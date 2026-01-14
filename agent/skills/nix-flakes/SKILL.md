@@ -1,0 +1,106 @@
+---
+name: nix-flakes
+description: Achieve reproducible builds, dependency management, and project isolation with Nix Flakes.
+---
+
+# Nix Flakes Skill
+
+Flakes are the modern way to manage Nix projects, providing hermeticity and reproducibility through a `flake.lock` file.
+
+## Core Commands
+
+### Project Management
+
+```bash
+# Initialize a new flake in the current directory
+nix flake init
+
+# Update flake.lock (updates all inputs)
+nix flake update
+
+# Check flake for syntax and common errors
+nix flake check
+
+# Show flake outputs
+nix flake show
+```
+
+### Running and Building
+
+Always prefix local flake paths with `path:` (e.g., `path:.`) to ensure Nix uses all files in the directory without requiring them to be staged in Git.
+
+```bash
+# Build the default package
+nix build path:.
+
+# Build a specific output
+nix build path:.#packageName
+
+# Run the default app
+nix run path:.
+
+# Run a specific app from a flake
+nix run path:.#appName
+
+# Run an app from a remote flake
+nix run github:numtide/treefmt
+```
+
+### Development Environments
+
+In a headless environment, use `nix develop` with `--command` to run tasks within the environment.
+
+```bash
+# Run a command inside the devShell
+nix develop path:. --command make build
+
+# Check if current environment matches devShell
+nix develop path:. --command env
+```
+
+## Flake Structure (`flake.nix`)
+
+A basic `flake.nix` pattern:
+
+```nix
+{
+  description = "A basic flake";
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+  };
+
+  outputs = { self, nixpkgs }:
+    let
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
+    in {
+      packages.${system}.default = pkgs.hello;
+
+      devShells.${system}.default = pkgs.mkShell {
+        buildInputs = [ pkgs.git pkgs.vim ];
+      };
+    };
+}
+```
+
+## Best Practices
+
+- **Locking**: Manage the `flake.lock` file to ensure reproducibility.
+- **Purity**: Flakes are "pure" by default. They cannot access files outside the flake directory unless they are tracked (e.g. in the git tree if using git).
+- **Non-Interactive**: When using `nix develop`, always use the `--command` flag to ensure scripts remain non-interactive.
+
+## Debugging Flakes
+
+```bash
+# Inspect inputs
+nix flake metadata path:.
+
+# Evaluate a specific output
+nix eval path:.#packages.x86_64-linux.default.name
+```
+
+## Related Skills
+
+- **nix**: Run applications without installation and create development environments using Nix.
+- **nh**: Manage NixOS and Home Manager operations with improved output using nh.

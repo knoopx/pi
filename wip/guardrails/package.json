@@ -1,0 +1,17 @@
+{
+  "name": "guardrails",
+  "version": "1.0.0",
+  "description": "Guardrails extension",
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "latest",
+    "@sinclair/typebox": "latest"
+  },
+  "devDependencies": {
+    "vitest": "^1.6.1",
+    "@types/node": "^20.19.29"
+  },
+  "scripts": {
+    "test": "vitest",
+    "test:run": "vitest run"
+  }
+}

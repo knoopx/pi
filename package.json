@@ -1,0 +1,15 @@
+{
+  "name": "pi-extensions",
+  "version": "1.0.0",
+  "description": "Main package for pi extensions with formatting",
+  "scripts": {
+    "format": "prettier --write \"agent/extensions/**/*.ts\"",
+    "format-check": "prettier --check \"agent/extensions/**/*.ts\"",
+    "update-deps": "find agent/extensions -name package.json -execdir bun update \\;",
+    "install-deps": "find agent/extensions -name package.json -execdir bun install \\;"
+  },
+  "devDependencies": {
+    "prettier": "^3.8.0",
+    "vitest": "^1.6.1"
+  }
+}
