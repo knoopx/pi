@@ -98,6 +98,52 @@ function textResult(
   return { content, details };
 }
 
+async function withBrowserPage<T>(
+  fn: (page: puppeteer.Page, browser: puppeteer.Browser) => Promise<T>,
+): Promise<{ result: T } | { error: string }> {
+  try {
+    const b = await puppeteer.connect({
+      browserURL: "http://localhost:9222",
+      defaultViewport: null,
+    });
+
+    const p = (await b.pages()).at(-1);
+
+    if (!p) {
+      await b.disconnect();
+      return { error: "✗ No active tab found" };
+    }
+
+    const result = await fn(p, b);
+
+    await b.disconnect();
+
+    return { result };
+  } catch (error) {
+    return { error: `✗ Error: ${(error as Error).message}` };
+  }
+}
+
+async function getBrowserAndPage(): Promise<{ b: puppeteer.Browser; p: puppeteer.Page } | { error: string }> {
+  try {
+    const b = await puppeteer.connect({
+      browserURL: "http://localhost:9222",
+      defaultViewport: null,
+    });
+
+    const p = (await b.pages()).at(-1);
+
+    if (!p) {
+      await b.disconnect();
+      return { error: "✗ No active tab found" };
+    }
+
+    return { b, p };
+  } catch (error) {
+    return { error: `✗ Error: ${(error as Error).message}` };
+  }
+}
+
 export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "start-browser",
@@ -323,47 +369,41 @@ export default function (pi: ExtensionAPI) {
   }
 
   async function navigateBrowser(url: string, newTab: boolean) {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
-    });
-
     if (newTab) {
-      const p = await b.newPage();
-      await p.goto(url, { waitUntil: "domcontentloaded" });
-      await b.disconnect();
-      return textResult({ url, newTab: true }, `✓ Opened: ${url}`);
-    } else {
-      const p = (await b.pages()).at(-1);
-      if (!p) {
+      try {
+        const b = await puppeteer.connect({
+          browserURL: "http://localhost:9222",
+          defaultViewport: null,
+        });
+        const p = await b.newPage();
+        await p.goto(url, { waitUntil: "domcontentloaded" });
         await b.disconnect();
-        return textResult({ error: true }, "✗ No active tab found");
+        return textResult({ url, newTab: true }, `✓ Opened: ${url}`);
+      } catch (error) {
+        return textResult({ error: true }, `✗ Error: ${(error as Error).message}`);
       }
-      await p.goto(url, { waitUntil: "domcontentloaded" });
-      await b.disconnect();
-      return textResult({ url, newTab: false }, `✓ Navigated to: ${url}`);
+    } else {
+      const res = await withBrowserPage(async (p) => {
+        await p.goto(url, { waitUntil: "domcontentloaded" });
+        return `✓ Navigated to: ${url}`;
+      });
+      if ('error' in res) return textResult({ error: true }, res.error);
+      return textResult({ url, newTab: false }, res.result);
     }
   }
 
   async function evalBrowser(code: string) {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
+    const res = await withBrowserPage(async (p) => {
+      const result = await p.evaluate((c) => {
+        const AsyncFunction = (async () => {}).constructor as any;
+        return new AsyncFunction(`return (${c})`)();
+      }, code);
+      return result;
     });
 
-    const p = (await b.pages()).at(-1);
+    if ('error' in res) return textResult({ error: true }, res.error);
 
-    if (!p) {
-      await b.disconnect();
-      return textResult({ error: true }, "✗ No active tab found");
-    }
-
-    const result = await p.evaluate((c) => {
-      const AsyncFunction = (async () => {}).constructor as any;
-      return new AsyncFunction(`return (${c})`)();
-    }, code);
-
-    await b.disconnect();
+    const result = res.result;
 
     if (Array.isArray(result)) {
       let output = "";
@@ -386,59 +426,43 @@ export default function (pi: ExtensionAPI) {
   }
 
   async function screenshotBrowser() {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
+    const res = await withBrowserPage(async (p) => {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const filename = `screenshot-${timestamp}.png`;
+      const filepath = join(tmpdir(), filename);
+
+      await p.screenshot({ path: filepath });
+
+      return filepath;
     });
 
-    const p = (await b.pages()).at(-1);
+    if ('error' in res) return textResult({ error: true }, res.error);
 
-    if (!p) {
-      await b.disconnect();
-      return textResult({ error: true }, "✗ No active tab found");
-    }
-
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const filename = `screenshot-${timestamp}.png`;
-    const filepath = join(tmpdir(), filename);
-
-    await p.screenshot({ path: filepath });
-
-    await b.disconnect();
-
-    return textResult({ filepath }, filepath);
+    return textResult({ filepath: res.result }, res.result);
   }
 
   async function extractTextBrowser(selector: string, all: boolean) {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
+    const res = await withBrowserPage(async (p) => {
+      const result = await p.evaluate(
+        (sel, allFlag) => {
+          const elements = allFlag
+            ? document.querySelectorAll(sel)
+            : document.querySelector(sel)
+              ? [document.querySelector(sel)]
+              : [];
+          return Array.from(elements)
+            .map((e) => (e as any).textContent || "")
+            .filter((text) => text.trim());
+        },
+        selector,
+        all,
+      );
+      return result;
     });
 
-    const p = (await b.pages()).at(-1);
+    if ('error' in res) return textResult({ error: true }, res.error);
 
-    if (!p) {
-      await b.disconnect();
-      return textResult({ error: true }, "✗ No active tab found");
-    }
-
-    const result = await p.evaluate(
-      (sel, allFlag) => {
-        // @ts-ignore
-        const elements = allFlag
-          ? document.querySelectorAll(sel)
-          : document.querySelector(sel)
-            ? [document.querySelector(sel)]
-            : [];
-        return Array.from(elements)
-          .map((e) => (e as any).textContent || "")
-          .filter((text) => text.trim());
-      },
-      selector,
-      all,
-    );
-
-    await b.disconnect();
+    const result = res.result;
 
     if (result.length === 0) {
       return textResult({}, "No text found matching the selector.");
@@ -453,17 +477,9 @@ export default function (pi: ExtensionAPI) {
     text: string,
     clear: boolean,
   ) {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
-    });
-
-    const p = (await b.pages()).at(-1);
-
-    if (!p) {
-      await b.disconnect();
-      return textResult({ error: true }, "✗ No active tab found");
-    }
+    const bp = await getBrowserAndPage();
+    if ('error' in bp) return textResult({ error: true }, bp.error);
+    const { b, p } = bp;
 
     try {
       if (selector) {
@@ -477,6 +493,7 @@ export default function (pi: ExtensionAPI) {
           }
           await element.type(text);
         } else {
+          await b.disconnect();
           return textResult({}, `✗ Element not found: ${selector}`);
         }
       } else {
@@ -496,17 +513,9 @@ export default function (pi: ExtensionAPI) {
   }
 
   async function clickElementBrowser(selector: string, all: boolean) {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
-    });
-
-    const p = (await b.pages()).at(-1);
-
-    if (!p) {
-      await b.disconnect();
-      return textResult({ error: true }, "✗ No active tab found");
-    }
+    const bp = await getBrowserAndPage();
+    if ('error' in bp) return textResult({ error: true }, bp.error);
+    const { b, p } = bp;
 
     try {
       if (all) {
@@ -533,17 +542,9 @@ export default function (pi: ExtensionAPI) {
   }
 
   async function waitForElementBrowser(selector: string, timeout: number) {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
-    });
-
-    const p = (await b.pages()).at(-1);
-
-    if (!p) {
-      await b.disconnect();
-      return textResult({ error: true }, "✗ No active tab found");
-    }
+    const bp = await getBrowserAndPage();
+    if ('error' in bp) return textResult({ error: true }, bp.error);
+    const { b, p } = bp;
 
     try {
       await p.waitForSelector(selector, { timeout });
@@ -559,160 +560,127 @@ export default function (pi: ExtensionAPI) {
   }
 
   async function getPageTitleBrowser() {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
+    const res = await withBrowserPage(async (p) => {
+      const title = await p.title();
+      return title;
     });
 
-    const p = (await b.pages()).at(-1);
+    if ('error' in res) return textResult({ error: true }, res.error);
 
-    if (!p) {
-      await b.disconnect();
-      return textResult({ error: true }, "✗ No active tab found");
-    }
-
-    const title = await p.title();
-    await b.disconnect();
-
-    return textResult({ title }, title);
+    return textResult({ title: res.result }, res.result);
   }
 
   async function getCurrentUrlBrowser() {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
+    const res = await withBrowserPage(async (p) => {
+      const url = p.url();
+      return url;
     });
 
-    const p = (await b.pages()).at(-1);
+    if ('error' in res) return textResult({ error: true }, res.error);
 
-    if (!p) {
-      await b.disconnect();
-      return textResult({ error: true }, "✗ No active tab found");
-    }
-
-    const url = p.url();
-    await b.disconnect();
-
-    return textResult({ url }, url);
+    return textResult({ url: res.result }, res.result);
   }
 
   async function refreshTabBrowser() {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
+    const res = await withBrowserPage(async (p) => {
+      await p.reload({ waitUntil: "domcontentloaded" });
+      return "✓ Page refreshed";
     });
 
-    const p = (await b.pages()).at(-1);
+    if ('error' in res) return textResult({ error: true }, res.error);
 
-    if (!p) {
-      await b.disconnect();
-      return textResult({ error: true }, "✗ No active tab found");
-    }
-
-    await p.reload({ waitUntil: "domcontentloaded" });
-    await b.disconnect();
-
-    return textResult({ refreshed: true }, "✓ Page refreshed");
+    return textResult({ refreshed: true }, res.result);
   }
 
   async function switchTabBrowser(index: number) {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
+    const res = await withBrowserPage(async (p, b) => {
+      const pages = await b.pages();
+
+      if (index < 0 || index >= pages.length) {
+        throw new Error(
+          `Invalid tab index: ${index} (0-${pages.length - 1})`,
+        );
+      }
+
+      const targetPage = pages[index];
+      await targetPage.bringToFront();
+
+      return `✓ Switched to tab ${index}`;
     });
 
-    const pages = await b.pages();
+    if ('error' in res) return textResult({ error: true }, res.error);
 
-    if (index < 0 || index >= pages.length) {
-      await b.disconnect();
-      return textResult(
-        { error: true },
-        `✗ Invalid tab index: ${index} (0-${pages.length - 1})`,
-      );
-    }
-
-    const targetPage = pages[index];
-    await targetPage.bringToFront();
-    await b.disconnect();
-
-    return textResult({ index }, `✓ Switched to tab ${index}`);
+    return textResult({ index }, res.result);
   }
 
   async function closeTabBrowser(index?: number, title?: string) {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
+    const res = await withBrowserPage(async (p, b) => {
+      const pages = await b.pages();
+
+      if (pages.length <= 1) {
+        throw new Error("Cannot close the last remaining tab");
+      }
+
+      let targetPage: any = null;
+      let targetIndex = -1;
+
+      if (index !== undefined) {
+        if (index < 0 || index >= pages.length) {
+          throw new Error(
+            `Invalid tab index: ${index} (0-${pages.length - 1})`,
+          );
+        }
+        targetPage = pages[index];
+        targetIndex = index;
+      } else if (title) {
+        for (let i = 0; i < pages.length; i++) {
+          const pageTitle = await pages[i].title();
+          if (pageTitle.toLowerCase().includes(title.toLowerCase())) {
+            targetPage = pages[i];
+            targetIndex = i;
+            break;
+          }
+        }
+        if (!targetPage) {
+          throw new Error(
+            `No tab found with title containing: "${title}"`,
+          );
+        }
+      } else {
+        // Close the current active tab (last in the array)
+        targetPage = pages[pages.length - 1];
+        targetIndex = pages.length - 1;
+      }
+
+      await targetPage.close();
+
+      return { targetIndex, msg: `✓ Closed tab ${targetIndex}` };
     });
 
-    const pages = await b.pages();
+    if ('error' in res) return textResult({ error: true }, `✗ ${res.error}`);
 
-    if (pages.length <= 1) {
-      await b.disconnect();
-      return textResult(
-        { error: true },
-        "✗ Cannot close the last remaining tab",
-      );
-    }
-
-    let targetPage: any = null;
-    let targetIndex = -1;
-
-    if (index !== undefined) {
-      if (index < 0 || index >= pages.length) {
-        await b.disconnect();
-        return textResult(
-          {},
-          `✗ Invalid tab index: ${index} (0-${pages.length - 1})`,
-        );
-      }
-      targetPage = pages[index];
-      targetIndex = index;
-    } else if (title) {
-      for (let i = 0; i < pages.length; i++) {
-        const pageTitle = await pages[i].title();
-        if (pageTitle.toLowerCase().includes(title.toLowerCase())) {
-          targetPage = pages[i];
-          targetIndex = i;
-          break;
-        }
-      }
-      if (!targetPage) {
-        await b.disconnect();
-        return textResult(
-          {},
-          `✗ No tab found with title containing: "${title}"`,
-        );
-      }
-    } else {
-      // Close the current active tab (last in the array)
-      targetPage = pages[pages.length - 1];
-      targetIndex = pages.length - 1;
-    }
-
-    await targetPage.close();
-    await b.disconnect();
-
-    return textResult({ index: targetIndex }, `✓ Closed tab ${targetIndex}`);
+    return textResult({ index: res.result.targetIndex }, res.result.msg);
   }
 
   async function listTabsBrowser() {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
+    const res = await withBrowserPage(async (p, b) => {
+      const pages = await b.pages();
+      const tabs: string[] = [];
+
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i];
+        const title = await page.title();
+        const url = page.url();
+        const isActive = i === pages.length - 1; // Assuming last page is active
+        tabs.push(`${i}: ${isActive ? "[ACTIVE] " : ""}${title} - ${url}`);
+      }
+
+      return tabs;
     });
 
-    const pages = await b.pages();
-    const tabs: string[] = [];
+    if ('error' in res) return textResult({ error: true }, res.error);
 
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i];
-      const title = await page.title();
-      const url = page.url();
-      const isActive = i === pages.length - 1; // Assuming last page is active
-      tabs.push(`${i}: ${isActive ? "[ACTIVE] " : ""}${title} - ${url}`);
-    }
-
-    await b.disconnect();
+    const tabs = res.result;
 
     if (tabs.length === 0) {
       return textResult({}, "No tabs open");
@@ -722,33 +690,25 @@ export default function (pi: ExtensionAPI) {
   }
 
   async function querySelectorBrowser(selector: string, all: boolean) {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
+    const res = await withBrowserPage(async (p) => {
+      const result = await p.evaluate(
+        (sel, allFlag) => {
+          const elements = allFlag
+            ? document.querySelectorAll(sel)
+            : document.querySelector(sel)
+              ? [document.querySelector(sel)]
+              : [];
+          return Array.from(elements).map((e) => (e as any).outerHTML);
+        },
+        selector,
+        all,
+      );
+      return result;
     });
 
-    const p = (await b.pages()).at(-1);
+    if ('error' in res) return textResult({ error: true }, res.error);
 
-    if (!p) {
-      await b.disconnect();
-      return textResult({ error: true }, "✗ No active tab found");
-    }
-
-    const result = await p.evaluate(
-      (sel, allFlag) => {
-        // @ts-ignore
-        const elements = allFlag
-          ? document.querySelectorAll(sel)
-          : document.querySelector(sel)
-            ? [document.querySelector(sel)]
-            : [];
-        return Array.from(elements).map((e) => (e as any).outerHTML);
-      },
-      selector,
-      all,
-    );
-
-    await b.disconnect();
+    const result = res.result;
 
     if (result.length === 0) {
       return textResult({}, "No elements found matching the selector.");

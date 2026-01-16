@@ -198,6 +198,30 @@ function buildSearchResult<T>(
   };
 }
 
+async function executeSearchTool<T>(
+  searchFn: (q: string) => Promise<T[]>,
+  mapper: (item: T) => any,
+  contentBuilder: (res: any[]) => string,
+  query: string,
+): Promise<AgentToolResult<Record<string, unknown>>> {
+  try {
+    const items = await searchFn(query);
+    const results = items.slice(0, 20).map(mapper);
+    return buildSearchResult(results, query, contentBuilder);
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error: ${(error as Error).message}`,
+        },
+      ],
+      isError: true,
+      details: {},
+    };
+  }
+}
+
 const COMMON_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (X11; Linux x86_64; rv:138.0) Gecko/20100101 Firefox/138.0",
@@ -543,24 +567,22 @@ export default function (pi: ExtensionAPI) {
     async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       const { query } = params as { query: string };
 
-      try {
-        const packages = await searchNixPackages(query);
-
-        const results = packages.slice(0, 20).map((pkg) => ({
-          attr_name: pkg.package_attr_name,
-          pname: pkg.package_pname,
-          version: pkg.package_pversion,
-          description: cleanText(pkg.package_description),
-          longDescription: cleanText(pkg.package_longDescription),
-          platforms: pkg.package_platforms,
-          homepage: pkg.package_homepage,
-          maintainers: pkg.package_maintainers
+      return executeSearchTool(
+        searchNixPackages,
+        (item: NixPackage) => ({
+          attr_name: item.package_attr_name,
+          pname: item.package_pname,
+          version: item.package_pversion,
+          description: cleanText(item.package_description),
+          longDescription: cleanText(item.package_longDescription),
+          platforms: item.package_platforms,
+          homepage: item.package_homepage,
+          maintainers: item.package_maintainers
             .map((m) => m.name || m.github)
             .join(", "),
-          license: pkg.package_license_set.join(", "),
-        }));
-
-        return buildSearchResult(results, query, (res) => {
+          license: item.package_license_set.join(", "),
+        }),
+        (res) => {
           let c = `Found ${res.length} packages matching "${query}":\n\n`;
           res.forEach((pkg) => {
             c += `**${pkg.attr_name}** (${pkg.pname} ${pkg.version})\n`;
@@ -572,19 +594,9 @@ export default function (pi: ExtensionAPI) {
             c += `License: ${pkg.license}\n\n`;
           });
           return c;
-        });
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error searching Nix packages: ${(error as Error).message}`,
-            },
-          ],
-          isError: true,
-          details: {},
-        };
-      }
+        },
+        query,
+      );
     },
   });
 
@@ -602,19 +614,17 @@ export default function (pi: ExtensionAPI) {
     async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       const { query } = params as { query: string };
 
-      try {
-        const options = await searchNixOptions(query);
-
-        const results = options.slice(0, 20).map((opt) => ({
+      return executeSearchTool(
+        searchNixOptions,
+        (opt: NixOption) => ({
           name: opt.option_name,
           description: cleanText(opt.option_description),
           type: opt.option_type,
           default: opt.option_default,
           example: opt.option_example,
           source: opt.option_source,
-        }));
-
-        return buildSearchResult(results, query, (res) => {
+        }),
+        (res) => {
           let c = `Found ${res.length} options matching "${query}":\n\n`;
           res.forEach((opt) => {
             c += `**${opt.name}**\n`;
@@ -625,19 +635,9 @@ export default function (pi: ExtensionAPI) {
             if (opt.source) c += `Source: ${opt.source}\n\n`;
           });
           return c;
-        });
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error searching Nix options: ${(error as Error).message}`,
-            },
-          ],
-          isError: true,
-          details: {},
-        };
-      }
+        },
+        query,
+      );
     },
   });
 
@@ -655,10 +655,9 @@ export default function (pi: ExtensionAPI) {
     async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       const { query } = params as { query: string };
 
-      try {
-        const flakes = await searchNixFlakes(query);
-
-        const results = flakes.slice(0, 20).map((flake) => ({
+      return executeSearchTool(
+        searchNixFlakes,
+        (flake: NixFlake) => ({
           flake_name: flake.flake_name,
           attr_name: flake.package_attr_name,
           pname: flake.package_pname,
@@ -672,9 +671,8 @@ export default function (pi: ExtensionAPI) {
             .join(", "),
           license: flake.package_license_set.join(", "),
           flake_url: flake.flake_source.url,
-        }));
-
-        return buildSearchResult(results, query, (res) => {
+        }),
+        (res) => {
           let c = `Found ${res.length} flake packages matching "${query}":\n\n`;
           res.forEach((pkg) => {
             c += `**${pkg.flake_name}#${pkg.attr_name}** (${pkg.pname} ${pkg.version})\n`;
@@ -687,19 +685,9 @@ export default function (pi: ExtensionAPI) {
             c += `Flake: ${pkg.flake_url}\n\n`;
           });
           return c;
-        });
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error searching Nix flake packages: ${(error as Error).message}`,
-            },
-          ],
-          isError: true,
-          details: {},
-        };
-      }
+        },
+        query,
+      );
     },
   });
 
@@ -716,19 +704,17 @@ export default function (pi: ExtensionAPI) {
     async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       const { query } = params as { query: string };
 
-      try {
-        const options = await searchHomeManagerOptions(query);
-
-        const results = options.slice(0, 20).map((opt) => ({
+      return executeSearchTool(
+        searchHomeManagerOptions,
+        (opt: HomeManagerOption) => ({
           title: opt.title,
           description: cleanText(opt.description),
           type: opt.type,
           default: opt.default,
           example: opt.example,
           declarations: opt.declarations.map((d) => d.url).join(", "),
-        }));
-
-        return buildSearchResult(results, query, (res) => {
+        }),
+        (res) => {
           let c = `Found ${res.length} Home-Manager options matching "${query}":\n\n`;
           res.forEach((opt) => {
             c += `**${opt.title}**\n`;
@@ -739,19 +725,9 @@ export default function (pi: ExtensionAPI) {
             if (opt.declarations) c += `Declarations: ${opt.declarations}\n\n`;
           });
           return c;
-        });
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error searching Home-Manager options: ${(error as Error).message}`,
-            },
-          ],
-          isError: true,
-          details: {},
-        };
-      }
+        },
+        query,
+      );
     },
   });
 
@@ -769,19 +745,17 @@ export default function (pi: ExtensionAPI) {
     async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       const { query } = params as { query: string };
 
-      try {
-        const prs = await searchNixpkgsPullRequests(query);
-
-        const results = prs.slice(0, 20).map((pr) => ({
+      return executeSearchTool(
+        searchNixpkgsPullRequests,
+        (pr: GitHubIssue) => ({
           number: pr.number,
           title: pr.title,
           state: pr.state,
           user: pr.user?.login || "unknown",
           updated_at: pr.updated_at,
           url: pr.html_url,
-        }));
-
-        return buildSearchResult(results, query, (res) => {
+        }),
+        (res) => {
           let c = `Found ${res.length} pull requests matching "${query}":\n\n`;
           res.forEach((pr) => {
             c += `**#${pr.number}**: ${pr.title}\n`;
@@ -791,19 +765,9 @@ export default function (pi: ExtensionAPI) {
             c += `URL: ${pr.url}\n\n`;
           });
           return c;
-        });
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error searching Nixpkgs pull requests: ${(error as Error).message}`,
-            },
-          ],
-          isError: true,
-          details: {},
-        };
-      }
+        },
+        query,
+      );
     },
   });
 }
