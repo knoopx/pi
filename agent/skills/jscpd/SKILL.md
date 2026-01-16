@@ -7,30 +7,12 @@ description: Detect and analyze duplicate code in JavaScript, TypeScript, and ot
 
 JSCPD is a tool for detecting duplicate code in various programming languages, primarily JavaScript and TypeScript, but supports many others.
 
-## Setup
-
-No setup required. JSCPD is run on-demand using `bunx`.
-
 ## Usage
 
 Run JSCPD on files or directories to detect duplicates:
 
 ```bash
-bunx jscpd <path>
-```
-
-Common options:
-
-- `--min-lines <number>`: Minimum lines for a duplicate block (default: 5)
-- `--min-tokens <number>`: Minimum tokens for a duplicate block (default: 50)
-- `--format <format>`: Output format (console, json, xml, html, etc.)
-- `--ignore <pattern>`: Ignore files matching pattern
-- `--reporters <reporters>`: Specify reporters (console, json, etc.)
-
-Example:
-
-```bash
-bunx jscpd src/ --min-lines 10 --format json
+bunx jscpd <path> --ignore "**/node_modules/**"
 ```
 
 ## Workflow
