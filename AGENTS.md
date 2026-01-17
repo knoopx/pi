@@ -4,32 +4,50 @@ This document provides essential guidelines for coding agents operating in this 
 
 ## Build/Lint/Test Commands
 
+### Version Control
+
+- **Repository Type**: This is a Jujutsu (jj) repository
+- **Use jujutsu skill**: Always use the jujutsu skill for version control operations (commits, branches, merges, etc.)
+- **Avoid git commands**: Do not use git commands directly - use jj through the jujutsu skill
+
 ### Package Management
+
 - **Install root dependencies**: `bun install`
 - **Update root dependencies**: `bun update`
 - **Install extension dependencies**: `find agent/extensions -name package.json -execdir bun install \;`
 - **Update extension dependencies**: `find agent/extensions -name package.json -execdir bun update \;`
 
 ### Formatting
+
 - **Format code**: `bun run format` or `prettier --write "agent/extensions/**/*.ts"`
 - **Check formatting**: `bun run format-check` or `prettier --check "agent/extensions/**/*.ts"`
 
+### Linting
+
+- **Lint code**: `bunx eslint agent/extensions/**/*.ts`
+- **Fix linting issues**: `bunx eslint --fix agent/extensions/**/*.ts`
+
 ### Testing
+
 - **Run all tests**: `bun test`
 - **Run tests in watch mode**: `bun test --watch`
 - **Run specific test file**: `bun test path/to/test-file.test.ts`
-- **Run single test**: `bun test -t "test description"`
+- **Run single test**: `bun test -t "exact test name"` or `bun test --run -t "test pattern"`
 - **Run tests with coverage**: `bun test --coverage`
 - **Run tests for specific extension**: `bun test agent/extensions/extension-name/`
+- **Debug tests**: `bun test --inspect` or `bun test --inspect-brk`
 
 ### TypeScript Compilation
+
 - **Type check**: `bunx tsc --noEmit`
 - **Build for production**: `bunx tsc` (if output directory is configured)
 
 ## Code Style Guidelines
 
 ### TypeScript Configuration
+
 This project uses strict TypeScript configuration:
+
 - Target: ES2022 with DOM types
 - Module: ESNext
 - Strict mode enabled
@@ -37,7 +55,14 @@ This project uses strict TypeScript configuration:
 - Explicit return types for exported functions
 - Includes Vitest globals for testing
 
+### ESLint Configuration
+
+- Extends: `eslint:recommended`, `@typescript-eslint/recommended`
+- Rules: `@typescript-eslint/no-unused-vars` (error), `@typescript-eslint/no-explicit-any` (warn)
+- Environments: Node.js, ES2022
+
 ### Naming Conventions
+
 - **Files**: Use kebab-case (e.g., `github-api.ts`, `lsp-core.ts`)
 - **Functions/Variables**: Use camelCase (e.g., `registerTool`, `validateParams`)
 - **Classes/Interfaces/Types**: Use PascalCase (e.g., `ToolDefinition`, `ApiResponse`)
@@ -46,6 +71,7 @@ This project uses strict TypeScript configuration:
 - **Extensions**: Name folders with kebab-case matching main export
 
 ### Import/Export Style
+
 ```typescript
 // Group imports: standard library, third-party, local
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -56,13 +82,16 @@ import { z } from "zod";
 export { setupExtension, validateCommand };
 
 // Default export for extensions
-export default function (pi: ExtensionAPI) { /* ... */ }
+export default function (pi: ExtensionAPI) {
+  /* ... */
+}
 
 // Avoid namespace imports except for testing utilities
 import { describe, it, expect, vi } from "vitest";
 ```
 
 ### Extension Development Patterns
+
 ```typescript
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
@@ -106,6 +135,7 @@ export default function (pi: ExtensionAPI) {
 ```
 
 ### Type Safety
+
 - **Avoid `any`**: Use `unknown` for uncertain types, create proper type definitions
 - **Use branded types** for primitive types needing runtime validation
 - **Discriminated unions** for mutually exclusive states
@@ -113,10 +143,14 @@ export default function (pi: ExtensionAPI) {
 - **Use `as const`** for literal type assertions
 
 ### Error Handling
+
 ```typescript
 // Custom error classes extending Error
 class ValidationError extends Error {
-  constructor(public field: string, message: string) {
+  constructor(
+    public field: string,
+    message: string,
+  ) {
     super(message);
     this.name = "ValidationError";
   }
@@ -140,10 +174,18 @@ try {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
   const data = await response.json();
-  return { content: [{ type: "text", text: JSON.stringify(data) }], details: { data } };
+  return {
+    content: [{ type: "text", text: JSON.stringify(data) }],
+    details: { data },
+  };
 } catch (error) {
   return {
-    content: [{ type: "text", text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+    content: [
+      {
+        type: "text",
+        text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+      },
+    ],
     isError: true,
     details: {},
   };
@@ -151,6 +193,7 @@ try {
 ```
 
 ### Testing Patterns
+
 ```typescript
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -165,7 +208,9 @@ describe("Extension Name", () => {
       registerCommand: vi.fn(),
       // ... other mocks
     } as any;
-    mockContext = { /* setup */ };
+    mockContext = {
+      /* setup */
+    };
   });
 
   it("should register tool with correct parameters", () => {
@@ -180,7 +225,7 @@ describe("Extension Name", () => {
       expect.objectContaining({
         name: "expected-tool-name",
         parameters: expect.any(Object),
-      })
+      }),
     );
   });
 
@@ -196,6 +241,7 @@ describe("Extension Name", () => {
 ```
 
 ### Code Organization
+
 ```
 agent/extensions/
 ├── extension-name/
@@ -206,19 +252,22 @@ agent/extensions/
 ```
 
 ### Documentation
+
 - **JSDoc** for public APIs: `@param`, `@returns`, `@example`
 - **Types serve as documentation** - prefer self-documenting code
 - **Inline comments** for complex business logic, not obvious implementations
 - **README.md** in extension folders for complex extensions
 
-### Performance Considerations
+## Performance Considerations
+
 - **Minimize type complexity** in frequently used types
 - **Use `const` assertions** for literal types: `as const`
 - **Prefer interfaces** over types for object shapes (better IntelliSense)
 - **Use `readonly`** for immutable data structures
 - **Signal handling** for cancellable operations
 
-### Best Practices
+## Best Practices
+
 1. **Fail fast**: Validate inputs early, use strict TypeScript settings
 2. **Single responsibility**: Each tool/command should do one thing well
 3. **DRY principle**: Extract common patterns, avoid code duplication
@@ -232,23 +281,22 @@ agent/extensions/
 ## Project-Specific Conventions
 
 ### Extension Registration
+
 - Always check tool availability in `session_start` event
 - Use consistent naming: kebab-case for tool names, Title Case for labels
 - Provide detailed parameter descriptions in TypeBox schemas
 - Return structured results with `content` and `details` fields
 
 ### Tool Parameters
+
 - Use TypeBox for runtime type validation
 - Include `description` fields for all parameters
 - Use appropriate TypeBox types (String, Number, Boolean, etc.)
 - Mark optional parameters with `Type.Optional()`
 
 ### Error Responses
+
 - Always return `isError: true` for failures
 - Include error message in content array
 - Provide empty `details` object for errors
 - Use descriptive error messages
-
-## Available Skills & Tools
-
-This repository uses various skills and tools. See the full list in the project documentation for available capabilities including ast-grep, bun, nix, podman, and many others.</content>
