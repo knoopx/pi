@@ -37,7 +37,7 @@ describe("Browser Extension", () => {
 
   it("should register all browser tools", () => {
     const expectedTools = [
-      "navigate-browser",
+      "navigate-url",
       "evaluate-javascript",
       "take-screenshot",
       "query-html-elements",
@@ -64,26 +64,26 @@ describe("Browser Extension", () => {
     expect(mockPi.registerTool).toHaveBeenCalledTimes(expectedTools.length);
   });
 
-  describe("navigate-browser tool", () => {
+  describe("navigate-url tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
       registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "navigate-browser",
+        (call) => call[0].name === "navigate-url",
       )[0];
     });
 
     it("should have correct label and description", () => {
-      expect(registeredTool.label).toBe("Navigate Browser");
+      expect(registeredTool.label).toBe("Navigate URL");
       expect(registeredTool.description).toBe(
-        `Navigate to a specific URL in the active browser tab.
+        `Navigate to a specific URL in a new browser tab.
 
 Use this to:
 - Visit web pages for data extraction
 - Load specific pages for testing or scraping
 - Open new tabs for parallel processing
 
-Supports both existing tabs and creating new ones.`,
+Always opens in a new tab.`,
       );
     });
   });
@@ -276,43 +276,7 @@ describe("E2E Tests", () => {
     setupBrowserExtension(mockPi);
   });
 
-  describe("navigate-browser", () => {
-    it("should navigate to URL in existing tab", async () => {
-      const mockPage = {
-        goto: vi.fn(),
-        title: vi.fn().mockResolvedValue("Example Page"),
-        evaluate: vi.fn().mockResolvedValue(["h1", "main"]),
-      };
-      const mockBrowser = {
-        pages: vi.fn().mockResolvedValue([mockPage]),
-        disconnect: vi.fn(),
-      };
-      mockConnect.mockResolvedValue(mockBrowser);
-
-      const tool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "navigate-browser",
-      )[0];
-
-      const result = await tool.execute(
-        "id",
-        { url: "https://example.com", newTab: false },
-        vi.fn(),
-        {},
-        AbortSignal.timeout(1000),
-      );
-
-      expect(mockPage.goto).toHaveBeenCalledWith("https://example.com", {
-        waitUntil: "domcontentloaded",
-      });
-      expect(result.content[0].text).toContain(
-        "Navigated to: https://example.com",
-      );
-      expect(result.content[0].text).toContain("Page Title: Example Page");
-      expect(result.content[0].text).toContain("Suggested selectors: h1, main");
-      expect(result.details).toHaveProperty("title", "Example Page");
-      expect(result.details).toHaveProperty("suggestedSelectors");
-    });
-
+  describe("navigate-url", () => {
     it("should open URL in new tab", async () => {
       const mockPage = {
         goto: vi.fn(),
@@ -326,12 +290,12 @@ describe("E2E Tests", () => {
       mockConnect.mockResolvedValue(mockBrowser);
 
       const tool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "navigate-browser",
+        (call) => call[0].name === "navigate-url",
       )[0];
 
       const result = await tool.execute(
         "id",
-        { url: "https://example.com", newTab: true },
+        { url: "https://example.com" },
         vi.fn(),
         {},
         AbortSignal.timeout(1000),

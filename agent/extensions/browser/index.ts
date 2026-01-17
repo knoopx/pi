@@ -12,13 +12,8 @@ import type { TextContent } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
 import prettier from "prettier";
 
-const NavigateBrowserParams = Type.Object({
+const NavigateUrlParams = Type.Object({
   url: Type.String({ description: "URL to navigate to" }),
-  newTab: Type.Optional(
-    Type.Boolean({
-      description: "Open in a new tab",
-    }),
-  ),
 });
 
 const EvaluateJavascriptParams = Type.Object({
@@ -288,17 +283,17 @@ export default function (pi: ExtensionAPI) {
   }
 
   pi.registerTool({
-    name: "navigate-browser",
-    label: "Navigate Browser",
-    description: `Navigate to a specific URL in the active browser tab.
+    name: "navigate-url",
+    label: "Navigate URL",
+    description: `Navigate to a specific URL in a new browser tab.
 
 Use this to:
 - Visit web pages for data extraction
 - Load specific pages for testing or scraping
 - Open new tabs for parallel processing
 
-Supports both existing tabs and creating new ones.`,
-    parameters: NavigateBrowserParams,
+Always opens in a new tab.`,
+    parameters: NavigateUrlParams,
 
     async execute(
       toolCallId: string,
@@ -307,8 +302,8 @@ Supports both existing tabs and creating new ones.`,
       ctx: ToolContext,
       signal: AbortSignal,
     ) {
-      const { url, newTab = false } = params;
-      return await navigateBrowser(url, newTab);
+      const { url } = params;
+      return await navigateUrl(url);
     },
   });
 
@@ -645,68 +640,38 @@ Returns plain text from matching elements.`,
     },
   });
 
-  async function navigateBrowser(url: string, newTab: boolean) {
-    if (newTab) {
-      try {
-        const b = await puppeteer.connect({
-          browserURL: "http://localhost:9222",
-          defaultViewport: null,
-        });
-        const p = await b.newPage();
-        await p.goto(url, { waitUntil: "domcontentloaded" });
-
-        const hints = await getPageHints(p);
-        await b.disconnect();
-
-        const hintText = [
-          `Page Title: ${hints.title}`,
-          hints.selectors.length > 0
-            ? `Suggested selectors: ${hints.selectors.join(", ")}`
-            : "No main content selectors found",
-        ].join("\n");
-
-        return textResult(
-          {
-            url,
-            newTab: true,
-            title: hints.title,
-            suggestedSelectors: hints.selectors,
-          },
-          `✓ Opened: ${url}\n${hintText}`,
-        );
-      } catch (error) {
-        return textResult(
-          { error: true },
-          `✗ Error: ${(error as Error).message}`,
-        );
-      }
-    } else {
-      const res = await withBrowserPage(async (p) => {
-        await p.goto(url, { waitUntil: "domcontentloaded" });
-        const hints = await getPageHints(p);
-
-        const hintText = [
-          `Page Title: ${hints.title}`,
-          hints.selectors.length > 0
-            ? `Suggested selectors: ${hints.selectors.join(", ")}`
-            : "No main content selectors found",
-        ].join("\n");
-
-        return {
-          message: `✓ Navigated to: ${url}\n${hintText}`,
-          hints,
-        };
+  async function navigateUrl(url: string) {
+    try {
+      const b = await puppeteer.connect({
+        browserURL: "http://localhost:9222",
+        defaultViewport: null,
       });
-      if ("error" in res) return textResult({ error: true }, res.error);
+      const p = await b.newPage();
+      await p.goto(url, { waitUntil: "domcontentloaded" });
+
+      const hints = await getPageHints(p);
+      await b.disconnect();
+
+      const hintText = [
+        `Page Title: ${hints.title}`,
+        hints.selectors.length > 0
+          ? `Suggested selectors: ${hints.selectors.join(", ")}`
+          : "No main content selectors found",
+      ].join("\n");
 
       return textResult(
         {
           url,
-          newTab: false,
-          title: res.result.hints.title,
-          suggestedSelectors: res.result.hints.selectors,
+          newTab: true,
+          title: hints.title,
+          suggestedSelectors: hints.selectors,
         },
-        res.result.message,
+        `✓ Opened: ${url}\n${hintText}`,
+      );
+    } catch (error) {
+      return textResult(
+        { error: true },
+        `✗ Error: ${(error as Error).message}`,
       );
     }
   }
