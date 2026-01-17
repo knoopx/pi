@@ -41,7 +41,7 @@ describe("Browser Extension", () => {
       "evaluate-javascript",
       "take-screenshot",
       "query-html-elements",
-      "list-tabs",
+      "list-browser-tabs",
       "close-tab",
       "switch-tab",
       "refresh-tab",
@@ -138,17 +138,17 @@ Saves the image to a temporary file and returns the path.`,
     });
   });
 
-  describe("list-tabs tool", () => {
+  describe("list-browser-tabs tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
       registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "list-tabs",
+        (call) => call[0].name === "list-browser-tabs",
       )[0];
     });
 
     it("should have correct label and description", () => {
-      expect(registeredTool.label).toBe("List Tabs");
+      expect(registeredTool.label).toBe("List Browser Tabs");
       expect(registeredTool.description).toBe(
         `Get information about all open browser tabs.
 
@@ -571,7 +571,7 @@ describe("E2E Tests", () => {
     });
   });
 
-  describe("list-tabs", () => {
+  describe("list-browser-tabs", () => {
     it("should list all tabs", async () => {
       const mockPages = [
         {
@@ -590,7 +590,7 @@ describe("E2E Tests", () => {
       mockConnect.mockResolvedValue(mockBrowser);
 
       const tool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "list-tabs",
+        (call) => call[0].name === "list-browser-tabs",
       )[0];
 
       const result = await tool.execute(

@@ -43,8 +43,25 @@ Returns comprehensive repository details from the GitHub API.`,
           );
         }
         const data = await response.json();
+        const summary = [
+          `**${data.name}** by ${data.owner.login}`,
+          data.description && data.description.trim()
+            ? `Description: ${data.description}`
+            : null,
+          `Language: ${data.language || "Not specified"}`,
+          `Stars: ${data.stargazers_count.toLocaleString()} | Forks: ${data.forks_count.toLocaleString()}`,
+          `Issues: ${data.open_issues_count} open | License: ${data.license?.name || "None"}`,
+          `Created: ${new Date(data.created_at).toLocaleDateString()} | Updated: ${new Date(data.updated_at).toLocaleDateString()}`,
+          `URL: ${data.html_url}`,
+          data.homepage && data.homepage.trim()
+            ? `Homepage: ${data.homepage}`
+            : null,
+          data.topics?.length ? `Topics: ${data.topics.join(", ")}` : null,
+        ]
+          .filter((item) => item !== null)
+          .join("\n");
         return {
-          content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+          content: [{ type: "text", text: summary }],
           details: { data },
         };
       } catch (error) {
@@ -95,8 +112,28 @@ Returns detailed user profile data from GitHub.`,
           );
         }
         const data = await response.json();
+        const summary = [
+          `**${data.name || data.login}** (${data.login})`,
+          data.bio && data.bio.trim() ? `Bio: ${data.bio}` : null,
+          data.location && data.location.trim()
+            ? `Location: ${data.location}`
+            : null,
+          data.company && data.company.trim()
+            ? `Company: ${data.company}`
+            : null,
+          `Followers: ${data.followers} | Following: ${data.following}`,
+          `Public repos: ${data.public_repos} | Public gists: ${data.public_gists}`,
+          `Joined: ${new Date(data.created_at).toLocaleDateString()}`,
+          `Profile: ${data.html_url}`,
+          data.blog && data.blog.trim() ? `Website: ${data.blog}` : null,
+          data.twitter_username && data.twitter_username.trim()
+            ? `Twitter: @${data.twitter_username}`
+            : null,
+        ]
+          .filter((item) => item !== null)
+          .join("\n");
         return {
-          content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+          content: [{ type: "text", text: summary }],
           details: { data },
         };
       } catch (error) {
@@ -124,7 +161,7 @@ Use this to:
 - Find feature requests and discussions
 - Analyze repository activity
 
-Supports filtering by state (open/closed/all).`,
+Supports filtering by state (open/closed/all). Limited to 10 issues by default.`,
     parameters: Type.Object({
       owner: Type.String({ description: "Repository owner" }),
       repo: Type.String({ description: "Repository name" }),
@@ -135,7 +172,7 @@ Supports filtering by state (open/closed/all).`,
         ),
       ),
       per_page: Type.Optional(
-        Type.Number({ minimum: 1, maximum: 100, default: 30 }),
+        Type.Number({ minimum: 1, maximum: 20, default: 10 }),
       ),
     }),
 
@@ -150,7 +187,7 @@ Supports filtering by state (open/closed/all).`,
         owner,
         repo,
         state = "open",
-        per_page = 30,
+        per_page = 10,
       } = params as {
         owner: string;
         repo: string;
@@ -166,8 +203,22 @@ Supports filtering by state (open/closed/all).`,
           );
         }
         const data = await response.json();
+        let summary = `Found ${data.length} ${state} issue${data.length !== 1 ? "s" : ""}:\n\n`;
+        if (data.length === 0) {
+          summary = `No ${state} issues found.`;
+        } else {
+          summary += data
+            .map(
+              (issue: any) =>
+                `#${issue.number || "N/A"}: ${issue.title || "No title"} (${issue.state || "unknown"})\n` +
+                `By ${issue.user?.login || "unknown"} on ${issue.created_at ? new Date(issue.created_at).toLocaleDateString() : "unknown date"}\n` +
+                `Labels: ${issue.labels?.map((l: any) => l.name).join(", ") || "none"}\n` +
+                `${issue.html_url || ""}\n`,
+            )
+            .join("\n");
+        }
         return {
-          content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+          content: [{ type: "text", text: summary }],
           details: { data, count: Array.isArray(data) ? data.length : 0 },
         };
       } catch (error) {
@@ -195,7 +246,7 @@ Use this to:
 - Retrieve documentation or README files
 - Get files from specific branches or commits
 
-Returns the file content as plain text.`,
+Returns the file content as plain text. Limited to 100KB files.`,
     parameters: Type.Object({
       owner: Type.String({ description: "Repository owner" }),
       repo: Type.String({ description: "Repository name" }),
@@ -238,9 +289,20 @@ Returns the file content as plain text.`,
           throw new Error(errorMessage);
         }
         const content = await response.text();
+        const maxSize = 100 * 1024; // 100KB limit
+        let truncatedContent = content;
+        let wasTruncated = false;
+
+        if (content.length > maxSize) {
+          truncatedContent =
+            content.substring(0, maxSize) +
+            `\n\n[File truncated - ${content.length - maxSize} characters remaining]`;
+          wasTruncated = true;
+        }
+
         return {
-          content: [{ type: "text", text: content }],
-          details: { url, contentLength: content.length },
+          content: [{ type: "text", text: truncatedContent }],
+          details: { url, contentLength: content.length, wasTruncated },
         };
       } catch (error) {
         const url = `https://raw.githubusercontent.com/${owner}/${repo}/${
@@ -270,7 +332,7 @@ Use this to:
 - Locate libraries and frameworks
 - Research similar projects
 
-Supports sorting by stars, forks, or update date.`,
+Supports sorting by stars, forks, or update date. Limited to 10 results by default.`,
     parameters: Type.Object({
       query: Type.String({
         description: "Search query (e.g., 'language:javascript stars:>1000')",
@@ -291,7 +353,7 @@ Supports sorting by stars, forks, or update date.`,
         }),
       ),
       per_page: Type.Optional(
-        Type.Number({ minimum: 1, maximum: 100, default: 30 }),
+        Type.Number({ minimum: 1, maximum: 20, default: 10 }),
       ),
     }),
 
@@ -306,7 +368,7 @@ Supports sorting by stars, forks, or update date.`,
         query,
         sort = "stars",
         order = "desc",
-        per_page = 30,
+        per_page = 10,
       } = params as {
         query: string;
         sort?: string;
@@ -323,8 +385,22 @@ Supports sorting by stars, forks, or update date.`,
           );
         }
         const data = await response.json();
+        let summary = `Found ${data.total_count} repositories (showing ${data.items.length}):\n\n`;
+        if (data.items.length === 0) {
+          summary = "No repositories found matching the search criteria.";
+        } else {
+          summary += data.items
+            .map(
+              (repo: any) =>
+                `**${repo.full_name}**\n` +
+                (repo.description ? `${repo.description}\n` : "") +
+                `Language: ${repo.language || "Not specified"} | Stars: ${repo.stargazers_count.toLocaleString()} | Forks: ${repo.forks_count.toLocaleString()}\n` +
+                `Updated: ${new Date(repo.updated_at).toLocaleDateString()} | ${repo.html_url}\n`,
+            )
+            .join("\n");
+        }
         return {
-          content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+          content: [{ type: "text", text: summary }],
           details: { data, totalCount: (data as any).total_count || 0 },
         };
       } catch (error) {

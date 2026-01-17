@@ -168,7 +168,7 @@ nu -c 'http get -u username:password https://api.example.com/protected'
 - **evaluate-javascript**: Evaluate JavaScript code in the active browser tab.
 - **take-screenshot**: Take a screenshot of the active browser tab.
 - **query-html-elements**: Extract HTML elements by CSS selector.
-- **list-tabs**: List all open browser tabs with their titles and URLs.
+- **list-browser-tabs**: List all open browser tabs with their titles and URLs.
 - **close-tab**: Close a browser tab by index or title.
 - **switch-tab**: Switch to a specific tab by index.
 - **refresh-tab**: Refresh the current tab.

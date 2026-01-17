@@ -73,7 +73,17 @@ describe("GitHub Extension", () => {
         name: "test-repo",
         full_name: "owner/test-repo",
         description: "A test repository",
-        stars: 42,
+        owner: { login: "owner" },
+        language: "JavaScript",
+        stargazers_count: 42,
+        forks_count: 10,
+        open_issues_count: 5,
+        license: { name: "MIT" },
+        created_at: "2023-01-01T00:00:00Z",
+        updated_at: "2023-12-01T00:00:00Z",
+        html_url: "https://github.com/owner/test-repo",
+        homepage: "https://example.com",
+        topics: ["javascript", "web"],
       };
 
       const mockResponse = {
@@ -90,9 +100,12 @@ describe("GitHub Extension", () => {
       expect(mockFetch).toHaveBeenCalledWith(
         "https://api.github.com/repos/owner/test-repo",
       );
-      expect(result.content[0].text).toBe(
-        JSON.stringify(mockRepoData, null, 2),
+      expect(result.content[0].text).toContain("**test-repo** by owner");
+      expect(result.content[0].text).toContain(
+        "Description: A test repository",
       );
+      expect(result.content[0].text).toContain("Language: JavaScript");
+      expect(result.content[0].text).toContain("Stars: 42");
       expect(result.details.data).toEqual(mockRepoData);
     });
 
@@ -150,7 +163,16 @@ describe("GitHub Extension", () => {
         login: "testuser",
         name: "Test User",
         bio: "A test user",
+        location: "Earth",
+        company: "Test Corp",
+        followers: 100,
+        following: 50,
         public_repos: 10,
+        public_gists: 5,
+        created_at: "2020-01-01T00:00:00Z",
+        html_url: "https://github.com/testuser",
+        blog: "https://blog.example.com",
+        twitter_username: "testuser",
       };
 
       const mockResponse = {
@@ -166,9 +188,11 @@ describe("GitHub Extension", () => {
       expect(mockFetch).toHaveBeenCalledWith(
         "https://api.github.com/users/testuser",
       );
-      expect(result.content[0].text).toBe(
-        JSON.stringify(mockUserData, null, 2),
-      );
+      expect(result.content[0].text).toContain("**Test User** (testuser)");
+      expect(result.content[0].text).toContain("Bio: A test user");
+      expect(result.content[0].text).toContain("Location: Earth");
+      expect(result.content[0].text).toContain("Company: Test Corp");
+      expect(result.content[0].text).toContain("Followers: 100");
       expect(result.details.data).toEqual(mockUserData);
     });
   });
@@ -187,8 +211,24 @@ describe("GitHub Extension", () => {
       global.fetch = mockFetch;
 
       const mockIssues = [
-        { id: 1, title: "Issue 1", state: "open" },
-        { id: 2, title: "Issue 2", state: "open" },
+        {
+          number: 1,
+          title: "Issue 1",
+          state: "open",
+          user: { login: "user1" },
+          created_at: "2023-01-01T00:00:00Z",
+          labels: [{ name: "bug" }],
+          html_url: "https://github.com/owner/repo/issues/1",
+        },
+        {
+          number: 2,
+          title: "Issue 2",
+          state: "open",
+          user: { login: "user2" },
+          created_at: "2023-01-02T00:00:00Z",
+          labels: [],
+          html_url: "https://github.com/owner/repo/issues/2",
+        },
       ];
 
       const mockResponse = {
@@ -203,9 +243,11 @@ describe("GitHub Extension", () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://api.github.com/repos/owner/repo/issues?state=open&per_page=30",
+        "https://api.github.com/repos/owner/repo/issues?state=open&per_page=10",
       );
-      expect(result.content[0].text).toBe(JSON.stringify(mockIssues, null, 2));
+      expect(result.content[0].text).toContain("Found 2 open issues:");
+      expect(result.content[0].text).toContain("#1: Issue 1 (open)");
+      expect(result.content[0].text).toContain("By user1");
       expect(result.details.count).toBe(2);
     });
 
@@ -334,6 +376,29 @@ describe("GitHub Extension", () => {
         "https://raw.githubusercontent.com/owner/repo/HEAD/file.txt",
       );
     });
+
+    it("should truncate large files", async () => {
+      const mockFetch = vi.fn();
+      global.fetch = mockFetch;
+
+      const largeContent = "x".repeat(150 * 1024); // 150KB
+
+      const mockResponse = {
+        ok: true,
+        text: () => Promise.resolve(largeContent),
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const result = await registeredTool.execute("tool1", {
+        owner: "owner",
+        repo: "repo",
+        path: "large-file.txt",
+      });
+
+      expect(result.content[0].text).toContain("[File truncated - ");
+      expect(result.details.contentLength).toBe(150 * 1024);
+      expect(result.details.wasTruncated).toBe(true);
+    });
   });
 
   describe("search-github-repositories tool", () => {
@@ -352,8 +417,24 @@ describe("GitHub Extension", () => {
       const mockSearchResult = {
         total_count: 1234,
         items: [
-          { name: "repo1", full_name: "owner/repo1" },
-          { name: "repo2", full_name: "owner/repo2" },
+          {
+            full_name: "owner/repo1",
+            description: "First repo",
+            language: "JavaScript",
+            stargazers_count: 100,
+            forks_count: 20,
+            updated_at: "2023-12-01T00:00:00Z",
+            html_url: "https://github.com/owner/repo1",
+          },
+          {
+            full_name: "owner/repo2",
+            description: "Second repo",
+            language: "Python",
+            stargazers_count: 50,
+            forks_count: 10,
+            updated_at: "2023-11-01T00:00:00Z",
+            html_url: "https://github.com/owner/repo2",
+          },
         ],
       };
 
@@ -368,11 +449,13 @@ describe("GitHub Extension", () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://api.github.com/search/repositories?q=language%3Ajavascript&sort=stars&order=desc&per_page=30",
+        "https://api.github.com/search/repositories?q=language%3Ajavascript&sort=stars&order=desc&per_page=10",
       );
-      expect(result.content[0].text).toBe(
-        JSON.stringify(mockSearchResult, null, 2),
+      expect(result.content[0].text).toContain(
+        "Found 1234 repositories (showing 2):",
       );
+      expect(result.content[0].text).toContain("**owner/repo1**");
+      expect(result.content[0].text).toContain("First repo");
       expect(result.details.totalCount).toBe(1234);
     });
 

@@ -22,7 +22,7 @@ const EvaluateJavascriptParams = Type.Object({
 
 const TakeScreenshotParams = Type.Object({});
 
-const ListTabsParams = Type.Object({});
+const ListBrowserTabsParams = Type.Object({});
 
 const CloseTabParams = Type.Object({
   index: Type.Optional(
@@ -89,9 +89,20 @@ function textResult(
   return { content, details };
 }
 
-export default function (pi: ExtensionAPI) {
-  let browserPid: number | null = null;
+let browserPid: number | null = null;
 
+function isBrowserRunning(): boolean {
+  if (browserPid === null) return false;
+  try {
+    process.kill(browserPid, 0);
+    return true;
+  } catch {
+    browserPid = null;
+    return false;
+  }
+}
+
+export default function (pi: ExtensionAPI) {
   async function ensureBrowserRunning(): Promise<
     { success: true } | { error: string }
   > {
@@ -385,8 +396,8 @@ Returns formatted HTML of matching elements.`,
   });
 
   pi.registerTool({
-    name: "list-tabs",
-    label: "List Tabs",
+    name: "list-browser-tabs",
+    label: "List Browser Tabs",
     description: `Get information about all open browser tabs.
 
 Use this to:
@@ -396,7 +407,7 @@ Use this to:
 - Debug tab switching operations
 
 Shows tab index, title, URL, and active status.`,
-    parameters: ListTabsParams,
+    parameters: ListBrowserTabsParams,
 
     async execute(
       toolCallId: string,
@@ -405,6 +416,9 @@ Shows tab index, title, URL, and active status.`,
       ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
+      if (!isBrowserRunning()) {
+        return { content: [], details: {} };
+      }
       return await listTabsBrowser();
     },
   });
