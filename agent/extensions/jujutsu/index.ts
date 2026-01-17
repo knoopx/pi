@@ -1,4 +1,10 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+  ExtensionCommandContext,
+  BeforeAgentStartEvent,
+  TurnStartEvent,
+} from "@mariozechner/pi-coding-agent";
 
 /**
  * Jujutsu extension for Pi coding agent.
@@ -61,31 +67,36 @@ export default function (pi: ExtensionAPI) {
    * Hook that runs before agent starts processing a user prompt.
    * Creates a JJ snapshot of the current state and starts a new change.
    */
-  pi.on("before_agent_start", async (event, _ctx) => {
-    try {
-      // Get the current change ID before creating a new one
-      const currentChangeId = await getCurrentChangeId();
+  pi.on(
+    "before_agent_start",
+    async (event: BeforeAgentStartEvent, _ctx: ExtensionContext) => {
+      try {
+        // Get the current change ID before creating a new one
+        const currentChangeId = await getCurrentChangeId();
 
-      // Create a new change to snapshot current state before processing
-      const message = event.prompt || "User prompt";
-      await pi.exec("jj", ["new", "-m", message]);
+        // Create a new change to snapshot current state before processing
+        const message = event.prompt || "User prompt";
+        await pi.exec("jj", ["new", "-m", message]);
 
-      // Store the previous change ID as the snapshot - we'll associate it with the next user message entry
-      if (currentChangeId) {
-        // We'll store it temporarily and associate it when the user message is saved
-        snapshots.set("__pending__", currentChangeId);
+        // Store the previous change ID as the snapshot - we'll associate it with the next user message entry
+        if (currentChangeId) {
+          // We'll store it temporarily and associate it when the user message is saved
+          snapshots.set("__pending__", currentChangeId);
+        }
+      } catch (error) {
+        // Silently fail for auto-snapshot - JJ might not be available or repo not initialized
+        console.warn(
+          `Failed to create snapshot: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
-    } catch (error) {
-      // Silently fail for auto-snapshot - JJ might not be available or repo not initialized
-      console.warn(`Failed to create snapshot: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  });
+    },
+  );
 
   /**
    * Hook that runs at the start of each turn.
    * Associates pending snapshots with user message entries.
    */
-  pi.on("turn_start", async (_event, ctx) => {
+  pi.on("turn_start", async (_event: TurnStartEvent, ctx: ExtensionContext) => {
     const entries = ctx.sessionManager.getBranch();
     const userEntries = entries.filter(
       (e) => e.type === "message" && e.message.role === "user",
@@ -111,7 +122,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerCommand("undo", {
     description:
       "Revert to the previous user message and restore the repository state to before that message was processed",
-    handler: async (args, ctx) => {
+    handler: async (args: string[], ctx: ExtensionCommandContext) => {
       // Find the most recent user message that has a snapshot
       const entries = ctx.sessionManager.getBranch();
       const userEntries = entries.filter(
@@ -133,10 +144,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       if (!targetEntryId || !changeId) {
-        ctx.ui.notify(
-          "No snapshots available to revert to",
-          "warning",
-        );
+        ctx.ui.notify("No snapshots available to revert to", "warning");
         return;
       }
 
@@ -194,7 +202,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerCommand("redo", {
     description:
       "Redo the last undo operation by switching back to the previous checkpoint",
-    handler: async (args, ctx) => {
+    handler: async (args: string[], ctx: ExtensionCommandContext) => {
       if (redoStack.length === 0) {
         ctx.ui.notify("No undo operation to redo", "warning");
         return;
@@ -241,7 +249,7 @@ export default function (pi: ExtensionAPI) {
    */
   pi.registerCommand("snapshots", {
     description: "Show available snapshots",
-    handler: async (args, ctx) => {
+    handler: async (args: string[], ctx: ExtensionCommandContext) => {
       if (snapshots.size === 0) {
         ctx.ui.notify("No snapshots available", "info");
         return;

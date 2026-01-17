@@ -3,23 +3,15 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import { mkdir, rm, writeFile } from "fs/promises";
 import { join } from "path";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+  ExtensionCommandContext,
+  BeforeAgentStartEvent,
+  TurnStartEvent,
+  ReadonlySessionManager,
+} from "@mariozechner/pi-coding-agent";
 import setupJujutsuExtension from "./index";
-
-const execAsync = promisify(exec);
-
-interface BeforeAgentStartEvent {
-  prompt: string;
-}
-
-interface TurnStartContext {
-  sessionManager: {
-    getBranch: () => Array<{
-      id: string;
-      type: string;
-      message: { role: string };
-    }>;
-  };
-}
 
 interface CommandContext {
   ui: {
@@ -64,14 +56,17 @@ describe("Jujutsu Extension", () => {
 
   const getEventHandler = (eventName: string) =>
     mockPi.on.mock.calls.find((call) => call[0] === eventName)?.[1] as (
-      event: unknown,
-      ctx: unknown,
+      event: BeforeAgentStartEvent | TurnStartEvent,
+      ctx: ExtensionContext,
     ) => Promise<void>;
 
   const getCommandHandler = (commandName: string) =>
     mockPi.registerCommand.mock.calls.find(
       (call) => call[0] === commandName,
-    )?.[1].handler as (args: unknown[], ctx: CommandContext) => Promise<void>;
+    )?.[1].handler as (
+      args: string[],
+      ctx: ExtensionCommandContext,
+    ) => Promise<void>;
 
   it("should register undo command", () => {
     expect(mockPi.registerCommand).toHaveBeenCalledWith(
@@ -109,7 +104,7 @@ describe("Jujutsu Extension", () => {
   describe("before_agent_start event handler", () => {
     let eventHandler: (
       event: BeforeAgentStartEvent,
-      ctx: unknown,
+      ctx: ExtensionContext,
     ) => Promise<void>;
 
     beforeEach(() => {
@@ -217,7 +212,10 @@ describe("Jujutsu Extension", () => {
   });
 
   describe("turn_start event handler", () => {
-    let eventHandler: (event: unknown, ctx: TurnStartContext) => Promise<void>;
+    let eventHandler: (
+      event: TurnStartEvent,
+      ctx: ExtensionContext,
+    ) => Promise<void>;
 
     beforeEach(() => {
       eventHandler = getEventHandler("turn_start")!;
@@ -279,14 +277,17 @@ describe("Jujutsu Extension", () => {
   });
 
   describe("undo command handler", () => {
-    let commandHandler: (args: unknown[], ctx: CommandContext) => Promise<void>;
+    let commandHandler: (
+      args: string[],
+      ctx: ExtensionCommandContext,
+    ) => Promise<void>;
 
     beforeEach(() => {
       commandHandler = getCommandHandler("undo")!;
     });
 
     it("should notify when no previous user message", async () => {
-      const mockCtx = {
+      const mockCtx: Partial<ExtensionCommandContext> = {
         ui: {
           notify: vi.fn(),
         },
@@ -295,7 +296,7 @@ describe("Jujutsu Extension", () => {
         },
       };
 
-      await commandHandler([], mockCtx);
+      await commandHandler([], mockCtx as ExtensionCommandContext);
 
       expect(mockCtx.ui.notify).toHaveBeenCalledWith(
         "No snapshots available to revert to",
@@ -311,20 +312,23 @@ describe("Jujutsu Extension", () => {
   });
 
   describe("redo command handler", () => {
-    let commandHandler: (args: unknown[], ctx: CommandContext) => Promise<void>;
+    let commandHandler: (
+      args: string[],
+      ctx: ExtensionCommandContext,
+    ) => Promise<void>;
 
     beforeEach(() => {
       commandHandler = getCommandHandler("redo")!;
     });
 
     it("should notify when no redo available", async () => {
-      const mockCtx = {
+      const mockCtx: Partial<ExtensionCommandContext> = {
         ui: {
           notify: vi.fn(),
         },
       };
 
-      await commandHandler([], mockCtx);
+      await commandHandler([], mockCtx as ExtensionCommandContext);
 
       expect(mockCtx.ui.notify).toHaveBeenCalledWith(
         "No undo operation to redo",
@@ -340,20 +344,23 @@ describe("Jujutsu Extension", () => {
   });
 
   describe("snapshots command handler", () => {
-    let commandHandler: (args: unknown[], ctx: CommandContext) => Promise<void>;
+    let commandHandler: (
+      args: string[],
+      ctx: ExtensionCommandContext,
+    ) => Promise<void>;
 
     beforeEach(() => {
       commandHandler = getCommandHandler("snapshots")!;
     });
 
     it("should notify when no snapshots available", async () => {
-      const mockCtx = {
+      const mockCtx: Partial<ExtensionCommandContext> = {
         ui: {
           notify: vi.fn(),
         },
       };
 
-      await commandHandler([], mockCtx);
+      await commandHandler([], mockCtx as ExtensionCommandContext);
 
       expect(mockCtx.ui.notify).toHaveBeenCalledWith(
         "No snapshots available",
@@ -378,6 +385,7 @@ describe("Jujutsu Extension", () => {
 describe("Jujutsu Extension Integration Tests", () => {
   const tempDir = join(process.cwd(), "test-jj-repo");
   const originalCwd = process.cwd();
+  const execAsync = promisify(exec);
 
   beforeEach(async () => {
     // Clean up any existing test directory
