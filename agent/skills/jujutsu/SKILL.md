@@ -1,7 +1,24 @@
 ---
 name: jujutsu
-description: A practical quick-reference for the JJ (Jujutsu) version control system. Use when learning JJ commands, navigating change history, performing merges/rebases, resolving conflicts, or working with bookmarks and remotes.
+description: A comprehensive guide to Jujutsu (JJ), the Git-compatible version control system, including quick-reference commands and automatic description generation for unpublished changes. Use when learning JJ commands, navigating change history, performing merges/rebases, resolving conflicts, working with bookmarks and remotes, or automatically generating change descriptions based on file modifications.
 ---
+
+# Jujutsu (JJ) Guide
+
+Jujutsu (JJ) is a powerful, Git-compatible version control system designed for modern software development. It emphasizes automatic working commits, branchless workflows, and seamless integration with Git, making it fast, scriptable, and intuitive.
+
+## Prerequisites
+
+- Jujutsu (jj) must be installed and available in PATH
+- For auto-description features: Repository must be a valid jj repository with unpublished changes
+
+## Core Concepts
+
+- **Changes**: JJ's equivalent of commits, representing units of work
+- **Working Copy**: Current state of files being modified
+- **Unpublished Changes**: Mutable changes that exist locally but haven't been pushed
+- **Descriptions**: Human-readable summaries of what the change accomplishes
+- **Bookmarks**: JJ's version of branches for tracking lines of development
 
 ## Basic Commands
 
@@ -32,7 +49,7 @@ description: A practical quick-reference for the JJ (Jujutsu) version control sy
 | `jj new -B @ -m "msg"` | Creates a new change Before current (@) setting a description |
 | `jj edit change-id`    | Moves to whatever change-id                                   |
 | `jj next --edit`       | Jumps to next change                                          |
-| `jj edit @+`           |                                                               |
+| `jj edit @+`           | Jumps to next change                                      |
 | `jj edit @-`           | Jumps to prev change                                          |
 
 ## Branchless Workflow
@@ -47,7 +64,7 @@ description: A practical quick-reference for the JJ (Jujutsu) version control sy
 | -------------------------- | ----------------------------------------------------- |
 | `jj log -r revsets`        | Applies a revset to log, similar to hg(1) (Mercurial) |
 | `jj --limit number`        | Limits log lines                                      |
-| `jj log -r 'heads(all())'` | Shows all 'heads' or 'forked' changes top change      |
+| `jj log -r 'heads(all())'` | Shows all heads or forked changes at the top      |
 
 ## Merging
 
@@ -270,6 +287,96 @@ Now your `fileA.ts` changes are safely committed. You're still on the remaining 
 
 You can repeat the process to incrementally split off changes until you're happy.
 
+## Automatic Description Generation
+
+Automatically analyze unpublished changes and generate conventional commit-style descriptions based on file modifications.
+
+### How It Works
+
+1. Identify mutable changes without descriptions or with non-conventional ones using queries like `jj log -r 'all() & ~(remote_bookmarks() | remote_branches() | tags() | trunk())' --no-graph -T 'change_id ++ " " ++ description.first_line()'`
+2. Analyze diffs with `jj diff -r <change_id>` to categorize by file types and actions
+3. Generate descriptions in conventional commit format using types like feat, fix, chore, docs, etc.
+4. Update with `jj describe <change_id> -m "..."`, skipping immutable or already conventional changes
+
+### Usage Examples
+
+- Basic: Run the agent with "Update descriptions for all unpublished jj changes"
+- Specific: "Describe change abc123 with focus on feature additions"
+- Advanced: "Generate descriptions using conventional commit format"
+
+### Change Categorization
+
+| File Type | Added | Modified | Deleted |
+|-----------|-------|----------|---------|
+| Source (.ts, .js, .py, .rs) | `feat(code): ✨ Add new feature` | `fix(code): 🐛 Update implementation` or `refactor(code): ♻️ Improve code structure` | `chore(code): 🧹 Remove obsolete code` |
+| Configuration (.json, .yaml) | `feat(config): ✨ Add configuration option` | `fix(config): 🐛 Update configuration` | `chore(config): 🧹 Remove unused config` |
+| Documentation (.md) | `docs: 📝 Add documentation` | `docs: 📝 Update documentation` | `docs: 📝 Remove documentation` |
+| Assets (.png, .jpg, .css) | `feat(assets): ✨ Add new assets` | `fix(assets): 🐛 Update styling/assets` | `chore(assets): 🧹 Remove unused assets` |
+
+### Conventional Commit Types
+
+- `feat`: ✨ New features
+- `fix`: 🐛 Bug fixes
+- `chore`: 🧹 Maintenance
+- `docs`: 📝 Documentation
+- `style`: 💄 Code style
+- `refactor`: ♻️ Code restructuring
+- `test`: ✅ Tests
+- `perf`: ⚡️ Performance
+- `ci`: 👷 CI/CD
+- `build`: 🏗️ Build system
+- And many more (security, i18n, ux, etc.)
+
+### Example Generated Descriptions
+
+**Feature Addition:**
+```
+feat(auth): ✨ Add user authentication system
+
+Added JWT-based authentication with login, registration, and token verification endpoints.
+- Implemented JWT auth
+- Added login/registration endpoints
+- Added token verification middleware
+
+Fixes #123
+```
+
+**Bug Fix:**
+```
+fix(memory): 🐛 Resolve memory leak in data pipeline
+
+Fixed memory leak by properly closing database connections and adding timeout handling.
+- Close DB connections
+- Add query timeouts
+- Improve async error handling
+
+Closes #456
+```
+
+### Error Handling
+
+- Skips empty diffs or immutable changes
+- Handles permission issues or invalid change IDs
+- Provides recovery options like manual review
+
+### Integration with Other Tools
+
+- Use `code-stats` for project structure insights
+- Use `code-inspect` to analyze modified files
+- Use `lsp-diagnostics` to check for issues
+- Leverage `search-code` or `search-web` for pattern inspiration
+
+## Best Practices
+
+1. Use conventional commit format: `type(scope):<icon> <short description>` (under 50 chars)
+2. Imperative mood: "Add feature" not "Added feature"
+3. Include detailed bodies with context, bullet points, and references
+4. Follow project conventions
+5. Cover all significant modifications
+6. Use icons for visual clarity (e.g., ✨ for features)
+7. Backup descriptions before auto-updates
+8. Validate generated descriptions before applying
+
 ## Why JJ?
 
 Jujutsu is a powerful version control system for software projects. You use it to get a copy of your code, track changes to the code, and finally publish those changes for others to see and use. It is designed from the ground up to be easy to use, whether you're new or experienced, working on brand new projects alone, or large scale software projects with large histories and teams.
@@ -278,4 +385,16 @@ What sets JJ apart is its focus on automatic working commits, which track your c
 
 That said, JJ introduces new workflows and concepts that may feel unfamiliar at first. Common operations like merge or rebase behave differently, so keeping a quick reference handy can make your transition smoother and more productive.
 
-This cheat sheet is not a comprehensive tutorial, it's a quick reference, a jumping-off point, and a distilled guide for navigating jj.
+This guide is not a comprehensive tutorial, but a distilled reference for navigating jj effectively, including modern features like automatic description generation.
+
+## Related Skills
+
+- **typescript**: Ensure type safety in JJ-managed projects by following TypeScript best practices.
+- **bun**: Use Bun for managing dependencies or running scripts in JJ repositories.
+- **ast-grep**: Apply structural search and replace to codebases managed with JJ.
+
+## Related Tools
+
+- **code-stats**: Generate statistics about your JJ-managed codebase.
+- **code-inspect**: Examine the structure and symbols within files in your JJ repository.
+- **search-code**: Find relevant code examples for patterns used in your JJ changes.
