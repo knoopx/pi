@@ -8,11 +8,9 @@ This directory contains the configuration and custom assets for the [pi-coding-a
   - **`settings.json`**: Global configuration (model, provider, theme, etc.).
   - **`auth.json`**: Authentication credentials.
   - **`extensions/`**: Custom TypeScript extensions that add tools, commands, or modify agent behavior.
-  - **`skills/`**: Specialized skill definitions providing extra tools (e.g., `ffmpeg`, `jq`, `nix`).
+  - **`skills/`**: Specialized skill definitions providing extra tools (e.g., `bun`, `nix`, `podman`).
   - **`themes/`**: UI theme definitions.
   - **`sessions/`**: Stored conversation sessions.
-- **`permission/`**: Permission management configurations.
-- **`sandbox/`**: Default working directory and scratchpad for the agent.
 
 ## Current Configuration
 
