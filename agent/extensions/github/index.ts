@@ -202,9 +202,15 @@ Returns the file content as plain text.`,
         }/${path}`;
         const response = await fetch(url);
         if (!response.ok) {
-          throw new Error(
-            `GitHub raw file error: ${response.status} ${response.statusText}`,
-          );
+          let errorMessage = `GitHub raw file error: ${response.status} ${response.statusText}`;
+          if (response.status === 404) {
+            errorMessage +=
+              ". The requested file, repository, or branch/tag/commit could not be found. Please verify the owner, repository name, file path, and reference (branch/tag/commit) are correct.";
+          } else if (response.status === 403) {
+            errorMessage +=
+              ". This might be due to rate limiting or accessing a private repository.";
+          }
+          throw new Error(errorMessage);
         }
         const content = await response.text();
         return {
@@ -212,6 +218,9 @@ Returns the file content as plain text.`,
           details: { url, contentLength: content.length },
         };
       } catch (error) {
+        const url = `https://raw.githubusercontent.com/${owner}/${repo}/${
+          ref || "HEAD"
+        }/${path}`;
         return {
           content: [
             {
@@ -220,7 +229,7 @@ Returns the file content as plain text.`,
             },
           ],
           isError: true,
-          details: {},
+          details: { url },
         };
       }
     },

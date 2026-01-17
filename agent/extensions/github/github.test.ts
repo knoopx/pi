@@ -292,6 +292,52 @@ describe("GitHub Extension", () => {
         "https://raw.githubusercontent.com/owner/repo/v1.0.0/README.md",
       );
     });
+
+    it("should handle 404 errors with helpful message", async () => {
+      const mockFetch = vi.fn();
+      global.fetch = mockFetch;
+
+      const mockResponse = {
+        ok: false,
+        status: 404,
+        statusText: "Not Found",
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const result = await registeredTool.execute("tool1", {
+        owner: "nonexistent",
+        repo: "missing-repo",
+        path: "file.txt",
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain(
+        "GitHub raw file error: 404 Not Found. The requested file, repository, or branch/tag/commit could not be found",
+      );
+      expect(result.details.url).toBe(
+        "https://raw.githubusercontent.com/nonexistent/missing-repo/HEAD/file.txt",
+      );
+    });
+
+    it("should handle network errors", async () => {
+      const mockFetch = vi.fn();
+      global.fetch = mockFetch;
+      mockFetch.mockRejectedValue(new Error("Network connection failed"));
+
+      const result = await registeredTool.execute("tool1", {
+        owner: "owner",
+        repo: "repo",
+        path: "file.txt",
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain(
+        "Error fetching raw file: Network connection failed",
+      );
+      expect(result.details.url).toBe(
+        "https://raw.githubusercontent.com/owner/repo/HEAD/file.txt",
+      );
+    });
   });
 
   describe("search-github-repositories tool", () => {
