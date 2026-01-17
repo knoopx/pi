@@ -1,16 +1,14 @@
 ---
 name: jujutsu
-description: A comprehensive guide to Jujutsu (JJ), the Git-compatible version control system, including quick-reference commands and automatic description generation for unpublished changes. Use when learning JJ commands, navigating change history, performing merges/rebases, resolving conflicts, working with bookmarks and remotes, or automatically generating change descriptions based on file modifications. Based on JJ version 0.37.0
+description: Work and manage Jujutsu (JJ) repositories and modifications. Use when managing version control with Jujutsu, tracking changes, resolving conflicts, rebasing, or working with bookmarks.
 ---
 
-# Jujutsu (JJ) Guide
-
-Jujutsu (JJ) is a powerful, Git-compatible version control system designed for modern software development. It emphasizes automatic working commits, branchless workflows, and seamless integration with Git, making it fast, scriptable, and intuitive.
+# Jujutsu Skill
 
 ## Prerequisites
 
 - Jujutsu (jj) must be installed and available in PATH
-- For auto-description features: Repository must be a valid jj repository with unpublished changes
+- Repository must be a valid jj repository
 
 ## Core Concepts
 
@@ -22,33 +20,140 @@ Jujutsu (JJ) is a powerful, Git-compatible version control system designed for m
 
 ## Basic Commands
 
-| Command                     | Description                                                                                             |
-| --------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `jj git init`               | Inits jj with git backend                                                                               |
-| `jj st` / `jj status`       | Prints status                                                                                           |
-| `jj` / `jj log`             | Prints log                                                                                              |
-| `jj diff`                   | Diffs current change                                                                                    |
-| `jj diff --git`             | Diffs current change in git style                                                                       |
-| `jj desc` / `jj describe`   | Adds a description to the current change                                                                |
-| `jj describe -m "..."`      | Same as above, but inline                                                                               |
-| `jj new`                    | Ends a change and inits a new one                                                                       |
-| `jj new -m`                 | Ends a change and inits a new one setting a description                                                 |
-| `jj undo`                   | Undoes last jj command                                                                                  |
-| `jj squash`                 | Combines changes and descriptions                                                                       |
-| `jj squash path`            | Moves changes to the specified path from current revision to its parent                                |
-| `jj squash -i`              | Opens an ui to select what to squash                                                                    |
-| `jj abandon`                | Drops everything on current change and starts a new one in place                                        |
-| `jj split`                  | Splits current change creating a new change with the selected content on @-                             |
-| `jj commit -m "..."`        | Adds a description for current change and starts a new one (equivalent to `jj desc -m "..." && jj new`) |
+| Command                   | Description                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| `jj git init`             | Initialize a jj repository with git backend                                  |
+| `jj st` / `jj status`     | Show working copy status                                                     |
+| `jj` / `jj log`           | Show change log                                                              |
+| `jj diff`                 | Show changes in working copy                                                 |
+| `jj diff --git`           | Show changes in git diff format                                              |
+| `jj desc` / `jj describe` | Edit the description of the current change                                   |
+| `jj describe -m "..."`    | Set the description of the current change                                    |
+| `jj new`                  | Create a new change on top                                                   |
+| `jj new -m`               | Create a new change on top and set its description                           |
+| `jj undo`                 | Undo the last jj operation                                                   |
+| `jj squash`               | Move changes from the current change into its parent                         |
+| `jj squash path`          | Move changes for the specified path into the parent change                   |
+| `jj squash -i`            | Open a UI to select changes to move to parent                                |
+| `jj abandon`              | Abandon the current change and create a new empty one in place               |
+| `jj split`                | Split the current change, creating a new change with selected content on top |
+| `jj commit "message"`     | Commit the current change to the Git repository (if colocated)               |
+
+## Best Practices
+
+1. **Update descriptions after modifications**: Always describe your working copy changes with `jj desc -m "type(scope): summary"` after making file modifications, following conventional commit format syntax. This keeps your change history meaningful and reviewable.
+2. Use conventional commit format: `type(scope):<icon> <short description>` (under 50 chars)
+3. Imperative mood: "Add feature" not "Added feature"
+4. Include detailed bodies with context, bullet points, and references
+5. Follow project conventions
+6. Cover all significant modifications
+7. Use icons for visual clarity (e.g., ✨ for features)
+
+## Describing Changes
+
+After making file modifications, it's essential to update the working copy description with a summary of the changes following conventional commit format syntax:
+
+```bash
+jj desc -m "type(scope):<icon> <short description>"
+```
+
+This creates a human-readable description of what the current change accomplishes using the conventional commit standard. Good descriptions:
+
+- Use conventional commit message format.
+- The commit message should have a short description (50 characters or less) followed by a blank line and then a longer description.
+- The short description should be in the format: `<type>(<scope>):<icon> <short description>`
+  - `type`: The type of change (e.g., feat, fix, docs, style, refactor, test, chore).
+  - `scope`: The scope of the change (e.g., component or file name). Include this if the change is specific to a particular part of the codebase.
+- `short description`: A brief summary of the change.
+- The long description should provide additional context and details about the change.
+  - Explain why the change was made.
+  - Describe what is being used and why.
+  - Include any relevant information that might be useful for understanding the change in the future.
+  - Reference any related issues or pull requests at the end of the long description.
+
+
+### Conventional Commit Types with Icons
+
+- `feat`: ✨ A new feature
+- `fix`: 🐛 A bug fix
+- `docs`: 📝 Documentation only changes
+- `style`: 💄 Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+- `refactor`: ♻️ A code change that neither fixes a bug nor adds a feature
+- `test`: ✅ Adding missing tests or correcting existing tests
+- `chore`: 🔧 Changes to the build process or auxiliary tools and libraries such as documentation generation
+- `perf`: ⚡️ A code change that improves performance
+- `ci`: 👷 Changes to CI configuration files and scripts
+- `build`: 🏗️ Changes that affect the build system or external dependencies
+- `revert`: ⏪ Reverts a previous commit
+- `wip`: 🚧 Work in progress
+- `security`: 🔒 Security-related changes
+- `i18n`: 🌐 Internationalization and localization
+- `a11y`: ♿ Accessibility improvements
+- `ux`: 🎨 User experience improvements
+- `ui`: 🖌️ User interface changes
+- `config`: 🔧 Configuration file changes
+- `deps`: 📦 Dependency updates
+- `infra`: 🌐 Infrastructure changes
+- `init`: 🎉 Initial commit
+- `analytics`: 📈 Analytics or tracking code
+- `seo`: 🔍 SEO improvements
+- `legal`: ⚖️ Licensing or legal changes
+- `typo`: ✏️ Typo fixes
+- `comment`: 💬 Adding or updating comments in the code
+- `example`: 💡 Adding or updating examples
+- `mock`: 🤖 Adding or updating mocks
+- `hotfix`: 🚑 Critical hotfix
+- `merge`: 🔀 Merging branches
+- `cleanup`: 🧹 Code cleanup
+- `deprecate`: 🗑️ Deprecating code or features
+- `move`: 🚚 Moving or renaming files
+- `rename`: ✏️ Renaming files or variables
+- `split`: ✂️ Splitting files or functions
+- `combine`: 🧬 Combining files or functions
+- `add`: ➕ Adding files or features
+- `remove`: ➖ Removing files or features
+- `update`: ⬆️ Updating files or features
+- `downgrade`: ⬇️ Downgrading files or features
+- `patch`: 🩹 Applying patches
+- `optimize`: 🛠️ Optimizing code
+
+### Commit Message Example
+
+```
+feat(auth): ✨ Add user authentication
+
+Added user authentication using JWT. This includes login, registration, and token verification endpoints.
+
+- Implemented JWT-based authentication.
+- Added login and registration endpoints.
+- Added middleware for token verification.
+
+Fixes #123
+```
+
+### Breaking Change Example
+
+```
+refactor(api): ♻️ Update API endpoints
+
+Refactored the API endpoints to follow RESTful conventions. This change affects all existing API calls.
+
+- Updated endpoint URLs to follow RESTful conventions.
+- Modified request and response formats.
+
+BREAKING CHANGE: All existing API calls need to be updated to the new endpoint URLs.
+```
+
+Use `jj log` to review descriptions and `jj desc` to edit them.
 
 ## Time Traveling
 
-| Command                | Description                                                   |
-| ---------------------- | ------------------------------------------------------------- |
-| `jj new -B @ -m "msg"` | Creates a new change Before current (@) setting a description |
-| `jj edit change-id`    | Moves to whatever change-id                                   |
-| `jj next --edit`       | Jumps to next change                                          |
-| `jj edit @-`           | Jumps to prev change                                          |
+| Command                      | Description                                                        |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `jj new --before @ -m "msg"` | Create a new change before the current one and set its description |
+| `jj edit change-id`          | Move working copy to the specified change                          |
+| `jj next --edit`             | Move to the next child change                                      |
+| `jj edit @-`                 | Move to the parent change                                          |
 
 ## Branchless Workflow
 
@@ -62,31 +167,31 @@ Jujutsu (JJ) is a powerful, Git-compatible version control system designed for m
 | -------------------------- | ----------------------------------------------------- |
 | `jj log -r revsets`        | Applies a revset to log, similar to hg(1) (Mercurial) |
 | `jj log --limit number`    | Limits log lines                                      |
-| `jj log -r 'heads(all())'` | Shows all heads or forked changes at the top      |
+| `jj log -r 'heads(all())'` | Shows all heads or forked changes at the top          |
 
 ## Merging
 
 Note: there's no `jj checkout` nor `jj merge`, those used to exist but are now deprecated. We use `jj new ...` for everything.
 
-| Command                    | Description                                                                                                                     |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `jj new x yz -m "message"` | Creates a new change by merging x and yz change ids defining a message "merge". User can merge as many change-ids as they wish. |
+| Command                    | Description                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `jj new x yz -m "message"` | Create a new change by merging the specified changes and set its description |
 
 ## Rebasing
 
 Notice: rebase always succeeds even with conflicts pending.
 
-| Command               | Description                                                         |
-| --------------------- | ------------------------------------------------------------------- |
-| `jj rebase -s o -d x` | Rebases change with id o (source) to change with id x (destination) |
+| Command               | Description                                          |
+| --------------------- | ---------------------------------------------------- |
+| `jj rebase -s o -d x` | Rebase the source change onto the destination change |
 
 ## Merge Conflicts
 
 If a conflict is present, `jj st` will tell you on which files you need to look for conflicts and solve. Just save your file after solving and nothing else, no need to continue anything.
 
-| Command      | Description                                                             |
-| ------------ | ----------------------------------------------------------------------- |
-| `jj resolve` | Opens an ui to choose how to solve conflicts (plus: mouse is supported) |
+| Command      | Description                                  |
+| ------------ | -------------------------------------------- |
+| `jj resolve` | Open a UI to choose how to resolve conflicts |
 
 ## Log - Template Language
 
@@ -207,7 +312,7 @@ This means jj side by side with git. Your project will have on its root, both a 
 
 ```
 jj log
-jj commit -m "msg"
+jj commit "msg"
 jj bookmark create main -r @-
 jj git push --bookmark main
 jj op log
@@ -304,12 +409,12 @@ Automatically analyze unpublished changes and generate conventional commit-style
 
 ### Change Categorization
 
-| File Type | Added | Modified | Deleted |
-|-----------|-------|----------|---------|
-| Source (.ts, .js, .py, .rs) | `feat(code): ✨ Add new feature` | `fix(code): 🐛 Update implementation` or `refactor(code): ♻️ Improve code structure` | `chore(code): 🧹 Remove obsolete code` |
-| Configuration (.json, .yaml) | `feat(config): ✨ Add configuration option` | `fix(config): 🐛 Update configuration` | `chore(config): 🧹 Remove unused config` |
-| Documentation (.md) | `docs: 📝 Add documentation` | `docs: 📝 Update documentation` | `docs: 📝 Remove documentation` |
-| Assets (.png, .jpg, .css) | `feat(assets): ✨ Add new assets` | `fix(assets): 🐛 Update styling/assets` | `chore(assets): 🧹 Remove unused assets` |
+| File Type                    | Added                                       | Modified                                                                             | Deleted                                  |
+| ---------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------- |
+| Source (.ts, .js, .py, .rs)  | `feat(code): ✨ Add new feature`            | `fix(code): 🐛 Update implementation` or `refactor(code): ♻️ Improve code structure` | `chore(code): 🧹 Remove obsolete code`   |
+| Configuration (.json, .yaml) | `feat(config): ✨ Add configuration option` | `fix(config): 🐛 Update configuration`                                               | `chore(config): 🧹 Remove unused config` |
+| Documentation (.md)          | `docs: 📝 Add documentation`                | `docs: 📝 Update documentation`                                                      | `docs: 📝 Remove documentation`          |
+| Assets (.png, .jpg, .css)    | `feat(assets): ✨ Add new assets`           | `fix(assets): 🐛 Update styling/assets`                                              | `chore(assets): 🧹 Remove unused assets` |
 
 ### Conventional Commit Types
 
@@ -328,6 +433,7 @@ Automatically analyze unpublished changes and generate conventional commit-style
 ### Example Generated Descriptions
 
 **Feature Addition:**
+
 ```
 feat(auth): ✨ Add user authentication system
 
@@ -340,6 +446,7 @@ Fixes #123
 ```
 
 **Bug Fix:**
+
 ```
 fix(memory): 🐛 Resolve memory leak in data pipeline
 
@@ -350,49 +457,3 @@ Fixed memory leak by properly closing database connections and adding timeout ha
 
 Closes #456
 ```
-
-### Error Handling
-
-- Skips empty diffs or immutable changes
-- Handles permission issues or invalid change IDs
-- Provides recovery options like manual review
-
-### Integration with Other Tools
-
-- Use `code-stats` for project structure insights
-- Use `code-inspect` to analyze modified files
-- Use `lsp-diagnostics` to check for issues
-- Leverage `search-code` or `search-web` for pattern inspiration
-
-## Best Practices
-
-1. Use conventional commit format: `type(scope):<icon> <short description>` (under 50 chars)
-2. Imperative mood: "Add feature" not "Added feature"
-3. Include detailed bodies with context, bullet points, and references
-4. Follow project conventions
-5. Cover all significant modifications
-6. Use icons for visual clarity (e.g., ✨ for features)
-7. Backup descriptions before auto-updates
-8. Validate generated descriptions before applying
-
-## Why JJ?
-
-Jujutsu is a powerful version control system for software projects. You use it to get a copy of your code, track changes to the code, and finally publish those changes for others to see and use. It is designed from the ground up to be easy to use, whether you're new or experienced, working on brand new projects alone, or large scale software projects with large histories and teams.
-
-What sets JJ apart is its focus on automatic working commits, which track your changes continuously without the usual manual commit overhead. This design makes JJ extremely fast, highly scriptable, and encourages maintaining a cleaner, more intuitive project history.
-
-That said, JJ introduces new workflows and concepts that may feel unfamiliar at first. Common operations like merge or rebase behave differently, so keeping a quick reference handy can make your transition smoother and more productive.
-
-This guide is not a comprehensive tutorial, but a distilled reference for navigating jj effectively, including modern features like automatic description generation.
-
-## Related Skills
-
-- **typescript**: Ensure type safety in JJ-managed projects by following TypeScript best practices.
-- **bun**: Use Bun for managing dependencies or running scripts in JJ repositories.
-- **ast-grep**: Apply structural search and replace to codebases managed with JJ.
-
-## Related Tools
-
-- **code-stats**: Generate statistics about your JJ-managed codebase.
-- **code-inspect**: Examine the structure and symbols within files in your JJ repository.
-- **search-code**: Find relevant code examples for patterns used in your JJ changes.
