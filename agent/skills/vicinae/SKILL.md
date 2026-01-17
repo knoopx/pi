@@ -1,6 +1,6 @@
 ---
 name: vicinae
-description: Develop and manage Vicinae launcher extensions using TypeScript and React.
+description: Develop and manage Vicinae launcher extensions using TypeScript and React. Use when building extensions for the Vicinae launcher.
 ---
 
 # Vicinae Extensions Skill
