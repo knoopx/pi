@@ -55,58 +55,6 @@ interface NixOption {
   option_source?: string;
 }
 
-interface NixFlake {
-  type: string;
-  flake_description: string;
-  flake_resolved: {
-    type: string;
-    url: string;
-  };
-  flake_name: string;
-  revision: string;
-  flake_source: {
-    type: string;
-    url: string;
-  };
-  package_attr_name: string;
-  package_attr_set: string;
-  package_pname: string;
-  package_pversion: string;
-  package_platforms: string[];
-  package_outputs: string[];
-  package_default_output: string;
-  package_programs: string[];
-  package_mainProgram: string | null;
-  package_license: Array<{
-    url: string;
-    fullName: string;
-  }>;
-  package_license_set: string[];
-  package_maintainers: Array<{
-    name: string | null;
-    github: string;
-    email: string | null;
-  }>;
-  package_maintainers_set: string[];
-  package_teams: Array<{
-    members: Array<{
-      name: string;
-      github: string;
-      email: string;
-    }>;
-    scope: string;
-    shortName: string;
-    githubTeams: string[];
-  }>;
-  package_teams_set: string[];
-  package_description: string;
-  package_longDescription: string | null;
-  package_hydra: unknown | null;
-  package_system: string;
-  package_homepage: string[];
-  package_position: string | null;
-}
-
 interface HomeManagerOption {
   title: string;
   description: string;
@@ -172,8 +120,6 @@ interface GitHubPullRequest {
 
 const SEARCH_URL =
   "https://search.nixos.org/backend/latest-44-nixos-unstable/_search";
-const FLAKE_SEARCH_URL =
-  "https://search.nixos.org/backend/latest-44-group-manual/_search";
 const AUTH_TOKEN = "YVdWU0FMWHBadjpYOGdQSG56TDUyd0ZFZWt1eHNmUTljU2g=";
 const HOME_MANAGER_OPTIONS_URL =
   "https://home-manager-options.extranix.com/data/options-master.json";
@@ -451,51 +397,6 @@ async function searchNixOptions(query: string): Promise<NixOption[]> {
   return data.hits.hits.map((hit) => hit._source);
 }
 
-async function searchNixFlakes(query: string): Promise<NixFlake[]> {
-  const queryPayload = createPackageQueryPayload(query, [
-    "type",
-    "flake_description",
-    "flake_resolved",
-    "flake_name",
-    "revision",
-    "flake_source",
-    "package_attr_name",
-    "package_attr_set",
-    "package_pname",
-    "package_pversion",
-    "package_platforms",
-    "package_outputs",
-    "package_default_output",
-    "package_programs",
-    "package_mainProgram",
-    "package_license",
-    "package_license_set",
-    "package_maintainers",
-    "package_maintainers_set",
-    "package_teams",
-    "package_teams_set",
-    "package_description",
-    "package_longDescription",
-    "package_hydra",
-    "package_system",
-    "package_homepage",
-    "package_position",
-  ]);
-
-  const response = await fetch(FLAKE_SEARCH_URL, {
-    method: "POST",
-    headers: COMMON_HEADERS,
-    body: JSON.stringify(queryPayload),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Search request failed: ${response.status}`);
-  }
-
-  const data = (await response.json()) as NixSearchResponse<NixFlake>;
-  return data.hits.hits.map((hit) => hit._source);
-}
-
 async function searchHomeManagerOptions(
   query: string,
 ): Promise<HomeManagerOption[]> {
@@ -557,8 +458,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "search-nix-packages",
     label: "Search Nix Packages",
-    description:
-      "Search for Nix packages from the official NixOS repositories. Returns package details including name, version, description, maintainers, and more.",
+    description: `Find packages available in the NixOS package repository.
+
+Use this to:
+- Discover software packages for installation
+- Check package versions and descriptions
+- Find packages by name or functionality
+- Get package metadata and maintainers
+
+Returns detailed package information from nixpkgs.`,
     parameters: Type.Object({
       query: Type.String({
         description: "Search query (package name, description, or programs)",
@@ -604,8 +512,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "search-nix-options",
     label: "Search Nix Options",
-    description:
-      "Search for NixOS configuration options from the official NixOS repositories.",
+    description: `Find configuration options available in NixOS.
+
+Use this to:
+- Discover system configuration settings
+- Find options for services and modules
+- Check option types and default values
+- Get examples for configuration
+
+Returns NixOS configuration option details.`,
     parameters: Type.Object({
       query: Type.String({
         description: "Search query (option name or description)",
@@ -641,61 +556,19 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  // Search Nix flake packages
-  pi.registerTool({
-    name: "search-nix-flake-packages",
-    label: "Search Nix Flake Packages",
-    description:
-      "Search for packages from Nix flakes in the official repositories.",
-    parameters: Type.Object({
-      query: Type.String({
-        description: "Search query (package name, description, or programs)",
-      }),
-    }),
-    async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
-      const { query } = params as { query: string };
-
-      return executeSearchTool(
-        searchNixFlakes,
-        (flake: NixFlake) => ({
-          flake_name: flake.flake_name,
-          attr_name: flake.package_attr_name,
-          pname: flake.package_pname,
-          version: flake.package_pversion,
-          description: cleanText(flake.package_description),
-          longDescription: cleanText(flake.package_longDescription),
-          platforms: flake.package_platforms,
-          homepage: flake.package_homepage,
-          maintainers: flake.package_maintainers
-            .map((m) => m?.name || m?.github || "unknown")
-            .join(", "),
-          license: flake.package_license_set.join(", "),
-          flake_url: flake.flake_source.url,
-        }),
-        (res) => {
-          let c = `Found ${res.length} flake packages matching "${query}":\n\n`;
-          res.forEach((pkg) => {
-            c += `**${pkg.flake_name}#${pkg.attr_name}** (${pkg.pname} ${pkg.version})\n`;
-            c += `Description: ${pkg.description || "N/A"}\n`;
-            if (pkg.longDescription) c += `Details: ${pkg.longDescription}\n`;
-            c += `Platforms: ${pkg.platforms.join(", ")}\n`;
-            if (pkg.homepage.length > 0) c += `Homepage: ${pkg.homepage[0]}\n`;
-            c += `Maintainers: ${pkg.maintainers}\n`;
-            c += `License: ${pkg.license}\n`;
-            c += `Flake: ${pkg.flake_url}\n\n`;
-          });
-          return c;
-        },
-        query,
-      );
-    },
-  });
-
   // Search Home-Manager options
   pi.registerTool({
     name: "search-home-manager-options",
     label: "Search Home-Manager Options",
-    description: "Search for Home-Manager configuration options.",
+    description: `Find configuration options for Home Manager.
+
+Use this to:
+- Configure user-specific settings
+- Set up dotfiles and user programs
+- Customize desktop environment
+- Manage user-level services
+
+Returns Home Manager configuration options.`,
     parameters: Type.Object({
       query: Type.String({
         description: "Search query (option name or description)",
@@ -735,8 +608,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "search-nixpkgs-pull-requests",
     label: "Search Nixpkgs Pull Requests",
-    description:
-      "Search for pull requests in the NixOS/nixpkgs repository on GitHub.",
+    description: `Search for pull requests in the NixOS/nixpkgs repository.
+
+Use this to:
+- Track package updates and changes
+- Find ongoing development work
+- Monitor contributions to nixpkgs
+- Discover recent package additions
+
+Returns GitHub pull request information.`,
     parameters: Type.Object({
       query: Type.String({
         description: "Search query (title, number, or keywords)",

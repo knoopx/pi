@@ -5,7 +5,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "github-repository-info",
     label: "GitHub Repository Info",
-    description: "Get basic information about a GitHub repository",
+    description: `Retrieve detailed information about a GitHub repository.
+
+Use this to:
+- Check repository statistics and metadata
+- Get information about stars, forks, and contributors
+- View repository description and topics
+- Access repository URLs and clone information
+
+Returns comprehensive repository details from the GitHub API.`,
     parameters: Type.Object({
       owner: Type.String({
         description: "Repository owner (username or organization)",
@@ -47,7 +55,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "github-user-info",
     label: "GitHub User Info",
-    description: "Get basic information about a GitHub user",
+    description: `Get profile information about a GitHub user.
+
+Use this to:
+- View user bio and location
+- Check follower/following counts
+- See public repository statistics
+- Access user profile URLs
+
+Returns detailed user profile data from GitHub.`,
     parameters: Type.Object({
       username: Type.String({ description: "GitHub username" }),
     }),
@@ -86,7 +102,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "github-repository-issues",
     label: "GitHub Repository Issues",
-    description: "Get open issues from a GitHub repository",
+    description: `Fetch issues from a GitHub repository.
+
+Use this to:
+- Monitor project issues and bug reports
+- Track development progress
+- Find feature requests and discussions
+- Analyze repository activity
+
+Supports filtering by state (open/closed/all).`,
     parameters: Type.Object({
       owner: Type.String({ description: "Repository owner" }),
       repo: Type.String({ description: "Repository name" }),
@@ -144,7 +168,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "github-raw-file",
     label: "GitHub Raw File",
-    description: "Get the raw content of a file from a GitHub repository",
+    description: `Download the raw content of a file from GitHub.
+
+Use this to:
+- Access source code files directly
+- Download configuration files
+- Retrieve documentation or README files
+- Get files from specific branches or commits
+
+Returns the file content as plain text.`,
     parameters: Type.Object({
       owner: Type.String({ description: "Repository owner" }),
       repo: Type.String({ description: "Repository name" }),
@@ -197,7 +229,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "search-github-repositories",
     label: "Search GitHub Repositories",
-    description: "Search for repositories on GitHub",
+    description: `Search for repositories on GitHub using advanced queries.
+
+Use this to:
+- Find projects by language or topic
+- Discover popular or trending repositories
+- Locate libraries and frameworks
+- Research similar projects
+
+Supports sorting by stars, forks, or update date.`,
     parameters: Type.Object({
       query: Type.String({
         description: "Search query (e.g., 'language:javascript stars:>1000')",

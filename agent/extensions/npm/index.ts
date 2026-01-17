@@ -30,7 +30,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "search-npm-packages",
     label: "Search NPM Packages",
-    description: "Search for packages on the npm registry",
+    description: `Search for packages available on the npm registry.
+
+Use this to:
+- Find JavaScript/TypeScript packages
+- Discover libraries and frameworks
+- Check package descriptions and keywords
+- Explore npm ecosystem
+
+Returns matching packages with metadata.`,
     parameters: SearchNpmPackagesParams,
 
     async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
@@ -42,7 +50,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "npm-package-info",
     label: "NPM Package Info",
-    description: "Get detailed information about an NPM package",
+    description: `Get comprehensive information about an npm package.
+
+Use this to:
+- Check package details and versions
+- See dependencies and maintainers
+- View licensing and repository information
+- Evaluate package suitability
+
+Returns detailed package metadata.`,
     parameters: GetNpmPackageInfoParams,
 
     async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
@@ -54,7 +70,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "npm-package-versions",
     label: "NPM Package Versions",
-    description: "Get all versions of an NPM package",
+    description: `List all available versions of an npm package.
+
+Use this to:
+- See version history and availability
+- Check for latest versions
+- Find specific version tags
+- Plan version upgrades
+
+Returns all published package versions.`,
     parameters: GetNpmPackageVersionsParams,
 
     async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {

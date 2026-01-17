@@ -124,7 +124,9 @@ async function withBrowserPage<T>(
   }
 }
 
-async function getBrowserAndPage(): Promise<{ b: puppeteer.Browser; p: puppeteer.Page } | { error: string }> {
+async function getBrowserAndPage(): Promise<
+  { b: puppeteer.Browser; p: puppeteer.Page } | { error: string }
+> {
   try {
     const b = await puppeteer.connect({
       browserURL: "http://localhost:9222",
@@ -148,7 +150,14 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "start-browser",
     label: "Start Browser",
-    description: "Start Cromite browser via Puppeteer",
+    description: `Launch a headless browser instance for web automation.
+
+Use this to:
+- Begin web scraping or automation sessions
+- Test web applications programmatically
+- Capture screenshots and interact with dynamic content
+
+The browser runs in the background and connects via debugging protocol.`,
     parameters: StartBrowserParams,
 
     async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
@@ -160,7 +169,14 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "navigate-browser",
     label: "Navigate Browser",
-    description: "Navigate to a URL in the browser",
+    description: `Navigate to a specific URL in the active browser tab.
+
+Use this to:
+- Visit web pages for data extraction
+- Load specific pages for testing or scraping
+- Open new tabs for parallel processing
+
+Supports both existing tabs and creating new ones.`,
     parameters: NavigateBrowserParams,
 
     async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
@@ -172,7 +188,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "evaluate-javascript",
     label: "Evaluate JavaScript",
-    description: "Evaluate JavaScript code in the active browser tab",
+    description: `Execute JavaScript code in the context of the current web page.
+
+Use this to:
+- Extract data from complex page structures
+- Interact with JavaScript-heavy websites
+- Test and debug web page functionality
+- Access browser APIs and page content
+
+Returns the result of the executed code.`,
     parameters: EvaluateJavascriptParams,
 
     async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
@@ -184,7 +208,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "take-screenshot",
     label: "Take Screenshot",
-    description: "Take a screenshot of the active browser tab",
+    description: `Capture a screenshot of the current browser page.
+
+Use this to:
+- Document web page states during automation
+- Verify visual changes or layouts
+- Debug rendering issues
+- Archive important web content
+
+Saves the image to a temporary file and returns the path.`,
     parameters: TakeScreenshotParams,
 
     async execute(_toolCallId, _params, _onUpdate, _ctx, _signal) {
@@ -195,7 +227,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "query-html-elements",
     label: "Query HTML Elements",
-    description: "Extract HTML elements by CSS selector",
+    description: `Extract HTML elements from the current page using CSS selectors.
+
+Use this to:
+- Inspect page structure and element details
+- Extract specific HTML components for analysis
+- Debug web scraping selectors
+- Understand page layout and styling
+
+Returns formatted HTML of matching elements.`,
     parameters: QueryHtmlElementsParams,
 
     async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
@@ -207,7 +247,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "list-tabs",
     label: "List Tabs",
-    description: "List all open browser tabs with their titles and URLs",
+    description: `Get information about all open browser tabs.
+
+Use this to:
+- See current browsing session state
+- Identify which tabs are active
+- Manage multiple tab automation workflows
+- Debug tab switching operations
+
+Shows tab index, title, URL, and active status.`,
     parameters: ListTabsParams,
 
     async execute(_toolCallId, _params, _onUpdate, _ctx, _signal) {
@@ -218,7 +266,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "close-tab",
     label: "Close Tab",
-    description: "Close a browser tab by index or title",
+    description: `Close a specific browser tab by index or title.
+
+Use this to:
+- Clean up completed automation sessions
+- Manage browser resource usage
+- Reset tab state for fresh operations
+- Handle multiple concurrent tasks
+
+Cannot close the last remaining tab.`,
     parameters: CloseTabParams,
 
     async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
@@ -230,7 +286,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "switch-tab",
     label: "Switch Tab",
-    description: "Switch to a specific tab by index",
+    description: `Switch focus to a different browser tab by index.
+
+Use this to:
+- Navigate between multiple automation contexts
+- Continue work in specific tabs
+- Manage parallel scraping operations
+- Access different web applications
+
+Makes the specified tab active for subsequent operations.`,
     parameters: SwitchTabParams,
 
     async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
@@ -242,7 +306,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "refresh-tab",
     label: "Refresh Tab",
-    description: "Refresh the current tab",
+    description: `Reload the current browser tab.
+
+Use this to:
+- Update dynamic web content
+- Reset page state during testing
+- Handle stale data in automation
+- Refresh after form submissions or state changes
+
+Waits for the page to fully load before returning.`,
     parameters: RefreshTabParams,
 
     async execute(_toolCallId, _params, _onUpdate, _ctx, _signal) {
@@ -253,7 +325,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "current-url",
     label: "Current URL",
-    description: "Get the URL of the current active tab",
+    description: `Get the URL of the currently active browser tab.
+
+Use this to:
+- Verify navigation results
+- Track current page location
+- Log browsing session progress
+- Validate redirects and page changes
+
+Returns the full URL including query parameters.`,
     parameters: CurrentUrlParams,
 
     async execute(_toolCallId, _params, _onUpdate, _ctx, _signal) {
@@ -264,7 +344,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "page-title",
     label: "Page Title",
-    description: "Get the title of the current active tab",
+    description: `Get the title of the currently active browser tab.
+
+Use this to:
+- Identify current page content
+- Verify page load completion
+- Log browsing activity
+- Check for expected page titles
+
+Returns the text from the browser's title bar.`,
     parameters: PageTitleParams,
 
     async execute(_toolCallId, _params, _onUpdate, _ctx, _signal) {
@@ -275,7 +363,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "wait-for-element",
     label: "Wait for Element",
-    description: "Wait for a CSS selector to appear on the page",
+    description: `Wait for a CSS selector to appear on the page.
+
+Use this to:
+- Synchronize with dynamic page loading
+- Ensure elements are ready before interaction
+- Handle AJAX-loaded content
+- Test page rendering performance
+
+Blocks until the element exists or timeout occurs.`,
     parameters: WaitForElementParams,
 
     async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
@@ -287,7 +383,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "click-element",
     label: "Click Element",
-    description: "Click on an element by CSS selector",
+    description: `Click on HTML elements matching a CSS selector.
+
+Use this to:
+- Interact with buttons, links, and form controls
+- Navigate through web applications
+- Trigger JavaScript events and actions
+- Submit forms or activate dropdowns
+
+Can click single elements or all matching elements.`,
     parameters: ClickElementParams,
 
     async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
@@ -299,7 +403,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "type-text",
     label: "Type Text",
-    description: "Type text into an input field",
+    description: `Type text into input fields or focused elements.
+
+Use this to:
+- Fill out web forms automatically
+- Enter search queries or data
+- Simulate user keyboard input
+- Test input validation and handling
+
+Optionally clears existing content before typing.`,
     parameters: TypeTextParams,
 
     async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
@@ -311,7 +423,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "extract-text",
     label: "Extract Text",
-    description: "Extract text content from elements by CSS selector",
+    description: `Extract text content from HTML elements by CSS selector.
+
+Use this to:
+- Scrape text data from web pages
+- Extract article content or product information
+- Gather data for analysis or processing
+- Monitor dynamic text changes
+
+Returns plain text from matching elements.`,
     parameters: ExtractTextParams,
 
     async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
@@ -380,14 +500,17 @@ export default function (pi: ExtensionAPI) {
         await b.disconnect();
         return textResult({ url, newTab: true }, `✓ Opened: ${url}`);
       } catch (error) {
-        return textResult({ error: true }, `✗ Error: ${(error as Error).message}`);
+        return textResult(
+          { error: true },
+          `✗ Error: ${(error as Error).message}`,
+        );
       }
     } else {
       const res = await withBrowserPage(async (p) => {
         await p.goto(url, { waitUntil: "domcontentloaded" });
         return `✓ Navigated to: ${url}`;
       });
-      if ('error' in res) return textResult({ error: true }, res.error);
+      if ("error" in res) return textResult({ error: true }, res.error);
       return textResult({ url, newTab: false }, res.result);
     }
   }
@@ -401,7 +524,7 @@ export default function (pi: ExtensionAPI) {
       return result;
     });
 
-    if ('error' in res) return textResult({ error: true }, res.error);
+    if ("error" in res) return textResult({ error: true }, res.error);
 
     const result = res.result;
 
@@ -436,7 +559,7 @@ export default function (pi: ExtensionAPI) {
       return filepath;
     });
 
-    if ('error' in res) return textResult({ error: true }, res.error);
+    if ("error" in res) return textResult({ error: true }, res.error);
 
     return textResult({ filepath: res.result }, res.result);
   }
@@ -460,7 +583,7 @@ export default function (pi: ExtensionAPI) {
       return result;
     });
 
-    if ('error' in res) return textResult({ error: true }, res.error);
+    if ("error" in res) return textResult({ error: true }, res.error);
 
     const result = res.result;
 
@@ -478,7 +601,7 @@ export default function (pi: ExtensionAPI) {
     clear: boolean,
   ) {
     const bp = await getBrowserAndPage();
-    if ('error' in bp) return textResult({ error: true }, bp.error);
+    if ("error" in bp) return textResult({ error: true }, bp.error);
     const { b, p } = bp;
 
     try {
@@ -514,7 +637,7 @@ export default function (pi: ExtensionAPI) {
 
   async function clickElementBrowser(selector: string, all: boolean) {
     const bp = await getBrowserAndPage();
-    if ('error' in bp) return textResult({ error: true }, bp.error);
+    if ("error" in bp) return textResult({ error: true }, bp.error);
     const { b, p } = bp;
 
     try {
@@ -543,7 +666,7 @@ export default function (pi: ExtensionAPI) {
 
   async function waitForElementBrowser(selector: string, timeout: number) {
     const bp = await getBrowserAndPage();
-    if ('error' in bp) return textResult({ error: true }, bp.error);
+    if ("error" in bp) return textResult({ error: true }, bp.error);
     const { b, p } = bp;
 
     try {
@@ -565,7 +688,7 @@ export default function (pi: ExtensionAPI) {
       return title;
     });
 
-    if ('error' in res) return textResult({ error: true }, res.error);
+    if ("error" in res) return textResult({ error: true }, res.error);
 
     return textResult({ title: res.result }, res.result);
   }
@@ -576,7 +699,7 @@ export default function (pi: ExtensionAPI) {
       return url;
     });
 
-    if ('error' in res) return textResult({ error: true }, res.error);
+    if ("error" in res) return textResult({ error: true }, res.error);
 
     return textResult({ url: res.result }, res.result);
   }
@@ -587,7 +710,7 @@ export default function (pi: ExtensionAPI) {
       return "✓ Page refreshed";
     });
 
-    if ('error' in res) return textResult({ error: true }, res.error);
+    if ("error" in res) return textResult({ error: true }, res.error);
 
     return textResult({ refreshed: true }, res.result);
   }
@@ -597,9 +720,7 @@ export default function (pi: ExtensionAPI) {
       const pages = await b.pages();
 
       if (index < 0 || index >= pages.length) {
-        throw new Error(
-          `Invalid tab index: ${index} (0-${pages.length - 1})`,
-        );
+        throw new Error(`Invalid tab index: ${index} (0-${pages.length - 1})`);
       }
 
       const targetPage = pages[index];
@@ -608,7 +729,7 @@ export default function (pi: ExtensionAPI) {
       return `✓ Switched to tab ${index}`;
     });
 
-    if ('error' in res) return textResult({ error: true }, res.error);
+    if ("error" in res) return textResult({ error: true }, res.error);
 
     return textResult({ index }, res.result);
   }
@@ -642,9 +763,7 @@ export default function (pi: ExtensionAPI) {
           }
         }
         if (!targetPage) {
-          throw new Error(
-            `No tab found with title containing: "${title}"`,
-          );
+          throw new Error(`No tab found with title containing: "${title}"`);
         }
       } else {
         // Close the current active tab (last in the array)
@@ -657,7 +776,7 @@ export default function (pi: ExtensionAPI) {
       return { targetIndex, msg: `✓ Closed tab ${targetIndex}` };
     });
 
-    if ('error' in res) return textResult({ error: true }, `✗ ${res.error}`);
+    if ("error" in res) return textResult({ error: true }, `✗ ${res.error}`);
 
     return textResult({ index: res.result.targetIndex }, res.result.msg);
   }
@@ -678,7 +797,7 @@ export default function (pi: ExtensionAPI) {
       return tabs;
     });
 
-    if ('error' in res) return textResult({ error: true }, res.error);
+    if ("error" in res) return textResult({ error: true }, res.error);
 
     const tabs = res.result;
 
@@ -706,7 +825,7 @@ export default function (pi: ExtensionAPI) {
       return result;
     });
 
-    if ('error' in res) return textResult({ error: true }, res.error);
+    if ("error" in res) return textResult({ error: true }, res.error);
 
     const result = res.result;
 

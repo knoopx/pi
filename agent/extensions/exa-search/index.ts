@@ -111,8 +111,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "search-code",
     label: "Search Code",
-    description:
-      "Search and get relevant context for any programming task using Exa Code API. Provides the highest quality and freshest context for libraries, SDKs, and APIs. Returns comprehensive code examples, documentation, and API references.",
+    description: `Find relevant code examples, documentation, and API references.
+
+Use this to:
+- Get code snippets for libraries and frameworks
+- Understand API usage patterns
+- Find implementation examples for specific tasks
+- Learn best practices from real code
+
+Provides high-quality, up-to-date programming context.`,
     parameters: Type.Object({
       query: Type.String({
         description:
@@ -146,8 +153,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "search-web",
     label: "Search Web",
-    description:
-      "Search the web using Exa AI - performs real-time web searches and can scrape content from specific URLs. Provides up-to-date information for current events and recent data.",
+    description: `Perform real-time web searches and content scraping.
+
+Use this to:
+- Find current information and recent updates
+- Research topics across the internet
+- Get fresh data for analysis
+- Access content from specific websites
+
+Supports live crawling and different search depths.`,
     parameters: Type.Object({
       query: Type.String({ description: "Websearch query" }),
       numResults: Type.Optional(

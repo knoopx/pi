@@ -18,8 +18,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "lsp-diagnostics",
     label: "LSP Diagnostics",
-    description:
-      "Get language server diagnostics for files. Supports TypeScript, JavaScript, Python, Go, Rust, Dart, Vue, Svelte, and more.",
+    description: `Run language server analysis on source files to find errors and warnings.
+
+Use this to:
+- Check code for syntax and type errors
+- Identify potential bugs and issues
+- Validate code quality and standards
+- Get detailed error messages and suggestions
+
+Supports multiple programming languages through LSP servers.`,
     parameters: Type.Object({
       files: Type.Array(Type.String(), {
         description: "Array of file paths to analyze",

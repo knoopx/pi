@@ -274,7 +274,9 @@ describe("E2E Tests", () => {
       expect(mockPage.goto).toHaveBeenCalledWith("https://example.com", {
         waitUntil: "domcontentloaded",
       });
-      expect(result.content[0].text).toContain("Navigated to: https://example.com");
+      expect(result.content[0].text).toContain(
+        "Navigated to: https://example.com",
+      );
     });
 
     it("should open URL in new tab", async () => {
@@ -380,7 +382,9 @@ describe("E2E Tests", () => {
       );
 
       expect(mockPage.screenshot).toHaveBeenCalledWith(
-        expect.objectContaining({ path: expect.stringContaining("screenshot-") }),
+        expect.objectContaining({
+          path: expect.stringContaining("screenshot-"),
+        }),
       );
       expect(result.content[0].text).toContain("screenshot-");
       expect(result.details).toHaveProperty("filepath");
@@ -564,8 +568,14 @@ describe("E2E Tests", () => {
   describe("list-tabs", () => {
     it("should list all tabs", async () => {
       const mockPages = [
-        { title: vi.fn().mockResolvedValue("Tab 1"), url: vi.fn().mockReturnValue("https://tab1.com") },
-        { title: vi.fn().mockResolvedValue("Tab 2"), url: vi.fn().mockReturnValue("https://tab2.com") },
+        {
+          title: vi.fn().mockResolvedValue("Tab 1"),
+          url: vi.fn().mockReturnValue("https://tab1.com"),
+        },
+        {
+          title: vi.fn().mockResolvedValue("Tab 2"),
+          url: vi.fn().mockReturnValue("https://tab2.com"),
+        },
       ];
       const mockBrowser = {
         pages: vi.fn().mockResolvedValue(mockPages),
@@ -586,16 +596,15 @@ describe("E2E Tests", () => {
       );
 
       expect(result.content[0].text).toContain("0: Tab 1 - https://tab1.com");
-      expect(result.content[0].text).toContain("1: [ACTIVE] Tab 2 - https://tab2.com");
+      expect(result.content[0].text).toContain(
+        "1: [ACTIVE] Tab 2 - https://tab2.com",
+      );
     });
   });
 
   describe("switch-tab", () => {
     it("should switch to specified tab", async () => {
-      const mockPages = [
-        { bringToFront: vi.fn() },
-        { bringToFront: vi.fn() },
-      ];
+      const mockPages = [{ bringToFront: vi.fn() }, { bringToFront: vi.fn() }];
       const mockBrowser = {
         pages: vi.fn().mockResolvedValue(mockPages),
         disconnect: vi.fn(),
@@ -621,10 +630,7 @@ describe("E2E Tests", () => {
 
   describe("close-tab", () => {
     it("should close tab by index", async () => {
-      const mockPages = [
-        { close: vi.fn() },
-        { close: vi.fn() },
-      ];
+      const mockPages = [{ close: vi.fn() }, { close: vi.fn() }];
       const mockBrowser = {
         pages: vi.fn().mockResolvedValue(mockPages),
         disconnect: vi.fn(),
@@ -748,14 +754,18 @@ describe("E2E Tests", () => {
         AbortSignal.timeout(1000),
       );
 
-      expect(mockPage.reload).toHaveBeenCalledWith({ waitUntil: "domcontentloaded" });
+      expect(mockPage.reload).toHaveBeenCalledWith({
+        waitUntil: "domcontentloaded",
+      });
       expect(result.content[0].text).toContain("Page refreshed");
     });
   });
 
   describe("wait-for-element", () => {
     it("should wait for element to appear", async () => {
-      const mockPage = { waitForSelector: vi.fn().mockResolvedValue(undefined) };
+      const mockPage = {
+        waitForSelector: vi.fn().mockResolvedValue(undefined),
+      };
       const mockBrowser = {
         pages: vi.fn().mockResolvedValue([mockPage]),
         disconnect: vi.fn(),
@@ -774,7 +784,9 @@ describe("E2E Tests", () => {
         AbortSignal.timeout(1000),
       );
 
-      expect(mockPage.waitForSelector).toHaveBeenCalledWith(".loading", { timeout: 5000 });
+      expect(mockPage.waitForSelector).toHaveBeenCalledWith(".loading", {
+        timeout: 5000,
+      });
       expect(result.content[0].text).toContain("Element found: .loading");
     });
   });
@@ -782,7 +794,7 @@ describe("E2E Tests", () => {
   describe("query-html-elements", () => {
     it("should query HTML elements", async () => {
       const mockPage = {
-        evaluate: vi.fn().mockResolvedValue(['<div>Hello</div>']),
+        evaluate: vi.fn().mockResolvedValue(["<div>Hello</div>"]),
       };
       const mockBrowser = {
         pages: vi.fn().mockResolvedValue([mockPage]),

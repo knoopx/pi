@@ -30,8 +30,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "pip-search",
     label: "Pip Search",
-    description:
-      "Search for Python packages on PyPI. Returns a list of matching packages with descriptions.",
+    description: `Search for Python packages available on PyPI.
+
+Use this to:
+- Find packages by name or functionality
+- Discover libraries for specific tasks
+- Check package descriptions and versions
+- Explore available Python packages
+
+Returns matching packages with metadata.`,
     parameters: Type.Object({
       query: Type.String({
         description: "Search query (package name or keyword)",
@@ -99,7 +106,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "pip-show",
     label: "Pip Show",
-    description: "Show detailed information about an installed Python package.",
+    description: `Get detailed information about an installed Python package.
+
+Use this to:
+- Check package version and metadata
+- See package dependencies and dependents
+- View package location and licensing
+- Get package author and homepage information
+
+Shows comprehensive package details.`,
     parameters: Type.Object({
       package: Type.String({
         description: "Name of the package to show information for",
@@ -160,7 +175,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "pip-list",
     label: "Pip List",
-    description: "List all installed Python packages with their versions.",
+    description: `List all Python packages installed in the environment.
+
+Use this to:
+- See what packages are currently installed
+- Check for outdated packages
+- Audit package versions
+- Manage Python dependencies
+
+Supports table, JSON, and freeze formats.`,
     parameters: Type.Object({
       format: Type.Optional(
         StringEnum(["table", "json", "freeze"] as const, {

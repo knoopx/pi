@@ -5,7 +5,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "transcribe",
     label: "Transcribe",
-    description: "Transcribe a URL or local file into human-readable text.",
+    description: `Convert various file formats and web content to Markdown text.
+
+Use this to:
+- Convert documents to readable text
+- Extract content from PDFs and Office files
+- Transcribe web pages to Markdown
+- Process various file formats
+
+Supports URLs and local files.`,
     parameters: Type.Object({
       source: Type.String({
         description: "URL or file path to transcribe into human-readable text",

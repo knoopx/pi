@@ -5,8 +5,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "command-examples",
     label: "Command Examples",
-    description:
-      "Get command-line examples and cheatsheets from cheat.sh for commands, programming languages, and more",
+    description: `Get command-line examples and reference sheets from cheat.sh.
+
+Use this to:
+- Find usage examples for CLI commands
+- Get programming language syntax help
+- Access quick reference guides
+- Learn tool usage patterns
+
+Provides examples for commands, languages, and tools.`,
     parameters: Type.Object({
       query: Type.String({
         description:

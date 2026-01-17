@@ -2007,13 +2007,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "ralph-loop",
     label: "Ralph Loop",
-    description: [
-      "Run subagent tasks in a loop while a condition command prints 'true' to continue (anything else stops).",
-      "Supports single and chain modes.",
-      "Supports model/thinking overrides like subagent.",
-      "Defaults to agent 'worker' and the latest user message when agent/task are omitted.",
-      "If conditionCommand is omitted, it is inferred from the task text or defaults to 'echo true'.",
-    ].join(" "),
+    description: `Execute subagent tasks repeatedly while a condition remains true.
+
+Use this to:
+- Automate iterative processes with custom stop conditions
+- Run agents in loops with dynamic state checking
+- Chain multiple agents in repeating workflows
+- Monitor external conditions and respond accordingly
+
+Supports both single agent and multi-agent chain execution modes.`,
     parameters: LoopParams,
 
     async execute(_toolCallId, params, onUpdate, ctx, signal) {

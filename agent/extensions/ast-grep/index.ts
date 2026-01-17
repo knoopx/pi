@@ -50,8 +50,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "ast-search",
     label: "AST Search",
-    description:
-      "Perform structural code search using ast-grep patterns. Use $VAR for single nodes, $$$ARGS for multiple nodes. Supports all ast-grep languages.",
+    description: `Search for code patterns using structural AST matching.
+
+Use this to:
+- Find complex code patterns across files
+- Locate function calls, variable usages, or syntax patterns
+- Analyze code structure without regex limitations
+- Debug and understand code relationships
+
+Supports pattern variables and multiple languages.`,
     parameters: Type.Object({
       pattern: Type.String({
         description:
@@ -176,8 +183,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "ast-replace",
     label: "AST Replace",
-    description:
-      "Perform structural search and replace using ast-grep. Use $VAR in rewrite to reference captured nodes. Use --dry-run first to preview changes.",
+    description: `Perform safe structural search and replace operations.
+
+Use this to:
+- Refactor code patterns across multiple files
+- Apply consistent changes to similar code structures
+- Transform function signatures or variable names
+- Automate code modernization tasks
+
+Always use dry-run first to preview changes.`,
     parameters: Type.Object({
       pattern: Type.String({ description: "The ast-grep pattern to match" }),
       rewrite: Type.String({
@@ -302,8 +316,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "ast-scan",
     label: "AST Scan",
-    description:
-      "Advanced structural search using ast-grep inline rules. Supports complex queries with 'all', 'any', 'not', 'inside', 'has' conditions.",
+    description: `Perform advanced structural searches with complex rule conditions.
+
+Use this to:
+- Find code patterns with logical combinations
+- Search for nested structures or relationships
+- Analyze code quality and patterns
+- Create custom linting or analysis rules
+
+Supports 'all', 'any', 'not', 'inside', 'has' operators.`,
     parameters: Type.Object({
       rule: Type.String({
         description:

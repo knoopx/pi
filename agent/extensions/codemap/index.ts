@@ -5,8 +5,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "code-stats",
     label: "Code Statistics",
-    description:
-      "Get project overview and statistics using CodeMapper, including file counts, language breakdown, and codebase metrics.",
+    description: `Generate comprehensive statistics about a codebase.
+
+Use this to:
+- Understand project size and complexity
+- Analyze language distribution
+- Track codebase metrics over time
+- Assess development effort and scope
+
+Shows file counts, lines of code, and language breakdown.`,
     parameters: Type.Object({
       path: Type.Optional(
         Type.String({
@@ -55,8 +62,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "code-map",
     label: "Code Map",
-    description:
-      "Generate a structured overview of the codebase file structure and symbol counts using CodeMapper. Shows hierarchical file organization with different detail levels.",
+    description: `Create a hierarchical overview of the codebase structure.
+
+Use this to:
+- Navigate large codebases efficiently
+- Understand project organization
+- Find files and symbols quickly
+- Get context for development tasks
+
+Supports filtering by patterns and detail levels.`,
     parameters: Type.Object({
       patterns: Type.Optional(
         Type.Array(
@@ -156,8 +170,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "code-query",
     label: "Code Query",
-    description:
-      "Search for symbols and code patterns using CodeMapper's fuzzy search. Find functions, classes, variables, and other symbols across the codebase.",
+    description: `Search for functions, classes, and symbols across the codebase.
+
+Use this to:
+- Find specific code elements
+- Locate function definitions or usages
+- Explore code relationships
+- Discover similar patterns
+
+Supports fuzzy and exact matching.`,
     parameters: Type.Object({
       query: Type.String({
         description: "Search query (function name, class name, etc.)",
@@ -226,8 +247,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "code-inspect",
     label: "Code Inspect",
-    description:
-      "Inspect all symbols and structure within a specific file using CodeMapper. Shows functions, classes, variables, and imports in the file.",
+    description: `Examine the structure and symbols within a specific file.
+
+Use this to:
+- Understand file contents and organization
+- Find functions, classes, and variables
+- Review import/export relationships
+- Analyze individual file complexity
+
+Shows detailed breakdown of file components.`,
     parameters: Type.Object({
       file: Type.String({
         description: "Path to the file to inspect",
@@ -269,8 +297,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "code-callers",
     label: "Code Callers",
-    description:
-      "Find all code that calls a specific function or symbol using CodeMapper. Shows reverse dependencies and usage locations.",
+    description: `Find all locations where a specific function or symbol is used.
+
+Use this to:
+- Understand function dependencies
+- Trace code usage patterns
+- Refactor safely by finding all references
+- Analyze impact of code changes
+
+Shows reverse dependencies and call sites.`,
     parameters: Type.Object({
       symbol: Type.String({
         description: "Symbol name to find callers for",
@@ -312,8 +347,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "code-callees",
     label: "Code Callees",
-    description:
-      "Find all functions and symbols that a specific function calls using CodeMapper. Shows forward dependencies and call graph.",
+    description: `Find all functions and symbols called by a specific function.
+
+Use this to:
+- Analyze function dependencies
+- Understand call graphs and relationships
+- Identify coupling between components
+- Debug complex function interactions
+
+Shows forward dependencies and call chains.`,
     parameters: Type.Object({
       symbol: Type.String({
         description: "Symbol name to find callees for",
@@ -355,8 +397,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "code-trace",
     label: "Code Trace",
-    description:
-      "Trace the call path between two symbols using CodeMapper. Shows the shortest path from one function to another through the call graph.",
+    description: `Trace the call path between two functions or symbols.
+
+Use this to:
+- Understand how functions are connected
+- Debug complex interaction flows
+- Find the shortest path between code elements
+- Analyze system architecture
+
+Shows the call chain linking the symbols.`,
     parameters: Type.Object({
       from: Type.String({
         description: "Starting symbol",
@@ -401,8 +450,15 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "code-deps",
     label: "Code Dependencies",
-    description:
-      "Analyze code dependencies and relationships using CodeMapper. Shows import dependencies, reverse dependencies, external packages, and detects circular dependencies.",
+    description: `Analyze import and dependency relationships in the codebase.
+
+Use this to:
+- Identify circular dependencies
+- Understand module coupling
+- Find external package usage
+- Optimize import structures
+
+Supports forward and reverse dependency analysis.`,
     parameters: Type.Object({
       file: Type.Optional(
         Type.String({ description: "File path to analyze dependencies for" }),
