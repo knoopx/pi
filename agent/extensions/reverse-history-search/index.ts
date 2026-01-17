@@ -12,8 +12,8 @@
 
 import type {
   ExtensionAPI,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { DynamicBorder } from "@mariozechner/pi-coding-agent";
 import {
@@ -336,7 +336,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerShortcut("ctrl+r", {
     description:
       "Reverse history search (user messages and commands across all sessions)",
-    handler: async (ctx: ToolContext) => {
+    handler: async (ctx: ExtensionContext) => {
       if (!ctx.hasUI) return;
 
       // Load all history (messages and commands) from all sessions

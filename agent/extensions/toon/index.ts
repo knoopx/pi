@@ -1,7 +1,7 @@
 import type {
   ExtensionAPI,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { encode } from "@toon-format/toon";
 

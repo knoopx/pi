@@ -30,7 +30,7 @@ describe("Markitdown Extension", () => {
 
     it("should convert file successfully", async () => {
       const mockResult = {
-        exitCode: 0,
+        code: 0,
         stdout:
           "# Converted Markdown Content\n\nThis is the converted content.",
         stderr: "",
@@ -54,7 +54,16 @@ describe("Markitdown Extension", () => {
         { signal: undefined },
       );
       expect(onUpdate).toHaveBeenCalledWith({
-        status: "Converting /path/to/file.pdf to Markdown...",
+        content: [
+          {
+            type: "text",
+            text: "Converting /path/to/file.pdf to Markdown...",
+          },
+        ],
+        details: {
+          source: "/path/to/file.pdf",
+          status: "converting",
+        },
       });
       expect(result.content[0].text).toBe(
         "# Converted Markdown Content\n\nThis is the converted content.",
@@ -67,7 +76,7 @@ describe("Markitdown Extension", () => {
 
     it("should convert URL successfully", async () => {
       const mockResult = {
-        exitCode: 0,
+        code: 0,
         stdout: "# Webpage Title\n\nContent from the webpage.",
         stderr: "",
       };
@@ -90,12 +99,15 @@ describe("Markitdown Extension", () => {
       expect(result.content[0].text).toBe(
         "# Webpage Title\n\nContent from the webpage.",
       );
-      expect(result.details.converted).toBe(true);
+      expect(result.details).toEqual({
+        source: "https://example.com/page",
+        converted: true,
+      });
     });
 
     it("should handle conversion errors", async () => {
       const mockResult = {
-        exitCode: 1,
+        code: 1,
         stdout: "",
         stderr: "markitdown: file not found",
       };
@@ -110,11 +122,13 @@ describe("Markitdown Extension", () => {
         {},
       );
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain(
         "Error converting source: markitdown: file not found",
       );
-      expect(result.details.error).toBe("markitdown: file not found");
+      expect(result.details).toEqual({
+        source: "/nonexistent/file.pdf",
+        error: "markitdown: file not found",
+      });
     });
 
     it("should handle execution errors", async () => {
@@ -129,11 +143,13 @@ describe("Markitdown Extension", () => {
         {},
       );
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toMatch(
         /Unexpected error:.*Command not found/,
       );
-      expect(result.details.error).toBe("Error: Command not found");
+      expect(result.details).toEqual({
+        source: "/path/to/file.pdf",
+        error: "Error: Command not found",
+      });
     });
 
     it("should pass signal to exec", async () => {

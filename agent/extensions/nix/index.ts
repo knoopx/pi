@@ -1,8 +1,8 @@
 import type {
   ExtensionAPI,
   AgentToolResult,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
@@ -184,7 +184,6 @@ async function executeSearchTool<T>(
           text: `Error: ${(error as Error).message}`,
         },
       ],
-      isError: true,
       details: {},
     };
   }
@@ -497,8 +496,8 @@ Returns detailed package information from nixpkgs.`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const { query } = params as { query: string };
@@ -556,8 +555,8 @@ Returns NixOS configuration option details.`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const { query } = params as { query: string };
@@ -611,8 +610,8 @@ Returns Home Manager configuration options.`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const { query } = params as { query: string };
@@ -666,8 +665,8 @@ Returns GitHub pull request information.`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const { query } = params as { query: string };

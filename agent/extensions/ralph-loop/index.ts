@@ -21,6 +21,7 @@ import {
   UserMessageComponent,
   formatSize,
   truncateTail,
+  type ExtensionCommandContext,
 } from "@mariozechner/pi-coding-agent";
 import { Box, Container, Spacer, Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
@@ -664,7 +665,7 @@ function pauseActiveRuns(
 ): boolean {
   if (control.paused) return runs.size > 0;
   let paused = false;
-  for (const run of runs) {
+  runs.forEach((run) => {
     try {
       if (isProcessActive(run.process)) {
         const didStop = run.process.kill("SIGSTOP");
@@ -673,7 +674,7 @@ function pauseActiveRuns(
     } catch {
       // ignore
     }
-  }
+  });
   if (paused) {
     control.paused = true;
     if (control.status !== "stopping") {
@@ -701,7 +702,7 @@ function resumeActiveRuns(
     return true;
   }
   let resumed = false;
-  for (const run of runs) {
+  runs.forEach((run) => {
     try {
       if (isProcessActive(run.process)) {
         const didResume = run.process.kill("SIGCONT");
@@ -710,7 +711,7 @@ function resumeActiveRuns(
     } catch {
       // ignore
     }
-  }
+  });
   if (resumed) {
     clearPausedState(control);
   }
@@ -909,13 +910,13 @@ async function runSingleAgent(
       let stdinClosed = false;
 
       const rejectPending = (error: Error) => {
-        for (const pendingReq of pending.values()) {
+        pending.forEach((pendingReq) => {
           try {
             pendingReq.reject(error);
           } catch {
             // ignore
           }
-        }
+        });
         pending.clear();
       };
 
@@ -1821,7 +1822,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("ralph-steer", {
     description: "Queue a steering message for the active ralph_loop run",
-    handler: async (args: any, ctx: ToolContext) => {
+    handler: async (args: string, ctx: ExtensionCommandContext) => {
       if (!ctx.hasUI) {
         ctx.ui.notify("Interactive mode required.", "error");
         return;
@@ -1871,7 +1872,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("ralph-follow", {
     description: "Queue a follow-up message for the active ralph_loop run",
-    handler: async (args: any, ctx: ToolContext) => {
+    handler: async (args: string, ctx: ExtensionCommandContext) => {
       if (!ctx.hasUI) {
         ctx.ui.notify("Interactive mode required.", "error");
         return;

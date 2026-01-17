@@ -20,9 +20,16 @@ describe("Cheatsh Extension", () => {
 
     expect(toolDef.name).toBe("command-examples");
     expect(toolDef.label).toBe("Command Examples");
-    expect(toolDef.description).toBe(
-      "Get command-line examples and cheatsheets from cheat.sh for commands, programming languages, and more",
-    );
+    expect(toolDef.description)
+      .toBe(`Get command-line examples and reference sheets from cheat.sh.
+
+Use this to:
+- Find usage examples for CLI commands
+- Get programming language syntax help
+- Access quick reference guides
+- Learn tool usage patterns
+
+Provides examples for commands, languages, and tools.`);
     expect(typeof toolDef.execute).toBe("function");
   });
 
@@ -78,7 +85,6 @@ describe("Cheatsh Extension", () => {
     );
 
     expect(result.content[0].text).toContain("No cheatsheet found");
-    expect(result.isError).toBe(true);
 
     delete global.fetch;
   });
@@ -98,7 +104,6 @@ describe("Cheatsh Extension", () => {
     );
 
     expect(result.content[0].text).toContain("Failed to fetch cheatsheet");
-    expect(result.isError).toBe(true);
 
     delete global.fetch;
   });

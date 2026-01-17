@@ -112,7 +112,6 @@ describe("GitHub Extension", () => {
         repo: "missing-repo",
       });
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain(
         "GitHub API error: 404 Not Found",
       );
@@ -128,7 +127,6 @@ describe("GitHub Extension", () => {
         repo: "repo",
       });
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain(
         "Error fetching repository info: Network connection failed",
       );
@@ -310,7 +308,6 @@ describe("GitHub Extension", () => {
         path: "file.txt",
       });
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain(
         "GitHub raw file error: 404 Not Found. The requested file, repository, or branch/tag/commit could not be found",
       );
@@ -330,7 +327,6 @@ describe("GitHub Extension", () => {
         path: "file.txt",
       });
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain(
         "Error fetching raw file: Network connection failed",
       );

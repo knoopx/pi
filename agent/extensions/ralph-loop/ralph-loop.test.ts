@@ -69,7 +69,6 @@ describe("Ralph Loop Extension", () => {
         mockCtx,
       );
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Unable to infer task or agent");
     });
 
@@ -94,7 +93,6 @@ describe("Ralph Loop Extension", () => {
         mockCtx,
       );
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain(
         "Parallel mode is not supported",
       );
@@ -123,7 +121,6 @@ describe("Ralph Loop Extension", () => {
         mockCtx,
       );
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Provide exactly one mode");
     });
 

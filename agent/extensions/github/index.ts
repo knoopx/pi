@@ -1,7 +1,7 @@
 import type {
   ExtensionAPI,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
@@ -28,8 +28,8 @@ Returns comprehensive repository details from the GitHub API.`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
       const { owner, repo } = params as { owner: string; repo: string };
@@ -55,7 +55,6 @@ Returns comprehensive repository details from the GitHub API.`,
               text: `Error fetching repository info: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
-          isError: true,
           details: {},
         };
       }
@@ -81,8 +80,8 @@ Returns detailed user profile data from GitHub.`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
       const { username } = params as { username: string };
@@ -108,7 +107,6 @@ Returns detailed user profile data from GitHub.`,
               text: `Error fetching user info: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
-          isError: true,
           details: {},
         };
       }
@@ -144,8 +142,8 @@ Supports filtering by state (open/closed/all).`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
       const {
@@ -180,7 +178,6 @@ Supports filtering by state (open/closed/all).`,
               text: `Error fetching issues: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
-          isError: true,
           details: {},
         };
       }
@@ -214,8 +211,8 @@ Returns the file content as plain text.`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
       const { owner, repo, path, ref } = params as {
@@ -256,7 +253,6 @@ Returns the file content as plain text.`,
               text: `Error fetching raw file: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
-          isError: true,
           details: { url },
         };
       }
@@ -302,8 +298,8 @@ Supports sorting by stars, forks, or update date.`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
       const {
@@ -339,7 +335,6 @@ Supports sorting by stars, forks, or update date.`,
               text: `Error searching repositories: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
-          isError: true,
           details: {},
         };
       }

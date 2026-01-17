@@ -4,8 +4,8 @@
 
 import type {
   ExtensionAPI,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import type { TextContent } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
@@ -56,8 +56,8 @@ Supports multiple programming languages through LSP servers.`,
     async execute(
       _toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const {
@@ -76,7 +76,6 @@ Supports multiple programming languages through LSP servers.`,
             { type: "text", text: "No files specified" } as TextContent,
           ],
           details: { files: 0 },
-          isError: true,
         };
       }
 
@@ -186,7 +185,6 @@ Supports multiple programming languages through LSP servers.`,
               text: `LSP analysis failed: ${error instanceof Error ? error.message : String(error)}`,
             } as TextContent,
           ],
-          isError: true,
           details: {},
         };
       }

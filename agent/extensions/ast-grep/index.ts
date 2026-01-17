@@ -4,8 +4,8 @@
 
 import type {
   ExtensionAPI,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { StringEnum } from "@mariozechner/pi-ai";
@@ -37,7 +37,7 @@ const SUPPORTED_LANGUAGES = [
 
 export default function (pi: ExtensionAPI) {
   // Check if ast-grep is available
-  pi.on("session_start", async (_event: any, ctx: ToolContext) => {
+  pi.on("session_start", async (_event: any, ctx: ExtensionContext) => {
     try {
       await pi.exec("ast-grep", ["--version"], {
         signal: AbortSignal.timeout(5000),
@@ -85,8 +85,8 @@ Supports pattern variables and multiple languages.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const {
@@ -114,7 +114,6 @@ Supports pattern variables and multiple languages.`,
       if (result.code !== 0) {
         return {
           content: [{ type: "text", text: `ast-grep error: ${result.stderr}` }],
-          isError: true,
           details: {},
         };
       }
@@ -227,8 +226,8 @@ Always use dry-run first to preview changes.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const {
@@ -266,7 +265,6 @@ Always use dry-run first to preview changes.`,
       if (result.code !== 0) {
         return {
           content: [{ type: "text", text: `ast-grep error: ${result.stderr}` }],
-          isError: true,
           details: {},
         };
       }
@@ -309,7 +307,6 @@ Always use dry-run first to preview changes.`,
                 text: `Failed to parse preview: ${parseError}\nRaw output: ${result.stdout}`,
               },
             ],
-            isError: true,
             details: {},
           };
         }
@@ -360,8 +357,8 @@ Supports 'all', 'any', 'not', 'inside', 'has' operators.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const {
@@ -380,7 +377,6 @@ Supports 'all', 'any', 'not', 'inside', 'has' operators.`,
       } catch (error) {
         return {
           content: [{ type: "text", text: `Invalid JSON rule: ${error}` }],
-          isError: true,
           details: {},
         };
       }
@@ -398,7 +394,6 @@ Supports 'all', 'any', 'not', 'inside', 'has' operators.`,
       if (result.code !== 0) {
         return {
           content: [{ type: "text", text: `ast-grep error: ${result.stderr}` }],
-          isError: true,
           details: {},
         };
       }

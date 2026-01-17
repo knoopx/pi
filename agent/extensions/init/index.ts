@@ -1,13 +1,13 @@
 import type {
   ExtensionAPI,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionCommandContext,
 } from "@mariozechner/pi-coding-agent";
 
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("init", {
     description: "Analyze codebase and create/improve AGENTS.md",
-    handler: async (args: any, ctx: ToolContext) => {
+    handler: async (args: string, ctx: ExtensionCommandContext) => {
       await ctx.waitForIdle();
       const templateContent = `Please analyze this codebase and create an AGENTS.md file containing:
 1. Build/lint/test commands - especially for running a single test

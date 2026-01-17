@@ -75,7 +75,7 @@ describe("Codemap Extension", () => {
 
     it("should get code statistics successfully", async () => {
       const mockResult = {
-        exitCode: 0,
+        code: 0,
         stdout: "Project statistics output",
         stderr: "",
       };
@@ -108,7 +108,7 @@ describe("Codemap Extension", () => {
 
     it("should generate code map successfully", async () => {
       const mockResult = {
-        exitCode: 0,
+        code: 0,
         stdout: "Code map output",
         stderr: "",
       };
@@ -138,7 +138,7 @@ describe("Codemap Extension", () => {
 
     it("should query code successfully", async () => {
       const mockResult = {
-        exitCode: 0,
+        code: 0,
         stdout: "Query results",
         stderr: "",
       };
@@ -171,7 +171,7 @@ describe("Codemap Extension", () => {
 
     it("should inspect file successfully", async () => {
       const mockResult = {
-        exitCode: 0,
+        code: 0,
         stdout: "File inspection output",
         stderr: "",
       };
@@ -204,7 +204,7 @@ describe("Codemap Extension", () => {
 
     it("should find callers successfully", async () => {
       const mockResult = {
-        exitCode: 0,
+        code: 0,
         stdout: "Callers list",
         stderr: "",
       };
@@ -237,7 +237,7 @@ describe("Codemap Extension", () => {
 
     it("should find callees successfully", async () => {
       const mockResult = {
-        exitCode: 0,
+        code: 0,
         stdout: "Callees list",
         stderr: "",
       };
@@ -270,7 +270,7 @@ describe("Codemap Extension", () => {
 
     it("should trace call path successfully", async () => {
       const mockResult = {
-        exitCode: 0,
+        code: 0,
         stdout: "Call trace path",
         stderr: "",
       };
@@ -303,7 +303,7 @@ describe("Codemap Extension", () => {
 
     it("should analyze dependencies successfully", async () => {
       const mockResult = {
-        exitCode: 0,
+        code: 0,
         stdout: "Dependency analysis output",
         stderr: "",
       };
@@ -330,7 +330,7 @@ describe("Codemap Extension", () => {
 
     it("should handle external packages flag", async () => {
       const mockResult = {
-        exitCode: 0,
+        code: 0,
         stdout: "External packages list",
         stderr: "",
       };
@@ -352,7 +352,7 @@ describe("Codemap Extension", () => {
 
     it("should handle circular dependencies flag", async () => {
       const mockResult = {
-        exitCode: 0,
+        code: 0,
         stdout: "Circular dependencies found",
         stderr: "",
       };
@@ -374,7 +374,7 @@ describe("Codemap Extension", () => {
 
     it("should handle command execution errors", async () => {
       const mockResult = {
-        exitCode: 1,
+        code: 1,
         stdout: "",
         stderr: "Command failed",
       };
@@ -382,7 +382,6 @@ describe("Codemap Extension", () => {
 
       const result = await registeredTool.execute("tool1", {}, vi.fn(), {});
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toBe("Error: Command failed");
     });
 
@@ -391,7 +390,6 @@ describe("Codemap Extension", () => {
 
       const result = await registeredTool.execute("tool1", {}, vi.fn(), {});
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Error analyzing dependencies");
     });
   });

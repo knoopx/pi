@@ -1,7 +1,7 @@
 import type {
   ExtensionAPI,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
@@ -34,8 +34,8 @@ Provides examples for commands, languages, and tools.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const { query, section } = params as { query: string; section?: string };
@@ -133,7 +133,6 @@ Provides examples for commands, languages, and tools.`,
             url,
             error: error instanceof Error ? error.message : String(error),
           },
-          isError: true,
         };
       }
     },

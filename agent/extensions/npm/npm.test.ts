@@ -128,7 +128,6 @@ describe("NPM Extension", () => {
 
       const result = await registeredTool.execute("tool1", { query: "test" });
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Failed to search packages");
     });
   });
@@ -199,7 +198,6 @@ describe("NPM Extension", () => {
         package: "nonexistent-package",
       });
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain(
         'Package "nonexistent-package" not found.',
       );
@@ -218,7 +216,6 @@ describe("NPM Extension", () => {
 
       const result = await registeredTool.execute("tool1", { package: "test" });
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Failed to get package info");
     });
   });
@@ -287,7 +284,6 @@ describe("NPM Extension", () => {
         package: "nonexistent",
       });
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain(
         'Package "nonexistent" not found.',
       );

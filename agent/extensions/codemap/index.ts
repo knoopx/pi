@@ -1,7 +1,7 @@
 import type {
   ExtensionAPI,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
@@ -28,8 +28,8 @@ Shows file counts, lines of code, and language breakdown.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       try {
@@ -46,7 +46,6 @@ Shows file counts, lines of code, and language breakdown.`,
           return {
             content: [{ type: "text", text: `Error: ${result.stderr}` }],
             details: {},
-            isError: true,
           };
         }
 
@@ -63,7 +62,6 @@ Shows file counts, lines of code, and language breakdown.`,
             },
           ],
           details: {},
-          isError: true,
         };
       }
     },
@@ -114,8 +112,8 @@ Supports filtering by patterns and detail levels.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       try {
@@ -152,7 +150,6 @@ Supports filtering by patterns and detail levels.`,
                 text: `Error generating codemap: ${result.stderr}`,
               },
             ],
-            isError: true,
             details: {},
           };
         }
@@ -177,7 +174,6 @@ Supports filtering by patterns and detail levels.`,
             },
           ],
           details: {},
-          isError: true,
         };
       }
     },
@@ -218,8 +214,8 @@ Supports fuzzy and exact matching.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       try {
@@ -243,7 +239,6 @@ Supports fuzzy and exact matching.`,
           return {
             content: [{ type: "text", text: `Error: ${result.stderr}` }],
             details: {},
-            isError: true,
           };
         }
 
@@ -260,7 +255,6 @@ Supports fuzzy and exact matching.`,
             },
           ],
           details: {},
-          isError: true,
         };
       }
     },
@@ -286,8 +280,8 @@ Shows detailed breakdown of file components.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       try {
@@ -299,7 +293,6 @@ Shows detailed breakdown of file components.`,
           return {
             content: [{ type: "text", text: `Error: ${result.stderr}` }],
             details: {},
-            isError: true,
           };
         }
 
@@ -316,7 +309,6 @@ Shows detailed breakdown of file components.`,
             },
           ],
           details: {},
-          isError: true,
         };
       }
     },
@@ -342,8 +334,8 @@ Shows reverse dependencies and call sites.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       try {
@@ -355,7 +347,6 @@ Shows reverse dependencies and call sites.`,
           return {
             content: [{ type: "text", text: `Error: ${result.stderr}` }],
             details: {},
-            isError: true,
           };
         }
 
@@ -372,7 +363,6 @@ Shows reverse dependencies and call sites.`,
             },
           ],
           details: {},
-          isError: true,
         };
       }
     },
@@ -398,8 +388,8 @@ Shows forward dependencies and call chains.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       try {
@@ -411,7 +401,6 @@ Shows forward dependencies and call chains.`,
           return {
             content: [{ type: "text", text: `Error: ${result.stderr}` }],
             details: {},
-            isError: true,
           };
         }
 
@@ -428,7 +417,6 @@ Shows forward dependencies and call chains.`,
             },
           ],
           details: {},
-          isError: true,
         };
       }
     },
@@ -457,8 +445,8 @@ Shows the call chain linking the symbols.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       try {
@@ -470,7 +458,6 @@ Shows the call chain linking the symbols.`,
           return {
             content: [{ type: "text", text: `Error: ${result.stderr}` }],
             details: {},
-            isError: true,
           };
         }
 
@@ -487,7 +474,6 @@ Shows the call chain linking the symbols.`,
             },
           ],
           details: {},
-          isError: true,
         };
       }
     },
@@ -528,8 +514,8 @@ Supports forward and reverse dependency analysis.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       try {
@@ -561,7 +547,6 @@ Supports forward and reverse dependency analysis.`,
           return {
             content: [{ type: "text", text: `Error: ${result.stderr}` }],
             details: {},
-            isError: true,
           };
         }
 
@@ -578,7 +563,6 @@ Supports forward and reverse dependency analysis.`,
             },
           ],
           details: {},
-          isError: true,
         };
       }
     },

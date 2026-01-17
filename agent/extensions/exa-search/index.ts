@@ -1,7 +1,7 @@
 import type {
   ExtensionAPI,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { StringEnum } from "@mariozechner/pi-ai";
@@ -142,8 +142,8 @@ Provides high-quality, up-to-date programming context.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal?: AbortSignal,
     ) {
       return makeMcpCall(
@@ -201,8 +201,8 @@ Supports live crawling and different search depths.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal?: AbortSignal,
     ) {
       return makeMcpCall(

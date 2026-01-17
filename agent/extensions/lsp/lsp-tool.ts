@@ -26,8 +26,8 @@ import { Type, type Static } from "@sinclair/typebox";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type {
   ExtensionAPI,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import {
@@ -268,8 +268,8 @@ Use bash to find files: find src -name "*.ts" -type f`,
     async execute(
       _toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       if (signal?.aborted) return cancelledToolResult();

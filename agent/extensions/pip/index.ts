@@ -7,8 +7,8 @@
 
 import type {
   ExtensionAPI,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
@@ -59,8 +59,8 @@ Returns matching packages with metadata.`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
       const { query, limit = 10 } = params as { query: string; limit?: number };
@@ -73,18 +73,30 @@ Returns matching packages with metadata.`,
         );
 
         if (result.code !== 0) {
-          return textResult(`Error searching for packages: ${result.stderr}`, {
-            query,
-          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Error searching for packages: ${result.stderr}`,
+              },
+            ],
+            details: { query },
+          };
         }
 
         let packages: any[] = [];
         try {
           packages = JSON.parse(result.stdout);
         } catch {
-          return textResult(`Error parsing search results: ${result.stdout}`, {
-            query,
-          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Error parsing search results: ${result.stdout}`,
+              },
+            ],
+            details: { query },
+          };
         }
 
         const limitedPackages = packages.slice(0, limit);
@@ -105,9 +117,15 @@ Returns matching packages with metadata.`,
           returned: limitedPackages.length,
         });
       } catch (error) {
-        return textResult(`Failed to search packages: ${String(error)}`, {
-          query,
-        });
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Failed to search packages: ${String(error)}`,
+            },
+          ],
+          details: { query },
+        };
       }
     },
   });
@@ -134,8 +152,8 @@ Shows comprehensive package details.`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
       const { package: packageName } = params as { package: string };
@@ -146,10 +164,15 @@ Shows comprehensive package details.`,
         });
 
         if (result.code !== 0) {
-          return textResult(
-            `Package "${packageName}" not found or error: ${result.stderr}`,
-            { package: packageName },
-          );
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Package "${packageName}" not found or error: ${result.stderr}`,
+              },
+            ],
+            details: { package: packageName },
+          };
         }
 
         const lines = result.stdout.split("\n");
@@ -180,9 +203,15 @@ Shows comprehensive package details.`,
 
         return textResult(output, { package: packageName, info });
       } catch (error) {
-        return textResult(`Failed to show package info: ${String(error)}`, {
-          package: packageName,
-        });
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Failed to show package info: ${String(error)}`,
+            },
+          ],
+          details: { package: packageName },
+        };
       }
     },
   });
@@ -214,8 +243,8 @@ Supports table, JSON, and freeze formats.`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
       const { format = "table", outdated = false } = params as {
@@ -237,10 +266,15 @@ Supports table, JSON, and freeze formats.`,
         const result = await pi.exec("pip", args, { signal: _signal });
 
         if (result.code !== 0) {
-          return textResult(`Error listing packages: ${result.stderr}`, {
-            format,
-            outdated,
-          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Error listing packages: ${result.stderr}`,
+              },
+            ],
+            details: { format, outdated },
+          };
         }
 
         if (format === "json") {
@@ -248,10 +282,15 @@ Supports table, JSON, and freeze formats.`,
           try {
             packages = JSON.parse(result.stdout);
           } catch {
-            return textResult(`Error parsing JSON output: ${result.stdout}`, {
-              format,
-              outdated,
-            });
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Error parsing JSON output: ${result.stdout}`,
+                },
+              ],
+              details: { format, outdated },
+            };
           }
 
           const lines = packages.map((pkg) => {
@@ -296,17 +335,30 @@ Supports table, JSON, and freeze formats.`,
           )}). Full output available in terminal.]`;
         }
 
+        // Count packages in table (skip header lines)
+        const lines = result.stdout.split("\n").filter((line) => line.trim());
+        const packageLines = lines.filter(
+          (line) =>
+            line.includes(" ") &&
+            !line.includes("---") &&
+            !line.includes("Package"),
+        );
+        const count = packageLines.length;
+
         const title = outdated ? "Outdated packages" : "Installed packages";
         return textResult(`${title}:\n\n${output}`, {
           format,
           outdated,
           truncated: truncation.truncated,
+          count,
         });
       } catch (error) {
-        return textResult(`Failed to list packages: ${String(error)}`, {
-          format,
-          outdated,
-        });
+        return {
+          content: [
+            { type: "text", text: `Failed to list packages: ${String(error)}` },
+          ],
+          details: { format, outdated },
+        };
       }
     },
   });

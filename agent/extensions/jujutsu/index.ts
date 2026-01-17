@@ -217,7 +217,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerCommand("undo", {
     description:
       "Revert to the previous user message and restore the repository state to before that message was processed",
-    handler: async (args: string[], ctx: ExtensionCommandContext) => {
+    handler: async (args: string, ctx: ExtensionCommandContext) => {
       const userEntries = getUserEntries(ctx.sessionManager);
 
       // Find the last user message that has a snapshot
@@ -285,7 +285,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerCommand("redo", {
     description:
       "Redo the last undo operation by switching back to the previous checkpoint",
-    handler: async (args: string[], ctx: ExtensionCommandContext) => {
+    handler: async (args: string, ctx: ExtensionCommandContext) => {
       if (redoStack.length === 0) {
         ctx.ui.notify("No undo operation to redo", "warning");
         return;
@@ -330,7 +330,7 @@ export default function (pi: ExtensionAPI) {
    */
   pi.registerCommand("snapshots", {
     description: "Show available snapshots",
-    handler: async (args: string[], ctx: ExtensionCommandContext) => {
+    handler: async (args: string, ctx: ExtensionCommandContext) => {
       if (snapshots.size === 0) {
         ctx.ui.notify("No snapshots available", "info");
         return;

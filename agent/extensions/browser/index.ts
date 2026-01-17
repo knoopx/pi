@@ -1,16 +1,16 @@
 import { spawn, execSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import puppeteer from "puppeteer-core";
+import puppeteer, { Browser, Page } from "puppeteer-core";
 import type {
   ExtensionAPI,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
-import prettier from "prettier";
+import { format } from "prettier";
 
 const NavigateUrlParams = Type.Object({
   url: Type.String({ description: "URL to navigate to" }),
@@ -157,7 +157,7 @@ export default function (pi: ExtensionAPI) {
   }
 
   async function withBrowserPage<T>(
-    fn: (page: puppeteer.Page, browser: puppeteer.Browser) => Promise<T>,
+    fn: (page: Page, browser: Browser) => Promise<T>,
   ): Promise<{ result: T } | { error: string }> {
     const browserCheck = await ensureBrowserRunning();
     if ("error" in browserCheck) return { error: browserCheck.error };
@@ -186,7 +186,7 @@ export default function (pi: ExtensionAPI) {
   }
 
   async function getBrowserAndPage(): Promise<
-    { b: puppeteer.Browser; p: puppeteer.Page } | { error: string }
+    { b: Browser; p: Page } | { error: string }
   > {
     const browserCheck = await ensureBrowserRunning();
     if ("error" in browserCheck) return { error: browserCheck.error };
@@ -210,7 +210,7 @@ export default function (pi: ExtensionAPI) {
     }
   }
 
-  async function getPageHints(page: puppeteer.Page): Promise<{
+  async function getPageHints(page: Page): Promise<{
     title: string;
     selectors: string[];
   }> {
@@ -276,7 +276,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       // Return unique selectors, limited to most relevant ones
-      return [...new Set(found)].slice(0, 10);
+      return Array.from(new Set(found)).slice(0, 10);
     });
 
     return { title, selectors };
@@ -298,8 +298,8 @@ Always opens in a new tab.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const { url } = params;
@@ -324,8 +324,8 @@ Returns the result of the executed code.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const { code } = params;
@@ -350,8 +350,8 @@ Saves the image to a temporary file and returns the path.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       return await screenshotBrowser();
@@ -375,8 +375,8 @@ Returns formatted HTML of matching elements.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const { selector, all = false } = params;
@@ -401,8 +401,8 @@ Shows tab index, title, URL, and active status.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       return await listTabsBrowser();
@@ -426,8 +426,8 @@ Cannot close the last remaining tab.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const { index, title } = params;
@@ -452,8 +452,8 @@ Makes the specified tab active for subsequent operations.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const { index } = params;
@@ -478,8 +478,8 @@ Waits for the page to fully load before returning.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       return await refreshTabBrowser();
@@ -503,8 +503,8 @@ Returns the full URL including query parameters.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       return await getCurrentUrlBrowser();
@@ -528,8 +528,8 @@ Returns the text from the browser's title bar.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       return await getPageTitleBrowser();
@@ -553,8 +553,8 @@ Blocks until the element exists or timeout occurs.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const { selector, timeout = 10000 } = params;
@@ -579,8 +579,8 @@ Can click single elements or all matching elements.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const { selector, all = false } = params;
@@ -605,8 +605,8 @@ Optionally clears existing content before typing.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const { selector, text, clear = false } = params;
@@ -631,8 +631,8 @@ Returns plain text from matching elements.`,
     async execute(
       toolCallId: string,
       params: any,
-      onUpdate: OnUpdate,
-      ctx: ToolContext,
+      onUpdate: AgentToolUpdateCallback,
+      ctx: ExtensionContext,
       signal: AbortSignal,
     ) {
       const { selector, all = false } = params;
@@ -995,7 +995,7 @@ Returns plain text from matching elements.`,
     }
 
     const html = result.join("\n\n");
-    const prettified = await prettier.format(html, { parser: "html" });
+    const prettified = await format(html, { parser: "html" });
 
     return textResult({ selector, all }, prettified);
   }

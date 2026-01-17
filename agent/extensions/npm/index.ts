@@ -1,7 +1,7 @@
 import type {
   ExtensionAPI,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
@@ -48,8 +48,8 @@ Returns matching packages with metadata.`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
       const { query, size = 10 } = params as { query: string; size?: number };
@@ -74,8 +74,8 @@ Returns detailed package metadata.`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
       const { package: pkg } = params as { package: string };
@@ -100,8 +100,8 @@ Returns all published package versions.`,
     async execute(
       _toolCallId: string,
       params: any,
-      _onUpdate: OnUpdate,
-      _ctx: ToolContext,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
       const { package: pkg } = params as { package: string };
@@ -122,11 +122,19 @@ async function searchNpmPackages(
     );
 
     if (!response.ok) {
-      return textResult(`Failed to search packages: ${response.statusText}`, {
-        query,
-        status: response.status,
-        statusText: response.statusText,
-      });
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Failed to search packages: ${response.statusText}`,
+          },
+        ],
+        details: {
+          query,
+          status: response.status,
+          statusText: response.statusText,
+        },
+      };
     }
 
     const data = (await response.json()) as any;
@@ -160,10 +168,15 @@ async function searchNpmPackages(
       count: packages.length,
     });
   } catch (error) {
-    return textResult(
-      `Error searching packages: ${error instanceof Error ? error.message : String(error)}`,
-      { query },
-    );
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error searching packages: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      details: { query },
+    };
   }
 }
 
@@ -177,17 +190,28 @@ async function getNpmPackageInfo(
 
     if (!response.ok) {
       if (response.status === 404) {
-        return textResult(`Package "${pkg}" not found.`, {
-          package: pkg,
-          status: 404,
-        });
+        return {
+          content: [{ type: "text", text: `Package "${pkg}" not found.` }],
+          details: {
+            package: pkg,
+            status: 404,
+          },
+        };
       }
 
-      return textResult(`Failed to get package info: ${response.statusText}`, {
-        package: pkg,
-        status: response.status,
-        statusText: response.statusText,
-      });
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Failed to get package info: ${response.statusText}`,
+          },
+        ],
+        details: {
+          package: pkg,
+          status: response.status,
+          statusText: response.statusText,
+        },
+      };
     }
 
     const data = (await response.json()) as any;
@@ -223,10 +247,15 @@ async function getNpmPackageInfo(
 
     return textResult(result, { package: pkg });
   } catch (error) {
-    return textResult(
-      `Error getting package info: ${error instanceof Error ? error.message : String(error)}`,
-      { package: pkg },
-    );
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error getting package info: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      details: { package: pkg },
+    };
   }
 }
 
@@ -240,20 +269,28 @@ async function getNpmPackageVersions(
 
     if (!response.ok) {
       if (response.status === 404) {
-        return textResult(`Package "${pkg}" not found.`, {
-          package: pkg,
-          status: 404,
-        });
+        return {
+          content: [{ type: "text", text: `Package "${pkg}" not found.` }],
+          details: {
+            package: pkg,
+            status: 404,
+          },
+        };
       }
 
-      return textResult(
-        `Failed to get package versions: ${response.statusText}`,
-        {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Failed to get package versions: ${response.statusText}`,
+          },
+        ],
+        details: {
           package: pkg,
           status: response.status,
           statusText: response.statusText,
         },
-      );
+      };
     }
 
     const data = (await response.json()) as any;
@@ -264,13 +301,18 @@ async function getNpmPackageVersions(
     for (const [tag, version] of Object.entries(distTags)) {
       result += `- ${tag}: ${version}\n`;
     }
-    result += `\n**All Versions:**\n${versions.join("\n")}`;
+    result += `\n**All Versions (latest first):**\n${versions.join("\n")}`;
 
     return textResult(result, { package: pkg, count: versions.length });
   } catch (error) {
-    return textResult(
-      `Error getting package versions: ${error instanceof Error ? error.message : String(error)}`,
-      { package: pkg },
-    );
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error getting package versions: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      details: { package: pkg },
+    };
   }
 }

@@ -108,7 +108,6 @@ describe("Pip Tools Extension", () => {
 
       const result = await registeredTool.execute("tool1", { query: "test" });
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Error searching for packages");
     });
 
@@ -122,7 +121,6 @@ describe("Pip Tools Extension", () => {
 
       const result = await registeredTool.execute("tool1", { query: "test" });
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Error parsing search results");
     });
   });
@@ -185,7 +183,6 @@ Required-by: pip-tools, requests-oauthlib`;
         package: "nonexistent",
       });
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain(
         'Package "nonexistent" not found',
       );
@@ -308,7 +305,6 @@ wheel==0.41.2`;
 
       const result = await registeredTool.execute("tool1", {});
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Error listing packages");
     });
   });

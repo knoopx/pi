@@ -13,7 +13,11 @@
  */
 
 import { complete, type Message } from "@mariozechner/pi-ai";
-import type { ExtensionAPI, SessionEntry } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ExtensionCommandContext,
+  SessionEntry,
+} from "@mariozechner/pi-coding-agent";
 import {
   BorderedLoader,
   convertToLlm,
@@ -45,7 +49,7 @@ Files involved:
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("handoff", {
     description: "Transfer context to a new focused session",
-    handler: async (args: any, ctx: ToolContext) => {
+    handler: async (args: any, ctx: ExtensionCommandContext) => {
       if (!ctx.hasUI) {
         ctx.ui.notify("handoff requires interactive mode", "error");
         return;

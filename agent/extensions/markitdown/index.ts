@@ -1,7 +1,7 @@
 import type {
   ExtensionAPI,
-  OnUpdate,
-  ToolContext,
+  AgentToolUpdateCallback,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
@@ -57,14 +57,12 @@ Supports URLs and local files.`,
               },
             ],
             details: { source, error: result.stderr || result.stdout },
-            isError: true,
           };
         }
       } catch (error) {
         return {
           content: [{ type: "text", text: `Unexpected error: ${error}` }],
           details: { source, error: String(error) },
-          isError: true,
         };
       }
     },

@@ -11,5 +11,13 @@
   "devDependencies": {
     "prettier": "^3.8.0",
     "vitest": "^1.6.1"
+  },
+  "dependencies": {
+    "@mariozechner/pi-agent-core": "^0.48.0",
+    "@mariozechner/pi-ai": "^0.48.0",
+    "@mariozechner/pi-coding-agent": "^0.48.0",
+    "@mariozechner/pi-tui": "^0.48.0",
+    "@sinclair/typebox": "^0.34.47",
+    "@toon-format/toon": "^2.1.0"
   }
 }

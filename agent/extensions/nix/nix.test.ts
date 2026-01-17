@@ -85,7 +85,6 @@ describe("Nix Extension", () => {
 
       const result = await registeredTool.execute("tool1", { query: "test" });
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Error: Network error");
     });
 
@@ -101,7 +100,6 @@ describe("Nix Extension", () => {
 
       const result = await registeredTool.execute("tool1", { query: "test" });
 
-      expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Search request failed");
     });
   });

@@ -50,9 +50,7 @@ describe("toon-rewriter extension", () => {
       content: [
         {
           type: "text",
-          text:
-            toonOutput +
-            "\n\n(This output is in TOON format for token efficiency. To decode: `bunx @toon-format/cli --decode <file>.toon`)",
+          text: toonOutput,
         },
       ],
       details: { some: "detail" },
