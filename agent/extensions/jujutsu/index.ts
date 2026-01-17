@@ -64,6 +64,61 @@ export default function (pi: ExtensionAPI) {
   }
 
   /**
+   * Get filtered user message entries from session manager
+   */
+  function getUserEntries(sessionManager: { getBranch: () => any[] }) {
+    const entries = sessionManager.getBranch();
+    return entries.filter(
+      (e) => e.type === "message" && e.message.role === "user",
+    );
+  }
+
+  /**
+   * Navigate to an entry and handle cancellation
+   */
+  async function navigateWithCancellation(
+    ctx: ExtensionCommandContext,
+    entryId: string,
+    successMessage: string,
+  ): Promise<boolean> {
+    const result = await ctx.navigateTree(entryId, {
+      summarize: true,
+    });
+
+    if (result.cancelled) {
+      ctx.ui.notify("Navigation was cancelled", "warning");
+      return false;
+    } else {
+      ctx.ui.notify(successMessage, "info");
+      return true;
+    }
+  }
+
+  /**
+   * Check if current change is empty (no modifications)
+   */
+  async function isCurrentChangeEmpty(): Promise<boolean> {
+    const { stdout: diffOutput } = await pi.exec("jj", ["diff", "--stat"]);
+    return diffOutput.trim() === "";
+  }
+
+  /**
+   * Check if current change has description
+   */
+  async function hasCurrentChangeDescription(): Promise<boolean> {
+    const { stdout: descriptionOutput } = await pi.exec("jj", [
+      "show",
+      "--template",
+      "description",
+      "--no-pager",
+    ]);
+    return descriptionOutput.trim() !== "";
+  }
+
+  /** Track if before_agent_start just created/modified the current change */
+  let changeCreatedThisTurn = false;
+
+  /**
    * Hook that runs before agent starts processing a user prompt.
    * Creates a JJ snapshot of the current state and starts a new change.
    */
@@ -75,24 +130,14 @@ export default function (pi: ExtensionAPI) {
         const currentChangeId = await getCurrentChangeId();
 
         // Check if current change is empty and has no description
-        const { stdout: statusOutput } = await pi.exec("jj", [
-          "diff",
-          "--stat",
-        ]);
-        const { stdout: descriptionOutput } = await pi.exec("jj", [
-          "show",
-          "--template",
-          "description",
-          "--no-pager",
-        ]);
-
-        const isEmpty = statusOutput.trim() === "";
-        const hasNoDescription = descriptionOutput.trim() === "";
+        const isEmpty = await isCurrentChangeEmpty();
+        const hasDescription = await hasCurrentChangeDescription();
 
         // If current change is empty and has no description, re-use it instead of creating new
-        if (isEmpty && hasNoDescription) {
+        if (isEmpty && !hasDescription) {
           // Store the current change ID as the snapshot directly
           snapshots.set("__pending__", currentChangeId);
+          changeCreatedThisTurn = true; // We're using this change for the current prompt
           return;
         }
 
@@ -105,6 +150,7 @@ export default function (pi: ExtensionAPI) {
           // We'll store it temporarily and associate it when the user message is saved
           snapshots.set("__pending__", currentChangeId);
         }
+        changeCreatedThisTurn = true; // We just created a new change
       } catch (error) {
         // Silently fail for auto-snapshot - JJ might not be available or repo not initialized
         console.warn(
@@ -117,12 +163,33 @@ export default function (pi: ExtensionAPI) {
   /**
    * Hook that runs at the start of each turn.
    * Associates pending snapshots with user message entries.
+   * Also checks if the current change is empty (no modifications done in previous turn), and discards it.
    */
   pi.on("turn_start", async (_event: TurnStartEvent, ctx: ExtensionContext) => {
-    const entries = ctx.sessionManager.getBranch();
-    const userEntries = entries.filter(
-      (e) => e.type === "message" && e.message.role === "user",
-    );
+    try {
+      // Check if current change is empty (no modifications from previous agent turn)
+      // But don't abandon changes that were just created by before_agent_start
+      const isEmpty = await isCurrentChangeEmpty();
+
+      if (isEmpty && !changeCreatedThisTurn) {
+        // Abandon the empty change and return to previous checkpoint
+        await pi.exec("jj", ["abandon"]);
+        ctx.ui.notify(
+          "No modifications were done, returned to previous checkpoint",
+          "info",
+        );
+      }
+    } catch (error) {
+      // Silently fail if JJ not available
+      console.warn(
+        `Failed to check/discard empty change: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    } finally {
+      // Reset the flag for the next turn
+      changeCreatedThisTurn = false;
+    }
+
+    const userEntries = getUserEntries(ctx.sessionManager);
     if (userEntries.length >= 1) {
       // Always update lastUserMessageEntryId to the latest user message
       lastUserMessageEntryId = userEntries[userEntries.length - 1].id;
@@ -145,16 +212,12 @@ export default function (pi: ExtensionAPI) {
     description:
       "Revert to the previous user message and restore the repository state to before that message was processed",
     handler: async (args: string[], ctx: ExtensionCommandContext) => {
-      // Find the most recent user message that has a snapshot
-      const entries = ctx.sessionManager.getBranch();
-      const userEntries = entries.filter(
-        (e) => e.type === "message" && e.message.role === "user",
-      );
+      const userEntries = getUserEntries(ctx.sessionManager);
 
+      // Find the last user message that has a snapshot
       let targetEntryId: string | undefined;
       let changeId: string | undefined;
 
-      // Find the last user message that has a snapshot
       for (let i = userEntries.length - 1; i >= 0; i--) {
         const entry = userEntries[i];
         const snapshot = snapshots.get(entry.id);
@@ -201,19 +264,11 @@ export default function (pi: ExtensionAPI) {
       }
 
       // Navigate back in the session tree to the user message
-      // This should put the user back in edit mode at that message
-      const result = await ctx.navigateTree(targetEntryId, {
-        summarize: false, // Don't create a summary, just navigate
-      });
-
-      if (result.cancelled) {
-        ctx.ui.notify("Navigation was cancelled", "warning");
-      } else {
-        ctx.ui.notify(
-          `Reverted to checkpoint ${changeId} and restored edit mode`,
-          "info",
-        );
-      }
+      await navigateWithCancellation(
+        ctx,
+        targetEntryId,
+        `Reverted to checkpoint ${changeId} and restored edit mode`,
+      );
     },
   });
 
@@ -246,23 +301,21 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      // Update lastUserMessageEntryId to the redone message for further operations
-      lastUserMessageEntryId = redoMessageId;
+      // Update lastUserMessageEntryId to the last user message in the conversation
+      const userEntries = getUserEntries(ctx.sessionManager);
+      lastUserMessageEntryId =
+        userEntries.length > 0
+          ? userEntries[userEntries.length - 1].id
+          : undefined;
 
-      // Navigate forward in the session tree to the message
-      // This should put the user back in edit mode at that message
-      const result = await ctx.navigateTree(redoMessageId, {
-        summarize: false, // Don't create a summary, just navigate
-      });
-
-      if (result.cancelled) {
-        ctx.ui.notify("Navigation was cancelled", "warning");
-      } else {
-        ctx.ui.notify(
-          `Redid to checkpoint ${redoChangeId} and restored edit mode`,
-          "info",
-        );
-      }
+      // Navigate to the end of the conversation (where we were before undo)
+      const allEntries = ctx.sessionManager.getBranch();
+      const lastEntry = allEntries[allEntries.length - 1];
+      await navigateWithCancellation(
+        ctx,
+        lastEntry.id,
+        `Redid to checkpoint ${redoChangeId} and restored edit mode`,
+      );
     },
   });
 
