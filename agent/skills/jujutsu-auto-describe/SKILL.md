@@ -37,6 +37,7 @@ To automatically describe all unpublished changes:
 1. Ensure you're in a jj repository
 2. Run the agent with task: "Update descriptions for all unpublished jj changes"
 3. The skill will analyze each change and generate/update its description
+4. Immutable changes (already pushed or protected) will be skipped
 
 ### Advanced Usage
 
@@ -78,7 +79,20 @@ Based on the diff and summary:
 - Create concise but descriptive summary
 - Use conventional commit format if applicable
 
-### 4. Update Description
+### 4. Check Mutability
+
+Before updating the description, verify the change is mutable:
+
+```bash
+# Check if change is immutable
+jj log --no-graph -r '<change_id> & (remote_bookmarks() | remote_branches() | tags() | trunk())' -T 'change_id'
+```
+
+If the command returns the change ID, the change is immutable and cannot be modified. Skip to the next change.
+
+### 5. Update Description
+
+If the change is mutable, update its description:
 
 ```bash
 # Update the change description
@@ -134,6 +148,7 @@ Refactor component architecture for better testability
 
 - **No unpublished changes**: Inform user that all changes are published
 - **Empty diff**: Skip changes with no modifications
+- **Immutable changes**: Skip changes that are already pushed or protected
 - **Permission denied**: Check jj repository permissions
 - **Invalid change ID**: Verify change exists before processing
 
@@ -204,6 +219,7 @@ const excludePatterns = [
 - Review diff manually: `jj diff -r <change_id>`
 - Check file modification times: `jj show <change_id> --summary`
 - Validate generated descriptions before applying
+- Check if change is immutable: `jj log -r '<change_id> & (remote_bookmarks() | remote_branches() | tags() | trunk())' -T 'change_id'`
 
 ## Related Skills
 
