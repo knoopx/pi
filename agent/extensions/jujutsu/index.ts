@@ -74,6 +74,28 @@ export default function (pi: ExtensionAPI) {
         // Get the current change ID before creating a new one
         const currentChangeId = await getCurrentChangeId();
 
+        // Check if current change is empty and has no description
+        const { stdout: statusOutput } = await pi.exec("jj", [
+          "diff",
+          "--stat",
+        ]);
+        const { stdout: descriptionOutput } = await pi.exec("jj", [
+          "show",
+          "--template",
+          "description",
+          "--no-pager",
+        ]);
+
+        const isEmpty = statusOutput.trim() === "";
+        const hasNoDescription = descriptionOutput.trim() === "";
+
+        // If current change is empty and has no description, re-use it instead of creating new
+        if (isEmpty && hasNoDescription) {
+          // Store the current change ID as the snapshot directly
+          snapshots.set("__pending__", currentChangeId);
+          return;
+        }
+
         // Create a new change to snapshot current state before processing
         const message = event.prompt || "User prompt";
         await pi.exec("jj", ["new", "-m", message]);

@@ -117,7 +117,17 @@ describe("Jujutsu Extension", () => {
         stderr: "",
         code: 0,
       }); // First call: get current change ID
-      mockPi.exec.mockResolvedValueOnce({ stdout: "", stderr: "", code: 0 }); // Second call: jj new
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "some changes",
+        stderr: "",
+        code: 0,
+      }); // Second call: jj diff --stat (has changes)
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "existing description",
+        stderr: "",
+        code: 0,
+      }); // Third call: jj show --template description (has description)
+      mockPi.exec.mockResolvedValueOnce({ stdout: "", stderr: "", code: 0 }); // Fourth call: jj new
 
       const mockEvent = { prompt: "Test prompt" };
       const mockCtx = {};
@@ -131,6 +141,13 @@ describe("Jujutsu Extension", () => {
         "--template",
         "change_id",
         "--no-graph",
+      ]);
+      expect(mockPi.exec).toHaveBeenCalledWith("jj", ["diff", "--stat"]);
+      expect(mockPi.exec).toHaveBeenCalledWith("jj", [
+        "show",
+        "--template",
+        "description",
+        "--no-pager",
       ]);
       expect(mockPi.exec).toHaveBeenCalledWith("jj", [
         "new",
@@ -146,7 +163,17 @@ describe("Jujutsu Extension", () => {
         stderr: "",
         code: 0,
       }); // First call: get current change ID
-      mockPi.exec.mockResolvedValueOnce({ stdout: "", stderr: "", code: 0 }); // Second call: jj new
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "some changes",
+        stderr: "",
+        code: 0,
+      }); // Second call: jj diff --stat (has changes)
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "existing description",
+        stderr: "",
+        code: 0,
+      }); // Third call: jj show --template description (has description)
+      mockPi.exec.mockResolvedValueOnce({ stdout: "", stderr: "", code: 0 }); // Fourth call: jj new
 
       const mockEvent = { prompt: longPrompt };
       const mockCtx = {};
@@ -161,6 +188,13 @@ describe("Jujutsu Extension", () => {
         "change_id",
         "--no-graph",
       ]);
+      expect(mockPi.exec).toHaveBeenCalledWith("jj", ["diff", "--stat"]);
+      expect(mockPi.exec).toHaveBeenCalledWith("jj", [
+        "show",
+        "--template",
+        "description",
+        "--no-pager",
+      ]);
       expect(mockPi.exec).toHaveBeenCalledWith("jj", ["new", "-m", longPrompt]);
     });
 
@@ -171,7 +205,17 @@ describe("Jujutsu Extension", () => {
         stderr: "",
         code: 0,
       }); // First call: get current change ID
-      mockPi.exec.mockResolvedValueOnce({ stdout: "", stderr: "", code: 0 }); // Second call: jj new
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "some changes",
+        stderr: "",
+        code: 0,
+      }); // Second call: jj diff --stat (has changes)
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "existing description",
+        stderr: "",
+        code: 0,
+      }); // Third call: jj show --template description (has description)
+      mockPi.exec.mockResolvedValueOnce({ stdout: "", stderr: "", code: 0 }); // Fourth call: jj new
 
       const mockEvent = { prompt: multiLinePrompt };
       const mockCtx = {};
@@ -186,10 +230,63 @@ describe("Jujutsu Extension", () => {
         "change_id",
         "--no-graph",
       ]);
+      expect(mockPi.exec).toHaveBeenCalledWith("jj", ["diff", "--stat"]);
+      expect(mockPi.exec).toHaveBeenCalledWith("jj", [
+        "show",
+        "--template",
+        "description",
+        "--no-pager",
+      ]);
       expect(mockPi.exec).toHaveBeenCalledWith("jj", [
         "new",
         "-m",
         multiLinePrompt,
+      ]);
+    });
+
+    it("should re-use current change when empty and has no description", async () => {
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "abc123",
+        stderr: "",
+        code: 0,
+      }); // First call: get current change ID
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "",
+        stderr: "",
+        code: 0,
+      }); // Second call: jj diff --stat (empty)
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "",
+        stderr: "",
+        code: 0,
+      }); // Third call: jj show --template description (empty)
+
+      const mockEvent = { prompt: "Test prompt" };
+      const mockCtx = {};
+
+      await eventHandler(mockEvent, mockCtx);
+
+      // Should only call the three check commands, not jj new
+      expect(mockPi.exec).toHaveBeenCalledTimes(3);
+      expect(mockPi.exec).toHaveBeenCalledWith("jj", [
+        "log",
+        "-r",
+        "@",
+        "--template",
+        "change_id",
+        "--no-graph",
+      ]);
+      expect(mockPi.exec).toHaveBeenCalledWith("jj", ["diff", "--stat"]);
+      expect(mockPi.exec).toHaveBeenCalledWith("jj", [
+        "show",
+        "--template",
+        "description",
+        "--no-pager",
+      ]);
+      expect(mockPi.exec).not.toHaveBeenCalledWith("jj", [
+        "new",
+        "-m",
+        "Test prompt",
       ]);
     });
 
@@ -246,7 +343,16 @@ describe("Jujutsu Extension", () => {
         stderr: "",
         code: 0,
       }); // First call: get current change ID
-      mockPi.exec.mockResolvedValueOnce({ stdout: "", stderr: "", code: 0 }); // Second call: jj new
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "",
+        stderr: "",
+        code: 0,
+      }); // Second call: jj diff --stat (empty)
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "",
+        stderr: "",
+        code: 0,
+      }); // Third call: jj show --template description (empty)
 
       await beforeHandler({ prompt: "Test" }, {});
 
