@@ -1,6 +1,12 @@
----
 name: python
-description: Follow best practices for Python development, including code quality, testing, type hints, and project structure.
+description: |
+  Follow best practices for Python development, including code quality, testing, type hints, and project structure.
+
+  Use this to:
+  - Write type-safe Python code with mypy
+  - Format and lint code with ruff
+  - Structure projects with clear organization
+  - Write comprehensive tests with pytest
 ---
 
 This skill provides modern templates and best practices for Python development, focusing on code organization, testing, type safety, and code quality.

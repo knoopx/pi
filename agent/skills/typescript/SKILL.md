@@ -1,6 +1,12 @@
----
 name: typescript
-description: Follow best practices for TypeScript development, including type safety, modern patterns, testing, and project organization.
+description: |
+  Follow best practices for TypeScript development, including type safety, modern patterns, testing, and project organization.
+
+  Use this to:
+  - Write strictly typed TypeScript code
+  - Organize projects with clear type definitions
+  - Implement modern TypeScript patterns and generics
+  - Ensure type safety in testing and error handling
 ---
 
 This skill provides templates and workflows for modern TypeScript development focused on type safety, code organization, and maintainability.

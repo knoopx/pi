@@ -1,6 +1,12 @@
----
 name: yt-dlp
-description: Download videos and audio from YouTube and thousands of other sites.
+description: |
+  Download videos and audio from YouTube and thousands of other sites.
+
+  Use this to:
+  - Download videos in various formats and qualities
+  - Extract audio from videos
+  - Download playlists and multiple videos
+  - Include subtitles and metadata
 ---
 
 # yt-dlp Skill

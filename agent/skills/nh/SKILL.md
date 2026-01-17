@@ -1,6 +1,12 @@
----
 name: nh
-description: Manage NixOS and Home Manager operations with improved output and cleanup.
+description: |
+  Manage NixOS and Home Manager operations with improved output and cleanup.
+
+  Use this to:
+  - Update NixOS system configurations
+  - Manage Home Manager user environments
+  - Clean up old generations and garbage collect
+  - Perform system maintenance tasks
 ---
 
 # nh (Nix Helper) Skill

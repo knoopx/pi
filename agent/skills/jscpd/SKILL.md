@@ -1,6 +1,12 @@
----
 name: jscpd
-description: Detect and analyze duplicate code in JavaScript, TypeScript, and other languages.
+description: |
+  Detect and analyze duplicate code in JavaScript, TypeScript, and other languages.
+
+  Use this to:
+  - Identify duplicate code blocks across files
+  - Analyze code duplication metrics
+  - Improve code maintainability by removing redundancy
+  - Support refactoring efforts
 ---
 
 # JSCPD (JavaScript Copy/Paste Detector)

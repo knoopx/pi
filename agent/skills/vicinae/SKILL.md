@@ -5,6 +5,15 @@ description: Develop and manage Vicinae launcher extensions using TypeScript and
 
 # Vicinae Extensions Skill
 
+Develop and manage Vicinae launcher extensions using TypeScript and React.
+
+Use this to:
+- Create custom commands for the Vicinae launcher
+- Build interactive UI views with React components
+- Develop no-view commands for quick actions
+- Manage extension development and building
+- Integrate with external APIs and services
+
 Vicinae is an open-source launcher application that can be extended with custom commands written in TypeScript and React. Extensions provide additional functionality like application shortcuts, file search, clipboard management, and custom UI views.
 
 ## Core Concepts

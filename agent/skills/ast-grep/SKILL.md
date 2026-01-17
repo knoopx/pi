@@ -1,6 +1,12 @@
----
 name: ast-grep
-description: Find complex code patterns and perform safe structural code transformations across projects using ast-grep.
+description: |
+  Find complex code patterns and perform safe structural code transformations across projects using ast-grep.
+
+  Use this to:
+  - Search for code patterns using AST matching instead of regex
+  - Perform safe refactoring across multiple files
+  - Analyze code structure and relationships
+  - Debug and understand codebases
 ---
 
 # ast-grep Skill

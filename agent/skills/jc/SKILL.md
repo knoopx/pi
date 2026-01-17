@@ -1,6 +1,12 @@
----
 name: jc
-description: Convert the output of common CLI tools into JSON for easier processing and analysis.
+description: |
+  Convert the output of common CLI tools into JSON for easier processing and analysis.
+
+  Use this to:
+  - Parse command output into structured JSON
+  - Process CLI data with JSON tools like jq
+  - Analyze system information programmatically
+  - Convert traditional output to machine-readable format
 ---
 
 # JC Skill
