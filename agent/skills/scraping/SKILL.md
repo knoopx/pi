@@ -1,12 +1,5 @@
 name: scraping
-description: |
-  Extract data from websites, parse HTML, interact with APIs, and scrape dynamic content.
-
-  Use this to:
-  - Parse HTML content with CSS selectors
-  - Interact with REST APIs and JSON data
-  - Scrape dynamic websites using browser automation
-  - Extract structured data from web pages
+description: Extract data from websites, parse HTML, interact with APIs, and scrape dynamic content. Use when parsing HTML with selectors, interacting with REST APIs, scraping dynamic sites, or extracting structured data.
 ---
 
 # Scraping

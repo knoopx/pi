@@ -1,12 +1,5 @@
 name: nix
-description: |
-  Run applications without installation, create development environments, and evaluate Nix expressions.
-
-  Use this to:
-  - Execute packages temporarily without installation
-  - Create isolated development environments
-  - Evaluate and debug Nix expressions
-  - Search for available packages
+description: Run applications without installation, create development environments, and evaluate Nix expressions. Use when executing packages temporarily, creating isolated environments, debugging expressions, or searching for packages.
 ---
 
 # Nix Skill

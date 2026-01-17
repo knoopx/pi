@@ -1,12 +1,5 @@
 name: jujutsu
-description: |
-  A practical quick-reference for the JJ (Jujutsu) version control system.
-
-  Use this to:
-  - Learn JJ commands for version control operations
-  - Navigate and manipulate change history
-  - Perform merges, rebases, and conflict resolution
-  - Work with bookmarks and remote repositories
+description: A practical quick-reference for the JJ (Jujutsu) version control system. Use when learning JJ commands, navigating change history, performing merges/rebases, resolving conflicts, or working with bookmarks and remotes.
 ---
 
 ## Basic Commands

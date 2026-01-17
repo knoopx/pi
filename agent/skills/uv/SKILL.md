@@ -1,12 +1,5 @@
 name: uv
-description: |
-  Manage Python dependencies, control Python versions, and set up projects with uv.
-
-  Use this to:
-  - Install and manage Python packages quickly
-  - Control Python versions and virtual environments
-  - Run scripts with project dependencies
-  - Build and publish Python packages
+description: Manage Python dependencies, control Python versions, and set up projects with uv. Use when installing/managing packages, controlling Python versions, running scripts with dependencies, or building/publishing packages.
 ---
 
 # UV Skill

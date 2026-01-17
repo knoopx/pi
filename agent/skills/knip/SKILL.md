@@ -1,12 +1,5 @@
 name: knip
-description: |
-  Identify and remove unused dependencies, files, and exports in TypeScript and JavaScript projects.
-
-  Use this to:
-  - Detect unused dependencies in package.json
-  - Find unused files and exports in codebases
-  - Clean up dead code for better maintainability
-  - Reduce bundle sizes by removing unnecessary code
+description: Identify and remove unused dependencies, files, and exports in TypeScript and JavaScript projects. Use when detecting unused code, cleaning up dead code, improving maintainability, or reducing bundle sizes.
 ---
 
 # Knip

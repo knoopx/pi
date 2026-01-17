@@ -1,12 +1,5 @@
 name: nu-shell
-description: |
-  Perform advanced shell scripting, data processing, and automation using nu-shell's structured data handling.
-
-  Use this to:
-  - Process structured data through pipelines
-  - Write scripts with typed parameters and subcommands
-  - Manipulate tables, lists, and records
-  - Automate tasks with custom commands
+description: Perform advanced shell scripting, data processing, and automation using nu-shell's structured data handling. Use when processing structured data through pipelines, writing scripts with parameters, manipulating tables/lists, or automating tasks.
 ---
 
 # nu-shell Skill
