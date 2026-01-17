@@ -1,6 +1,6 @@
 ---
 name: jujutsu
-description: A comprehensive guide to Jujutsu (JJ), the Git-compatible version control system, including quick-reference commands and automatic description generation for unpublished changes. Use when learning JJ commands, navigating change history, performing merges/rebases, resolving conflicts, working with bookmarks and remotes, or automatically generating change descriptions based on file modifications.
+description: A comprehensive guide to Jujutsu (JJ), the Git-compatible version control system, including quick-reference commands and automatic description generation for unpublished changes. Use when learning JJ commands, navigating change history, performing merges/rebases, resolving conflicts, working with bookmarks and remotes, or automatically generating change descriptions based on file modifications. Based on JJ version 0.37.0
 ---
 
 # Jujutsu (JJ) Guide
@@ -33,10 +33,9 @@ Jujutsu (JJ) is a powerful, Git-compatible version control system designed for m
 | `jj describe -m "..."`      | Same as above, but inline                                                                               |
 | `jj new`                    | Ends a change and inits a new one                                                                       |
 | `jj new -m`                 | Ends a change and inits a new one setting a description                                                 |
-| `jj file annotate filename` | Annotates filename, similar to git blame or hg annotate                                                 |
 | `jj undo`                   | Undoes last jj command                                                                                  |
 | `jj squash`                 | Combines changes and descriptions                                                                       |
-| `jj squash file`            | Instantly squashes file down to last change                                                             |
+| `jj squash path`            | Moves changes to the specified path from current revision to its parent                                |
 | `jj squash -i`              | Opens an ui to select what to squash                                                                    |
 | `jj abandon`                | Drops everything on current change and starts a new one in place                                        |
 | `jj split`                  | Splits current change creating a new change with the selected content on @-                             |
@@ -49,7 +48,6 @@ Jujutsu (JJ) is a powerful, Git-compatible version control system designed for m
 | `jj new -B @ -m "msg"` | Creates a new change Before current (@) setting a description |
 | `jj edit change-id`    | Moves to whatever change-id                                   |
 | `jj next --edit`       | Jumps to next change                                          |
-| `jj edit @+`           | Jumps to next change                                      |
 | `jj edit @-`           | Jumps to prev change                                          |
 
 ## Branchless Workflow
@@ -63,7 +61,7 @@ Jujutsu (JJ) is a powerful, Git-compatible version control system designed for m
 | Command                    | Description                                           |
 | -------------------------- | ----------------------------------------------------- |
 | `jj log -r revsets`        | Applies a revset to log, similar to hg(1) (Mercurial) |
-| `jj --limit number`        | Limits log lines                                      |
+| `jj log --limit number`    | Limits log lines                                      |
 | `jj log -r 'heads(all())'` | Shows all heads or forked changes at the top      |
 
 ## Merging
@@ -102,7 +100,7 @@ Examples:
 - Format log to have commit-id, new line, description and ---- before next log entry:
 
   ```
-  jj log -T 'commit-id ++ "\n" ++ description ++ "\n------\n"'
+  jj log -T 'commit_id ++ "\n" ++ description ++ "\n------\n"'
   ```
 
 - Get short commit IDs of the working-copy parents:
@@ -210,8 +208,8 @@ This means jj side by side with git. Your project will have on its root, both a 
 ```
 jj log
 jj commit -m "msg"
-jj bookmark set --revision @- main
-jj git push -r @-
+jj bookmark create main -r @-
+jj git push --bookmark main
 jj op log
 ```
 
@@ -219,14 +217,14 @@ jj op log
 
 ```
 jj
-jj bookmark set -r @ 'feat/blahk'
-jj git push -r @ --allow-new --remote origin
+jj bookmark create feat/blahk -r @
+jj git push --bookmark feat/blahk --allow-new --remote origin
 ```
 
 To the next pushes, simply:
 
 ```
-jj git push -r @
+jj git push --bookmark feat/blahk
 ```
 
 Some other useful commands since jj/git colocated relies heavily on bookmarks:
@@ -293,7 +291,7 @@ Automatically analyze unpublished changes and generate conventional commit-style
 
 ### How It Works
 
-1. Identify mutable changes without descriptions or with non-conventional ones using queries like `jj log -r 'all() & ~(remote_bookmarks() | remote_branches() | tags() | trunk())' --no-graph -T 'change_id ++ " " ++ description.first_line()'`
+1. Identify mutable changes without descriptions or with non-conventional ones using queries like `jj log -r 'all() & ~(remote_bookmarks() | tags() | trunk())' --no-graph -T 'change_id ++ " " ++ description.first_line()'`
 2. Analyze diffs with `jj diff -r <change_id>` to categorize by file types and actions
 3. Generate descriptions in conventional commit format using types like feat, fix, chore, docs, etc.
 4. Update with `jj describe <change_id> -m "..."`, skipping immutable or already conventional changes
