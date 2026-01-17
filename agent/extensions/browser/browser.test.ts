@@ -1,19 +1,28 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { spawn, execSync } from "node:child_process";
-import puppeteer from "puppeteer-core";
-import setupBrowserExtension from "./index";
 
-const mockSpawn = vi.fn();
+// Mocks must be defined before imports
 const mockExecSync = vi.fn();
 const mockConnect = vi.fn();
 
 vi.mock("node:child_process", () => ({
-  spawn: mockSpawn,
+  spawn: vi.fn(() => ({ pid: 12345, unref: vi.fn() })),
   execSync: mockExecSync,
 }));
+
+// Mock process.kill
+const mockKill = vi.fn();
+Object.defineProperty(global.process, "kill", {
+  value: mockKill,
+  writable: true,
+});
+
 vi.mock("puppeteer-core", () => ({
   default: { connect: mockConnect },
 }));
+
+import { execSync } from "node:child_process";
+import puppeteer from "puppeteer-core";
+import setupBrowserExtension from "./index";
 
 describe("Browser Extension", () => {
   let mockPi: any;
@@ -21,13 +30,13 @@ describe("Browser Extension", () => {
   beforeEach(() => {
     mockPi = {
       registerTool: vi.fn(),
+      on: vi.fn(),
     };
     setupBrowserExtension(mockPi);
   });
 
   it("should register all browser tools", () => {
     const expectedTools = [
-      "start-browser",
       "navigate-browser",
       "evaluate-javascript",
       "take-screenshot",
@@ -55,25 +64,6 @@ describe("Browser Extension", () => {
     expect(mockPi.registerTool).toHaveBeenCalledTimes(expectedTools.length);
   });
 
-  describe("start-browser tool", () => {
-    let registeredTool: any;
-
-    beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "start-browser",
-      )[0];
-    });
-
-    it("should have correct parameters schema", () => {
-      expect(registeredTool.parameters).toBeDefined();
-      // Parameters validation would be tested in integration tests
-    });
-
-    it("should have execute function", () => {
-      expect(typeof registeredTool.execute).toBe("function");
-    });
-  });
-
   describe("navigate-browser tool", () => {
     let registeredTool: any;
 
@@ -86,7 +76,14 @@ describe("Browser Extension", () => {
     it("should have correct label and description", () => {
       expect(registeredTool.label).toBe("Navigate Browser");
       expect(registeredTool.description).toBe(
-        "Navigate to a URL in the browser",
+        `Navigate to a specific URL in the active browser tab.
+
+Use this to:
+- Visit web pages for data extraction
+- Load specific pages for testing or scraping
+- Open new tabs for parallel processing
+
+Supports both existing tabs and creating new ones.`,
       );
     });
   });
@@ -103,7 +100,15 @@ describe("Browser Extension", () => {
     it("should have correct label and description", () => {
       expect(registeredTool.label).toBe("Evaluate JavaScript");
       expect(registeredTool.description).toBe(
-        "Evaluate JavaScript code in the active browser tab",
+        `Execute JavaScript code in the context of the current web page.
+
+Use this to:
+- Extract data from complex page structures
+- Interact with JavaScript-heavy websites
+- Test and debug web page functionality
+- Access browser APIs and page content
+
+Returns the result of the executed code.`,
       );
     });
   });
@@ -120,7 +125,15 @@ describe("Browser Extension", () => {
     it("should have correct label and description", () => {
       expect(registeredTool.label).toBe("Take Screenshot");
       expect(registeredTool.description).toBe(
-        "Take a screenshot of the active browser tab",
+        `Capture a screenshot of the current browser page.
+
+Use this to:
+- Document web page states during automation
+- Verify visual changes or layouts
+- Debug rendering issues
+- Archive important web content
+
+Saves the image to a temporary file and returns the path.`,
       );
     });
   });
@@ -137,7 +150,15 @@ describe("Browser Extension", () => {
     it("should have correct label and description", () => {
       expect(registeredTool.label).toBe("List Tabs");
       expect(registeredTool.description).toBe(
-        "List all open browser tabs with their titles and URLs",
+        `Get information about all open browser tabs.
+
+Use this to:
+- See current browsing session state
+- Identify which tabs are active
+- Manage multiple tab automation workflows
+- Debug tab switching operations
+
+Shows tab index, title, URL, and active status.`,
       );
     });
   });
@@ -154,7 +175,15 @@ describe("Browser Extension", () => {
     it("should have correct label and description", () => {
       expect(registeredTool.label).toBe("Close Tab");
       expect(registeredTool.description).toBe(
-        "Close a browser tab by index or title",
+        `Close a specific browser tab by index or title.
+
+Use this to:
+- Clean up completed automation sessions
+- Manage browser resource usage
+- Reset tab state for fresh operations
+- Handle multiple concurrent tasks
+
+Cannot close the last remaining tab.`,
       );
     });
   });
@@ -171,7 +200,15 @@ describe("Browser Extension", () => {
     it("should have correct label and description", () => {
       expect(registeredTool.label).toBe("Switch Tab");
       expect(registeredTool.description).toBe(
-        "Switch to a specific tab by index",
+        `Switch focus to a different browser tab by index.
+
+Use this to:
+- Navigate between multiple automation contexts
+- Continue work in specific tabs
+- Manage parallel scraping operations
+- Access different web applications
+
+Makes the specified tab active for subsequent operations.`,
       );
     });
   });
@@ -188,7 +225,15 @@ describe("Browser Extension", () => {
     it("should have correct label and description", () => {
       expect(registeredTool.label).toBe("Query HTML Elements");
       expect(registeredTool.description).toBe(
-        "Extract HTML elements by CSS selector",
+        `Extract HTML elements from the current page using CSS selectors.
+
+Use this to:
+- Inspect page structure and element details
+- Extract specific HTML components for analysis
+- Debug web scraping selectors
+- Understand page layout and styling
+
+Returns formatted HTML of matching elements.`,
       );
     });
   });
@@ -205,7 +250,15 @@ describe("Browser Extension", () => {
     it("should have correct label and description", () => {
       expect(registeredTool.label).toBe("Extract Text");
       expect(registeredTool.description).toBe(
-        "Extract text content from elements by CSS selector",
+        `Extract text content from HTML elements by CSS selector.
+
+Use this to:
+- Scrape text data from web pages
+- Extract article content or product information
+- Gather data for analysis or processing
+- Monitor dynamic text changes
+
+Returns plain text from matching elements.`,
       );
     });
   });
@@ -218,41 +271,18 @@ describe("E2E Tests", () => {
     vi.clearAllMocks();
     mockPi = {
       registerTool: vi.fn(),
+      on: vi.fn(),
     };
     setupBrowserExtension(mockPi);
   });
 
-  describe("start-browser", () => {
-    it("should start browser successfully", async () => {
-      mockExecSync.mockImplementation(() => {});
-      mockSpawn.mockReturnValue({ unref: vi.fn() } as any);
-      mockConnect.mockResolvedValue({ disconnect: vi.fn() } as any);
-
-      const tool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "start-browser",
-      )[0];
-
-      const result = await tool.execute(
-        "id",
-        { profile: false },
-        vi.fn(),
-        {},
-        AbortSignal.timeout(1000),
-      );
-
-      expect(result.content[0].text).toContain("Cromite started");
-      expect(result.details).toEqual({ profile: false, port: 9222 });
-    });
-
-    it("should handle connection failure", async () => {
-      // Skip this test as it times out due to internal retry logic
-      expect(true).toBe(true);
-    });
-  });
-
   describe("navigate-browser", () => {
     it("should navigate to URL in existing tab", async () => {
-      const mockPage = { goto: vi.fn() };
+      const mockPage = {
+        goto: vi.fn(),
+        title: vi.fn().mockResolvedValue("Example Page"),
+        evaluate: vi.fn().mockResolvedValue(["h1", "main"]),
+      };
       const mockBrowser = {
         pages: vi.fn().mockResolvedValue([mockPage]),
         disconnect: vi.fn(),
@@ -277,10 +307,18 @@ describe("E2E Tests", () => {
       expect(result.content[0].text).toContain(
         "Navigated to: https://example.com",
       );
+      expect(result.content[0].text).toContain("Page Title: Example Page");
+      expect(result.content[0].text).toContain("Suggested selectors: h1, main");
+      expect(result.details).toHaveProperty("title", "Example Page");
+      expect(result.details).toHaveProperty("suggestedSelectors");
     });
 
     it("should open URL in new tab", async () => {
-      const mockPage = { goto: vi.fn() };
+      const mockPage = {
+        goto: vi.fn(),
+        title: vi.fn().mockResolvedValue("New Tab Page"),
+        evaluate: vi.fn().mockResolvedValue(["article"]),
+      };
       const mockBrowser = {
         newPage: vi.fn().mockResolvedValue(mockPage),
         disconnect: vi.fn(),
@@ -304,6 +342,10 @@ describe("E2E Tests", () => {
         waitUntil: "domcontentloaded",
       });
       expect(result.content[0].text).toContain("Opened: https://example.com");
+      expect(result.content[0].text).toContain("Page Title: New Tab Page");
+      expect(result.content[0].text).toContain("Suggested selectors: article");
+      expect(result.details).toHaveProperty("title", "New Tab Page");
+      expect(result.details).toHaveProperty("suggestedSelectors");
     });
   });
 

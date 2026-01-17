@@ -8,14 +8,6 @@ import type { TextContent } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
 import prettier from "prettier";
 
-const StartBrowserParams = Type.Object({
-  profile: Type.Optional(
-    Type.Boolean({
-      description: "Use user profile directory",
-    }),
-  ),
-});
-
 const NavigateBrowserParams = Type.Object({
   url: Type.String({ description: "URL to navigate to" }),
   newTab: Type.Optional(
@@ -98,73 +90,198 @@ function textResult(
   return { content, details };
 }
 
-async function withBrowserPage<T>(
-  fn: (page: puppeteer.Page, browser: puppeteer.Browser) => Promise<T>,
-): Promise<{ result: T } | { error: string }> {
-  try {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
-    });
-
-    const p = (await b.pages()).at(-1);
-
-    if (!p) {
-      await b.disconnect();
-      return { error: "✗ No active tab found" };
-    }
-
-    const result = await fn(p, b);
-
-    await b.disconnect();
-
-    return { result };
-  } catch (error) {
-    return { error: `✗ Error: ${(error as Error).message}` };
-  }
-}
-
-async function getBrowserAndPage(): Promise<
-  { b: puppeteer.Browser; p: puppeteer.Page } | { error: string }
-> {
-  try {
-    const b = await puppeteer.connect({
-      browserURL: "http://localhost:9222",
-      defaultViewport: null,
-    });
-
-    const p = (await b.pages()).at(-1);
-
-    if (!p) {
-      await b.disconnect();
-      return { error: "✗ No active tab found" };
-    }
-
-    return { b, p };
-  } catch (error) {
-    return { error: `✗ Error: ${(error as Error).message}` };
-  }
-}
-
 export default function (pi: ExtensionAPI) {
-  pi.registerTool({
-    name: "start-browser",
-    label: "Start Browser",
-    description: `Launch a headless browser instance for web automation.
+  let browserPid: number | null = null;
 
-Use this to:
-- Begin web scraping or automation sessions
-- Test web applications programmatically
-- Capture screenshots and interact with dynamic content
+  async function ensureBrowserRunning(): Promise<
+    { success: true } | { error: string }
+  > {
+    if (browserPid !== null) {
+      // Check if process is still running
+      try {
+        process.kill(browserPid, 0); // Signal 0 just checks if process exists
+        return { success: true };
+      } catch {
+        // Process died, reset
+        browserPid = null;
+      }
+    }
 
-The browser runs in the background and connects via debugging protocol.`,
-    parameters: StartBrowserParams,
+    // Kill any existing Cromite processes to ensure clean state
+    try {
+      execSync("killall cromite", { stdio: "ignore" });
+    } catch {}
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
-      const { profile = false } = params;
-      return await startBrowser(profile);
-    },
-  });
+    // Wait a bit for processes to fully die
+    await new Promise((r) => setTimeout(r, 1000));
+
+    // Setup profile directory
+    execSync("mkdir -p ~/.cache/scraping", { stdio: "ignore" });
+
+    // Start Cromite in background
+    const browserProcess = spawn(
+      "cromite",
+      [
+        "--remote-debugging-port=9222",
+        `--user-data-dir=${process.env["HOME"]}/.cache/scraping`,
+      ],
+      { detached: false, stdio: "ignore" },
+    );
+
+    browserPid = browserProcess.pid!;
+
+    // Wait for Cromite to be ready by attempting to connect
+    let connected = false;
+    for (let i = 0; i < 30; i++) {
+      try {
+        const browser = await puppeteer.connect({
+          browserURL: "http://localhost:9222",
+          defaultViewport: null,
+        });
+        await browser.disconnect();
+        connected = true;
+        break;
+      } catch {
+        await new Promise((r) => setTimeout(r, 500));
+      }
+    }
+
+    if (!connected) {
+      try {
+        if (browserPid) process.kill(browserPid);
+      } catch {}
+      browserPid = null;
+      return { error: "✗ Failed to connect to Cromite" };
+    }
+
+    return { success: true };
+  }
+
+  async function withBrowserPage<T>(
+    fn: (page: puppeteer.Page, browser: puppeteer.Browser) => Promise<T>,
+  ): Promise<{ result: T } | { error: string }> {
+    const browserCheck = await ensureBrowserRunning();
+    if ("error" in browserCheck) return { error: browserCheck.error };
+
+    try {
+      const b = await puppeteer.connect({
+        browserURL: "http://localhost:9222",
+        defaultViewport: null,
+      });
+
+      const p = (await b.pages()).at(-1);
+
+      if (!p) {
+        await b.disconnect();
+        return { error: "✗ No active tab found" };
+      }
+
+      const result = await fn(p, b);
+
+      await b.disconnect();
+
+      return { result };
+    } catch (error) {
+      return { error: `✗ Error: ${(error as Error).message}` };
+    }
+  }
+
+  async function getBrowserAndPage(): Promise<
+    { b: puppeteer.Browser; p: puppeteer.Page } | { error: string }
+  > {
+    const browserCheck = await ensureBrowserRunning();
+    if ("error" in browserCheck) return { error: browserCheck.error };
+
+    try {
+      const b = await puppeteer.connect({
+        browserURL: "http://localhost:9222",
+        defaultViewport: null,
+      });
+
+      const p = (await b.pages()).at(-1);
+
+      if (!p) {
+        await b.disconnect();
+        return { error: "✗ No active tab found" };
+      }
+
+      return { b, p };
+    } catch (error) {
+      return { error: `✗ Error: ${(error as Error).message}` };
+    }
+  }
+
+  async function getPageHints(page: puppeteer.Page): Promise<{
+    title: string;
+    selectors: string[];
+  }> {
+    const title = await page.title();
+
+    // Find main page element selectors
+    const selectors = await page.evaluate(() => {
+      const candidates = [
+        "h1",
+        "main",
+        "article",
+        ".main",
+        "#main",
+        ".content",
+        "#content",
+        ".container",
+        "#container",
+        "header",
+        "nav",
+        "section",
+        "aside",
+      ];
+
+      const found: string[] = [];
+
+      for (const selector of candidates) {
+        try {
+          const elements = document.querySelectorAll(selector);
+          if (elements.length > 0) {
+            // Check if the element has meaningful content
+            const hasContent = Array.from(elements).some((el) => {
+              const text = el.textContent?.trim();
+              return text && text.length > 10; // At least 10 characters
+            });
+            if (hasContent) {
+              found.push(selector);
+            }
+          }
+        } catch {
+          // Ignore invalid selectors
+        }
+      }
+
+      // Also look for elements with common content classes/ids
+      const contentSelectors = [
+        '[class*="content"]',
+        '[id*="content"]',
+        '[class*="main"]',
+        '[id*="main"]',
+        '[class*="article"]',
+        '[id*="article"]',
+      ];
+
+      for (const selector of contentSelectors) {
+        try {
+          const elements = document.querySelectorAll(selector);
+          if (elements.length > 0) {
+            found.push(selector);
+          }
+        } catch {
+          // Ignore invalid selectors
+        }
+      }
+
+      // Return unique selectors, limited to most relevant ones
+      return [...new Set(found)].slice(0, 10);
+    });
+
+    return { title, selectors };
+  }
 
   pi.registerTool({
     name: "navigate-browser",
@@ -440,54 +557,6 @@ Returns plain text from matching elements.`,
     },
   });
 
-  async function startBrowser(profile: boolean) {
-    // Kill existing Cromite
-    try {
-      execSync("killall cromite", { stdio: "ignore" });
-    } catch {}
-
-    // Wait a bit for processes to fully die
-    await new Promise((r) => setTimeout(r, 1000));
-
-    // Setup profile directory
-    execSync("mkdir -p ~/.cache/scraping", { stdio: "ignore" });
-
-    // Start Cromite in background (detached so Node can exit)
-    spawn(
-      "cromite",
-      [
-        "--remote-debugging-port=9222",
-        `--user-data-dir=${process.env["HOME"]}/.cache/scraping`,
-      ],
-      { detached: true, stdio: "ignore" },
-    ).unref();
-
-    // Wait for Cromite to be ready by attempting to connect
-    let connected = false;
-    for (let i = 0; i < 30; i++) {
-      try {
-        const browser = await puppeteer.connect({
-          browserURL: "http://localhost:9222",
-          defaultViewport: null,
-        });
-        await browser.disconnect();
-        connected = true;
-        break;
-      } catch {
-        await new Promise((r) => setTimeout(r, 500));
-      }
-    }
-
-    if (!connected) {
-      return textResult({ error: true }, "✗ Failed to connect to Cromite");
-    }
-
-    const msg = `✓ Cromite started on :9222${
-      profile ? " with your profile" : ""
-    }`;
-    return textResult({ profile, port: 9222 }, msg);
-  }
-
   async function navigateBrowser(url: string, newTab: boolean) {
     if (newTab) {
       try {
@@ -497,8 +566,26 @@ Returns plain text from matching elements.`,
         });
         const p = await b.newPage();
         await p.goto(url, { waitUntil: "domcontentloaded" });
+
+        const hints = await getPageHints(p);
         await b.disconnect();
-        return textResult({ url, newTab: true }, `✓ Opened: ${url}`);
+
+        const hintText = [
+          `Page Title: ${hints.title}`,
+          hints.selectors.length > 0
+            ? `Suggested selectors: ${hints.selectors.join(", ")}`
+            : "No main content selectors found",
+        ].join("\n");
+
+        return textResult(
+          {
+            url,
+            newTab: true,
+            title: hints.title,
+            suggestedSelectors: hints.selectors,
+          },
+          `✓ Opened: ${url}\n${hintText}`,
+        );
       } catch (error) {
         return textResult(
           { error: true },
@@ -508,10 +595,31 @@ Returns plain text from matching elements.`,
     } else {
       const res = await withBrowserPage(async (p) => {
         await p.goto(url, { waitUntil: "domcontentloaded" });
-        return `✓ Navigated to: ${url}`;
+        const hints = await getPageHints(p);
+
+        const hintText = [
+          `Page Title: ${hints.title}`,
+          hints.selectors.length > 0
+            ? `Suggested selectors: ${hints.selectors.join(", ")}`
+            : "No main content selectors found",
+        ].join("\n");
+
+        return {
+          message: `✓ Navigated to: ${url}\n${hintText}`,
+          hints,
+        };
       });
       if ("error" in res) return textResult({ error: true }, res.error);
-      return textResult({ url, newTab: false }, res.result);
+
+      return textResult(
+        {
+          url,
+          newTab: false,
+          title: res.result.hints.title,
+          suggestedSelectors: res.result.hints.selectors,
+        },
+        res.result.message,
+      );
     }
   }
 
@@ -838,4 +946,16 @@ Returns plain text from matching elements.`,
 
     return textResult({ selector, all }, prettified);
   }
+
+  // Automatically terminate browser session on shutdown
+  pi.on("session_shutdown", () => {
+    if (browserPid !== null) {
+      try {
+        process.kill(browserPid);
+        browserPid = null;
+      } catch {
+        // Ignore errors if process is already dead
+      }
+    }
+  });
 }
