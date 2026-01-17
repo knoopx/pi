@@ -290,12 +290,15 @@ describe("Jujutsu Extension", () => {
         ui: {
           notify: vi.fn(),
         },
+        sessionManager: {
+          getBranch: () => [],
+        },
       };
 
       await commandHandler([], mockCtx);
 
       expect(mockCtx.ui.notify).toHaveBeenCalledWith(
-        "No previous user message to revert to",
+        "No snapshots available to revert to",
         "warning",
       );
     });

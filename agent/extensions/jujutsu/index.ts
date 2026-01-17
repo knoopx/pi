@@ -62,17 +62,22 @@ export default function (pi: ExtensionAPI) {
    * Creates a JJ snapshot of the current state and starts a new change.
    */
   pi.on("before_agent_start", async (event, _ctx) => {
-    // Get the current change ID before creating a new one
-    const currentChangeId = await getCurrentChangeId();
+    try {
+      // Get the current change ID before creating a new one
+      const currentChangeId = await getCurrentChangeId();
 
-    // Create a new change to snapshot current state before processing
-    const message = event.prompt || "User prompt";
-    await pi.exec("jj", ["new", "-m", message]);
+      // Create a new change to snapshot current state before processing
+      const message = event.prompt || "User prompt";
+      await pi.exec("jj", ["new", "-m", message]);
 
-    // Store the previous change ID as the snapshot - we'll associate it with the next user message entry
-    if (currentChangeId) {
-      // We'll store it temporarily and associate it when the user message is saved
-      snapshots.set("__pending__", currentChangeId);
+      // Store the previous change ID as the snapshot - we'll associate it with the next user message entry
+      if (currentChangeId) {
+        // We'll store it temporarily and associate it when the user message is saved
+        snapshots.set("__pending__", currentChangeId);
+      }
+    } catch (error) {
+      // Silently fail for auto-snapshot - JJ might not be available or repo not initialized
+      console.warn(`Failed to create snapshot: ${error instanceof Error ? error.message : String(error)}`);
     }
   });
 
@@ -86,13 +91,15 @@ export default function (pi: ExtensionAPI) {
       (e) => e.type === "message" && e.message.role === "user",
     );
     if (userEntries.length >= 1) {
+      // Always update lastUserMessageEntryId to the latest user message
+      lastUserMessageEntryId = userEntries[userEntries.length - 1].id;
+
       // Associate pending snapshot with the last user message
       const lastUserEntry = userEntries[userEntries.length - 1];
       const pendingSnapshot = snapshots.get("__pending__");
       if (pendingSnapshot) {
         snapshots.set(lastUserEntry.id, pendingSnapshot);
         snapshots.delete("__pending__");
-        lastUserMessageEntryId = lastUserEntry.id;
       }
     }
   });
@@ -105,15 +112,29 @@ export default function (pi: ExtensionAPI) {
     description:
       "Revert to the previous user message and restore the repository state to before that message was processed",
     handler: async (args, ctx) => {
-      if (!lastUserMessageEntryId) {
-        ctx.ui.notify("No previous user message to revert to", "warning");
-        return;
+      // Find the most recent user message that has a snapshot
+      const entries = ctx.sessionManager.getBranch();
+      const userEntries = entries.filter(
+        (e) => e.type === "message" && e.message.role === "user",
+      );
+
+      let targetEntryId: string | undefined;
+      let changeId: string | undefined;
+
+      // Find the last user message that has a snapshot
+      for (let i = userEntries.length - 1; i >= 0; i--) {
+        const entry = userEntries[i];
+        const snapshot = snapshots.get(entry.id);
+        if (snapshot) {
+          targetEntryId = entry.id;
+          changeId = snapshot;
+          break;
+        }
       }
 
-      const changeId = snapshots.get(lastUserMessageEntryId);
-      if (!changeId) {
+      if (!targetEntryId || !changeId) {
         ctx.ui.notify(
-          "No snapshot available for the last user message",
+          "No snapshots available to revert to",
           "warning",
         );
         return;
@@ -125,7 +146,7 @@ export default function (pi: ExtensionAPI) {
       // Push current state to redo stack
       redoStack.push({
         changeId: currentChangeId,
-        messageId: lastUserMessageEntryId,
+        messageId: targetEntryId,
       });
 
       // Restore the jj checkpoint
@@ -136,23 +157,17 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      // Find the target message ID before updating
-      const targetEntryId = lastUserMessageEntryId;
+      // Update lastUserMessageEntryId to the target entry
+      lastUserMessageEntryId = targetEntryId;
 
-      // Find the previous user message for further undos
-      const entries = ctx.sessionManager.getBranch();
-      const userEntries = entries.filter(
-        (e) => e.type === "message" && e.message.role === "user",
-      );
-      const currentIndex = userEntries.findIndex(
-        (e) => e.id === lastUserMessageEntryId,
-      );
-      if (currentIndex > 0) {
-        // Set to the message before the one we're undoing to
-        lastUserMessageEntryId = userEntries[currentIndex - 1].id;
-      } else {
-        // No further undo possible
-        lastUserMessageEntryId = undefined;
+      // Find the previous user message with a snapshot for further undos
+      const targetIndex = userEntries.findIndex((e) => e.id === targetEntryId);
+      for (let i = targetIndex - 1; i >= 0; i--) {
+        const entry = userEntries[i];
+        if (snapshots.has(entry.id)) {
+          lastUserMessageEntryId = entry.id;
+          break;
+        }
       }
 
       // Navigate back in the session tree to the user message
