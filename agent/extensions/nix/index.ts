@@ -1,4 +1,7 @@
-import type { ExtensionAPI, AgentToolResult } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  AgentToolResult,
+} from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 // Adapted from https://github.com/vicinaehq/extensions/tree/main/extensions/nix
@@ -129,11 +132,17 @@ function cleanText(text: string | null): string {
   return text.replace(/<[^>]*>/g, "").trim();
 }
 
-function removeEmptyProperties<T extends Record<string, any>>(obj: T): Partial<T> {
+function removeEmptyProperties<T extends Record<string, any>>(
+  obj: T,
+): Partial<T> {
   const result: Partial<T> = {};
   for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined && value !== null && value !== "" && 
-        !(Array.isArray(value) && value.length === 0)) {
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== "" &&
+      !(Array.isArray(value) && value.length === 0)
+    ) {
       result[key as keyof T] = value;
     }
   }
@@ -488,18 +497,19 @@ Returns detailed package information from nixpkgs.`,
 
       return executeSearchTool(
         searchNixPackages,
-        (item: NixPackage) => removeEmptyProperties({
-          attr_name: item.package_attr_name,
-          pname: item.package_pname,
-          version: item.package_pversion,
-          description: cleanText(item.package_description),
-          longDescription: cleanText(item.package_longDescription),
-          homepage: item.package_homepage,
-          maintainers: item.package_maintainers
-            .map((m) => m.name || m.github)
-            .join(", "),
-          license: item.package_license_set.join(", "),
-        }),
+        (item: NixPackage) =>
+          removeEmptyProperties({
+            attr_name: item.package_attr_name,
+            pname: item.package_pname,
+            version: item.package_pversion,
+            description: cleanText(item.package_description),
+            longDescription: cleanText(item.package_longDescription),
+            homepage: item.package_homepage,
+            maintainers: item.package_maintainers
+              .map((m) => m.name || m.github)
+              .join(", "),
+            license: item.package_license_set.join(", "),
+          }),
         (res) => {
           let c = `Found ${res.length} packages matching "${query}":\n\n`;
           res.forEach((pkg) => {
@@ -540,14 +550,15 @@ Returns NixOS configuration option details.`,
 
       return executeSearchTool(
         searchNixOptions,
-        (opt: NixOption) => removeEmptyProperties({
-          name: opt.option_name,
-          description: cleanText(opt.option_description),
-          type: opt.option_type,
-          default: opt.option_default,
-          example: opt.option_example,
-          source: opt.option_source,
-        }),
+        (opt: NixOption) =>
+          removeEmptyProperties({
+            name: opt.option_name,
+            description: cleanText(opt.option_description),
+            type: opt.option_type,
+            default: opt.option_default,
+            example: opt.option_example,
+            source: opt.option_source,
+          }),
         (res) => {
           let c = `Found ${res.length} options matching "${query}":\n\n`;
           res.forEach((opt) => {
@@ -588,14 +599,15 @@ Returns Home Manager configuration options.`,
 
       return executeSearchTool(
         searchHomeManagerOptions,
-        (opt: HomeManagerOption) => removeEmptyProperties({
-          title: opt.title,
-          description: cleanText(opt.description),
-          type: opt.type,
-          default: opt.default,
-          example: opt.example,
-          declarations: opt.declarations.map((d) => d.url).join(", "),
-        }),
+        (opt: HomeManagerOption) =>
+          removeEmptyProperties({
+            title: opt.title,
+            description: cleanText(opt.description),
+            type: opt.type,
+            default: opt.default,
+            example: opt.example,
+            declarations: opt.declarations.map((d) => d.url).join(", "),
+          }),
         (res) => {
           let c = `Found ${res.length} Home-Manager options matching "${query}":\n\n`;
           res.forEach((opt) => {
@@ -636,14 +648,15 @@ Returns GitHub pull request information.`,
 
       return executeSearchTool(
         searchNixpkgsPullRequests,
-        (pr: GitHubIssue) => removeEmptyProperties({
-          number: pr.number,
-          title: pr.title,
-          state: pr.state,
-          user: pr.user?.login,
-          updated_at: pr.updated_at,
-          url: pr.html_url,
-        }),
+        (pr: GitHubIssue) =>
+          removeEmptyProperties({
+            number: pr.number,
+            title: pr.title,
+            state: pr.state,
+            user: pr.user?.login,
+            updated_at: pr.updated_at,
+            url: pr.html_url,
+          }),
         (res) => {
           let c = `Found ${res.length} pull requests matching "${query}":\n\n`;
           res.forEach((pr) => {
