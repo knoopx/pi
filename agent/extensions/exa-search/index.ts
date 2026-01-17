@@ -1,4 +1,8 @@
-import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  OnUpdate,
+  ToolContext,
+} from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
@@ -135,7 +139,13 @@ Provides high-quality, up-to-date programming context.`,
         }),
       ),
     }),
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal?: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal?: AbortSignal,
+    ) {
       return makeMcpCall(
         "get_code_context_exa",
         {
@@ -188,7 +198,13 @@ Supports live crawling and different search depths.`,
         }),
       ),
     }),
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal?: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal?: AbortSignal,
+    ) {
       return makeMcpCall(
         "web_search_exa",
         {

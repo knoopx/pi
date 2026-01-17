@@ -475,10 +475,13 @@ describe("Jujutsu Extension", () => {
         code: 0,
       }); // diff --stat (empty)
 
-      await turnHandler({}, {
-        sessionManager: { getBranch: () => [] },
-        ui: { notify: vi.fn() },
-      });
+      await turnHandler(
+        {},
+        {
+          sessionManager: { getBranch: () => [] },
+          ui: { notify: vi.fn() },
+        },
+      );
 
       // Second turn: without before_agent_start, should abandon empty changes
       mockPi.exec.mockResolvedValueOnce({
@@ -640,8 +643,8 @@ describe("Jujutsu Extension", () => {
       await turnHandler({}, { sessionManager: { getBranch: () => [] } });
 
       // Should have created 2 new changes (jj new called twice)
-      const newCalls = mockPi.exec.mock.calls.filter(call =>
-        call[0] === "jj" && call[1][0] === "new"
+      const newCalls = mockPi.exec.mock.calls.filter(
+        (call) => call[0] === "jj" && call[1][0] === "new",
       );
       expect(newCalls).toHaveLength(2);
     });
@@ -1346,8 +1349,8 @@ describe("Jujutsu Extension Integration Tests", () => {
     await turnStart({}, { ui, sessionManager });
 
     // Verify that no premature abandoning occurred
-    const abandonNotifications = uiNotifications.filter(msg =>
-      msg.includes("No modifications were done")
+    const abandonNotifications = uiNotifications.filter((msg) =>
+      msg.includes("No modifications were done"),
     );
 
     // In a real scenario, some changes might be empty, but none should be abandoned

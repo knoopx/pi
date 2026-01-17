@@ -2,7 +2,11 @@ import { spawn, execSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import puppeteer from "puppeteer-core";
-import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  OnUpdate,
+  ToolContext,
+} from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
@@ -296,7 +300,13 @@ Use this to:
 Supports both existing tabs and creating new ones.`,
     parameters: NavigateBrowserParams,
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const { url, newTab = false } = params;
       return await navigateBrowser(url, newTab);
     },
@@ -316,7 +326,13 @@ Use this to:
 Returns the result of the executed code.`,
     parameters: EvaluateJavascriptParams,
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const { code } = params;
       return await evalBrowser(code);
     },
@@ -336,7 +352,13 @@ Use this to:
 Saves the image to a temporary file and returns the path.`,
     parameters: TakeScreenshotParams,
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       return await screenshotBrowser();
     },
   });
@@ -355,7 +377,13 @@ Use this to:
 Returns formatted HTML of matching elements.`,
     parameters: QueryHtmlElementsParams,
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const { selector, all = false } = params;
       return await querySelectorBrowser(selector, all);
     },
@@ -375,7 +403,13 @@ Use this to:
 Shows tab index, title, URL, and active status.`,
     parameters: ListTabsParams,
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       return await listTabsBrowser();
     },
   });
@@ -394,7 +428,13 @@ Use this to:
 Cannot close the last remaining tab.`,
     parameters: CloseTabParams,
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const { index, title } = params;
       return await closeTabBrowser(index, title);
     },
@@ -414,7 +454,13 @@ Use this to:
 Makes the specified tab active for subsequent operations.`,
     parameters: SwitchTabParams,
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const { index } = params;
       return await switchTabBrowser(index);
     },
@@ -434,7 +480,13 @@ Use this to:
 Waits for the page to fully load before returning.`,
     parameters: RefreshTabParams,
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       return await refreshTabBrowser();
     },
   });
@@ -453,7 +505,13 @@ Use this to:
 Returns the full URL including query parameters.`,
     parameters: CurrentUrlParams,
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       return await getCurrentUrlBrowser();
     },
   });
@@ -472,7 +530,13 @@ Use this to:
 Returns the text from the browser's title bar.`,
     parameters: PageTitleParams,
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       return await getPageTitleBrowser();
     },
   });
@@ -491,7 +555,13 @@ Use this to:
 Blocks until the element exists or timeout occurs.`,
     parameters: WaitForElementParams,
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const { selector, timeout = 10000 } = params;
       return await waitForElementBrowser(selector, timeout);
     },
@@ -511,7 +581,13 @@ Use this to:
 Can click single elements or all matching elements.`,
     parameters: ClickElementParams,
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const { selector, all = false } = params;
       return await clickElementBrowser(selector, all);
     },
@@ -531,7 +607,13 @@ Use this to:
 Optionally clears existing content before typing.`,
     parameters: TypeTextParams,
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const { selector, text, clear = false } = params;
       return await typeTextBrowser(selector, text, clear);
     },
@@ -551,7 +633,13 @@ Use this to:
 Returns plain text from matching elements.`,
     parameters: ExtractTextParams,
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const { selector, all = false } = params;
       return await extractTextBrowser(selector, all);
     },

@@ -1,4 +1,8 @@
-import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  OnUpdate,
+  ToolContext,
+} from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 export default function (pi: ExtensionAPI) {
@@ -21,7 +25,13 @@ Returns comprehensive repository details from the GitHub API.`,
       repo: Type.String({ description: "Repository name" }),
     }),
 
-    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, _signal: AbortSignal) {
+    async execute(
+      _toolCallId: string,
+      params: any,
+      _onUpdate: OnUpdate,
+      _ctx: ToolContext,
+      _signal: AbortSignal,
+    ) {
       const { owner, repo } = params as { owner: string; repo: string };
       try {
         const response = await fetch(
@@ -68,7 +78,13 @@ Returns detailed user profile data from GitHub.`,
       username: Type.String({ description: "GitHub username" }),
     }),
 
-    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, _signal: AbortSignal) {
+    async execute(
+      _toolCallId: string,
+      params: any,
+      _onUpdate: OnUpdate,
+      _ctx: ToolContext,
+      _signal: AbortSignal,
+    ) {
       const { username } = params as { username: string };
       try {
         const response = await fetch(
@@ -125,7 +141,13 @@ Supports filtering by state (open/closed/all).`,
       ),
     }),
 
-    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, _signal: AbortSignal) {
+    async execute(
+      _toolCallId: string,
+      params: any,
+      _onUpdate: OnUpdate,
+      _ctx: ToolContext,
+      _signal: AbortSignal,
+    ) {
       const {
         owner,
         repo,
@@ -189,7 +211,13 @@ Returns the file content as plain text.`,
       ),
     }),
 
-    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, _signal: AbortSignal) {
+    async execute(
+      _toolCallId: string,
+      params: any,
+      _onUpdate: OnUpdate,
+      _ctx: ToolContext,
+      _signal: AbortSignal,
+    ) {
       const { owner, repo, path, ref } = params as {
         owner: string;
         repo: string;
@@ -271,7 +299,13 @@ Supports sorting by stars, forks, or update date.`,
       ),
     }),
 
-    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, _signal: AbortSignal) {
+    async execute(
+      _toolCallId: string,
+      params: any,
+      _onUpdate: OnUpdate,
+      _ctx: ToolContext,
+      _signal: AbortSignal,
+    ) {
       const {
         query,
         sort = "stars",

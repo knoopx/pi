@@ -1,4 +1,8 @@
-import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  OnUpdate,
+  ToolContext,
+} from "@mariozechner/pi-coding-agent";
 import { readdirSync, statSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";

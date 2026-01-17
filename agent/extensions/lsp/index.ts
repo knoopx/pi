@@ -2,7 +2,11 @@
  * LSP Extension - Language Server Protocol diagnostics and analysis
  */
 
-import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  OnUpdate,
+  ToolContext,
+} from "@mariozechner/pi-coding-agent";
 import type { TextContent } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
 import {
@@ -49,7 +53,13 @@ Supports multiple programming languages through LSP servers.`,
       ),
     }),
 
-    async execute(_toolCallId: string, params: any, onUpdate: OnUpdate, _ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      _toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      _ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const {
         files,
         severity = "all",

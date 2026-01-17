@@ -8,6 +8,7 @@ description: Develop and manage Vicinae launcher extensions using TypeScript and
 Develop and manage Vicinae launcher extensions using TypeScript and React.
 
 Use this to:
+
 - Create custom commands for the Vicinae launcher
 - Build interactive UI views with React components
 - Develop no-view commands for quick actions

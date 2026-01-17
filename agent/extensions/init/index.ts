@@ -1,4 +1,8 @@
-import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  OnUpdate,
+  ToolContext,
+} from "@mariozechner/pi-coding-agent";
 
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("init", {

@@ -494,7 +494,13 @@ Returns detailed package information from nixpkgs.`,
         description: "Search query (package name, description, or programs)",
       }),
     }),
-    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      _toolCallId: string,
+      params: any,
+      _onUpdate: OnUpdate,
+      _ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const { query } = params as { query: string };
 
       return executeSearchTool(
@@ -547,7 +553,13 @@ Returns NixOS configuration option details.`,
         description: "Search query (option name or description)",
       }),
     }),
-    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      _toolCallId: string,
+      params: any,
+      _onUpdate: OnUpdate,
+      _ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const { query } = params as { query: string };
 
       return executeSearchTool(
@@ -596,7 +608,13 @@ Returns Home Manager configuration options.`,
         description: "Search query (option name or description)",
       }),
     }),
-    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      _toolCallId: string,
+      params: any,
+      _onUpdate: OnUpdate,
+      _ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const { query } = params as { query: string };
 
       return executeSearchTool(
@@ -645,7 +663,13 @@ Returns GitHub pull request information.`,
         description: "Search query (title, number, or keywords)",
       }),
     }),
-    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      _toolCallId: string,
+      params: any,
+      _onUpdate: OnUpdate,
+      _ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const { query } = params as { query: string };
 
       return executeSearchTool(

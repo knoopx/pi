@@ -2,7 +2,11 @@
  * ast-grep Extension - Tools for structural code search and rewriting using ast-grep
  */
 
-import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  OnUpdate,
+  ToolContext,
+} from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { StringEnum } from "@mariozechner/pi-ai";
 import {
@@ -78,7 +82,13 @@ Supports pattern variables and multiple languages.`,
       ),
     }),
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const {
         pattern,
         language,
@@ -214,7 +224,13 @@ Always use dry-run first to preview changes.`,
       ),
     }),
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const {
         pattern,
         rewrite,
@@ -341,7 +357,13 @@ Supports 'all', 'any', 'not', 'inside', 'has' operators.`,
       ),
     }),
 
-    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       const {
         rule,
         language,

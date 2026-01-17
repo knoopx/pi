@@ -24,7 +24,11 @@
 import * as path from "node:path";
 import { Type, type Static } from "@sinclair/typebox";
 import { StringEnum } from "@mariozechner/pi-ai";
-import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  OnUpdate,
+  ToolContext,
+} from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import {
   getOrCreateManager,
@@ -261,7 +265,13 @@ Actions: definition, references, hover, signature, rename (require file + line/c
 Use bash to find files: find src -name "*.ts" -type f`,
     parameters: LspParams,
 
-    async execute(_toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
+    async execute(
+      _toolCallId: string,
+      params: any,
+      onUpdate: OnUpdate,
+      ctx: ToolContext,
+      signal: AbortSignal,
+    ) {
       if (signal?.aborted) return cancelledToolResult();
       onUpdate?.({
         content: [{ type: "text", text: "Working..." }],
