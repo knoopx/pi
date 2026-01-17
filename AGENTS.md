@@ -252,4 +252,3 @@ agent/extensions/
 ## Available Skills & Tools
 
 This repository uses various skills and tools. See the full list in the project documentation for available capabilities including ast-grep, bun, nix, podman, and many others.</content>
-<parameter name="path">/home/knoopx/.pi/AGENTS.md
