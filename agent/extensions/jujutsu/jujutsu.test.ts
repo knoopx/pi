@@ -254,7 +254,7 @@ describe("Jujutsu Extension", () => {
       ]);
     });
 
-    it("should re-use current change when empty and has no description", async () => {
+    it("should re-use current change when empty or has no description", async () => {
       mockPi.exec.mockResolvedValueOnce({
         stdout: "abc123",
         stderr: "",
@@ -269,15 +269,16 @@ describe("Jujutsu Extension", () => {
         stdout: "",
         stderr: "",
         code: 0,
-      }); // Third call: jj show --template description (empty)
+      }); // Third call: jj show --template description (no description)
+      mockPi.exec.mockResolvedValueOnce({ stdout: "", stderr: "", code: 0 }); // Fourth call: jj describe
 
       const mockEvent = { prompt: "Test prompt" };
       const mockCtx = {};
 
       await eventHandler(mockEvent, mockCtx);
 
-      // Should only call the three check commands, not jj new
-      expect(mockPi.exec).toHaveBeenCalledTimes(3);
+      // Should call the check commands and jj describe
+      expect(mockPi.exec).toHaveBeenCalledTimes(4);
       expect(mockPi.exec).toHaveBeenCalledWith("jj", [
         "log",
         "-r",
@@ -292,6 +293,84 @@ describe("Jujutsu Extension", () => {
         "--template",
         "description",
         "--no-pager",
+      ]);
+      expect(mockPi.exec).toHaveBeenCalledWith("jj", [
+        "describe",
+        "-m",
+        "Test prompt",
+      ]);
+      expect(mockPi.exec).not.toHaveBeenCalledWith("jj", [
+        "new",
+        "-m",
+        "Test prompt",
+      ]);
+    });
+
+    it("should re-use current change when empty even with description", async () => {
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "abc123",
+        stderr: "",
+        code: 0,
+      }); // First call: get current change ID
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "",
+        stderr: "",
+        code: 0,
+      }); // Second call: jj diff --stat (empty)
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "existing description",
+        stderr: "",
+        code: 0,
+      }); // Third call: jj show --template description (has description)
+
+      const mockEvent = { prompt: "Test prompt" };
+      const mockCtx = {};
+
+      await eventHandler(mockEvent, mockCtx);
+
+      // Should only call the three check commands, not jj describe or jj new
+      expect(mockPi.exec).toHaveBeenCalledTimes(3);
+      expect(mockPi.exec).not.toHaveBeenCalledWith("jj", [
+        "describe",
+        "-m",
+        "Test prompt",
+      ]);
+      expect(mockPi.exec).not.toHaveBeenCalledWith("jj", [
+        "new",
+        "-m",
+        "Test prompt",
+      ]);
+    });
+
+    it("should re-use current change when has no description even with modifications", async () => {
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "abc123",
+        stderr: "",
+        code: 0,
+      }); // First call: get current change ID
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "some changes",
+        stderr: "",
+        code: 0,
+      }); // Second call: jj diff --stat (has changes)
+      mockPi.exec.mockResolvedValueOnce({
+        stdout: "",
+        stderr: "",
+        code: 0,
+      }); // Third call: jj show --template description (no description)
+      mockPi.exec.mockResolvedValueOnce({ stdout: "", stderr: "", code: 0 }); // Fourth call: jj describe
+
+      const mockEvent = { prompt: "Test prompt" };
+      const mockCtx = {};
+
+      await eventHandler(mockEvent, mockCtx);
+
+      // Should call the check commands and jj describe, not jj new
+      expect(mockPi.exec).toHaveBeenCalledTimes(4);
+      expect(mockPi.exec).toHaveBeenCalledWith("jj", [
+        "describe",
+        "-m",
+        "Test prompt",
       ]);
       expect(mockPi.exec).not.toHaveBeenCalledWith("jj", [
         "new",
@@ -318,33 +397,13 @@ describe("Jujutsu Extension", () => {
     });
 
     it("should handle undefined prompt", async () => {
-      mockPi.exec.mockResolvedValueOnce({
-        stdout: "abc123",
-        stderr: "",
-        code: 0,
-      }); // First call: get current change ID
-      mockPi.exec.mockResolvedValueOnce({
-        stdout: "some changes",
-        stderr: "",
-        code: 0,
-      }); // Second call: jj diff --stat (has changes)
-      mockPi.exec.mockResolvedValueOnce({
-        stdout: "existing description",
-        stderr: "",
-        code: 0,
-      }); // Third call: jj show --template description (has description)
-      mockPi.exec.mockResolvedValueOnce({ stdout: "", stderr: "", code: 0 }); // Fourth call: jj new
-
       const mockEvent = { prompt: undefined };
       const mockCtx = {};
 
       await eventHandler(mockEvent, mockCtx);
 
-      expect(mockPi.exec).toHaveBeenCalledWith("jj", [
-        "new",
-        "-m",
-        "User prompt",
-      ]);
+      // Should not call any jj commands when prompt is undefined
+      expect(mockPi.exec).toHaveBeenCalledTimes(0);
     });
   });
 

@@ -126,15 +126,22 @@ export default function (pi: ExtensionAPI) {
     "before_agent_start",
     async (event: BeforeAgentStartEvent, _ctx: ExtensionContext) => {
       try {
+        // Skip if no prompt
+        if (!event.prompt) return;
+
         // Get the current change ID before creating a new one
         const currentChangeId = await getCurrentChangeId();
 
-        // Check if current change is empty and has no description
+        // Check if current change is empty or has description
         const isEmpty = await isCurrentChangeEmpty();
         const hasDescription = await hasCurrentChangeDescription();
 
-        // If current change is empty and has no description, re-use it instead of creating new
-        if (isEmpty && !hasDescription) {
+        // If current change is empty or has no description, re-use it instead of creating new
+        if (isEmpty || !hasDescription) {
+          // Update the description if it doesn't have one
+          if (!hasDescription) {
+            await pi.exec("jj", ["describe", "-m", event.prompt]);
+          }
           // Store the current change ID as the snapshot directly
           snapshots.set("__pending__", currentChangeId);
           changeCreatedThisTurn = true; // We're using this change for the current prompt
@@ -142,8 +149,7 @@ export default function (pi: ExtensionAPI) {
         }
 
         // Create a new change to snapshot current state before processing
-        const message = event.prompt || "User prompt";
-        await pi.exec("jj", ["new", "-m", message]);
+        await pi.exec("jj", ["new", "-m", event.prompt]);
 
         // Store the previous change ID as the snapshot - we'll associate it with the next user message entry
         if (currentChangeId) {
