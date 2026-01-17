@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
 import { encode } from "@toon-format/toon";
 
 export default function (pi: ExtensionAPI) {

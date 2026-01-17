@@ -10,7 +10,7 @@
  * - Escape: Cancel
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
 import { DynamicBorder } from "@mariozechner/pi-coding-agent";
 import {
   Container,
@@ -332,7 +332,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerShortcut("ctrl+r", {
     description:
       "Reverse history search (user messages and commands across all sessions)",
-    handler: async (ctx) => {
+    handler: async (ctx: ToolContext) => {
       if (!ctx.hasUI) return;
 
       // Load all history (messages and commands) from all sessions
@@ -344,7 +344,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       const result = await ctx.ui.custom<HistoryEntry | null>(
-        (tui, theme, _kb, done) => {
+        (tui: any, theme: any, _kb: any, done: (result: any) => void) => {
           const component = new HistorySearchComponent(theme, history);
 
           component.onSelect = (entry) => done(entry);
@@ -353,7 +353,7 @@ export default function (pi: ExtensionAPI) {
           return {
             render: (w) => component.render(w),
             invalidate: () => component.invalidate(),
-            handleInput: (data) => {
+            handleInput: (data: string) => {
               component.handleInput(data);
               tui.requestRender();
             },

@@ -24,7 +24,7 @@
 import * as path from "node:path";
 import { Type, type Static } from "@sinclair/typebox";
 import { StringEnum } from "@mariozechner/pi-ai";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import {
   getOrCreateManager,
@@ -261,7 +261,7 @@ Actions: definition, references, hover, signature, rename (require file + line/c
 Use bash to find files: find src -name "*.ts" -type f`,
     parameters: LspParams,
 
-    async execute(_toolCallId, params, onUpdate, ctx, signal) {
+    async execute(_toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
       if (signal?.aborted) return cancelledToolResult();
       onUpdate?.({
         content: [{ type: "text", text: "Working..." }],
@@ -543,7 +543,7 @@ Use bash to find files: find src -name "*.ts" -type f`,
       }
     },
 
-    renderCall(args, theme) {
+    renderCall(args: LspParamsType, theme: any) {
       const params = args as LspParamsType;
       let text =
         theme.fg("toolTitle", theme.bold("lsp ")) +
@@ -560,7 +560,7 @@ Use bash to find files: find src -name "*.ts" -type f`,
       return new Text(text, 0, 0);
     },
 
-    renderResult(result, options, theme) {
+    renderResult(result: any, options: any, theme: any) {
       if (options.isPartial)
         return new Text(theme.fg("warning", "Working..."), 0, 0);
 

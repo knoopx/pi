@@ -5,7 +5,7 @@
  * Tools available: pip-search, pip-show, pip-list
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
@@ -52,7 +52,7 @@ Returns matching packages with metadata.`,
       ),
     }),
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
+    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, _signal: AbortSignal) {
       const { query, limit = 10 } = params as { query: string; limit?: number };
 
       try {
@@ -121,7 +121,7 @@ Shows comprehensive package details.`,
       }),
     }),
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
+    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, _signal: AbortSignal) {
       const { package: packageName } = params as { package: string };
 
       try {
@@ -195,7 +195,7 @@ Supports table, JSON, and freeze formats.`,
       ),
     }),
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
+    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, _signal: AbortSignal) {
       const { format = "table", outdated = false } = params as {
         format?: "table" | "json" | "freeze";
         outdated?: boolean;

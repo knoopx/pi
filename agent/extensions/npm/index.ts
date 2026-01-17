@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
@@ -41,7 +41,7 @@ Use this to:
 Returns matching packages with metadata.`,
     parameters: SearchNpmPackagesParams,
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
+    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, _signal: AbortSignal) {
       const { query, size = 10 } = params as { query: string; size?: number };
       return await searchNpmPackages(query, size);
     },
@@ -61,7 +61,7 @@ Use this to:
 Returns detailed package metadata.`,
     parameters: GetNpmPackageInfoParams,
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
+    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, _signal: AbortSignal) {
       const { package: pkg } = params as { package: string };
       return await getNpmPackageInfo(pkg);
     },
@@ -81,7 +81,7 @@ Use this to:
 Returns all published package versions.`,
     parameters: GetNpmPackageVersionsParams,
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
+    async execute(_toolCallId: string, params: any, _onUpdate: OnUpdate, _ctx: ToolContext, _signal: AbortSignal) {
       const { package: pkg } = params as { package: string };
       return await getNpmPackageVersions(pkg);
     },

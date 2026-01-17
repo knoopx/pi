@@ -1821,7 +1821,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("ralph-steer", {
     description: "Queue a steering message for the active ralph_loop run",
-    handler: async (args, ctx) => {
+    handler: async (args: any, ctx: ToolContext) => {
       if (!ctx.hasUI) {
         ctx.ui.notify("Interactive mode required.", "error");
         return;
@@ -1871,7 +1871,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("ralph-follow", {
     description: "Queue a follow-up message for the active ralph_loop run",
-    handler: async (args, ctx) => {
+    handler: async (args: any, ctx: ToolContext) => {
       if (!ctx.hasUI) {
         ctx.ui.notify("Interactive mode required.", "error");
         return;

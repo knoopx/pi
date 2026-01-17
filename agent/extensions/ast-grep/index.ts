@@ -2,7 +2,7 @@
  * ast-grep Extension - Tools for structural code search and rewriting using ast-grep
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { StringEnum } from "@mariozechner/pi-ai";
 import {
@@ -33,7 +33,7 @@ const SUPPORTED_LANGUAGES = [
 
 export default function (pi: ExtensionAPI) {
   // Check if ast-grep is available
-  pi.on("session_start", async (_event, ctx) => {
+  pi.on("session_start", async (_event: any, ctx: ToolContext) => {
     try {
       await pi.exec("ast-grep", ["--version"], {
         signal: AbortSignal.timeout(5000),
@@ -78,7 +78,7 @@ Supports pattern variables and multiple languages.`,
       ),
     }),
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
+    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
       const {
         pattern,
         language,
@@ -214,7 +214,7 @@ Always use dry-run first to preview changes.`,
       ),
     }),
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
+    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
       const {
         pattern,
         rewrite,
@@ -341,7 +341,7 @@ Supports 'all', 'any', 'not', 'inside', 'has' operators.`,
       ),
     }),
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
+    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
       const {
         rule,
         language,

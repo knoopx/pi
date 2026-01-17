@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 export default function (pi: ExtensionAPI) {
@@ -21,7 +21,7 @@ Shows file counts, lines of code, and language breakdown.`,
         }),
       ),
     }),
-    async execute(toolCallId, params, onUpdate, ctx, signal) {
+    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
       try {
         const args = ["stats"];
         if (params.path) {
@@ -101,7 +101,7 @@ Supports filtering by patterns and detail levels.`,
       ),
     }),
 
-    async execute(toolCallId, params, onUpdate, ctx, signal) {
+    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
       try {
         // Use codemapper's 'map' command to generate codebase structure
         const args = ["map", ctx.cwd || "."];
@@ -199,7 +199,7 @@ Supports fuzzy and exact matching.`,
         }),
       ),
     }),
-    async execute(toolCallId, params, onUpdate, ctx, signal) {
+    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
       try {
         const args = ["query", params.query];
 
@@ -261,7 +261,7 @@ Shows detailed breakdown of file components.`,
         description: "Path to the file to inspect",
       }),
     }),
-    async execute(toolCallId, params, onUpdate, ctx, signal) {
+    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
       try {
         const result = await pi.exec("cm", ["inspect", params.file], {
           signal,
@@ -311,7 +311,7 @@ Shows reverse dependencies and call sites.`,
         description: "Symbol name to find callers for",
       }),
     }),
-    async execute(toolCallId, params, onUpdate, ctx, signal) {
+    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
       try {
         const result = await pi.exec("cm", ["callers", params.symbol], {
           signal,
@@ -361,7 +361,7 @@ Shows forward dependencies and call chains.`,
         description: "Symbol name to find callees for",
       }),
     }),
-    async execute(toolCallId, params, onUpdate, ctx, signal) {
+    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
       try {
         const result = await pi.exec("cm", ["callees", params.symbol], {
           signal,
@@ -414,7 +414,7 @@ Shows the call chain linking the symbols.`,
         description: "Target symbol",
       }),
     }),
-    async execute(toolCallId, params, onUpdate, ctx, signal) {
+    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
       try {
         const result = await pi.exec("cm", ["trace", params.from, params.to], {
           signal,
@@ -479,7 +479,7 @@ Supports forward and reverse dependency analysis.`,
       ),
     }),
 
-    async execute(toolCallId, params, onUpdate, ctx, signal) {
+    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
       try {
         const args = ["deps"];
 

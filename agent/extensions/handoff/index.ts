@@ -45,7 +45,7 @@ Files involved:
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("handoff", {
     description: "Transfer context to a new focused session",
-    handler: async (args, ctx) => {
+    handler: async (args: any, ctx: ToolContext) => {
       if (!ctx.hasUI) {
         ctx.ui.notify("handoff requires interactive mode", "error");
         return;
@@ -66,10 +66,10 @@ export default function (pi: ExtensionAPI) {
       const branch = ctx.sessionManager.getBranch();
       const messages = branch
         .filter(
-          (entry): entry is SessionEntry & { type: "message" } =>
+          (entry: SessionEntry): entry is SessionEntry & { type: "message" } =>
             entry.type === "message",
         )
-        .map((entry) => entry.message);
+        .map((entry: SessionEntry & { type: "message" }) => entry.message);
 
       if (messages.length === 0) {
         ctx.ui.notify("No conversation to hand off", "error");
@@ -83,7 +83,7 @@ export default function (pi: ExtensionAPI) {
 
       // Generate the handoff prompt with loader UI
       const result = await ctx.ui.custom<string | null>(
-        (tui, theme, _kb, done) => {
+        (tui: any, theme: any, _kb: any, done: (result: any) => void) => {
           const loader = new BorderedLoader(
             tui,
             theme,
@@ -117,7 +117,7 @@ export default function (pi: ExtensionAPI) {
 
             return response.content
               .filter(
-                (c): c is { type: "text"; text: string } => c.type === "text",
+                (c: any): c is { type: "text"; text: string } => c.type === "text",
               )
               .map((c) => c.text)
               .join("\n");

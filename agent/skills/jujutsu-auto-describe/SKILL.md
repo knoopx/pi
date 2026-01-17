@@ -181,19 +181,6 @@ Refactor component architecture for better testability
 
 ## Configuration
 
-### Custom Templates
-
-Create description templates for common change types:
-
-```typescript
-const templates = {
-  feature: "feat: add {component} {functionality}",
-  bugfix: "fix: resolve {issue} in {component}",
-  refactor: "refactor: improve {component} {aspect}",
-  docs: "docs: update {section} documentation"
-};
-```
-
 ### Exclusion Rules
 
 Skip certain file types or patterns:

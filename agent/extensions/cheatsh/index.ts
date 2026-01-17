@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, OnUpdate, ToolContext } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 export default function (pi: ExtensionAPI) {
@@ -27,7 +27,7 @@ Provides examples for commands, languages, and tools.`,
       ),
     }),
 
-    async execute(_toolCallId, params, onUpdate, _ctx, signal) {
+    async execute(toolCallId: string, params: any, onUpdate: OnUpdate, ctx: ToolContext, signal: AbortSignal) {
       const { query, section } = params as { query: string; section?: string };
 
       // Build the URL
