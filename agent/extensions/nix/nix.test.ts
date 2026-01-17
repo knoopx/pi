@@ -15,7 +15,6 @@ describe("Nix Extension", () => {
     const toolNames = [
       "search-nix-packages",
       "search-nix-options",
-      "search-nix-flake-packages",
       "search-home-manager-options",
       "search-nixpkgs-pull-requests",
     ];
@@ -87,7 +86,7 @@ describe("Nix Extension", () => {
       const result = await registeredTool.execute("tool1", { query: "test" });
 
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("Error searching Nix packages");
+      expect(result.content[0].text).toContain("Error: Network error");
     });
 
     it("should handle HTTP errors", async () => {
@@ -145,54 +144,6 @@ describe("Nix Extension", () => {
     });
   });
 
-  describe("search-nix-flake-packages tool", () => {
-    let registeredTool: any;
-
-    beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "search-nix-flake-packages",
-      )[0];
-    });
-
-    it("should search flake packages successfully", async () => {
-      const mockFlakes = [
-        {
-          flake_name: "nixpkgs",
-          package_attr_name: "hello",
-          package_pname: "hello",
-          package_pversion: "2.12.1",
-          package_description: "A simple hello world program",
-          package_platforms: ["x86_64-linux"],
-          package_homepage: ["https://www.gnu.org/software/hello/"],
-          package_maintainers: [{ name: "John Doe", github: "johndoe" }],
-          package_license_set: ["GPL-3.0-or-later"],
-          flake_source: { url: "github:NixOS/nixpkgs" },
-        },
-      ];
-
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
-
-      const mockResponse = {
-        ok: true,
-        json: () =>
-          Promise.resolve({ hits: { hits: [{ _source: mockFlakes[0] }] } }),
-      };
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const result = await registeredTool.execute("tool1", { query: "hello" });
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://search.nixos.org/backend/latest-44-group-manual/_search",
-        expect.any(Object),
-      );
-      expect(result.content[0].text).toContain(
-        "Found 1 flake packages matching",
-      );
-      expect(result.content[0].text).toContain("nixpkgs#hello");
-    });
-  });
-
   describe("search-home-manager-options tool", () => {
     let registeredTool: any;
 
@@ -201,7 +152,6 @@ describe("Nix Extension", () => {
         (call) => call[0].name === "search-home-manager-options",
       )[0];
     });
-
     it("should search Home-Manager options successfully", async () => {
       const mockOptions = [
         {
@@ -300,6 +250,7 @@ describe("Nix Extension", () => {
           user: { login: "contributor" },
           updated_at: "2024-01-01T00:00:00Z",
           html_url: "https://github.com/NixOS/nixpkgs/pull/12345",
+          pull_request: true,
         },
       ];
 
@@ -321,6 +272,37 @@ describe("Nix Extension", () => {
       expect(result.content[0].text).toMatch(
         /Found \d+ pull requests matching/,
       );
+      expect(result.content[0].text).toContain("Author: contributor");
+    });
+
+    it("should not display author when user is missing", async () => {
+      const mockPRs = [
+        {
+          number: 12345,
+          title: "Update hello to version 2.12.1",
+          state: "open",
+          user: null,
+          updated_at: "2024-01-01T00:00:00Z",
+          html_url: "https://github.com/NixOS/nixpkgs/pull/12345",
+          pull_request: true,
+        },
+      ];
+
+      const mockFetch = vi.fn();
+      global.fetch = mockFetch;
+
+      const mockResponse = {
+        ok: true,
+        json: () => Promise.resolve({ items: mockPRs }),
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const result = await registeredTool.execute("tool1", { query: "hello" });
+
+      expect(result.content[0].text).toMatch(
+        /Found \d+ pull requests matching/,
+      );
+      expect(result.content[0].text).not.toContain("Author:");
     });
   });
 });

@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, AgentToolResult } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 // Adapted from https://github.com/vicinaehq/extensions/tree/main/extensions/nix
@@ -127,6 +127,17 @@ const HOME_MANAGER_OPTIONS_URL =
 function cleanText(text: string | null): string {
   if (!text) return "";
   return text.replace(/<[^>]*>/g, "").trim();
+}
+
+function removeEmptyProperties<T extends Record<string, any>>(obj: T): Partial<T> {
+  const result: Partial<T> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined && value !== null && value !== "" && 
+        !(Array.isArray(value) && value.length === 0)) {
+      result[key as keyof T] = value;
+    }
+  }
+  return result;
 }
 
 function buildSearchResult<T>(
@@ -477,13 +488,12 @@ Returns detailed package information from nixpkgs.`,
 
       return executeSearchTool(
         searchNixPackages,
-        (item: NixPackage) => ({
+        (item: NixPackage) => removeEmptyProperties({
           attr_name: item.package_attr_name,
           pname: item.package_pname,
           version: item.package_pversion,
           description: cleanText(item.package_description),
           longDescription: cleanText(item.package_longDescription),
-          platforms: item.package_platforms,
           homepage: item.package_homepage,
           maintainers: item.package_maintainers
             .map((m) => m.name || m.github)
@@ -496,7 +506,6 @@ Returns detailed package information from nixpkgs.`,
             c += `**${pkg.attr_name}** (${pkg.pname} ${pkg.version})\n`;
             c += `Description: ${pkg.description || "N/A"}\n`;
             if (pkg.longDescription) c += `Details: ${pkg.longDescription}\n`;
-            c += `Platforms: ${pkg.platforms.join(", ")}\n`;
             if (pkg.homepage.length > 0) c += `Homepage: ${pkg.homepage[0]}\n`;
             c += `Maintainers: ${pkg.maintainers}\n`;
             c += `License: ${pkg.license}\n\n`;
@@ -531,7 +540,7 @@ Returns NixOS configuration option details.`,
 
       return executeSearchTool(
         searchNixOptions,
-        (opt: NixOption) => ({
+        (opt: NixOption) => removeEmptyProperties({
           name: opt.option_name,
           description: cleanText(opt.option_description),
           type: opt.option_type,
@@ -579,7 +588,7 @@ Returns Home Manager configuration options.`,
 
       return executeSearchTool(
         searchHomeManagerOptions,
-        (opt: HomeManagerOption) => ({
+        (opt: HomeManagerOption) => removeEmptyProperties({
           title: opt.title,
           description: cleanText(opt.description),
           type: opt.type,
@@ -627,11 +636,11 @@ Returns GitHub pull request information.`,
 
       return executeSearchTool(
         searchNixpkgsPullRequests,
-        (pr: GitHubIssue) => ({
+        (pr: GitHubIssue) => removeEmptyProperties({
           number: pr.number,
           title: pr.title,
           state: pr.state,
-          user: pr.user?.login || "unknown",
+          user: pr.user?.login,
           updated_at: pr.updated_at,
           url: pr.html_url,
         }),
@@ -640,7 +649,7 @@ Returns GitHub pull request information.`,
           res.forEach((pr) => {
             c += `**#${pr.number}**: ${pr.title}\n`;
             c += `State: ${pr.state}\n`;
-            c += `Author: ${pr.user}\n`;
+            if (pr.user) c += `Author: ${pr.user}\n`;
             c += `Updated: ${pr.updated_at}\n`;
             c += `URL: ${pr.url}\n\n`;
           });
