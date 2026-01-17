@@ -1,3 +1,4 @@
+---
 name: yt-dlp
 description: Download videos and audio from YouTube and thousands of other sites. Use when downloading videos/audio, extracting audio, downloading playlists, or including subtitles/metadata.
 ---

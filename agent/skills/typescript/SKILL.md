@@ -1,3 +1,4 @@
+---
 name: typescript
 description: Follow best practices for TypeScript development, including type safety, modern patterns, testing, and project organization. Use when writing strictly typed code, organizing projects, implementing generics, or ensuring type safety in testing.
 ---

@@ -1,3 +1,4 @@
+---
 name: nix-flakes
 description: Achieve reproducible builds, dependency management, and project isolation with Nix Flakes. Use when creating reproducible environments, managing dependencies, building packages, or initializing Nix projects.
 ---

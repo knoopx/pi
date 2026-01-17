@@ -1,3 +1,4 @@
+---
 name: knip
 description: Identify and remove unused dependencies, files, and exports in TypeScript and JavaScript projects. Use when detecting unused code, cleaning up dead code, improving maintainability, or reducing bundle sizes.
 ---

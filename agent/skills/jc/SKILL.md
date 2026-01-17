@@ -1,3 +1,4 @@
+---
 name: jc
 description: Convert the output of common CLI tools into JSON for easier processing and analysis. Use when parsing command-line tool output, processing data with JSON tools like jq, or analyzing system information programmatically.
 ---

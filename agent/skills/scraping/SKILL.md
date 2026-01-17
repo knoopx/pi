@@ -1,3 +1,4 @@
+---
 name: scraping
 description: Extract data from websites, parse HTML, interact with APIs, and scrape dynamic content. Use when parsing HTML with selectors, interacting with REST APIs, scraping dynamic sites, or extracting structured data.
 ---

@@ -1,3 +1,4 @@
+---
 name: nh
 description: Manage NixOS and Home Manager operations with improved output and cleanup. Use when updating NixOS configurations, managing user environments, cleaning up generations, or performing system maintenance.
 ---

@@ -1,3 +1,4 @@
+---
 name: podman
 description: Manage containers, pods, and images as a daemonless, rootless alternative to Docker. Use when running containerized applications, building images, grouping containers into pods, or performing cleanup.
 ---

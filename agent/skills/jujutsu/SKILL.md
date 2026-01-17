@@ -1,3 +1,4 @@
+---
 name: jujutsu
 description: A practical quick-reference for the JJ (Jujutsu) version control system. Use when learning JJ commands, navigating change history, performing merges/rebases, resolving conflicts, or working with bookmarks and remotes.
 ---

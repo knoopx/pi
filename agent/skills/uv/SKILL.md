@@ -1,3 +1,4 @@
+---
 name: uv
 description: Manage Python dependencies, control Python versions, and set up projects with uv. Use when installing/managing packages, controlling Python versions, running scripts with dependencies, or building/publishing packages.
 ---

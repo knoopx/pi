@@ -1,3 +1,4 @@
+---
 name: python
 description: Follow best practices for Python development, including code quality, testing, type hints, and project structure. Use when writing type-safe code, formatting/linting with ruff, structuring projects, or writing comprehensive tests.
 ---

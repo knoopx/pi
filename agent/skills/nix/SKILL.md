@@ -1,3 +1,4 @@
+---
 name: nix
 description: Run applications without installation, create development environments, and evaluate Nix expressions. Use when executing packages temporarily, creating isolated environments, debugging expressions, or searching for packages.
 ---

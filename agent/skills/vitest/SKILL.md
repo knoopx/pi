@@ -1,3 +1,4 @@
+---
 name: vitest
 description: Manage JavaScript/TypeScript testing projects with Vitest (test execution, configuration, mocking, coverage, and debugging). Use when running tests, configuring environments, generating coverage, or debugging tests.
 ---
