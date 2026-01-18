@@ -572,7 +572,7 @@ Respond with only the change message, no additional text.`;
   /**
    * Enable hooks command: Enable automatic JJ hooks for change management
    */
-  pi.registerCommand("enable-hooks", {
+  pi.registerCommand("jujutsu-enable-hooks", {
     description: "Enable automatic Jujutsu hooks for change management",
     handler: async (args: string, ctx: ExtensionCommandContext) => {
       hooksEnabled = true;
@@ -583,7 +583,7 @@ Respond with only the change message, no additional text.`;
   /**
    * Disable hooks command: Disable automatic JJ hooks for change management
    */
-  pi.registerCommand("disable-hooks", {
+  pi.registerCommand("jujutsu-disable-hooks", {
     description: "Disable automatic Jujutsu hooks for change management",
     handler: async (args: string, ctx: ExtensionCommandContext) => {
       hooksEnabled = false;
