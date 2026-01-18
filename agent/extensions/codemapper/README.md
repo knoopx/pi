@@ -45,6 +45,7 @@ Create a hierarchical overview of the codebase structure at different detail lev
 - `noComments` (optional): Exclude JSDoc comments
 - `noImports` (optional): Exclude import lists
 - `output` (optional): Output format ('text' or 'json')
+- `path` (optional): Path to analyze (default: current directory)
 
 **Example:**
 
@@ -62,6 +63,7 @@ Search for functions, classes, and symbols across the codebase with fuzzy or exa
 - `exact` (optional): Use exact matching instead of fuzzy search
 - `showBody` (optional): Include the actual code implementation
 - `exportsOnly` (optional): Only show exported/public symbols
+- `path` (optional): Path to search in (default: current directory)
 
 **Example:**
 
@@ -90,6 +92,7 @@ Find all locations where a specific function or symbol is used (reverse dependen
 **Parameters:**
 
 - `symbol` (required): Symbol name to find callers for
+- `path` (optional): Path to search in (default: current directory)
 
 **Example:**
 
@@ -104,6 +107,7 @@ Find all functions and symbols called by a specific function (forward dependenci
 **Parameters:**
 
 - `symbol` (required): Symbol name to find callees for
+- `path` (optional): Path to search in (default: current directory)
 
 **Example:**
 
@@ -119,6 +123,7 @@ Trace the call path between two functions or symbols.
 
 - `from` (required): Starting symbol
 - `to` (required): Target symbol
+- `path` (optional): Path to search in (default: current directory)
 
 **Example:**
 
@@ -137,6 +142,7 @@ Analyze import and dependency relationships in the codebase, including circular 
 - `depth` (optional): Limit dependency tree depth
 - `external` (optional): List all external packages used
 - `circular` (optional): Find circular dependencies
+- `path` (optional): Path to analyze (default: current directory)
 
 **Examples:**
 

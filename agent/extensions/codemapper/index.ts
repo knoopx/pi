@@ -70,6 +70,11 @@ Use this to:
 
 Supports filtering by detail level.`,
     parameters: Type.Object({
+      path: Type.Optional(
+        Type.String({
+          description: "Path to analyze (default: current directory)",
+        }),
+      ),
       budget: Type.Optional(
         Type.Number({
           description: "Token budget to auto-reduce detail to fit",
@@ -82,7 +87,9 @@ Supports filtering by detail level.`,
 
     async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       try {
-        const args = ["map", "."];
+        const args = ["map"];
+        const targetPath = params.path || ".";
+        args.push(targetPath);
 
         if (params.budget) {
           const level = params.budget < 2000 ? 1 : params.budget < 5000 ? 2 : 3;
@@ -145,6 +152,11 @@ Supports fuzzy and exact matching.`,
       query: Type.String({
         description: "Search query (function name, class name, etc.)",
       }),
+      path: Type.Optional(
+        Type.String({
+          description: "Path to search in (default: current directory)",
+        }),
+      ),
       exact: Type.Optional(
         Type.Boolean({
           description: "Use exact matching instead of fuzzy search",
@@ -164,6 +176,8 @@ Supports fuzzy and exact matching.`,
     async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       try {
         const args = ["query", params.query];
+        const targetPath = params.path || ".";
+        args.push(targetPath);
 
         if (params.exact) {
           args.push("--exact");
@@ -268,10 +282,19 @@ Shows reverse dependencies and call sites.`,
       symbol: Type.String({
         description: "Symbol name to find callers for",
       }),
+      path: Type.Optional(
+        Type.String({
+          description: "Path to search in (default: current directory)",
+        }),
+      ),
     }),
     async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       try {
-        const result = await pi.exec("cm", ["callers", params.symbol], {
+        const args = ["callers", params.symbol];
+        const targetPath = params.path || ".";
+        args.push(targetPath);
+
+        const result = await pi.exec("cm", args, {
           signal,
         });
 
@@ -316,10 +339,19 @@ Shows forward dependencies and call chains.`,
       symbol: Type.String({
         description: "Symbol name to find callees for",
       }),
+      path: Type.Optional(
+        Type.String({
+          description: "Path to search in (default: current directory)",
+        }),
+      ),
     }),
     async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       try {
-        const result = await pi.exec("cm", ["callees", params.symbol], {
+        const args = ["callees", params.symbol];
+        const targetPath = params.path || ".";
+        args.push(targetPath);
+
+        const result = await pi.exec("cm", args, {
           signal,
         });
 
@@ -367,10 +399,19 @@ Shows the call chain linking the symbols.`,
       to: Type.String({
         description: "Target symbol",
       }),
+      path: Type.Optional(
+        Type.String({
+          description: "Path to search in (default: current directory)",
+        }),
+      ),
     }),
     async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       try {
-        const result = await pi.exec("cm", ["trace", params.from, params.to], {
+        const args = ["trace", params.from, params.to];
+        const targetPath = params.path || ".";
+        args.push(targetPath);
+
+        const result = await pi.exec("cm", args, {
           signal,
         });
 
@@ -415,6 +456,11 @@ Supports forward and reverse dependency analysis.`,
       file: Type.Optional(
         Type.String({ description: "File path to analyze dependencies for" }),
       ),
+      path: Type.Optional(
+        Type.String({
+          description: "Path to analyze (default: current directory)",
+        }),
+      ),
       reverse: Type.Optional(
         Type.Boolean({
           description: "Show reverse dependencies (who imports this file)",
@@ -435,12 +481,12 @@ Supports forward and reverse dependency analysis.`,
       try {
         const args = ["deps"];
 
-        if (params.file) {
-          args.push(params.file);
-        }
+        // Determine the target: file takes precedence, otherwise use path or default to "."
+        const target = params.file || params.path || ".";
+        args.push(target);
 
         if (params.reverse) {
-          args.push("--reverse");
+          args.push("--direction", "used-by");
         }
 
         if (params.depth) {

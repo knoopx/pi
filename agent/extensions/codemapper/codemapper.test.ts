@@ -176,6 +176,7 @@ describe("Codemapper Extension", () => {
       const props = registeredTool.parameters.properties;
       expect(props).toHaveProperty("budget");
       expect(props).toHaveProperty("exportedOnly");
+      expect(props).toHaveProperty("path");
     });
 
     it("should generate code map with default parameters", async () => {
@@ -303,6 +304,7 @@ describe("Codemapper Extension", () => {
       expect(props).toHaveProperty("exact");
       expect(props).toHaveProperty("showBody");
       expect(props).toHaveProperty("exportsOnly");
+      expect(props).toHaveProperty("path");
     });
 
     it("should query code successfully with basic search", async () => {
@@ -322,7 +324,7 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["query", "authenticate"],
+        ["query", "authenticate", "."],
         { signal: undefined },
       );
       expect(result.content[0].text).toBe(
@@ -343,7 +345,7 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["query", "processData", "--exact"],
+        ["query", "processData", ".", "--exact"],
         { signal: undefined },
       );
     });
@@ -365,7 +367,7 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["query", "validate", "--show-body"],
+        ["query", "validate", ".", "--show-body"],
         { signal: undefined },
       );
     });
@@ -383,7 +385,7 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["query", "helper", "--exports-only"],
+        ["query", "helper", ".", "--exports-only"],
         { signal: undefined },
       );
     });
@@ -401,7 +403,7 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["query", "MyClass", "--exact", "--show-body", "--exports-only"],
+        ["query", "MyClass", ".", "--exact", "--show-body", "--exports-only"],
         { signal: undefined },
       );
     });
@@ -587,6 +589,7 @@ describe("Codemapper Extension", () => {
 
     it("should have symbol parameter in schema", () => {
       expect(registeredTool.parameters.properties).toHaveProperty("symbol");
+      expect(registeredTool.parameters.properties).toHaveProperty("path");
     });
 
     it("should find callers successfully", async () => {
@@ -606,7 +609,7 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["callers", "chargeCard"],
+        ["callers", "chargeCard", "."],
         { signal: undefined },
       );
       expect(result.content[0].text).toContain("processPayment");
@@ -647,7 +650,7 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["callers", "User.authenticate"],
+        ["callers", "User.authenticate", "."],
         { signal: undefined },
       );
     });
@@ -703,6 +706,7 @@ describe("Codemapper Extension", () => {
 
     it("should have symbol parameter in schema", () => {
       expect(registeredTool.parameters.properties).toHaveProperty("symbol");
+      expect(registeredTool.parameters.properties).toHaveProperty("path");
     });
 
     it("should find callees successfully", async () => {
@@ -722,7 +726,7 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["callees", "processPayment"],
+        ["callees", "processPayment", "."],
         { signal: undefined },
       );
       expect(result.content[0].text).toContain("validateInput");
@@ -759,7 +763,7 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["callees", "Request.handle"],
+        ["callees", "Request.handle", "."],
         { signal: undefined },
       );
     });
@@ -817,6 +821,7 @@ describe("Codemapper Extension", () => {
       const props = registeredTool.parameters.properties;
       expect(props).toHaveProperty("from");
       expect(props).toHaveProperty("to");
+      expect(props).toHaveProperty("path");
     });
 
     it("should trace call path successfully", async () => {
@@ -836,7 +841,7 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["trace", "main", "parseData"],
+        ["trace", "main", "parseData", "."],
         { signal: undefined },
       );
       expect(result.content[0].text).toContain("parseData");
@@ -859,7 +864,7 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["trace", "authenticate", "validatePassword"],
+        ["trace", "authenticate", "validatePassword", "."],
         { signal: undefined },
       );
     });
@@ -899,7 +904,7 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["trace", "recursive", "recursive"],
+        ["trace", "recursive", "recursive", "."],
         { signal: undefined },
       );
     });
@@ -960,6 +965,7 @@ describe("Codemapper Extension", () => {
       expect(props).toHaveProperty("depth");
       expect(props).toHaveProperty("external");
       expect(props).toHaveProperty("circular");
+      expect(props).toHaveProperty("path");
     });
 
     it("should analyze file dependencies successfully", async () => {
@@ -1002,7 +1008,7 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["deps", "src/utils.ts", "--reverse"],
+        ["deps", "src/utils.ts", "--direction", "used-by"],
         { signal: undefined },
       );
       expect(result.content[0].text).toContain("Reverse");
@@ -1023,7 +1029,7 @@ describe("Codemapper Extension", () => {
         {},
       );
 
-      expect(mockPi.exec).toHaveBeenCalledWith("cm", ["deps", "--external"], {
+      expect(mockPi.exec).toHaveBeenCalledWith("cm", ["deps", ".", "--external"], {
         signal: undefined,
       });
       expect(result.content[0].text).toContain("express");
@@ -1044,7 +1050,7 @@ describe("Codemapper Extension", () => {
         {},
       );
 
-      expect(mockPi.exec).toHaveBeenCalledWith("cm", ["deps", "--circular"], {
+      expect(mockPi.exec).toHaveBeenCalledWith("cm", ["deps", ".", "--circular"], {
         signal: undefined,
       });
       expect(result.content[0].text).toContain("Circular");
@@ -1085,7 +1091,7 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["deps", "src/app.ts", "--reverse", "--depth", "3", "--external"],
+        ["deps", "src/app.ts", "--direction", "used-by", "--depth", "3", "--external"],
         { signal: undefined },
       );
     });
@@ -1100,7 +1106,7 @@ describe("Codemapper Extension", () => {
 
       await registeredTool.execute("tool1", { circular: true }, vi.fn(), {});
 
-      expect(mockPi.exec).toHaveBeenCalledWith("cm", ["deps", "--circular"], {
+      expect(mockPi.exec).toHaveBeenCalledWith("cm", ["deps", ".", "--circular"], {
         signal: undefined,
       });
     });
