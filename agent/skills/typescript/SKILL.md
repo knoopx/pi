@@ -502,6 +502,46 @@ function isValidEmail(email: string): boolean {
 }
 ````
 
+### 6. Don't Pointlessly Rescue Exceptions and Silence Them
+
+```typescript
+// ❌ Bad - silently swallowing errors makes debugging impossible
+try {
+  riskyOperation();
+} catch (error) {
+  // Do nothing - error is lost forever
+}
+
+// ❌ Bad - logging but not handling properly
+try {
+  riskyOperation();
+} catch (error) {
+  console.log("Something went wrong"); // Not enough context
+}
+
+// ✅ Good - handle errors appropriately
+try {
+  riskyOperation();
+} catch (error) {
+  console.error("Failed to perform operation:", error);
+  throw error; // Re-throw if caller should handle it
+}
+
+
+// ✅ Good - catch specific errors
+try {
+  riskyOperation();
+} catch (error) {
+  if (error instanceof ValidationError) {
+    // Handle validation error specifically
+    return { status: "invalid", message: error.message };
+  } else {
+    // Re-throw unexpected errors
+    throw error;
+  }
+}
+```
+
 ## Testing TypeScript Code
 
 ### Unit Tests with Vitest
