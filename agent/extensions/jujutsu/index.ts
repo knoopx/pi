@@ -405,8 +405,21 @@ Respond with only the change message, no additional text.`;
       try {
         ctx.ui.notify("Generating change description...", "info");
 
+        // Check signal before diff
+        if (contextSignal?.aborted) {
+          ctx.ui.notify("Description generation was cancelled", "warning");
+          return;
+        }
+
         // Generate a proper description from diff
         const { stdout: diffOutput } = await pi.exec("jj", ["diff"]);
+
+        // Check signal before generation
+        if (contextSignal?.aborted) {
+          ctx.ui.notify("Description generation was cancelled", "warning");
+          return;
+        }
+
         const newDescription = await generateDescriptionWithPi(
           diffOutput,
           currentPrompt,
@@ -414,7 +427,20 @@ Respond with only the change message, no additional text.`;
           contextSignal,
         );
 
+        // Check signal before getting change ID
+        if (contextSignal?.aborted) {
+          ctx.ui.notify("Description generation was cancelled", "warning");
+          return;
+        }
+
         const currentChangeId = await getCurrentChangeId();
+
+        // Check signal before describing
+        if (contextSignal?.aborted) {
+          ctx.ui.notify("Description generation was cancelled", "warning");
+          return;
+        }
+
         await pi.exec("jj", [
           "describe",
           currentChangeId,
