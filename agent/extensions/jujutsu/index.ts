@@ -6,7 +6,15 @@ import type {
   TurnStartEvent,
   SessionEntry,
 } from "@mariozechner/pi-coding-agent";
+import type { AgentEvent } from "@mariozechner/pi-agent-core";
 import { spawn } from "node:child_process";
+
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import { homedir } from "node:os";
+
+const GREEN = "\x1b[32m";
+const RESET = "\x1b[0m";
 
 /**
  * Jujutsu extension for Pi coding agent.
@@ -18,6 +26,20 @@ import { spawn } from "node:child_process";
  * - Redo command to restore after undo
  */
 export default function (pi: ExtensionAPI) {
+  // Get settings from ~/.pi/agent/settings.json
+  async function getSettings(): Promise<Record<string, unknown>> {
+    try {
+      const settingsPath = path.join(
+        process.env.PI_CODING_AGENT_DIR || path.join(homedir(), ".pi", "agent"),
+        "settings.json",
+      );
+      const content = await fs.readFile(settingsPath, "utf8");
+      return JSON.parse(content);
+    } catch {
+      return {};
+    }
+  }
+
   // Check if current directory is a Jujutsu repository
   async function isJujutsuRepo(): Promise<boolean> {
     try {
@@ -38,26 +60,175 @@ export default function (pi: ExtensionAPI) {
     }
   }
 
+  /**
+   * Spawn JJ command with proper cwd
+   */
+  async function spawnJj(
+    args: string[],
+    _cwd: string = process.cwd(),
+  ): Promise<{ stdout: string; stderr: string }> {
+    return pi.exec("jj", args);
+  }
+
+  /**
+   * Ensure workspace exists for a session
+   */
+  async function ensureWorkspace(sessionId: string): Promise<string> {
+    const workspacePath = path.join(
+      process.env.PROJECT_ROOT || process.cwd(),
+      ".jj",
+      "pi-jujutsu",
+      "workspaces",
+      sessionId,
+    );
+    try {
+      await fs.access(workspacePath);
+      // exists
+    } catch {
+      // not exists, create directory and workspace
+      await pi.exec("mkdir", ["-p", workspacePath]);
+      await pi.exec("jj", ["workspace", "add", workspacePath]);
+    }
+    return workspacePath;
+  }
+
   /** Map of entryId -> changeId for changes */
   const changes = new Map<string, string>();
   /** Stack of {changeId, messageId} for multi-level redo */
   const redoStack: Array<{ changeId: string; messageId: string }> = [];
+  /** Map of sessionId -> workspacePath */
+  const workspacePaths = new Map<string, string>();
   /** Flag to enable/disable hooks */
   let hooksEnabled = true;
+
+  /**
+   * Get workspace name by sessionId
+   */
+  async function getWorkspaceName(
+    sessionId: string,
+    mainRepo: string,
+  ): Promise<string> {
+    try {
+      const { stdout } = await spawnJj(["workspace", "list"], mainRepo);
+      const lines = stdout.trim().split("\n");
+      for (const line of lines) {
+        if (line.startsWith(sessionId + ":")) {
+          return line.split(":")[1].trim().split(" ")[0]; // name is after :
+        }
+      }
+      return "unknown";
+    } catch {
+      return "unknown";
+    }
+  }
+
+  /**
+   * Get current change ID (short form)
+   */
+  async function getCurrentChangeIdShort(cwd: string): Promise<string> {
+    try {
+      const { stdout } = await spawnJj(
+        ["log", "-r", "@", "--template", "change_id.short()", "--no-graph"],
+        cwd,
+      );
+      return stdout.trim();
+    } catch {
+      return "unknown";
+    }
+  }
+
+  /**
+   * Check if repository has uncommitted changes
+   */
+  async function isDirty(cwd: string): Promise<boolean> {
+    try {
+      const { stdout } = await spawnJj(["diff"], cwd);
+      return stdout.trim() !== "";
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Update the status bar with detailed JJ information
+   */
+  async function updateStatus(ctx: ExtensionContext) {
+    if (!hooksEnabled || !(await isJujutsuRepo())) {
+      if (ctx.ui?.setStatus) ctx.ui.setStatus("jujutsu", undefined);
+      return;
+    }
+
+    try {
+      const sessionId = ctx.sessionManager.getBranch()[0]?.id;
+      const workspacePath = workspacePaths.get(sessionId);
+      const cwd = workspacePath || process.cwd();
+      const mainRepo = workspacePath
+        ? path.dirname(path.dirname(path.dirname(path.dirname(workspacePath))))
+        : process.cwd();
+
+      const [workspace, changeId, dirty] = await Promise.all([
+        getWorkspaceName(sessionId, mainRepo),
+        getCurrentChangeIdShort(cwd),
+        isDirty(cwd),
+      ]);
+
+      const dirtyIndicator = dirty ? "*" : "";
+      const statusText = `${GREEN}JJ${RESET} ws:${workspace} ${changeId}${dirtyIndicator}`;
+
+      if (ctx.ui?.setStatus) {
+        ctx.ui.setStatus("jujutsu", statusText);
+      }
+    } catch (error) {
+      // Fallback to simple status on error
+      if (ctx.ui?.setStatus) {
+        ctx.ui.setStatus("jujutsu", `${GREEN}Jujutsu${RESET}`);
+      }
+      console.warn(
+        `Failed to update JJ status: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  pi.on("session_start", async (_event, _ctx) => {
+    const settings = await getSettings();
+    hooksEnabled =
+      (settings as { jujutsu?: { enabled?: boolean } }).jujutsu?.enabled ??
+      true;
+
+    // Ensure workspace exists and switch to it for status display
+    if (hooksEnabled && (await isJujutsuRepo())) {
+      const branch = _ctx.sessionManager.getBranch();
+      if (branch.length > 0) {
+        const sessionId = branch[0].id;
+        const workspacePath = await ensureWorkspace(sessionId);
+        workspacePaths.set(sessionId, workspacePath);
+
+        // Change to the workspace directory (should exist after ensureWorkspace)
+        try {
+          process.chdir(workspacePath);
+        } catch {
+          // Directory might not exist in test environments or edge cases
+        }
+      }
+    }
+
+    await updateStatus(_ctx);
+  });
+
+  /** Flag to track if the last turn was aborted */
+  let lastTurnAborted = false;
+  /** Flag to track if the current turn completed successfully */
+  let turnCompleted = false;
 
   /**
    * Get the current JJ change ID
    * @throws Error if JJ command fails
    */
-  async function getCurrentChangeId(): Promise<string> {
-    const { stdout } = await pi.exec("jj", [
-      "log",
-      "-r",
-      "@",
-      "--template",
-      "change_id",
-      "--no-graph",
-    ]);
+  async function getCurrentChangeId(cwd: string): Promise<string> {
+    const { stdout } = await spawnJj(
+      ["log", "-r", "@", "--template", "change_id", "--no-graph"],
+      cwd,
+    );
     return stdout.trim();
   }
 
@@ -65,8 +236,8 @@ export default function (pi: ExtensionAPI) {
    * Check if current change is empty (no modifications)
    * @returns true if change is empty
    */
-  async function isCurrentChangeEmpty(): Promise<boolean> {
-    const { stdout: diffOutput } = await pi.exec("jj", ["diff"]);
+  async function isCurrentChangeEmpty(cwd: string): Promise<boolean> {
+    const { stdout: diffOutput } = await spawnJj(["diff"], cwd);
     return diffOutput.trim() === "";
   }
 
@@ -75,15 +246,17 @@ export default function (pi: ExtensionAPI) {
    * @param args JJ command arguments
    * @param errorMessage Error message to display to user
    * @param ctx Extension command context for notifications
+   * @param cwd Working directory for JJ command
    * @returns true if successful, false if failed
    */
   async function execJj(
     args: string[],
     errorMessage: string,
     ctx: ExtensionCommandContext,
+    cwd: string,
   ): Promise<boolean> {
     try {
-      await pi.exec("jj", args);
+      await spawnJj(args, cwd);
       return true;
     } catch (error) {
       ctx.ui.notify(
@@ -178,30 +351,24 @@ export default function (pi: ExtensionAPI) {
     model: string,
     signal: AbortSignal,
   ): Promise<string> {
-    interface PiEventMessage {
-      role: "assistant" | "toolResult";
-      content: Array<{ type: "text"; text: string }>;
+    if (signal.aborted) {
+      throw new Error("Operation aborted");
     }
 
-    interface PiEvent {
-      type: "message_end" | "tool_result_end";
-      message?: PiEventMessage;
-    }
+    const args = [
+      "--mode",
+      "json",
+      "-p",
+      "--no-session",
+      "--no-tools",
+      "--no-skills",
+      "--no-extensions",
+      "--model",
+      model,
+      `Task: ${task}`,
+    ];
 
-    return new Promise((resolve, reject) => {
-      const args = [
-        "--mode",
-        "json",
-        "-p",
-        "--no-session",
-        "--no-tools",
-        "--no-skills",
-        "--no-extensions",
-        "--model",
-        model,
-        `Task: ${task}`,
-      ];
-
+    return new Promise<string>((resolve, reject) => {
       const proc = spawn("pi", args, {
         cwd: process.cwd(),
         shell: false,
@@ -223,8 +390,8 @@ export default function (pi: ExtensionAPI) {
       const processLine = (line: string) => {
         if (!line.trim()) return;
         try {
-          const event: PiEvent = JSON.parse(line);
-          if (event.type === "message_end" && event.message) {
+          const event: AgentEvent = JSON.parse(line);
+          if (event.type === "message_end" && "message" in event) {
             const msg = event.message;
             if (msg.role === "assistant") {
               for (const part of msg.content) {
@@ -235,10 +402,14 @@ export default function (pi: ExtensionAPI) {
             }
           }
 
-          if (event.type === "tool_result_end" && event.message) {
-            const msg = event.message;
-            if (msg.role === "toolResult") {
-              for (const part of msg.content) {
+          if (
+            event.type === "tool_execution_end" &&
+            "result" in event &&
+            !event.isError
+          ) {
+            const result = event.result;
+            if (result && typeof result === "object" && "content" in result) {
+              for (const part of result.content) {
                 if (part.type === "text") {
                   finalOutput += part.text;
                 }
@@ -348,7 +519,20 @@ Respond with only the change message, no additional text.`;
     async (event: BeforeAgentStartEvent, _ctx: ExtensionContext) => {
       if (!hooksEnabled) return;
       // Check if in JJ repo
-      if (!(await isJujutsuRepo())) return;
+      try {
+        if (!(await isJujutsuRepo())) return;
+      } catch (error) {
+        console.warn(
+          `Failed to check Jujutsu repository: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        return;
+      }
+
+      const branch = _ctx.sessionManager.getBranch();
+      if (branch.length === 0) return;
+      const sessionId = branch[0].id;
+      const workspacePath = await ensureWorkspace(sessionId);
+      workspacePaths.set(sessionId, workspacePath);
 
       // Store the current model for use in subagents
       try {
@@ -368,20 +552,20 @@ Respond with only the change message, no additional text.`;
 
       try {
         // Get the current change ID before potentially creating a new one
-        const currentChangeId = await getCurrentChangeId();
+        const currentChangeId = await getCurrentChangeId(workspacePath);
 
         // Check if current change is empty
-        const isEmpty = await isCurrentChangeEmpty();
+        const isEmpty = await isCurrentChangeEmpty(workspacePath);
 
         // Store the current change ID as the change
         changes.set("__pending__", currentChangeId);
 
-        if (isEmpty) {
-          // Re-use the current empty change and update its description
-          await pi.exec("jj", ["describe", "-m", event.prompt]);
+        if (lastTurnAborted || isEmpty) {
+          // Re-use the current change and update its description
+          await spawnJj(["describe", "-m", event.prompt], workspacePath);
         } else {
           // Create a new change to snapshot current state before processing
-          await pi.exec("jj", ["new", "-m", event.prompt]);
+          await spawnJj(["new", "-m", event.prompt], workspacePath);
         }
       } catch (error) {
         // Log error but don't fail the extension - JJ operations are not critical
@@ -389,6 +573,9 @@ Respond with only the change message, no additional text.`;
           `Failed to create JJ change: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
+
+      // Update status after change operations
+      await updateStatus(_ctx);
     },
   );
 
@@ -396,64 +583,36 @@ Respond with only the change message, no additional text.`;
     if (!hooksEnabled) return;
     if (!(await isJujutsuRepo())) return;
 
-    const isEmpty = await isCurrentChangeEmpty();
+    const branch = ctx.sessionManager.getBranch();
+    if (branch.length === 0) return;
+    const sessionId = branch[0].id;
+    const workspacePath = workspacePaths.get(sessionId);
+    if (!workspacePath) return;
+
+    const isEmpty = await isCurrentChangeEmpty(workspacePath);
     const piAvailable = await isPiCommandAvailable();
-    if (!isEmpty && piAvailable) {
-      // Check if the turn was aborted before starting description generation
-      const contextSignal =
-        "signal" in ctx && ctx.signal instanceof AbortSignal
-          ? ctx.signal
-          : undefined;
-
-      if (contextSignal?.aborted) {
-        return; // Skip description generation if turn was aborted
-      }
-
+    if (!isEmpty && piAvailable && turnCompleted) {
       try {
         ctx.ui.notify("Generating change description...", "info");
 
-        // Check signal before diff
-        if (contextSignal?.aborted) {
-          ctx.ui.notify("Description generation was cancelled", "warning");
-          return;
-        }
-
         // Generate a proper description from diff
-        const { stdout: diffOutput } = await pi.exec("jj", ["diff", "--stat"], {
-          signal: contextSignal,
-        });
-
-        // Check signal before generation
-        if (contextSignal?.aborted) {
-          ctx.ui.notify("Description generation was cancelled", "warning");
-          return;
-        }
+        const { stdout: diffOutput } = await spawnJj(
+          ["diff", "--stat"],
+          workspacePath,
+        );
 
         const newDescription = await generateDescriptionWithPi(
           diffOutput,
           currentPrompt,
           currentModel,
-          contextSignal,
+          undefined, // No signal available in event handlers
         );
 
-        // Check signal before getting change ID
-        if (contextSignal?.aborted) {
-          ctx.ui.notify("Description generation was cancelled", "warning");
-          return;
-        }
+        const currentChangeId = await getCurrentChangeId(workspacePath);
 
-        const currentChangeId = await getCurrentChangeId();
-
-        // Check signal before describing
-        if (contextSignal?.aborted) {
-          ctx.ui.notify("Description generation was cancelled", "warning");
-          return;
-        }
-
-        await pi.exec(
-          "jj",
+        await spawnJj(
           ["describe", currentChangeId, "-m", newDescription],
-          { signal: contextSignal },
+          workspacePath,
         );
 
         ctx.ui.notify(
@@ -464,21 +623,16 @@ Respond with only the change message, no additional text.`;
         const errorMessage =
           error instanceof Error ? error.message : String(error);
 
-        if (
-          contextSignal?.aborted ||
-          errorMessage.includes("Aborted") ||
-          errorMessage.includes("abort")
-        ) {
-          ctx.ui.notify("Description generation was cancelled", "warning");
-        } else {
-          ctx.ui.notify(
-            `Failed to generate change description: ${errorMessage}`,
-            "warning",
-          );
-        }
+        ctx.ui.notify(
+          `Failed to generate change description: ${errorMessage}`,
+          "warning",
+        );
         // Log to console for debugging but don't expose internal details to user
         console.warn(`Failed to generate change description: ${errorMessage}`);
       }
+
+      // Update status after description update
+      await updateStatus(ctx);
     }
   });
 
@@ -491,6 +645,10 @@ Respond with only the change message, no additional text.`;
     async (_event: TurnStartEvent, _ctx: ExtensionContext) => {
       if (!hooksEnabled) return;
       if (!(await isJujutsuRepo())) return;
+
+      // Track if the last turn was aborted
+      lastTurnAborted = !turnCompleted;
+      turnCompleted = false;
 
       const userEntries = getUserEntries(_ctx.sessionManager);
       if (userEntries.length >= 1) {
@@ -506,6 +664,43 @@ Respond with only the change message, no additional text.`;
   );
 
   /**
+   * Hook that runs at the end of each turn.
+   */
+  pi.on("turn_end", async (_event, _ctx) => {
+    turnCompleted = true;
+  });
+
+  /**
+   * Hook that runs when a session ends.
+   * Forgets the workspace associated with the session.
+   */
+  // pi.on(
+  //   "session_end",
+  //   async (_event, ctx: ExtensionContext) => {
+  //     if (!hooksEnabled) return;
+  //     if (!(await isJujutsuRepo())) return;
+
+  //     const branch = ctx.sessionManager.getBranch();
+  //     if (branch.length === 0) return;
+  //     const sessionId = branch[0].id;
+  //     const workspacePath = workspacePaths.get(sessionId);
+  //     if (workspacePath) {
+  //       try {
+  //         await spawnJj(["workspace", "forget", workspacePath]);
+  //         // Clean up the directory
+  //         await pi.exec("rm", ["-rf", workspacePath]);
+  //         workspacePaths.delete(sessionId);
+  //         ctx.ui.notify(`Forgot workspace for session ${sessionId}`, "info");
+  //       } catch (error) {
+  //         console.warn(
+  //           `Failed to forget workspace: ${error instanceof Error ? error.message : String(error)}`,
+  //         );
+  //       }
+  //     }
+  //   },
+  // );
+
+  /**
    * Undo command: Abandon the current change and restore repository state to before that change was processed.
    * This removes the current change conceptually and switches to the previous user message's change.
    */
@@ -515,6 +710,13 @@ Respond with only the change message, no additional text.`;
     handler: async (args: string, ctx: ExtensionCommandContext) => {
       if (!(await isJujutsuRepo())) {
         ctx.ui.notify("Not in a Jujutsu repository", "warning");
+        return;
+      }
+
+      const sessionId = ctx.sessionManager.getBranch()[0]?.id;
+      const workspacePath = workspacePaths.get(sessionId);
+      if (!workspacePath) {
+        ctx.ui.notify("No workspace found for current session", "warning");
         return;
       }
 
@@ -540,7 +742,7 @@ Respond with only the change message, no additional text.`;
       }
 
       // Get current change ID before switching for redo
-      const currentChangeId = await getCurrentChangeId();
+      const currentChangeId = await getCurrentChangeId(workspacePath);
 
       // Push current state to redo stack
       redoStack.push({
@@ -549,12 +751,20 @@ Respond with only the change message, no additional text.`;
       });
 
       // Switch to the target change (conceptually abandoning the current)
-      const success = await execJj(["edit", changeId], "Failed to undo", ctx);
+      const success = await execJj(
+        ["edit", changeId],
+        "Failed to undo",
+        ctx,
+        workspacePath,
+      );
       if (!success) {
         // Remove from redo stack if jj edit failed
         redoStack.pop();
         return;
       }
+
+      // Reset the aborted state since we're going back to a clean state
+      lastTurnAborted = false;
 
       // Navigate back in the session tree to the user message
       await navigateWithCancellation(
@@ -562,6 +772,9 @@ Respond with only the change message, no additional text.`;
         targetEntryId,
         `Abandoned current change and restored edit mode to ${changeId}`,
       );
+
+      // Update status after undo
+      await updateStatus(ctx);
     },
   });
 
@@ -575,6 +788,13 @@ Respond with only the change message, no additional text.`;
     handler: async (args: string, ctx: ExtensionCommandContext) => {
       if (!(await isJujutsuRepo())) {
         ctx.ui.notify("Not in a Jujutsu repository", "warning");
+        return;
+      }
+
+      const sessionId = ctx.sessionManager.getBranch()[0]?.id;
+      const workspacePath = workspacePaths.get(sessionId);
+      if (!workspacePath) {
+        ctx.ui.notify("No workspace found for current session", "warning");
         return;
       }
 
@@ -592,6 +812,7 @@ Respond with only the change message, no additional text.`;
         ["edit", redoChangeId],
         "Failed to redo",
         ctx,
+        workspacePath,
       );
       if (!success) {
         // Push back to stack if jj edit failed
@@ -607,28 +828,72 @@ Respond with only the change message, no additional text.`;
         lastEntry.id,
         `Redid to checkpoint ${redoChangeId} and restored edit mode`,
       );
+
+      // Update status after redo
+      await updateStatus(ctx);
     },
   });
 
   /**
-   * Enable hooks command: Enable automatic JJ hooks for change management
+   * Jujutsu command: Show current configuration status
    */
-  pi.registerCommand("jujutsu-enable-hooks", {
-    description: "Enable automatic Jujutsu hooks for change management",
+  pi.registerCommand("jujutsu", {
+    description: "Show Jujutsu extension configuration status",
+    handler: async (args: string, ctx: ExtensionCommandContext) => {
+      const settings = await getSettings();
+      const enabled =
+        (settings as { jujutsu?: { enabled?: boolean } }).jujutsu?.enabled ??
+        true;
+      const inRepo = await isJujutsuRepo();
+
+      let message = `Jujutsu Extension Status:\n`;
+      message += `Enabled: ${enabled ? "Yes" : "No"}\n`;
+      message += `In JJ repository: ${inRepo ? "Yes" : "No"}\n`;
+      message += `Active: ${enabled && inRepo ? "Yes" : "No"}\n\n`;
+
+      if (enabled && inRepo) {
+        message += `Status bar shows current workspace, change ID, and dirty indicator (e.g., "JJ ws:main abc123*")\n`;
+      }
+
+      message += `To change settings, edit ~/.pi/agent/settings.json:\n`;
+      message += `{\n`;
+      message += `  "jujutsu": {\n`;
+      message += `    "enabled": ${enabled ? "false" : "true"}\n`;
+      message += `  }\n`;
+      message += `}\n\n`;
+      message += `Or use /jujutsu-enable or /jujutsu-disable commands.`;
+
+      ctx.ui.notify(message, "info");
+    },
+  });
+
+  /**
+   * Enable Jujutsu hooks command
+   */
+  pi.registerCommand("jujutsu-enable", {
+    description: "Enable Jujutsu extension hooks",
     handler: async (args: string, ctx: ExtensionCommandContext) => {
       hooksEnabled = true;
-      ctx.ui.notify("Jujutsu hooks enabled", "info");
+      await updateStatus(ctx);
+      ctx.ui.notify(
+        'Jujutsu hooks enabled for this session. To make it permanent, set "jujutsu": { "enabled": true } in ~/.pi/agent/settings.json',
+        "info",
+      );
     },
   });
 
   /**
-   * Disable hooks command: Disable automatic JJ hooks for change management
+   * Disable Jujutsu hooks command
    */
-  pi.registerCommand("jujutsu-disable-hooks", {
-    description: "Disable automatic Jujutsu hooks for change management",
+  pi.registerCommand("jujutsu-disable", {
+    description: "Disable Jujutsu extension hooks",
     handler: async (args: string, ctx: ExtensionCommandContext) => {
       hooksEnabled = false;
-      ctx.ui.notify("Jujutsu hooks disabled", "info");
+      await updateStatus(ctx);
+      ctx.ui.notify(
+        'Jujutsu hooks disabled for this session. To make it permanent, set "jujutsu": { "enabled": false } in ~/.pi/agent/settings.json',
+        "info",
+      );
     },
   });
 }

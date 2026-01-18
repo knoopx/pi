@@ -2,6 +2,7 @@
   "name": "pi-extensions",
   "version": "1.0.0",
   "description": "Main package for pi extensions with formatting",
+  "type": "module",
   "scripts": {
     "format": "prettier --write \"agent/extensions/**/*.ts\"",
     "format-check": "prettier --check \"agent/extensions/**/*.ts\"",

@@ -8,8 +8,8 @@ A production-grade Pi coding agent extension that provides change-based undo/red
 - **Undo Command**: Revert to the previous user message and restore repository state
 - **Redo Command**: Restore after undo operations (supports multi-level redo)
 - **Smart Description Generation**: Uses pi sub-agent to generate conventional change descriptions from diffs
+- **Session Isolation**: Each session works in its own JJ workspace for isolation
 - **Robust Error Handling**: Graceful degradation when commands fail
-- **Session-Based**: Changes are maintained in memory for the current session
 
 ## Requirements
 
@@ -31,6 +31,7 @@ The extension works automatically:
 - The change captures the repository state before any changes
 - Changes are associated with user message entries for navigation
 - After changes are made, AI generates conventional commit descriptions (if pi command available)
+- Status bar shows current workspace, change ID, and dirty status (e.g., `JJ ws:main abc123*`)
 
 ### Manual Commands
 
@@ -85,8 +86,13 @@ The extension gracefully handles:
 
 Changes are stored in memory for the current session only. When the extension is restarted, all changes are lost and undo/redo functionality becomes unavailable until new changes are created.
 
+Workspaces are created automatically in `.jj/pi-jujutsu/workspaces/` using the session root ID as the workspace name. Each conversation branch gets its own isolated workspace for version control operations.
+
 ## Technical Details
 
+- Uses JJ's `jj workspace add` to create isolated workspaces for each session
+- Workspaces are stored in `$PROJECT_ROOT/.jj/pi-jujutsu/workspaces/`
+- Session ID from conversation root determines workspace name
 - Uses JJ's `jj new` to create changes with user message previews
 - Associates changes with conversation entries via Pi's session management
 - Maintains a redo stack for multi-level undo/redo
