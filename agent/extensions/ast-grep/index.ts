@@ -75,10 +75,8 @@ Supports pattern variables and multiple languages.`,
         Type.String({
           description:
             "Directory or file to search in (default: current directory)",
+          default: ".",
         }),
-      ),
-      debug: Type.Optional(
-        Type.Boolean({ description: "Debug the pattern to see AST structure" }),
       ),
     }),
 
@@ -93,21 +91,21 @@ Supports pattern variables and multiple languages.`,
         pattern,
         language,
         path = ".",
-        debug = false,
       } = params as {
         pattern: string;
         language: string;
         path?: string;
-        debug?: boolean;
       };
 
-      const args = ["run", "--pattern", pattern, "--lang", language, "--json"];
-      if (debug) {
-        args.push("--debug-query=cst");
-      } else {
-        args.push("--json");
-      }
-      args.push(path);
+      const args = [
+        "run",
+        "--pattern",
+        pattern,
+        "--lang",
+        language,
+        "--json",
+        path,
+      ];
 
       const result = await pi.exec("ast-grep", args, { signal });
 
@@ -118,17 +116,9 @@ Supports pattern variables and multiple languages.`,
         };
       }
 
-      let output = result.stdout;
-      if (debug) {
-        return {
-          content: [{ type: "text", text: output }],
-          details: { pattern, language, debug: true },
-        };
-      }
-
       // Parse JSON output for matches
       try {
-        const matches = JSON.parse(output);
+        const matches = JSON.parse(result.stdout);
         const matchCount = matches.length;
         let summary = `Found ${matchCount} matches for pattern '${pattern}' in ${language}:\n\n`;
 
@@ -168,7 +158,7 @@ Supports pattern variables and multiple languages.`,
         };
       } catch (parseError) {
         // Fallback to raw output
-        const truncation = truncateHead(output, {
+        const truncation = truncateHead(result.stdout, {
           maxLines: DEFAULT_MAX_LINES,
           maxBytes: DEFAULT_MAX_BYTES,
         });
@@ -213,6 +203,7 @@ Always use dry-run first to preview changes.`,
         Type.String({
           description:
             "Directory or file to search in (default: current directory)",
+          default: ".",
         }),
       ),
       dryRun: Type.Optional(
@@ -350,6 +341,7 @@ Supports 'all', 'any', 'not', 'inside', 'has' operators.`,
         Type.String({
           description:
             "Directory or file to search in (default: current directory)",
+          default: ".",
         }),
       ),
     }),
