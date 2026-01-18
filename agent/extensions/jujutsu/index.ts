@@ -42,6 +42,8 @@ export default function (pi: ExtensionAPI) {
   const changes = new Map<string, string>();
   /** Stack of {changeId, messageId} for multi-level redo */
   const redoStack: Array<{ changeId: string; messageId: string }> = [];
+  /** Flag to enable/disable hooks */
+  let hooksEnabled = true;
 
   /**
    * Get the current JJ change ID
@@ -334,6 +336,7 @@ Respond with only the change message, no additional text.`;
   pi.on(
     "before_agent_start",
     async (event: BeforeAgentStartEvent, _ctx: ExtensionContext) => {
+      if (!hooksEnabled) return;
       // Check if in JJ repo
       if (!(await isJujutsuRepo())) return;
 
@@ -377,6 +380,7 @@ Respond with only the change message, no additional text.`;
   );
 
   pi.on("agent_end", async (_event, ctx) => {
+    if (!hooksEnabled) return;
     if (!(await isJujutsuRepo())) return;
 
     const isEmpty = await isCurrentChangeEmpty();
@@ -444,6 +448,7 @@ Respond with only the change message, no additional text.`;
   pi.on(
     "turn_start",
     async (_event: TurnStartEvent, _ctx: ExtensionContext) => {
+      if (!hooksEnabled) return;
       if (!(await isJujutsuRepo())) return;
 
       const userEntries = getUserEntries(_ctx.sessionManager);
@@ -561,6 +566,28 @@ Respond with only the change message, no additional text.`;
         lastEntry.id,
         `Redid to checkpoint ${redoChangeId} and restored edit mode`,
       );
+    },
+  });
+
+  /**
+   * Enable hooks command: Enable automatic JJ hooks for change management
+   */
+  pi.registerCommand("enable-hooks", {
+    description: "Enable automatic Jujutsu hooks for change management",
+    handler: async (args: string, ctx: ExtensionCommandContext) => {
+      hooksEnabled = true;
+      ctx.ui.notify("Jujutsu hooks enabled", "info");
+    },
+  });
+
+  /**
+   * Disable hooks command: Disable automatic JJ hooks for change management
+   */
+  pi.registerCommand("disable-hooks", {
+    description: "Disable automatic Jujutsu hooks for change management",
+    handler: async (args: string, ctx: ExtensionCommandContext) => {
+      hooksEnabled = false;
+      ctx.ui.notify("Jujutsu hooks disabled", "info");
     },
   });
 }
