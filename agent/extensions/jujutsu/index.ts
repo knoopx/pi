@@ -311,6 +311,7 @@ export default function (pi: ExtensionAPI) {
    */
   async function generateDescriptionWithPi(
     diffOutput: string,
+    prompt: string | undefined,
     model: string | undefined,
     signal: AbortSignal | undefined,
   ): Promise<string> {
@@ -318,7 +319,7 @@ export default function (pi: ExtensionAPI) {
 
 Follow conventional commit standards with appropriate icons. Analyze the changes and provide a meaningful description.
 
-Diff:
+${prompt ? `Issue/Request: ${prompt}\n\n` : ""}Diff:
 ${diffOutput}
 
 Respond with only the change message, no additional text.`;
@@ -328,6 +329,8 @@ Respond with only the change message, no additional text.`;
 
   /** Store model for use in agent_end */
   let currentModel: string | undefined;
+  /** Store current prompt for description generation */
+  let currentPrompt: string | undefined;
 
   /**
    * Hook that runs before agent starts processing a user prompt.
@@ -349,6 +352,9 @@ Respond with only the change message, no additional text.`;
           `Failed to get model info: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
+
+      // Store the current prompt for description generation
+      currentPrompt = event.prompt;
 
       // Skip if no prompt
       if (!event.prompt) return;
@@ -403,6 +409,7 @@ Respond with only the change message, no additional text.`;
         const { stdout: diffOutput } = await pi.exec("jj", ["diff"]);
         const newDescription = await generateDescriptionWithPi(
           diffOutput,
+          currentPrompt,
           currentModel,
           contextSignal,
         );
