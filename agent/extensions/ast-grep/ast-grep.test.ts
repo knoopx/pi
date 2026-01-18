@@ -57,8 +57,7 @@ describe("AST Grep Extension", () => {
     it("should execute ast-grep search successfully", async () => {
       const mockResult = {
         code: 0,
-        stdout:
-          '[{"file": "test.js", "range": {"start": {"line": 1}}, "lines": "console.log(\\"hello\\");"}]',
+        stdout: 'test.js:1:console.log("hello");',
       };
       mockPi.exec.mockResolvedValue(mockResult);
 
@@ -69,10 +68,9 @@ describe("AST Grep Extension", () => {
       const result = await registeredTool.execute(
         "tool1",
         {
-          pattern: "console.log($$$ARGS)",
+          pattern: "console.log",
           language: "javascript",
           path: ".",
-          debug: false,
         },
         vi.fn(),
         mockCtx,
@@ -80,16 +78,7 @@ describe("AST Grep Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "ast-grep",
-        [
-          "run",
-          "--pattern",
-          "console.log($$$ARGS)",
-          "--lang",
-          "javascript",
-          "--json",
-          "--json",
-          ".",
-        ],
+        ["run", "--pattern", "console.log", "--lang", "javascript", "."],
         { signal: undefined },
       );
       expect(result.content[0].text).toContain("Found 1 matches");
@@ -119,45 +108,6 @@ describe("AST Grep Extension", () => {
 
       expect(result.content[0].text).toContain("ast-grep error");
     });
-
-    it("should handle debug mode", async () => {
-      const mockResult = {
-        code: 0,
-        stdout: "Debug AST output",
-      };
-      mockPi.exec.mockResolvedValue(mockResult);
-
-      const registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "ast-search",
-      )[0];
-
-      const result = await registeredTool.execute(
-        "tool1",
-        {
-          pattern: "console.log($$$ARGS)",
-          language: "javascript",
-          debug: true,
-        },
-        vi.fn(),
-        mockCtx,
-      );
-
-      expect(mockPi.exec).toHaveBeenCalledWith(
-        "ast-grep",
-        [
-          "run",
-          "--pattern",
-          "console.log($$$ARGS)",
-          "--lang",
-          "javascript",
-          "--json",
-          "--debug-query=cst",
-          ".",
-        ],
-        { signal: undefined },
-      );
-      expect(result.details.debug).toBe(true);
-    });
   });
 
   describe("ast-replace tool", () => {
@@ -165,7 +115,7 @@ describe("AST Grep Extension", () => {
       const mockResult = {
         code: 0,
         stdout:
-          '[{"file": "test.js", "lines": "console.log(\\"old\\");", "rewrite": "console.log(\\"new\\");"}]',
+          'test.js\n@@ -0,1 +0,1 @@\n1  │-console.log("old");\n  1│+console.log("new");',
       };
       mockPi.exec.mockResolvedValue(mockResult);
 
@@ -195,12 +145,11 @@ describe("AST Grep Extension", () => {
           "console.log($MSG)",
           "--lang",
           "javascript",
-          "--json",
           ".",
         ],
         expect.any(Object),
       );
-      expect(result.content[0].text).toContain("Preview:");
+      expect(result.content[0].text).toContain("Preview of changes");
       expect(result.details.preview).toBe(true);
     });
 
@@ -250,8 +199,7 @@ describe("AST Grep Extension", () => {
     it("should execute advanced scan successfully", async () => {
       const mockResult = {
         code: 0,
-        stdout:
-          '[{"file": "test.js", "range": {"start": {"line": 1}}, "lines": "async function test() {"}]',
+        stdout: "help[scan-rule]: \n  ┌─ test.js:1:1\n  │\n1 │ function test() {}\n  │ ^^^^^^^^^^^^^^^^^^\n",
       };
       mockPi.exec.mockResolvedValue(mockResult);
 
@@ -277,12 +225,11 @@ describe("AST Grep Extension", () => {
           "scan",
           "--inline-rules",
           `{"id": "scan-rule", "language": "javascript", "rule": ${rule}}`,
-          "--json",
           ".",
         ],
         expect.any(Object),
       );
-      expect(result.content[0].text).toContain("Found 1 matches");
+      expect(result.content[0].text).toContain("Scan results");
     });
 
     it("should validate JSON rule", async () => {

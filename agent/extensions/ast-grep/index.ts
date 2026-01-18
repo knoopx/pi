@@ -97,15 +97,7 @@ Supports pattern variables and multiple languages.`,
         path?: string;
       };
 
-      const args = [
-        "run",
-        "--pattern",
-        pattern,
-        "--lang",
-        language,
-        "--json",
-        path,
-      ];
+      const args = ["run", "--pattern", pattern, "--lang", language, path];
 
       const result = await pi.exec("ast-grep", args, { signal });
 
@@ -116,65 +108,67 @@ Supports pattern variables and multiple languages.`,
         };
       }
 
-      // Parse JSON output for matches
-      try {
-        const matches = JSON.parse(result.stdout);
-        const matchCount = matches.length;
-        let summary = `Found ${matchCount} matches for pattern '${pattern}' in ${language}:\n\n`;
+      // Parse text output
+      const lines = result.stdout
+        .trim()
+        .split("\n")
+        .filter((line) => line.trim());
+      const matches = lines
+        .map((line) => {
+          const colonIndex = line.indexOf(":");
+          if (colonIndex === -1) return null;
+          const rest = line.slice(colonIndex + 1);
+          const colonIndex2 = rest.indexOf(":");
+          if (colonIndex2 === -1) return null;
+          const file = line.slice(0, colonIndex);
+          const lineStr = rest.slice(0, colonIndex2);
+          const content = rest.slice(colonIndex2 + 1);
+          const lineNum = parseInt(lineStr) - 1;
+          return {
+            file,
+            range: { start: { line: lineNum } },
+            lines: content,
+          };
+        })
+        .filter((m) => m !== null);
 
-        for (let i = 0; i < Math.min(matches.length, 10); i++) {
-          const match = matches[i];
-          summary += `Match ${i + 1}:\n`;
-          summary += `File: ${match.file}\n`;
-          summary += `Line: ${match.range.start.line + 1}\n`;
-          summary += `Code: ${match.lines.trim()}\n\n`;
-        }
+      const matchCount = matches.length;
+      let summary = `Found ${matchCount} matches for pattern '${pattern}' in ${language}:\n\n`;
 
-        if (matches.length > 10) {
-          summary += `... and ${matches.length - 10} more matches\n`;
-        }
-
-        // Truncate if too long
-        const truncation = truncateHead(summary, {
-          maxLines: DEFAULT_MAX_LINES,
-          maxBytes: DEFAULT_MAX_BYTES,
-        });
-
-        let finalOutput = truncation.content;
-        if (truncation.truncated) {
-          finalOutput += `\n\n[Output truncated: ${truncation.outputLines} of ${truncation.totalLines} lines`;
-          finalOutput += ` (${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}).`;
-          finalOutput += ` Full results in raw output above.]`;
-        }
-
-        return {
-          content: [{ type: "text", text: finalOutput }],
-          details: {
-            pattern,
-            language,
-            matchCount,
-            matches: matches.slice(0, 10),
-          },
-        };
-      } catch (parseError) {
-        // Fallback to raw output
-        const truncation = truncateHead(result.stdout, {
-          maxLines: DEFAULT_MAX_LINES,
-          maxBytes: DEFAULT_MAX_BYTES,
-        });
-
-        let finalOutput = truncation.content;
-        if (truncation.truncated) {
-          finalOutput += `\n\n[Output truncated. Full output in stderr above.]`;
-        }
-
-        return {
-          content: [
-            { type: "text", text: `Raw ast-grep output:\n${finalOutput}` },
-          ],
-          details: { pattern, language, raw: true },
-        };
+      for (let i = 0; i < Math.min(matches.length, 10); i++) {
+        const match = matches[i];
+        summary += `Match ${i + 1}:\n`;
+        summary += `File: ${match.file}\n`;
+        summary += `Line: ${match.range.start.line + 1}\n`;
+        summary += `Code: ${match.lines.trim()}\n\n`;
       }
+
+      if (matches.length > 10) {
+        summary += `... and ${matches.length - 10} more matches\n`;
+      }
+
+      // Truncate if too long
+      const truncation = truncateHead(summary, {
+        maxLines: DEFAULT_MAX_LINES,
+        maxBytes: DEFAULT_MAX_BYTES,
+      });
+
+      let finalOutput = truncation.content;
+      if (truncation.truncated) {
+        finalOutput += `\n\n[Output truncated: ${truncation.outputLines} of ${truncation.totalLines} lines`;
+        finalOutput += ` (${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}).`;
+        finalOutput += ` Full results in raw output above.]`;
+      }
+
+      return {
+        content: [{ type: "text", text: finalOutput }],
+        details: {
+          pattern,
+          language,
+          matchCount,
+          matches: matches.slice(0, 10),
+        },
+      };
     },
   });
 
@@ -244,9 +238,7 @@ Always use dry-run first to preview changes.`,
         "--lang",
         language,
       ];
-      if (dryRun) {
-        args.push("--json");
-      } else {
+      if (!dryRun) {
         args.push("--update-all");
       }
       args.push(path);
@@ -261,53 +253,25 @@ Always use dry-run first to preview changes.`,
       }
 
       if (dryRun) {
-        // Parse JSON output for preview
-        try {
-          const changes = JSON.parse(result.stdout);
-          let summary = `Preview: ${changes.length} potential replacements for pattern '${pattern}' with '${rewrite}':\n\n`;
+        // Show diff preview
+        const summary = `Preview of changes for pattern '${pattern}' -> '${rewrite}':\n\n${result.stdout.trim()}\n\nUse dryRun: false to apply these changes.`;
 
-          for (let i = 0; i < Math.min(changes.length, 5); i++) {
-            const change = changes[i];
-            summary += `File: ${change.file}\n`;
-            summary += `Before: ${change.lines.trim()}\n`;
-            summary += `After:  ${change.rewrite.trim()}\n\n`;
-          }
-
-          if (changes.length > 5) {
-            summary += `... and ${changes.length - 5} more changes\n`;
-          }
-
-          summary += `\nUse dryRun: false to apply these changes.`;
-
-          return {
-            content: [{ type: "text", text: summary }],
-            details: {
-              pattern,
-              rewrite,
-              language,
-              changeCount: changes.length,
-              changes: changes.slice(0, 5),
-              preview: true,
-            },
-          };
-        } catch (parseError) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Failed to parse preview: ${parseError}\nRaw output: ${result.stdout}`,
-              },
-            ],
-            details: {},
-          };
-        }
+        return {
+          content: [{ type: "text", text: summary }],
+          details: {
+            pattern,
+            rewrite,
+            language,
+            preview: true,
+          },
+        };
       } else {
         // Applied changes
         return {
           content: [
             {
               type: "text",
-              text: `Applied ${result.stdout.trim() || "changes"} for pattern '${pattern}' -> '${rewrite}'`,
+              text: `Applied changes for pattern '${pattern}' -> '${rewrite}': ${result.stdout.trim()}`,
             },
           ],
           details: { pattern, rewrite, language, applied: true },
@@ -377,7 +341,6 @@ Supports 'all', 'any', 'not', 'inside', 'has' operators.`,
         "scan",
         "--inline-rules",
         `{"id": "scan-rule", "language": "${language}", "rule": ${rule}}`,
-        "--json",
         path,
       ];
 
@@ -390,64 +353,29 @@ Supports 'all', 'any', 'not', 'inside', 'has' operators.`,
         };
       }
 
-      try {
-        const matches = JSON.parse(result.stdout);
-        const matchCount = matches.length;
-        let summary = `Found ${matchCount} matches for advanced rule in ${language}:\n\n`;
+      // Show scan results
+      const summary = `Scan results for rule in ${language}:\n\n${result.stdout.trim()}`;
 
-        for (let i = 0; i < Math.min(matches.length, 10); i++) {
-          const match = matches[i];
-          summary += `Match ${i + 1}:\n`;
-          summary += `File: ${match.file}\n`;
-          summary += `Line: ${match.range.start.line + 1}\n`;
-          summary += `Code: ${match.lines.trim()}\n\n`;
-        }
+      // Truncate if too long
+      const truncation = truncateHead(summary, {
+        maxLines: DEFAULT_MAX_LINES,
+        maxBytes: DEFAULT_MAX_BYTES,
+      });
 
-        if (matches.length > 10) {
-          summary += `... and ${matches.length - 10} more matches\n`;
-        }
-
-        // Truncate if too long
-        const truncation = truncateHead(summary, {
-          maxLines: DEFAULT_MAX_LINES,
-          maxBytes: DEFAULT_MAX_BYTES,
-        });
-
-        let finalOutput = truncation.content;
-        if (truncation.truncated) {
-          finalOutput += `\n\n[Output truncated: ${truncation.outputLines} of ${truncation.totalLines} lines`;
-          finalOutput += ` (${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}).`;
-          finalOutput += ` Full results in raw output above.]`;
-        }
-
-        return {
-          content: [{ type: "text", text: finalOutput }],
-          details: {
-            rule,
-            language,
-            matchCount,
-            matches: matches.slice(0, 10),
-          },
-        };
-      } catch (parseError) {
-        // Fallback to raw output
-        const truncation = truncateHead(result.stdout, {
-          maxLines: DEFAULT_MAX_LINES,
-          maxBytes: DEFAULT_MAX_BYTES,
-        });
-
-        let finalOutput = truncation.content;
-        if (truncation.truncated) {
-          finalOutput += `\n\n[Output truncated. Full output in stderr above.]`;
-        }
-
-        return {
-          content: [
-            { type: "text", text: `Raw ast-grep output:\n${finalOutput}` },
-          ],
-          details: { rule, language, raw: true },
-        };
+      let finalOutput = truncation.content;
+      if (truncation.truncated) {
+        finalOutput += `\n\n[Output truncated: ${truncation.outputLines} of ${truncation.totalLines} lines`;
+        finalOutput += ` (${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}).`;
+        finalOutput += ` Full results in raw output above.]`;
       }
+
+      return {
+        content: [{ type: "text", text: finalOutput }],
+        details: {
+          rule,
+          language,
+        },
+      };
     },
   });
 }
