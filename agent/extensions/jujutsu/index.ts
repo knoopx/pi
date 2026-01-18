@@ -7,6 +7,7 @@ import type {
   SessionEntry,
 } from "@mariozechner/pi-coding-agent";
 import { spawn } from "node:child_process";
+import { writeFileSync, unlinkSync } from "node:fs";
 
 /**
  * Jujutsu extension for Pi coding agent.
@@ -40,8 +41,8 @@ export default function (pi: ExtensionAPI) {
 
   /** Map of entryId -> changeId for changes */
   const changes = new Map<string, string>();
-  /** Stack of {changeId, messageId} for multi-level redo */
-  const redoStack: Array<{ changeId: string; messageId: string }> = [];
+  /** Stack of {diff, description, messageId} for multi-level redo */
+  const redoStack: Array<{ diff: string; description: string; messageId: string }> = [];
   /** Flag to enable/disable hooks */
   let hooksEnabled = true;
 
@@ -465,12 +466,12 @@ Respond with only the change message, no additional text.`;
   );
 
   /**
-   * Undo command: Revert to the previous user message and restore repository state.
-   * This removes all conversation after that message and restores JJ to before the next message was processed.
+   * Undo command: Abandon the current change and restore repository state to before that change was processed.
+   * This removes the current change and switches to the previous user message's change.
    */
   pi.registerCommand("undo", {
     description:
-      "Revert to the previous user message and restore the repository state to before that message was processed",
+      "Abandon the current change and restore the repository state to before that change was processed",
     handler: async (args: string, ctx: ExtensionCommandContext) => {
       if (!(await isJujutsuRepo())) {
         ctx.ui.notify("Not in a Jujutsu repository", "warning");
@@ -498,20 +499,43 @@ Respond with only the change message, no additional text.`;
         return;
       }
 
-      // Get current change ID before switching for redo
-      const currentChangeId = await getCurrentChangeId();
+      // Capture the current change's diff and description before abandoning
+      const { stdout: diffOutput } = await pi.exec("jj", ["diff"]);
+      const { stdout: descOutput } = await pi.exec("jj", [
+        "log",
+        "-r",
+        "@",
+        "-T",
+        "description",
+        "--no-graph",
+      ]);
 
-      // Push current state to redo stack
+      // Push current change info to redo stack
       redoStack.push({
-        changeId: currentChangeId,
+        diff: diffOutput,
+        description: descOutput.trim(),
         messageId: targetEntryId,
       });
 
-      // Restore the jj checkpoint
-      const success = await execJj(["edit", changeId], "Failed to undo", ctx);
-      if (!success) {
-        // Remove from redo stack if jj edit failed
+      // Abandon the current change
+      const abandonSuccess = await execJj(
+        ["abandon"],
+        "Failed to abandon current change",
+        ctx,
+      );
+      if (!abandonSuccess) {
+        // Remove from redo stack if abandon failed
         redoStack.pop();
+        return;
+      }
+
+      // Switch to the target change
+      const editSuccess = await execJj(
+        ["edit", changeId],
+        "Failed to switch to target change",
+        ctx,
+      );
+      if (!editSuccess) {
         return;
       }
 
@@ -519,18 +543,18 @@ Respond with only the change message, no additional text.`;
       await navigateWithCancellation(
         ctx,
         targetEntryId,
-        `Reverted to checkpoint ${changeId} and restored edit mode`,
+        `Abandoned current change and restored edit mode to ${changeId}`,
       );
     },
   });
 
   /**
-   * Redo command: Restore to the change before the last undo.
-   * Supports multiple redos by maintaining a stack.
+   * Redo command: Restore the last abandoned change by recreating it.
+   * Supports multiple redos by maintaining a stack of abandoned change data.
    */
   pi.registerCommand("redo", {
     description:
-      "Redo the last undo operation by switching back to the previous change",
+      "Redo the last undo operation by recreating the abandoned change",
     handler: async (args: string, ctx: ExtensionCommandContext) => {
       if (!(await isJujutsuRepo())) {
         ctx.ui.notify("Not in a Jujutsu repository", "warning");
@@ -542,29 +566,68 @@ Respond with only the change message, no additional text.`;
         return;
       }
 
-      // Pop the last redo checkpoint
+      // Pop the last redo entry
       const redoEntry = redoStack.pop()!;
-      const { changeId: redoChangeId } = redoEntry;
+      const { diff, description } = redoEntry;
 
-      // Switch back to the redo checkpoint
-      const success = await execJj(
-        ["edit", redoChangeId],
-        "Failed to redo",
+      // Create a new change
+      const newSuccess = await execJj(
+        ["new"],
+        "Failed to create new change",
         ctx,
       );
-      if (!success) {
-        // Push back to stack if jj edit failed
+      if (!newSuccess) {
+        // Push back to stack if new failed
         redoStack.push(redoEntry);
         return;
       }
 
-      // Navigate to the end of the conversation (where we were before undo)
+      // Apply the diff patch if there's content
+      if (diff.trim()) {
+        const tempFile = `/tmp/jj-redo-${Date.now()}.patch`;
+        try {
+          writeFileSync(tempFile, diff);
+          const patchSuccess = await execJj(
+            ["patch", tempFile],
+            "Failed to apply patch",
+            ctx,
+          );
+          if (!patchSuccess) {
+            // If patch fails, abandon the new change and restore stack
+            await pi.exec("jj", ["abandon"]);
+            redoStack.push(redoEntry);
+            return;
+          }
+        } finally {
+          // Clean up temp file
+          try {
+            unlinkSync(tempFile);
+          } catch {
+            // Ignore cleanup errors
+          }
+        }
+      }
+
+      // Set the description
+      if (description) {
+        const describeSuccess = await execJj(
+          ["describe", "-m", description],
+          "Failed to set description",
+          ctx,
+        );
+        if (!describeSuccess) {
+          // Description setting failed, but change is created, so continue
+          ctx.ui.notify("Warning: Failed to restore description", "warning");
+        }
+      }
+
+      // Navigate to the end of the conversation
       const allEntries = ctx.sessionManager.getBranch();
       const lastEntry = allEntries[allEntries.length - 1];
       await navigateWithCancellation(
         ctx,
         lastEntry.id,
-        `Redid to checkpoint ${redoChangeId} and restored edit mode`,
+        `Recreated abandoned change and restored edit mode`,
       );
     },
   });
