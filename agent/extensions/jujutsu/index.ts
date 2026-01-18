@@ -315,12 +315,19 @@ export default function (pi: ExtensionAPI) {
     model: string | undefined,
     signal: AbortSignal | undefined,
   ): Promise<string> {
+    // Truncate diff to prevent argument length issues
+    const maxDiffLength = 50000;
+    const truncatedDiff =
+      diffOutput.length > maxDiffLength
+        ? diffOutput.substring(0, maxDiffLength) + "\n... (truncated)"
+        : diffOutput;
+
     const task = `Generate a conventional change description for the following Jujutsu diff. Use the format: type(scope): icon short description
 
 Follow conventional commit standards with appropriate icons. Analyze the changes and provide a meaningful description.
 
 ${prompt ? `Issue/Request: ${prompt}\n\n` : ""}Diff:
-${diffOutput}
+${truncatedDiff}
 
 Respond with only the change message, no additional text.`;
 
@@ -412,7 +419,7 @@ Respond with only the change message, no additional text.`;
         }
 
         // Generate a proper description from diff
-        const { stdout: diffOutput } = await pi.exec("jj", ["diff"]);
+        const { stdout: diffOutput } = await pi.exec("jj", ["diff", "--stat"]);
 
         // Check signal before generation
         if (contextSignal?.aborted) {
