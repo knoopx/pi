@@ -419,7 +419,9 @@ Respond with only the change message, no additional text.`;
         }
 
         // Generate a proper description from diff
-        const { stdout: diffOutput } = await pi.exec("jj", ["diff", "--stat"]);
+        const { stdout: diffOutput } = await pi.exec("jj", ["diff", "--stat"], {
+          signal: contextSignal,
+        });
 
         // Check signal before generation
         if (contextSignal?.aborted) {
@@ -448,12 +450,11 @@ Respond with only the change message, no additional text.`;
           return;
         }
 
-        await pi.exec("jj", [
-          "describe",
-          currentChangeId,
-          "-m",
-          newDescription,
-        ]);
+        await pi.exec(
+          "jj",
+          ["describe", currentChangeId, "-m", newDescription],
+          { signal: contextSignal },
+        );
 
         ctx.ui.notify(
           `Updated change description to: ${newDescription}`,
