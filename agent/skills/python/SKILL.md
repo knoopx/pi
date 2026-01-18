@@ -496,6 +496,8 @@ uv run pytest -v
 
 # 6. Check coverage
 uv run pytest --cov=src tests/
+
+# 7. Run development server: `tmux new -d 'uv run uvicorn my_project.main:app --reload'`
 ```
 
 ### Pre-commit Workflow

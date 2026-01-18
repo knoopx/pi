@@ -83,7 +83,7 @@ podman system df
 ## Headless / Non-Interactive Tips
 
 - **Force Flag**: Use `-f` or `--force` with `rm`, `rmi`, and `prune` to avoid confirmation prompts.
-- **Detached Mode**: Always use `-d` for long-running services to prevent the command from hanging.
+- **Detached Mode**: Always use `-d` for long-running services to prevent the command from hanging. For interactive sessions, use: `tmux new -d 'podman run -it --name my-app alpine sh'`
 - **Rootless**: Podman runs in rootless mode by default for the current user. Ensure subuid/subgid are configured if running complex workloads.
 - **Docker Compatibility**: Most `docker` commands can be prefixed with `podman` instead.
 

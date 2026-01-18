@@ -86,7 +86,7 @@ export default defineConfig({
 
 # Command Line Interface
 
-- `bun run vitest`: Run tests in watch mode
+- `bun run vitest`: `tmux new -d 'bun run vitest'` (run tests in watch mode)
 - `bun run vitest run`: Run tests once
 - `bun run vitest run --coverage`: Run with coverage
 - `bun run vitest --config <file>`: Specify config file

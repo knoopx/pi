@@ -20,6 +20,8 @@ nix run nixpkgs#cowsay -- "Hello from Nix!"
 
 # Run a command within a shell environment (non-interactive)
 nix shell nixpkgs#git nixpkgs#vim --command git --version
+
+# Run long-running applications (e.g., servers): `tmux new -d 'nix run nixpkgs#some-server'`
 ```
 
 ## Evaluating Expressions (Debugging)

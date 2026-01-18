@@ -179,11 +179,9 @@ bun -e "console.log(1 + 1)"
 # Print expression result
 bun -p "2 * 5"
 
-# Watch mode (auto-restart on changes)
-bun run --watch ./src/index.ts
+# Watch mode (auto-restart on changes): `tmux new -d 'bun run --watch ./src/index.ts'`
 
-# Hot reload (preserves state)
-bun run --hot ./src/index.ts
+# Hot reload (preserves state): `tmux new -d 'bun run --hot ./src/index.ts'`
 
 # Auto-install missing dependencies
 bun run -i ./script.ts
@@ -280,8 +278,7 @@ bun test --only
 # Include tests marked with .todo()
 bun test --todo
 
-# Watch mode (re-run on changes)
-bun test --watch
+# Watch mode (re-run on changes): `tmux new -d 'bun test --watch'`
 
 # Exit after N failures
 bun test --bail 3
