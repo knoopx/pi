@@ -1,8 +1,4 @@
-import type {
-  ExtensionAPI,
-  AgentToolUpdateCallback,
-  ExtensionContext,
-} from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 export default function (pi: ExtensionAPI) {
@@ -25,19 +21,13 @@ Shows file counts, lines of code, and language breakdown.`,
         }),
       ),
     }),
-    async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
-    ) {
+    async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       try {
         const args = ["stats"];
         if (params.path) {
           args.push(params.path);
         } else {
-          args.push(ctx.cwd || ".");
+          args.push(".");
         }
 
         const result = await pi.exec("cm", args, { signal });
@@ -78,16 +68,8 @@ Use this to:
 - Find files and symbols quickly
 - Get context for development tasks
 
-Supports filtering by patterns and detail levels.`,
+Supports filtering by detail level.`,
     parameters: Type.Object({
-      patterns: Type.Optional(
-        Type.Array(
-          Type.String({
-            description:
-              "Glob patterns to include files (e.g., ['src/**/*.ts', 'lib/*.js'])",
-          }),
-        ),
-      ),
       budget: Type.Optional(
         Type.Number({
           description: "Token budget to auto-reduce detail to fit",
@@ -96,49 +78,24 @@ Supports filtering by patterns and detail levels.`,
       exportedOnly: Type.Optional(
         Type.Boolean({ description: "Only include exported symbols" }),
       ),
-      noComments: Type.Optional(
-        Type.Boolean({ description: "Exclude JSDoc comments" }),
-      ),
-      noImports: Type.Optional(
-        Type.Boolean({ description: "Exclude import lists" }),
-      ),
-      output: Type.Optional(
-        Type.Union([Type.Literal("text"), Type.Literal("json")], {
-          description: "Output format",
-        }),
-      ),
     }),
 
-    async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
-    ) {
+    async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       try {
-        // Use codemapper's 'map' command to generate codebase structure
-        const args = ["map", ctx.cwd || "."];
+        const args = ["map", "."];
 
-        // Add level for detail (similar to token budget concept)
         if (params.budget) {
-          // Map budget to level: smaller budget = less detail
           const level = params.budget < 2000 ? 1 : params.budget < 5000 ? 2 : 3;
           args.push("--level", level.toString());
         } else {
-          args.push("--level", "2"); // Default level
+          args.push("--level", "2");
         }
 
-        // Use 'ai' format for LLM-friendly output, or 'default' for markdown
-        const format = params.output === "json" ? "ai" : "ai"; // codemapper doesn't have json, ai is compact
-        args.push("--format", format);
+        args.push("--format", "ai");
 
         if (params.exportedOnly) {
           args.push("--exports-only");
         }
-
-        // Note: codemapper doesn't have direct equivalents for noComments/noImports
-        // The 'ai' format is already compact and excludes verbose details
 
         const result = await pi.exec("cm", args, { signal });
 
@@ -147,30 +104,23 @@ Supports filtering by patterns and detail levels.`,
             content: [
               {
                 type: "text",
-                text: `Error generating codemap: ${result.stderr}`,
+                text: `Error generating code map: ${result.stderr}`,
               },
             ],
             details: {},
           };
         }
 
-        let output = result.stdout;
-        if (params.output === "json") {
-          // Try to convert the output to JSON-like structure
-          // For now, just return as text since codemapper outputs formatted text
-          output = JSON.stringify({ codemap: output }, null, 2);
-        }
-
         return {
-          content: [{ type: "text", text: output }],
-          details: { format: params.output || "text" },
+          content: [{ type: "text", text: result.stdout }],
+          details: {},
         };
       } catch (error: any) {
         return {
           content: [
             {
               type: "text",
-              text: `Error generating codemap: ${error.message}`,
+              text: `Error generating code map: ${error.message}`,
             },
           ],
           details: {},
@@ -211,13 +161,7 @@ Supports fuzzy and exact matching.`,
         }),
       ),
     }),
-    async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
-    ) {
+    async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       try {
         const args = ["query", params.query];
 
@@ -277,13 +221,7 @@ Shows detailed breakdown of file components.`,
         description: "Path to the file to inspect",
       }),
     }),
-    async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
-    ) {
+    async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       try {
         const result = await pi.exec("cm", ["inspect", params.file], {
           signal,
@@ -331,13 +269,7 @@ Shows reverse dependencies and call sites.`,
         description: "Symbol name to find callers for",
       }),
     }),
-    async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
-    ) {
+    async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       try {
         const result = await pi.exec("cm", ["callers", params.symbol], {
           signal,
@@ -385,13 +317,7 @@ Shows forward dependencies and call chains.`,
         description: "Symbol name to find callees for",
       }),
     }),
-    async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
-    ) {
+    async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       try {
         const result = await pi.exec("cm", ["callees", params.symbol], {
           signal,
@@ -442,13 +368,7 @@ Shows the call chain linking the symbols.`,
         description: "Target symbol",
       }),
     }),
-    async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
-    ) {
+    async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       try {
         const result = await pi.exec("cm", ["trace", params.from, params.to], {
           signal,
@@ -511,13 +431,7 @@ Supports forward and reverse dependency analysis.`,
       ),
     }),
 
-    async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
-    ) {
+    async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
       try {
         const args = ["deps"];
 

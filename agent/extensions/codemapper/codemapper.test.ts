@@ -83,7 +83,7 @@ describe("Codemapper Extension", () => {
       expect(result.isError).not.toBe(true);
     });
 
-    it("should get code statistics with default path", async () => {
+    it("should get code statistics with empty params", async () => {
       const mockResult = {
         code: 0,
         stdout: "Default path statistics",
@@ -91,11 +91,9 @@ describe("Codemapper Extension", () => {
       };
       mockPi.exec.mockResolvedValue(mockResult);
 
-      const result = await registeredTool.execute("tool1", {}, vi.fn(), {
-        cwd: "/my/project",
-      });
+      const result = await registeredTool.execute("tool1", {}, vi.fn(), {});
 
-      expect(mockPi.exec).toHaveBeenCalledWith("cm", ["stats", "/my/project"], {
+      expect(mockPi.exec).toHaveBeenCalledWith("cm", ["stats", "."], {
         signal: undefined,
       });
       expect(result.content[0].text).toBe("Default path statistics");
@@ -174,14 +172,10 @@ describe("Codemapper Extension", () => {
       });
     });
 
-    it("should have proper parameter schema with all options", () => {
+    it("should have proper parameter schema", () => {
       const props = registeredTool.parameters.properties;
-      expect(props).toHaveProperty("patterns");
       expect(props).toHaveProperty("budget");
       expect(props).toHaveProperty("exportedOnly");
-      expect(props).toHaveProperty("noComments");
-      expect(props).toHaveProperty("noImports");
-      expect(props).toHaveProperty("output");
     });
 
     it("should generate code map with default parameters", async () => {
@@ -192,13 +186,11 @@ describe("Codemapper Extension", () => {
       };
       mockPi.exec.mockResolvedValue(mockResult);
 
-      const result = await registeredTool.execute("tool1", {}, vi.fn(), {
-        cwd: "/test/project",
-      });
+      const result = await registeredTool.execute("tool1", {}, vi.fn(), {});
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["map", "/test/project", "--level", "2", "--format", "ai"],
+        ["map", ".", "--level", "2", "--format", "ai"],
         { signal: undefined },
       );
       expect(result.content[0].text).toBe("Code map output");
@@ -212,13 +204,11 @@ describe("Codemapper Extension", () => {
       };
       mockPi.exec.mockResolvedValue(mockResult);
 
-      await registeredTool.execute("tool1", { budget: 1000 }, vi.fn(), {
-        cwd: "/test",
-      });
+      await registeredTool.execute("tool1", { budget: 1000 }, vi.fn(), {});
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["map", "/test", "--level", "1", "--format", "ai"],
+        ["map", ".", "--level", "1", "--format", "ai"],
         { signal: undefined },
       );
     });
@@ -227,13 +217,11 @@ describe("Codemapper Extension", () => {
       const mockResult = { code: 0, stdout: "Medium detail map", stderr: "" };
       mockPi.exec.mockResolvedValue(mockResult);
 
-      await registeredTool.execute("tool1", { budget: 3000 }, vi.fn(), {
-        cwd: "/test",
-      });
+      await registeredTool.execute("tool1", { budget: 3000 }, vi.fn(), {});
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["map", "/test", "--level", "2", "--format", "ai"],
+        ["map", ".", "--level", "2", "--format", "ai"],
         { signal: undefined },
       );
     });
@@ -242,13 +230,11 @@ describe("Codemapper Extension", () => {
       const mockResult = { code: 0, stdout: "Full detail map", stderr: "" };
       mockPi.exec.mockResolvedValue(mockResult);
 
-      await registeredTool.execute("tool1", { budget: 6000 }, vi.fn(), {
-        cwd: "/test",
-      });
+      await registeredTool.execute("tool1", { budget: 6000 }, vi.fn(), {});
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["map", "/test", "--level", "3", "--format", "ai"],
+        ["map", ".", "--level", "3", "--format", "ai"],
         { signal: undefined },
       );
     });
@@ -257,44 +243,18 @@ describe("Codemapper Extension", () => {
       const mockResult = { code: 0, stdout: "Exports only map", stderr: "" };
       mockPi.exec.mockResolvedValue(mockResult);
 
-      await registeredTool.execute("tool1", { exportedOnly: true }, vi.fn(), {
-        cwd: "/test",
-      });
+      await registeredTool.execute(
+        "tool1",
+        { exportedOnly: true },
+        vi.fn(),
+        {},
+      );
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["map", "/test", "--level", "2", "--format", "ai", "--exports-only"],
+        ["map", ".", "--level", "2", "--format", "ai", "--exports-only"],
         { signal: undefined },
       );
-    });
-
-    it("should handle JSON output format", async () => {
-      const mockResult = { code: 0, stdout: "map data", stderr: "" };
-      mockPi.exec.mockResolvedValue(mockResult);
-
-      const result = await registeredTool.execute(
-        "tool1",
-        { output: "json" },
-        vi.fn(),
-        { cwd: "/test" },
-      );
-
-      expect(result.details.format).toBe("json");
-      expect(result.content[0].text).toContain("codemap");
-    });
-
-    it("should handle text output format", async () => {
-      const mockResult = { code: 0, stdout: "text output", stderr: "" };
-      mockPi.exec.mockResolvedValue(mockResult);
-
-      const result = await registeredTool.execute(
-        "tool1",
-        { output: "text" },
-        vi.fn(),
-        { cwd: "/test" },
-      );
-
-      expect(result.details.format).toBe("text");
     });
 
     it("should handle command execution errors", async () => {
@@ -316,7 +276,7 @@ describe("Codemapper Extension", () => {
 
       const result = await registeredTool.execute("tool1", {}, vi.fn(), {});
 
-      expect(result.content[0].text).toContain("Error generating codemap");
+      expect(result.content[0].text).toContain("Error generating code map");
     });
   });
 
