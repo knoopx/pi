@@ -108,6 +108,37 @@ Provides examples for commands, languages, and tools.`);
     delete global.fetch;
   });
 
+  it("should decode HTML entities in the response", async () => {
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            "# jj\nJujutsu command examples\n\n$ jj desc -r&quot;trunk()..description(&#x27;&#x27;)&quot;",
+          ),
+      } as any),
+    );
+
+    extension(mockPi);
+    const toolDef = mockPi.registerTool.mock.calls[0][0];
+
+    const result = await toolDef.execute(
+      "test-id",
+      { query: "jj" },
+      null,
+      null,
+      null,
+    );
+
+    expect(result.content[0].text).toContain(
+      "$ jj desc -r\"trunk()..description('')\"",
+    );
+    expect(result.content[0].text).not.toContain("&quot;");
+    expect(result.content[0].text).not.toContain("&#x27;");
+
+    delete global.fetch;
+  });
+
   it("should handle cancellation", async () => {
     const abortController = new AbortController();
     abortController.abort();

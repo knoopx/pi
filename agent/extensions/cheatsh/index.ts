@@ -85,11 +85,28 @@ Provides examples for commands, languages, and tools.`,
 
         const cheatsheet = await response.text();
 
+        // Decode HTML entities
+        const decodedCheatsheet = cheatsheet
+          .replace(/&quot;/g, '"')
+          .replace(/&#x27;/g, "'")
+          .replace(/&#39;/g, "'")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&amp;/g, "&")
+          .replace(/&nbsp;/g, " ")
+          .replace(/&hellip;/g, "…")
+          .replace(/&mdash;/g, "—")
+          .replace(/&ndash;/g, "–")
+          .replace(/&lsquo;/g, "'")
+          .replace(/&rsquo;/g, "'")
+          .replace(/&ldquo;/g, '"')
+          .replace(/&rdquo;/g, '"');
+
         // No need to strip ANSI codes: ?T returns plain text
 
         // Truncate if too long (following best practices)
         const MAX_CONTENT_LENGTH = 10000; // Reasonable limit for LLM context
-        let content = cheatsheet.trim();
+        let content = decodedCheatsheet.trim();
         let truncated = false;
 
         if (content.length > MAX_CONTENT_LENGTH) {
