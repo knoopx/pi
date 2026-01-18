@@ -4,28 +4,48 @@ import type {
   ExtensionCommandContext,
   BeforeAgentStartEvent,
   TurnStartEvent,
+  SessionEntry,
 } from "@mariozechner/pi-coding-agent";
+import { spawn } from "node:child_process";
 
 /**
  * Jujutsu extension for Pi coding agent.
- * Provides snapshot-based undo/redo functionality integrated with JJ version control.
+ * Provides change-based undo/redo functionality integrated with JJ version control.
  *
  * Features:
- * - Automatic snapshots before processing user messages
+ * - Automatic changes before processing user messages
  * - Undo command to revert conversation and repository state
  * - Redo command to restore after undo
- * - Snapshots command to list available checkpoints
  */
 export default function (pi: ExtensionAPI) {
-  /** Map of entryId -> changeId for snapshots */
-  const snapshots = new Map<string, string>();
-  /** ID of the last user message entry for undo */
-  let lastUserMessageEntryId: string | undefined;
+  // Check if current directory is a Jujutsu repository
+  async function isJujutsuRepo(): Promise<boolean> {
+    try {
+      await pi.exec("jj", ["status"]);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Check if pi command is available
+  async function isPiCommandAvailable(): Promise<boolean> {
+    try {
+      await pi.exec("pi", ["--version"]);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Map of entryId -> changeId for changes */
+  const changes = new Map<string, string>();
   /** Stack of {changeId, messageId} for multi-level redo */
   const redoStack: Array<{ changeId: string; messageId: string }> = [];
 
   /**
    * Get the current JJ change ID
+   * @throws Error if JJ command fails
    */
   async function getCurrentChangeId(): Promise<string> {
     const { stdout } = await pi.exec("jj", [
@@ -40,16 +60,25 @@ export default function (pi: ExtensionAPI) {
   }
 
   /**
-   * Execute JJ command with error handling
+   * Check if current change is empty (no modifications)
+   * @returns true if change is empty
+   */
+  async function isCurrentChangeEmpty(): Promise<boolean> {
+    const { stdout: diffOutput } = await pi.exec("jj", ["diff"]);
+    return diffOutput.trim() === "";
+  }
+
+  /**
+   * Execute JJ command with error handling and user notification
+   * @param args JJ command arguments
+   * @param errorMessage Error message to display to user
+   * @param ctx Extension command context for notifications
+   * @returns true if successful, false if failed
    */
   async function execJj(
     args: string[],
     errorMessage: string,
-    ctx: {
-      ui: {
-        notify: (msg: string, type?: "info" | "warning" | "error") => void;
-      };
-    },
+    ctx: ExtensionCommandContext,
   ): Promise<boolean> {
     try {
       await pi.exec("jj", args);
@@ -65,16 +94,25 @@ export default function (pi: ExtensionAPI) {
 
   /**
    * Get filtered user message entries from session manager
+   * @param sessionManager Session manager instance
+   * @returns Array of user message entries
    */
-  function getUserEntries(sessionManager: { getBranch: () => any[] }) {
+  function getUserEntries(sessionManager: {
+    getBranch(): SessionEntry[];
+  }): SessionEntry[] {
     const entries = sessionManager.getBranch();
     return entries.filter(
-      (e) => e.type === "message" && e.message.role === "user",
+      (e: SessionEntry) =>
+        e.type === "message" && "message" in e && e.message.role === "user",
     );
   }
 
   /**
    * Navigate to an entry and handle cancellation
+   * @param ctx Extension command context
+   * @param entryId Entry ID to navigate to
+   * @param successMessage Message to display on success
+   * @returns true if navigation succeeded, false if cancelled
    */
   async function navigateWithCancellation(
     ctx: ExtensionCommandContext,
@@ -95,120 +133,331 @@ export default function (pi: ExtensionAPI) {
   }
 
   /**
-   * Check if current change is empty (no modifications)
+   * Generate content using a pi subagent with proper error handling and timeouts
    */
-  async function isCurrentChangeEmpty(): Promise<boolean> {
-    const { stdout: diffOutput } = await pi.exec("jj", ["diff", "--stat"]);
-    return diffOutput.trim() === "";
+  async function generateWithPi(
+    task: string,
+    model: string | undefined,
+    signal: AbortSignal | undefined,
+    timeoutMs: number = 30000,
+  ): Promise<string> {
+    const piAvailable = await isPiCommandAvailable();
+    if (!piAvailable) {
+      throw new Error("pi command not available");
+    }
+
+    if (!model) {
+      throw new Error("Model name not available");
+    }
+
+    if (signal?.aborted) {
+      throw new Error("Operation aborted");
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    const combinedSignal = signal
+      ? AbortSignal.any([signal, controller.signal])
+      : controller.signal;
+
+    try {
+      return await generateWithPiInternal(task, model, combinedSignal);
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   /**
-   * Check if current change has description
+   * Internal implementation of pi subagent generation
    */
-  async function hasCurrentChangeDescription(): Promise<boolean> {
-    const { stdout: descriptionOutput } = await pi.exec("jj", [
-      "show",
-      "--template",
-      "description",
-      "--no-pager",
-    ]);
-    return descriptionOutput.trim() !== "";
+  async function generateWithPiInternal(
+    task: string,
+    model: string,
+    signal: AbortSignal,
+  ): Promise<string> {
+    interface PiEventMessage {
+      role: "assistant" | "toolResult";
+      content: Array<{ type: "text"; text: string }>;
+    }
+
+    interface PiEvent {
+      type: "message_end" | "tool_result_end";
+      message?: PiEventMessage;
+    }
+
+    return new Promise((resolve, reject) => {
+      const args = [
+        "--mode",
+        "json",
+        "-p",
+        "--no-session",
+        "--no-tools",
+        "--no-skills",
+        "--no-extensions",
+        "--model",
+        model,
+        `Task: ${task}`,
+      ];
+
+      const proc = spawn("pi", args, {
+        cwd: process.cwd(),
+        shell: false,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: { ...process.env },
+      });
+
+      let buffer = "";
+      let finalOutput = "";
+      let stderrOutput = "";
+
+      const cleanup = () => {
+        proc.kill("SIGTERM");
+        setTimeout(() => {
+          if (!proc.killed) proc.kill("SIGKILL");
+        }, 5000);
+      };
+
+      const processLine = (line: string) => {
+        if (!line.trim()) return;
+        try {
+          const event: PiEvent = JSON.parse(line);
+          if (event.type === "message_end" && event.message) {
+            const msg = event.message;
+            if (msg.role === "assistant") {
+              for (const part of msg.content) {
+                if (part.type === "text") {
+                  finalOutput += part.text;
+                }
+              }
+            }
+          }
+
+          if (event.type === "tool_result_end" && event.message) {
+            const msg = event.message;
+            if (msg.role === "toolResult") {
+              for (const part of msg.content) {
+                if (part.type === "text") {
+                  finalOutput += part.text;
+                }
+              }
+            }
+          }
+        } catch {
+          // Invalid JSON, skip this line
+          console.warn(`Invalid JSON from pi subagent: ${line}`);
+        }
+      };
+
+      proc.stdout.on("data", (data) => {
+        buffer += data.toString();
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) processLine(line);
+      });
+
+      proc.stderr.on("data", (data) => {
+        stderrOutput += data.toString();
+      });
+
+      proc.on("close", (code) => {
+        if (buffer.trim()) processLine(buffer);
+
+        if (code === 0) {
+          const trimmed = finalOutput.trim();
+          if (trimmed) {
+            resolve(trimmed);
+          } else {
+            reject(
+              new Error(
+                `No output from pi subagent${stderrOutput ? `: ${stderrOutput}` : ""}`,
+              ),
+            );
+          }
+        } else {
+          reject(
+            new Error(
+              `pi subagent exited with code ${code}${stderrOutput ? `: ${stderrOutput}` : ""}`,
+            ),
+          );
+        }
+      });
+
+      proc.on("error", (error) => {
+        reject(new Error(`Failed to spawn pi subagent: ${error.message}`));
+      });
+
+      // Handle abort signal
+      if (signal.aborted) {
+        cleanup();
+        reject(new Error("Operation aborted"));
+      } else {
+        signal.addEventListener(
+          "abort",
+          () => {
+            cleanup();
+            reject(new Error("Operation aborted"));
+          },
+          { once: true },
+        );
+      }
+    });
   }
 
-  /** Track if before_agent_start just created/modified the current change */
-  let changeCreatedThisTurn = false;
+  /**
+   * Generate a conventional commit description from a diff
+   */
+  async function generateDescriptionWithPi(
+    diffOutput: string,
+    model: string | undefined,
+    signal: AbortSignal | undefined,
+  ): Promise<string> {
+    const task = `Generate a conventional change description for the following Jujutsu diff. Use the format: type(scope): icon short description
+
+Follow conventional commit standards with appropriate icons. Analyze the changes and provide a meaningful description.
+
+Diff:
+${diffOutput}
+
+Respond with only the change message, no additional text.`;
+
+    return generateWithPi(task, model, signal);
+  }
+
+  /** Store model for use in agent_end */
+  let currentModel: string | undefined;
 
   /**
    * Hook that runs before agent starts processing a user prompt.
-   * Creates a JJ snapshot of the current state and starts a new change.
+   * Creates a JJ change for the current state and starts a new change only if needed.
    */
   pi.on(
     "before_agent_start",
     async (event: BeforeAgentStartEvent, _ctx: ExtensionContext) => {
-      try {
-        // Skip if no prompt
-        if (!event.prompt) return;
+      // Check if in JJ repo
+      if (!(await isJujutsuRepo())) return;
 
-        // Get the current change ID before creating a new one
+      // Store the current model for use in subagents
+      try {
+        currentModel = _ctx.model?.name;
+      } catch (error) {
+        // Silently fail if we can't get model info
+        console.warn(
+          `Failed to get model info: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+
+      // Skip if no prompt
+      if (!event.prompt) return;
+
+      try {
+        // Get the current change ID before potentially creating a new one
         const currentChangeId = await getCurrentChangeId();
 
-        // Check if current change is empty or has description
+        // Check if current change is empty
         const isEmpty = await isCurrentChangeEmpty();
-        const hasDescription = await hasCurrentChangeDescription();
 
-        // If current change is empty or has no description, re-use it instead of creating new
-        if (isEmpty || !hasDescription) {
-          // Update the description if it doesn't have one
-          if (!hasDescription) {
-            await pi.exec("jj", ["describe", "-m", event.prompt]);
-          }
-          // Store the current change ID as the snapshot directly
-          snapshots.set("__pending__", currentChangeId);
-          changeCreatedThisTurn = true; // We're using this change for the current prompt
-          return;
+        // Store the current change ID as the change
+        changes.set("__pending__", currentChangeId);
+
+        if (isEmpty) {
+          // Re-use the current empty change and update its description
+          await pi.exec("jj", ["describe", "-m", event.prompt]);
+        } else {
+          // Create a new change to snapshot current state before processing
+          await pi.exec("jj", ["new", "-m", event.prompt]);
         }
-
-        // Create a new change to snapshot current state before processing
-        await pi.exec("jj", ["new", "-m", event.prompt]);
-
-        // Store the previous change ID as the snapshot - we'll associate it with the next user message entry
-        if (currentChangeId) {
-          // We'll store it temporarily and associate it when the user message is saved
-          snapshots.set("__pending__", currentChangeId);
-        }
-        changeCreatedThisTurn = true; // We just created a new change
       } catch (error) {
-        // Silently fail for auto-snapshot - JJ might not be available or repo not initialized
+        // Log error but don't fail the extension - JJ operations are not critical
         console.warn(
-          `Failed to create snapshot: ${error instanceof Error ? error.message : String(error)}`,
+          `Failed to create JJ change: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     },
   );
 
-  /**
-   * Hook that runs at the start of each turn.
-   * Associates pending snapshots with user message entries.
-   * Also checks if the current change is empty (no modifications done in previous turn), and discards it.
-   */
-  pi.on("turn_start", async (_event: TurnStartEvent, ctx: ExtensionContext) => {
-    try {
-      // Check if current change is empty (no modifications from previous agent turn)
-      // But don't abandon changes that were just created by before_agent_start
-      const isEmpty = await isCurrentChangeEmpty();
+  pi.on("agent_end", async (_event, ctx) => {
+    if (!(await isJujutsuRepo())) return;
 
-      if (isEmpty && !changeCreatedThisTurn) {
-        // Abandon the empty change and return to previous checkpoint
-        await pi.exec("jj", ["abandon"]);
+    const isEmpty = await isCurrentChangeEmpty();
+    const piAvailable = await isPiCommandAvailable();
+    if (!isEmpty && piAvailable) {
+      // Check if the turn was aborted before starting description generation
+      const contextSignal =
+        "signal" in ctx && ctx.signal instanceof AbortSignal
+          ? ctx.signal
+          : undefined;
+
+      if (contextSignal?.aborted) {
+        return; // Skip description generation if turn was aborted
+      }
+
+      try {
+        ctx.ui.notify("Generating commit description...", "info");
+
+        // Generate a proper description from diff
+        const { stdout: diffOutput } = await pi.exec("jj", ["diff"]);
+        const newDescription = await generateDescriptionWithPi(
+          diffOutput,
+          currentModel,
+          contextSignal,
+        );
+
+        const currentChangeId = await getCurrentChangeId();
+        await pi.exec("jj", [
+          "describe",
+          currentChangeId,
+          "-m",
+          newDescription,
+        ]);
+
         ctx.ui.notify(
-          "No modifications were done, returned to previous checkpoint",
+          `Updated change description to: ${newDescription}`,
           "info",
         );
-      }
-    } catch (error) {
-      // Silently fail if JJ not available
-      console.warn(
-        `Failed to check/discard empty change: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    } finally {
-      // Reset the flag for the next turn
-      changeCreatedThisTurn = false;
-    }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
 
-    const userEntries = getUserEntries(ctx.sessionManager);
-    if (userEntries.length >= 1) {
-      // Always update lastUserMessageEntryId to the latest user message
-      lastUserMessageEntryId = userEntries[userEntries.length - 1].id;
-
-      // Associate pending snapshot with the last user message
-      const lastUserEntry = userEntries[userEntries.length - 1];
-      const pendingSnapshot = snapshots.get("__pending__");
-      if (pendingSnapshot) {
-        snapshots.set(lastUserEntry.id, pendingSnapshot);
-        snapshots.delete("__pending__");
+        if (
+          contextSignal?.aborted ||
+          errorMessage.includes("Aborted") ||
+          errorMessage.includes("abort")
+        ) {
+          ctx.ui.notify("Description generation was cancelled", "warning");
+        } else {
+          ctx.ui.notify(
+            `Failed to generate commit description: ${errorMessage}`,
+            "warning",
+          );
+        }
+        // Log to console for debugging but don't expose internal details to user
+        console.warn(`Failed to generate commit description: ${errorMessage}`);
       }
     }
   });
+
+  /**
+   * Hook that runs at the start of each turn.
+   * Associates pending changes with user message entries.
+   */
+  pi.on(
+    "turn_start",
+    async (_event: TurnStartEvent, _ctx: ExtensionContext) => {
+      if (!(await isJujutsuRepo())) return;
+
+      const userEntries = getUserEntries(_ctx.sessionManager);
+      if (userEntries.length >= 1) {
+        // Associate pending change with the last user message
+        const lastUserEntry = userEntries[userEntries.length - 1];
+        const pendingChange = changes.get("__pending__");
+        if (pendingChange) {
+          changes.set(lastUserEntry.id, pendingChange);
+          changes.delete("__pending__");
+        }
+      }
+    },
+  );
 
   /**
    * Undo command: Revert to the previous user message and restore repository state.
@@ -218,24 +467,29 @@ export default function (pi: ExtensionAPI) {
     description:
       "Revert to the previous user message and restore the repository state to before that message was processed",
     handler: async (args: string, ctx: ExtensionCommandContext) => {
+      if (!(await isJujutsuRepo())) {
+        ctx.ui.notify("Not in a Jujutsu repository", "warning");
+        return;
+      }
+
       const userEntries = getUserEntries(ctx.sessionManager);
 
-      // Find the last user message that has a snapshot
+      // Find the last user message that has a change
       let targetEntryId: string | undefined;
       let changeId: string | undefined;
 
       for (let i = userEntries.length - 1; i >= 0; i--) {
         const entry = userEntries[i];
-        const snapshot = snapshots.get(entry.id);
-        if (snapshot) {
+        const change = changes.get(entry.id);
+        if (change) {
           targetEntryId = entry.id;
-          changeId = snapshot;
+          changeId = change;
           break;
         }
       }
 
       if (!targetEntryId || !changeId) {
-        ctx.ui.notify("No snapshots available to revert to", "warning");
+        ctx.ui.notify("No changes available to revert to", "warning");
         return;
       }
 
@@ -256,19 +510,6 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      // Update lastUserMessageEntryId to the target entry
-      lastUserMessageEntryId = targetEntryId;
-
-      // Find the previous user message with a snapshot for further undos
-      const targetIndex = userEntries.findIndex((e) => e.id === targetEntryId);
-      for (let i = targetIndex - 1; i >= 0; i--) {
-        const entry = userEntries[i];
-        if (snapshots.has(entry.id)) {
-          lastUserMessageEntryId = entry.id;
-          break;
-        }
-      }
-
       // Navigate back in the session tree to the user message
       await navigateWithCancellation(
         ctx,
@@ -279,13 +520,18 @@ export default function (pi: ExtensionAPI) {
   });
 
   /**
-   * Redo command: Restore to the checkpoint before the last undo.
+   * Redo command: Restore to the change before the last undo.
    * Supports multiple redos by maintaining a stack.
    */
   pi.registerCommand("redo", {
     description:
-      "Redo the last undo operation by switching back to the previous checkpoint",
+      "Redo the last undo operation by switching back to the previous change",
     handler: async (args: string, ctx: ExtensionCommandContext) => {
+      if (!(await isJujutsuRepo())) {
+        ctx.ui.notify("Not in a Jujutsu repository", "warning");
+        return;
+      }
+
       if (redoStack.length === 0) {
         ctx.ui.notify("No undo operation to redo", "warning");
         return;
@@ -293,7 +539,7 @@ export default function (pi: ExtensionAPI) {
 
       // Pop the last redo checkpoint
       const redoEntry = redoStack.pop()!;
-      const { changeId: redoChangeId, messageId: redoMessageId } = redoEntry;
+      const { changeId: redoChangeId } = redoEntry;
 
       // Switch back to the redo checkpoint
       const success = await execJj(
@@ -307,13 +553,6 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      // Update lastUserMessageEntryId to the last user message in the conversation
-      const userEntries = getUserEntries(ctx.sessionManager);
-      lastUserMessageEntryId =
-        userEntries.length > 0
-          ? userEntries[userEntries.length - 1].id
-          : undefined;
-
       // Navigate to the end of the conversation (where we were before undo)
       const allEntries = ctx.sessionManager.getBranch();
       const lastEntry = allEntries[allEntries.length - 1];
@@ -322,38 +561,6 @@ export default function (pi: ExtensionAPI) {
         lastEntry.id,
         `Redid to checkpoint ${redoChangeId} and restored edit mode`,
       );
-    },
-  });
-
-  /**
-   * Snapshots command: Show available snapshots with user-friendly formatting.
-   */
-  pi.registerCommand("snapshots", {
-    description: "Show available snapshots",
-    handler: async (args: string, ctx: ExtensionCommandContext) => {
-      if (snapshots.size === 0) {
-        ctx.ui.notify("No snapshots available", "info");
-        return;
-      }
-
-      // Get current change ID for context
-      const currentId = await getCurrentChangeId();
-
-      // Format snapshots with descriptions
-      const snapshotList = Array.from(snapshots.entries())
-        .filter(([entryId]) => entryId !== "__pending__")
-        .map(([entryId, changeId]) => {
-          const isCurrent = changeId === currentId ? " (current)" : "";
-          return `${changeId.substring(0, 8)}...${isCurrent} - Entry: ${entryId}`;
-        })
-        .join("\n");
-
-      const redoInfo =
-        redoStack.length > 0
-          ? `\nRedo available: ${redoStack.length} level(s)`
-          : "";
-
-      ctx.ui.notify(`Available snapshots:\n${snapshotList}${redoInfo}`, "info");
     },
   });
 }

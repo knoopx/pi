@@ -1,19 +1,21 @@
 # Jujutsu Extension
 
-A Pi coding agent extension that provides snapshot-based undo/redo functionality integrated with [Jujutsu (JJ)](https://github.com/martinvonz/jj) version control.
+A production-grade Pi coding agent extension that provides change-based undo/redo functionality integrated with [Jujutsu (JJ)](https://github.com/martinvonz/jj) version control.
 
 ## Features
 
-- **Automatic Snapshots**: Creates JJ snapshots before processing each user message
+- **Automatic Changes**: Creates JJ changes before processing each user message
 - **Undo Command**: Revert to the previous user message and restore repository state
 - **Redo Command**: Restore after undo operations (supports multi-level redo)
-- **Snapshots Command**: List available checkpoints
-- **Session-Based**: Snapshots are maintained in memory for the current session
+- **Smart Description Generation**: Uses AI to generate conventional commit messages from diffs
+- **Robust Error Handling**: Graceful degradation when commands fail
+- **Session-Based**: Changes are maintained in memory for the current session
 
 ## Requirements
 
 - [Jujutsu (JJ)](https://github.com/martinvonz/jj) must be installed and available in PATH
 - A JJ repository must be initialized in the project directory
+- Pi command must be available for description generation (optional)
 
 ## Installation
 
@@ -25,9 +27,10 @@ The extension is automatically loaded when placed in the `agent/extensions/jujut
 
 The extension works automatically:
 
-- Before each user message is processed, a JJ snapshot is created
-- The snapshot captures the repository state before any changes
-- Snapshots are associated with user message entries for navigation
+- Before each user message is processed, a JJ change is created
+- The change captures the repository state before any changes
+- Changes are associated with user message entries for navigation
+- After changes are made, AI generates conventional commit descriptions (if pi command available)
 
 ### Manual Commands
 
@@ -41,7 +44,7 @@ Revert to the previous user message and restore the repository state:
 
 This command:
 
-- Switches JJ to the checkpoint before the last user message was processed
+- Switches JJ to the change before the last user message was processed
 - Navigates the conversation back to that user message
 - Puts you in edit mode at that point
 
@@ -55,63 +58,47 @@ Restore the state after an undo operation:
 
 Supports multiple redo levels by maintaining a stack of previous states. When redoing, both the repository state and conversation position are restored to continue editing from where you left off.
 
-#### Snapshots
-
-List all available snapshots:
-
-```
-/snapshots
-```
-
-Shows:
-
-- Available checkpoints with their JJ change IDs
-- Current active checkpoint
-- Number of redo levels available
-
 ## Examples
 
 ### Basic Undo/Redo Workflow
 
 1. User sends a message that causes code changes
 2. Agent processes the message and makes changes
-3. User realizes they want to revert: `/undo`
-4. JJ switches back to pre-processing state
-5. Conversation navigates to the previous user message
-6. User can edit the message or continue differently
-7. To restore: `/redo` (navigates forward and restores the state)
-
-### Checking Available Snapshots
-
-```
-/snapshots
-```
-
-Output:
-
-```
-Available snapshots:
-abc12345... (current) - Entry: msg-456
-def67890... - Entry: msg-123
-Redo available: 1 level(s)
-```
+3. JJ change is created with AI-generated description
+4. User realizes they want to revert: `/undo`
+5. JJ switches back to pre-processing state
+6. Conversation navigates to the previous user message
+7. User can edit the message or continue differently
+8. To restore: `/redo` (navigates forward and restores the state)
 
 ### Error Handling
 
 The extension gracefully handles:
 
-- JJ not being installed (commands fail silently during auto-snapshot)
-- Repository not being a JJ repo
+- JJ not being installed (extension deactivates)
+- Repository not being a JJ repo (extension deactivates)
+- Pi command not available (description generation skipped)
 - JJ command failures (with user notifications)
+- AI generation timeouts or failures (with fallback behavior)
 
 ## Configuration
 
-Snapshots are stored in memory for the current session only. When the extension is restarted, all snapshots are lost and undo/redo functionality becomes unavailable until new snapshots are created.
+Changes are stored in memory for the current session only. When the extension is restarted, all changes are lost and undo/redo functionality becomes unavailable until new changes are created.
 
 ## Technical Details
 
-- Uses JJ's `jj new` to create change commits with user message previews
-- Associates snapshots with conversation entries via Pi's session management
+- Uses JJ's `jj new` to create changes with user message previews
+- Associates changes with conversation entries via Pi's session management
 - Maintains a redo stack for multi-level undo/redo
-- Handles prompt truncation for JJ commit messages (80 char limit)
-- **Snapshots are stored in memory only and are lost when the session restarts**</content>
+- Handles prompt truncation for JJ change descriptions
+- Uses subprocess spawning for AI description generation with proper timeout and signal handling
+- Implements comprehensive error handling and logging
+
+## Production Features
+
+- **Type Safety**: Full TypeScript with strict mode
+- **Error Handling**: Comprehensive error catching and user-friendly notifications
+- **Performance**: Efficient subprocess management with timeouts
+- **Testing**: Full test coverage with Vitest
+- **Code Quality**: ESLint compliant with proper JSDoc documentation
+- **Signal Handling**: Proper AbortSignal support for cancellable operations
