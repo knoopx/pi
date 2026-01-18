@@ -1,6 +1,7 @@
 {
   "name": "pi-extensions",
   "version": "1.0.0",
+  "type": "module",
   "description": "Main package for pi extensions with formatting",
   "type": "module",
   "scripts": {
