@@ -307,7 +307,7 @@ export default function (pi: ExtensionAPI) {
   }
 
   /**
-   * Generate a conventional commit description from a diff
+   * Generate a conventional change description from a diff
    */
   async function generateDescriptionWithPi(
     diffOutput: string,
@@ -397,7 +397,7 @@ Respond with only the change message, no additional text.`;
       }
 
       try {
-        ctx.ui.notify("Generating commit description...", "info");
+        ctx.ui.notify("Generating change description...", "info");
 
         // Generate a proper description from diff
         const { stdout: diffOutput } = await pi.exec("jj", ["diff"]);
@@ -431,12 +431,12 @@ Respond with only the change message, no additional text.`;
           ctx.ui.notify("Description generation was cancelled", "warning");
         } else {
           ctx.ui.notify(
-            `Failed to generate commit description: ${errorMessage}`,
+            `Failed to generate change description: ${errorMessage}`,
             "warning",
           );
         }
         // Log to console for debugging but don't expose internal details to user
-        console.warn(`Failed to generate commit description: ${errorMessage}`);
+        console.warn(`Failed to generate change description: ${errorMessage}`);
       }
     }
   });

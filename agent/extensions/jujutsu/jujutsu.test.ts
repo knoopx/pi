@@ -113,7 +113,7 @@ describe("Jujutsu Extension", () => {
     expect(mockPi.registerCommand).toHaveBeenCalledWith(
       "undo",
       expect.objectContaining({
-        description: expect.stringContaining("Revert"),
+        description: expect.stringContaining("Abandon"),
         handler: expect.any(Function),
       }),
     );

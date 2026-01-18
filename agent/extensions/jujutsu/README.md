@@ -7,7 +7,7 @@ A production-grade Pi coding agent extension that provides change-based undo/red
 - **Automatic Changes**: Creates JJ changes before processing each user message
 - **Undo Command**: Revert to the previous user message and restore repository state
 - **Redo Command**: Restore after undo operations (supports multi-level redo)
-- **Smart Description Generation**: Uses AI to generate conventional commit messages from diffs
+- **Smart Description Generation**: Uses AI to generate conventional change descriptions from diffs
 - **Robust Error Handling**: Graceful degradation when commands fail
 - **Session-Based**: Changes are maintained in memory for the current session
 
