@@ -4,6 +4,7 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import { StringEnum } from "@mariozechner/pi-ai";
 
 export default function (pi: ExtensionAPI) {
   pi.registerTool({
@@ -166,10 +167,7 @@ Supports filtering by state (open/closed/all). Limited to 10 issues by default.`
       owner: Type.String({ description: "Repository owner" }),
       repo: Type.String({ description: "Repository name" }),
       state: Type.Optional(
-        Type.Union(
-          [Type.Literal("open"), Type.Literal("closed"), Type.Literal("all")],
-          { default: "open" },
-        ),
+        StringEnum(["open", "closed", "all"], { default: "open" }),
       ),
       per_page: Type.Optional(
         Type.Number({ minimum: 1, maximum: 20, default: 10 }),
@@ -338,20 +336,9 @@ Supports sorting by stars, forks, or update date. Limited to 10 results by defau
         description: "Search query (e.g., 'language:javascript stars:>1000')",
       }),
       sort: Type.Optional(
-        Type.Union(
-          [
-            Type.Literal("stars"),
-            Type.Literal("forks"),
-            Type.Literal("updated"),
-          ],
-          { default: "stars" },
-        ),
+        StringEnum(["stars", "forks", "updated"], { default: "stars" }),
       ),
-      order: Type.Optional(
-        Type.Union([Type.Literal("asc"), Type.Literal("desc")], {
-          default: "desc",
-        }),
-      ),
+      order: Type.Optional(StringEnum(["asc", "desc"], { default: "desc" })),
       per_page: Type.Optional(
         Type.Number({ minimum: 1, maximum: 20, default: 10 }),
       ),

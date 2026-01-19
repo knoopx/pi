@@ -9,6 +9,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import type { TextContent } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
+import { StringEnum } from "@mariozechner/pi-ai";
 import {
   getOrCreateManager,
   formatDiagnostic,
@@ -36,13 +37,9 @@ Supports multiple programming languages through LSP servers.`,
         description: "Array of file paths to analyze",
       }),
       severity: Type.Optional(
-        Type.Union(
-          SEVERITY_FILTERS.map((f) => Type.Literal(f)),
-          {
-            description:
-              "Filter diagnostics by severity level (default: 'all')",
-          },
-        ),
+        StringEnum(SEVERITY_FILTERS, {
+          description: "Filter diagnostics by severity level (default: 'all')",
+        }),
       ),
       timeout: Type.Optional(
         Type.Number({
