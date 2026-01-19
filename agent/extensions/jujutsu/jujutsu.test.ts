@@ -86,10 +86,6 @@ describe("Jujutsu Extension", () => {
       expect.any(Function),
     );
     expect(freshMockPi.on).toHaveBeenCalledWith(
-      "turn_start",
-      expect.any(Function),
-    );
-    expect(freshMockPi.on).toHaveBeenCalledWith(
       "agent_end",
       expect.any(Function),
     );
@@ -110,7 +106,6 @@ describe("Jujutsu Extension", () => {
       "before_agent_start",
       expect.any(Function),
     );
-    expect(mockPi.on).toHaveBeenCalledWith("turn_start", expect.any(Function));
     expect(mockPi.on).toHaveBeenCalledWith("agent_end", expect.any(Function));
   });
 
@@ -151,7 +146,6 @@ describe("Jujutsu Extension", () => {
       expect.any(Function),
     );
     expect(mockPi.on).toHaveBeenCalledWith("agent_end", expect.any(Function));
-    expect(mockPi.on).toHaveBeenCalledWith("turn_start", expect.any(Function));
   });
 
   describe("before_agent_start event handler", () => {
@@ -186,9 +180,13 @@ describe("Jujutsu Extension", () => {
       });
 
       const mockEvent = { prompt: "Test prompt" };
-      const mockCtx = {};
+      const mockCtx = {
+        sessionManager: {
+          getBranch: () => [],
+        },
+      };
 
-      await eventHandler(mockEvent, mockCtx);
+      await eventHandler(mockEvent, mockCtx as unknown as ExtensionContext);
 
       expect(mockPi.exec).toHaveBeenCalledWith("jj", ["status"]);
       expect(mockPi.exec).toHaveBeenCalledWith("jj", [
@@ -226,9 +224,13 @@ describe("Jujutsu Extension", () => {
       });
 
       const mockEvent = { prompt: "Test prompt" };
-      const mockCtx = {};
+      const mockCtx = {
+        sessionManager: {
+          getBranch: () => [],
+        },
+      };
 
-      await eventHandler(mockEvent, mockCtx);
+      await eventHandler(mockEvent, mockCtx as unknown as ExtensionContext);
 
       expect(mockPi.exec).toHaveBeenCalledWith("jj", ["status"]);
       expect(mockPi.exec).toHaveBeenCalledWith("jj", [

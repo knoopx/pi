@@ -3,7 +3,7 @@ import type {
   ExtensionContext,
   ExtensionCommandContext,
   BeforeAgentStartEvent,
-  TurnStartEvent,
+  SessionStartEvent,
   SessionEntry,
 } from "@mariozechner/pi-coding-agent";
 import { spawn } from "node:child_process";
@@ -48,7 +48,11 @@ export default function (pi: ExtensionAPI) {
    * @param message Message to display if aborted
    * @returns true if aborted, false otherwise
    */
-  function checkAborted(ctx: ExtensionContext, signal?: AbortSignal, message = "Operation was cancelled"): boolean {
+  function checkAborted(
+    ctx: ExtensionContext,
+    signal?: AbortSignal,
+    message = "Operation was cancelled",
+  ): boolean {
     if (signal?.aborted) {
       ctx.ui.notify(message, "warning");
       return true;
@@ -397,11 +401,15 @@ Respond with only the change message, no additional text.`;
         // Get the current change ID before potentially creating a new one
         const currentChangeId = await getCurrentChangeId();
 
+        // Associate current change with the last user message
+        const userEntries = getUserEntries(_ctx.sessionManager);
+        if (userEntries.length > 0) {
+          const lastUserEntry = userEntries[userEntries.length - 1];
+          changes.set(lastUserEntry.id, currentChangeId);
+        }
+
         // Check if current change is empty
         const isEmpty = await isCurrentChangeEmpty();
-
-        // Store the current change ID as the change
-        changes.set("__pending__", currentChangeId);
 
         if (isEmpty) {
           // Re-use the current empty change and update its description
@@ -439,14 +447,28 @@ Respond with only the change message, no additional text.`;
       try {
         ctx.ui.notify("Generating change description...", "info");
 
-        if (checkAborted(ctx, contextSignal, "Description generation was cancelled")) return;
+        if (
+          checkAborted(
+            ctx,
+            contextSignal,
+            "Description generation was cancelled",
+          )
+        )
+          return;
 
         // Generate a proper description from diff
         const { stdout: diffOutput } = await pi.exec("jj", ["diff", "--stat"], {
           signal: contextSignal,
         });
 
-        if (checkAborted(ctx, contextSignal, "Description generation was cancelled")) return;
+        if (
+          checkAborted(
+            ctx,
+            contextSignal,
+            "Description generation was cancelled",
+          )
+        )
+          return;
 
         const newDescription = await generateDescriptionWithPi(
           diffOutput,
@@ -455,11 +477,25 @@ Respond with only the change message, no additional text.`;
           contextSignal,
         );
 
-        if (checkAborted(ctx, contextSignal, "Description generation was cancelled")) return;
+        if (
+          checkAborted(
+            ctx,
+            contextSignal,
+            "Description generation was cancelled",
+          )
+        )
+          return;
 
         const currentChangeId = await getCurrentChangeId();
 
-        if (checkAborted(ctx, contextSignal, "Description generation was cancelled")) return;
+        if (
+          checkAborted(
+            ctx,
+            contextSignal,
+            "Description generation was cancelled",
+          )
+        )
+          return;
 
         await pi.exec(
           "jj",
@@ -493,25 +529,33 @@ Respond with only the change message, no additional text.`;
     }
   });
 
+
   /**
-   * Hook that runs at the start of each turn.
-   * Associates pending changes with user message entries.
+   * Hook that runs at the start of the session.
+   * Creates a new empty change and bookmarks it with name "pi-<timestamp>".
    */
   pi.on(
-    "turn_start",
-    async (_event: TurnStartEvent, _ctx: ExtensionContext) => {
+    "session_start",
+    async (_event: SessionStartEvent, ctx: ExtensionContext) => {
       if (!hooksEnabled) return;
-    if (!(await requireRepo())) return;
+      if (!(await requireRepo())) return;
 
-      const userEntries = getUserEntries(_ctx.sessionManager);
-      if (userEntries.length >= 1) {
-        // Associate pending change with the last user message
-        const lastUserEntry = userEntries[userEntries.length - 1];
-        const pendingChange = changes.get("__pending__");
-        if (pendingChange) {
-          changes.set(lastUserEntry.id, pendingChange);
-          changes.delete("__pending__");
-        }
+      try {
+        const timestamp = new Date()
+          .toISOString()
+          .replace(/[:.]/g, "-")
+          .replace("T", "_")
+          .replace("Z", "");
+        const bookmarkName = `pi-${timestamp}`;
+        // Create a new empty change for the session
+        await pi.exec("jj", ["new"]);
+        // Bookmark the new empty change
+        await pi.exec("jj", ["bookmark", "create", bookmarkName]);
+        ctx.ui.notify(`Created bookmark: ${bookmarkName} on new empty change`, "info");
+      } catch (error) {
+        console.warn(
+          `Failed to create bookmark and change: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     },
   );
