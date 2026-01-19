@@ -529,7 +529,6 @@ Respond with only the change message, no additional text.`;
     }
   });
 
-
   /**
    * Hook that runs at the start of the session.
    * Creates a new empty change and bookmarks it with name "pi-<timestamp>".
@@ -551,7 +550,10 @@ Respond with only the change message, no additional text.`;
         await pi.exec("jj", ["new"]);
         // Bookmark the new empty change
         await pi.exec("jj", ["bookmark", "create", bookmarkName]);
-        ctx.ui.notify(`Created bookmark: ${bookmarkName} on new empty change`, "info");
+        ctx.ui.notify(
+          `Created bookmark: ${bookmarkName} on new empty change`,
+          "info",
+        );
       } catch (error) {
         console.warn(
           `Failed to create bookmark and change: ${error instanceof Error ? error.message : String(error)}`,

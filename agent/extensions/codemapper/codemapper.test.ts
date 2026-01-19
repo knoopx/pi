@@ -1029,9 +1029,13 @@ describe("Codemapper Extension", () => {
         {},
       );
 
-      expect(mockPi.exec).toHaveBeenCalledWith("cm", ["deps", ".", "--external"], {
-        signal: undefined,
-      });
+      expect(mockPi.exec).toHaveBeenCalledWith(
+        "cm",
+        ["deps", ".", "--external"],
+        {
+          signal: undefined,
+        },
+      );
       expect(result.content[0].text).toContain("express");
     });
 
@@ -1050,9 +1054,13 @@ describe("Codemapper Extension", () => {
         {},
       );
 
-      expect(mockPi.exec).toHaveBeenCalledWith("cm", ["deps", ".", "--circular"], {
-        signal: undefined,
-      });
+      expect(mockPi.exec).toHaveBeenCalledWith(
+        "cm",
+        ["deps", ".", "--circular"],
+        {
+          signal: undefined,
+        },
+      );
       expect(result.content[0].text).toContain("Circular");
     });
 
@@ -1091,7 +1099,15 @@ describe("Codemapper Extension", () => {
 
       expect(mockPi.exec).toHaveBeenCalledWith(
         "cm",
-        ["deps", "src/app.ts", "--direction", "used-by", "--depth", "3", "--external"],
+        [
+          "deps",
+          "src/app.ts",
+          "--direction",
+          "used-by",
+          "--depth",
+          "3",
+          "--external",
+        ],
         { signal: undefined },
       );
     });
@@ -1106,9 +1122,13 @@ describe("Codemapper Extension", () => {
 
       await registeredTool.execute("tool1", { circular: true }, vi.fn(), {});
 
-      expect(mockPi.exec).toHaveBeenCalledWith("cm", ["deps", ".", "--circular"], {
-        signal: undefined,
-      });
+      expect(mockPi.exec).toHaveBeenCalledWith(
+        "cm",
+        ["deps", ".", "--circular"],
+        {
+          signal: undefined,
+        },
+      );
     });
 
     it("should handle command execution errors", async () => {

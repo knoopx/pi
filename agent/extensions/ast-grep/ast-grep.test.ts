@@ -199,7 +199,8 @@ describe("AST Grep Extension", () => {
     it("should execute advanced scan successfully", async () => {
       const mockResult = {
         code: 0,
-        stdout: "help[scan-rule]: \n  ┌─ test.js:1:1\n  │\n1 │ function test() {}\n  │ ^^^^^^^^^^^^^^^^^^\n",
+        stdout:
+          "help[scan-rule]: \n  ┌─ test.js:1:1\n  │\n1 │ function test() {}\n  │ ^^^^^^^^^^^^^^^^^^\n",
       };
       mockPi.exec.mockResolvedValue(mockResult);
 
