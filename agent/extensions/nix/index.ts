@@ -103,26 +103,6 @@ interface NixSearchResponse<T> {
   };
 }
 
-interface GitHubPullRequest {
-  number: number;
-  title: string;
-  html_url: string;
-  state: "open" | "closed";
-  user: GitHubUser | null;
-  created_at: string;
-  updated_at: string;
-  body: string | null;
-  merged_at: string | null;
-  requested_reviewers: GitHubUser[];
-  availableOn: string[];
-  head: {
-    ref: string;
-  } | null;
-  base: {
-    ref: string;
-  } | null;
-}
-
 const SEARCH_URL =
   "https://search.nixos.org/backend/latest-44-nixos-unstable/_search";
 const AUTH_TOKEN = "YVdWU0FMWHBadjpYOGdQSG56TDUyd0ZFZWt1eHNmUTljU2g=";
@@ -498,7 +478,7 @@ Returns detailed package information from nixpkgs.`,
       params: any,
       _onUpdate: AgentToolUpdateCallback,
       _ctx: ExtensionContext,
-      signal: AbortSignal,
+      _signal: AbortSignal,
     ) {
       const { query } = params as { query: string };
 
@@ -557,7 +537,7 @@ Returns NixOS configuration option details.`,
       params: any,
       _onUpdate: AgentToolUpdateCallback,
       _ctx: ExtensionContext,
-      signal: AbortSignal,
+      _signal: AbortSignal,
     ) {
       const { query } = params as { query: string };
 
@@ -612,7 +592,7 @@ Returns Home Manager configuration options.`,
       params: any,
       _onUpdate: AgentToolUpdateCallback,
       _ctx: ExtensionContext,
-      signal: AbortSignal,
+      _signal: AbortSignal,
     ) {
       const { query } = params as { query: string };
 
@@ -667,7 +647,7 @@ Returns GitHub pull request information.`,
       params: any,
       _onUpdate: AgentToolUpdateCallback,
       _ctx: ExtensionContext,
-      signal: AbortSignal,
+      _signal: AbortSignal,
     ) {
       const { query } = params as { query: string };
 
