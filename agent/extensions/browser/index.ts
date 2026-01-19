@@ -12,6 +12,8 @@ import type { TextContent } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
 import { format } from "prettier";
 
+declare const document: any;
+
 const NavigateUrlParams = Type.Object({
   url: Type.String({ description: "URL to navigate to" }),
 });
@@ -179,7 +181,8 @@ export default function (pi: ExtensionAPI) {
         defaultViewport: null,
       });
 
-      const p = (await b.pages()).at(-1);
+      const pages = await b.pages();
+      const p = pages[pages.length - 1];
 
       if (!p) {
         await b.disconnect();
@@ -208,7 +211,8 @@ export default function (pi: ExtensionAPI) {
         defaultViewport: null,
       });
 
-      const p = (await b.pages()).at(-1);
+      const pages = await b.pages();
+      const p = pages[pages.length - 1];
 
       if (!p) {
         await b.disconnect();
@@ -252,8 +256,10 @@ export default function (pi: ExtensionAPI) {
           const elements = document.querySelectorAll(selector);
           if (elements.length > 0) {
             // Check if the element has meaningful content
-            const hasContent = Array.from(elements).some((el) => {
-              const text = el.textContent?.trim();
+            const hasContent = Array.from(
+              elements as unknown as unknown[],
+            ).some((el) => {
+              const text = (el as { textContent?: string }).textContent?.trim();
               return text && text.length > 10; // At least 10 characters
             });
             if (hasContent) {
@@ -307,13 +313,13 @@ Always opens in a new tab.`,
     parameters: NavigateUrlParams,
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
-      const { url } = params;
+      const { url } = params as { url: string };
       return await navigateUrl(url);
     },
   });
@@ -333,13 +339,13 @@ Returns the result of the executed code.`,
     parameters: EvaluateJavascriptParams,
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
-      const { code } = params;
+      const { code } = params as { code: string };
       return await evalBrowser(code);
     },
   });
@@ -359,11 +365,11 @@ Saves the image to a temporary file and returns the path.`,
     parameters: TakeScreenshotParams,
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      _params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
       return await screenshotBrowser();
     },
@@ -384,14 +390,14 @@ Returns formatted HTML of matching elements.`,
     parameters: QueryHtmlElementsParams,
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
       const { selector, all = false } = params;
-      return await querySelectorBrowser(selector, all);
+      return await querySelectorBrowser(selector as string, all as boolean);
     },
   });
 
@@ -410,11 +416,11 @@ Shows tab index, title, URL, and active status.`,
     parameters: ListBrowserTabsParams,
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      _params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
       if (!isBrowserRunning()) {
         return { content: [], details: {} };
@@ -438,14 +444,17 @@ Cannot close the last remaining tab.`,
     parameters: CloseTabParams,
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
       const { index, title } = params;
-      return await closeTabBrowser(index, title);
+      return await closeTabBrowser(
+        index as number | undefined,
+        title as string | undefined,
+      );
     },
   });
 
@@ -464,14 +473,14 @@ Makes the specified tab active for subsequent operations.`,
     parameters: SwitchTabParams,
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
       const { index } = params;
-      return await switchTabBrowser(index);
+      return await switchTabBrowser(index as number);
     },
   });
 
@@ -490,11 +499,11 @@ Waits for the page to fully load before returning.`,
     parameters: RefreshTabParams,
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      _params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
       return await refreshTabBrowser();
     },
@@ -515,11 +524,11 @@ Returns the full URL including query parameters.`,
     parameters: CurrentUrlParams,
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      _params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
       return await getCurrentUrlBrowser();
     },
@@ -540,11 +549,11 @@ Returns the text from the browser's title bar.`,
     parameters: PageTitleParams,
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      _params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
       return await getPageTitleBrowser();
     },
@@ -565,14 +574,14 @@ Blocks until the element exists or timeout occurs.`,
     parameters: WaitForElementParams,
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
       const { selector, timeout = 10000 } = params;
-      return await waitForElementBrowser(selector, timeout);
+      return await waitForElementBrowser(selector as string, timeout as number);
     },
   });
 
@@ -591,14 +600,14 @@ Can click single elements or all matching elements.`,
     parameters: ClickElementParams,
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
       const { selector, all = false } = params;
-      return await clickElementBrowser(selector, all);
+      return await clickElementBrowser(selector as string, all as boolean);
     },
   });
 
@@ -617,14 +626,18 @@ Optionally clears existing content before typing.`,
     parameters: TypeTextParams,
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
       const { selector, text, clear = false } = params;
-      return await typeTextBrowser(selector, text, clear);
+      return await typeTextBrowser(
+        selector as string | undefined,
+        text as string,
+        clear as boolean,
+      );
     },
   });
 
@@ -643,14 +656,14 @@ Returns plain text from matching elements.`,
     parameters: ExtractTextParams,
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
       const { selector, all = false } = params;
-      return await extractTextBrowser(selector, all);
+      return await extractTextBrowser(selector as string, all as boolean);
     },
   });
 
@@ -693,7 +706,9 @@ Returns plain text from matching elements.`,
   async function evalBrowser(code: string) {
     const res = await withBrowserPage(async (p) => {
       const result = await p.evaluate((c: string) => {
-        const AsyncFunction = (async () => {}).constructor as any;
+        const AsyncFunction = (async () => {}).constructor as {
+          new (body: string): (...args: unknown[]) => unknown;
+        };
         return new AsyncFunction(`return (${c})`)();
       }, code);
       return result;
@@ -742,14 +757,14 @@ Returns plain text from matching elements.`,
   async function extractTextBrowser(selector: string, all: boolean) {
     const res = await withBrowserPage(async (p) => {
       const result = await p.evaluate(
-        (sel: any, allFlag: any) => {
+        (sel: string, allFlag: boolean) => {
           const elements = allFlag
             ? document.querySelectorAll(sel)
             : document.querySelector(sel)
               ? [document.querySelector(sel)]
               : [];
           return Array.from(elements)
-            .map((e) => (e as any).textContent || "")
+            .map((e) => (e as { textContent?: string }).textContent || "")
             .filter((text) => text.trim());
         },
         selector,
@@ -848,7 +863,7 @@ Returns plain text from matching elements.`,
       await p.waitForSelector(selector, { timeout });
       await b.disconnect();
       return textResult({}, `✓ Element found: ${selector}`);
-    } catch (error) {
+    } catch {
       await b.disconnect();
       return textResult(
         { error: true },
@@ -917,7 +932,7 @@ Returns plain text from matching elements.`,
         throw new Error("Cannot close the last remaining tab");
       }
 
-      let targetPage: any = null;
+      let targetPage: Page | null = null;
       let targetIndex = -1;
 
       if (index !== undefined) {
@@ -986,13 +1001,15 @@ Returns plain text from matching elements.`,
   async function querySelectorBrowser(selector: string, all: boolean) {
     const res = await withBrowserPage(async (p) => {
       const result = await p.evaluate(
-        (sel: any, allFlag: any) => {
+        (sel: string, allFlag: boolean) => {
           const elements = allFlag
             ? document.querySelectorAll(sel)
             : document.querySelector(sel)
               ? [document.querySelector(sel)]
               : [];
-          return Array.from(elements).map((e) => (e as any).outerHTML);
+          return Array.from(elements).map(
+            (e) => (e as { outerHTML: string }).outerHTML,
+          );
         },
         selector,
         all,

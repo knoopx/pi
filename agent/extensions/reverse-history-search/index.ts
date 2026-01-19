@@ -12,16 +12,10 @@
 
 import type {
   ExtensionAPI,
-  AgentToolUpdateCallback,
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { DynamicBorder } from "@mariozechner/pi-coding-agent";
-import {
-  Container,
-  matchesKey,
-  Text,
-  truncateToWidth,
-} from "@mariozechner/pi-tui";
+import { Container, matchesKey, Text } from "@mariozechner/pi-tui";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
@@ -138,22 +132,22 @@ const loadAllSessionHistory = (): HistoryEntry[] => {
                       });
                     }
                   }
-                } catch (e) {
+                } catch {
                   // Skip invalid JSON lines
                 }
               }
             }
-          } catch (e) {
+          } catch {
             // Skip files we can't read
           }
         }
-      } catch (e) {
+      } catch {
         // Skip directories we can't read
       }
     };
 
     walkDir(sessionsDir);
-  } catch (e) {
+  } catch {
     // Sessions directory doesn't exist or can't be read
   }
 

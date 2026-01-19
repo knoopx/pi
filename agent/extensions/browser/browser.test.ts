@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 // Mocks must be defined before imports
 const mockExecSync = vi.fn();
@@ -20,12 +21,10 @@ vi.mock("puppeteer-core", () => ({
   default: { connect: mockConnect },
 }));
 
-import { execSync } from "node:child_process";
-import puppeteer from "puppeteer-core";
 import setupBrowserExtension from "./index";
 
 describe("Browser Extension", () => {
-  let mockPi: any;
+  let mockPi: ExtensionAPI;
 
   beforeEach(() => {
     mockPi = {

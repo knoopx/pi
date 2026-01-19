@@ -32,11 +32,11 @@ Provides examples for commands, languages, and tools.`,
     }),
 
     async execute(
-      toolCallId: string,
-      params: any,
-      onUpdate: AgentToolUpdateCallback,
-      ctx: ExtensionContext,
-      signal: AbortSignal,
+      _toolCallId: string,
+      params: Record<string, unknown>,
+      _onUpdate: AgentToolUpdateCallback,
+      _ctx: ExtensionContext,
+      _signal: AbortSignal,
     ) {
       const { query, section } = params as { query: string; section?: string };
 
@@ -49,14 +49,14 @@ Provides examples for commands, languages, and tools.`,
 
       try {
         // Check for cancellation
-        if (signal?.aborted) {
+        if (_signal?.aborted) {
           return {
             content: [{ type: "text", text: "Cancelled" }],
             details: { query, url, section },
           };
         }
 
-        onUpdate?.({
+        _onUpdate?.({
           content: [
             { type: "text", text: `Fetching cheatsheet for ${query}...` },
           ],
@@ -65,7 +65,7 @@ Provides examples for commands, languages, and tools.`,
 
         // Fetch from cheat.sh
         const response = await fetch(url, {
-          signal: signal || AbortSignal.timeout(10000), // 10 second timeout
+          signal: _signal || AbortSignal.timeout(10000), // 10 second timeout
         });
 
         if (!response.ok) {

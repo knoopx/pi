@@ -37,7 +37,7 @@ const SUPPORTED_LANGUAGES = [
 
 export default function (pi: ExtensionAPI) {
   // Check if ast-grep is available
-  pi.on("session_start", async (_event: any, ctx: ExtensionContext) => {
+  pi.on("session_start", async (_event: unknown, ctx: ExtensionContext) => {
     try {
       await pi.exec("ast-grep", ["--version"], {
         signal: AbortSignal.timeout(5000),
@@ -86,8 +86,8 @@ Examples:
     }),
 
     async execute(
-      toolCallId: string,
-      params: any,
+      _toolCallId: string,
+      params: Record<string, unknown>,
       onUpdate: AgentToolUpdateCallback,
       ctx: ExtensionContext,
       signal: AbortSignal,
@@ -98,8 +98,8 @@ Examples:
         path = ".",
       } = params as {
         pattern: string;
-        language: string;
-        path?: string;
+        language: (typeof SUPPORTED_LANGUAGES)[number];
+        path: string;
       };
 
       const args = ["run", "--pattern", pattern, "--lang", language, path];
@@ -219,8 +219,8 @@ Examples:
     }),
 
     async execute(
-      toolCallId: string,
-      params: any,
+      _toolCallId: string,
+      params: Record<string, unknown>,
       onUpdate: AgentToolUpdateCallback,
       ctx: ExtensionContext,
       signal: AbortSignal,
@@ -326,8 +326,8 @@ Examples:
     }),
 
     async execute(
-      toolCallId: string,
-      params: any,
+      _toolCallId: string,
+      params: Record<string, unknown>,
       onUpdate: AgentToolUpdateCallback,
       ctx: ExtensionContext,
       signal: AbortSignal,
@@ -345,9 +345,9 @@ Examples:
       // Validate JSON
       try {
         JSON.parse(rule);
-      } catch (error) {
+      } catch {
         return {
-          content: [{ type: "text", text: `Invalid JSON rule: ${error}` }],
+          content: [{ type: "text", text: `Invalid JSON rule` }],
           details: {},
         };
       }

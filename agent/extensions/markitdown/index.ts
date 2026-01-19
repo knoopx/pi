@@ -1,8 +1,4 @@
-import type {
-  ExtensionAPI,
-  AgentToolUpdateCallback,
-  ExtensionContext,
-} from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 export default function (pi: ExtensionAPI) {

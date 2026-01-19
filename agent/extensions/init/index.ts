@@ -1,6 +1,5 @@
 import type {
   ExtensionAPI,
-  AgentToolUpdateCallback,
   ExtensionCommandContext,
 } from "@mariozechner/pi-coding-agent";
 

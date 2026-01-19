@@ -26,12 +26,10 @@ interface McpResponse {
   };
 }
 
-type TextContent = { type: "text"; text: string };
-
 async function makeMcpCall(
   methodName: string,
-  args: Record<string, any>,
-  onUpdate: ((update: any) => void) | undefined,
+  args: Record<string, unknown>,
+  onUpdate: AgentToolUpdateCallback | undefined,
   onUpdateText: string,
   signal?: AbortSignal,
   timeout: number = 30000,
@@ -46,34 +44,29 @@ async function makeMcpCall(
     },
   };
 
-  onUpdate?.({ content: [{ type: "text", text: onUpdateText }] });
+  onUpdate?.({ content: [{ type: "text", text: onUpdateText }], details: {} });
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
-  const combinedSignal = signal
-    ? AbortSignal.any([controller.signal, signal])
-    : controller.signal;
-
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   try {
+    const controller = new AbortController();
+    timeoutId = setTimeout(() => controller.abort(), timeout);
     const response = await fetch(
-      `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CONTEXT}`,
+      `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SEARCH}`,
       {
         method: "POST",
         headers: {
-          accept: "application/json, text/event-stream",
-          "content-type": "application/json",
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify(request),
-        signal: combinedSignal,
+        signal: signal ?? controller.signal,
       },
     );
-
     clearTimeout(timeoutId);
-
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Request error (${response.status}): ${errorText}`);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
+    await response.json();
 
     const responseText = await response.text();
     const lines = responseText.split("\n");
@@ -84,11 +77,14 @@ async function makeMcpCall(
           if (data.result?.content?.[0]?.text) {
             return {
               content: [{ type: "text", text: data.result.content[0].text }],
-              details: { query: args.query },
+              details: { query: args.query as string },
             } as AgentToolResult<unknown> & { details: { query: string } };
           }
-        } catch (e) {
-          // Ignore invalid JSON lines
+        } catch {
+          return {
+            content: [{ type: "text", text: `Error: Request failed` }],
+            details: { query: methodName },
+          };
         }
       }
     }
@@ -100,11 +96,11 @@ async function makeMcpCall(
           text: "No results found. Please try a different query.",
         },
       ],
-      details: { query: args.query },
+      details: { query: args.query as string },
     } as AgentToolResult<unknown> & { details: { query: string } };
-  } catch (error: any) {
+  } catch (error) {
     clearTimeout(timeoutId);
-    if (error.name === "AbortError") {
+    if (error instanceof Error && error.name === "AbortError") {
       throw new Error("Request timed out");
     }
     throw error;
@@ -140,8 +136,8 @@ Provides high-quality, up-to-date programming context.`,
       ),
     }),
     async execute(
-      toolCallId: string,
-      params: any,
+      _toolCallId: string,
+      params: Record<string, unknown>,
       onUpdate: AgentToolUpdateCallback,
       ctx: ExtensionContext,
       signal?: AbortSignal,
@@ -149,8 +145,8 @@ Provides high-quality, up-to-date programming context.`,
       return makeMcpCall(
         "get_code_context_exa",
         {
-          query: params.query,
-          tokensNum: params.tokensNum || 5000,
+          query: params.query as string,
+          tokensNum: (params.tokensNum as number) || 5000,
         },
         onUpdate,
         `Searching for code: ${params.query}...`,
@@ -199,8 +195,8 @@ Supports live crawling and different search depths.`,
       ),
     }),
     async execute(
-      toolCallId: string,
-      params: any,
+      _toolCallId: string,
+      params: Record<string, unknown>,
       onUpdate: AgentToolUpdateCallback,
       ctx: ExtensionContext,
       signal?: AbortSignal,
@@ -208,11 +204,14 @@ Supports live crawling and different search depths.`,
       return makeMcpCall(
         "web_search_exa",
         {
-          query: params.query,
-          type: params.type || "auto",
-          numResults: params.numResults || API_CONFIG.DEFAULT_NUM_RESULTS,
-          livecrawl: params.livecrawl || "fallback",
-          contextMaxCharacters: params.contextMaxCharacters,
+          query: params.query as string,
+          type: (params.type as string) || "auto",
+          numResults:
+            (params.numResults as number) || API_CONFIG.DEFAULT_NUM_RESULTS,
+          livecrawl: (params.livecrawl as string) || "fallback",
+          contextMaxCharacters: params.contextMaxCharacters as
+            | number
+            | undefined,
         },
         onUpdate,
         `Searching the web for: ${params.query}...`,

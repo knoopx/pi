@@ -535,7 +535,7 @@ Respond with only the change message, no additional text.`;
    */
   pi.on(
     "session_start",
-    async (_event: SessionStartEvent, ctx: ExtensionContext) => {
+    async (_event: SessionStartEvent, _ctx: ExtensionContext) => {
       if (!hooksEnabled) return;
       if (!(await requireRepo())) return;
 
