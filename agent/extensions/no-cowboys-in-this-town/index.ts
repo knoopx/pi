@@ -1,7 +1,6 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 const groundingTools = [
-  "code-stats",
   "code-map",
   "code-query",
   "code-inspect",
