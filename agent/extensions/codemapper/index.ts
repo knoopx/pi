@@ -13,7 +13,11 @@ Use this to:
 - Track codebase metrics over time
 - Assess development effort and scope
 
-Shows file counts, lines of code, and language breakdown.`,
+Shows file counts, lines of code, and language breakdown.
+
+Examples:
+- Get project overview: path='.'
+- Analyze specific directory: path='./src'`,
     parameters: Type.Object({
       path: Type.Optional(
         Type.String({
@@ -43,12 +47,14 @@ Shows file counts, lines of code, and language breakdown.`,
           content: [{ type: "text", text: result.stdout }],
           details: {},
         };
-      } catch (error: any) {
+      } catch (error) {
         return {
           content: [
             {
               type: "text",
-              text: `Error getting code statistics: ${error.message}`,
+              text: `Error getting code statistics: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
             },
           ],
           details: {},
@@ -68,7 +74,12 @@ Use this to:
 - Find files and symbols quickly
 - Get context for development tasks
 
-Supports filtering by detail level.`,
+Supports filtering by detail level.
+
+Examples:
+- Basic overview: path='.', budget=1000
+- Detailed structure: path='.', budget=5000, exportedOnly=true
+- Specific directory: path='./src', budget=2000`,
     parameters: Type.Object({
       path: Type.Optional(
         Type.String({
@@ -122,12 +133,14 @@ Supports filtering by detail level.`,
           content: [{ type: "text", text: result.stdout }],
           details: {},
         };
-      } catch (error: any) {
+      } catch (error) {
         return {
           content: [
             {
               type: "text",
-              text: `Error generating code map: ${error.message}`,
+              text: `Error generating code map: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
             },
           ],
           details: {},
@@ -147,7 +160,12 @@ Use this to:
 - Explore code relationships
 - Discover similar patterns
 
-Supports fuzzy and exact matching.`,
+Supports fuzzy and exact matching.
+
+Examples:
+- Find function: query='authenticate', showBody=true
+- Exact class search: query='User', exact=true
+- Public symbols only: query='validate', exportsOnly=true`,
     parameters: Type.Object({
       query: Type.String({
         description: "Search query (function name, class name, etc.)",
@@ -204,12 +222,14 @@ Supports fuzzy and exact matching.`,
           content: [{ type: "text", text: result.stdout }],
           details: {},
         };
-      } catch (error: any) {
+      } catch (error) {
         return {
           content: [
             {
               type: "text",
-              text: `Error querying code: ${error.message}`,
+              text: `Error querying code: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
             },
           ],
           details: {},
@@ -229,7 +249,12 @@ Use this to:
 - Review import/export relationships
 - Analyze individual file complexity
 
-Shows detailed breakdown of file components.`,
+Shows detailed breakdown of file components.
+
+Examples:
+- Analyze main file: file='./src/main.py'
+- Check module structure: file='./utils/helpers.js'
+- Review class file: file='./models/User.ts'`,
     parameters: Type.Object({
       file: Type.String({
         description: "Path to the file to inspect",
@@ -252,12 +277,14 @@ Shows detailed breakdown of file components.`,
           content: [{ type: "text", text: result.stdout }],
           details: {},
         };
-      } catch (error: any) {
+      } catch (error) {
         return {
           content: [
             {
               type: "text",
-              text: `Error inspecting file: ${error.message}`,
+              text: `Error inspecting file: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
             },
           ],
           details: {},
@@ -277,7 +304,12 @@ Use this to:
 - Refactor safely by finding all references
 - Analyze impact of code changes
 
-Shows reverse dependencies and call sites.`,
+Shows reverse dependencies and call sites.
+
+Examples:
+- Find function usage: symbol='authenticate'
+- Check class references: symbol='User'
+- Analyze method calls: symbol='process_payment'`,
     parameters: Type.Object({
       symbol: Type.String({
         description: "Symbol name to find callers for",
@@ -289,37 +321,25 @@ Shows reverse dependencies and call sites.`,
       ),
     }),
     async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
-      try {
-        const args = ["callers", params.symbol];
-        const targetPath = params.path || ".";
-        args.push(targetPath);
+      const args = ["callers", params.symbol];
+      const targetPath = params.path || ".";
+      args.push(targetPath);
 
-        const result = await pi.exec("cm", args, {
-          signal,
-        });
+      const result = await pi.exec("cm", args, {
+        signal,
+      });
 
-        if (result.code !== 0) {
-          return {
-            content: [{ type: "text", text: `Error: ${result.stderr}` }],
-            details: {},
-          };
-        }
-
+      if (result.code !== 0) {
         return {
-          content: [{ type: "text", text: result.stdout }],
-          details: {},
-        };
-      } catch (error: any) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error finding callers: ${error.message}`,
-            },
-          ],
+          content: [{ type: "text", text: `Error: ${result.stderr}` }],
           details: {},
         };
       }
+
+      return {
+        content: [{ type: "text", text: result.stdout }],
+        details: {},
+      };
     },
   });
 
@@ -334,7 +354,12 @@ Use this to:
 - Identify coupling between components
 - Debug complex function interactions
 
-Shows forward dependencies and call chains.`,
+Shows forward dependencies and call chains.
+
+Examples:
+- Analyze function calls: symbol='process_payment'
+- Check class methods: symbol='User.authenticate'
+- Debug complex logic: symbol='handle_request'`,
     parameters: Type.Object({
       symbol: Type.String({
         description: "Symbol name to find callees for",
@@ -346,37 +371,25 @@ Shows forward dependencies and call chains.`,
       ),
     }),
     async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
-      try {
-        const args = ["callees", params.symbol];
-        const targetPath = params.path || ".";
-        args.push(targetPath);
+      const args = ["callees", params.symbol];
+      const targetPath = params.path || ".";
+      args.push(targetPath);
 
-        const result = await pi.exec("cm", args, {
-          signal,
-        });
+      const result = await pi.exec("cm", args, {
+        signal,
+      });
 
-        if (result.code !== 0) {
-          return {
-            content: [{ type: "text", text: `Error: ${result.stderr}` }],
-            details: {},
-          };
-        }
-
+      if (result.code !== 0) {
         return {
-          content: [{ type: "text", text: result.stdout }],
-          details: {},
-        };
-      } catch (error: any) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error finding callees: ${error.message}`,
-            },
-          ],
+          content: [{ type: "text", text: `Error: ${result.stderr}` }],
           details: {},
         };
       }
+
+      return {
+        content: [{ type: "text", text: result.stdout }],
+        details: {},
+      };
     },
   });
 
@@ -391,7 +404,12 @@ Use this to:
 - Find the shortest path between code elements
 - Analyze system architecture
 
-Shows the call chain linking the symbols.`,
+Shows the call chain linking the symbols.
+
+Examples:
+- Trace API flow: from='main', to='authenticate'
+- Debug data flow: from='handle_request', to='save_database'
+- Analyze call chain: from='process_order', to='send_notification'`,
     parameters: Type.Object({
       from: Type.String({
         description: "Starting symbol",
@@ -406,37 +424,25 @@ Shows the call chain linking the symbols.`,
       ),
     }),
     async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
-      try {
-        const args = ["trace", params.from, params.to];
-        const targetPath = params.path || ".";
-        args.push(targetPath);
+      const args = ["trace", params.from, params.to];
+      const targetPath = params.path || ".";
+      args.push(targetPath);
 
-        const result = await pi.exec("cm", args, {
-          signal,
-        });
+      const result = await pi.exec("cm", args, {
+        signal,
+      });
 
-        if (result.code !== 0) {
-          return {
-            content: [{ type: "text", text: `Error: ${result.stderr}` }],
-            details: {},
-          };
-        }
-
+      if (result.code !== 0) {
         return {
-          content: [{ type: "text", text: result.stdout }],
-          details: {},
-        };
-      } catch (error: any) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error tracing call path: ${error.message}`,
-            },
-          ],
+          content: [{ type: "text", text: `Error: ${result.stderr}` }],
           details: {},
         };
       }
+
+      return {
+        content: [{ type: "text", text: result.stdout }],
+        details: {},
+      };
     },
   });
 
@@ -451,7 +457,13 @@ Use this to:
 - Find external package usage
 - Optimize import structures
 
-Supports forward and reverse dependency analysis.`,
+Supports forward and reverse dependency analysis.
+
+Examples:
+- Check file imports: file='./src/auth.py'
+- Find reverse dependencies: file='./utils.js', reverse=true
+- Detect circular deps: circular=true
+- List external packages: external=true`,
     parameters: Type.Object({
       file: Type.Optional(
         Type.String({ description: "File path to analyze dependencies for" }),
@@ -478,53 +490,41 @@ Supports forward and reverse dependency analysis.`,
     }),
 
     async execute(_toolCallId, params, _onUpdate, _ctx, signal) {
-      try {
-        const args = ["deps"];
+      const args = ["deps"];
 
-        // Determine the target: file takes precedence, otherwise use path or default to "."
-        const target = params.file || params.path || ".";
-        args.push(target);
+      // Determine the target: file takes precedence, otherwise use path or default to "."
+      const target = params.file || params.path || ".";
+      args.push(target);
 
-        if (params.reverse) {
-          args.push("--direction", "used-by");
-        }
+      if (params.reverse) {
+        args.push("--direction", "used-by");
+      }
 
-        if (params.depth) {
-          args.push("--depth", params.depth.toString());
-        }
+      if (params.depth) {
+        args.push("--depth", params.depth.toString());
+      }
 
-        if (params.external) {
-          args.push("--external");
-        }
+      if (params.external) {
+        args.push("--external");
+      }
 
-        if (params.circular) {
-          args.push("--circular");
-        }
+      if (params.circular) {
+        args.push("--circular");
+      }
 
-        const result = await pi.exec("cm", args, { signal });
+      const result = await pi.exec("cm", args, { signal });
 
-        if (result.code !== 0) {
-          return {
-            content: [{ type: "text", text: `Error: ${result.stderr}` }],
-            details: {},
-          };
-        }
-
+      if (result.code !== 0) {
         return {
-          content: [{ type: "text", text: result.stdout }],
-          details: {},
-        };
-      } catch (error: any) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error analyzing dependencies: ${error.message}`,
-            },
-          ],
+          content: [{ type: "text", text: `Error: ${result.stderr}` }],
           details: {},
         };
       }
+
+      return {
+        content: [{ type: "text", text: result.stdout }],
+        details: {},
+      };
     },
   });
 }

@@ -42,7 +42,7 @@ export default function (pi: ExtensionAPI) {
       await pi.exec("ast-grep", ["--version"], {
         signal: AbortSignal.timeout(5000),
       });
-    } catch (error) {
+    } catch {
       ctx.ui.notify(
         "ast-grep not found. Install it to use ast-grep tools.",
         "warning",
@@ -62,7 +62,12 @@ Use this to:
 - Analyze code structure without regex limitations
 - Debug and understand code relationships
 
-Supports pattern variables and multiple languages.`,
+Supports pattern variables and multiple languages.
+
+Examples:
+- Find console.log calls: pattern='console.log($$$ARGS)', language='javascript'
+- Find React useEffect hooks: pattern='useEffect(() => { $$$BODY }, [$DEPS])', language='tsx'
+- Find async functions: pattern='async function $NAME($$$ARGS) { $$$BODY }', language='typescript'`,
     parameters: Type.Object({
       pattern: Type.String({
         description:
@@ -184,7 +189,12 @@ Use this to:
 - Transform function signatures or variable names
 - Automate code modernization tasks
 
-Always use dry-run first to preview changes.`,
+Always use dry-run first to preview changes.
+
+Examples:
+- Replace == with ===: pattern='$A == $B', rewrite='$A === $B', language='javascript'
+- Convert function to arrow: pattern='function $NAME($$$ARGS) { $$$BODY }', rewrite='const $NAME = ($$$ARGS) => { $$$BODY }', language='javascript'
+- Simplify boolean return: pattern='if ($COND) { return true } else { return false }', rewrite='return !!$COND', language='javascript'`,
     parameters: Type.Object({
       pattern: Type.String({ description: "The ast-grep pattern to match" }),
       rewrite: Type.String({
@@ -292,7 +302,12 @@ Use this to:
 - Analyze code quality and patterns
 - Create custom linting or analysis rules
 
-Supports 'all', 'any', 'not', 'inside', 'has' operators.`,
+Supports 'all', 'any', 'not', 'inside', 'has' operators.
+
+Examples:
+- Find async functions: rule='{"kind": "function_declaration", "has": {"pattern": "await $EXPR"}}', language='javascript'
+- Find functions with multiple returns: rule='{"kind": "function_declaration", "has": {"kind": "return_statement", "nth-child": {"at-least": 2}}}', language='javascript'
+- Find nested if statements: rule='{"kind": "if_statement", "inside": {"kind": "if_statement"}}', language='javascript'`,
     parameters: Type.Object({
       rule: Type.String({
         description:
