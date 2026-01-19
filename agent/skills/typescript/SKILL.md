@@ -1,6 +1,6 @@
 ---
 name: typescript
-description: Follow best practices for TypeScript development, including type safety, modern patterns, testing, and project organization. Use when writing strictly typed code, organizing projects, implementing generics, or ensuring type safety in testing.
+description: Always use when working with Typescript projects.
 ---
 
 # TypeScript Skill
@@ -539,6 +539,40 @@ try {
     // Re-throw unexpected errors
     throw error;
   }
+}
+```
+
+### 7. Avoid Creating Temporary Files When You Can Pipe a Stream
+
+```typescript
+// ❌ Bad - creates temporary files unnecessarily, potential race conditions, filesystem overhead
+import { writeFileSync, readFileSync, unlinkSync } from "node:fs";
+import { execSync } from "node:child_process";
+
+function processData(input: string): string {
+  const tempFile = "/tmp/temp.txt";
+  writeFileSync(tempFile, input);
+  const result = execSync(`process ${tempFile}`, { encoding: "utf8" });
+  unlinkSync(tempFile);
+  return result;
+}
+
+// ✅ Good - use streams for efficiency, safety, and reduced I/O
+import { spawn } from "node:child_process";
+
+async function processData(input: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const proc = spawn("process", [], { stdio: ["pipe", "pipe", "pipe"] });
+    let output = "";
+    proc.stdout.on("data", (data) => (output += data.toString()));
+    proc.on("close", (code) => {
+      if (code === 0) resolve(output);
+      else reject(new Error("Process failed"));
+    });
+    proc.on("error", reject);
+    proc.stdin.write(input);
+    proc.stdin.end();
+  });
 }
 ```
 

@@ -1,6 +1,6 @@
 ---
 name: bun
-description: Manage JavaScript/TypeScript projects, including dependency management, bundling, testing, and runtime execution with Bun. Use when working with JavaScript/TypeScript projects, managing dependencies, building for production, or running tests.
+description: Always use when working with Bun projects
 ---
 
 # Bun Skill
