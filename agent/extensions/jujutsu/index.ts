@@ -531,7 +531,7 @@ Respond with only the change message, no additional text.`;
 
   /**
    * Hook that runs at the start of the session.
-   * Creates a new empty change and bookmarks it with name "pi-<timestamp>".
+   * Creates a new empty change for the session.
    */
   pi.on(
     "session_start",
@@ -540,23 +540,11 @@ Respond with only the change message, no additional text.`;
       if (!(await requireRepo())) return;
 
       try {
-        const timestamp = new Date()
-          .toISOString()
-          .replace(/[:.]/g, "-")
-          .replace("T", "_")
-          .replace("Z", "");
-        const bookmarkName = `pi-${timestamp}`;
         // Create a new empty change for the session
         await pi.exec("jj", ["new"]);
-        // Bookmark the new empty change
-        await pi.exec("jj", ["bookmark", "create", bookmarkName]);
-        ctx.ui.notify(
-          `Created bookmark: ${bookmarkName} on new empty change`,
-          "info",
-        );
       } catch (error) {
         console.warn(
-          `Failed to create bookmark and change: ${error instanceof Error ? error.message : String(error)}`,
+          `Failed to create change: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     },
