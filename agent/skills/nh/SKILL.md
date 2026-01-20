@@ -1,6 +1,6 @@
 ---
 name: nh
-description: Manage NixOS and Home Manager operations with improved output and cleanup. Use when updating NixOS configurations, managing user environments, cleaning up generations, or performing system maintenance.
+description: Switch NixOS/Home Manager configurations, clean old generations, and perform system maintenance with nh. Use when running os/home switch, pruning the Nix store, or managing system generations.
 ---
 
 # nh (Nix Helper) Skill
@@ -22,6 +22,21 @@ nh os test path:.
 
 # Build a configuration without switching (equivalent to nixos-rebuild build)
 nh os build path:.
+
+# Make configuration the boot default without activating
+nh os boot path:.
+
+# Rollback to a previous generation
+nh os rollback
+
+# List available generations
+nh os info
+
+# Build a NixOS VM image
+nh os build-vm path:.
+
+# Load system configuration in a REPL (use tmux for interactive)
+tmux new -d -s nh-repl 'nh os repl path:.'
 ```
 
 ### Home Manager Updates
@@ -34,6 +49,30 @@ nh home switch path:.
 
 # Build Home Manager configuration without switching
 nh home build path:.
+
+# Load Home Manager configuration in a REPL (use tmux for interactive)
+tmux new -d -s hm-repl 'nh home repl path:.'
+```
+
+### Nix-Darwin (macOS)
+
+Use `nh darwin` for managing nix-darwin configurations on macOS.
+
+```bash
+# Build and switch darwin configuration
+nh darwin switch path:.
+
+# Build darwin configuration without switching
+nh darwin build path:.
+```
+
+### Package Search
+
+Search for packages using search.nixos.org:
+
+```bash
+# Search for packages
+nh search ripgrep
 ```
 
 ### Maintenance and Cleanup
@@ -41,11 +80,14 @@ nh home build path:.
 `nh clean` provides a more intuitive way to manage the Nix store and generations.
 
 ```bash
-# Clean generations older than 7 days
+# Clean all profiles (system + user)
 nh clean all --keep-since 7d
 
-# Keep only the last 5 generations
-nh clean all --keep 5
+# Clean only current user's profiles
+nh clean user --keep 5
+
+# Clean a specific profile
+nh clean profile /nix/var/nix/profiles/system --keep 3
 
 # Run garbage collection on the Nix store
 nh clean all

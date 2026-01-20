@@ -16,7 +16,6 @@ describe("Scenario: Nix Extension", () => {
       "search-nix-packages",
       "search-nix-options",
       "search-home-manager-options",
-      "search-nixpkgs-pull-requests",
     ];
 
     toolNames.forEach((name) => {
@@ -230,77 +229,4 @@ describe("Scenario: Nix Extension", () => {
     });
   });
 
-  describe("Given search-nixpkgs-pull-requests tool", () => {
-    let registeredTool: any;
-
-    beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "search-nixpkgs-pull-requests",
-      )[0];
-    });
-
-    it("should search pull requests successfully", async () => {
-      const mockPRs = [
-        {
-          number: 12345,
-          title: "Update hello to version 2.12.1",
-          state: "open",
-          user: { login: "contributor" },
-          updated_at: "2024-01-01T00:00:00Z",
-          html_url: "https://github.com/NixOS/nixpkgs/pull/12345",
-          pull_request: true,
-        },
-      ];
-
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
-
-      const mockResponse = {
-        ok: true,
-        json: () => Promise.resolve({ items: mockPRs }),
-      };
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const result = await registeredTool.execute("tool1", { query: "hello" });
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("https://api.github.com/search/issues"),
-        expect.any(Object),
-      );
-      expect(result.content[0].text).toMatch(
-        /Found \d+ pull requests matching/,
-      );
-      expect(result.content[0].text).toContain("Author: contributor");
-    });
-
-    it("should not display author when user is missing", async () => {
-      const mockPRs = [
-        {
-          number: 12345,
-          title: "Update hello to version 2.12.1",
-          state: "open",
-          user: null,
-          updated_at: "2024-01-01T00:00:00Z",
-          html_url: "https://github.com/NixOS/nixpkgs/pull/12345",
-          pull_request: true,
-        },
-      ];
-
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
-
-      const mockResponse = {
-        ok: true,
-        json: () => Promise.resolve({ items: mockPRs }),
-      };
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const result = await registeredTool.execute("tool1", { query: "hello" });
-
-      expect(result.content[0].text).toMatch(
-        /Found \d+ pull requests matching/,
-      );
-      expect(result.content[0].text).not.toContain("Author:");
-    });
-  });
 });

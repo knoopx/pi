@@ -1,11 +1,28 @@
 {
-  "lastChangelogVersion": "0.49.2",
-  "defaultProvider": "github-copilot",
-  "defaultModel": "grok-code-fast-1",
+  "lastChangelogVersion": "0.49.3",
+  "defaultProvider": "anthropic",
+  "defaultModel": "claude-opus-4-5",
   "defaultThinkingLevel": "off",
   "theme": "custom",
   "permissionLevel": "low",
   "lsp": {
     "hookMode": "edit_write"
-  }
+  },
+  "enabledModels": [
+    "anthropic/claude-haiku-4-5",
+    "anthropic/claude-opus-4-5",
+    "anthropic/claude-sonnet-4-5",
+    "github-copilot/grok-code-fast-1",
+    "google-antigravity/gemini-3-flash",
+    "ollama/glm-4.7-flash",
+    "openai-codex/gpt-5.2-codex",
+    "x.ai/grok-code-fast-1",
+    "xiaomi/mimo-v2-flash",
+    "zai-coding-plan/glm-4.7-flash",
+    "zai-coding-plan/glm-4.7",
+    "zen/big-pickle",
+    "zen/glm-4.7-free",
+    "zen/grok-code",
+    "zen/minimax-m2.1-free"
+  ]
 }

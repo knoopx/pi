@@ -13,9 +13,11 @@
 import type {
   ExtensionAPI,
   ExtensionContext,
+  Theme,
+  KeybindingsManager,
 } from "@mariozechner/pi-coding-agent";
 import { DynamicBorder } from "@mariozechner/pi-coding-agent";
-import { Container, matchesKey, Text } from "@mariozechner/pi-tui";
+import { Container, matchesKey, Text, type TUI } from "@mariozechner/pi-tui";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
@@ -167,7 +169,7 @@ class HistorySearchComponent {
   public onCancel?: () => void;
 
   constructor(
-    private theme: any,
+    private theme: Theme,
     history: HistoryEntry[],
   ) {
     this.allHistory = history;
@@ -342,7 +344,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       const result = await ctx.ui.custom<HistoryEntry | null>(
-        (tui: any, theme: any, _kb: any, done: (result: any) => void) => {
+        (tui: TUI, theme: Theme, _kb: KeybindingsManager, done: (result: HistoryEntry | null) => void) => {
           const component = new HistorySearchComponent(theme, history);
 
           component.onSelect = (entry) => done(entry);

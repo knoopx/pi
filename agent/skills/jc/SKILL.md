@@ -1,87 +1,85 @@
 ---
 name: jc
-description: Convert the output of common CLI tools into JSON for easier processing and analysis. Use when parsing command-line tool output, processing data with JSON tools like jq, or analyzing system information programmatically.
+description: Convert CLI output to JSON for structured processing and analysis. Use when parsing ps, dig, netstat, ls, or other command output into machine-readable format for piping to jq or scripts.
 ---
 
-# JC Skill
+# JC Cheatsheet
 
-This skill provides commands for using `jc` to convert traditional command-line output into JSON.
+JSONifies the output of many CLI tools and file-types for easier parsing in scripts.
 
 ## Basic Usage
 
 ```bash
-# Pipe output of a command to jc
-ls -l | jc --ls | jq '.[0].filename'
-
-# Use the -p flag for pretty-print
-uptime | jc --uptime -p
+command | jc --parser          # Pipe output
+jc command                    # Magic syntax
+jc --help                     # List all parsers
+jc --help --parser            # Parser docs
 ```
 
-## Supported Commands
-
-`jc` supports over 100 commands. Here are some common ones:
-
-- `ls`: `ls -l | jc --ls`
-- `ps`: `ps aux | jc --ps`
-- `df`: `df -h | jc --df`
-- `ifconfig`: `ifconfig | jc --ifconfig`
-- `netstat`: `netstat -rn | jc --netstat`
-- `dig`: `dig google.com | jc --dig`
-- `ping`: `ping -c 3 google.com | jc --ping`
-- `uptime`: `uptime | jc --uptime`
-- `crontab`: `crontab -l | jc --crontab`
-
-## Magic Mode
-
-The `--magic` (or `-m`) flag attempts to automatically detect the command:
+## Examples
 
 ```bash
-jc -m ls -l
-jc -m ping -c 3 google.com
+dig example.com | jc --dig | jq '.answer[].data'
+ps aux | jc --ps
+ifconfig | jc --ifconfig
 ```
 
-## Useful Patterns
+## Parsers
 
-### Combining with JQ
+| Category | Parsers |
+|----------|---------|
+| System | `ps`, `top`, `free`, `df`, `du`, `ls`, `stat`, `uptime` |
+| Network | `dig`, `ping`, `traceroute`, `netstat`, `ss`, `ifconfig` |
+| Files | `ls`, `find`, `stat`, `file`, `mount`, `fstab` |
+| Packages | `dpkg -l`, `rpm -qi`, `pacman`, `brew` |
+| Logs | `syslog`, `clf` (Common Log Format) |
+| Dev | `git log`, `docker ps`, `kubectl` |
+
+## Options
+
+| Flag | Description |
+|------|-------------|
+| `-p` | Pretty format JSON |
+| `-r` | Raw output (less processed) |
+| `-u` | Unbuffered output |
+| `-q` | Quiet (suppress warnings) |
+| `-d` | Debug mode |
+| `-y` | YAML output |
+| `-M` | Add metadata |
+| `-s` | Slurp multi-line input |
+
+## Slicing
+
+Skip lines: `START:STOP` syntax
 
 ```bash
-# Get the IP address of the first interface
-ifconfig | jc --ifconfig | jq '.[0].ipv4_addr'
-
-# List files larger than 1MB
-ls -lh | jc --ls | jq '.[] | select(.size > 1000000) | .filename'
+cat file.txt | jc 1:-1 --parser  # Skip first/last lines
 ```
 
-### Formatting Output
+## Slurp Mode
+
+For multi-line parsers: `--slurp` outputs array
 
 ```bash
-# YAML output
-ls -l | jc --ls --yaml
+cat ips.txt | jc --slurp --ip-address
 ```
 
-## Cheat Sheet
+## Python Library
 
-### Common Parsers
+```python
+import jc
 
-- `--ls`
-- `--ps`
-- `--df`
-- `--dig`
-- `--ping`
-- `--ifconfig`
-- `--env`
-- `--ini`
-- `--xml`
-- `--csv`
+# Parse command output
+data = jc.parse('dig', output_string)
 
-### Global Options
+# Or parse directly
+data = jc.parsers.dig.parse(output_string)
+```
 
-- `-p`, `--pretty`: Pretty-print JSON.
-- `-m`, `--magic`: Auto-detect command.
-- `-q`, `--quiet`: Suppress warning messages.
-- `-r`, `--raw`: Do not process values (no type conversion).
-- `--yaml`: Output YAML instead of JSON.
+## Tips
 
-## Related Skills
-
-- **nu-shell**: Process jc's JSON output using nu-shell's structured data handling and pipelines.
+- Magic syntax: `jc command` auto-detects parser
+- Use `jq` for processing: `jc cmd | jq '.field'`
+- `--slurp` for multiple items per file
+- Streaming parsers for large outputs
+- Python lib returns dict/list, not JSON

@@ -1,6 +1,6 @@
 ---
 name: nix-flakes
-description: Achieve reproducible builds, dependency management, and project isolation with Nix Flakes. Use when creating reproducible environments, managing dependencies, building packages, or initializing Nix projects.
+description: Create reproducible builds, manage flake inputs, define devShells, and build packages with flake.nix. Use when initializing Nix projects, locking dependencies, or running nix build/develop commands.
 ---
 
 # Nix Flakes Skill
@@ -15,14 +15,34 @@ Flakes are the modern way to manage Nix projects, providing hermeticity and repr
 # Initialize a new flake in the current directory
 nix flake init
 
+# Create a new flake from template
+nix flake new hello -t templates#hello
+
 # Update flake.lock (updates all inputs)
 nix flake update
+
+# Update specific input only
+nix flake update nixpkgs
+
+# Lock without updating (create missing entries)
+nix flake lock
 
 # Check flake for syntax and common errors
 nix flake check
 
 # Show flake outputs
 nix flake show
+
+# Show flake metadata (inputs, revisions)
+nix flake metadata path:.
+nix flake info path:.  # Alias for metadata
+
+# Prefetch flake and inputs into store
+nix flake prefetch github:NixOS/nixpkgs
+nix flake prefetch-inputs path:.
+
+# Clone flake repository
+nix flake clone nixpkgs --dest ./nixpkgs
 ```
 
 ### Running and Building

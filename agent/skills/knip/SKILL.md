@@ -1,56 +1,47 @@
 ---
 name: knip
-description: Identify and remove unused dependencies, files, and exports in TypeScript and JavaScript projects. Use when detecting unused code, cleaning up dead code, improving maintainability, or reducing bundle sizes.
+description: Find unused dependencies, files, and exports in JS/TS projects. Use when cleaning up dead code, removing stale packages from package.json, or identifying unreferenced exports.
 ---
 
 # Knip
 
-Knip is a tool to find unused files, dependencies, and exports in TypeScript and JavaScript projects. It helps maintain clean codebases by detecting dead code.
-
-## Setup
-
-No setup required. Knip is run on-demand using `bunx`.
+Find unused files, dependencies, and exports in TypeScript/JavaScript projects.
 
 ## Usage
 
-Run Knip in the root of your project:
-
 ```bash
-bunx knip
+bunx knip                     # Analyze project
+bunx knip --production        # Production only (no tests, devDeps)
+bunx knip --strict            # Direct dependencies only
+bunx knip --fix               # Auto-remove unused (use cautiously)
+bunx knip --include files     # Only unused files
+bunx knip --include exports   # Only unused exports
+bunx knip --include dependencies  # Only unused deps
 ```
 
-Common options:
-
-- `--fix`: Automatically remove unused dependencies from package.json (use cautiously)
-- `--config <file>`: Specify a custom configuration file
-- `--include <patterns>`: Include additional file patterns
-- `--exclude <patterns>`: Exclude file patterns
-- `--reporter <reporter>`: Output format (e.g., json, markdown)
-- `--no-config-hints`: Disable configuration hints
-
-Example:
+## Output Formats
 
 ```bash
-bunx knip --reporter json --exclude "test/**/*"
+bunx knip --reporter compact  # Compact output
+bunx knip --reporter json     # JSON for tooling
+bunx knip --reporter github-actions  # CI annotations
 ```
 
-## Workflow
+## Filtering
 
-1. Ensure you're in the project root directory
-2. Run Knip to scan for unused code
-3. Review the reported unused dependencies, files, and exports
-4. Manually remove or refactor the identified unused code
-5. Re-run to verify cleanup
+```bash
+bunx knip --workspace packages/client  # Specific workspace
+bunx knip --exclude "test/**/*"        # Exclude patterns
+```
+
+## Debugging
+
+```bash
+bunx knip --debug                      # Debug output
+bunx knip --trace-file src/utils.ts    # Trace file
+bunx knip --trace-export myFunction    # Trace export
+```
 
 ## Configuration
 
-Knip can be configured via a `.knip.json` or `knip.config.js` file for custom rules, entry points, and exclusions.
-
-## Supported Environments
-
-Works with TypeScript, JavaScript, and various bundlers/frameworks. It analyzes imports, exports, and dependencies to detect unused code.
-
-## Related Skills
-
-- **bun**: Use Knip to clean up unused dependencies in Bun-managed projects.
-- **typescript**: Maintain clean TypeScript codebases by removing unused exports and files.
+Configure via `.knip.json` or `knip.config.js` for custom entry points and exclusions.

@@ -1,117 +1,218 @@
 ---
 name: ast-grep
-description: Find complex code patterns and perform safe structural code transformations across projects using ast-grep. Use when analyzing code structures, searching for patterns, refactoring codebases, or debugging.
+description: Search code by AST patterns and perform structural refactoring across files. Use when finding function calls, replacing code patterns, or refactoring syntax that regex cannot reliably match.
 ---
 
-# ast-grep Skill
+# ast-grep
 
-This skill provides specialized workflows and reference documentation for using `ast-grep` (also known as `sg`) to perform structural search and replace across a codebase using command-line arguments.
+Structural code search and rewriting using AST matching instead of regex.
 
-## Setup
+## Contents
 
-Ensure `ast-grep` is installed:
+- [Pattern Syntax](#pattern-syntax)
+- [Basic Search](#basic-search)
+- [Search and Replace](#search-and-replace-dry-run)
+- [Advanced Scan with Rules](#advanced-scan-with-rules)
+- [Common Refactoring Examples](#common-refactoring-examples)
+- [Project Setup](#project-setup)
 
-```bash
-ast-grep --version
-```
+## Pattern Syntax
+
+ast-grep uses pattern placeholders to match and capture AST nodes:
+
+| Pattern | Description |
+|---------|-------------|
+| `$VAR` | Match a single AST node and capture it as `VAR` |
+| `$$$VAR` | Match zero or more AST nodes (spread) and capture as `VAR` |
+| `$_` | Anonymous placeholder (matches any single node, no capture) |
+| `$$$_` | Anonymous spread placeholder (matches any number of nodes) |
+
+**Shell quoting tip:** Escape `$` as `\$VAR` or wrap the pattern in single quotes to avoid shell expansion.
+
+## Supported Languages
+
+javascript, typescript, tsx, html, css, python, go, rust, java, c, cpp, csharp, ruby, php, yaml
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `ast-grep run` | One-time search or rewrite (default) |
+| `ast-grep scan` | Scan and rewrite by configuration |
+| `ast-grep test` | Test ast-grep rules |
+| `ast-grep new` | Create new project or rules |
+| `ast-grep lsp` | Start language server |
 
 ## Usage
 
-### Basic Structural Search
+### Basic Search
 
-Find code matching a pattern in a specific language:
+Find patterns in code:
 
 ```bash
-ast-grep run --pattern 'console.log($$$ARGS)' --lang javascript
+# Find console.log calls
+ast-grep run --pattern 'console.log($$$ARGS)' --lang javascript .
+
+# Find React useState hooks
+ast-grep run --pattern 'const [$STATE, $SETTER] = useState($INIT)' --lang tsx .
+
+# Find async functions
+ast-grep run --pattern 'async function $NAME($$$ARGS) { $$$BODY }' --lang typescript .
+
+# Find Express route handlers
+ast-grep run --pattern 'app.$METHOD($PATH, ($$$ARGS) => { $$$BODY })' --lang javascript .
+
+# Find Python function definitions
+ast-grep run --pattern 'def $NAME($$$ARGS): $$$BODY' --lang python .
+
+# Find Go error handling
+ast-grep run --pattern 'if $ERR != nil { $$$BODY }' --lang go .
 ```
 
-### Structural Search and Replace
+### Search and Replace (Dry Run)
 
-Rewrite code by matching a pattern and providing a replacement:
+Preview refactoring changes without modifying files:
 
 ```bash
-ast-grep run --pattern 'if ($A == $B) { $S }' --rewrite 'if (Object.is($A, $B)) { $S }' --lang typescript
+# Replace == with === (preview)
+ast-grep run --pattern '$A == $B' --rewrite '$A === $B' --lang javascript .
+
+# Convert function to arrow function (preview)
+ast-grep run --pattern 'function $NAME($$$ARGS) { $$$BODY }' \
+  --rewrite 'const $NAME = ($$$ARGS) => { $$$BODY }' --lang javascript .
+
+# Replace var with let (preview)
+ast-grep run --pattern 'var $NAME = $VALUE' --rewrite 'let $NAME = $VALUE' --lang javascript .
+
+# Add optional chaining (preview)
+ast-grep run --pattern '$OBJ && $OBJ.$PROP' --rewrite '$OBJ?.$PROP' --lang javascript .
 ```
 
-### Advanced Structural Search (Inline Rules)
+### Apply Changes
 
-For complex queries involving logic (all, any, not) or relationships (inside, has), use `--inline-rules`:
+Apply refactoring to files:
 
 ```bash
-ast-grep scan --inline-rules "{id: find-async, language: javascript, rule: {all: [{kind: function_declaration}, {has: {pattern: await \$EXPR, stopBy: end}}]}}"
+# Apply changes (use --update-all)
+ast-grep run --pattern '$A == $B' --rewrite '$A === $B' --lang javascript --update-all .
 ```
 
-### In-place Updates
+### Advanced Scan with Rules
 
-Apply changes directly to files without confirmation:
+Use inline rules for complex pattern matching with logical operators:
 
 ```bash
-ast-grep run --pattern '$A && $A.prop' --rewrite '$A?.prop' --lang javascript --update-all
+# Find functions containing await
+ast-grep scan --inline-rules '{"id": "async-fn", "language": "javascript", "rule": {"kind": "function_declaration", "has": {"pattern": "await $EXPR"}}}' .
+
+# Find nested if statements
+ast-grep scan --inline-rules '{"id": "nested-if", "language": "javascript", "rule": {"kind": "if_statement", "inside": {"kind": "if_statement"}}}' .
+
+# Find console.log inside catch blocks
+ast-grep scan --inline-rules '{"id": "catch-log", "language": "javascript", "rule": {"pattern": "console.log($$$ARGS)", "inside": {"kind": "catch_clause"}}}' .
+```
+
+### Rule Operators
+
+Rules support these operators for complex matching:
+
+- `all`: All conditions must match
+- `any`: Any condition must match
+- `not`: Negate a condition
+- `inside`: Node must be inside another pattern
+- `has`: Node must contain another pattern
+- `kind`: Match AST node type
+- `pattern`: Match a code pattern
+
+## Common Refactoring Examples
+
+### JavaScript/TypeScript
+
+```bash
+# Convert require to import
+ast-grep run --pattern 'const $NAME = require($PATH)' \
+  --rewrite 'import $NAME from $PATH' --lang javascript .
+
+# Simplify boolean return
+ast-grep run --pattern 'if ($COND) { return true } else { return false }' \
+  --rewrite 'return !!$COND' --lang javascript .
+
+# Convert Promise.then to async/await
+ast-grep run --pattern '$PROMISE.then($CALLBACK)' \
+  --rewrite 'await $PROMISE' --lang javascript .
+```
+
+### Python
+
+```bash
+# Convert string formatting
+ast-grep run --pattern '"%s" % ($ARGS)' \
+  --rewrite 'f"{$ARGS}"' --lang python .
+
+# Find deprecated function calls
+ast-grep run --pattern 'old_function($$$ARGS)' --lang python .
+```
+
+### React
+
+```bash
+# Find class components
+ast-grep run --pattern 'class $NAME extends React.Component { $$$BODY }' --lang tsx .
+
+# Find useEffect with empty deps
+ast-grep run --pattern 'useEffect($CALLBACK, [])' --lang tsx .
 ```
 
 ## Workflow
 
-1.  **Identify the language**: Determine the programming language (e.g., `javascript`, `python`, `go`).
-2.  **Debug the AST**: If you don't know the node name (`kind`), use the debug flag:
-    ```bash
-    ast-grep run --pattern 'code snippet here' --lang lang --debug-query=cst
-    ```
-3.  **Define the search pattern**: Use placeholders like `$VAR` (single node) or `$$$ARGS` (multiple nodes).
-4.  **Test the search**: Run `ast-grep run --pattern '...' --lang ...` to verify matches.
-5.  **Apply and verify**: Use the `--rewrite` flag with `--update-all` to apply changes.
+1. **Search first**: Use `ast-grep run --pattern` to find matches
+2. **Preview changes**: Add `--rewrite` to see what would change
+3. **Verify output**: Review the diff output carefully
+4. **Apply changes**: Add `--update-all` to modify files
+5. **Test**: Run tests to verify refactoring didn't break anything
 
-## Cheat Sheet
+## Project Setup
 
-### Pattern Syntax
+Create a new ast-grep project with rules:
 
-- `$VAR` : Matches a single AST node and captures it as `VAR`.
-- `$$$VAR` : Matches zero or more AST nodes (spread) and captures them as `VAR`.
-- `$_` : Anonymous placeholder (matches any single node but doesn't capture).
-- `$$$_` : Anonymous spread placeholder (matches any number of nodes).
+```bash
+# Initialize project with sgconfig.yml
+ast-grep new
 
-### Rule Syntax (for --inline-rules)
+# Create a new rule
+ast-grep new rule
 
-| Property      | Purpose                                                                 |
-| :------------ | :---------------------------------------------------------------------- |
-| `kind`        | Matches AST node by its kind name (found via `--debug-query`).          |
-| `inside`      | Target node must be inside node matching sub-rule (use `stopBy: end`).  |
-| `has`         | Target node must have descendant matching sub-rule (use `stopBy: end`). |
-| `all` / `any` | Logical AND / OR for multiple sub-rules.                                |
-| `not`         | Negation of a sub-rule.                                                 |
+# Create a new test for rules
+ast-grep new test
+```
 
-**Important**: When using `$VAR` in a shell command string, escape it as `\$VAR` or use single quotes for the entire rule string.
+## Testing Rules
 
-### Practical Command Examples
+```bash
+# Test all rules in project
+ast-grep test
 
-| Task                      | Command                                                                                                                             |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Find React `useEffect`    | `ast-grep run --pattern 'useEffect(() => { $$$BODY }, [$DEPS])' --lang tsx`                                                         |
-| Simplify Boolean return   | `ast-grep run --pattern 'if ($COND) { return true } else { return false }' --rewrite 'return !!$COND' --lang javascript`            |
-| Convert to Arrow Function | `ast-grep run --pattern 'function $NAME($$$ARGS) { $$$BODY }' --rewrite 'const $NAME = ($$$ARGS) => { $$$BODY }' --lang javascript` |
-| Remove Debugger           | `ast-grep run --pattern 'debugger' --rewrite '' --lang javascript`                                                                  |
+# Test with specific config
+ast-grep test -c ./sgconfig.yml
+```
 
-### Supported Languages
+## Language Server
 
-`javascript`, `typescript`, `tsx`, `html`, `css`, `python`, `go`, `rust`, `java`, `c`, `cpp`, `csharp`, `ruby`, `php`, `yaml`.
+```bash
+# Start LSP for editor integration (use tmux for background)
+tmux new -d -s ast-grep-lsp 'ast-grep lsp'
+```
 
-### Command Line Flags
+## Tips
 
-- `--pattern`, `-p`: The pattern to search for.
-- `--lang`, `-l`: The language of the source files.
-- `--rewrite`, `-r`: The replacement pattern.
-- `--update-all`, `-u`: Apply all rewrites without confirmation.
-- `--json`, `-j`: Output matches in JSON format.
-- `--debug-query`: Inspect AST structure (`cst`, `ast`, `pattern`).
+- Start with simple patterns and refine
+- Use `$_` for parts you don't care about capturing
+- Use `$$$` for variable-length matches (arguments, statements)
+- Test patterns on a single file first: `ast-grep run --pattern '...' --lang js path/to/file.js`
+- Use JSON output for programmatic processing: `ast-grep run --pattern '...' --json`
+- Use `ast-grep new` to scaffold rules and tests
 
 ## Related Skills
 
-- **typescript**: Use ast-grep to find and refactor TypeScript code patterns safely.
-- **python**: Apply structural search and replace to Python codebases with ast-grep.
-
-## Related Tools
-
-- **ast-search**: Perform structural code search using ast-grep patterns.
-- **ast-replace**: Perform structural search and replace using ast-grep.
-- **ast-scan**: Advanced structural search using ast-grep inline rules.
-- **generate-codemap**: Generate a compact map of the codebase structure, symbols, and dependencies.
-- **analyze-dependencies**: Analyze dependency tree for files or show external packages used in the project.
+- **typescript**: Use ast-grep for TypeScript-specific refactoring patterns.
+- **jscpd**: Combine with duplicate detection to find and consolidate similar code.

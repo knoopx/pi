@@ -4,3 +4,4 @@ agent/sessions
 agent/settings.json
 agent/themes/custom.json
 node_modules
+.jj

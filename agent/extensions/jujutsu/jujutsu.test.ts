@@ -223,7 +223,7 @@ describe("Scenario: Jujutsu Extension", () => {
       expect(mockPi.exec).toHaveBeenCalledTimes(5);
     });
 
-    it("should reuse current change when empty and update description", async () => {
+    it("should reuse current change when empty", async () => {
       mockPi.exec.mockImplementation((command: string, args?: string[]) => {
         if (command === "jj" && args?.[0] === "status") {
           return Promise.resolve({ stdout: "", stderr: "", code: 0 });
@@ -232,9 +232,6 @@ describe("Scenario: Jujutsu Extension", () => {
           return Promise.resolve({ stdout: "abc123", stderr: "", code: 0 });
         }
         if (command === "jj" && args?.[0] === "diff") {
-          return Promise.resolve({ stdout: "", stderr: "", code: 0 });
-        }
-        if (command === "jj" && args?.[0] === "describe") {
           return Promise.resolve({ stdout: "", stderr: "", code: 0 });
         }
         return Promise.resolve({ stdout: "", stderr: "", code: 0 });
@@ -259,12 +256,7 @@ describe("Scenario: Jujutsu Extension", () => {
         "--no-graph",
       ]);
       expect(mockPi.exec).toHaveBeenCalledWith("jj", ["diff"]);
-      expect(mockPi.exec).toHaveBeenCalledWith("jj", [
-        "describe",
-        "-m",
-        "Test prompt",
-      ]);
-      expect(mockPi.exec).toHaveBeenCalledTimes(4);
+      expect(mockPi.exec).toHaveBeenCalledTimes(3);
       expect(mockPi.exec).not.toHaveBeenCalledWith("jj", [
         "new",
         "-m",

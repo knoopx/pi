@@ -5,8 +5,9 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
-import { Type } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 
+// Parameter schemas
 const SearchNpmPackagesParams = Type.Object({
   query: Type.String({ description: "Search query for npm packages" }),
   size: Type.Optional(
@@ -22,12 +23,64 @@ const GetNpmPackageVersionsParams = Type.Object({
   package: Type.String({ description: "npm package name" }),
 });
 
+type SearchNpmPackagesParamsType = Static<typeof SearchNpmPackagesParams>;
+type GetNpmPackageInfoParamsType = Static<typeof GetNpmPackageInfoParams>;
+type GetNpmPackageVersionsParamsType = Static<
+  typeof GetNpmPackageVersionsParams
+>;
+
+// NPM API response types
+interface NpmSearchObject {
+  package: {
+    name: string;
+    version: string;
+    description?: string;
+    keywords?: string[];
+    author?: { name?: string };
+  };
+}
+
+interface NpmSearchResponse {
+  objects: NpmSearchObject[];
+}
+
+interface NpmMaintainer {
+  name?: string;
+}
+
+interface NpmPackageVersion {
+  license?: string;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+}
+
+interface NpmPackageResponse {
+  name?: string;
+  description?: string;
+  author?: { name?: string } | string;
+  maintainers?: NpmMaintainer[];
+  homepage?: string;
+  repository?: { url?: string } | string;
+  keywords?: string[];
+  "dist-tags"?: Record<string, string>;
+  versions?: Record<string, NpmPackageVersion>;
+}
+
 function textResult(
   text: string,
   details: Record<string, unknown> = {},
 ): AgentToolResult<Record<string, unknown>> {
   const content: TextContent[] = [{ type: "text", text }];
   return { content, details };
+}
+
+function extractStringOrProperty<T extends { [K in P]?: string }, P extends string>(
+  value: T | string | undefined,
+  property: P,
+): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "object" && value !== null) return value[property] ?? "";
+  return "";
 }
 
 export default function (pi: ExtensionAPI) {
@@ -47,12 +100,12 @@ Returns matching packages with metadata.`,
 
     async execute(
       _toolCallId: string,
-      params: any,
+      params: SearchNpmPackagesParamsType,
       _onUpdate: AgentToolUpdateCallback,
       _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
-      const { query, size = 10 } = params as { query: string; size?: number };
+      const { query, size = 10 } = params;
       return await searchNpmPackages(query, size);
     },
   });
@@ -73,12 +126,12 @@ Returns detailed package metadata.`,
 
     async execute(
       _toolCallId: string,
-      params: any,
+      params: GetNpmPackageInfoParamsType,
       _onUpdate: AgentToolUpdateCallback,
       _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
-      const { package: pkg } = params as { package: string };
+      const { package: pkg } = params;
       return await getNpmPackageInfo(pkg);
     },
   });
@@ -99,12 +152,12 @@ Returns all published package versions.`,
 
     async execute(
       _toolCallId: string,
-      params: any,
+      params: GetNpmPackageVersionsParamsType,
       _onUpdate: AgentToolUpdateCallback,
       _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
-      const { package: pkg } = params as { package: string };
+      const { package: pkg } = params;
       return await getNpmPackageVersions(pkg);
     },
   });
@@ -137,8 +190,8 @@ async function searchNpmPackages(
       };
     }
 
-    const data = (await response.json()) as any;
-    const packages = (data.objects ?? []).map((obj: any) => ({
+    const data = (await response.json()) as NpmSearchResponse;
+    const packages = (data.objects ?? []).map((obj: NpmSearchObject) => ({
       name: String(obj?.package?.name ?? ""),
       version: String(obj?.package?.version ?? ""),
       description: String(obj?.package?.description ?? ""),
@@ -150,13 +203,7 @@ async function searchNpmPackages(
 
     const result = packages
       .map(
-        (pkg: {
-          name: string;
-          version: string;
-          description: string;
-          keywords: string[];
-          author: string;
-        }) =>
+        (pkg) =>
           `**${pkg.name}** (${pkg.version})\n${pkg.description}\nAuthor: ${pkg.author}\nKeywords: ${pkg.keywords.join(
             ", ",
           )}\n---`,
@@ -214,22 +261,22 @@ async function getNpmPackageInfo(
       };
     }
 
-    const data = (await response.json()) as any;
+    const data = (await response.json()) as NpmPackageResponse;
     const latestVersion = String(data?.["dist-tags"]?.latest ?? "");
     const latestInfo = data?.versions?.[latestVersion];
 
     const info = {
       name: String(data?.name ?? pkg),
       description: String(data?.description ?? ""),
-      author: String(data?.author?.name ?? data?.author ?? "Unknown"),
+      author: extractStringOrProperty(data?.author, "name") || "Unknown",
       maintainers: Array.isArray(data?.maintainers)
         ? data.maintainers
-            .map((m: any) => m?.name)
+            .map((m: NpmMaintainer) => m?.name)
             .filter(Boolean)
             .join(", ")
         : "Unknown",
       homepage: String(data?.homepage ?? ""),
-      repository: String(data?.repository?.url ?? data?.repository ?? ""),
+      repository: extractStringOrProperty(data?.repository, "url"),
       license: String(latestInfo?.license ?? "Unknown"),
       latestVersion,
       keywords: Array.isArray(data?.keywords)
@@ -293,7 +340,7 @@ async function getNpmPackageVersions(
       };
     }
 
-    const data = (await response.json()) as any;
+    const data = (await response.json()) as NpmPackageResponse;
     const versions = Object.keys(data?.versions ?? {});
     const distTags = (data?.["dist-tags"] ?? {}) as Record<string, string>;
 

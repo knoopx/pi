@@ -1,6 +1,6 @@
 ---
 name: yt-dlp
-description: Download videos and audio from YouTube and thousands of other sites. Use when downloading videos/audio, extracting audio, downloading playlists, or including subtitles/metadata.
+description: Download videos and audio, extract audio tracks, fetch playlists, and embed subtitles/metadata using yt-dlp. Use when saving media from YouTube or other sites, converting formats, or archiving content.
 ---
 
 # yt-dlp Skill
@@ -18,6 +18,37 @@ yt-dlp -F "https://www.youtube.com/watch?v=..."
 
 # Download specific format
 yt-dlp -f 22 "https://www.youtube.com/watch?v=..."
+```
+
+## Advanced Usage
+
+### Format Selection
+
+```bash
+# Best video + best audio
+yt-dlp -f "bestvideo+bestaudio" "URL"
+
+# Best video with height ≤ 720
+yt-dlp -f "bestvideo[height<=720]+bestaudio" "URL"
+
+# Specific format by ID
+yt-dlp -f "137+140" "URL"
+
+# Audio only in specific format
+yt-dlp -f "bestaudio[ext=m4a]" "URL"
+```
+
+### Output Templates
+
+```bash
+# Custom filename template
+yt-dlp -o "%(title)s - %(uploader)s.%(ext)s" "URL"
+
+# Organize by uploader
+yt-dlp -o "%(uploader)s/%(title)s.%(ext)s" "URL"
+
+# Include upload date
+yt-dlp -o "%(upload_date>%Y-%m-%d)s - %(title)s.%(ext)s" "URL"
 ```
 
 ## Common Tasks
@@ -65,6 +96,31 @@ yt-dlp --embed-subs "URL"
 yt-dlp --add-metadata --embed-thumbnail "URL"
 ```
 
+## Post-Processing
+
+### Video Conversion
+
+```bash
+# Remux to different container
+yt-dlp --remux-video mp4 "URL"
+
+# Re-encode video
+yt-dlp --recode-video mp4 "URL"
+
+# Split by chapters
+yt-dlp --split-chapters "URL"
+```
+
+### SponsorBlock Integration
+
+```bash
+# Remove sponsor segments
+yt-dlp --sponsorblock-remove sponsor "URL"
+
+# Mark sponsor segments as chapters
+yt-dlp --sponsorblock-mark sponsor "URL"
+```
+
 ## Cheat Sheet
 
 ### Output Templates
@@ -88,14 +144,48 @@ yt-dlp -n "URL"
 
 ### Useful Options
 
-| Option            | Description                                                  |
-| :---------------- | :----------------------------------------------------------- |
-| `-U`              | Update yt-dlp.                                               |
-| `--list-subs`     | List all available subtitles for the video.                  |
-| `--get-filename`  | Print the output filename without downloading.               |
-| `--skip-download` | Do not download the video (useful with `--write-info-json`). |
-| `--limit-rate 1M` | Limit download speed to 1MB/s.                               |
+| Option | Description |
+| :----- | :---------- |
+| `-U` | Update yt-dlp |
+| `--list-subs` | List available subtitles |
+| `--get-filename` | Print output filename without downloading |
+| `--skip-download` | Process but don't download |
+| `--limit-rate 1M` | Limit download speed to 1MB/s |
+| `--playlist-random` | Download playlist in random order |
+| `--no-overwrites` | Don't overwrite existing files |
+| `--continue` | Resume partial downloads |
+| `--ignore-errors` | Continue on download errors |
+| `--verbose` | More detailed output |
+| `--write-description` | Save video description |
+| `--write-info-json` | Save metadata as JSON |
+| `--download-archive FILE` | Skip already downloaded videos |
 
-## Related Tools
+### Format Selection Examples
 
-- **transcribe**: Convert downloaded media files to text using transcription tools.
+```bash
+# Best quality MP4
+-f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]"
+
+# Audio only
+-f "bestaudio"
+
+# Video under 1080p
+-f "bestvideo[height<=1080]+bestaudio/best[height<=1080]"
+
+# Specific codec
+-f "bestvideo[vcodec^=avc]+bestaudio"
+```
+
+### Output Template Fields
+
+Common fields for `-o` template:
+
+- `%(title)s` - Video title
+- `%(uploader)s` - Channel/uploader name
+- `%(upload_date)s` - Upload date (YYYYMMDD)
+- `%(duration)s` - Duration in seconds
+- `%(view_count)s` - View count
+- `%(id)s` - Video ID
+- `%(ext)s` - File extension
+- `%(playlist_title)s` - Playlist name
+- `%(playlist_index)s` - Position in playlist

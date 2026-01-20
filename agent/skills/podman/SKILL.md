@@ -1,11 +1,9 @@
 ---
 name: podman
-description: Manage containers, pods, and images as a daemonless, rootless alternative to Docker. Use when running containerized applications, building images, grouping containers into pods, or performing cleanup.
+description: Run containers, build images, manage pods, and configure networks with Podman. Use when starting/stopping containers, creating Containerfiles, grouping services in pods, or pruning unused resources.
 ---
 
 # Podman Skill
-
-Podman is a tool for managing OCI containers and pods. It is daemonless and can run containers as a non-root user.
 
 ## Container Management
 
@@ -87,18 +85,124 @@ podman system df
 - **Rootless**: Podman runs in rootless mode by default for the current user. Ensure subuid/subgid are configured if running complex workloads.
 - **Docker Compatibility**: Most `docker` commands can be prefixed with `podman` instead.
 
-## Volumes
+## Networking
 
 ```bash
-# Create a volume
-podman volume create my-data
+# Create a network
+podman network create my-network
 
-# Run container with a volume mount
-podman run -v my-data:/data:Z alpine ls /data
+# Run container on a network
+podman run --network my-network --name web nginx
+
+# Connect existing container to network
+podman network connect my-network web
+
+# List networks
+podman network ls
+
+# Inspect network
+podman network inspect my-network
 ```
 
-Note: Use `:Z` or `:z` suffix for volume mounts on systems with SELinux to automatically relabel files.
+## Secrets Management
 
-## Related Skills
+```bash
+# Create a secret
+echo "my-secret-value" | podman secret create my-secret -
 
-- **nix**: Use Nix to create development environments that can be integrated with Podman containers.
+# List secrets
+podman secret ls
+
+# Use secret in container
+podman run --secret my-secret,type=env,target=MY_SECRET alpine env
+```
+
+## Health Checks
+
+```bash
+# Run container with health check
+podman run -d --health-cmd "curl -f http://localhost/ || exit 1" \
+  --health-interval 30s --health-retries 3 \
+  --name web nginx
+
+# Check health status
+podman inspect web | grep -A 10 "Health"
+```
+
+## Auto Updates
+
+```bash
+# Run container with auto-update policy
+podman run -d --label "io.containers.autoupdate=registry" \
+  --name web nginx
+
+# Check for updates
+podman auto-update
+
+# Apply updates
+podman auto-update --dry-run=false
+```
+
+## Systemd Integration (Quadlet)
+
+Podman can generate systemd service files for containers:
+
+```bash
+# Create a .container file
+cat > ~/.config/containers/systemd/my-app.container << EOF
+[Container]
+Image=nginx:latest
+PublishPort=8080:80
+EOF
+
+# Generate systemd service
+podman generate systemd --new --files --name my-app
+
+# Enable and start
+systemctl --user enable --now container-my-app.service
+```
+
+## Docker Compose Compatibility
+
+```bash
+# Native podman compose support
+podman compose up -d
+podman compose down
+podman compose logs
+
+# Or use podman-compose (third-party tool)
+pip install podman-compose
+podman-compose up -d
+```
+
+## Kubernetes Integration
+
+```bash
+# Generate Kubernetes YAML from container/pod
+podman generate kube my-pod > pod.yaml
+
+# Play Kubernetes YAML
+podman kube play pod.yaml
+
+# Stop and remove Kubernetes resources
+podman kube down pod.yaml
+```
+
+## Remote Builds (Farm)
+
+```bash
+# Farm out builds to remote machines
+podman farm build -t myimage .
+
+# List configured farms
+podman farm list
+```
+
+## Artifact Management
+
+```bash
+# Push OCI artifacts
+podman artifact push myartifact.tar oci://registry.example.com/artifact
+
+# Pull OCI artifacts
+podman artifact pull oci://registry.example.com/artifact

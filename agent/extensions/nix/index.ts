@@ -4,7 +4,16 @@ import type {
   AgentToolUpdateCallback,
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
+
+// Parameter schema for search queries
+const SearchQueryParams = Type.Object({
+  query: Type.String({
+    description: "Search query (option name or description)",
+  }),
+});
+
+type SearchQueryParamsType = Static<typeof SearchQueryParams>;
 
 // Adapted from https://github.com/vicinaehq/extensions/tree/main/extensions/nix
 
@@ -79,24 +88,6 @@ interface HomeManagerOptionResponse {
   options: HomeManagerOption[];
 }
 
-interface GitHubIssue {
-  number: number;
-  title: string;
-  html_url: string;
-  state: "open" | "closed";
-  user: GitHubUser | null;
-  updated_at: string;
-  pull_request?: {
-    merged_at: string | null;
-  };
-}
-
-interface GitHubUser {
-  login: string;
-  name?: string | null;
-  email?: string | null;
-}
-
 interface NixSearchResponse<T> {
   hits: {
     hits: Array<{ _source: T }>;
@@ -114,7 +105,7 @@ function cleanText(text: string | null): string {
   return text.replace(/<[^>]*>/g, "").trim();
 }
 
-function removeEmptyProperties<T extends Record<string, any>>(
+function removeEmptyProperties<T extends Record<string, unknown>>(
   obj: T,
 ): Partial<T> {
   const result: Partial<T> = {};
@@ -125,7 +116,7 @@ function removeEmptyProperties<T extends Record<string, any>>(
       value !== "" &&
       !(Array.isArray(value) && value.length === 0)
     ) {
-      result[key as keyof T] = value;
+      result[key as keyof T] = value as T[keyof T];
     }
   }
   return result;
@@ -146,10 +137,10 @@ function buildSearchResult<T>(
   };
 }
 
-async function executeSearchTool<T>(
+async function executeSearchTool<T, U>(
   searchFn: (q: string) => Promise<T[]>,
-  mapper: (item: T) => any,
-  contentBuilder: (res: any[]) => string,
+  mapper: (item: T) => U,
+  contentBuilder: (res: U[]) => string,
   query: string,
 ): Promise<AgentToolResult<Record<string, unknown>>> {
   try {
@@ -436,24 +427,6 @@ async function searchHomeManagerOptions(
   );
 }
 
-async function searchNixpkgsPullRequests(
-  query: string,
-): Promise<GitHubIssue[]> {
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github+json",
-  };
-
-  const url = `https://api.github.com/search/issues?q=${encodeURIComponent(
-    query,
-  )}+repo:NixOS/nixpkgs+type:pr`;
-
-  const res = await fetch(url, { headers });
-  if (!res.ok) throw new Error(`GitHub ${res.status}`);
-
-  const json = (await res.json()) as any;
-  return json.items.filter((i: GitHubIssue) => i.pull_request || !query.trim());
-}
-
 export default function (pi: ExtensionAPI) {
   // Search Nix packages
   pi.registerTool({
@@ -468,19 +441,15 @@ Use this to:
 - Get package metadata and maintainers
 
 Returns detailed package information from nixpkgs.`,
-    parameters: Type.Object({
-      query: Type.String({
-        description: "Search query (package name, description, or programs)",
-      }),
-    }),
+    parameters: SearchQueryParams,
     async execute(
       _toolCallId: string,
-      params: any,
+      params: SearchQueryParamsType,
       _onUpdate: AgentToolUpdateCallback,
       _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
-      const { query } = params as { query: string };
+      const { query } = params;
 
       return executeSearchTool(
         searchNixPackages,
@@ -503,7 +472,7 @@ Returns detailed package information from nixpkgs.`,
             c += `**${pkg.attr_name}** (${pkg.pname} ${pkg.version})\n`;
             c += `Description: ${pkg.description || "N/A"}\n`;
             if (pkg.longDescription) c += `Details: ${pkg.longDescription}\n`;
-            if (pkg.homepage.length > 0) c += `Homepage: ${pkg.homepage[0]}\n`;
+            if (pkg.homepage && pkg.homepage.length > 0) c += `Homepage: ${pkg.homepage[0]}\n`;
             c += `Maintainers: ${pkg.maintainers}\n`;
             c += `License: ${pkg.license}\n\n`;
           });
@@ -527,19 +496,15 @@ Use this to:
 - Get examples for configuration
 
 Returns NixOS configuration option details.`,
-    parameters: Type.Object({
-      query: Type.String({
-        description: "Search query (option name or description)",
-      }),
-    }),
+    parameters: SearchQueryParams,
     async execute(
       _toolCallId: string,
-      params: any,
+      params: SearchQueryParamsType,
       _onUpdate: AgentToolUpdateCallback,
       _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
-      const { query } = params as { query: string };
+      const { query } = params;
 
       return executeSearchTool(
         searchNixOptions,
@@ -582,19 +547,15 @@ Use this to:
 - Manage user-level services
 
 Returns Home Manager configuration options.`,
-    parameters: Type.Object({
-      query: Type.String({
-        description: "Search query (option name or description)",
-      }),
-    }),
+    parameters: SearchQueryParams,
     async execute(
       _toolCallId: string,
-      params: any,
+      params: SearchQueryParamsType,
       _onUpdate: AgentToolUpdateCallback,
       _ctx: ExtensionContext,
       _signal: AbortSignal,
     ) {
-      const { query } = params as { query: string };
+      const { query } = params;
 
       return executeSearchTool(
         searchHomeManagerOptions,
@@ -624,57 +585,4 @@ Returns Home Manager configuration options.`,
     },
   });
 
-  // Search Nixpkgs pull requests
-  pi.registerTool({
-    name: "search-nixpkgs-pull-requests",
-    label: "Search Nixpkgs Pull Requests",
-    description: `Search for pull requests in the NixOS/nixpkgs repository.
-
-Use this to:
-- Track package updates and changes
-- Find ongoing development work
-- Monitor contributions to nixpkgs
-- Discover recent package additions
-
-Returns GitHub pull request information.`,
-    parameters: Type.Object({
-      query: Type.String({
-        description: "Search query (title, number, or keywords)",
-      }),
-    }),
-    async execute(
-      _toolCallId: string,
-      params: any,
-      _onUpdate: AgentToolUpdateCallback,
-      _ctx: ExtensionContext,
-      _signal: AbortSignal,
-    ) {
-      const { query } = params as { query: string };
-
-      return executeSearchTool(
-        searchNixpkgsPullRequests,
-        (pr: GitHubIssue) =>
-          removeEmptyProperties({
-            number: pr.number,
-            title: pr.title,
-            state: pr.state,
-            user: pr.user?.login,
-            updated_at: pr.updated_at,
-            url: pr.html_url,
-          }),
-        (res) => {
-          let c = `Found ${res.length} pull requests matching "${query}":\n\n`;
-          res.forEach((pr) => {
-            c += `**#${pr.number}**: ${pr.title}\n`;
-            c += `State: ${pr.state}\n`;
-            if (pr.user) c += `Author: ${pr.user}\n`;
-            c += `Updated: ${pr.updated_at}\n`;
-            c += `URL: ${pr.url}\n\n`;
-          });
-          return c;
-        },
-        query,
-      );
-    },
-  });
 }

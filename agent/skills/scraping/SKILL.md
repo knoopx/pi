@@ -1,6 +1,6 @@
 ---
 name: scraping
-description: Extract data from websites, parse HTML, interact with APIs, and scrape dynamic content. Use when parsing HTML with selectors, interacting with REST APIs, scraping dynamic sites, or extracting structured data.
+description: Fetch web pages, parse HTML with CSS selectors, call REST APIs, and scrape dynamic content. Use when extracting data from websites, querying JSON APIs, or automating browser interactions.
 ---
 
 # Scraping
@@ -152,10 +152,6 @@ nu -c 'http get -H [X-API-Key "YOUR_API_KEY"] https://api.example.com/data'
 # Basic auth
 nu -c 'http get -u username:password https://api.example.com/protected'
 ```
-
-## Best Practices
-
-- Use appropriate User-Agent headers
 
 ## Related Skills
 

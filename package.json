@@ -10,6 +10,7 @@
     "install-deps": "find agent/extensions -name package.json -execdir bun install \\;"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@typescript-eslint/eslint-plugin": "^8.53.0",
     "@typescript-eslint/parser": "^8.53.0",
     "eslint": "^9.39.2",
@@ -22,7 +23,6 @@
     "@mariozechner/pi-ai": "^0.48.0",
     "@mariozechner/pi-coding-agent": "^0.48.0",
     "@mariozechner/pi-tui": "^0.48.0",
-    "@sinclair/typebox": "^0.34.47",
-    "@toon-format/toon": "^2.1.0"
+    "@sinclair/typebox": "^0.34.47"
   }
 }

@@ -1,6 +1,6 @@
 ---
 name: nix
-description: Run applications without installation, create development environments, and evaluate Nix expressions. Use when executing packages temporarily, creating isolated environments, debugging expressions, or searching for packages.
+description: Run packages temporarily, create isolated shell environments, and evaluate Nix expressions. Use when executing tools without installing, debugging derivations, or searching nixpkgs.
 ---
 
 # Nix Skill
@@ -22,6 +22,18 @@ nix run nixpkgs#cowsay -- "Hello from Nix!"
 nix shell nixpkgs#git nixpkgs#vim --command git --version
 
 # Run long-running applications (e.g., servers): `tmux new -d 'nix run nixpkgs#some-server'`
+```
+
+## Formatting
+
+Format Nix files in your project:
+
+```bash
+# Format current flake
+nix fmt
+
+# Check formatting
+nix fmt -- --check
 ```
 
 ## Evaluating Expressions (Debugging)
@@ -76,11 +88,32 @@ in
 }
 ```
 
+## Shebang Scripts
+
+Use Nix as a script interpreter:
+
+```bash
+#!/usr/bin/env nix
+#! nix shell nixpkgs#bash nixpkgs#curl --command bash
+
+curl -s https://example.com
+```
+
+Or with flakes:
+
+```bash
+#!/usr/bin/env nix
+#! nix shell nixpkgs#python3 --command python3
+
+print("Hello from Nix!")
+```
+
 ## Troubleshooting
 
 - **Broken Builds**: Use `nix log` to see the build output of a derivation.
 - **Dependency Issues**: Use `nix-store -q --references $(which program)` to see what a program depends on.
 - **Cache issues**: Add `--no-substitute` to force a local build if you suspect a bad binary cache.
+- **Why depends**: Use `nix why-depends nixpkgs#hello nixpkgs#glibc` to see dependency chain.
 
 ## Related Skills
 

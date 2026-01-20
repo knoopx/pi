@@ -410,9 +410,7 @@ Respond with only the change message, no additional text.`;
           userEntries.length > 0 ? userEntries[userEntries.length - 1] : null;
 
         if (isEmpty) {
-          // Re-use the current empty change and update its description
-          await pi.exec("jj", ["describe", "-m", event.prompt]);
-          // Associate with the current user message
+          // Re-use the current empty change for this turn
           if (lastUserEntry) {
             changes.set(lastUserEntry.id, currentChangeId);
           }
@@ -439,18 +437,42 @@ Respond with only the change message, no additional text.`;
     if (!(await requireRepo())) return;
 
     const isEmpty = await isCurrentChangeEmpty();
-    const piAvailable = await isPiCommandAvailable();
-    if (!isEmpty && piAvailable) {
-      // Check if the turn was aborted before starting description generation
-      const contextSignal =
-        "signal" in ctx && ctx.signal instanceof AbortSignal
-          ? ctx.signal
-          : undefined;
+    // Check if the turn was aborted before starting description generation
+    const contextSignal =
+      "signal" in ctx && ctx.signal instanceof AbortSignal
+        ? ctx.signal
+        : undefined;
 
-      if (checkAborted(ctx, contextSignal)) {
-        return; // Skip description generation if turn was aborted
+    if (checkAborted(ctx, contextSignal)) {
+      return; // Skip description updates if turn was aborted
+    }
+
+    if (isEmpty) {
+      if (!currentPrompt) return;
+
+      try {
+        await pi.exec("jj", ["describe", "-m", currentPrompt], {
+          signal: contextSignal,
+        });
+        ctx.ui.notify(
+          `Re-used empty change with description: ${currentPrompt}`,
+          "info",
+        );
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        ctx.ui.notify(
+          `Failed to update change description: ${errorMessage}`,
+          "warning",
+        );
+        console.warn(`Failed to update change description: ${errorMessage}`);
       }
+      return;
+    }
 
+    const piAvailable = false;
+    // const piAvailable = await isPiCommandAvailable();
+    if (piAvailable) {
       try {
         ctx.ui.notify("Generating change description...", "info");
 

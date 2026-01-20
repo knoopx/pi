@@ -1,32 +1,47 @@
 ---
 name: jscpd
-description: Detect and analyze duplicate code in JavaScript, TypeScript, and other languages. Use when identifying duplicate code blocks, analyzing code duplication metrics, improving maintainability, or supporting refactoring efforts.
+description: Find duplicate code blocks and analyze duplication metrics across files. Use when identifying copy-pasted code, measuring technical debt, or preparing for refactoring.
 ---
 
-# JSCPD (JavaScript Copy/Paste Detector)
+# jscpd
 
-JSCPD is a tool for detecting duplicate code in various programming languages, primarily JavaScript and TypeScript, but supports many others.
+Duplicate code detector supporting 150+ languages.
 
 ## Usage
 
-Run JSCPD on files or directories to detect duplicates:
-
 ```bash
-bunx jscpd <path> --ignore "**/node_modules/**"
+# Analyze directory
+npx jscpd /path/to/source
+
+# With pattern filter
+npx jscpd --pattern "src/**/*.js" .
+
+# Ignore directories
+npx jscpd --ignore "**/node_modules/**,**/dist/**" .
+
+# Minimum tokens to match (default: 50)
+npx jscpd --min-tokens 30 .
+
+# Output formats
+npx jscpd --reporters json --output report.json .
+npx jscpd --reporters html --output ./report/ .
 ```
+
+## Common Options
+
+| Option | Description |
+|--------|-------------|
+| `--min-tokens N` | Minimum tokens for duplicate detection |
+| `--min-lines N` | Minimum lines for duplicate detection |
+| `--threshold N` | Fail if duplication % exceeds threshold |
+| `--ignore "glob"` | Ignore patterns (comma-separated) |
+| `--reporters type` | Output format: `console`, `json`, `html` |
+| `--output path` | Output directory for reports |
+| `--silent` | Suppress console output |
 
 ## Workflow
 
-1. Identify the codebase or files to analyze
-2. Run JSCPD with appropriate options
-3. Review the reported duplicates
-4. Refactor duplicate code to improve maintainability
-
-## Supported Languages
-
-JSCPD supports detection in languages like JavaScript, TypeScript, Python, Java, C++, and more. It analyzes source code files and reports duplicate blocks based on token sequences.
-
-## Related Skills
-
-- **typescript**: Detect duplicate code in TypeScript projects to improve maintainability.
-- **python**: Identify duplicate code patterns in Python codebases.
+1. Run jscpd to find duplicates
+2. Review the reported duplicates
+3. Refactor to eliminate duplication
+4. Re-run to verify cleanup

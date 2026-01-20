@@ -1,19 +1,20 @@
 ---
 name: nu-shell
-description: Perform advanced shell scripting, data processing, and automation using nu-shell's structured data handling. Use when processing structured data through pipelines, writing scripts with parameters, manipulating tables/lists, or automating tasks.
+description: Write scripts, process structured data, and automate tasks with nu-shell pipelines. Use when filtering tables, transforming JSON/CSV/YAML, defining custom commands, or scripting with typed parameters.
 ---
 
 # nu-shell Skill
 
-This skill provides patterns and documentation for scripting with `nu-shell`. nu-shell is unique because it passes structured data (tables, lists, records) through pipelines rather than just raw text.
+Scripting with structured data (tables, lists, records) through pipelines.
 
-## Setup
+## Contents
 
-Ensure `nu` is installed:
-
-```bash
-nu --version
-```
+- [Core Concepts](#core-concepts)
+- [Data Manipulation](#data-manipulation)
+- [Scripting](#scripting)
+- [Control Flow](#control-flow)
+- [Custom Commands](#custom-commands)
+- [Cheat Sheet](#cheat-sheet)
 
 ## Core Concepts
 
