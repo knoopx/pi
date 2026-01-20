@@ -1,0 +1,8 @@
+{
+  "name": "no-cowboys-in-this-town",
+  "version": "1.0.0",
+  "description": "Extension that prevents cowboy coding by blocking file operations until context analysis",
+  "dependencies": {
+    "ignore": "^7.0.5"
+  }
+}
