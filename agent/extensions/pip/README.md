@@ -4,7 +4,7 @@ This extension provides tools to query Python packages using pip. It adds three 
 
 ## Tools
 
-### pip_search
+### pip-search
 Search for Python packages on PyPI.
 
 **Parameters:**
@@ -16,7 +16,7 @@ Search for Python packages on PyPI.
 pip_search(query="requests", limit=5)
 ```
 
-### pip_show
+### pip-show
 Show detailed information about an installed Python package.
 
 **Parameters:**
@@ -27,7 +27,7 @@ Show detailed information about an installed Python package.
 pip_show(package="requests")
 ```
 
-### pip_list
+### pip-list
 List all installed Python packages with their versions.
 
 **Parameters:**
@@ -41,12 +41,12 @@ pip_list(format="json", outdated=true)
 
 ## Installation
 
-The extension is automatically loaded from `~/.pi/agent/extensions/pip-tools/index.ts`.
+The extension is automatically loaded from `~/.pi/agent/extensions/pip/index.ts`.
 
 ## Requirements
 
 - Python and pip must be installed and available in PATH
-- For `pip_search`, pip version 20.3+ is recommended for JSON output support
+- For `pip-search`, pip version 20.3+ is recommended for JSON output support
 
 ## Usage
 
