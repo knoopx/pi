@@ -163,7 +163,7 @@ describe("Scenario: Jujutsu Extension", () => {
         if (command === "jj" && args?.[0] === "status") {
           return Promise.resolve({ stdout: "", stderr: "", code: 0 });
         }
-        if (command === "jj" && args?.[0] === "log") {
+        if (command === "jj" && args?.[0] === "log" && args?.[1] === "-r") {
           return Promise.resolve({ stdout: "abc123", stderr: "", code: 0 });
         }
         if (command === "jj" && args?.[0] === "diff") {
@@ -175,6 +175,14 @@ describe("Scenario: Jujutsu Extension", () => {
         }
         if (command === "jj" && args?.[0] === "new") {
           return Promise.resolve({ stdout: "", stderr: "", code: 0 });
+        }
+        // Second log call after new
+        if (
+          command === "jj" &&
+          args?.[0] === "log" &&
+          args?.[3] === "change_id"
+        ) {
+          return Promise.resolve({ stdout: "def456", stderr: "", code: 0 });
         }
         return Promise.resolve({ stdout: "", stderr: "", code: 0 });
       });
@@ -203,7 +211,16 @@ describe("Scenario: Jujutsu Extension", () => {
         "-m",
         "Test prompt",
       ]);
-      expect(mockPi.exec).toHaveBeenCalledTimes(4);
+      // Second log call to get new change ID
+      expect(mockPi.exec).toHaveBeenCalledWith("jj", [
+        "log",
+        "-r",
+        "@",
+        "--template",
+        "change_id",
+        "--no-graph",
+      ]);
+      expect(mockPi.exec).toHaveBeenCalledTimes(5);
     });
 
     it("should reuse current change when empty and update description", async () => {

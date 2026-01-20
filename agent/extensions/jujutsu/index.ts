@@ -401,22 +401,29 @@ Respond with only the change message, no additional text.`;
         // Get the current change ID before potentially creating a new one
         const currentChangeId = await getCurrentChangeId();
 
-        // Associate current change with the last user message
-        const userEntries = getUserEntries(_ctx.sessionManager);
-        if (userEntries.length > 0) {
-          const lastUserEntry = userEntries[userEntries.length - 1];
-          changes.set(lastUserEntry.id, currentChangeId);
-        }
-
         // Check if current change is empty
         const isEmpty = await isCurrentChangeEmpty();
+
+        // Get user entries for association
+        const userEntries = getUserEntries(_ctx.sessionManager);
+        const lastUserEntry =
+          userEntries.length > 0 ? userEntries[userEntries.length - 1] : null;
 
         if (isEmpty) {
           // Re-use the current empty change and update its description
           await pi.exec("jj", ["describe", "-m", event.prompt]);
+          // Associate with the current user message
+          if (lastUserEntry) {
+            changes.set(lastUserEntry.id, currentChangeId);
+          }
         } else {
           // Create a new change to snapshot current state before processing
           await pi.exec("jj", ["new", "-m", event.prompt]);
+          // Get the new change ID and associate with the current user message
+          const newChangeId = await getCurrentChangeId();
+          if (lastUserEntry) {
+            changes.set(lastUserEntry.id, newChangeId);
+          }
         }
       } catch (error) {
         // Log error but don't fail the extension - JJ operations are not critical
