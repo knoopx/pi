@@ -1,5 +1,5 @@
 /**
- * Pip Tools Extension
+ * PyPI Extension
  *
  * Provides tools to query Python packages using pip.
  * Tools available: pip-search, pip-show, pip-list

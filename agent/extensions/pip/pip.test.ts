@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import setupPipToolsExtension from "./index";
 
-describe("Scenario: Pip Tools Extension", () => {
+describe("Scenario: PyPI Extension", () => {
   let mockPi: any;
 
   beforeEach(() => {
@@ -12,7 +12,7 @@ describe("Scenario: Pip Tools Extension", () => {
     setupPipToolsExtension(mockPi);
   });
 
-  it("should register pip tools", () => {
+  it("should register PyPI", () => {
     expect(mockPi.registerTool).toHaveBeenCalledWith(
       expect.objectContaining({
         name: "pip-search",

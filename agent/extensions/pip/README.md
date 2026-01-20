@@ -1,4 +1,4 @@
-# Pip Tools Extension
+# PyPI Extension
 
 This extension provides tools to query Python packages using pip. It adds three tools to the pi coding assistant:
 
