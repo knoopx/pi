@@ -160,25 +160,25 @@ const PROVIDER_FETCH_MAP: Record<
     status?: () => Promise<ProviderStatus>;
   }
 > = {
-  anthropic: {
-    fetch: () => fetchClaudeUsage(),
-    status: () => fetchProviderStatus("anthropic"),
-  },
-  "github-copilot": {
-    fetch: (modelRegistry) => fetchCopilotUsage(modelRegistry),
-    status: () => fetchProviderStatus("copilot"),
-  },
-  "google-antigravity": {
-    fetch: (modelRegistry) => fetchAntigravityUsage(modelRegistry),
-  },
-  "google-gemini-cli": {
-    fetch: (modelRegistry) => fetchGeminiUsage(modelRegistry),
-    status: () => fetchGeminiStatus(),
-  },
-  "openai-codex": {
-    fetch: (modelRegistry) => fetchCodexUsage(modelRegistry),
-    status: () => fetchProviderStatus("codex"),
-  },
+  // anthropic: {
+  //   fetch: () => fetchClaudeUsage(),
+  //   status: () => fetchProviderStatus("anthropic"),
+  // },
+  // "github-copilot": {
+  //   fetch: (modelRegistry) => fetchCopilotUsage(modelRegistry),
+  //   status: () => fetchProviderStatus("copilot"),
+  // },
+  // "google-antigravity": {
+  //   fetch: (modelRegistry) => fetchAntigravityUsage(modelRegistry),
+  // },
+  // "google-gemini-cli": {
+  //   fetch: (modelRegistry) => fetchGeminiUsage(modelRegistry),
+  //   status: () => fetchGeminiStatus(),
+  // },
+  // "openai-codex": {
+  //   fetch: (modelRegistry) => fetchCodexUsage(modelRegistry),
+  //   status: () => fetchProviderStatus("codex"),
+  // },
 };
 
 // ============================================================================
@@ -857,63 +857,57 @@ async function fetchAntigravityUsage(
 // ============================================================================
 
 async function fetchCodexUsage(modelRegistry: any): Promise<UsageSnapshot> {
-  // Try to get token from pi's auth storage first
-  let accessToken: string | undefined;
-  let accountId: string | undefined;
-
-  try {
-    // Try openai-codex provider first (pi's built-in)
-    accessToken = await modelRegistry?.authStorage?.getApiKey?.("openai-codex");
-
-    // Get account ID if available from OAuth credentials
-    const cred = modelRegistry?.authStorage?.get?.("openai-codex");
-    if (cred?.type === "oauth") {
-      accountId = (cred as any).accountId;
-    }
-  } catch {}
-
-  // Fallback to ~/.codex/auth.json if not in pi's auth
-  if (!accessToken) {
-    const codexHome =
-      process.env.CODEX_HOME || path.join(os.homedir(), ".codex");
-    const authPath = path.join(codexHome, "auth.json");
+    // Try to get token from pi's auth storage first
+    let accessToken: string | undefined;
+    let accountId: string | undefined;
 
     try {
-      if (fs.existsSync(authPath)) {
-        const data = JSON.parse(fs.readFileSync(authPath, "utf-8"));
+        // Try openai-codex provider first (pi's built-in)
+        accessToken = await modelRegistry?.authStorage?.getApiKey?.("openai-codex");
 
-        if (data.OPENAI_API_KEY) {
-          accessToken = data.OPENAI_API_KEY;
-        } else if (data.tokens?.access_token) {
-          accessToken = data.tokens.access_token;
-          accountId = data.tokens.account_id;
+        // Get account ID if available from OAuth credentials
+        const cred = modelRegistry?.authStorage?.get?.("openai-codex");
+        if (cred?.type === "oauth") {
+            accountId = (cred as any).accountId;
         }
-      }
     } catch {}
-  }
 
-  if (!accessToken) {
-    return {
-      provider: "openai-codex",
-      displayName: "Codex",
-      windows: [],
-      error: "No credentials",
-    };
-  }
+    // Fallback to ~/.codex/auth.json if not in pi's auth
+    if (!accessToken) {
+        const codexHome = process.env.CODEX_HOME || path.join(os.homedir(), ".codex");
+        const authPath = path.join(codexHome, "auth.json");
+
+        try {
+            if (fs.existsSync(authPath)) {
+                const data = JSON.parse(fs.readFileSync(authPath, "utf-8"));
+
+                if (data.OPENAI_API_KEY) {
+                    accessToken = data.OPENAI_API_KEY;
+                } else if (data.tokens?.access_token) {
+                    accessToken = data.tokens.access_token;
+                    accountId = data.tokens.account_id;
+                }
+            }
+        } catch {}
+    }
+
+    if (!accessToken) {
+        return { provider: "openai-codex", displayName: "Codex", windows: [], error: "No credentials" };
+    }
 
   try {
     const controller = new AbortController();
     setTimeout(() => controller.abort(), 5000);
 
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${accessToken}`,
-      "User-Agent": "CodexBar",
-      Accept: "application/json",
-    };
+        const headers: Record<string, string> = {
+            Authorization: `Bearer ${accessToken}`,
+            "User-Agent": "CodexBar",
+            Accept: "application/json",
+        };
 
-    if (accountId) {
-      headers["ChatGPT-Account-Id"] = accountId;
-    }
+        if (accountId) {
+            headers["ChatGPT-Account-Id"] = accountId;
+        }
 
     const res = await fetch("https://chatgpt.com/backend-api/wham/usage", {
       method: "GET",
@@ -967,15 +961,14 @@ async function fetchCodexUsage(modelRegistry: any): Promise<UsageSnapshot> {
       });
     }
 
-    // Credits info
-    let plan = data.plan_type;
-    if (data.credits?.balance !== undefined && data.credits.balance !== null) {
-      const balance =
-        typeof data.credits.balance === "number"
-          ? data.credits.balance
-          : parseFloat(data.credits.balance) || 0;
-      plan = plan ? `${plan} (${balance.toFixed(2)})` : `${balance.toFixed(2)}`;
-    }
+        // Credits info
+        let plan = data.plan_type;
+        if (data.credits?.balance !== undefined && data.credits.balance !== null) {
+            const balance = typeof data.credits.balance === 'number'
+                ? data.credits.balance
+                : parseFloat(data.credits.balance) || 0;
+            plan = plan ? `${plan} (${balance.toFixed(2)})` : `${balance.toFixed(2)}`;
+        }
 
     return { provider: "openai-codex", displayName: "Codex", windows, plan };
   } catch (e) {
