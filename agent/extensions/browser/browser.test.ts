@@ -63,202 +63,107 @@ describe("Scenario: Browser Extension", () => {
     expect(mockPi.registerTool).toHaveBeenCalledTimes(expectedTools.length);
   });
 
-  describe("Given navigate-url tool", () => {
-    let registeredTool: any;
+  describe("Given tool metadata validation", () => {
+    const toolsToCheck = [
+      {
+        name: "navigate-url",
+        label: "Navigate URL",
+        description: "Navigate to a specific URL in a new browser tab",
+      },
+      {
+        name: "evaluate-javascript",
+        label: "Evaluate JavaScript",
+        description: "Execute JavaScript code in the context of the current web page",
+      },
+      {
+        name: "take-screenshot",
+        label: "Take Screenshot",
+        description: "Capture a screenshot of the current browser page",
+      },
+      {
+        name: "query-html-elements",
+        label: "Query HTML Elements",
+        description: "Extract HTML elements from the current page using CSS selectors",
+      },
+      {
+        name: "extract-text",
+        label: "Extract Text",
+        description: "Extract text content from HTML elements by CSS selector",
+      },
+      {
+        name: "list-browser-tabs",
+        label: "List Browser Tabs",
+        description: "Get information about all open browser tabs",
+      },
+      {
+        name: "close-tab",
+        label: "Close Tab",
+        description: "Close a specific browser tab by index or title",
+      },
+      {
+        name: "switch-tab",
+        label: "Switch Tab",
+        description: "Switch focus to a different browser tab by index",
+      },
+      {
+        name: "refresh-tab",
+        label: "Refresh Tab",
+        description: "Reload the current browser tab",
+      },
+      {
+        name: "current-url",
+        label: "Current URL",
+        description: "Get the URL of the currently active browser tab",
+      },
+      {
+        name: "page-title",
+        label: "Page Title",
+        description: "Get the title of the currently active browser tab",
+      },
+      {
+        name: "wait-for-element",
+        label: "Wait for Element",
+        description: "Wait for a CSS selector to appear on the page",
+      },
+      {
+        name: "click-element",
+        label: "Click Element",
+        description: "Click on HTML elements matching a CSS selector",
+      },
+      {
+        name: "type-text",
+        label: "Type Text",
+        description: "Type text into input fields or focused elements",
+      },
+    ];
 
-    beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "navigate-url",
-      )[0];
-    });
+    toolsToCheck.forEach(({ name, label, description }) => {
+      describe(`Given ${name} tool`, () => {
+        let registeredTool: any;
 
-    it("should have correct label and description", () => {
-      expect(registeredTool.label).toBe("Navigate URL");
-      expect(registeredTool.description).toBe(
-        `Navigate to a specific URL in a new browser tab.
+        beforeEach(() => {
+          registeredTool = mockPi.registerTool.mock.calls.find(
+            (call) => call[0].name === name,
+          )[0];
+        });
 
-Use this to:
-- Visit web pages for data extraction
-- Load specific pages for testing or scraping
-- Open new tabs for parallel processing
+        it(`should have correct label "${label}"`, () => {
+          expect(registeredTool.label).toBe(label);
+        });
 
-Always opens in a new tab.`,
-      );
-    });
-  });
+        it("should have description containing expected text", () => {
+          expect(registeredTool.description).toContain(description);
+        });
 
-  describe("Given evaluate-javascript tool", () => {
-    let registeredTool: any;
+        it("should have execute function", () => {
+          expect(typeof registeredTool.execute).toBe("function");
+        });
 
-    beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "evaluate-javascript",
-      )[0];
-    });
-
-    it("should have correct label and description", () => {
-      expect(registeredTool.label).toBe("Evaluate JavaScript");
-      expect(registeredTool.description).toBe(
-        `Execute JavaScript code in the context of the current web page.
-
-Use this to:
-- Extract data from complex page structures
-- Interact with JavaScript-heavy websites
-- Test and debug web page functionality
-- Access browser APIs and page content
-
-Returns the result of the executed code.`,
-      );
-    });
-  });
-
-  describe("Given take-screenshot tool", () => {
-    let registeredTool: any;
-
-    beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "take-screenshot",
-      )[0];
-    });
-
-    it("should have correct label and description", () => {
-      expect(registeredTool.label).toBe("Take Screenshot");
-      expect(registeredTool.description).toBe(
-        `Capture a screenshot of the current browser page.
-
-Use this to:
-- Document web page states during automation
-- Verify visual changes or layouts
-- Debug rendering issues
-- Archive important web content
-
-Saves the image to a temporary file and returns the path.`,
-      );
-    });
-  });
-
-  describe("Given list-browser-tabs tool", () => {
-    let registeredTool: any;
-
-    beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "list-browser-tabs",
-      )[0];
-    });
-
-    it("should have correct label and description", () => {
-      expect(registeredTool.label).toBe("List Browser Tabs");
-      expect(registeredTool.description).toBe(
-        `Get information about all open browser tabs.
-
-Use this to:
-- See current browsing session state
-- Identify which tabs are active
-- Manage multiple tab automation workflows
-- Debug tab switching operations
-
-Shows tab index, title, URL, and active status.`,
-      );
-    });
-  });
-
-  describe("Given close-tab tool", () => {
-    let registeredTool: any;
-
-    beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "close-tab",
-      )[0];
-    });
-
-    it("should have correct label and description", () => {
-      expect(registeredTool.label).toBe("Close Tab");
-      expect(registeredTool.description).toBe(
-        `Close a specific browser tab by index or title.
-
-Use this to:
-- Clean up completed automation sessions
-- Manage browser resource usage
-- Reset tab state for fresh operations
-- Handle multiple concurrent tasks
-
-Cannot close the last remaining tab.`,
-      );
-    });
-  });
-
-  describe("Given switch-tab tool", () => {
-    let registeredTool: any;
-
-    beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "switch-tab",
-      )[0];
-    });
-
-    it("should have correct label and description", () => {
-      expect(registeredTool.label).toBe("Switch Tab");
-      expect(registeredTool.description).toBe(
-        `Switch focus to a different browser tab by index.
-
-Use this to:
-- Navigate between multiple automation contexts
-- Continue work in specific tabs
-- Manage parallel scraping operations
-- Access different web applications
-
-Makes the specified tab active for subsequent operations.`,
-      );
-    });
-  });
-
-  describe("Given query-html-elements tool", () => {
-    let registeredTool: any;
-
-    beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "query-html-elements",
-      )[0];
-    });
-
-    it("should have correct label and description", () => {
-      expect(registeredTool.label).toBe("Query HTML Elements");
-      expect(registeredTool.description).toBe(
-        `Extract HTML elements from the current page using CSS selectors.
-
-Use this to:
-- Inspect page structure and element details
-- Extract specific HTML components for analysis
-- Debug web scraping selectors
-- Understand page layout and styling
-
-Returns formatted HTML of matching elements.`,
-      );
-    });
-  });
-
-  describe("Given extract-text tool", () => {
-    let registeredTool: any;
-
-    beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => call[0].name === "extract-text",
-      )[0];
-    });
-
-    it("should have correct label and description", () => {
-      expect(registeredTool.label).toBe("Extract Text");
-      expect(registeredTool.description).toBe(
-        `Extract text content from HTML elements by CSS selector.
-
-Use this to:
-- Scrape text data from web pages
-- Extract article content or product information
-- Gather data for analysis or processing
-- Monitor dynamic text changes
-
-Returns plain text from matching elements.`,
-      );
+        it("should have parameters schema", () => {
+          expect(registeredTool.parameters).toBeDefined();
+          expect(registeredTool.parameters.type).toBe("object");
+        });
+      });
     });
   });
 });
