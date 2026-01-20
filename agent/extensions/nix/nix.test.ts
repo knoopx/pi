@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import setupNixExtension from "./index";
 
-describe("Nix Extension", () => {
+describe("Scenario: Nix Extension", () => {
   let mockPi: any;
 
   beforeEach(() => {
@@ -26,7 +26,7 @@ describe("Nix Extension", () => {
     });
   });
 
-  describe("search-nix-packages tool", () => {
+  describe("Given search-nix-packages tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -104,7 +104,7 @@ describe("Nix Extension", () => {
     });
   });
 
-  describe("search-nix-options tool", () => {
+  describe("Given search-nix-options tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -142,7 +142,7 @@ describe("Nix Extension", () => {
     });
   });
 
-  describe("search-home-manager-options tool", () => {
+  describe("Given search-home-manager-options tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -230,7 +230,7 @@ describe("Nix Extension", () => {
     });
   });
 
-  describe("search-nixpkgs-pull-requests tool", () => {
+  describe("Given search-nixpkgs-pull-requests tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {

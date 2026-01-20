@@ -33,7 +33,7 @@ function createMockPi(): MockExtensionAPI {
   };
 }
 
-describe("Jujutsu Extension", () => {
+describe("Scenario: Jujutsu Extension", () => {
   let mockPi: MockExtensionAPI;
 
   beforeEach(async () => {
@@ -148,7 +148,7 @@ describe("Jujutsu Extension", () => {
     expect(mockPi.on).toHaveBeenCalledWith("agent_end", expect.any(Function));
   });
 
-  describe("before_agent_start event handler", () => {
+  describe("Given before_agent_start event handler", () => {
     let eventHandler: (
       event: BeforeAgentStartEvent,
       ctx: ExtensionContext,
@@ -272,7 +272,7 @@ describe("Jujutsu Extension", () => {
     });
   });
 
-  describe("command handlers", () => {
+  describe("Given command handlers", () => {
     it("should handle undo with no changes", async () => {
       const undoHandler = getCommandHandler("undo")!;
       const mockCtx = {

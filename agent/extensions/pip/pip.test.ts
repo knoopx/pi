@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import setupPipToolsExtension from "./index";
 
-describe("Pip Tools Extension", () => {
+describe("Scenario: Pip Tools Extension", () => {
   let mockPi: any;
 
   beforeEach(() => {
@@ -33,7 +33,7 @@ describe("Pip Tools Extension", () => {
     );
   });
 
-  describe("pip-search tool", () => {
+  describe("Given pip-search tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -125,7 +125,7 @@ describe("Pip Tools Extension", () => {
     });
   });
 
-  describe("pip-show tool", () => {
+  describe("Given pip-show tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -189,7 +189,7 @@ Required-by: pip-tools, requests-oauthlib`;
     });
   });
 
-  describe("pip-list tool", () => {
+  describe("Given pip-list tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {

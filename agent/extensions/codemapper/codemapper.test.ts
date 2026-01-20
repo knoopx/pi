@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import setupCodemapperExtension from "./index";
 
-describe("Codemapper Extension", () => {
+describe("Scenario: Codemapper Extension", () => {
   let mockPi: any;
 
   beforeEach(() => {
@@ -35,7 +35,7 @@ describe("Codemapper Extension", () => {
     });
   });
 
-  describe("code-stats tool", () => {
+  describe("Given code-stats tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -155,7 +155,7 @@ describe("Codemapper Extension", () => {
     });
   });
 
-  describe("code-map tool", () => {
+  describe("Given code-map tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -281,7 +281,7 @@ describe("Codemapper Extension", () => {
     });
   });
 
-  describe("code-query tool", () => {
+  describe("Given code-query tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -458,7 +458,7 @@ describe("Codemapper Extension", () => {
     });
   });
 
-  describe("code-inspect tool", () => {
+  describe("Given code-inspect tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -570,7 +570,7 @@ describe("Codemapper Extension", () => {
     });
   });
 
-  describe("code-callers tool", () => {
+  describe("Given code-callers tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -687,7 +687,7 @@ describe("Codemapper Extension", () => {
     });
   });
 
-  describe("code-callees tool", () => {
+  describe("Given code-callees tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -800,7 +800,7 @@ describe("Codemapper Extension", () => {
     });
   });
 
-  describe("code-trace tool", () => {
+  describe("Given code-trace tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -941,7 +941,7 @@ describe("Codemapper Extension", () => {
     });
   });
 
-  describe("code-deps tool", () => {
+  describe("Given code-deps tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -1158,7 +1158,7 @@ describe("Codemapper Extension", () => {
     });
   });
 
-  describe("Error handling across all tools", () => {
+  describe("Given Error handling across all tools", () => {
     it("should return error response on failure", async () => {
       const tools = [
         "code-stats",

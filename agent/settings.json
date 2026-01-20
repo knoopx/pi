@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.49.2",
-  "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.1-codex-mini",
+  "defaultProvider": "github-copilot",
+  "defaultModel": "grok-code-fast-1",
   "defaultThinkingLevel": "off",
   "theme": "custom",
   "permissionLevel": "low",

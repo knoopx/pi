@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import setupGitHubExtension from "./index";
 
-describe("GitHub Extension", () => {
+describe("Scenario: GitHub Extension", () => {
   let mockPi: any;
 
   beforeEach(() => {
@@ -56,7 +56,7 @@ describe("GitHub Extension", () => {
     );
   });
 
-  describe("github-repository-info tool", () => {
+  describe("Given github-repository-info tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -146,7 +146,7 @@ describe("GitHub Extension", () => {
     });
   });
 
-  describe("github-user-info tool", () => {
+  describe("Given github-user-info tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -197,7 +197,7 @@ describe("GitHub Extension", () => {
     });
   });
 
-  describe("github-repository-issues tool", () => {
+  describe("Given github-repository-issues tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -277,7 +277,7 @@ describe("GitHub Extension", () => {
     });
   });
 
-  describe("github-raw-file tool", () => {
+  describe("Given github-raw-file tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -401,7 +401,7 @@ describe("GitHub Extension", () => {
     });
   });
 
-  describe("search-github-repositories tool", () => {
+  describe("Given search-github-repositories tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import setupMarkitdownExtension from "./index";
 
-describe("Markitdown Extension", () => {
+describe("Scenario: Markitdown Extension", () => {
   let mockPi: any;
 
   beforeEach(() => {
@@ -21,7 +21,7 @@ describe("Markitdown Extension", () => {
     );
   });
 
-  describe("convert-to-markdown tool", () => {
+  describe("Given convert-to-markdown tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {

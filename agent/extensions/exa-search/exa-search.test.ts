@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import setupExaSearchExtension from "./index";
 
-describe("Exa Search Extension", () => {
+describe("Scenario: Exa Search Extension", () => {
   let mockPi: any;
 
   beforeEach(() => {
@@ -29,7 +29,7 @@ describe("Exa Search Extension", () => {
     );
   });
 
-  describe("search-code tool", () => {
+  describe("Given search-code tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -160,7 +160,7 @@ describe("Exa Search Extension", () => {
     });
   });
 
-  describe("search-web tool", () => {
+  describe("Given search-web tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {

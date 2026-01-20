@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import setupAstGrepExtension from "./index";
 
-describe("AST Grep Extension", () => {
+describe("Scenario: AST Grep Extension", () => {
   let mockPi: any;
   let mockCtx: any;
 
@@ -53,7 +53,7 @@ describe("AST Grep Extension", () => {
     );
   });
 
-  describe("ast-search tool", () => {
+  describe("Given ast-search tool", () => {
     it("should execute ast-grep search successfully", async () => {
       const mockResult = {
         code: 0,
@@ -110,7 +110,7 @@ describe("AST Grep Extension", () => {
     });
   });
 
-  describe("ast-replace tool", () => {
+  describe("Given ast-replace tool", () => {
     it("should preview changes in dry run mode", async () => {
       const mockResult = {
         code: 0,
@@ -195,7 +195,7 @@ describe("AST Grep Extension", () => {
     });
   });
 
-  describe("ast-scan tool", () => {
+  describe("Given ast-scan tool", () => {
     it("should execute advanced scan successfully", async () => {
       const mockResult = {
         code: 0,

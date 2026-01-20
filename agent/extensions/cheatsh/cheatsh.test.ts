@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 // Import the extension
 import extension from "./index";
 
-describe("Cheatsh Extension", () => {
+describe("Scenario: Cheatsh Extension", () => {
   let mockPi: any;
 
   beforeEach(() => {

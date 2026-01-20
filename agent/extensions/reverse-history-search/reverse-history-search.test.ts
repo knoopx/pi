@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import setupReverseHistorySearchExtension from "./index";
 
-describe("Reverse History Search Extension", () => {
+describe("Scenario: Reverse History Search Extension", () => {
   let mockPi: any;
 
   beforeEach(() => {
@@ -19,7 +19,7 @@ describe("Reverse History Search Extension", () => {
     });
   });
 
-  describe("shortcut handler", () => {
+  describe("Given shortcut handler", () => {
     let handler: any;
     let mockCtx: any;
 
@@ -102,7 +102,7 @@ describe("Reverse History Search Extension", () => {
     });
   });
 
-  describe("fuzzy matching", () => {
+  describe("Given fuzzy matching", () => {
     it("should match empty query", async () => {
       // Skip internal function testing
       expect(true).toBe(true);

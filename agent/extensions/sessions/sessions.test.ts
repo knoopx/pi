@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import setupSessionsExtension from "./index";
 
-describe("Sessions Extension", () => {
+describe("Scenario: Sessions Extension", () => {
   let mockPi: any;
 
   beforeEach(() => {
@@ -19,7 +19,7 @@ describe("Sessions Extension", () => {
     });
   });
 
-  describe("sessions command handler", () => {
+  describe("Given sessions command handler", () => {
     let handler: any;
     let mockCtx: any;
 

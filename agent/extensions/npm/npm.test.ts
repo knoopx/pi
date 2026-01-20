@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import setupNpmExtension from "./index";
 
-describe("NPM Extension", () => {
+describe("Scenario: NPM Extension", () => {
   let mockPi: any;
 
   beforeEach(() => {
@@ -32,7 +32,7 @@ describe("NPM Extension", () => {
     );
   });
 
-  describe("search-npm-packages tool", () => {
+  describe("Given search-npm-packages tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -132,7 +132,7 @@ describe("NPM Extension", () => {
     });
   });
 
-  describe("npm-package-info tool", () => {
+  describe("Given npm-package-info tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -220,7 +220,7 @@ describe("NPM Extension", () => {
     });
   });
 
-  describe("npm-package-versions tool", () => {
+  describe("Given npm-package-versions tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {

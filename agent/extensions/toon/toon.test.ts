@@ -12,7 +12,7 @@ import { encode } from "@toon-format/toon";
 // Get the mocked encode function
 const mockEncode = encode as MockedFunction<typeof encode>;
 
-describe("toon-rewriter extension", () => {
+describe("Scenario: toon-rewriter extension", () => {
   it("should convert JSON tool result content to TOON format", async () => {
     // Mock the ExtensionAPI
     const mockPi = {

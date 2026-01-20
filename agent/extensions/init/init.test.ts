@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import setupInitExtension from "./index";
 
-describe("Init Extension", () => {
+describe("Scenario: Init Extension", () => {
   let mockPi: any;
 
   beforeEach(() => {
@@ -19,7 +19,7 @@ describe("Init Extension", () => {
     });
   });
 
-  describe("init command handler", () => {
+  describe("Given init command handler", () => {
     let handler: any;
     let mockCtx: any;
 

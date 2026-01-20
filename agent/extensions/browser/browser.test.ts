@@ -23,7 +23,7 @@ vi.mock("puppeteer-core", () => ({
 
 import setupBrowserExtension from "./index";
 
-describe("Browser Extension", () => {
+describe("Scenario: Browser Extension", () => {
   let mockPi: ExtensionAPI;
 
   beforeEach(() => {
@@ -63,7 +63,7 @@ describe("Browser Extension", () => {
     expect(mockPi.registerTool).toHaveBeenCalledTimes(expectedTools.length);
   });
 
-  describe("navigate-url tool", () => {
+  describe("Given navigate-url tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -87,7 +87,7 @@ Always opens in a new tab.`,
     });
   });
 
-  describe("evaluate-javascript tool", () => {
+  describe("Given evaluate-javascript tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -112,7 +112,7 @@ Returns the result of the executed code.`,
     });
   });
 
-  describe("take-screenshot tool", () => {
+  describe("Given take-screenshot tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -137,7 +137,7 @@ Saves the image to a temporary file and returns the path.`,
     });
   });
 
-  describe("list-browser-tabs tool", () => {
+  describe("Given list-browser-tabs tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -162,7 +162,7 @@ Shows tab index, title, URL, and active status.`,
     });
   });
 
-  describe("close-tab tool", () => {
+  describe("Given close-tab tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -187,7 +187,7 @@ Cannot close the last remaining tab.`,
     });
   });
 
-  describe("switch-tab tool", () => {
+  describe("Given switch-tab tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -212,7 +212,7 @@ Makes the specified tab active for subsequent operations.`,
     });
   });
 
-  describe("query-html-elements tool", () => {
+  describe("Given query-html-elements tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -237,7 +237,7 @@ Returns formatted HTML of matching elements.`,
     });
   });
 
-  describe("extract-text tool", () => {
+  describe("Given extract-text tool", () => {
     let registeredTool: any;
 
     beforeEach(() => {
@@ -263,7 +263,7 @@ Returns plain text from matching elements.`,
   });
 });
 
-describe("E2E Tests", () => {
+describe("Scenario: E2E Tests", () => {
   let mockPi: any;
 
   beforeEach(() => {
@@ -275,7 +275,7 @@ describe("E2E Tests", () => {
     setupBrowserExtension(mockPi);
   });
 
-  describe("navigate-url", () => {
+  describe("Given navigate-url", () => {
     it("should open URL in new tab", async () => {
       const mockPage = {
         goto: vi.fn(),
@@ -312,7 +312,7 @@ describe("E2E Tests", () => {
     });
   });
 
-  describe("evaluate-javascript", () => {
+  describe("Given evaluate-javascript", () => {
     it("should evaluate JavaScript and return result", async () => {
       const mockPage = {
         evaluate: vi.fn().mockResolvedValue("result"),
@@ -363,7 +363,7 @@ describe("E2E Tests", () => {
     });
   });
 
-  describe("take-screenshot", () => {
+  describe("Given take-screenshot", () => {
     it("should take screenshot and return filepath", async () => {
       const mockPage = {
         screenshot: vi.fn().mockResolvedValue(undefined),
@@ -396,7 +396,7 @@ describe("E2E Tests", () => {
     });
   });
 
-  describe("extract-text", () => {
+  describe("Given extract-text", () => {
     it("should extract text from single element", async () => {
       const mockPage = {
         evaluate: vi.fn().mockResolvedValue(["Hello World"]),
@@ -449,7 +449,7 @@ describe("E2E Tests", () => {
     });
   });
 
-  describe("click-element", () => {
+  describe("Given click-element", () => {
     it("should click single element", async () => {
       const mockElement = { click: vi.fn() };
       const mockPage = {
@@ -508,7 +508,7 @@ describe("E2E Tests", () => {
     });
   });
 
-  describe("type-text", () => {
+  describe("Given type-text", () => {
     it("should type text into element", async () => {
       const mockElement = {
         click: vi.fn(),
@@ -570,7 +570,7 @@ describe("E2E Tests", () => {
     });
   });
 
-  describe("list-browser-tabs", () => {
+  describe("Given list-browser-tabs", () => {
     it("should list all tabs", async () => {
       const mockPages = [
         {
@@ -607,7 +607,7 @@ describe("E2E Tests", () => {
     });
   });
 
-  describe("switch-tab", () => {
+  describe("Given switch-tab", () => {
     it("should switch to specified tab", async () => {
       const mockPages = [{ bringToFront: vi.fn() }, { bringToFront: vi.fn() }];
       const mockBrowser = {
@@ -633,7 +633,7 @@ describe("E2E Tests", () => {
     });
   });
 
-  describe("close-tab", () => {
+  describe("Given close-tab", () => {
     it("should close tab by index", async () => {
       const mockPages = [{ close: vi.fn() }, { close: vi.fn() }];
       const mockBrowser = {
@@ -686,7 +686,7 @@ describe("E2E Tests", () => {
     });
   });
 
-  describe("current-url", () => {
+  describe("Given current-url", () => {
     it("should get current URL", async () => {
       const mockPage = { url: vi.fn().mockReturnValue("https://example.com") };
       const mockBrowser = {
@@ -712,7 +712,7 @@ describe("E2E Tests", () => {
     });
   });
 
-  describe("page-title", () => {
+  describe("Given page-title", () => {
     it("should get page title", async () => {
       const mockPage = { title: vi.fn().mockResolvedValue("Example Page") };
       const mockBrowser = {
@@ -738,7 +738,7 @@ describe("E2E Tests", () => {
     });
   });
 
-  describe("refresh-tab", () => {
+  describe("Given refresh-tab", () => {
     it("should refresh the page", async () => {
       const mockPage = { reload: vi.fn().mockResolvedValue(undefined) };
       const mockBrowser = {
@@ -766,7 +766,7 @@ describe("E2E Tests", () => {
     });
   });
 
-  describe("wait-for-element", () => {
+  describe("Given wait-for-element", () => {
     it("should wait for element to appear", async () => {
       const mockPage = {
         waitForSelector: vi.fn().mockResolvedValue(undefined),
@@ -796,7 +796,7 @@ describe("E2E Tests", () => {
     });
   });
 
-  describe("query-html-elements", () => {
+  describe("Given query-html-elements", () => {
     it("should query HTML elements", async () => {
       const mockPage = {
         evaluate: vi.fn().mockResolvedValue(["<div>Hello</div>"]),
