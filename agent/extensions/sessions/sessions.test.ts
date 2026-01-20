@@ -51,70 +51,501 @@ describe("Scenario: Sessions Extension", () => {
         mockCtx.hasUI = true;
       });
 
-      it("should be properly initialized for interactive operations", async () => {
-        // Test that handler is callable and has access to UI
-        expect(typeof handler).toBe("function");
-        expect(mockCtx.hasUI).toBe(true);
-        expect(mockCtx.ui).toBeDefined();
+      it("should notify when no session files found", async () => {
+        // Mock file system operations
+        const mockReaddirSync = vi.fn().mockReturnValue([]);
+        const mockStatSync = vi.fn();
+        const mockReadFileSync = vi.fn();
+
+        vi.mock("node:fs", () => ({
+          readdirSync: mockReaddirSync,
+          statSync: mockStatSync,
+          readFileSync: mockReadFileSync,
+        }));
+
+        vi.mock("node:path", () => ({
+          join: vi.fn((...args) => args.join("/")),
+        }));
+
+        vi.mock("node:os", () => ({
+          homedir: vi.fn(() => "/home/user"),
+        }));
+
+        await handler("", mockCtx);
+
+        expect(mockCtx.ui.notify).toHaveBeenCalledWith(
+          "No previous sessions found",
+          "info",
+        );
       });
 
-      it("should have access to UI notification methods", () => {
-        expect(typeof mockCtx.ui.notify).toBe("function");
-        expect(typeof mockCtx.ui.select).toBe("function");
-        expect(typeof mockCtx.ui.setEditorText).toBe("function");
-      });
-    });
+      it("should handle file system errors gracefully", async () => {
+        // Mock file system to throw error
+        vi.mock("node:fs", () => ({
+          readdirSync: vi.fn(() => {
+            throw new Error("Permission denied");
+          }),
+        }));
 
-    describe("Given session restoration workflow", () => {
-      beforeEach(() => {
-        mockCtx.hasUI = true;
-      });
+        vi.mock("node:path", () => ({
+          join: vi.fn((...args) => args.join("/")),
+        }));
 
-      it("should prepare for session selection when UI is available", async () => {
-        // This test verifies the setup for session browsing functionality
-        // The actual file system operations would be tested in integration tests
-        expect(mockCtx.hasUI).toBe(true);
-        expect(mockCtx.ui.select).toBeDefined();
-        expect(mockCtx.ui.setEditorText).toBeDefined();
-      });
+        vi.mock("node:os", () => ({
+          homedir: vi.fn(() => "/home/user"),
+        }));
 
-      it("should support setting editor text for session restoration", async () => {
-        const testContent = "restored session content";
+        await handler("", mockCtx);
 
-        mockCtx.ui.setEditorText(testContent);
-
-        expect(mockCtx.ui.setEditorText).toHaveBeenCalledWith(testContent);
-      });
-    });
-
-    describe("Given error handling scenarios", () => {
-      beforeEach(() => {
-        mockCtx.hasUI = true;
+        expect(mockCtx.ui.notify).toHaveBeenCalledWith(
+          "No previous sessions found",
+          "info",
+        );
       });
 
-      it("should handle cases where session data cannot be loaded", async () => {
-        // Test that the handler can be called without throwing
-        // when session directory or files are not available
-        try {
-          await handler("", mockCtx);
-          // If we get here, no exception was thrown
-          expect(true).toBe(true);
-        } catch (error) {
-          // This is unexpected - the handler should handle missing session data gracefully
-          throw error;
-        }
+      it("should show session selection dialog with parsed sessions", async () => {
+        const mockSessionContent = JSON.stringify({
+          type: "message",
+          message: {
+            role: "user",
+            content: [{ type: "text", text: "Hello world command" }],
+          },
+        });
+
+        // Mock file system operations
+        vi.mock("node:fs", () => ({
+          readdirSync: vi.fn((path) => {
+            if (path === "/home/user/.pi/agent/sessions") {
+              return [
+                {
+                  name: "session1.jsonl",
+                  isFile: () => true,
+                  isDirectory: () => false,
+                },
+              ];
+            }
+            return [];
+          }),
+          statSync: vi.fn(() => ({ mtime: new Date("2024-01-20T10:00:00Z") })),
+          readFileSync: vi.fn(() => mockSessionContent),
+        }));
+
+        vi.mock("node:path", () => ({
+          join: vi.fn((...args) => args.join("/")),
+        }));
+
+        vi.mock("node:os", () => ({
+          homedir: vi.fn(() => "/home/user"),
+        }));
+
+        mockCtx.ui.select.mockResolvedValue("0");
+
+        await handler("", mockCtx);
+
+        expect(mockCtx.ui.select).toHaveBeenCalledWith(
+          "Select a session to restore:",
+          expect.arrayContaining([
+            expect.stringContaining("Hello world command"),
+          ]),
+        );
       });
 
-      it("should gracefully handle invalid session data", async () => {
-        // Test that malformed session files don't crash the extension
-        try {
-          await handler("", mockCtx);
-          // If we get here, no exception was thrown
-          expect(true).toBe(true);
-        } catch (error) {
-          // This is unexpected - the handler should handle malformed data gracefully
-          throw error;
-        }
+      it("should restore selected session", async () => {
+        // Mock file system operations
+        vi.mock("node:fs", () => ({
+          readdirSync: vi.fn((path) => {
+            if (path === "/home/user/.pi/agent/sessions") {
+              return [
+                {
+                  name: "session1.jsonl",
+                  isFile: () => true,
+                  isDirectory: () => false,
+                },
+              ];
+            }
+            return [];
+          }),
+          statSync: vi.fn(() => ({ mtime: new Date("2024-01-20T10:00:00Z") })),
+          readFileSync: vi.fn(() => "mock content"),
+        }));
+
+        vi.mock("node:path", () => ({
+          join: vi.fn((...args) => args.join("/")),
+        }));
+
+        vi.mock("node:os", () => ({
+          homedir: vi.fn(() => "/home/user"),
+        }));
+
+        mockCtx.ui.select.mockResolvedValue("0");
+
+        await handler("", mockCtx);
+
+        expect(mockCtx.ui.setEditorText).toHaveBeenCalledWith(
+          `/resume /home/user/.pi/agent/sessions/session1.jsonl`,
+        );
+        expect(mockCtx.ui.notify).toHaveBeenCalledWith(
+          "Selected session loaded. Press Enter to restore.",
+          "info",
+        );
+      });
+
+      it("should handle user cancelling session selection", async () => {
+        // Mock file system operations
+        vi.mock("node:fs", () => ({
+          readdirSync: vi.fn((path) => {
+            if (path === "/home/user/.pi/agent/sessions") {
+              return [
+                {
+                  name: "session1.jsonl",
+                  isFile: () => true,
+                  isDirectory: () => false,
+                },
+              ];
+            }
+            return [];
+          }),
+          statSync: vi.fn(() => ({ mtime: new Date("2024-01-20T10:00:00Z") })),
+          readFileSync: vi.fn(() => "mock content"),
+        }));
+
+        vi.mock("node:path", () => ({
+          join: vi.fn((...args) => args.join("/")),
+        }));
+
+        vi.mock("node:os", () => ({
+          homedir: vi.fn(() => "/home/user"),
+        }));
+
+        mockCtx.ui.select.mockResolvedValue(undefined); // User cancelled
+
+        await handler("", mockCtx);
+
+        expect(mockCtx.ui.setEditorText).not.toHaveBeenCalled();
+        expect(mockCtx.ui.notify).not.toHaveBeenCalledWith(
+          "Selected session loaded. Press Enter to restore.",
+          "info",
+        );
+      });
+
+      it("should handle invalid selection index", async () => {
+        // Mock file system operations
+        vi.mock("node:fs", () => ({
+          readdirSync: vi.fn((path) => {
+            if (path === "/home/user/.pi/agent/sessions") {
+              return [
+                {
+                  name: "session1.jsonl",
+                  isFile: () => true,
+                  isDirectory: () => false,
+                },
+              ];
+            }
+            return [];
+          }),
+          statSync: vi.fn(() => ({ mtime: new Date("2024-01-20T10:00:00Z") })),
+          readFileSync: vi.fn(() => "mock content"),
+        }));
+
+        vi.mock("node:path", () => ({
+          join: vi.fn((...args) => args.join("/")),
+        }));
+
+        vi.mock("node:os", () => ({
+          homedir: vi.fn(() => "/home/user"),
+        }));
+
+        mockCtx.ui.select.mockResolvedValue("invalid");
+
+        await handler("", mockCtx);
+
+        expect(mockCtx.ui.notify).toHaveBeenCalledWith(
+          "Invalid selection",
+          "error",
+        );
+      });
+
+      it("should handle out of bounds selection", async () => {
+        // Mock file system operations
+        vi.mock("node:fs", () => ({
+          readdirSync: vi.fn((path) => {
+            if (path === "/home/user/.pi/agent/sessions") {
+              return [
+                {
+                  name: "session1.jsonl",
+                  isFile: () => true,
+                  isDirectory: () => false,
+                },
+              ];
+            }
+            return [];
+          }),
+          statSync: vi.fn(() => ({ mtime: new Date("2024-01-20T10:00:00Z") })),
+          readFileSync: vi.fn(() => "mock content"),
+        }));
+
+        vi.mock("node:path", () => ({
+          join: vi.fn((...args) => args.join("/")),
+        }));
+
+        vi.mock("node:os", () => ({
+          homedir: vi.fn(() => "/home/user"),
+        }));
+
+        mockCtx.ui.select.mockResolvedValue("5"); // Out of bounds
+
+        await handler("", mockCtx);
+
+        expect(mockCtx.ui.notify).toHaveBeenCalledWith(
+          "Invalid selection",
+          "error",
+        );
+      });
+
+      it("should sort sessions by modification time (newest first)", async () => {
+        const sessionsDir = "/home/user/.pi/agent/sessions";
+
+        // Mock file system operations
+        vi.mock("node:fs", () => ({
+          readdirSync: vi.fn((path) => {
+            if (path === sessionsDir) {
+              return [
+                {
+                  name: "old.jsonl",
+                  isFile: () => true,
+                  isDirectory: () => false,
+                },
+                {
+                  name: "new.jsonl",
+                  isFile: () => true,
+                  isDirectory: () => false,
+                },
+              ];
+            }
+            return [];
+          }),
+          statSync: vi.fn((path) => {
+            if (path.includes("new.jsonl")) {
+              return { mtime: new Date("2024-01-20T12:00:00Z") };
+            } else {
+              return { mtime: new Date("2024-01-20T10:00:00Z") };
+            }
+          }),
+          readFileSync: vi.fn(() =>
+            JSON.stringify({
+              type: "message",
+              message: {
+                role: "user",
+                content: [{ type: "text", text: "test" }],
+              },
+            }),
+          ),
+        }));
+
+        vi.mock("node:path", () => ({
+          join: vi.fn((...args) => args.join("/")),
+        }));
+
+        vi.mock("node:os", () => ({
+          homedir: vi.fn(() => "/home/user"),
+        }));
+
+        mockCtx.ui.select.mockResolvedValue("0");
+
+        await handler("", mockCtx);
+
+        // Should select the first option which should be the newest (new.jsonl)
+        expect(mockCtx.ui.setEditorText).toHaveBeenCalledWith(
+          `/resume ${sessionsDir}/new.jsonl`,
+        );
+      });
+
+      it("should limit displayed sessions to 20 most recent", async () => {
+        const sessionsDir = "/home/user/.pi/agent/sessions";
+        const mockFiles = Array.from({ length: 25 }, (_, i) => ({
+          name: `session${i}.jsonl`,
+          isFile: () => true,
+          isDirectory: () => false,
+        }));
+
+        // Mock file system operations
+        vi.mock("node:fs", () => ({
+          readdirSync: vi.fn((path) => {
+            if (path === sessionsDir) {
+              return mockFiles;
+            }
+            return [];
+          }),
+          statSync: vi.fn(() => ({ mtime: new Date() })),
+          readFileSync: vi.fn(() =>
+            JSON.stringify({
+              type: "message",
+              message: {
+                role: "user",
+                content: [{ type: "text", text: "test" }],
+              },
+            }),
+          ),
+        }));
+
+        vi.mock("node:path", () => ({
+          join: vi.fn((...args) => args.join("/")),
+        }));
+
+        vi.mock("node:os", () => ({
+          homedir: vi.fn(() => "/home/user"),
+        }));
+
+        mockCtx.ui.select.mockResolvedValue("0");
+
+        await handler("", mockCtx);
+
+        const selectCall = mockCtx.ui.select.mock.calls[0];
+        expect(selectCall[1]).toHaveLength(20); // Should limit to 20
+      });
+
+      it("should handle file read errors gracefully", async () => {
+        const sessionsDir = "/home/user/.pi/agent/sessions";
+
+        // Mock file system operations
+        vi.mock("node:fs", () => ({
+          readdirSync: vi.fn((path) => {
+            if (path === sessionsDir) {
+              return [
+                {
+                  name: "session1.jsonl",
+                  isFile: () => true,
+                  isDirectory: () => false,
+                },
+              ];
+            }
+            return [];
+          }),
+          statSync: vi.fn(() => ({ mtime: new Date() })),
+          readFileSync: vi.fn(() => {
+            throw new Error("Permission denied");
+          }),
+        }));
+
+        vi.mock("node:path", () => ({
+          join: vi.fn((...args) => args.join("/")),
+        }));
+
+        vi.mock("node:os", () => ({
+          homedir: vi.fn(() => "/home/user"),
+        }));
+
+        mockCtx.ui.select.mockResolvedValue("0");
+
+        await handler("", mockCtx);
+
+        // Should still work with "Error reading file" preview
+        expect(mockCtx.ui.select).toHaveBeenCalledWith(
+          "Select a session to restore:",
+          expect.arrayContaining([
+            expect.stringContaining("Error reading file"),
+          ]),
+        );
+      });
+
+      it("should handle malformed JSON in session files", async () => {
+        const sessionsDir = "/home/user/.pi/agent/sessions";
+
+        // Mock file system operations
+        vi.mock("node:fs", () => ({
+          readdirSync: vi.fn((path) => {
+            if (path === sessionsDir) {
+              return [
+                {
+                  name: "session1.jsonl",
+                  isFile: () => true,
+                  isDirectory: () => false,
+                },
+              ];
+            }
+            return [];
+          }),
+          statSync: vi.fn(() => ({ mtime: new Date() })),
+          readFileSync: vi.fn(() => "invalid json content\nmore content"),
+        }));
+
+        vi.mock("node:path", () => ({
+          join: vi.fn((...args) => args.join("/")),
+        }));
+
+        vi.mock("node:os", () => ({
+          homedir: vi.fn(() => "/home/user"),
+        }));
+
+        mockCtx.ui.select.mockResolvedValue("0");
+
+        await handler("", mockCtx);
+
+        // Should handle malformed JSON gracefully
+        expect(mockCtx.ui.select).toHaveBeenCalledWith(
+          "Select a session to restore:",
+          expect.arrayContaining([expect.stringContaining("No preview")]),
+        );
+      });
+
+      it("should recursively find session files in subdirectories", async () => {
+        const sessionsDir = "/home/user/.pi/agent/sessions";
+        const subDir = "/home/user/.pi/agent/sessions/subdir";
+
+        // Mock file system operations
+        vi.mock("node:fs", () => ({
+          readdirSync: vi.fn((path) => {
+            if (path === sessionsDir) {
+              return [
+                {
+                  name: "session1.jsonl",
+                  isFile: () => true,
+                  isDirectory: () => false,
+                },
+                {
+                  name: "subdir",
+                  isFile: () => false,
+                  isDirectory: () => true,
+                },
+              ];
+            } else if (path === subDir) {
+              return [
+                {
+                  name: "session2.jsonl",
+                  isFile: () => true,
+                  isDirectory: () => false,
+                },
+              ];
+            }
+            return [];
+          }),
+          statSync: vi.fn(() => ({ mtime: new Date() })),
+          readFileSync: vi.fn(() =>
+            JSON.stringify({
+              type: "message",
+              message: {
+                role: "user",
+                content: [{ type: "text", text: "test" }],
+              },
+            }),
+          ),
+        }));
+
+        vi.mock("node:path", () => ({
+          join: vi.fn((...args) => args.join("/")),
+        }));
+
+        vi.mock("node:os", () => ({
+          homedir: vi.fn(() => "/home/user"),
+        }));
+
+        mockCtx.ui.select.mockResolvedValue("0");
+
+        await handler("", mockCtx);
+
+        // Should find both files
+        const selectCall = mockCtx.ui.select.mock.calls[0];
+        expect(selectCall[1]).toHaveLength(2);
       });
     });
   });
