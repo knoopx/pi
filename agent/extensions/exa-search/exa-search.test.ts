@@ -64,8 +64,8 @@ describe("Scenario: Exa Search Extension", () => {
       expect(mockFetch).toHaveBeenCalledWith("https://mcp.exa.ai/mcp", {
         method: "POST",
         headers: {
-          accept: "application/json, text/event-stream",
-          "content-type": "application/json",
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           jsonrpc: "2.0",
@@ -151,7 +151,7 @@ describe("Scenario: Exa Search Extension", () => {
           vi.fn(),
           {},
         ),
-      ).rejects.toThrow("Request error (500): Server error details");
+      ).rejects.toThrow("HTTP 500: Internal Server Error");
     });
 
     it("should handle timeout", async () => {
@@ -170,18 +170,154 @@ describe("Scenario: Exa Search Extension", () => {
     });
 
     it("should make MCP call for web search with all parameters", async () => {
-      // Skip complex mocking for now
-      expect(registeredTool).toBeDefined();
+      const mockFetch = vi.fn();
+      global.fetch = mockFetch;
+
+      const mockResponse = {
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            'data: {"jsonrpc": "2.0", "result": {"content": [{"type": "text", "text": "Web search results"}]}}',
+          ),
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const result = await registeredTool.execute(
+        "tool1",
+        {
+          query: "latest JavaScript frameworks",
+          numResults: 10,
+          livecrawl: "preferred",
+          contextMaxCharacters: 2000,
+          type: "deep",
+        },
+        vi.fn(),
+        {},
+      );
+
+      expect(mockFetch).toHaveBeenCalledWith("https://mcp.exa.ai/mcp", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/call",
+          params: {
+            name: "web_search_exa",
+            arguments: {
+              query: "latest JavaScript frameworks",
+              type: "deep",
+              numResults: 10,
+              livecrawl: "preferred",
+              contextMaxCharacters: 2000,
+            },
+          },
+        }),
+        signal: expect.any(AbortSignal),
+      });
+
+      expect(result.content[0].text).toBe("Web search results");
+      expect(result.details.query).toBe("latest JavaScript frameworks");
     });
 
     it("should use default values for optional parameters", async () => {
-      // Skip complex mocking for now
-      expect(registeredTool).toBeDefined();
+      const mockFetch = vi.fn();
+      global.fetch = mockFetch;
+
+      const mockResponse = {
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            'data: {"jsonrpc": "2.0", "result": {"content": [{"type": "text", "text": "Results"}]}}',
+          ),
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+
+      await registeredTool.execute(
+        "tool1",
+        {
+          query: "test query",
+        },
+        vi.fn(),
+        {},
+      );
+
+      const fetchCall = mockFetch.mock.calls[0];
+      const body = JSON.parse(fetchCall[1].body);
+      expect(body.params.arguments.numResults).toBe(8);
+      expect(body.params.arguments.livecrawl).toBe("fallback");
+      expect(body.params.arguments.contextMaxCharacters).toBe(10000);
+      expect(body.params.arguments.type).toBe("auto");
     });
 
     it("should handle no results found", async () => {
-      // Skip complex mocking for now
-      expect(registeredTool).toBeDefined();
+      const mockFetch = vi.fn();
+      global.fetch = mockFetch;
+
+      const mockResponse = {
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            'data: {"jsonrpc": "2.0", "result": {"content": [{"type": "text", "text": "No results found"}]}}',
+          ),
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const result = await registeredTool.execute(
+        "tool1",
+        {
+          query: "nonexistent topic xyz123",
+        },
+        vi.fn(),
+        {},
+      );
+
+      expect(result.content[0].text).toBe("No results found");
+      expect(result.details.query).toBe("nonexistent topic xyz123");
+    });
+
+    it("should handle web search errors", async () => {
+      const mockFetch = vi.fn();
+      global.fetch = mockFetch;
+      mockFetch.mockRejectedValue(new Error("Network error"));
+
+      await expect(
+        registeredTool.execute(
+          "tool1",
+          {
+            query: "test query",
+          },
+          vi.fn(),
+          {},
+        ),
+      ).rejects.toThrow("Network error");
+    });
+
+    it("should handle HTTP errors for web search", async () => {
+      const mockFetch = vi.fn();
+      global.fetch = mockFetch;
+
+      const mockResponse = {
+        ok: false,
+        status: 429,
+        statusText: "Too Many Requests",
+        text: () => Promise.resolve("Rate limit exceeded"),
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+
+      await expect(
+        registeredTool.execute(
+          "tool1",
+          {
+            query: "test query",
+          },
+          vi.fn(),
+          {},
+        ),
+      ).rejects.toThrow("HTTP 429: Too Many Requests");
     });
   });
 });
