@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeEach, vi, type MockedFunction } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  vi,
+  type MockedFunction,
+} from "vitest";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 // Mock the encode function to verify it's called

@@ -41,8 +41,14 @@ describe("Scenario: Provider Status Bar Extension", () => {
       mockPi.on("session_start", vi.fn());
       mockPi.on("session_shutdown", vi.fn());
 
-      expect(mockPi.on).toHaveBeenCalledWith("session_start", expect.any(Function));
-      expect(mockPi.on).toHaveBeenCalledWith("session_shutdown", expect.any(Function));
+      expect(mockPi.on).toHaveBeenCalledWith(
+        "session_start",
+        expect.any(Function),
+      );
+      expect(mockPi.on).toHaveBeenCalledWith(
+        "session_shutdown",
+        expect.any(Function),
+      );
     });
   });
 
@@ -152,7 +158,10 @@ describe("Scenario: Provider Status Bar Extension", () => {
       const mockSetStatus = vi.fn();
 
       // Simulate missing credentials handling
-      mockSetStatus("provider-quotas", "No Providers: No AI providers configured");
+      mockSetStatus(
+        "provider-quotas",
+        "No Providers: No AI providers configured",
+      );
 
       expect(mockSetStatus).toHaveBeenCalledWith(
         "provider-quotas",

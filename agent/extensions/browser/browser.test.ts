@@ -73,7 +73,8 @@ describe("Scenario: Browser Extension", () => {
       {
         name: "evaluate-javascript",
         label: "Evaluate JavaScript",
-        description: "Execute JavaScript code in the context of the current web page",
+        description:
+          "Execute JavaScript code in the context of the current web page",
       },
       {
         name: "take-screenshot",
@@ -83,7 +84,8 @@ describe("Scenario: Browser Extension", () => {
       {
         name: "query-html-elements",
         label: "Query HTML Elements",
-        description: "Extract HTML elements from the current page using CSS selectors",
+        description:
+          "Extract HTML elements from the current page using CSS selectors",
       },
       {
         name: "extract-text",

@@ -207,7 +207,8 @@ Supports live crawling and different search depths.`,
           numResults:
             (params.numResults as number) || API_CONFIG.DEFAULT_NUM_RESULTS,
           livecrawl: (params.livecrawl as string) || "fallback",
-          contextMaxCharacters: (params.contextMaxCharacters as number) || 10000,
+          contextMaxCharacters:
+            (params.contextMaxCharacters as number) || 10000,
         },
         onUpdate,
         `Searching the web for: ${params.query}...`,

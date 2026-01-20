@@ -113,7 +113,9 @@ describe("Scenario: No Cowboys In This Town Extension", () => {
         const result = await mockPi.toolCallHandler({ toolName: "edit" }, {});
         expect(result).toEqual({
           block: true,
-          reason: expect.stringContaining("File editing is blocked until a context-grounding tool"),
+          reason: expect.stringContaining(
+            "File editing is blocked until a context-grounding tool",
+          ),
         });
         expect(result.reason).toContain(groundingTools.join(", "));
       });
@@ -122,12 +124,17 @@ describe("Scenario: No Cowboys In This Town Extension", () => {
         const result = await mockPi.toolCallHandler({ toolName: "write" }, {});
         expect(result).toEqual({
           block: true,
-          reason: expect.stringContaining("File editing is blocked until a context-grounding tool"),
+          reason: expect.stringContaining(
+            "File editing is blocked until a context-grounding tool",
+          ),
         });
       });
 
       it("should allow non-editing tools", async () => {
-        const result = await mockPi.toolCallHandler({ toolName: "search-web" }, {});
+        const result = await mockPi.toolCallHandler(
+          { toolName: "search-web" },
+          {},
+        );
         expect(result).toBeUndefined();
       });
     });
@@ -162,7 +169,9 @@ describe("Scenario: No Cowboys In This Town Extension", () => {
         const result = await mockPi.toolCallHandler({ toolName: "edit" }, {});
         expect(result).toEqual({
           block: true,
-          reason: expect.stringContaining("File editing is blocked until a context-grounding tool"),
+          reason: expect.stringContaining(
+            "File editing is blocked until a context-grounding tool",
+          ),
         });
       });
     });
