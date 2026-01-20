@@ -33,127 +33,121 @@ Provides examples for commands, languages, and tools.`);
     expect(typeof toolDef.execute).toBe("function");
   });
 
-  it("should execute tool with mock fetch", async () => {
-    // Mock fetch
-    global.fetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        text: () =>
-          Promise.resolve("# ls\nList directory contents\n\nls -l\nls -a"),
-      } as any),
-    );
+  describe("Given command-examples tool", () => {
+    let toolDef: any;
 
-    extension(mockPi);
-    const toolDef = mockPi.registerTool.mock.calls[0][0];
+    beforeEach(() => {
+      extension(mockPi);
+      toolDef = mockPi.registerTool.mock.calls[0][0];
+    });
 
-    const result = await toolDef.execute(
-      "test-id",
-      { query: "ls" },
-      null,
-      null,
-      null,
-    );
+    it("should execute tool with mock fetch", async () => {
+      // Mock fetch
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          text: () =>
+            Promise.resolve("# ls\nList directory contents\n\nls -l\nls -a"),
+        } as any),
+      );
 
-    expect(result.content).toHaveLength(1);
-    expect(result.content[0].type).toBe("text");
-    expect(result.content[0].text).toContain("# ls");
-    expect(result.details.query).toBe("ls");
-    expect(result.details.url).toContain("cheat.sh/ls");
+      const result = await toolDef.execute(
+        "test-id",
+        { query: "ls" },
+        null,
+        null,
+        null,
+      );
 
-    // Restore fetch
-    delete global.fetch;
-  });
+      expect(result.content).toHaveLength(1);
+      expect(result.content[0].type).toBe("text");
+      expect(result.content[0].text).toContain("# ls");
+      expect(result.details.query).toBe("ls");
+      expect(result.details.url).toContain("cheat.sh/ls");
 
-  it("should handle 404 errors", async () => {
-    global.fetch = vi.fn(() =>
-      Promise.resolve({
-        ok: false,
-        status: 404,
-        statusText: "Not Found",
-      } as any),
-    );
+      // Restore fetch
+      delete global.fetch;
+    });
 
-    extension(mockPi);
-    const toolDef = mockPi.registerTool.mock.calls[0][0];
+    it("should handle 404 errors", async () => {
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: false,
+          status: 404,
+          statusText: "Not Found",
+        } as any),
+      );
 
-    const result = await toolDef.execute(
-      "test-id",
-      { query: "nonexistent" },
-      null,
-      null,
-      null,
-    );
+      const result = await toolDef.execute(
+        "test-id",
+        { query: "nonexistent" },
+        null,
+        null,
+        null,
+      );
 
-    expect(result.content[0].text).toContain("No cheatsheet found");
+      expect(result.content[0].text).toContain("No cheatsheet found");
 
-    delete global.fetch;
-  });
+      delete global.fetch;
+    });
 
-  it("should handle network errors", async () => {
-    global.fetch = vi.fn(() => Promise.reject(new Error("Network error")));
+    it("should handle network errors", async () => {
+      global.fetch = vi.fn(() => Promise.reject(new Error("Network error")));
 
-    extension(mockPi);
-    const toolDef = mockPi.registerTool.mock.calls[0][0];
+      const result = await toolDef.execute(
+        "test-id",
+        { query: "ls" },
+        null,
+        null,
+        null,
+      );
 
-    const result = await toolDef.execute(
-      "test-id",
-      { query: "ls" },
-      null,
-      null,
-      null,
-    );
+      expect(result.content[0].text).toContain("Failed to fetch cheatsheet");
 
-    expect(result.content[0].text).toContain("Failed to fetch cheatsheet");
+      delete global.fetch;
+    });
 
-    delete global.fetch;
-  });
+    it("should decode HTML entities in the response", async () => {
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          text: () =>
+            Promise.resolve(
+              "# jj\nJujutsu command examples\n\n$ jj desc -r&quot;trunk()..description(&#x27;&#x27;)&quot;",
+            ),
+        } as any),
+      );
 
-  it("should decode HTML entities in the response", async () => {
-    global.fetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        text: () =>
-          Promise.resolve(
-            "# jj\nJujutsu command examples\n\n$ jj desc -r&quot;trunk()..description(&#x27;&#x27;)&quot;",
-          ),
-      } as any),
-    );
+      const result = await toolDef.execute(
+        "test-id",
+        { query: "jj" },
+        null,
+        null,
+        null,
+      );
 
-    extension(mockPi);
-    const toolDef = mockPi.registerTool.mock.calls[0][0];
+      expect(result.content[0].text).toContain(
+        "$ jj desc -r\"trunk()..description('')\"",
+      );
+      expect(result.content[0].text).not.toContain("&quot;");
+      expect(result.content[0].text).not.toContain("&#x27;");
 
-    const result = await toolDef.execute(
-      "test-id",
-      { query: "jj" },
-      null,
-      null,
-      null,
-    );
+      delete global.fetch;
+    });
 
-    expect(result.content[0].text).toContain(
-      "$ jj desc -r\"trunk()..description('')\"",
-    );
-    expect(result.content[0].text).not.toContain("&quot;");
-    expect(result.content[0].text).not.toContain("&#x27;");
+    it("should handle cancellation", async () => {
+      const abortController = new AbortController();
+      abortController.abort();
 
-    delete global.fetch;
-  });
+      const result = await toolDef.execute(
+        "test-id",
+        { query: "ls" },
+        null,
+        null,
+        abortController.signal,
+      );
 
-  it("should handle cancellation", async () => {
-    const abortController = new AbortController();
-    abortController.abort();
-
-    extension(mockPi);
-    const toolDef = mockPi.registerTool.mock.calls[0][0];
-
-    const result = await toolDef.execute(
-      "test-id",
-      { query: "ls" },
-      null,
-      null,
-      abortController.signal,
-    );
-
-    expect(result.content[0].text).toBe("Cancelled");
+      expect(result.content[0].text).toBe("Cancelled");
+    });
   });
 });
