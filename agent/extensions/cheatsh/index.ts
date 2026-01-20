@@ -85,7 +85,46 @@ Provides examples for commands, languages, and tools.`,
 
         const cheatsheet = await response.text();
 
-        // Decode HTML entities
+        // Check if the response contains HTML (indicating an error page)
+        if (
+          cheatsheet.trim().toLowerCase().startsWith("<!doctype html") ||
+          cheatsheet.trim().toLowerCase().startsWith("<html")
+        ) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `No cheatsheet found for "${query}". Try a different query or check ${url} directly.`,
+              },
+            ],
+            details: {
+              query,
+              url,
+              section,
+              status: response.status,
+              isHtml: true,
+            },
+          };
+        }
+
+        // Check for "Unknown topic" responses
+        if (cheatsheet.trim().toLowerCase().startsWith("unknown topic")) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `No cheatsheet found for "${query}". Try a different query or check ${url} directly.`,
+              },
+            ],
+            details: {
+              query,
+              url,
+              section,
+              status: response.status,
+              unknownTopic: true,
+            },
+          };
+        }
         const decodedCheatsheet = cheatsheet
           .replace(/&quot;/g, '"')
           .replace(/&#x27;/g, "'")
