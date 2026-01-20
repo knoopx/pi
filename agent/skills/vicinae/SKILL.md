@@ -921,3 +921,8 @@ import {
   }
 />
 ```
+
+## Related Skills
+
+- **typescript**: Use TypeScript for developing Vicinae extensions with proper type safety and modern JavaScript features.
+```

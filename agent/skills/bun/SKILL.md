@@ -722,3 +722,9 @@ bun build --compile --outfile=myapp ./cli.ts
 - **typescript**: Follow TypeScript best practices when developing with Bun, as Bun provides native TypeScript support.
 - **vitest**: Use Vitest as an alternative or complementary testing framework in Bun projects for advanced testing features.
 - **knip**: Identify and remove unused dependencies in Bun-managed JavaScript/TypeScript projects.
+
+## Related Tools
+
+- **search-npm-packages**: Search for packages available on the npm registry when managing Bun project dependencies.
+- **npm-package-info**: Get comprehensive information about npm packages for dependency management.
+- **npm-package-versions**: List available versions of npm packages for version planning in Bun projects.

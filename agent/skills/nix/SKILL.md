@@ -86,3 +86,9 @@ in
 
 - **nix-flakes**: Use Nix Flakes for reproducible builds and dependency management in Nix projects.
 - **nh**: Manage NixOS and Home Manager operations with improved output using nh.
+
+## Related Tools
+
+- **search-nix-packages**: Search for packages available in the NixOS package repository.
+- **search-nix-options**: Find configuration options available in NixOS.
+- **search-home-manager-options**: Find configuration options for Home Manager.

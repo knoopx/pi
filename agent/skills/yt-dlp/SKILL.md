@@ -95,3 +95,7 @@ yt-dlp -n "URL"
 | `--get-filename`  | Print the output filename without downloading.               |
 | `--skip-download` | Do not download the video (useful with `--write-info-json`). |
 | `--limit-rate 1M` | Limit download speed to 1MB/s.                               |
+
+## Related Tools
+
+- **transcribe**: Convert downloaded media files to text using transcription tools.

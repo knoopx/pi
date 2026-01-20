@@ -390,4 +390,9 @@ Now your `fileA.ts` changes are safely committed. You're still on the remaining 
 
 You can repeat the process to incrementally split off changes until you're happy.
 
+## Related Skills
+
+- **typescript**: Use TypeScript in Jujutsu-managed projects for type safety and modern JavaScript development.
+- **bun**: Manage JavaScript/TypeScript projects with Bun while using Jujutsu for version control.
+
 

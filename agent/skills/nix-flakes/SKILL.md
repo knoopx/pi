@@ -104,3 +104,9 @@ nix eval path:.#packages.x86_64-linux.default.name
 
 - **nix**: Run applications without installation and create development environments using Nix.
 - **nh**: Manage NixOS and Home Manager operations with improved output using nh.
+
+## Related Tools
+
+- **search-nix-packages**: Search for packages available in the NixOS package repository when working with flakes.
+- **search-nix-options**: Find configuration options available in NixOS for flake configurations.
+- **search-home-manager-options**: Find configuration options for Home Manager in flake setups.
