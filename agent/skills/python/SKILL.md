@@ -12,6 +12,7 @@ Modern Python development with type hints, testing, and code quality tools.
 - [Project Setup](#project-setup)
 - [Code Quality](#code-quality)
 - [Testing](#testing)
+- [Dataclasses](#dataclasses)
 - [Type Hints](#type-hints)
 - [Best Practices](#best-practices)
 
@@ -141,6 +142,51 @@ def test_user_insert(db):
     db.insert("users", {"name": "Test"})
     assert db.count("users") == 1
 ```
+
+## Dataclasses
+
+**Prefer dataclasses over regular classes** for data containers. Auto-generates `__init__`, `__repr__`, `__eq__`.
+
+```python
+from dataclasses import dataclass, field
+
+@dataclass
+class User:
+    id: int
+    name: str
+    email: str
+
+@dataclass(frozen=True)  # Immutable, hashable
+class Point:
+    x: float
+    y: float
+
+@dataclass
+class Config:
+    name: str
+    debug: bool = False                           # Simple default
+    tags: list[str] = field(default_factory=list) # Mutable default
+    area: float = field(init=False)               # Computed field
+
+    def __post_init__(self) -> None:
+        self.area = len(self.tags)
+```
+
+### Decorator Options
+
+| Option | Effect |
+|--------|--------|
+| `frozen=True` | Immutable, hashable (use for value objects) |
+| `slots=True` | Memory-efficient (Python 3.10+) |
+| `order=True` | Enable `<`, `>`, `<=`, `>=` comparisons |
+
+### When to Use
+
+| ✅ Dataclasses | ❌ Regular Classes |
+|----------------|-------------------|
+| DTOs, configs, records | Complex behavior/methods |
+| API request/response models | Custom `__init__` logic |
+| Immutable value objects | Mutable state with invariants |
 
 ## Type Hints
 
