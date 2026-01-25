@@ -454,10 +454,6 @@ Respond with only the change message, no additional text.`;
         await pi.exec("jj", ["describe", "-m", currentPrompt], {
           signal: contextSignal,
         });
-        ctx.ui.notify(
-          `Re-used empty change with description: ${currentPrompt}`,
-          "info",
-        );
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);

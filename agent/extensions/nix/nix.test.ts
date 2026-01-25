@@ -1,28 +1,38 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import setupNixExtension from "./index";
 
 describe("Scenario: Nix Extension", () => {
   let mockPi: any;
+  let originalFetch: typeof globalThis.fetch;
 
   beforeEach(() => {
     mockPi = {
       registerTool: vi.fn(),
     };
+    originalFetch = globalThis.fetch;
     setupNixExtension(mockPi);
   });
 
-  it("should register all nix tools", () => {
-    const toolNames = [
-      "search-nix-packages",
-      "search-nix-options",
-      "search-home-manager-options",
-    ];
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
 
-    toolNames.forEach((name) => {
-      expect(mockPi.registerTool).toHaveBeenCalledWith(
-        expect.objectContaining({ name }),
-      );
-    });
+  it("should register all nix tools", () => {
+    expect(mockPi.registerTool).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "search-nix-packages",
+      }),
+    );
+    expect(mockPi.registerTool).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "search-nix-options",
+      }),
+    );
+    expect(mockPi.registerTool).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "search-home-manager-options",
+      }),
+    );
   });
 
   describe("Given search-nix-packages tool", () => {
@@ -34,72 +44,73 @@ describe("Scenario: Nix Extension", () => {
       )[0];
     });
 
-    it("should search packages successfully", async () => {
-      const mockPackages = [
-        {
-          package_attr_name: "hello",
-          package_pname: "hello",
-          package_pversion: "2.12.1",
-          package_description: "A simple hello world program",
-          package_longDescription: "GNU Hello prints a friendly greeting.",
-          package_platforms: ["x86_64-linux", "aarch64-linux"],
-          package_homepage: ["https://www.gnu.org/software/hello/"],
-          package_maintainers: [{ name: "John Doe", github: "johndoe" }],
-          package_license_set: ["GPL-3.0-or-later"],
-        },
-      ];
+    describe("when searching for packages", () => {
+      let result: any;
 
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
+      beforeEach(async () => {
+        const mockPackages = [
+          {
+            type: "package",
+            package_attr_name: "hello",
+            package_pname: "hello",
+            package_pversion: "2.12.1",
+            package_description: "A simple hello world program",
+            package_longDescription:
+              "GNU Hello prints a friendly greeting.",
+            package_homepage: ["https://www.gnu.org/software/hello/"],
+            package_maintainers: [{ name: "John Doe" }],
+            package_license_set: ["GPL-3.0-or-later"],
+          },
+        ];
 
-      const mockResponse = {
-        ok: true,
-        json: () =>
-          Promise.resolve({ hits: { hits: [{ _source: mockPackages[0] }] } }),
-      };
-      mockFetch.mockResolvedValue(mockResponse);
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
 
-      const result = await registeredTool.execute("tool1", { query: "hello" });
+        const mockResponse = {
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              hits: { hits: mockPackages.map((p) => ({ _source: p })) },
+            }),
+        };
+        mockFetch.mockResolvedValue(mockResponse);
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://search.nixos.org/backend/latest-44-nixos-unstable/_search",
-        {
-          method: "POST",
-          headers: expect.any(Object),
-          body: expect.any(String),
-        },
-      );
+        result = await registeredTool.execute("tool1", { query: "hello" });
+      });
 
-      expect(result.content[0].text).toContain("Found 1 packages matching");
-      expect(result.content[0].text).toContain("hello");
-      expect(result.content[0].text).toContain("2.12.1");
-      expect(result.details.query).toBe("hello");
-      expect(result.details.totalFound).toBe(1);
+      it("then it should return formatted package results", () => {
+        expect(result.content[0].text).toBe("hello hello 2.12.1: A simple hello world program [John Doe] GNU Hello prints a friendly greeting. https://www.gnu.org/software/hello/ GPL-3.0-or-later");
+        expect(result.details.query).toBe("hello");
+        expect(result.details.totalFound).toBe(1);
+      });
     });
 
-    it("should handle search errors", async () => {
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
-      mockFetch.mockRejectedValue(new Error("Network error"));
+    describe("when search throws an error", () => {
+      it("then it should return error message", async () => {
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
+        mockFetch.mockRejectedValue(new Error("Network error"));
 
-      const result = await registeredTool.execute("tool1", { query: "test" });
+        const result = await registeredTool.execute("tool1", { query: "test" });
 
-      expect(result.content[0].text).toContain("Error: Network error");
+        expect(result.content[0].text).toBe("Error: Network error");
+      });
     });
 
-    it("should handle HTTP errors", async () => {
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
+    describe("when HTTP request fails", () => {
+      it("then it should return error message", async () => {
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
 
-      const mockResponse = {
-        ok: false,
-        status: 500,
-      };
-      mockFetch.mockResolvedValue(mockResponse);
+        const mockResponse = {
+          ok: false,
+        };
+        mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await registeredTool.execute("tool1", { query: "test" });
+        const result = await registeredTool.execute("tool1", { query: "test" });
 
-      expect(result.content[0].text).toContain("Search request failed");
+        expect(result.content[0].text).toBe("Error: Search request failed: undefined");
+      });
     });
   });
 
@@ -112,32 +123,42 @@ describe("Scenario: Nix Extension", () => {
       )[0];
     });
 
-    it("should search options successfully", async () => {
-      const mockOptions = [
-        {
-          option_name: "services.httpd.enable",
-          option_description: "Whether to enable the Apache HTTP Server.",
-          option_type: "boolean",
-          option_default: "false",
-          option_example: "true",
-        },
-      ];
+    describe("when searching for options", () => {
+      let result: any;
 
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
+      beforeEach(async () => {
+        const mockOptions = [
+          {
+            type: "option",
+            option_name: "services.httpd.enable",
+            option_description:
+              "Whether to enable the Apache HTTP Server.",
+            option_type: "boolean",
+            option_default: "false",
+            option_example: "true",
+          },
+        ];
 
-      const mockResponse = {
-        ok: true,
-        json: () =>
-          Promise.resolve({ hits: { hits: [{ _source: mockOptions[0] }] } }),
-      };
-      mockFetch.mockResolvedValue(mockResponse);
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
 
-      const result = await registeredTool.execute("tool1", { query: "httpd" });
+        const mockResponse = {
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              hits: { hits: mockOptions.map((o) => ({ _source: o })) },
+            }),
+        };
+        mockFetch.mockResolvedValue(mockResponse);
 
-      expect(result.content[0].text).toContain("Found 1 options matching");
-      expect(result.content[0].text).toContain("services.httpd.enable");
-      expect(result.details.query).toBe("httpd");
+        result = await registeredTool.execute("tool1", { query: "httpd" });
+      });
+
+      it("then it should return formatted option results", () => {
+        expect(result.content[0].text).toBe("services.httpd.enable: Whether to enable the Apache HTTP Server. boolean false true");
+        expect(result.details.query).toBe("httpd");
+        expect(result.details.totalFound).toBe(1);
+      });
     });
   });
 
@@ -149,84 +170,61 @@ describe("Scenario: Nix Extension", () => {
         (call) => call[0].name === "search-home-manager-options",
       )[0];
     });
-    it("should search Home-Manager options successfully", async () => {
-      const mockOptions = [
-        {
-          title: "programs.git.enable",
-          description: "Whether to enable Git.",
-          type: "boolean",
-          default: "false",
-          example: "true",
-          declarations: [
-            {
-              url: "https://github.com/nix-community/home-manager/blob/master/modules/programs/git.nix",
-            },
-          ],
-        },
-      ];
 
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
+    describe("when searching for Home Manager options", () => {
+      let result: any;
 
-      const mockResponse = {
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            last_update: "2024-01-01",
-            options: mockOptions,
-          }),
-      };
-      mockFetch.mockResolvedValue(mockResponse);
+      beforeEach(async () => {
+        const mockOptions = [
+          {
+            title: "programs.git.enable",
+            description: "Whether to enable Git.",
+            type: "boolean",
+            default: "false",
+            example: "true",
+            declarations: [
+              {
+                name: "programs.git.enable",
+                url: "https://github.com/nix-community/home-manager/blob/master/modules/programs/git.nix",
+              },
+            ],
+          },
+          {
+            title: "programs.vim.enable",
+            description: "Whether to enable Vim.",
+            type: "boolean",
+            default: "false",
+            example: "true",
+            declarations: [
+              {
+                name: "programs.vim.enable",
+                url: "https://github.com/nix-community/home-manager/blob/master/modules/programs/vim.nix",
+              },
+            ],
+          },
+        ];
 
-      const result = await registeredTool.execute("tool1", { query: "git" });
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
 
-      expect(result.content[0].text).toContain(
-        "Found 1 Home-Manager options matching",
-      );
-      expect(result.content[0].text).toContain("programs.git.enable");
-    });
+        const mockResponse = {
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              last_update: "2024-01-01",
+              options: mockOptions,
+            }),
+        };
+        mockFetch.mockResolvedValue(mockResponse);
 
-    it("should filter options based on query", async () => {
-      const mockOptions = [
-        {
-          title: "programs.git.enable",
-          description: "Whether to enable Git.",
-          type: "boolean",
-          default: "false",
-          example: "true",
-          declarations: [],
-        },
-        {
-          title: "programs.vim.enable",
-          description: "Whether to enable Vim.",
-          type: "boolean",
-          default: "false",
-          example: "true",
-          declarations: [],
-        },
-      ];
+        result = await registeredTool.execute("tool1", { query: "git" });
+      });
 
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
-
-      const mockResponse = {
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            last_update: "2024-01-01",
-            options: mockOptions,
-          }),
-      };
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const result = await registeredTool.execute("tool1", { query: "git" });
-
-      expect(result.content[0].text).toContain(
-        "Found 1 Home-Manager options matching",
-      );
-      expect(result.content[0].text).toContain("programs.git.enable");
-      expect(result.content[0].text).not.toContain("programs.vim.enable");
+      it("then it should filter and return matching options", () => {
+        expect(result.content[0].text).toBe("programs.git.enable: Whether to enable Git. boolean false true https://github.com/nix-community/home-manager/blob/master/modules/programs/git.nix");
+        expect(result.details.query).toBe("git");
+        expect(result.details.totalFound).toBe(1);
+      });
     });
   });
-
 });

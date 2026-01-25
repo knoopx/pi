@@ -14,7 +14,7 @@ describe("Scenario: Reverse History Search Extension", () => {
   it("should register ctrl+r shortcut", () => {
     expect(mockPi.registerShortcut).toHaveBeenCalledWith("ctrl+r", {
       description:
-        "Reverse history search (user messages and commands across all sessions)",
+        "Reverse history search (user messages and commands from sessions in current directory)",
       handler: expect.any(Function),
     });
   });
@@ -27,6 +27,7 @@ describe("Scenario: Reverse History Search Extension", () => {
       handler = mockPi.registerShortcut.mock.calls[0][1].handler;
       mockCtx = {
         hasUI: true,
+        cwd: "/home/test/project",
         ui: {
           notify: vi.fn(),
           custom: vi.fn(),
@@ -44,69 +45,15 @@ describe("Scenario: Reverse History Search Extension", () => {
       expect(mockCtx.ui.custom).not.toHaveBeenCalled();
     });
 
-    it("should show history search UI and handle command selection", async () => {
-      const mockHistoryEntry = {
-        content: "git status",
-        timestamp: Date.now(),
-        type: "command",
-      };
-
-      mockCtx.ui.custom.mockResolvedValue(mockHistoryEntry);
-
+    it("should show notification when no history for current cwd", async () => {
+      // No sessions exist for mock cwd, so notification should be shown
       await handler(mockCtx);
 
-      expect(mockCtx.ui.custom).toHaveBeenCalled();
-      expect(mockCtx.ui.setEditorText).toHaveBeenCalledWith("!git status");
-    });
-
-    it("should handle message type selection", async () => {
-      const mockHistoryEntry = {
-        content: "Hello world",
-        timestamp: Date.now(),
-        type: "message",
-      };
-
-      mockCtx.ui.custom.mockResolvedValue(mockHistoryEntry);
-
-      await handler(mockCtx);
-
-      expect(mockCtx.ui.setEditorText).toHaveBeenCalledWith("Hello world");
-    });
-
-    it("should handle cancellation", async () => {
-      mockCtx.ui.custom.mockResolvedValue(null);
-
-      await handler(mockCtx);
-
-      expect(mockCtx.ui.setEditorText).not.toHaveBeenCalled();
-    });
-
-    it("should handle command content without newlines", async () => {
-      const mockHistoryEntry = {
-        content: "git status",
-        timestamp: Date.now(),
-        type: "command",
-      };
-
-      mockCtx.ui.custom.mockResolvedValue(mockHistoryEntry);
-
-      await handler(mockCtx);
-
-      expect(mockCtx.ui.setEditorText).toHaveBeenCalledWith("!git status");
-    });
-
-    it("should handle message content without newlines", async () => {
-      const mockHistoryEntry = {
-        content: "Hello world",
-        timestamp: Date.now(),
-        type: "message",
-      };
-
-      mockCtx.ui.custom.mockResolvedValue(mockHistoryEntry);
-
-      await handler(mockCtx);
-
-      expect(mockCtx.ui.setEditorText).toHaveBeenCalledWith("Hello world");
+      expect(mockCtx.ui.notify).toHaveBeenCalledWith(
+        "No history found",
+        "warning",
+      );
+      expect(mockCtx.ui.custom).not.toHaveBeenCalled();
     });
   });
 

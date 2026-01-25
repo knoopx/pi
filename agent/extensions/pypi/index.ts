@@ -114,8 +114,8 @@ Returns matching packages with metadata.`,
               (await directResponse.json()) as PyPIPackageResponse;
             const info = data.info;
             return textResult(
-              `Found 1 package matching "${query}":\n\n**${info.name}** (${info.version})\n${info.summary || "No description available"}\n`,
-              { query, total: 1, returned: 1 },
+              `${info.name} ${info.version}: ${info.summary||"-"}`,
+              { query, total: 1, returned: 1, info },
             );
           }
 
@@ -167,8 +167,8 @@ Returns matching packages with metadata.`,
               (await fallbackResponse.json()) as PyPIPackageResponse;
             const info = data.info;
             return textResult(
-              `Found 1 package matching "${query}":\n\n**${info.name}** (${info.version})\n${info.summary || "No description available"}\n`,
-              { query, total: 1, returned: 1 },
+              `${info.name} ${info.version}: ${info.summary||"-"}`,
+              { query, total: 1, returned: 1, info },
             );
           }
 
@@ -183,16 +183,13 @@ Returns matching packages with metadata.`,
           };
         }
 
-        let output = `Found ${packages.length} package(s) matching "${query}":\n\n`;
-        for (const pkg of packages) {
-          output += `**${pkg.name}** (${pkg.version})\n`;
-          output += `${pkg.description}\n\n`;
-        }
+        const output = packages.map(p => `${p.name} ${p.version}: ${p.description}`).join('\n');
 
         return textResult(output, {
           query,
           total: packages.length,
           returned: packages.length,
+          packages,
         });
       } catch (error) {
         return {
@@ -265,37 +262,20 @@ Shows comprehensive package details from PyPI.`,
         const data = (await response.json()) as PyPIPackageResponse;
         const info = data.info;
 
-        let output = `Package: ${info.name}\n\n`;
-        output += `**Version:** ${info.version}\n`;
-        output += `**Summary:** ${info.summary || "No summary"}\n`;
-        output += `**Home-page:** ${info.home_page || info.project_url || "Not specified"}\n`;
-        output += `**Author:** ${info.author || info.maintainer || "Unknown"}\n`;
-        output += `**Author Email:** ${info.author_email || info.maintainer_email || "Not specified"}\n`;
-        output += `**License:** ${info.license || "Unknown"}\n`;
-        output += `**Python Requires:** ${info.requires_python || "Not specified"}\n`;
-
+        const author = info.author || info.maintainer || "-";
+        let result = `${info.name} ${info.version}: ${info.summary||"-"} [${author}]`;
+        if (info.license) result += ` ${info.license}`;
+        if (info.requires_python) result += ` ${info.requires_python}`;
+        if (info.home_page || info.project_url) result += ` ${info.home_page||info.project_url}`;
+        if (info.author_email || info.maintainer_email) result += ` ${info.author_email||info.maintainer_email}`;
         if (info.requires_dist && info.requires_dist.length > 0) {
-          // Show first 20 dependencies to avoid overwhelming output
-          const deps = info.requires_dist.slice(0, 20);
-          output += `**Dependencies:** ${deps.join(", ")}`;
-          if (info.requires_dist.length > 20) {
-            output += ` ... and ${info.requires_dist.length - 20} more`;
-          }
-          output += "\n";
+          const deps = info.requires_dist.slice(0, 20).join(" ");
+          result += ` ${deps}${info.requires_dist.length > 20 ? ` +${info.requires_dist.length-20}` : ""}`;
         }
+        if (info.project_urls) result += ` ${Object.entries(info.project_urls).map(([k,v])=>`${k}:${v}`).join(" ")}`;
+        if (info.keywords) result += ` ${info.keywords}`;
 
-        if (info.project_urls) {
-          output += `\n**Project URLs:**\n`;
-          for (const [name, url] of Object.entries(info.project_urls)) {
-            output += `  - ${name}: ${url}\n`;
-          }
-        }
-
-        if (info.keywords) {
-          output += `\n**Keywords:** ${info.keywords}\n`;
-        }
-
-        return textResult(output, { package: packageName, info });
+        return textResult(result, { package: packageName, info });
       } catch (error) {
         return {
           content: [

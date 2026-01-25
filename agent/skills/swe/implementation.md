@@ -156,6 +156,29 @@ Before writing new code:
 // New code: orderService.getById(orderId)  // Consistent!
 ```
 
+### Avoid Barrel Files and Re-exports
+
+**Barrel files (`index.ts` re-exporting siblings) are an anti-pattern.** They hide dependencies, create circular import risks, and force wide rebuilds when unrelated exports change.
+
+```
+❌ BAD: Barrel file
+// src/users/index.ts
+export * from "./user-service";
+export * from "./user-repository";
+
+// usage
+import { userService } from "./users";
+
+✅ GOOD: Direct imports
+import { userService } from "./users/user-service";
+import { userRepository } from "./users/user-repository";
+```
+
+**Rules:**
+- Import from the concrete module, not `index.ts`
+- Don't add re-export layers unless a framework explicitly requires it
+- Prefer explicit dependencies over convenience
+
 **Analyze existing patterns with codemapper:**
 
 ```bash

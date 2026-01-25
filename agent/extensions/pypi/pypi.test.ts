@@ -10,13 +10,11 @@ describe("Scenario: PyPI Extension", () => {
       registerTool: vi.fn(),
       exec: vi.fn(),
     };
-    // Save original fetch
     originalFetch = globalThis.fetch;
     setupPyPIExtension(mockPi);
   });
 
   afterEach(() => {
-    // Restore original fetch
     globalThis.fetch = originalFetch;
   });
 
@@ -42,105 +40,110 @@ describe("Scenario: PyPI Extension", () => {
       )[0];
     });
 
-    it("should search packages via HTML scraping", async () => {
-      const mockHtml = `
-        <a class="package-snippet" href="/project/requests/">
-          <span class="package-snippet__name">requests</span>
-          <span class="package-snippet__version">2.31.0</span>
-          <p class="package-snippet__description">Python HTTP for Humans.</p>
-        </a>
-        <a class="package-snippet" href="/project/requests-oauthlib/">
-          <span class="package-snippet__name">requests-oauthlib</span>
-          <span class="package-snippet__version">1.3.1</span>
-          <p class="package-snippet__description">OAuthlib authentication support for Requests.</p>
-        </a>
-      `;
+    describe("when search returns valid HTML results", () => {
+      let result: any;
 
-      globalThis.fetch = vi.fn().mockResolvedValueOnce({
-        ok: true,
-        text: async () => mockHtml,
+      beforeEach(async () => {
+        const mockHtml = `
+          <a class="package-snippet" href="/project/requests/">
+            <span class="package-snippet__name">requests</span>
+            <span class="package-snippet__version">2.31.0</span>
+            <p class="package-snippet__description">Python HTTP for Humans.</p>
+          </a>
+          <a class="package-snippet" href="/project/requests-oauthlib/">
+            <span class="package-snippet__name">requests-oauthlib</span>
+            <span class="package-snippet__version">1.3.1</span>
+            <p class="package-snippet__description">OAuthlib authentication support for Requests.</p>
+          </a>
+        `;
+
+        globalThis.fetch = vi.fn().mockResolvedValueOnce({
+          ok: true,
+          text: async () => mockHtml,
+        });
+
+        result = await registeredTool.execute("tool1", {
+          query: "requests",
+          limit: 5,
+        });
       });
 
-      const result = await registeredTool.execute("tool1", {
-        query: "requests",
-        limit: 5,
+      it("then it should call PyPI search endpoint", () => {
+        expect(globalThis.fetch).toHaveBeenCalledWith(
+          "https://pypi.org/search/?q=requests&o=",
+          expect.objectContaining({
+            headers: { Accept: "application/vnd.pypi.simple.v1+json" },
+          }),
+        );
       });
 
-      expect(globalThis.fetch).toHaveBeenCalledWith(
-        "https://pypi.org/search/?q=requests&o=",
-        expect.objectContaining({
-          headers: { Accept: "application/vnd.pypi.simple.v1+json" },
-        }),
-      );
-      expect(result.content[0].text).toContain("Found 2 package(s) matching");
-      expect(result.content[0].text).toContain("**requests** (2.31.0)");
-      expect(result.content[0].text).toContain("Python HTTP for Humans.");
-      expect(result.details.query).toBe("requests");
-      expect(result.details.total).toBe(2);
+      it("then it should return packages in compact format", () => {
+        expect(result.content[0].text).toBe("requests 2.31.0: Python HTTP for Humans.\nrequests-oauthlib 1.3.1: OAuthlib authentication support for Requests.");
+        expect(result.details.query).toBe("requests");
+        expect(result.details.total).toBe(2);
+      });
     });
 
-    it("should fallback to direct lookup when search fails", async () => {
-      const mockFetch = vi.fn();
-      // First call (search) fails
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
+    describe("when search fails and fallback succeeds", () => {
+      let result: any;
+
+      beforeEach(async () => {
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
+        mockFetch
+          .mockResolvedValueOnce({
+            ok: false,
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+              info: {
+                name: "requests",
+                version: "2.31.0",
+                summary: "Python HTTP for Humans.",
+              },
+            }),
+          });
+
+        result = await registeredTool.execute("tool1", { query: "requests" });
       });
 
-      // Second call (direct lookup) succeeds
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          info: {
-            name: "requests",
-            version: "2.31.0",
-            summary: "Python HTTP for Humans.",
-          },
-        }),
+      it("then it should fallback to direct package lookup", () => {
+        expect(result.content[0].text).toBe("requests 2.31.0: Python HTTP for Humans.");
+        expect(result.details.total).toBe(1);
       });
-
-      globalThis.fetch = mockFetch;
-
-      const result = await registeredTool.execute("tool1", {
-        query: "requests",
-      });
-
-      expect(result.content[0].text).toContain("Found 1 package matching");
-      expect(result.content[0].text).toContain("**requests** (2.31.0)");
     });
 
-    it("should handle no results", async () => {
-      const mockFetch = vi.fn();
-      // Search returns empty HTML
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        text: async () => "<html><body>No results</body></html>",
+    describe("when search returns no results", () => {
+      it("then it should return empty result message", async () => {
+        globalThis.fetch = vi.fn().mockResolvedValueOnce({
+          ok: true,
+          text: async () => "<html></html>",
+        });
+
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
+        mockFetch.mockResolvedValueOnce({
+          ok: true,
+          text: async () => "<html></html>",
+        }).mockResolvedValueOnce({
+          ok: false,
+        });
+
+        const result = await registeredTool.execute("tool1", { query: "nonexistent-pkg-xyz-123" });
+
+        expect(result.content[0].text).toContain('No packages found matching "nonexistent-pkg-xyz-123"');
       });
-
-      // Direct lookup also fails
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-      });
-
-      globalThis.fetch = mockFetch;
-
-      const result = await registeredTool.execute("tool1", {
-        query: "nonexistent-package-xyz",
-      });
-
-      expect(result.content[0].text).toContain("No packages found matching");
     });
 
-    it("should handle fetch errors", async () => {
-      globalThis.fetch = vi
-        .fn()
-        .mockRejectedValueOnce(new Error("Network error"));
+    describe("when fetch throws an error", () => {
+      it("then it should return error message", async () => {
+        globalThis.fetch = vi.fn().mockRejectedValue(new Error("Network error"));
 
-      const result = await registeredTool.execute("tool1", { query: "test" });
+        const result = await registeredTool.execute("tool1", { query: "requests" });
 
-      expect(result.content[0].text).toContain("Failed to search packages");
-      expect(result.content[0].text).toContain("Network error");
+        expect(result.content[0].text).toBe("Failed to search packages: Error: Network error");
+      });
     });
   });
 
@@ -153,117 +156,111 @@ describe("Scenario: PyPI Extension", () => {
       )[0];
     });
 
-    it("should show package info from PyPI API", async () => {
-      const mockPackageInfo = {
-        info: {
-          name: "requests",
-          version: "2.31.0",
-          summary: "Python HTTP for Humans.",
-          home_page: "https://requests.readthedocs.io/",
-          author: "Kenneth Reitz",
-          author_email: "me@kennethreitz.org",
-          license: "Apache 2.0",
-          requires_python: ">=3.7",
-          requires_dist: ["urllib3", "certifi", "charset-normalizer", "idna"],
-          project_urls: {
-            Documentation: "https://requests.readthedocs.io/",
-            Source: "https://github.com/psf/requests",
-          },
-          keywords: "http client",
-        },
-      };
+    describe("when package exists on PyPI", () => {
+      let result: any;
 
-      globalThis.fetch = vi.fn().mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockPackageInfo,
+      beforeEach(async () => {
+        globalThis.fetch = vi.fn().mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            info: {
+              name: "requests",
+              version: "2.31.0",
+              summary: "Python HTTP for Humans.",
+              home_page: "https://requests.readthedocs.io/",
+              author: "Kenneth Reitz",
+              license: "Apache 2.0",
+            },
+          }),
+        });
+
+        result = await registeredTool.execute("tool1", {
+          package: "requests",
+        });
       });
 
-      const result = await registeredTool.execute("tool1", {
-        package: "requests",
+      it("then it should fetch package info from PyPI", () => {
+        expect(globalThis.fetch).toHaveBeenCalledWith(
+          "https://pypi.org/pypi/requests/json",
+          expect.objectContaining({ signal: undefined }),
+        );
       });
 
-      expect(globalThis.fetch).toHaveBeenCalledWith(
-        "https://pypi.org/pypi/requests/json",
-        expect.objectContaining({ signal: undefined }),
-      );
-      expect(result.content[0].text).toContain("Package: requests");
-      expect(result.content[0].text).toContain("**Version:** 2.31.0");
-      expect(result.content[0].text).toContain(
-        "**Summary:** Python HTTP for Humans.",
-      );
-      expect(result.content[0].text).toContain("**Author:** Kenneth Reitz");
-      expect(result.content[0].text).toContain("**License:** Apache 2.0");
-      expect(result.content[0].text).toContain(
-        "**Dependencies:** urllib3, certifi, charset-normalizer, idna",
-      );
-      expect(result.content[0].text).toContain("**Project URLs:**");
-      expect(result.details.package).toBe("requests");
+      it("then it should return package in compact format", () => {
+        expect(result.content[0].text).toBe("requests 2.31.0: Python HTTP for Humans. [Kenneth Reitz] Apache 2.0 https://requests.readthedocs.io/");
+        expect(result.details.package).toBe("requests");
+      });
     });
 
-    it("should handle package not found on PyPI", async () => {
-      globalThis.fetch = vi.fn().mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-      });
+    describe("when package has many dependencies", () => {
+      it("then it should truncate and show count", async () => {
+        const requiresDist = Array.from({ length: 30 }, (_, i) => `dep${i}`);
 
-      const result = await registeredTool.execute("tool1", {
-        package: "nonexistent-package",
-      });
+        globalThis.fetch = vi.fn().mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            info: {
+              name: "big-package",
+              version: "1.0.0",
+              summary: "A package with many deps",
+              requires_dist: requiresDist,
+            },
+          }),
+        });
 
-      expect(result.content[0].text).toContain(
-        'Package "nonexistent-package" not found on PyPI.',
-      );
+        const result = await registeredTool.execute("tool1", {
+          package: "big-package",
+        });
+
+        expect(result.content[0].text).toContain("+10");
+      });
     });
 
-    it("should handle HTTP errors", async () => {
-      globalThis.fetch = vi.fn().mockResolvedValueOnce({
-        ok: false,
-        status: 500,
+    describe("when package is not found on PyPI", () => {
+      let result: any;
+
+      beforeEach(async () => {
+        globalThis.fetch = vi.fn().mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        });
+
+        result = await registeredTool.execute("tool1", {
+          package: "nonexistent-pkg-xyz-123",
+        });
       });
 
-      const result = await registeredTool.execute("tool1", {
-        package: "requests",
+      it("then it should return not found message", () => {
+        expect(result.content[0].text).toContain('not found on PyPI');
+        expect(result.details.package).toBe("nonexistent-pkg-xyz-123");
       });
-
-      expect(result.content[0].text).toContain(
-        "Error fetching package info: HTTP 500",
-      );
     });
 
-    it("should handle fetch errors", async () => {
-      globalThis.fetch = vi
-        .fn()
-        .mockRejectedValueOnce(new Error("Network error"));
+    describe("when HTTP request fails", () => {
+      it("then it should return error message", async () => {
+        globalThis.fetch = vi.fn().mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+        });
 
-      const result = await registeredTool.execute("tool1", {
-        package: "requests",
+        const result = await registeredTool.execute("tool1", {
+          package: "requests",
+        });
+
+        expect(result.content[0].text).toBe("Error fetching package info: HTTP 500");
       });
-
-      expect(result.content[0].text).toContain("Failed to show package info");
-      expect(result.content[0].text).toContain("Network error");
     });
 
-    it("should handle packages with many dependencies", async () => {
-      const manyDeps = Array.from({ length: 30 }, (_, i) => `dep${i}`);
-      const mockPackageInfo = {
-        info: {
-          name: "big-package",
-          version: "1.0.0",
-          summary: "A package with many deps",
-          requires_dist: manyDeps,
-        },
-      };
+    describe("when fetch throws an error", () => {
+      it("then it should return error message", async () => {
+        globalThis.fetch = vi.fn().mockRejectedValue(new Error("Network error"));
 
-      globalThis.fetch = vi.fn().mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockPackageInfo,
+        const result = await registeredTool.execute("tool1", {
+          package: "requests",
+        });
+
+        expect(result.content[0].text).toBe("Failed to show package info: Error: Network error");
       });
-
-      const result = await registeredTool.execute("tool1", {
-        package: "big-package",
-      });
-
-      expect(result.content[0].text).toContain("... and 10 more");
     });
   });
 });

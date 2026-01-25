@@ -201,18 +201,12 @@ async function searchNpmPackages(
       author: String(obj?.package?.author?.name ?? "Unknown"),
     }));
 
-    const result = packages
-      .map(
-        (pkg) =>
-          `**${pkg.name}** (${pkg.version})\n${pkg.description}\nAuthor: ${pkg.author}\nKeywords: ${pkg.keywords.join(
-            ", ",
-          )}\n---`,
-      )
-      .join("\n");
+    const result = packages.map((pkg) => `${pkg.name} ${pkg.version}: ${pkg.description} [${pkg.author}] ${pkg.keywords.join(",")}`).join("\n");
 
     return textResult(result || "No packages found.", {
       query,
       count: packages.length,
+      packages,
     });
   } catch (error) {
     return {
@@ -290,9 +284,9 @@ async function getNpmPackageInfo(
         : 0,
     };
 
-    const result = `**${info.name}**\n\n${info.description}\n\n- **Author:** ${info.author}\n- **Maintainers:** ${info.maintainers}\n- **Latest Version:** ${info.latestVersion}\n- **License:** ${info.license}\n- **Homepage:** ${info.homepage || "N/A"}\n- **Repository:** ${info.repository || "N/A"}\n- **Keywords:** ${info.keywords}\n- **Dependencies:** ${info.dependencies}\n- **Dev Dependencies:** ${info.devDependencies}`;
+    const result = `${info.name} ${info.latestVersion}: ${info.description} [${info.author}] ${info.license} ${info.homepage} ${info.repository} ${info.keywords} ${info.dependencies} ${info.devDependencies}`;
 
-    return textResult(result, { package: pkg });
+    return textResult(result, { package: pkg, info });
   } catch (error) {
     return {
       content: [
@@ -344,13 +338,9 @@ async function getNpmPackageVersions(
     const versions = Object.keys(data?.versions ?? {});
     const distTags = (data?.["dist-tags"] ?? {}) as Record<string, string>;
 
-    let result = `**${data?.name ?? pkg} Versions**\n\n**Dist Tags:**\n`;
-    for (const [tag, version] of Object.entries(distTags)) {
-      result += `- ${tag}: ${version}\n`;
-    }
-    result += `\n**All Versions (latest first):**\n${versions.join("\n")}`;
+    const result = `${data?.name ?? pkg} ${versions.length} versions ${Object.entries(distTags).map(([t,v])=>`${t}:${v}`).join(",")} ${versions.join(",")}`;
 
-    return textResult(result, { package: pkg, count: versions.length });
+    return textResult(result, { package: pkg, count: versions.length, distTags, versions });
   } catch (error) {
     return {
       content: [

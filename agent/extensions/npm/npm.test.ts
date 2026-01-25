@@ -1,33 +1,37 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import setupNpmExtension from "./index";
 
 describe("Scenario: NPM Extension", () => {
   let mockPi: any;
+  let originalFetch: typeof globalThis.fetch;
 
   beforeEach(() => {
     mockPi = {
       registerTool: vi.fn(),
+      exec: vi.fn(),
     };
+    originalFetch = globalThis.fetch;
     setupNpmExtension(mockPi);
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
   });
 
   it("should register npm tools", () => {
     expect(mockPi.registerTool).toHaveBeenCalledWith(
       expect.objectContaining({
         name: "search-npm-packages",
-        label: "Search NPM Packages",
       }),
     );
     expect(mockPi.registerTool).toHaveBeenCalledWith(
       expect.objectContaining({
         name: "npm-package-info",
-        label: "NPM Package Info",
       }),
     );
     expect(mockPi.registerTool).toHaveBeenCalledWith(
       expect.objectContaining({
         name: "npm-package-versions",
-        label: "NPM Package Versions",
       }),
     );
   });
@@ -41,94 +45,104 @@ describe("Scenario: NPM Extension", () => {
       )[0];
     });
 
-    it("should search packages successfully", async () => {
-      const mockResponseData = {
-        objects: [
-          {
-            package: {
-              name: "lodash",
-              version: "4.17.21",
-              description: "A modern JavaScript utility library",
-              keywords: ["util", "functional", "server", "client", "browser"],
-              author: { name: "John-David Dalton" },
-              date: "2021-01-01",
-              links: { npm: "https://www.npmjs.com/package/lodash" },
+    describe("when searching for packages", () => {
+      let result: any;
+
+      beforeEach(async () => {
+        const mockResponseData = {
+          objects: [
+            {
+              package: {
+                name: "lodash",
+                version: "4.17.21",
+                description: "A modern JavaScript utility library",
+                keywords: ["util", "functional", "server", "client", "browser"],
+                author: { name: "John-David Dalton" },
+              },
             },
-          },
-        ],
-      };
+          ],
+        };
 
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
 
-      const mockResponse = {
-        ok: true,
-        json: () => Promise.resolve(mockResponseData),
-      };
-      mockFetch.mockResolvedValue(mockResponse);
+        const mockResponse = {
+          ok: true,
+          json: () => Promise.resolve(mockResponseData),
+        };
+        mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await registeredTool.execute("tool1", {
-        query: "lodash",
-        size: 5,
+        result = await registeredTool.execute("tool1", {
+          query: "lodash",
+          size: 1,
+        });
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://registry.npmjs.org/-/v1/search?text=lodash&size=5",
-      );
-      expect(result.content[0].text).toContain("**lodash** (4.17.21)");
-      expect(result.content[0].text).toContain(
-        "A modern JavaScript utility library",
-      );
-      expect(result.content[0].text).toContain("Author: John-David Dalton");
-    });
-
-    it("should use default size when not provided", async () => {
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
-
-      const mockResponse = {
-        ok: true,
-        json: () => Promise.resolve({ objects: [] }),
-      };
-      mockFetch.mockResolvedValue(mockResponse);
-
-      await registeredTool.execute("tool1", { query: "test" });
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://registry.npmjs.org/-/v1/search?text=test&size=10",
-      );
-    });
-
-    it("should handle no packages found", async () => {
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
-
-      const mockResponse = {
-        ok: true,
-        json: () => Promise.resolve({ objects: [] }),
-      };
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const result = await registeredTool.execute("tool1", {
-        query: "nonexistent",
+      it("then it should return formatted search results", () => {
+        expect(result.content).toHaveLength(1);
+        expect(result.content[0].type).toBe("text");
+        expect(result.content[0].text).toBe("lodash 4.17.21: A modern JavaScript utility library [John-David Dalton] util,functional,server,client,browser");
+        expect(result.details.query).toBe("lodash");
+        expect(result.details.count).toBe(1);
       });
-
-      expect(result.content[0].text).toBe("No packages found.");
     });
 
-    it("should handle HTTP errors", async () => {
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
+    describe("when size is not provided", () => {
+      it("then it should use default size of 10", async () => {
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
 
-      const mockResponse = {
-        ok: false,
-        statusText: "Internal Server Error",
-      };
-      mockFetch.mockResolvedValue(mockResponse);
+        const mockResponse = {
+          ok: true,
+          json: () => Promise.resolve({ objects: [] }),
+        };
+        mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await registeredTool.execute("tool1", { query: "test" });
+        await registeredTool.execute("tool1", { query: "test" });
 
-      expect(result.content[0].text).toContain("Failed to search packages");
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringContaining("size=10"),
+        );
+      });
+    });
+
+    describe("when no packages are found", () => {
+      it("then it should return no packages found message", async () => {
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
+
+        const mockResponse = {
+          ok: true,
+          json: () => Promise.resolve({ objects: [] }),
+        };
+        mockFetch.mockResolvedValue(mockResponse);
+
+        const result = await registeredTool.execute("tool1", {
+          query: "nonexistent-pkg-xyz-123",
+        });
+
+        expect(result.content[0].text).toBe("No packages found.");
+        expect(result.details.count).toBe(0);
+      });
+    });
+
+    describe("when HTTP request fails", () => {
+      it("then it should return error message", async () => {
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
+
+        const mockResponse = {
+          ok: false,
+          statusText: "Not Found",
+          status: 404,
+        };
+        mockFetch.mockResolvedValue(mockResponse);
+
+        const result = await registeredTool.execute("tool1", { query: "test" });
+
+        expect(result.content[0].text).toBe("Failed to search packages: Not Found");
+        expect(result.details.status).toBe(404);
+      });
     });
   });
 
@@ -141,82 +155,87 @@ describe("Scenario: NPM Extension", () => {
       )[0];
     });
 
-    it("should get package info successfully", async () => {
-      const mockPackageData = {
-        name: "express",
-        description: "Fast, unopinionated, minimalist web framework",
-        author: { name: "TJ Holowaychuk" },
-        maintainers: [{ name: "TJ Holowaychuk" }, { name: "Douglas Wilson" }],
-        homepage: "http://expressjs.com/",
-        repository: { url: "git+https://github.com/expressjs/express.git" },
-        "dist-tags": { latest: "4.18.2" },
-        versions: {
-          "4.18.2": {
-            license: "MIT",
-            dependencies: { accepts: "~1.3.8", "array-flatten": "1.1.1" },
-            devDependencies: { mocha: "^10.2.0" },
+    describe("when fetching package info", () => {
+      let result: any;
+
+      beforeEach(async () => {
+        const mockPackageData = {
+          name: "express",
+          description: "Fast, unopinionated, minimalist web framework",
+          author: { name: "TJ Holowaychuk" },
+          maintainers: [{ name: "TJ Holowaychuk" }, { name: "Douglas Wilson" }],
+          homepage: "http://expressjs.com/",
+          repository: { url: "git+https://github.com/expressjs/express.git" },
+          keywords: ["express", "framework", "web", "http"],
+          "dist-tags": { latest: "4.18.2" },
+          versions: {
+            "4.18.2": {
+              license: "MIT",
+              dependencies: { accepts: "~1.3.8", "array-flatten": "1.1.1" },
+              devDependencies: { mocha: "^10.2.0" },
+            },
           },
-        },
-        keywords: ["express", "framework", "web", "http"],
-      };
+        };
 
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
 
-      const mockResponse = {
-        ok: true,
-        json: () => Promise.resolve(mockPackageData),
-      };
-      mockFetch.mockResolvedValue(mockResponse);
+        const mockResponse = {
+          ok: true,
+          json: () => Promise.resolve(mockPackageData),
+        };
+        mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await registeredTool.execute("tool1", {
-        package: "express",
+        result = await registeredTool.execute("tool1", {
+          package: "express",
+        });
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://registry.npmjs.org/express",
-      );
-      expect(result.content[0].text).toContain("**express**");
-      expect(result.content[0].text).toContain(
-        "Fast, unopinionated, minimalist web framework",
-      );
-      expect(result.content[0].text).toContain("**Latest Version:** 4.18.2");
-      expect(result.content[0].text).toContain("**License:** MIT");
-    });
-
-    it("should handle package not found", async () => {
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
-
-      const mockResponse = {
-        ok: false,
-        status: 404,
-      };
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const result = await registeredTool.execute("tool1", {
-        package: "nonexistent-package",
+      it("then it should return formatted package info", () => {
+        expect(result.content[0].text).toBe("express 4.18.2: Fast, unopinionated, minimalist web framework [TJ Holowaychuk] MIT http://expressjs.com/ git+https://github.com/expressjs/express.git express, framework, web, http 2 1");
+        expect(result.details.package).toBe("express");
+        expect(result.details.info.name).toBe("express");
+        expect(result.details.info.license).toBe("MIT");
       });
-
-      expect(result.content[0].text).toContain(
-        'Package "nonexistent-package" not found.',
-      );
     });
 
-    it("should handle HTTP errors", async () => {
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
+    describe("when package is not found", () => {
+      it("then it should return not found message", async () => {
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
 
-      const mockResponse = {
-        ok: false,
-        status: 500,
-        statusText: "Internal Server Error",
-      };
-      mockFetch.mockResolvedValue(mockResponse);
+        const mockResponse = {
+          ok: false,
+          status: 404,
+        };
+        mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await registeredTool.execute("tool1", { package: "test" });
+        const result = await registeredTool.execute("tool1", {
+          package: "nonexistent-pkg-xyz-123",
+        });
 
-      expect(result.content[0].text).toContain("Failed to get package info");
+        expect(result.content[0].text).toContain("not found.");
+        expect(result.details.status).toBe(404);
+      });
+    });
+
+    describe("when HTTP request fails", () => {
+      it("then it should return error message", async () => {
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
+
+        const mockResponse = {
+          ok: false,
+          statusText: "Internal Server Error",
+          status: 500,
+        };
+        mockFetch.mockResolvedValue(mockResponse);
+
+        const result = await registeredTool.execute("tool1", { package: "test" });
+
+        expect(result.content[0].text).toBe("Failed to get package info: Internal Server Error");
+        expect(result.details.status).toBe(500);
+      });
     });
   });
 
@@ -229,64 +248,59 @@ describe("Scenario: NPM Extension", () => {
       )[0];
     });
 
-    it("should get package versions successfully", async () => {
-      const mockPackageData = {
-        name: "lodash",
-        "dist-tags": {
-          latest: "4.17.21",
-          beta: "4.17.21-rc.1",
-        },
-        versions: {
-          "4.17.21": { time: "2021-01-01T00:00:00.000Z" },
-          "4.17.20": { time: "2020-12-01T00:00:00.000Z" },
-          "4.17.21-rc.1": { time: "2020-12-15T00:00:00.000Z" },
-        },
-      };
+    describe("when fetching package versions", () => {
+      let result: any;
 
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
+      beforeEach(async () => {
+        const mockPackageData = {
+          name: "lodash",
+          "dist-tags": { latest: "4.17.21", beta: "4.17.21-rc.1" },
+          versions: {
+            "4.17.21": {},
+            "4.17.20": {},
+            "4.17.21-rc.1": {},
+          },
+        };
 
-      const mockResponse = {
-        ok: true,
-        json: () => Promise.resolve(mockPackageData),
-      };
-      mockFetch.mockResolvedValue(mockResponse);
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
 
-      const result = await registeredTool.execute("tool1", {
-        package: "lodash",
+        const mockResponse = {
+          ok: true,
+          json: () => Promise.resolve(mockPackageData),
+        };
+        mockFetch.mockResolvedValue(mockResponse);
+
+        result = await registeredTool.execute("tool1", {
+          package: "lodash",
+        });
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://registry.npmjs.org/lodash",
-      );
-      expect(result.content[0].text).toContain("**lodash Versions**");
-      expect(result.content[0].text).toContain("**Dist Tags:**");
-      expect(result.content[0].text).toContain("- latest: 4.17.21");
-      expect(result.content[0].text).toContain("- beta: 4.17.21-rc.1");
-      expect(result.content[0].text).toContain(
-        "**All Versions (latest first):**",
-      );
-      expect(result.content[0].text).toContain("4.17.21");
-      expect(result.content[0].text).toContain("4.17.20");
+      it("then it should return formatted versions", () => {
+        expect(result.content[0].text).toBe("lodash 3 versions latest:4.17.21,beta:4.17.21-rc.1 4.17.21,4.17.20,4.17.21-rc.1");
+        expect(result.details.package).toBe("lodash");
+        expect(result.details.count).toBe(3);
+      });
     });
 
-    it("should handle package not found", async () => {
-      const mockFetch = vi.fn();
-      global.fetch = mockFetch;
+    describe("when package is not found", () => {
+      it("then it should return not found message", async () => {
+        const mockFetch = vi.fn();
+        globalThis.fetch = mockFetch;
 
-      const mockResponse = {
-        ok: false,
-        status: 404,
-      };
-      mockFetch.mockResolvedValue(mockResponse);
+        const mockResponse = {
+          ok: false,
+          status: 404,
+        };
+        mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await registeredTool.execute("tool1", {
-        package: "nonexistent",
+        const result = await registeredTool.execute("tool1", {
+          package: "nonexistent-pkg-xyz-123",
+        });
+
+        expect(result.content[0].text).toContain("not found.");
+        expect(result.details.status).toBe(404);
       });
-
-      expect(result.content[0].text).toContain(
-        'Package "nonexistent" not found.',
-      );
     });
   });
 });

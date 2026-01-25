@@ -467,16 +467,13 @@ Returns detailed package information from nixpkgs.`,
             license: item.package_license_set.join(", "),
           }),
         (res) => {
-          let c = `Found ${res.length} packages matching "${query}":\n\n`;
-          res.forEach((pkg) => {
-            c += `**${pkg.attr_name}** (${pkg.pname} ${pkg.version})\n`;
-            c += `Description: ${pkg.description || "N/A"}\n`;
-            if (pkg.longDescription) c += `Details: ${pkg.longDescription}\n`;
-            if (pkg.homepage && pkg.homepage.length > 0) c += `Homepage: ${pkg.homepage[0]}\n`;
-            c += `Maintainers: ${pkg.maintainers}\n`;
-            c += `License: ${pkg.license}\n\n`;
-          });
-          return c;
+          return res.map((pkg) => {
+            let line = `${pkg.attr_name} ${pkg.pname} ${pkg.version}: ${pkg.description||"-"} [${pkg.maintainers}]`;
+            if (pkg.longDescription) line += ` ${pkg.longDescription}`;
+            if (pkg.homepage?.[0]) line += ` ${pkg.homepage[0]}`;
+            if (pkg.license) line += ` ${pkg.license}`;
+            return line;
+          }).join('\n');
         },
         query,
       );
@@ -518,16 +515,13 @@ Returns NixOS configuration option details.`,
             source: opt.option_source,
           }),
         (res) => {
-          let c = `Found ${res.length} options matching "${query}":\n\n`;
-          res.forEach((opt) => {
-            c += `**${opt.name}**\n`;
-            c += `Description: ${opt.description}\n`;
-            c += `Type: ${opt.type}\n`;
-            if (opt.default) c += `Default: ${opt.default}\n`;
-            if (opt.example) c += `Example: ${opt.example}\n`;
-            if (opt.source) c += `Source: ${opt.source}\n\n`;
-          });
-          return c;
+          return res.map((opt) => {
+            let line = `${opt.name}: ${opt.description} ${opt.type}`;
+            if (opt.default) line += ` ${opt.default}`;
+            if (opt.example) line += ` ${opt.example}`;
+            if (opt.source) line += ` ${opt.source}`;
+            return line;
+          }).join('\n');
         },
         query,
       );
@@ -569,16 +563,12 @@ Returns Home Manager configuration options.`,
             declarations: opt.declarations.map((d) => d.url).join(", "),
           }),
         (res) => {
-          let c = `Found ${res.length} Home-Manager options matching "${query}":\n\n`;
-          res.forEach((opt) => {
-            c += `**${opt.title}**\n`;
-            c += `Description: ${opt.description}\n`;
-            c += `Type: ${opt.type}\n`;
-            c += `Default: ${opt.default}\n`;
-            if (opt.example) c += `Example: ${opt.example}\n`;
-            if (opt.declarations) c += `Declarations: ${opt.declarations}\n\n`;
-          });
-          return c;
+          return res.map((opt) => {
+            let line = `${opt.title}: ${opt.description} ${opt.type} ${opt.default}`;
+            if (opt.example) line += ` ${opt.example}`;
+            if (opt.declarations) line += ` ${opt.declarations}`;
+            return line;
+          }).join('\n');
         },
         query,
       );

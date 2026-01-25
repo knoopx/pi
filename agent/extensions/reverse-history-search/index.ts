@@ -45,8 +45,8 @@ const fuzzyMatch = (text: string, query: string): boolean => {
   return true;
 };
 
-// Load all history (commands and messages) from all session files
-const loadAllSessionHistory = (): HistoryEntry[] => {
+// Load history (commands and messages) from session files matching the given cwd
+const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
   const history: HistoryEntry[] = [];
   const seen = new Set<string>();
 
@@ -67,6 +67,24 @@ const loadAllSessionHistory = (): HistoryEntry[] => {
               // Parse session file
               const content = readFileSync(fullPath, "utf-8");
               const lines = content.trim().split("\n");
+
+              // First, check if this session matches the target cwd
+              let sessionCwd: string | null = null;
+              for (const line of lines) {
+                if (!line.trim()) continue;
+                try {
+                  const parsed = JSON.parse(line);
+                  if (parsed.type === "session" && parsed.cwd) {
+                    sessionCwd = parsed.cwd;
+                    break;
+                  }
+                } catch {
+                  // Skip invalid JSON lines
+                }
+              }
+
+              // Skip sessions that don't match the target cwd
+              if (sessionCwd !== targetCwd) return;
 
               for (const line of lines) {
                 if (!line.trim()) continue;
@@ -331,12 +349,12 @@ class HistorySearchComponent {
 export default function (pi: ExtensionAPI) {
   pi.registerShortcut("ctrl+r", {
     description:
-      "Reverse history search (user messages and commands across all sessions)",
+      "Reverse history search (user messages and commands from sessions in current directory)",
     handler: async (ctx: ExtensionContext) => {
       if (!ctx.hasUI) return;
 
-      // Load all history (messages and commands) from all sessions
-      const history = loadAllSessionHistory();
+      // Load history (messages and commands) from sessions matching current cwd
+      const history = loadSessionHistoryForCwd(ctx.cwd);
 
       if (history.length === 0) {
         ctx.ui.notify("No history found", "warning");
@@ -344,7 +362,12 @@ export default function (pi: ExtensionAPI) {
       }
 
       const result = await ctx.ui.custom<HistoryEntry | null>(
-        (tui: TUI, theme: Theme, _kb: KeybindingsManager, done: (result: HistoryEntry | null) => void) => {
+        (
+          tui: TUI,
+          theme: Theme,
+          _kb: KeybindingsManager,
+          done: (result: HistoryEntry | null) => void,
+        ) => {
           const component = new HistorySearchComponent(theme, history);
 
           component.onSelect = (entry) => done(entry);
