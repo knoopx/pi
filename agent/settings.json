@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.50.1",
-  "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.2-codex",
+  "defaultProvider": "github-copilot",
+  "defaultModel": "grok-code-fast-1",
   "defaultThinkingLevel": "off",
   "theme": "custom",
   "permissionLevel": "low",
@@ -14,15 +14,34 @@
     "anthropic/claude-sonnet-4-5",
     "github-copilot/grok-code-fast-1",
     "google-antigravity/gemini-3-flash",
-    "ollama/glm-4.7-flash",
     "openai-codex/gpt-5.2-codex",
     "x.ai/grok-code-fast-1",
     "xiaomi/mimo-v2-flash",
     "zai-coding-plan/glm-4.7-flash",
     "zai-coding-plan/glm-4.7",
-    "zen/big-pickle",
-    "zen/glm-4.7-free",
-    "zen/grok-code",
-    "zen/minimax-m2.1-free"
+    "openai-codex/gpt-5.2",
+    "google-antigravity/gemini-3-pro-low",
+    "google-antigravity/gemini-3-pro-high",
+    "google-antigravity/claude-sonnet-4-5",
+    "google-antigravity/claude-opus-4-5-thinking",
+    "google-antigravity/claude-sonnet-4-5-thinking",
+    "github-copilot/gpt-5.2",
+    "github-copilot/gpt-5.2-codex",
+    "github-copilot/claude-sonnet-4.5",
+    "github-copilot/claude-opus-4.5",
+    "github-copilot/claude-haiku-4.5",
+    "ollama/gpt-oss:20b",
+    "ollama/gemma3n:e4b",
+    "ollama/nemotron-3-nano:30b",
+    "ollama/glm-4.7-flash:latest"
+  ],
+  "packages": [
+    {
+      "source": "git:github.com/tmustier/pi-extensions",
+      "skills": [
+        "."
+      ],
+      "extensions": ["usage-extension/index.ts"]
+    }
   ]
 }
