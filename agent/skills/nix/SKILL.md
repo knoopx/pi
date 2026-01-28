@@ -36,6 +36,30 @@ nix fmt
 nix fmt -- --check
 ```
 
+## Hash Conversion (nix hash convert)
+
+Convert hashes between formats (replaces the deprecated `nix hash to-sri`/`to-base16` subcommands).
+
+```bash
+# Convert a nix32 hash to SRI (sha256)
+nix hash convert --hash-algo sha256 --from nix32 --to sri 1b8m03r63zqhnjf7l5wnldhh7c134ap5vpj0850ymkq1iyzicy5s
+
+# Convert to nix32 explicitly
+nix hash convert --hash-algo sha256 --to nix32 sha256-ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=
+```
+
+## Prefetching Hashes
+
+Use prefetch helpers to fetch sources and get the nix32 hash, then convert to SRI if needed.
+
+```bash
+# Fetch a tarball and print its nix32 hash
+nix-prefetch-url --unpack https://example.com/source.tar.gz
+
+# Convert the nix32 hash to SRI for fetchFromGitHub/fetchurl
+nix hash convert --hash-algo sha256 --from nix32 --to sri <nix32-hash>
+```
+
 ## Evaluating Expressions (Debugging)
 
 Since the environment is headless and non-interactive, use `nix eval` instead of the REPL for debugging.
