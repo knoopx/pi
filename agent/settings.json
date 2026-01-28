@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.50.1",
-  "defaultProvider": "github-copilot",
-  "defaultModel": "grok-code-fast-1",
+  "defaultProvider": "ollama",
+  "defaultModel": "unsloth/GLM-4.7-Flash-GGUF:IQ4_NL",
   "defaultThinkingLevel": "off",
   "theme": "custom",
   "permissionLevel": "low",
@@ -30,10 +30,10 @@
     "github-copilot/claude-sonnet-4.5",
     "github-copilot/claude-opus-4.5",
     "github-copilot/claude-haiku-4.5",
-    "ollama/gpt-oss:20b",
     "ollama/gemma3n:e4b",
-    "ollama/nemotron-3-nano:30b",
-    "ollama/glm-4.7-flash:latest"
+    "ollama/unsloth/Nemotron-3-Nano-30B-A3B-GGUF",
+    "ollama/unsloth/gpt-oss-20b-GGUF:Q4_K_M",
+    "ollama/unsloth/GLM-4.7-Flash-GGUF:IQ4_NL"
   ],
   "packages": [
     {
@@ -41,7 +41,9 @@
       "skills": [
         "."
       ],
-      "extensions": ["usage-extension/index.ts"]
+      "extensions": [
+        "usage-extension/index.ts"
+      ]
     }
   ]
 }
