@@ -1,9 +1,9 @@
 ---
 name: python
-description: Structure Python projects, write type-hinted code, test with pytest, and enforce quality with ruff and mypy. Use when setting up pyproject.toml, writing tests, adding type annotations, or formatting/linting code.
+description: Structures Python projects, writes type-hinted code, tests with pytest, and enforces quality with ruff and mypy. Use when setting up pyproject.toml, writing tests, adding type annotations, or formatting/linting code.
 ---
 
-# Python Development
+# Python
 
 Modern Python development with type hints, testing, and code quality tools.
 
@@ -174,19 +174,19 @@ class Config:
 
 ### Decorator Options
 
-| Option | Effect |
-|--------|--------|
+| Option        | Effect                                      |
+| ------------- | ------------------------------------------- |
 | `frozen=True` | Immutable, hashable (use for value objects) |
-| `slots=True` | Memory-efficient (Python 3.10+) |
-| `order=True` | Enable `<`, `>`, `<=`, `>=` comparisons |
+| `slots=True`  | Memory-efficient (Python 3.10+)             |
+| `order=True`  | Enable `<`, `>`, `<=`, `>=` comparisons     |
 
 ### When to Use
 
-| ✅ Dataclasses | ❌ Regular Classes |
-|----------------|-------------------|
-| DTOs, configs, records | Complex behavior/methods |
-| API request/response models | Custom `__init__` logic |
-| Immutable value objects | Mutable state with invariants |
+| ✅ Dataclasses              | ❌ Regular Classes            |
+| --------------------------- | ----------------------------- |
+| DTOs, configs, records      | Complex behavior/methods      |
+| API request/response models | Custom `__init__` logic       |
+| Immutable value objects     | Mutable state with invariants |
 
 ## Type Hints
 

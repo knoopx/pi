@@ -1,27 +1,31 @@
 ---
 name: nix
-description: Run packages temporarily, create isolated shell environments, and evaluate Nix expressions. Use when executing tools without installing, debugging derivations, or searching nixpkgs.
+description: Runs packages temporarily, creates isolated shell environments, and evaluates Nix expressions. Use when executing tools without installing, debugging derivations, or working with nixpkgs.
 ---
 
-# Nix Skill
+# Nix
 
-Nix is a powerful package manager and functional programming language. This skill covers common operations like running apps on-the-fly and managing environments.
+Package manager and functional language for reproducible environments.
 
-## Running Applications
-
-You can run any application from `nixpkgs` without installing it permanently.
+## Quick Start
 
 ```bash
 # Run a package once
 nix run nixpkgs#hello
 
+# Create a shell with multiple packages
+nix shell nixpkgs#git nixpkgs#vim --command git --version
+```
+
+## Running Applications
+
+Run any application from `nixpkgs` without installing it permanently.
+
+```bash
 # Run a package with specific arguments
 nix run nixpkgs#cowsay -- "Hello from Nix!"
 
-# Run a command within a shell environment (non-interactive)
-nix shell nixpkgs#git nixpkgs#vim --command git --version
-
-# Run long-running applications (e.g., servers): `tmux new -d 'nix run nixpkgs#some-server'`
+# Run long-running applications: `tmux new -d 'nix run nixpkgs#some-server'`
 ```
 
 ## Formatting
@@ -36,9 +40,9 @@ nix fmt
 nix fmt -- --check
 ```
 
-## Hash Conversion (nix hash convert)
+## Hash Conversion
 
-Convert hashes between formats (replaces the deprecated `nix hash to-sri`/`to-base16` subcommands).
+Convert hashes between formats (replaces deprecated `nix hash to-sri`/`to-base16`).
 
 ```bash
 # Convert a nix32 hash to SRI (sha256)
@@ -60,7 +64,7 @@ nix-prefetch-url --unpack https://example.com/source.tar.gz
 nix hash convert --hash-algo sha256 --from nix32 --to sri <nix32-hash>
 ```
 
-## Evaluating Expressions (Debugging)
+## Evaluating Expressions
 
 Since the environment is headless and non-interactive, use `nix eval` instead of the REPL for debugging.
 
@@ -85,7 +89,7 @@ nix eval --expr 'builtins.attrNames (import <nixpkgs> {})'
 nix search nixpkgs python3
 ```
 
-## Common Nix Language Patterns
+## Nix Language Patterns
 
 ### Variables and Functions
 
@@ -136,8 +140,8 @@ print("Hello from Nix!")
 
 - **Broken Builds**: Use `nix log` to see the build output of a derivation.
 - **Dependency Issues**: Use `nix-store -q --references $(which program)` to see what a program depends on.
-- **Cache issues**: Add `--no-substitute` to force a local build if you suspect a bad binary cache.
-- **Why depends**: Use `nix why-depends nixpkgs#hello nixpkgs#glibc` to see dependency chain.
+- **Cache Issues**: Add `--no-substitute` to force a local build if you suspect a bad binary cache.
+- **Why Depends**: Use `nix why-depends nixpkgs#hello nixpkgs#glibc` to see dependency chain.
 
 ## Related Skills
 

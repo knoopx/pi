@@ -137,6 +137,30 @@ function buildSearchResult<T>(
   };
 }
 
+/**
+ * Helper function to build common aggregations structure
+ */
+function buildCommonAggregations(): Record<string, unknown> {
+  return {
+    global: {},
+    aggregations: {
+      package_attr_set: { terms: { field: "package_attr_set", size: 20 } },
+      package_license_set: {
+        terms: { field: "package_license_set", size: 20 },
+      },
+      package_maintainers_set: {
+        terms: { field: "package_maintainers_set", size: 20 },
+      },
+      package_teams_set: {
+        terms: { field: "package_teams_set", size: 20 },
+      },
+      package_platforms: {
+        terms: { field: "package_platforms", size: 20 },
+      },
+    },
+  };
+}
+
 async function executeSearchTool<T, U>(
   searchFn: (q: string) => Promise<T[]>,
   mapper: (item: T) => U,
@@ -310,17 +334,19 @@ async function searchNixPackages(query: string): Promise<NixPackage[]> {
   return data.hits.hits.map((hit) => hit._source);
 }
 
+function buildPackageAggregations(): Record<string, unknown> {
+  return {
+    global: {},
+    aggregations: buildCommonAggregations(),
+  };
+}
+
 async function searchNixOptions(query: string): Promise<NixOption[]> {
   const queryPayload = {
     from: 0,
     size: 50,
     sort: [{ _score: "desc", option_name: "desc" }],
-    aggs: {
-      all: {
-        global: {},
-        aggregations: {},
-      },
-    },
+    aggs: buildPackageAggregations(),
     query: {
       bool: {
         filter: [
@@ -467,13 +493,15 @@ Returns detailed package information from nixpkgs.`,
             license: item.package_license_set.join(", "),
           }),
         (res) => {
-          return res.map((pkg) => {
-            let line = `${pkg.attr_name} ${pkg.pname} ${pkg.version}: ${pkg.description||"-"} [${pkg.maintainers}]`;
-            if (pkg.longDescription) line += ` ${pkg.longDescription}`;
-            if (pkg.homepage?.[0]) line += ` ${pkg.homepage[0]}`;
-            if (pkg.license) line += ` ${pkg.license}`;
-            return line;
-          }).join('\n');
+          return res
+            .map((pkg) => {
+              let line = `${pkg.attr_name} ${pkg.pname} ${pkg.version}: ${pkg.description || "-"} [${pkg.maintainers}]`;
+              if (pkg.longDescription) line += ` ${pkg.longDescription}`;
+              if (pkg.homepage?.[0]) line += ` ${pkg.homepage[0]}`;
+              if (pkg.license) line += ` ${pkg.license}`;
+              return line;
+            })
+            .join("\n");
         },
         query,
       );
@@ -515,13 +543,15 @@ Returns NixOS configuration option details.`,
             source: opt.option_source,
           }),
         (res) => {
-          return res.map((opt) => {
-            let line = `${opt.name}: ${opt.description} ${opt.type}`;
-            if (opt.default) line += ` ${opt.default}`;
-            if (opt.example) line += ` ${opt.example}`;
-            if (opt.source) line += ` ${opt.source}`;
-            return line;
-          }).join('\n');
+          return res
+            .map((opt) => {
+              let line = `${opt.name}: ${opt.description} ${opt.type}`;
+              if (opt.default) line += ` ${opt.default}`;
+              if (opt.example) line += ` ${opt.example}`;
+              if (opt.source) line += ` ${opt.source}`;
+              return line;
+            })
+            .join("\n");
         },
         query,
       );
@@ -563,16 +593,17 @@ Returns Home Manager configuration options.`,
             declarations: opt.declarations.map((d) => d.url).join(", "),
           }),
         (res) => {
-          return res.map((opt) => {
-            let line = `${opt.title}: ${opt.description} ${opt.type} ${opt.default}`;
-            if (opt.example) line += ` ${opt.example}`;
-            if (opt.declarations) line += ` ${opt.declarations}`;
-            return line;
-          }).join('\n');
+          return res
+            .map((opt) => {
+              let line = `${opt.title}: ${opt.description} ${opt.type} ${opt.default}`;
+              if (opt.example) line += ` ${opt.example}`;
+              if (opt.declarations) line += ` ${opt.declarations}`;
+              return line;
+            })
+            .join("\n");
         },
         query,
       );
     },
   });
-
 }

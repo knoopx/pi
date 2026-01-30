@@ -1,29 +1,29 @@
 ---
 name: jujutsu
-description: Track changes, rebase modifications, resolve conflicts, and manage bookmarks with Jujutsu (jj). Use when committing changes, navigating history, squashing/splitting commits, or pushing to Git remotes.
+description: Manages version control with Jujutsu (jj), including rebasing, conflict resolution, and Git interop. Use when tracking changes, navigating history, squashing/splitting commits, or pushing to Git remotes.
 ---
 
-# Jujutsu Cheatsheet
+# Jujutsu
 
-Jujutsu (JJ) is a Git-compatible VCS with a focus on concurrent development and ease of use.
+Git-compatible VCS focused on concurrent development and ease of use.
 
 ## Key Commands
 
-| Command | Description |
-|---------|-------------|
-| `jj st` | Show working copy status |
-| `jj log` | Show change log |
-| `jj diff` | Show changes in working copy |
-| `jj new` | Create new change |
-| `jj desc` | Edit change description |
-| `jj squash` | Move changes to parent |
-| `jj split` | Split current change |
-| `jj rebase -s src -d dest` | Rebase changes |
-| `jj absorb` | Move changes into stack of mutable revisions |
-| `jj bisect` | Find bad revision by bisection |
-| `jj fix` | Update files with formatting fixes |
-| `jj sign` | Cryptographically sign a revision |
-| `jj metaedit` | Modify metadata without changing content |
+| Command                    | Description                                  |
+| -------------------------- | -------------------------------------------- |
+| `jj st`                    | Show working copy status                     |
+| `jj log`                   | Show change log                              |
+| `jj diff`                  | Show changes in working copy                 |
+| `jj new`                   | Create new change                            |
+| `jj desc`                  | Edit change description                      |
+| `jj squash`                | Move changes to parent                       |
+| `jj split`                 | Split current change                         |
+| `jj rebase -s src -d dest` | Rebase changes                               |
+| `jj absorb`                | Move changes into stack of mutable revisions |
+| `jj bisect`                | Find bad revision by bisection               |
+| `jj fix`                   | Update files with formatting fixes           |
+| `jj sign`                  | Cryptographically sign a revision            |
+| `jj metaedit`              | Modify metadata without changing content     |
 
 ## Project Setup
 
@@ -104,5 +104,9 @@ jj metaedit -r @ -m "new message"  # Edit metadata only
 - `jj undo` to revert operations
 - `jj op log` to see operation history
 - Bookmarks are like branches
-- Concurrent development encouraged
 - `jj absorb` is powerful for fixing up commits in a stack
+
+## Related Skills
+
+- **gh**: GitHub CLI for PRs and issues
+- **review**: Code review before committing

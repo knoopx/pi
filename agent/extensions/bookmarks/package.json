@@ -1,0 +1,32 @@
+{
+  "name": "bookmarks",
+  "version": "1.0.0",
+  "description": "Firefox bookmarks integration extension for pi-coding-agent",
+  "scripts": {
+    "test": "bun vitest run tests/*.test.ts"
+  },
+  "keywords": [
+    "firefox",
+    "bookmarks",
+    "browser",
+    "pi-coding-agent",
+    "extension"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-ai": "^0.50.7",
+    "@mariozechner/pi-coding-agent": "^0.50.7",
+    "@sinclair/typebox": "^0.34.48"
+  },
+  "devDependencies": {
+    "@types/node": "^25.1.0",
+    "typescript": "^5.9.3"
+  }
+}

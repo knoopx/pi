@@ -1,0 +1,18 @@
+{
+  "name": "ical",
+  "version": "1.0.0",
+  "description": "iCal calendar integration extension",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "^0.50.6",
+    "@mariozechner/pi-ai": "^0.50.6",
+    "@sinclair/typebox": "^0.34.48",
+    "@mariozechner/pi-tui": "^0.50.6",
+    "node-ical": "^0.24.0"
+  }
+}

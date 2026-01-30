@@ -1,11 +1,11 @@
 ---
 name: vicinae
-description: Build Vicinae launcher extensions with TypeScript and React, define commands, and create List/Form/Detail views. Use when creating new extensions, implementing view/no-view commands, or debugging Raycast-compatible extensions.
+description: Builds Vicinae launcher extensions with TypeScript and React, defines commands, and creates List/Form/Detail views. Use when creating new extensions, implementing view/no-view commands, or building Raycast-compatible extensions.
 ---
 
 # Vicinae Extensions
 
-Build extensions for Vicinae launcher using TypeScript and React.
+Extensions for Vicinae launcher using TypeScript and React.
 
 ## Contents
 
@@ -20,18 +20,19 @@ Build extensions for Vicinae launcher using TypeScript and React.
 
 ## Core Concepts
 
-| Concept | Description |
-|---------|-------------|
-| **Extension** | Package adding commands to the launcher |
-| **View Command** | Displays React UI (`mode: "view"`) |
+| Concept             | Description                                    |
+| ------------------- | ---------------------------------------------- |
+| **Extension**       | Package adding commands to the launcher        |
+| **View Command**    | Displays React UI (`mode: "view"`)             |
 | **No-View Command** | Executes action without UI (`mode: "no-view"`) |
-| **Manifest** | `package.json` with extension metadata |
+| **Manifest**        | `package.json` with extension metadata         |
 
 ## Quick Start
 
 **Recommended**: Use Vicinae's built-in "Create Extension" command.
 
 **Manual**:
+
 ```bash
 mkdir my-extension && cd my-extension
 npm init -y
@@ -121,12 +122,22 @@ tmux new -d -s vicinae-dev 'npm run dev'
 ```typescript
 import {
   // UI Components
-  List, Detail, Form, Grid,
-  ActionPanel, Action, Icon, Color,
+  List,
+  Detail,
+  Form,
+  Grid,
+  ActionPanel,
+  Action,
+  Icon,
+  Color,
   // Utilities
-  showToast, Toast,
-  Clipboard, open, closeMainWindow,
-  getPreferenceValues, useNavigation,
+  showToast,
+  Toast,
+  Clipboard,
+  open,
+  closeMainWindow,
+  getPreferenceValues,
+  useNavigation,
 } from "@vicinae/api";
 ```
 
@@ -135,7 +146,7 @@ import {
 ```tsx
 function ListView() {
   const { push, pop } = useNavigation();
-  
+
   return (
     <List.Item
       title="Go to Detail"
@@ -152,15 +163,22 @@ function ListView() {
 ## Preferences
 
 Define in manifest:
+
 ```json
 {
   "preferences": [
-    { "name": "apiKey", "title": "API Key", "type": "password", "required": true }
+    {
+      "name": "apiKey",
+      "title": "API Key",
+      "type": "password",
+      "required": true
+    }
   ]
 }
 ```
 
 Access in code:
+
 ```typescript
 const { apiKey } = getPreferenceValues();
 ```
@@ -168,6 +186,7 @@ const { apiKey } = getPreferenceValues();
 ## Raycast Compatibility
 
 Vicinae runs most Raycast extensions. To test:
+
 ```bash
 cd raycast-extension
 npm install --save-dev @vicinae/api

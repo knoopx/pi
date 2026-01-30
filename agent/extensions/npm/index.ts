@@ -74,10 +74,10 @@ function textResult(
   return { content, details };
 }
 
-function extractStringOrProperty<T extends { [K in P]?: string }, P extends string>(
-  value: T | string | undefined,
-  property: P,
-): string {
+function extractStringOrProperty<
+  T extends { [K in P]?: string },
+  P extends string,
+>(value: T | string | undefined, property: P): string {
   if (typeof value === "string") return value;
   if (typeof value === "object" && value !== null) return value[property] ?? "";
   return "";
@@ -201,7 +201,12 @@ async function searchNpmPackages(
       author: String(obj?.package?.author?.name ?? "Unknown"),
     }));
 
-    const result = packages.map((pkg) => `${pkg.name} ${pkg.version}: ${pkg.description} [${pkg.author}] ${pkg.keywords.join(",")}`).join("\n");
+    const result = packages
+      .map(
+        (pkg) =>
+          `${pkg.name} ${pkg.version}: ${pkg.description} [${pkg.author}] ${pkg.keywords.join(",")}`,
+      )
+      .join("\n");
 
     return textResult(result || "No packages found.", {
       query,
@@ -338,9 +343,18 @@ async function getNpmPackageVersions(
     const versions = Object.keys(data?.versions ?? {});
     const distTags = (data?.["dist-tags"] ?? {}) as Record<string, string>;
 
-    const result = `${data?.name ?? pkg} ${versions.length} versions ${Object.entries(distTags).map(([t,v])=>`${t}:${v}`).join(",")} ${versions.join(",")}`;
+    const result = `${data?.name ?? pkg} ${versions.length} versions ${Object.entries(
+      distTags,
+    )
+      .map(([t, v]) => `${t}:${v}`)
+      .join(",")} ${versions.join(",")}`;
 
-    return textResult(result, { package: pkg, count: versions.length, distTags, versions });
+    return textResult(result, {
+      package: pkg,
+      count: versions.length,
+      distTags,
+      versions,
+    });
   } catch (error) {
     return {
       content: [

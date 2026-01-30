@@ -1,26 +1,41 @@
 ---
 name: gh
-description: Interact with GitHub repositories, issues, pull requests, releases, gists, and more using the gh CLI. Use when managing GitHub resources, searching code/repos, creating PRs/issues, or making API requests.
+description: Interacts with GitHub repositories, issues, pull requests, releases, and gists using the gh CLI. Use when managing GitHub resources, searching code/repos, creating PRs/issues, or making API requests.
 ---
 
-# GitHub CLI (gh) Cheatsheet
+# GitHub CLI (gh)
 
-The GitHub CLI brings GitHub functionality to your terminal.
+GitHub functionality in the terminal.
 
-## Key Commands
+## Quick Start
 
-| Command | Description |
-|---------|-------------|
-| `gh repo view` | View repository details |
-| `gh repo clone owner/repo` | Clone a repository |
-| `gh issue list` | List issues |
-| `gh issue create` | Create a new issue |
-| `gh pr list` | List pull requests |
-| `gh pr create` | Create a pull request |
-| `gh pr checkout 123` | Checkout a PR locally |
-| `gh search repos "query"` | Search repositories |
-| `gh api <endpoint>` | Make API requests |
-| `gh status` | Show your GitHub status |
+```bash
+# View current repo
+gh repo view
+
+# Create issue
+gh issue create
+
+# List PRs
+gh pr list
+
+# Search repos
+gh search repos "query"
+```
+
+## Contents
+
+- [Repository Management](./REFERENCE.md#repository-management)
+- [Issues](./REFERENCE.md#issues)
+- [Pull Requests](./REFERENCE.md#pull-requests)
+- [Search](./REFERENCE.md#search)
+- [Releases](./REFERENCE.md#releases)
+- [Gists](./REFERENCE.md#gists)
+- [API Requests](./REFERENCE.md#api-requests)
+- [Status & Notifications](./REFERENCE.md#status--notifications)
+- [Workflows](./REFERENCE.md#workflows)
+- [Common Flags](./REFERENCE.md#common-flags)
+- [JSON Output](./REFERENCE.md#json-output)
 
 ## Repository Management
 
@@ -35,6 +50,8 @@ gh repo list                      # List your repos
 gh repo list owner                # List user/org repos
 gh repo sync                      # Sync fork with upstream
 ```
+
+See [Repository Management](./REFERENCE.md#repository-management) for details.
 
 ## Issues
 
@@ -52,6 +69,8 @@ gh issue reopen 123               # Reopen issue
 gh issue comment 123 --body "msg" # Add comment
 gh issue edit 123 --add-label bug # Edit issue
 ```
+
+See [Issues](./REFERENCE.md#issues) for details.
 
 ## Pull Requests
 
@@ -75,6 +94,8 @@ gh pr checks 123                  # View CI status
 gh pr ready 123                   # Mark as ready
 ```
 
+See [Pull Requests](./REFERENCE.md#pull-requests) for details.
+
 ## Search
 
 ```bash
@@ -97,6 +118,8 @@ gh search code "filename:config.json owner:org"
 gh search commits "fix bug repo:owner/repo"
 ```
 
+See [Search](./REFERENCE.md#search) for details.
+
 ## Releases
 
 ```bash
@@ -109,6 +132,8 @@ gh release download v1.0.0        # Download assets
 gh release delete v1.0.0          # Delete release
 ```
 
+See [Releases](./REFERENCE.md#releases) for details.
+
 ## Gists
 
 ```bash
@@ -120,6 +145,8 @@ gh gist edit <id>                 # Edit gist
 gh gist clone <id>                # Clone gist
 gh gist delete <id>               # Delete gist
 ```
+
+See [Gists](./REFERENCE.md#gists) for details.
 
 ## API Requests
 
@@ -151,6 +178,8 @@ gh api graphql -F owner='{owner}' -F name='{repo}' -f query='
 '
 ```
 
+See [API Requests](./REFERENCE.md#api-requests) for details.
+
 ## Status & Notifications
 
 ```bash
@@ -175,14 +204,16 @@ gh workflow view <workflow>       # View workflow
 
 ## Common Flags
 
-| Flag | Description |
-|------|-------------|
-| `-R owner/repo` | Target specific repository |
-| `--web` | Open in browser |
-| `--json fields` | Output as JSON |
-| `--jq query` | Filter JSON output |
-| `--limit N` | Limit results |
-| `--state open/closed/all` | Filter by state |
+| Flag                      | Description                |
+| ------------------------- | -------------------------- |
+| `-R owner/repo`           | Target specific repository |
+| `--web`                   | Open in browser            |
+| `--json fields`           | Output as JSON             |
+| `--jq query`              | Filter JSON output         |
+| `--limit N`               | Limit results              |
+| `--state open/closed/all` | Filter by state            |
+
+See [Common Flags](./REFERENCE.md#common-flags) for details.
 
 ## JSON Output
 
@@ -196,6 +227,8 @@ gh issue list --json title --jq '.[].title'
 gh pr list --json number,title --jq '.[] | "\(.number): \(.title)"'
 ```
 
+See [JSON Output](./REFERENCE.md#json-output) for details.
+
 ## Tips
 
 - Use `{owner}` and `{repo}` placeholders in API calls (auto-filled from current dir)
@@ -205,3 +238,9 @@ gh pr list --json number,title --jq '.[] | "\(.number): \(.title)"'
 - `gh auth status` to check authentication
 - `gh config set editor vim` to set default editor
 - Use `gh alias set` to create command shortcuts
+
+## Related Skills
+
+- **jujutsu**: Commit changes, rebase, manage history before PR
+- **review**: Code review checklist and self-review before PR
+- **bun**: Package management and scripting

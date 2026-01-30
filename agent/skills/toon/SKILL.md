@@ -1,11 +1,11 @@
 ---
 name: toon
-description: Convert JSON to compact TOON format for reduced token usage. Use when inspecting JSON APIs, processing large JSON payloads, or reducing token costs when sending data to LLMs.
+description: Converts JSON to compact TOON format for reduced token usage. Use when inspecting JSON APIs, processing large JSON payloads, or reducing token costs when sending data to LLMs.
 ---
 
 # TOON CLI
 
-TOON (Token-Optimized Object Notation) reduces JSON token counts by 30-50%. Convert JSON ↔ TOON for API inspection, large payload processing, or LLM context optimization.
+Token-Optimized Object Notation reduces JSON token counts by 30-50%.
 
 ## Quick Reference
 
@@ -37,15 +37,15 @@ cat data.toon | toon --decode
 
 ### Common Options
 
-| Option | Description |
-|--------|-------------|
-| `-o, --output <file>` | Output file (stdout if omitted) |
-| `-e, --encode` | Force encode mode (JSON → TOON) |
-| `-d, --decode` | Force decode mode (TOON → JSON) |
-| `--stats` | Show token savings (encode only) |
-| `--delimiter <char>` | Array delimiter: `,` (default), `\t`, `|` |
-| `--keyFolding safe` | Collapse nested objects to dotted paths |
-| `--expandPaths safe` | Expand dotted paths when decoding |
+| Option                | Description                             |
+| --------------------- | --------------------------------------- | --- |
+| `-o, --output <file>` | Output file (stdout if omitted)         |
+| `-e, --encode`        | Force encode mode (JSON → TOON)         |
+| `-d, --decode`        | Force decode mode (TOON → JSON)         |
+| `--stats`             | Show token savings (encode only)        |
+| `--delimiter <char>`  | Array delimiter: `,` (default), `\t`, ` | `   |
+| `--keyFolding safe`   | Collapse nested objects to dotted paths |
+| `--expandPaths safe`  | Expand dotted paths when decoding       |
 
 ## Use Cases
 
@@ -95,6 +95,7 @@ curl -s https://api.example.com/data | jq '.results' | npx @toon-format/cli --st
 TOON uses indentation instead of braces and brackets, with inline arrays and tabular object arrays:
 
 **JSON:**
+
 ```json
 {
   "user": {
@@ -103,20 +104,20 @@ TOON uses indentation instead of braces and brackets, with inline arrays and tab
     "tags": ["admin", "ops"]
   },
   "items": [
-    {"sku": "A1", "qty": 2, "price": 9.99},
-    {"sku": "B2", "qty": 1, "price": 14.5}
+    { "sku": "A1", "qty": 2, "price": 9.99 },
+    { "sku": "B2", "qty": 1, "price": 14.5 }
   ]
 }
 ```
 
 **TOON:**
+
 ```yaml
 user:
   id: 123
   name: Ada
   tags[2]: admin,ops
-items[2]{sku,qty,price}:
-  A1,2,9.99
+items[2]{sku,qty,price}: A1,2,9.99
   B2,1,14.5
 ```
 

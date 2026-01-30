@@ -4,25 +4,32 @@
   "type": "module",
   "description": "Main package for pi extensions with formatting",
   "scripts": {
+    "test": "bun vitest run --dir agent/extensions",
     "format": "prettier --write \"agent/extensions/**/*.ts\"",
-    "format-check": "prettier --check \"agent/extensions/**/*.ts\"",
-    "update-deps": "find agent/extensions -name package.json -execdir bun update \\;",
-    "install-deps": "find agent/extensions -name package.json -execdir bun install \\;"
+    "update-deps": "find agent/extensions -not -path '*/node_modules/*' -name package.json -execdir bun update --latest \\;",
+    "install-deps": "find agent/extensions -not -path '*/node_modules/*' -name package.json -execdir bun install \\;",
+    "typecheck": "bun tsc --noEmit",
+    "lint": "eslint agent/extensions/**/*.ts --fix"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "@typescript-eslint/eslint-plugin": "^8.53.0",
-    "@typescript-eslint/parser": "^8.53.0",
     "eslint": "^9.39.2",
-    "globals": "^17.0.0",
-    "prettier": "^3.8.0",
-    "vitest": "^1.6.1"
+    "globals": "^17.2.0",
+    "knip": "^5.82.1",
+    "prettier": "^3.8.1",
+    "typescript-eslint": "^8.54.0",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@mariozechner/pi-agent-core": "^0.48.0",
-    "@mariozechner/pi-ai": "^0.48.0",
-    "@mariozechner/pi-coding-agent": "^0.48.0",
-    "@mariozechner/pi-tui": "^0.48.0",
-    "@sinclair/typebox": "^0.34.47"
+    "@mariozechner/pi-agent-core": "^0.50.7",
+    "@mariozechner/pi-ai": "^0.50.7",
+    "@mariozechner/pi-coding-agent": "^0.50.7",
+    "@mariozechner/pi-tui": "^0.50.7",
+    "@sinclair/typebox": "^0.34.48",
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.6.2",
+    "chokidar": "^5.0.0",
+    "node-ical": "^0.24.0",
+    "vscode-languageserver-protocol": "^3.17.5"
   }
 }

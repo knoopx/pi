@@ -13,9 +13,11 @@ Provides Ctrl+R reverse history search functionality for pi, allowing fuzzy sear
 ## Usage
 
 ### Opening Search
+
 - Press `Ctrl+R` in pi to open the reverse history search interface
 
 ### Navigation
+
 - **Up/Down arrows**: Navigate through filtered results
 - **Enter**: Insert selected item into the editor
 - **Escape**: Cancel and close search
@@ -23,6 +25,7 @@ Provides Ctrl+R reverse history search functionality for pi, allowing fuzzy sear
 - **Backspace/Delete**: Remove characters from search query
 
 ### Result Types
+
 - **$**: Bash commands (prefixed with `!` when inserted)
 - **💬**: User messages (inserted as plain text)
 

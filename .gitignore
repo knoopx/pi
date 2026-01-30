@@ -1,7 +1,9 @@
+.jj
 agent/auth.json
+agent/git/
 agent/models.json
 agent/sessions
 agent/settings.json
 agent/themes/custom.json
+coverage
 node_modules
-.jj

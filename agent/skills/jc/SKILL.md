@@ -1,11 +1,11 @@
 ---
 name: jc
-description: Convert CLI output to JSON for structured processing and analysis. Use when parsing ps, dig, netstat, ls, or other command output into machine-readable format for piping to jq or scripts.
+description: Converts CLI output to JSON for structured processing and analysis. Use when parsing ps, dig, netstat, ls, or other command output into machine-readable format for piping to jq or scripts.
 ---
 
-# JC Cheatsheet
+# jc
 
-JSONifies the output of many CLI tools and file-types for easier parsing in scripts.
+JSONifies the output of CLI tools and file-types for easier parsing.
 
 ## Basic Usage
 
@@ -26,27 +26,27 @@ ifconfig | jc --ifconfig
 
 ## Parsers
 
-| Category | Parsers |
-|----------|---------|
-| System | `ps`, `top`, `free`, `df`, `du`, `ls`, `stat`, `uptime` |
-| Network | `dig`, `ping`, `traceroute`, `netstat`, `ss`, `ifconfig` |
-| Files | `ls`, `find`, `stat`, `file`, `mount`, `fstab` |
-| Packages | `dpkg -l`, `rpm -qi`, `pacman`, `brew` |
-| Logs | `syslog`, `clf` (Common Log Format) |
-| Dev | `git log`, `docker ps`, `kubectl` |
+| Category | Parsers                                                  |
+| -------- | -------------------------------------------------------- |
+| System   | `ps`, `top`, `free`, `df`, `du`, `ls`, `stat`, `uptime`  |
+| Network  | `dig`, `ping`, `traceroute`, `netstat`, `ss`, `ifconfig` |
+| Files    | `ls`, `find`, `stat`, `file`, `mount`, `fstab`           |
+| Packages | `dpkg -l`, `rpm -qi`, `pacman`, `brew`                   |
+| Logs     | `syslog`, `clf` (Common Log Format)                      |
+| Dev      | `git log`, `docker ps`, `kubectl`                        |
 
 ## Options
 
-| Flag | Description |
-|------|-------------|
-| `-p` | Pretty format JSON |
+| Flag | Description                 |
+| ---- | --------------------------- |
+| `-p` | Pretty format JSON          |
 | `-r` | Raw output (less processed) |
-| `-u` | Unbuffered output |
-| `-q` | Quiet (suppress warnings) |
-| `-d` | Debug mode |
-| `-y` | YAML output |
-| `-M` | Add metadata |
-| `-s` | Slurp multi-line input |
+| `-u` | Unbuffered output           |
+| `-q` | Quiet (suppress warnings)   |
+| `-d` | Debug mode                  |
+| `-y` | YAML output                 |
+| `-M` | Add metadata                |
+| `-s` | Slurp multi-line input      |
 
 ## Slicing
 
@@ -83,3 +83,8 @@ data = jc.parsers.dig.parse(output_string)
 - `--slurp` for multiple items per file
 - Streaming parsers for large outputs
 - Python lib returns dict/list, not JSON
+
+## Related Skills
+
+- **nu-shell**: Alternative structured data processing
+- **toon**: Compact JSON representation

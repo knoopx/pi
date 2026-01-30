@@ -1,191 +1,201 @@
 ---
 name: yt-dlp
-description: Download videos and audio, extract audio tracks, fetch playlists, and embed subtitles/metadata using yt-dlp. Use when saving media from YouTube or other sites, converting formats, or archiving content.
+description: Download videos from YouTube and other sites using yt-dlp. Use when downloading videos, extracting metadata, or batch downloading multiple files.
 ---
 
-# yt-dlp Skill
+# yt-dlp Cheatsheet
 
-This skill provides common commands for downloading media using `yt-dlp`.
+Command-line tool for downloading videos from YouTube and other sites.
 
-## Basic Usage
+## Quick Start
 
 ```bash
-# Download a video (best quality)
-yt-dlp "https://www.youtube.com/watch?v=..."
+# Download video
+yt-dlp https://url
 
-# List available formats
-yt-dlp -F "https://www.youtube.com/watch?v=..."
+# Download with specific format
+yt-dlp -f best https://url
 
-# Download specific format
-yt-dlp -f 22 "https://www.youtube.com/watch?v=..."
+# Download with output filename
+yt-dlp -o "filename.%(ext)s" https://url
 ```
 
-## Advanced Usage
+## Contents
 
-### Format Selection
+- [Basic Download](./REFERENCE.md#basic-download)
+- [Format Selection](./REFERENCE.md#format-selection)
+- [Output Options](./REFERENCE.md#output-options)
+- [Playlist Handling](./REFERENCE.md#playlist-handling)
+- [Authentication](./REFERENCE.md#authentication)
+- [Metadata Extraction](./REFERENCE.md#metadata-extraction)
+- [Advanced Options](./REFERENCE.md#advanced-options)
+- [Batch Processing](./REFERENCE.md#batch-processing)
+
+## Basic Download
 
 ```bash
-# Best video + best audio
-yt-dlp -f "bestvideo+bestaudio" "URL"
+# Download video
+yt-dlp https://url
 
-# Best video with height ≤ 720
-yt-dlp -f "bestvideo[height<=720]+bestaudio" "URL"
+# Download to current directory
+yt-dlp https://url
 
-# Specific format by ID
-yt-dlp -f "137+140" "URL"
-
-# Audio only in specific format
-yt-dlp -f "bestaudio[ext=m4a]" "URL"
+# Download with specific format
+yt-dlp -f best https://url
 ```
 
-### Output Templates
+See [Basic Download](./REFERENCE.md#basic-download) for details.
+
+## Format Selection
 
 ```bash
-# Custom filename template
-yt-dlp -o "%(title)s - %(uploader)s.%(ext)s" "URL"
+# Best quality
+yt-dlp -f best https://url
 
-# Organize by uploader
-yt-dlp -o "%(uploader)s/%(title)s.%(ext)s" "URL"
+# Best audio
+yt-dlp -f bestaudio https://url
 
-# Include upload date
-yt-dlp -o "%(upload_date>%Y-%m-%d)s - %(title)s.%(ext)s" "URL"
+# Best video
+yt-dlp -f bestvideo https://url
+
+# Specific format
+yt-dlp -f 137 https://url
+
+# Format list
+yt-dlp --list-formats https://url
+
+# Format with preference
+yt-dlp -f "bestvideo[ext=mp4]+bestaudio/best" https://url
 ```
 
-## Common Tasks
+See [Format Selection](./REFERENCE.md#format-selection) for details.
 
-### Extracting Audio
+## Output Options
 
 ```bash
-# Extract best quality audio as MP3
-yt-dlp -x --audio-format mp3 --audio-quality 0 "URL"
+# Custom output filename
+yt-dlp -o "Title.%(ext)s" https://url
 
-# Extract audio and keep the original video
-yt-dlp -x -k "URL"
+# Output template
+yt-dlp -o "%(title)s.%(ext)s" https://url
+
+# Keep original filename
+yt-dlp --keep-filename https://url
+
+# Skip existing files
+yt-dlp --continue https://url
+
+# Limit download rate
+yt-dlp --limit 1M https://url
+
+# Retries
+yt-dlp --retries 5 https://url
 ```
 
-### Video Selection
+See [Output Options](./REFERENCE.md#output-options) for details.
+
+## Playlist Handling
 
 ```bash
-# Download best video and best audio separately and merge them
-yt-dlp -f "bestvideo+bestaudio" "URL"
+# Download single video
+yt-dlp https://url
 
-# Download video smaller than 50MB
-yt-dlp -f "best[filesize<50M]" "URL"
-```
-
-### Playlists
-
-```bash
 # Download entire playlist
-yt-dlp --yes-playlist "URL_TO_PLAYLIST"
+yt-dlp --yes-playlist https://url
 
-# Download only specific items from a playlist
-yt-dlp --playlist-items 1,2,5,10-15 "URL"
+# Download only certain videos
+yt-dlp --playlist-end 10 https://url
+
+# Download with start number
+yt-dlp --playlist-start 5 https://url
+
+# Download all except certain videos
+yt-dlp --ignore-errors https://url
 ```
 
-### Metadata and Subtitles
+See [Playlist Handling](./REFERENCE.md#playlist-handling) for details.
+
+## Authentication
 
 ```bash
-# Write subtitles to file
-yt-dlp --write-subs --sub-langs "en.*" "URL"
+# Username and password
+yt-dlp -u user -p pass https://url
 
-# Embed subtitles in video file
-yt-dlp --embed-subs "URL"
+# API key
+yt-dlp --cookies cookies.txt https://url
 
-# Embed metadata and thumbnail
-yt-dlp --add-metadata --embed-thumbnail "URL"
+# Netflix username/password
+yt-dlp --username user --password pass https://url
 ```
 
-## Post-Processing
+See [Authentication](./REFERENCE.md#authentication) for details.
 
-### Video Conversion
+## Metadata Extraction
 
 ```bash
-# Remux to different container
-yt-dlp --remux-video mp4 "URL"
+# Extract info
+yt-dlp --dump-json https://url
 
-# Re-encode video
-yt-dlp --recode-video mp4 "URL"
+# Extract title
+yt-dlp --get-title https://url
 
-# Split by chapters
-yt-dlp --split-chapters "URL"
+# Extract duration
+yt-dlp --get-duration https://url
+
+# Extract description
+yt-dlp --get-description https://url
+
+# Extract uploader
+yt-dlp --get-uploader https://url
 ```
 
-### SponsorBlock Integration
+See [Metadata Extraction](./REFERENCE.md#metadata-extraction) for details.
+
+## Advanced Options
 
 ```bash
-# Remove sponsor segments
-yt-dlp --sponsorblock-remove sponsor "URL"
+# Download subtitles
+yt-dlp --write-sub https://url
 
-# Mark sponsor segments as chapters
-yt-dlp --sponsorblock-mark sponsor "URL"
+# Download all formats
+yt-dlp --all-formats https://url
+
+# Download best quality only
+yt-dlp --no-playlist https://url
+
+# Skip download, only extract info
+yt-dlp --skip-download https://url
+
+# Download to specific directory
+yt-dlp -o "downloads/%(title)s.%(ext)s" https://url
+
+# Concurrent downloads
+yt-dlp --concurrent-connections 10 https://url
 ```
 
-## Cheat Sheet
+See [Advanced Options](./REFERENCE.md#advanced-options) for details.
 
-### Output Templates
-
-Control the output filename:
+## Batch Processing
 
 ```bash
-yt-dlp -o "%(title)s.%(ext)s" "URL"
-yt-dlp -o "%(uploader)s/%(upload_date)s - %(title)s.%(ext)s" "URL"
+# Download from file
+yt-dlp --batch-file urls.txt
+
+# Download all in directory
+yt-dlp --download-archive archive.txt https://url
 ```
 
-### Authentication
+See [Batch Processing](./REFERENCE.md#batch-processing) for details.
 
-```bash
-# Use browser cookies (handy for age-restricted videos)
-yt-dlp --cookies-from-browser chrome "URL"
+## Tips
 
-# Use netrc file
-yt-dlp -n "URL"
-```
+- Use `-f best` for maximum quality
+- Use `-o "filename.%(ext)s"` for custom naming
+- Use `--continue` to skip already downloaded files
+- Use `--list-formats` to see available formats
+- Use `--skip-download` to extract metadata without downloading
+- Use `--download-archive` to avoid re-downloading
 
-### Useful Options
+## Related Skills
 
-| Option | Description |
-| :----- | :---------- |
-| `-U` | Update yt-dlp |
-| `--list-subs` | List available subtitles |
-| `--get-filename` | Print output filename without downloading |
-| `--skip-download` | Process but don't download |
-| `--limit-rate 1M` | Limit download speed to 1MB/s |
-| `--playlist-random` | Download playlist in random order |
-| `--no-overwrites` | Don't overwrite existing files |
-| `--continue` | Resume partial downloads |
-| `--ignore-errors` | Continue on download errors |
-| `--verbose` | More detailed output |
-| `--write-description` | Save video description |
-| `--write-info-json` | Save metadata as JSON |
-| `--download-archive FILE` | Skip already downloaded videos |
-
-### Format Selection Examples
-
-```bash
-# Best quality MP4
--f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]"
-
-# Audio only
--f "bestaudio"
-
-# Video under 1080p
--f "bestvideo[height<=1080]+bestaudio/best[height<=1080]"
-
-# Specific codec
--f "bestvideo[vcodec^=avc]+bestaudio"
-```
-
-### Output Template Fields
-
-Common fields for `-o` template:
-
-- `%(title)s` - Video title
-- `%(uploader)s` - Channel/uploader name
-- `%(upload_date)s` - Upload date (YYYYMMDD)
-- `%(duration)s` - Duration in seconds
-- `%(view_count)s` - View count
-- `%(id)s` - Video ID
-- `%(ext)s` - File extension
-- `%(playlist_title)s` - Playlist name
-- `%(playlist_index)s` - Position in playlist
+- **tmux**: Run yt-dlp in background with watch mode

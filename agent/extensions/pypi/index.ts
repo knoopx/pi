@@ -67,6 +67,19 @@ function textResult(
   return { content, details };
 }
 
+/**
+ * Helper function to create an error result
+ */
+function createPypiErrorResult(
+  message: string,
+  packageName: string,
+): AgentToolResult<Record<string, unknown>> {
+  return {
+    content: [{ type: "text", text: message }],
+    details: { package: packageName, total: 0, returned: 0 },
+  };
+}
+
 export default function (pi: ExtensionAPI) {
   // Tool to search for packages
   pi.registerTool({
@@ -110,24 +123,20 @@ Returns matching packages with metadata.`,
           );
 
           if (directResponse.ok) {
-            const data =
-              (await directResponse.json()) as PyPIPackageResponse;
-            const info = data.info;
-            return textResult(
-              `${info.name} ${info.version}: ${info.summary||"-"}`,
-              { query, total: 1, returned: 1, info },
-            );
+            const text = await directResponse.text();
+            try {
+              const data = JSON.parse(text) as PyPIPackageResponse;
+              const info = data.info;
+              return textResult(
+                `${info.name} ${info.version}: ${info.summary || "-"}`,
+                { query, total: 1, returned: 1, info },
+              );
+            } catch {
+              return createPypiErrorResult(`No packages found.`, query);
+            }
           }
 
-          return {
-            content: [
-              {
-                type: "text",
-                text: `No packages found matching "${query}".`,
-              },
-            ],
-            details: { query },
-          };
+          return createPypiErrorResult(`No packages found.`, query);
         }
 
         // Parse HTML response to extract package info (PyPI doesn't have a JSON search API)
@@ -163,27 +172,26 @@ Returns matching packages with metadata.`,
           );
 
           if (fallbackResponse.ok) {
-            const data =
-              (await fallbackResponse.json()) as PyPIPackageResponse;
-            const info = data.info;
-            return textResult(
-              `${info.name} ${info.version}: ${info.summary||"-"}`,
-              { query, total: 1, returned: 1, info },
-            );
+            // Use text() instead of json() to avoid issues with Response object
+            const text = await fallbackResponse.text();
+            try {
+              const data = JSON.parse(text) as PyPIPackageResponse;
+              const info = data.info;
+              return textResult(
+                `${info.name} ${info.version}: ${info.summary || "-"}`,
+                { query, total: 1, returned: 1, info },
+              );
+            } catch {
+              return createPypiErrorResult(`No packages found.`, query);
+            }
           }
 
-          return {
-            content: [
-              {
-                type: "text",
-                text: `No packages found matching "${query}".`,
-              },
-            ],
-            details: { query },
-          };
+          return createPypiErrorResult(`No packages found.`, query);
         }
 
-        const output = packages.map(p => `${p.name} ${p.version}: ${p.description}`).join('\n');
+        const output = packages
+          .map((p) => `${p.name} ${p.version}: ${p.description}`)
+          .join("\n");
 
         return textResult(output, {
           query,
@@ -192,15 +200,10 @@ Returns matching packages with metadata.`,
           packages,
         });
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Failed to search packages: ${String(error)}`,
-            },
-          ],
-          details: { query },
-        };
+        return createPypiErrorResult(
+          `Failed to search packages: ${String(error)}`,
+          query,
+        );
       }
     },
   });
@@ -238,54 +241,44 @@ Shows comprehensive package details from PyPI.`,
 
         if (!response.ok) {
           if (response.status === 404) {
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `Package "${packageName}" not found on PyPI.`,
-                },
-              ],
-              details: { package: packageName },
-            };
+            return createPypiErrorResult(
+              `Package "${packageName}" not found on PyPI.`,
+              packageName,
+            );
           }
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Error fetching package info: HTTP ${response.status}`,
-              },
-            ],
-            details: { package: packageName },
-          };
+          return createPypiErrorResult(
+            `Error fetching package info: HTTP ${response.status}`,
+            packageName,
+          );
         }
 
         const data = (await response.json()) as PyPIPackageResponse;
         const info = data.info;
 
         const author = info.author || info.maintainer || "-";
-        let result = `${info.name} ${info.version}: ${info.summary||"-"} [${author}]`;
+        let result = `${info.name} ${info.version}: ${info.summary || "-"} [${author}]`;
         if (info.license) result += ` ${info.license}`;
         if (info.requires_python) result += ` ${info.requires_python}`;
-        if (info.home_page || info.project_url) result += ` ${info.home_page||info.project_url}`;
-        if (info.author_email || info.maintainer_email) result += ` ${info.author_email||info.maintainer_email}`;
+        if (info.home_page || info.project_url)
+          result += ` ${info.home_page || info.project_url}`;
+        if (info.author_email || info.maintainer_email)
+          result += ` ${info.author_email || info.maintainer_email}`;
         if (info.requires_dist && info.requires_dist.length > 0) {
           const deps = info.requires_dist.slice(0, 20).join(" ");
-          result += ` ${deps}${info.requires_dist.length > 20 ? ` +${info.requires_dist.length-20}` : ""}`;
+          result += ` ${deps}${info.requires_dist.length > 20 ? ` +${info.requires_dist.length - 20}` : ""}`;
         }
-        if (info.project_urls) result += ` ${Object.entries(info.project_urls).map(([k,v])=>`${k}:${v}`).join(" ")}`;
+        if (info.project_urls)
+          result += ` ${Object.entries(info.project_urls)
+            .map(([k, v]) => `${k}:${v}`)
+            .join(" ")}`;
         if (info.keywords) result += ` ${info.keywords}`;
 
         return textResult(result, { package: packageName, info });
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Failed to show package info: ${String(error)}`,
-            },
-          ],
-          details: { package: packageName },
-        };
+        return createPypiErrorResult(
+          `Failed to show package info: ${String(error)}`,
+          packageName,
+        );
       }
     },
   });

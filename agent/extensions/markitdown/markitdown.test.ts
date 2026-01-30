@@ -1,183 +1,286 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import setupMarkitdownExtension from "./index";
+import type { MockTool, MockExtensionAPI } from "../../test-utils";
+import { createMockExtensionAPI } from "../../test-utils";
 
-describe("Scenario: Markitdown Extension", () => {
-  let mockPi: any;
+// ============================================
+// Extension Registration
+// ============================================
+describe("Markitdown Extension", () => {
+  let mockPi: MockExtensionAPI;
 
   beforeEach(() => {
-    mockPi = {
-      registerTool: vi.fn(),
-      exec: vi.fn(),
-    };
+    mockPi = createMockExtensionAPI();
     setupMarkitdownExtension(mockPi);
   });
 
-  it("should register convert-to-markdown tool", () => {
-    expect(mockPi.registerTool).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: "transcribe",
-        label: "Transcribe",
-      }),
-    );
+  describe("given the extension is initialized", () => {
+    describe("when registering tools", () => {
+      it("then it should register transcribe tool", () => {
+        expect(mockPi.registerTool).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: "transcribe",
+            label: "Transcribe",
+          }),
+        );
+      });
+
+      it("then it should register with the correct label", () => {
+        const call = mockPi.registerTool.mock.calls[0];
+        expect(call[0].label).toBe("Transcribe");
+      });
+    });
   });
 
-  describe("Given convert-to-markdown tool", () => {
-    let registeredTool: any;
+  // ============================================
+  // Transcribe Tool
+  // ============================================
+  describe("transcribe tool", () => {
+    let registeredTool: MockTool;
 
     beforeEach(() => {
       registeredTool = mockPi.registerTool.mock.calls[0][0];
     });
 
-    it("should convert file successfully", async () => {
-      const mockResult = {
-        code: 0,
-        stdout:
-          "# Converted Markdown Content\n\nThis is the converted content.",
-        stderr: "",
-      };
-      mockPi.exec.mockResolvedValue(mockResult);
+    describe("given a local file to convert", () => {
+      let result: AgentToolResult<Record<string, unknown>>;
+      let onUpdate: (update: AgentToolResult<Record<string, unknown>>) => void;
 
-      const onUpdate = vi.fn();
+      beforeEach(async () => {
+        const mockResult = {
+          code: 0,
+          stdout:
+            "# Converted Markdown Content\n\nThis is the converted content.",
+          stderr: "",
+        };
+        mockPi.exec.mockResolvedValue(mockResult);
 
-      const result = await registeredTool.execute(
-        "tool1",
-        {
-          source: "/path/to/file.pdf",
-        },
-        onUpdate,
-        {},
-      );
+        onUpdate = vi.fn().mockReturnValue(undefined);
 
-      expect(mockPi.exec).toHaveBeenCalledWith(
-        "markitdown",
-        ["/path/to/file.pdf"],
-        { signal: undefined },
-      );
-      expect(onUpdate).toHaveBeenCalledWith({
-        content: [
+        result = await registeredTool.execute(
+          "tool1",
           {
-            type: "text",
-            text: "Converting /path/to/file.pdf to Markdown...",
+            source: "/path/to/file.pdf",
           },
-        ],
-        details: {
-          source: "/path/to/file.pdf",
-          status: "converting",
-        },
+          onUpdate,
+          {},
+        );
       });
-      expect(result.content[0].text).toBe(
-        "# Converted Markdown Content\n\nThis is the converted content.",
-      );
-      expect(result.details).toEqual({
-        source: "/path/to/file.pdf",
-        converted: true,
+
+      it("then it should execute markitdown with the file path", () => {
+        expect(mockPi.exec).toHaveBeenCalledWith(
+          "markitdown",
+          ["/path/to/file.pdf"],
+          { signal: undefined },
+        );
+      });
+
+      it("then it should notify the user that conversion started", () => {
+        expect(onUpdate).toHaveBeenCalledWith({
+          content: [
+            {
+              type: "text",
+              text: "Converting /path/to/file.pdf to Markdown...",
+            },
+          ],
+          details: {
+            source: "/path/to/file.pdf",
+            status: "converting",
+          },
+        });
+      });
+
+      it("then it should return the converted content", () => {
+        expect(result.content[0].text).toBe(
+          "# Converted Markdown Content\n\nThis is the converted content.",
+        );
+      });
+
+      it("then it should mark the conversion as successful", () => {
+        expect(result.details).toEqual({
+          source: "/path/to/file.pdf",
+          converted: true,
+        });
       });
     });
 
-    it("should convert URL successfully", async () => {
-      const mockResult = {
-        code: 0,
-        stdout: "# Webpage Title\n\nContent from the webpage.",
-        stderr: "",
-      };
-      mockPi.exec.mockResolvedValue(mockResult);
+    describe("given a URL to convert", () => {
+      let result: AgentToolResult<Record<string, unknown>>;
 
-      const result = await registeredTool.execute(
-        "tool1",
-        {
+      beforeEach(async () => {
+        const mockResult = {
+          code: 0,
+          stdout: "# Webpage Title\n\nContent from the webpage.",
+          stderr: "",
+        };
+        mockPi.exec.mockResolvedValue(mockResult);
+
+        result = await registeredTool.execute(
+          "tool1",
+          {
+            source: "https://example.com/page",
+          },
+          vi.fn(),
+          {},
+        );
+      });
+
+      it("then it should execute markitdown with the URL", () => {
+        expect(mockPi.exec).toHaveBeenCalledWith(
+          "markitdown",
+          ["https://example.com/page"],
+          { signal: undefined },
+        );
+      });
+
+      it("then it should return the webpage content", () => {
+        expect(result.content[0].text).toBe(
+          "# Webpage Title\n\nContent from the webpage.",
+        );
+      });
+
+      it("then it should mark the conversion as successful", () => {
+        expect(result.details).toEqual({
           source: "https://example.com/page",
-        },
-        vi.fn(),
-        {},
-      );
-
-      expect(mockPi.exec).toHaveBeenCalledWith(
-        "markitdown",
-        ["https://example.com/page"],
-        { signal: undefined },
-      );
-      expect(result.content[0].text).toBe(
-        "# Webpage Title\n\nContent from the webpage.",
-      );
-      expect(result.details).toEqual({
-        source: "https://example.com/page",
-        converted: true,
+          converted: true,
+        });
       });
     });
 
-    it("should handle conversion errors", async () => {
-      const mockResult = {
-        code: 1,
-        stdout: "",
-        stderr: "markitdown: file not found",
-      };
-      mockPi.exec.mockResolvedValue(mockResult);
+    describe("given a local file that does not exist", () => {
+      let result: AgentToolResult<Record<string, unknown>>;
+      let onUpdate: (update: AgentToolResult<Record<string, unknown>>) => void;
 
-      const result = await registeredTool.execute(
-        "tool1",
-        {
+      beforeEach(async () => {
+        const mockResult = {
+          code: 1,
+          stdout: "",
+          stderr: "markitdown: file not found",
+        };
+        mockPi.exec.mockResolvedValue(mockResult);
+
+        onUpdate = vi.fn();
+
+        result = await registeredTool.execute(
+          "tool1",
+          {
+            source: "/nonexistent/file.pdf",
+          },
+          onUpdate,
+          {},
+        );
+      });
+
+      it("then it should notify the user that conversion started", () => {
+        expect(onUpdate).toHaveBeenCalledWith({
+          content: [
+            {
+              type: "text",
+              text: "Converting /nonexistent/file.pdf to Markdown...",
+            },
+          ],
+          details: {
+            source: "/nonexistent/file.pdf",
+            status: "converting",
+          },
+        });
+      });
+
+      it("then it should return error in content", () => {
+        expect(result.content[0].text).toContain(
+          "Error converting source: markitdown: file not found",
+        );
+      });
+
+      it("then it should mark the conversion as failed", () => {
+        expect(result.details).toEqual({
           source: "/nonexistent/file.pdf",
-        },
-        vi.fn(),
-        {},
-      );
-
-      expect(result.content[0].text).toContain(
-        "Error converting source: markitdown: file not found",
-      );
-      expect(result.details).toEqual({
-        source: "/nonexistent/file.pdf",
-        error: "markitdown: file not found",
+          error: "markitdown: file not found",
+        });
       });
     });
 
-    it("should handle execution errors", async () => {
-      mockPi.exec.mockRejectedValue(new Error("Command not found"));
+    describe("given markitdown command is not available", () => {
+      let result: AgentToolResult<Record<string, unknown>>;
+      let onUpdate: (update: AgentToolResult<Record<string, unknown>>) => void;
 
-      const result = await registeredTool.execute(
-        "tool1",
-        {
+      beforeEach(async () => {
+        mockPi.exec.mockRejectedValue(new Error("Command not found"));
+
+        onUpdate = vi.fn();
+
+        result = await registeredTool.execute(
+          "tool1",
+          {
+            source: "/path/to/file.pdf",
+          },
+          onUpdate,
+          {},
+        );
+      });
+
+      it("then it should notify the user that conversion started", () => {
+        expect(onUpdate).toHaveBeenCalledWith({
+          content: [
+            {
+              type: "text",
+              text: "Converting /path/to/file.pdf to Markdown...",
+            },
+          ],
+          details: {
+            source: "/path/to/file.pdf",
+            status: "converting",
+          },
+        });
+      });
+
+      it("then it should return unexpected error in content", () => {
+        expect(result.content[0].text).toContain(
+          "Unexpected error: Error: Command not found",
+        );
+      });
+
+      it("then it should mark the conversion as failed", () => {
+        expect(result.details).toEqual({
           source: "/path/to/file.pdf",
-        },
-        vi.fn(),
-        {},
-      );
-
-      expect(result.content[0].text).toMatch(
-        /Unexpected error:.*Command not found/,
-      );
-      expect(result.details).toEqual({
-        source: "/path/to/file.pdf",
-        error: "Error: Command not found",
+          error: "Error: Command not found",
+        });
       });
     });
 
-    it("should pass signal to exec", async () => {
-      const mockResult = {
-        exitCode: 0,
-        stdout: "Converted content",
-        stderr: "",
-      };
-      mockPi.exec.mockResolvedValue(mockResult);
+    describe("given an abort signal", () => {
+      let signal: AbortSignal;
 
-      const abortController = new AbortController();
-      const signal = abortController.signal;
+      beforeEach(async () => {
+        const mockResult = {
+          exitCode: 0,
+          stdout: "Converted content",
+          stderr: "",
+        };
+        mockPi.exec.mockResolvedValue(mockResult);
 
-      await registeredTool.execute(
-        "tool1",
-        {
-          source: "/path/to/file.pdf",
-        },
-        vi.fn(),
-        {},
-        signal,
-      );
+        const abortController = new AbortController();
+        signal = abortController.signal;
 
-      expect(mockPi.exec).toHaveBeenCalledWith(
-        "markitdown",
-        ["/path/to/file.pdf"],
-        { signal },
-      );
+        await registeredTool.execute(
+          "tool1",
+          {
+            source: "/path/to/file.pdf",
+          },
+          vi.fn(),
+          {},
+          signal,
+        );
+      });
+
+      it("then it should pass the signal to the exec function", () => {
+        expect(mockPi.exec).toHaveBeenCalledWith(
+          "markitdown",
+          ["/path/to/file.pdf"],
+          { signal },
+        );
+      });
     });
   });
 });

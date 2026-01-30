@@ -15,6 +15,7 @@ No additional installation required. This extension uses public APIs from NixOS 
 **Description:** Find packages available in the NixOS package repository.
 
 Use this to:
+
 - Discover software packages for installation
 - Check package versions and descriptions
 - Find packages by name or functionality
@@ -23,6 +24,7 @@ Use this to:
 Returns detailed package information from nixpkgs.
 
 **Parameters:**
+
 - `query` (string): Search query (package name, description, or programs)
 
 ### search-nix-options
@@ -32,6 +34,7 @@ Returns detailed package information from nixpkgs.
 **Description:** Find configuration options available in NixOS.
 
 Use this to:
+
 - Discover system configuration settings
 - Find options for services and modules
 - Check option types and default values
@@ -40,6 +43,7 @@ Use this to:
 Returns NixOS configuration option details.
 
 **Parameters:**
+
 - `query` (string): Search query (option name or description)
 
 ### search-home-manager-options
@@ -49,6 +53,7 @@ Returns NixOS configuration option details.
 **Description:** Find configuration options for Home Manager.
 
 Use this to:
+
 - Configure user-specific settings
 - Set up dotfiles and user programs
 - Customize desktop environment
@@ -57,6 +62,7 @@ Use this to:
 Returns Home Manager configuration options.
 
 **Parameters:**
+
 - `query` (string): Search query (option name or description)
 
 ### search-nixpkgs-pull-requests
@@ -66,6 +72,7 @@ Returns Home Manager configuration options.
 **Description:** Search for pull requests in the NixOS/nixpkgs repository.
 
 Use this to:
+
 - Track package updates and changes
 - Find ongoing development work
 - Monitor contributions to nixpkgs
@@ -74,4 +81,5 @@ Use this to:
 Returns GitHub pull request information.
 
 **Parameters:**
+
 - `query` (string): Search query (title, number, or keywords)

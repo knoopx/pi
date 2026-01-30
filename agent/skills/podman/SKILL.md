@@ -1,9 +1,11 @@
 ---
 name: podman
-description: Run containers, build images, manage pods, and configure networks with Podman. Use when starting/stopping containers, creating Containerfiles, grouping services in pods, or pruning unused resources.
+description: Manages containers, builds images, configures pods and networks with Podman. Use when running containers, creating Containerfiles, grouping services in pods, or managing container resources.
 ---
 
-# Podman Skill
+# Podman
+
+Rootless container management compatible with Docker commands.
 
 ## Container Management
 
@@ -206,3 +208,9 @@ podman artifact push myartifact.tar oci://registry.example.com/artifact
 
 # Pull OCI artifacts
 podman artifact pull oci://registry.example.com/artifact
+```
+
+## Related Skills
+
+- **tmux**: Run containers in background sessions
+- **nix**: Alternative reproducible environments

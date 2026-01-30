@@ -42,7 +42,10 @@ Most commonly used APIs from `@vicinae/api`.
 <Form
   actions={
     <ActionPanel>
-      <Action.SubmitForm title="Save" onSubmit={(values) => console.log(values)} />
+      <Action.SubmitForm
+        title="Save"
+        onSubmit={(values) => console.log(values)}
+      />
     </ActionPanel>
   }
 >
@@ -73,7 +76,7 @@ Most commonly used APIs from `@vicinae/api`.
 <ActionPanel>
   {/* Custom action */}
   <Action title="Do Something" onAction={handleAction} />
-  
+
   {/* Built-in actions */}
   <Action.CopyToClipboard title="Copy" content={text} />
   <Action.OpenInBrowser title="Open" url="https://..." />
@@ -89,7 +92,11 @@ Most commonly used APIs from `@vicinae/api`.
 ```typescript
 // Toast notifications
 await showToast({ title: "Success", style: Toast.Style.Success });
-await showToast({ title: "Error", message: "Details", style: Toast.Style.Failure });
+await showToast({
+  title: "Error",
+  message: "Details",
+  style: Toast.Style.Failure,
+});
 
 // HUD (brief overlay)
 await showHUD("Action completed");
@@ -106,11 +113,11 @@ const text = await Clipboard.readText();
 ### System
 
 ```typescript
-await open("https://...");                    // Open URL/file
-await closeMainWindow();                      // Close launcher
-await popToRoot();                            // Navigate to root
-const app = await getFrontmostApplication();  // Get focused app
-const selected = await getSelectedText();     // Get selected text
+await open("https://..."); // Open URL/file
+await closeMainWindow(); // Close launcher
+await popToRoot(); // Navigate to root
+const app = await getFrontmostApplication(); // Get focused app
+const selected = await getSelectedText(); // Get selected text
 ```
 
 ### Preferences
@@ -149,11 +156,24 @@ pop();              // Navigate back
 
 ```typescript
 import {
-  List, Detail, Form, Grid,
-  ActionPanel, Action, Icon, Color,
-  showToast, Toast, showHUD,
-  Clipboard, open, closeMainWindow, popToRoot,
-  getPreferenceValues, useNavigation,
-  getFrontmostApplication, getSelectedText,
+  List,
+  Detail,
+  Form,
+  Grid,
+  ActionPanel,
+  Action,
+  Icon,
+  Color,
+  showToast,
+  Toast,
+  showHUD,
+  Clipboard,
+  open,
+  closeMainWindow,
+  popToRoot,
+  getPreferenceValues,
+  useNavigation,
+  getFrontmostApplication,
+  getSelectedText,
 } from "@vicinae/api";
 ```

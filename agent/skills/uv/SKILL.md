@@ -1,9 +1,9 @@
 ---
 name: uv
-description: Initialize Python projects, manage dependencies, pin Python versions, and run scripts with uv. Use when adding/removing packages, syncing environments, running tools with uvx, or building distributions.
+description: Initializes Python projects, manages dependencies, pins Python versions, and runs scripts with uv. Use when adding/removing packages, syncing environments, running tools with uvx, or building distributions.
 ---
 
-# UV Cheatsheet
+# uv
 
 Fast Python package and project manager with built-in virtual environment management.
 

@@ -5,38 +5,43 @@ Linux-optimized shortcuts (use `Ctrl`, not `Cmd`).
 ## Standard Shortcuts
 
 ### Primary Actions
-| Shortcut | Action |
-|----------|--------|
+
+| Shortcut     | Action                 |
+| ------------ | ---------------------- |
 | `Ctrl+Enter` | Execute primary action |
-| `Ctrl+Space` | Toggle state |
+| `Ctrl+Space` | Toggle state           |
 
 ### Copy Operations
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+C` | Copy primary content |
+
+| Shortcut       | Action                 |
+| -------------- | ---------------------- |
+| `Ctrl+C`       | Copy primary content   |
 | `Ctrl+Shift+C` | Copy secondary content |
 
 ### CRUD Operations
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+N` | Create new |
-| `Ctrl+E` | Edit |
-| `Ctrl+Delete` | Delete |
+
+| Shortcut      | Action     |
+| ------------- | ---------- |
+| `Ctrl+N`      | Create new |
+| `Ctrl+E`      | Edit       |
+| `Ctrl+Delete` | Delete     |
 
 ### Navigation
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+[` | Go back |
-| `Ctrl+]` | Go forward |
+
+| Shortcut | Action         |
+| -------- | -------------- |
+| `Ctrl+[` | Go back        |
+| `Ctrl+]` | Go forward     |
 | `Ctrl+I` | Toggle details |
-| `Ctrl+R` | Refresh |
+| `Ctrl+R` | Refresh        |
 
 ### Connection/Network
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+C` | Connect |
-| `Ctrl+D` | Disconnect |
-| `Ctrl+S` | Scan |
+
+| Shortcut | Action      |
+| -------- | ----------- |
+| `Ctrl+C` | Connect     |
+| `Ctrl+D` | Disconnect  |
+| `Ctrl+S` | Scan        |
 | `Ctrl+F` | Forget/Find |
 
 ## Implementation

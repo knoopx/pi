@@ -15,6 +15,7 @@ No additional installation required. This extension uses the public npm registry
 **Description:** Search for packages available on the npm registry.
 
 Use this to:
+
 - Find JavaScript/TypeScript packages
 - Discover libraries and frameworks
 - Check package descriptions and keywords
@@ -23,6 +24,7 @@ Use this to:
 Returns matching packages with metadata.
 
 **Parameters:**
+
 - `query` (string): Search query for npm packages
 - `size` (number, optional): Number of results (default 10, max 100)
 
@@ -33,6 +35,7 @@ Returns matching packages with metadata.
 **Description:** Get comprehensive information about an npm package.
 
 Use this to:
+
 - Check package details and versions
 - See dependencies and maintainers
 - View licensing and repository information
@@ -41,6 +44,7 @@ Use this to:
 Returns detailed package metadata.
 
 **Parameters:**
+
 - `package` (string): npm package name
 
 ### npm-package-versions
@@ -50,6 +54,7 @@ Returns detailed package metadata.
 **Description:** List all available versions of an npm package.
 
 Use this to:
+
 - See version history and availability
 - Check for latest versions
 - Find specific version tags
@@ -58,4 +63,5 @@ Use this to:
 Returns all published package versions.
 
 **Parameters:**
+
 - `package` (string): npm package name

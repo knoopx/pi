@@ -1,11 +1,11 @@
 ---
 name: knip
-description: Find unused dependencies, files, and exports in JS/TS projects. Use when cleaning up dead code, removing stale packages from package.json, or identifying unreferenced exports.
+description: Finds unused dependencies, files, and exports in JS/TS projects. Use when cleaning up dead code, removing stale packages from package.json, or identifying unreferenced exports.
 ---
 
 # Knip
 
-Find unused files, dependencies, and exports in TypeScript/JavaScript projects.
+Finds unused files, dependencies, and exports in TypeScript/JavaScript projects.
 
 ## Usage
 
@@ -45,3 +45,9 @@ bunx knip --trace-export myFunction    # Trace export
 ## Configuration
 
 Configure via `.knip.json` or `knip.config.js` for custom entry points and exclusions.
+
+## Related Skills
+
+- **maintenance**: Refactoring and technical debt management
+- **jscpd**: Find duplicate code blocks
+- **bun**: Package management for JS/TS projects

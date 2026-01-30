@@ -1,0 +1,42 @@
+{
+  "name": "lsp",
+  "version": "1.0.1",
+  "description": "LSP extension for pi-coding-agent - provides language server tool and diagnostics feedback for TypeScript/JavaScript, Python, Markdown, YAML, and JSON",
+  "scripts": {
+    "test": "bun vitest run index.test.ts"
+  },
+  "keywords": [
+    "lsp",
+    "language-server",
+    "typescript",
+    "javascript",
+    "python",
+    "markdown",
+    "yaml",
+    "json",
+    "pi-coding-agent",
+    "extension"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-ai": "^0.50.7",
+    "@mariozechner/pi-coding-agent": "^0.50.7",
+    "@mariozechner/pi-tui": "^0.50.7",
+    "@sinclair/typebox": "^0.34.48",
+    "memfs": "^4.56.10",
+    "vscode-jsonrpc": "^8.2.0",
+    "vscode-languageserver-protocol": "^3.17.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.1.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

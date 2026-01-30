@@ -5,6 +5,7 @@ Based on established patterns from the Vicinae extensions codebase.
 ## List.Item Action Patterns
 
 **✅ Actions directly on List.Item**:
+
 ```tsx
 <List.Item
   title="Item Name"
@@ -18,10 +19,11 @@ Based on established patterns from the Vicinae extensions codebase.
 ```
 
 **❌ Avoid selection-based conditional actions**:
+
 ```tsx
 // Don't do this - creates confusing UX
 <List>
-  {items.map(item => (
+  {items.map((item) => (
     <List.Item title={item.name} onAction={() => setSelected(item)} />
   ))}
   <ActionPanel>
@@ -33,6 +35,7 @@ Based on established patterns from the Vicinae extensions codebase.
 ## ActionPanel Organization
 
 Group related actions in sections:
+
 ```tsx
 <ActionPanel>
   <ActionPanel.Section>
@@ -70,7 +73,11 @@ function DetailView() {
     <Detail
       actions={
         <ActionPanel>
-          <Action title="Back" onAction={pop} shortcut={{ modifiers: ["ctrl"], key: "[" }} />
+          <Action
+            title="Back"
+            onAction={pop}
+            shortcut={{ modifiers: ["ctrl"], key: "[" }}
+          />
         </ActionPanel>
       }
     />
@@ -80,12 +87,12 @@ function DetailView() {
 
 ## Pattern Recommendations
 
-| Use Case | Pattern |
-|----------|---------|
-| Simple actions | Direct actions on List.Item |
-| State changes | Direct actions on List.Item |
-| Complex workflows | Navigation to detail view |
-| Quick actions | No-view commands |
+| Use Case          | Pattern                     |
+| ----------------- | --------------------------- |
+| Simple actions    | Direct actions on List.Item |
+| State changes     | Direct actions on List.Item |
+| Complex workflows | Navigation to detail view   |
+| Quick actions     | No-view commands            |
 
 ## Anti-Patterns
 

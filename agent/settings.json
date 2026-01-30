@@ -1,7 +1,7 @@
 {
-  "lastChangelogVersion": "0.50.1",
-  "defaultProvider": "ollama",
-  "defaultModel": "unsloth/GLM-4.7-Flash-GGUF:IQ4_NL",
+  "lastChangelogVersion": "0.50.7",
+  "defaultProvider": "anthropic",
+  "defaultModel": "claude-opus-4-5",
   "defaultThinkingLevel": "off",
   "theme": "custom",
   "permissionLevel": "low",
@@ -9,41 +9,17 @@
     "hookMode": "edit_write"
   },
   "enabledModels": [
-    "anthropic/claude-haiku-4-5",
     "anthropic/claude-opus-4-5",
-    "anthropic/claude-sonnet-4-5",
+    "github-copilot/claude-opus-4.5",
+    "github-copilot/gpt-5.2",
     "github-copilot/grok-code-fast-1",
-    "google-antigravity/gemini-3-flash",
+    "local/unsloth/gemma-3-27b-it-GGUF:IQ4_NL",
+    "local/unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF:IQ4_NL",
+    "local/unsloth/Nemotron-3-Nano-30B-A3B-GGUF",
     "openai-codex/gpt-5.2-codex",
+    "openai-codex/gpt-5.2",
     "x.ai/grok-code-fast-1",
     "xiaomi/mimo-v2-flash",
-    "zai-coding-plan/glm-4.7-flash",
-    "zai-coding-plan/glm-4.7",
-    "openai-codex/gpt-5.2",
-    "google-antigravity/gemini-3-pro-low",
-    "google-antigravity/gemini-3-pro-high",
-    "google-antigravity/claude-sonnet-4-5",
-    "google-antigravity/claude-opus-4-5-thinking",
-    "google-antigravity/claude-sonnet-4-5-thinking",
-    "github-copilot/gpt-5.2",
-    "github-copilot/gpt-5.2-codex",
-    "github-copilot/claude-sonnet-4.5",
-    "github-copilot/claude-opus-4.5",
-    "github-copilot/claude-haiku-4.5",
-    "ollama/gemma3n:e4b",
-    "ollama/unsloth/Nemotron-3-Nano-30B-A3B-GGUF",
-    "ollama/unsloth/gpt-oss-20b-GGUF:Q4_K_M",
-    "ollama/unsloth/GLM-4.7-Flash-GGUF:IQ4_NL"
-  ],
-  "packages": [
-    {
-      "source": "git:github.com/tmustier/pi-extensions",
-      "skills": [
-        "."
-      ],
-      "extensions": [
-        "usage-extension/index.ts"
-      ]
-    }
+    "zai-coding-plan/glm-4.7"
   ]
 }

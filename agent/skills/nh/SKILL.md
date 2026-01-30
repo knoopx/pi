@@ -1,11 +1,11 @@
 ---
 name: nh
-description: Switch NixOS/Home Manager configurations, clean old generations, and perform system maintenance with nh. Use when running os/home switch, pruning the Nix store, or managing system generations.
+description: Switches NixOS/Home Manager configurations, cleans old generations, and performs system maintenance. Use when running os/home switch, pruning the Nix store, or managing system generations.
 ---
 
-# nh (Nix Helper) Skill
+# nh (Nix Helper)
 
-`nh` is a CLI tool that simplifies Nix operations, providing a cleaner interface for builds, switches, and garbage collection.
+CLI tool that simplifies Nix operations with cleaner interface for builds, switches, and garbage collection.
 
 ## Core Commands
 

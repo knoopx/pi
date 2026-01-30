@@ -1,3 +1,16 @@
+// Simple fuzzy matching - returns true if all chars in query appear in text in order
+export function fuzzyMatch(text: string, query: string): boolean {
+  if (!query) return true;
+  let queryIndex = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i].toLowerCase() === query[queryIndex].toLowerCase()) {
+      queryIndex++;
+      if (queryIndex === query.length) return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Reverse History Search - Ctrl+R fuzzy history search
  *
@@ -29,21 +42,6 @@ type HistoryEntry = {
 };
 
 // Simple fuzzy matching - returns true if all chars in query appear in text in order
-const fuzzyMatch = (text: string, query: string): boolean => {
-  if (!query) return true;
-
-  const textLower = text.toLowerCase();
-  const queryLower = query.toLowerCase();
-  let textIdx = 0;
-
-  for (const char of queryLower) {
-    textIdx = textLower.indexOf(char, textIdx);
-    if (textIdx === -1) return false;
-    textIdx++;
-  }
-
-  return true;
-};
 
 // Load history (commands and messages) from session files matching the given cwd
 const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {

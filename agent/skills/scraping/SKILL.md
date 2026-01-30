@@ -1,11 +1,11 @@
 ---
 name: scraping
-description: Fetch web pages, parse HTML with CSS selectors, call REST APIs, and scrape dynamic content. Use when extracting data from websites, querying JSON APIs, or automating browser interactions.
+description: Fetches web pages, parses HTML with CSS selectors, calls REST APIs, and scrapes dynamic content. Use when extracting data from websites, querying JSON APIs, or automating browser interactions.
 ---
 
 # Scraping
 
-Web scraping techniques using nu-shell (nu) and browser tools. Use this skill for quick data extraction from websites, HTML parsing, API interactions, and dynamic content scraping.
+Web scraping using nu-shell and browser tools for data extraction.
 
 ## Prerequisites
 

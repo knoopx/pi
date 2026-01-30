@@ -1,47 +1,52 @@
 ---
 name: bun
-description: Initialize projects, manage dependencies, run scripts, execute tests, and bundle code using Bun. Use when working with package.json, installing packages, running dev servers, or building for production.
+description: Initializes projects, manages dependencies, runs scripts, executes tests, and bundles code using Bun. Use when working with package.json, installing packages, running dev servers, or building for production.
 ---
 
-# Bun Cheatsheet
+# Bun
 
 Fast all-in-one JavaScript runtime, bundler, test runner, and package manager.
 
-## Key Commands
-
-| Command | Description |
-|---------|-------------|
-| `bun init` | Create new project |
-| `bun install` | Install dependencies |
-| `bun add <pkg>` | Add package |
-| `bun remove <pkg>` | Remove package |
-| `bun update` | Update dependencies |
-| `bun run <script>` | Run script |
-| `bun test` | Run tests |
-| `bun build` | Bundle code |
-| `bunx <cmd>` | Run package binary |
-| `bun audit` | Check for vulnerabilities |
-| `bun outdated` | Show outdated packages |
-| `bun why <pkg>` | Explain why package is installed |
-| `bun publish` | Publish to npm registry |
-| `bun patch <pkg>` | Prepare package for patching |
-
-## Project Setup
+## Quick Start
 
 ```bash
-bun init                    # Basic project
-bun init --react           # React project
-bun init --react=tailwind  # React + Tailwind
-bun init --react=shadcn    # React + shadcn/ui
+# Create new project
+bun init
+
+# Install dependencies
+bun install
+
+# Run a script
+bun run ./file.ts
+
+# Run tests
+bun test
 ```
 
+## Contents
+
+- [Package Management](./REFERENCE.md#package-management)
+- [Running Code](./REFERENCE.md#running-code)
+- [Testing](./REFERENCE.md#testing)
+- [Building](./REFERENCE.md#building)
+- [Configuration](./REFERENCE.md#configuration)
+- [Workspaces](./REFERENCE.md#workspaces)
+- [Environment Variables](./REFERENCE.md#environment-variables)
+
 ## Package Management
+
+### Installation
 
 ```bash
 bun add <pkg>              # Production dep
 bun add -d <pkg>           # Dev dependency
 bun add --optional <pkg>   # Optional dep
 bun add -g <pkg>           # Global install
+```
+
+### Management
+
+```bash
 bun remove <pkg>           # Remove package
 bun update                 # Update all
 bun outdated               # Show outdated
@@ -53,6 +58,8 @@ bun patch <pkg>            # Patch a package
 bun link                   # Link local package
 bun unlink                 # Unlink local package
 ```
+
+See [Package Management](./REFERENCE.md#package-management) for details.
 
 ## Running Code
 
@@ -68,6 +75,8 @@ tmux new -d -s hot 'bun run --hot ./file.ts'
 tmux new -d -s repl 'bun repl'
 ```
 
+See [Running Code](./REFERENCE.md#running-code) for details.
+
 ## Testing
 
 ```bash
@@ -81,6 +90,8 @@ bun test -u               # Update snapshots
 tmux new -d -s test 'bun test --watch'
 ```
 
+See [Testing](./REFERENCE.md#testing) for details.
+
 ## Building
 
 ```bash
@@ -91,7 +102,11 @@ bun build --compile ./cli.ts          # Executable
 bun build --splitting ./src/index.ts  # Code splitting
 ```
 
-## Configuration (bunfig.toml)
+See [Building](./REFERENCE.md#building) for details.
+
+## Configuration
+
+### bunfig.toml
 
 ```toml
 [install]
@@ -108,9 +123,11 @@ minify = true
 sourcemap = "external"
 ```
 
+See [Configuration](./REFERENCE.md#configuration) for details.
+
 ## Workspaces
 
-Root `package.json`:
+### Root package.json
 
 ```json
 {
@@ -122,7 +139,7 @@ Root `package.json`:
 }
 ```
 
-Commands:
+### Workspace Commands
 
 ```bash
 bun run --workspaces test    # Run in all workspaces
@@ -130,12 +147,16 @@ bun add <pkg> --filter <ws>  # Add to specific workspace
 bun remove <pkg> --filter <ws> # Remove from workspace
 ```
 
+See [Workspaces](./REFERENCE.md#workspaces) for details.
+
 ## Environment Variables
 
 ```bash
 bun run --env-file=.env dev  # Load .env
 process.env.VAR             # Access in code
 ```
+
+See [Environment Variables](./REFERENCE.md#environment-variables) for details.
 
 ## Tips
 
@@ -145,3 +166,9 @@ process.env.VAR             # Access in code
 - `bun run -i` auto-installs missing deps
 - Standalone executables: `bun build --compile`
 - Use tmux for watch/hot modes: `tmux new -d -s dev 'bun run --watch'`
+
+## Related Skills
+
+- **typescript**: TypeScript configuration and type checking
+- **vitest**: Test utilities and mocking
+- **ast-grep**: Pattern matching for refactoring

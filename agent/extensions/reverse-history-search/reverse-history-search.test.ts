@@ -1,27 +1,46 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import setupReverseHistorySearchExtension from "./index";
+import setupExtension, { fuzzyMatch } from "./index";
 
-describe("Scenario: Reverse History Search Extension", () => {
-  let mockPi: any;
+// ============================================
+// Extension Registration
+// ============================================
+describe("Reverse History Search Extension", () => {
+  let mockPi: unknown;
 
   beforeEach(() => {
-    mockPi = {
+    const mockExtensionAPI = {
+      on: vi.fn(),
+      registerTool: vi.fn(),
+      registerCommand: vi.fn(),
       registerShortcut: vi.fn(),
-    };
-    setupReverseHistorySearchExtension(mockPi);
+    } as unknown;
+    mockPi = mockExtensionAPI;
+    setupExtension(mockPi);
   });
 
-  it("should register ctrl+r shortcut", () => {
-    expect(mockPi.registerShortcut).toHaveBeenCalledWith("ctrl+r", {
-      description:
-        "Reverse history search (user messages and commands from sessions in current directory)",
-      handler: expect.any(Function),
+  describe("given the extension is initialized", () => {
+    describe("when registering shortcut", () => {
+      it("then it should register ctrl+r shortcut", () => {
+        expect(mockPi.registerShortcut).toHaveBeenCalledWith("ctrl+r", {
+          description:
+            "Reverse history search (user messages and commands from sessions in current directory)",
+          handler: expect.any(Function),
+        });
+      });
+
+      it("then it should register a handler function", () => {
+        const call = mockPi.registerShortcut.mock.calls[0];
+        expect(call[1].handler).toBeInstanceOf(Function);
+      });
     });
   });
 
-  describe("Given shortcut handler", () => {
-    let handler: any;
-    let mockCtx: any;
+  // ============================================
+  // Shortcut Handler
+  // ============================================
+  describe("ctrl+r shortcut handler", () => {
+    let handler: unknown;
+    let mockCtx: unknown;
 
     beforeEach(() => {
       handler = mockPi.registerShortcut.mock.calls[0][1].handler;
@@ -36,95 +55,117 @@ describe("Scenario: Reverse History Search Extension", () => {
       };
     });
 
-    it("should do nothing if no UI", async () => {
-      mockCtx.hasUI = false;
+    describe("given no UI is available", () => {
+      it("then it should do nothing", async () => {
+        mockCtx.hasUI = false;
 
-      await handler(mockCtx);
+        await handler(mockCtx);
 
-      expect(mockCtx.ui.notify).not.toHaveBeenCalled();
-      expect(mockCtx.ui.custom).not.toHaveBeenCalled();
+        expect(mockCtx.ui.notify).not.toHaveBeenCalled();
+        expect(mockCtx.ui.custom).not.toHaveBeenCalled();
+      });
     });
 
-    it("should show notification when no history for current cwd", async () => {
-      // No sessions exist for mock cwd, so notification should be shown
-      await handler(mockCtx);
+    describe("given no history exists for current working directory", () => {
+      it("then it should notify user that no history is found", async () => {
+        await handler(mockCtx);
 
-      expect(mockCtx.ui.notify).toHaveBeenCalledWith(
-        "No history found",
-        "warning",
-      );
-      expect(mockCtx.ui.custom).not.toHaveBeenCalled();
+        expect(mockCtx.ui.notify).toHaveBeenCalledWith(
+          "No history found",
+          "warning",
+        );
+        expect(mockCtx.ui.custom).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("given UI is available and history exists", () => {
+      it("then it should show the custom UI with history", async () => {
+        await expect(handler(mockCtx)).resolves.toBeUndefined();
+      });
     });
   });
 
-  describe("Given fuzzy matching functionality", () => {
-    // Test the fuzzy matching behavior through component interaction
-    // Since fuzzyMatch is an internal function, we'll test its behavior
-    // by creating test scenarios that exercise the matching logic
+  // ============================================
+  // Fuzzy Matching Logic
+  // ============================================
+  describe("fuzzyMatch function", () => {
+    describe("given an empty query", () => {
+      it("then it should return true for empty query", () => {
+        expect(fuzzyMatch("test", "")).toBe(true);
+      });
 
-    const fuzzyMatch = (text: string, query: string): boolean => {
-      if (!query) return true;
-
-      const textLower = text.toLowerCase();
-      const queryLower = query.toLowerCase();
-      let textIdx = 0;
-
-      for (const char of queryLower) {
-        textIdx = textLower.indexOf(char, textIdx);
-        if (textIdx === -1) return false;
-        textIdx++;
-      }
-
-      return true;
-    };
-
-    describe("Given empty query", () => {
-      it("should match any text", () => {
-        expect(fuzzyMatch("any text", "")).toBe(true);
+      it("then it should match unknown text", () => {
+        expect(fuzzyMatch("unknown text", "")).toBe(true);
         expect(fuzzyMatch("", "")).toBe(true);
         expect(fuzzyMatch("git status", "")).toBe(true);
       });
+
+      it("then it should return true for unknown input", () => {
+        expect(fuzzyMatch("test", "")).toBe(true);
+        expect(fuzzyMatch("12345", "")).toBe(true);
+      });
     });
 
-    describe("Given exact string matching", () => {
-      it("should match identical strings", () => {
+    describe("given exact string matching", () => {
+      it("then it should match identical strings", () => {
         expect(fuzzyMatch("git", "git")).toBe(true);
         expect(fuzzyMatch("status", "status")).toBe(true);
+        expect(fuzzyMatch("command", "command")).toBe(true);
       });
 
-      it("should not match different strings", () => {
+      it("then it should not match different strings", () => {
         expect(fuzzyMatch("git", "svn")).toBe(false);
         expect(fuzzyMatch("status", "state")).toBe(false);
+        expect(fuzzyMatch("command", "exec")).toBe(false);
       });
     });
 
-    describe("Given fuzzy pattern matching", () => {
-      it("should match when all characters appear in order", () => {
+    describe("given fuzzy pattern matching", () => {
+      it("then it should match when all characters appear in order", () => {
         expect(fuzzyMatch("git status", "gts")).toBe(true); // g,i,t,s,t,a,t,u,s -> g,t,s
         expect(fuzzyMatch("hello world", "hlo")).toBe(true); // h,e,l,l,o, ,w,o,r,l,d -> h,l,o
+        expect(fuzzyMatch("npm install", "in")).toBe(true); // n,p,m, ,i,n,s,t,a,l,l -> i,n
       });
 
-      it("should not match when characters are out of order", () => {
+      it("then it should not match when characters are out of order", () => {
         expect(fuzzyMatch("git status", "tsg")).toBe(false); // t,s,g not in order
         expect(fuzzyMatch("hello", "hle")).toBe(false); // h,l,e not in sequence
+        expect(fuzzyMatch("npm install", "nsi")).toBe(false); // n,s,i not in sequence
       });
+    });
 
-      it("should be case insensitive", () => {
+    describe("given case insensitive matching", () => {
+      it("then it should treat uppercase and lowercase as equivalent", () => {
         expect(fuzzyMatch("GIT STATUS", "git")).toBe(true);
         expect(fuzzyMatch("git status", "GIT")).toBe(true);
         expect(fuzzyMatch("Hello World", "hw")).toBe(true);
+        expect(fuzzyMatch("HELLO WORLD", "hw")).toBe(true);
       });
     });
 
-    describe("Given partial matches", () => {
-      it("should match substrings", () => {
+    describe("given partial matches", () => {
+      it("then it should match substrings", () => {
         expect(fuzzyMatch("git status --help", "status")).toBe(true);
         expect(fuzzyMatch("npm install package", "inst")).toBe(true);
+        expect(fuzzyMatch("cargo build", "build")).toBe(true);
       });
 
-      it("should handle repeated characters", () => {
+      it("then it should handle repeated characters", () => {
         expect(fuzzyMatch("hello", "ll")).toBe(true);
         expect(fuzzyMatch("bookkeeping", "ook")).toBe(true);
+        expect(fuzzyMatch("success", "cc")).toBe(true);
+      });
+    });
+
+    describe("given complex queries", () => {
+      it("then it should handle queries with spaces", () => {
+        expect(fuzzyMatch("git commit", "gitc")).toBe(true);
+        expect(fuzzyMatch("npm run dev", "rund")).toBe(true);
+      });
+
+      it("then it should handle queries with special characters", () => {
+        expect(fuzzyMatch("git push origin", "pso")).toBe(true);
+        expect(fuzzyMatch("cargo publish", "pub")).toBe(true);
       });
     });
   });

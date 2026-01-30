@@ -1,11 +1,26 @@
 ---
 name: typescript
-description: Configure TypeScript projects, define types and interfaces, write generics, and implement type guards. Use when setting up tsconfig.json, creating type definitions, or ensuring type safety in JS/TS codebases.
+description: Configures TypeScript projects, defines types and interfaces, writes generics, and implements type guards. Use when setting up tsconfig.json, creating type definitions, or ensuring type safety in JS/TS codebases.
 ---
 
-# TypeScript Cheatsheet
+References are relative to /home/knoopx/.pi/agent/skills/typescript.
+
+# TypeScript
 
 Type-safe JavaScript with static typing and modern features.
+
+## Quick Start
+
+```bash
+# Initialize project
+bun init --typescript
+
+# Type check
+bunx tsc --noEmit
+
+# Run tests
+vitest run
+```
 
 ## Configuration
 
@@ -45,48 +60,28 @@ let tuple: [string, number] = ["age", 25];
 let obj: { name: string; age: number } = { name: "John", age: 30 };
 ```
 
-### Advanced Types
-
-```typescript
-// Union
-type Status = "loading" | "success" | "error";
-
-// Intersection
-type User = Person & { email: string };
-
-// Generics
-function identity<T>(arg: T): T { return arg; }
-
-// Utility types
-type PartialUser = Partial<User>;
-type ReadonlyUser = Readonly<User>;
-type PickName = Pick<User, "name">;
-type OmitEmail = Omit<User, "email">;
-```
-
 ### Interfaces vs Types
 
 ```typescript
+// Interface for object shapes
 interface User {
+  id: number;
   name: string;
-  age: number;
+  email: string;
 }
 
-type UserType = {
-  name: string;
-  age: number;
-};
+// Type for function signatures
+type CreateUser = (data: Partial<User>) => Promise<User>;
 
-// Interface extends, type uses &
-interface Admin extends User {
-  role: string;
-}
+// Discriminated union (branded types)
+type Result<T> = { ok: true; value: T } | { ok: false; error: Error };
 ```
 
 ## Functions
 
+### Function Declaration
+
 ```typescript
-// Function declaration
 function add(a: number, b: number): number {
   return a + b;
 }
@@ -152,7 +147,9 @@ function wrap<T>(value: T): { value: T } {
 class Container<T> {
   constructor(private value: T) {}
 
-  get(): T { return this.value; }
+  get(): T {
+    return this.value;
+  }
 }
 
 // Generic constraints
@@ -177,16 +174,23 @@ function process(value: unknown) {
 
 ## Error Handling
 
+### Custom Errors
+
 ```typescript
-// Custom errors
 class ValidationError extends Error {
-  constructor(public field: string, message: string) {
+  constructor(
+    public field: string,
+    message: string,
+  ) {
     super(message);
     this.name = "ValidationError";
   }
 }
+```
 
-// Result type
+### Result Type
+
+```typescript
 type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E };
 
 function safeParse(json: string): Result<unknown> {
@@ -206,7 +210,6 @@ function safeParse(json: string): Result<unknown> {
 - Use branded types for primitives needing validation
 - Make invalid states unrepresentable
 - Type at boundaries (API inputs/outputs)
-- Use JSDoc for complex types
 
 ## Compilation
 
@@ -226,3 +229,9 @@ tmux new -d -s tsc 'tsc --watch'
 - Path mapping for clean imports: `"@/*": ["src/*"]`
 - Declaration files: `"declaration": true`
 - Source maps: `"sourceMap": true`
+
+## Related Skills
+
+- **vitest**: Test utilities and mocking
+- **bun**: Package management and scripting
+- **ast-grep**: Pattern matching for refactoring

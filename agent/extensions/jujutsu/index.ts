@@ -6,7 +6,9 @@ import type {
   SessionStartEvent,
   SessionEntry,
 } from "@mariozechner/pi-coding-agent";
-import { spawn } from "node:child_process";
+import * as path from "node:path";
+import * as fs from "node:fs";
+import * as os from "node:os";
 
 /**
  * Jujutsu extension for Pi coding agent.
@@ -29,19 +31,6 @@ export default function (pi: ExtensionAPI) {
   }
 
   /**
-   * Check if in a Jujutsu repository, notifying user if context provided
-   * @param ctx Optional command context for notifications
-   * @returns true if in JJ repo, false otherwise
-   */
-  async function requireRepo(ctx?: ExtensionCommandContext): Promise<boolean> {
-    const isRepo = await isJujutsuRepo();
-    if (!isRepo && ctx) {
-      ctx.ui.notify("Not in a Jujutsu repository", "warning");
-    }
-    return isRepo;
-  }
-
-  /**
    * Check if operation was aborted and notify user
    * @param ctx Context for notifications
    * @param signal Abort signal
@@ -60,22 +49,112 @@ export default function (pi: ExtensionAPI) {
     return false;
   }
 
-  // Check if pi command is available
-  async function isPiCommandAvailable(): Promise<boolean> {
+  /** Map of entryId -> changeId for changes */
+  const changes = new Map<string, string>();
+  /** Stack of {changeId, messageId} for multi-level redo */
+  const redoStack: Array<{ changeId: string; messageId: string }> = [];
+
+  type HookScope = "session" | "global";
+
+  const globalSettingsPath = path.join(
+    os.homedir(),
+    ".pi",
+    "agent",
+    "settings.json",
+  );
+  const JUJU_CONFIG_ENTRY = "juju-hook-config";
+
+  interface HookConfigEntry {
+    scope: HookScope;
+    hooksEnabled?: boolean;
+  }
+
+  /**
+   * Flag to enable/disable hooks (sub-feature)
+   */
+  let hooksEnabled = true;
+  let hookScope: HookScope = "global";
+
+  function readSettingsFile(filePath: string): Record<string, unknown> {
     try {
-      await pi.exec("pi", ["--version"]);
+      if (!fs.existsSync(filePath)) return {};
+      const raw = fs.readFileSync(filePath, "utf-8");
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object"
+        ? (parsed as unknown as Record<string, unknown>)
+        : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function getGlobalHooksEnabled(): boolean | undefined {
+    const settings = readSettingsFile(globalSettingsPath);
+    const jujuSettings = settings["jujutsu"];
+    const hooksValue = (jujuSettings as { hooksEnabled?: unknown } | undefined)
+      ?.hooksEnabled;
+    if (typeof hooksValue === "boolean") return hooksValue;
+    return undefined;
+  }
+
+  function setGlobalHooksEnabled(enabled: boolean): boolean {
+    try {
+      const settings = readSettingsFile(globalSettingsPath);
+      const existing = settings["jujutsu"];
+      const nextNamespace =
+        existing && typeof existing === "object"
+          ? {
+              ...(existing as unknown as Record<string, unknown>),
+              hooksEnabled: enabled,
+            }
+          : { hooksEnabled: enabled };
+
+      settings["jujutsu"] = nextNamespace;
+      fs.mkdirSync(path.dirname(globalSettingsPath), { recursive: true });
+      fs.writeFileSync(
+        globalSettingsPath,
+        JSON.stringify(settings, null, 2),
+        "utf-8",
+      );
       return true;
     } catch {
       return false;
     }
   }
 
-  /** Map of entryId -> changeId for changes */
-  const changes = new Map<string, string>();
-  /** Stack of {changeId, messageId} for multi-level redo */
-  const redoStack: Array<{ changeId: string; messageId: string }> = [];
-  /** Flag to enable/disable hooks */
-  let hooksEnabled = true;
+  function getLastHookEntry(
+    ctx: ExtensionContext,
+  ): HookConfigEntry | undefined {
+    const branchEntries = ctx.sessionManager.getBranch();
+    let latest: HookConfigEntry | undefined;
+
+    for (const entry of branchEntries) {
+      if (entry.type === "custom" && entry.customType === JUJU_CONFIG_ENTRY) {
+        latest = entry.data as HookConfigEntry | undefined;
+      }
+    }
+
+    return latest;
+  }
+
+  function restoreHookState(ctx: ExtensionContext): void {
+    const entry = getLastHookEntry(ctx);
+    if (entry?.scope === "session") {
+      if (typeof entry.hooksEnabled === "boolean") {
+        hooksEnabled = entry.hooksEnabled;
+        hookScope = "session";
+        return;
+      }
+    }
+
+    const globalSetting = getGlobalHooksEnabled();
+    hooksEnabled = globalSetting ?? true;
+    hookScope = "global";
+  }
+
+  function persistHookEntry(entry: HookConfigEntry): void {
+    pi.appendEntry<HookConfigEntry>(JUJU_CONFIG_ENTRY, entry);
+  }
 
   /**
    * Get the current JJ change ID
@@ -166,208 +245,6 @@ export default function (pi: ExtensionAPI) {
     }
   }
 
-  /**
-   * Generate content using a pi subagent with proper error handling and timeouts
-   */
-  async function generateWithPi(
-    task: string,
-    model: string | undefined,
-    signal: AbortSignal | undefined,
-    timeoutMs: number = 30000,
-  ): Promise<string> {
-    const piAvailable = await isPiCommandAvailable();
-    if (!piAvailable) {
-      throw new Error("pi command not available");
-    }
-
-    if (!model) {
-      throw new Error("Model name not available");
-    }
-
-    if (signal?.aborted) {
-      throw new Error("Operation aborted");
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-    const combinedSignal = signal
-      ? AbortSignal.any([signal, controller.signal])
-      : controller.signal;
-
-    try {
-      return await generateWithPiInternal(task, model, combinedSignal);
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  }
-
-  /**
-   * Internal implementation of pi subagent generation
-   */
-  async function generateWithPiInternal(
-    task: string,
-    model: string,
-    signal: AbortSignal,
-  ): Promise<string> {
-    interface PiEventMessage {
-      role: "assistant" | "toolResult";
-      content: Array<{ type: "text"; text: string }>;
-    }
-
-    interface PiEvent {
-      type: "message_end" | "tool_result_end";
-      message?: PiEventMessage;
-    }
-
-    return new Promise((resolve, reject) => {
-      const args = [
-        "--mode",
-        "json",
-        "-p",
-        "--no-session",
-        "--no-tools",
-        "--no-skills",
-        "--no-extensions",
-        "--model",
-        model,
-        `Task: ${task}`,
-      ];
-
-      const proc = spawn("pi", args, {
-        cwd: process.cwd(),
-        shell: false,
-        stdio: ["ignore", "pipe", "pipe"],
-        env: { ...process.env },
-      });
-
-      let buffer = "";
-      let finalOutput = "";
-      let stderrOutput = "";
-
-      const cleanup = () => {
-        proc.kill("SIGTERM");
-        setTimeout(() => {
-          if (!proc.killed) proc.kill("SIGKILL");
-        }, 5000);
-      };
-
-      const processLine = (line: string) => {
-        if (!line.trim()) return;
-        try {
-          const event: PiEvent = JSON.parse(line);
-          if (event.type === "message_end" && event.message) {
-            const msg = event.message;
-            if (msg.role === "assistant") {
-              for (const part of msg.content) {
-                if (part.type === "text") {
-                  finalOutput += part.text;
-                }
-              }
-            }
-          }
-
-          if (event.type === "tool_result_end" && event.message) {
-            const msg = event.message;
-            if (msg.role === "toolResult") {
-              for (const part of msg.content) {
-                if (part.type === "text") {
-                  finalOutput += part.text;
-                }
-              }
-            }
-          }
-        } catch {
-          // Invalid JSON, skip this line
-          console.warn(`Invalid JSON from pi subagent: ${line}`);
-        }
-      };
-
-      proc.stdout.on("data", (data) => {
-        buffer += data.toString();
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-        for (const line of lines) processLine(line);
-      });
-
-      proc.stderr.on("data", (data) => {
-        stderrOutput += data.toString();
-      });
-
-      proc.on("close", (code) => {
-        if (buffer.trim()) processLine(buffer);
-
-        if (code === 0) {
-          const trimmed = finalOutput.trim();
-          if (trimmed) {
-            resolve(trimmed);
-          } else {
-            reject(
-              new Error(
-                `No output from pi subagent${stderrOutput ? `: ${stderrOutput}` : ""}`,
-              ),
-            );
-          }
-        } else {
-          reject(
-            new Error(
-              `pi subagent exited with code ${code}${stderrOutput ? `: ${stderrOutput}` : ""}`,
-            ),
-          );
-        }
-      });
-
-      proc.on("error", (error) => {
-        reject(new Error(`Failed to spawn pi subagent: ${error.message}`));
-      });
-
-      // Handle abort signal
-      if (signal.aborted) {
-        cleanup();
-        reject(new Error("Operation aborted"));
-      } else {
-        signal.addEventListener(
-          "abort",
-          () => {
-            cleanup();
-            reject(new Error("Operation aborted"));
-          },
-          { once: true },
-        );
-      }
-    });
-  }
-
-  /**
-   * Generate a conventional change description from a diff
-   */
-  async function generateDescriptionWithPi(
-    diffOutput: string,
-    prompt: string | undefined,
-    model: string | undefined,
-    signal: AbortSignal | undefined,
-  ): Promise<string> {
-    // Truncate diff to prevent argument length issues
-    const maxDiffLength = 50000;
-    const truncatedDiff =
-      diffOutput.length > maxDiffLength
-        ? diffOutput.substring(0, maxDiffLength) + "\n... (truncated)"
-        : diffOutput;
-
-    const task = `Generate a conventional change description for the following Jujutsu diff. Use the format: type(scope): icon short description
-
-Follow conventional commit standards with appropriate icons. Analyze the changes and provide a meaningful description.
-
-${prompt ? `Issue/Request: ${prompt}\n\n` : ""}Diff:
-${truncatedDiff}
-
-Respond with only the change message, no additional text.`;
-
-    return generateWithPi(task, model, signal);
-  }
-
-  /** Store model for use in agent_end */
-  let currentModel: string | undefined;
   /** Store current prompt for description generation */
   let currentPrompt: string | undefined;
 
@@ -379,17 +256,8 @@ Respond with only the change message, no additional text.`;
     "before_agent_start",
     async (event: BeforeAgentStartEvent, _ctx: ExtensionContext) => {
       if (!hooksEnabled) return;
-      if (!(await requireRepo())) return;
 
-      // Store the current model for use in subagents
-      try {
-        currentModel = _ctx.model?.name;
-      } catch (error) {
-        // Silently fail if we can't get model info
-        console.warn(
-          `Failed to get model info: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
+      if (!(await isJujutsuRepo())) return;
 
       // Store the current prompt for description generation
       currentPrompt = event.prompt;
@@ -434,7 +302,7 @@ Respond with only the change message, no additional text.`;
 
   pi.on("agent_end", async (_event, ctx) => {
     if (!hooksEnabled) return;
-    if (!(await requireRepo())) return;
+    if (!(await isJujutsuRepo())) return;
 
     const isEmpty = await isCurrentChangeEmpty();
     // Check if the turn was aborted before starting description generation
@@ -482,7 +350,7 @@ Respond with only the change message, no additional text.`;
           return;
 
         // Generate a proper description from diff
-        const { stdout: diffOutput } = await pi.exec("jj", ["diff", "--stat"], {
+        await pi.exec("jj", ["diff", "--stat"], {
           signal: contextSignal,
         });
 
@@ -494,13 +362,6 @@ Respond with only the change message, no additional text.`;
           )
         )
           return;
-
-        const newDescription = await generateDescriptionWithPi(
-          diffOutput,
-          currentPrompt,
-          currentModel,
-          contextSignal,
-        );
 
         if (
           checkAborted(
@@ -521,6 +382,9 @@ Respond with only the change message, no additional text.`;
           )
         )
           return;
+
+        // Use current prompt as description if Pi is not available
+        const newDescription = currentPrompt || "Updated change description";
 
         await pi.exec(
           "jj",
@@ -561,8 +425,12 @@ Respond with only the change message, no additional text.`;
   pi.on(
     "session_start",
     async (_event: SessionStartEvent, _ctx: ExtensionContext) => {
+      restoreHookState(_ctx);
+
       if (!hooksEnabled) return;
-      if (!(await requireRepo())) return;
+
+      // Check if currently inside .jj directory
+      if (!(await isJujutsuRepo())) return;
 
       try {
         // Create a new empty change for the session
@@ -576,6 +444,52 @@ Respond with only the change message, no additional text.`;
   );
 
   /**
+   * Tool call handler: Blocks operations that would affect the .jj directory or use git
+   */
+  // pi.on(
+  //   "tool_call",
+  //   async (
+  //     event: {
+  //       type: "tool_call";
+  //       toolName: string;
+  //       toolCallId: string;
+  //       input: Record<string, unknown>;
+  //     },
+  //     _ctx: ExtensionContext,
+  //   ) => {
+  //     const { affectsJj, usesGit } = wouldAffectJjDir(event.input);
+
+  //     // Block .jj directory operations
+  //     if (affectsJj) {
+  //       const blockedTools = [
+  //         "bash",
+  //         "write",
+  //         "edit",
+  //         "read",
+  //         "grep",
+  //         "find",
+  //         "ls",
+  //       ];
+  //       if (blockedTools.includes(event.toolName)) {
+  //         return {
+  //           block: true,
+  //           reason: `Tool ${event.toolName} blocked: Direct operations on .jj directory are not allowed`,
+  //         };
+  //       }
+  //     }
+
+  //     // Block git operations
+  //     if (usesGit) {
+  //       return {
+  //         block: true,
+  //         reason:
+  //           "Git operations blocked: This project uses jujutsu for version control",
+  //       };
+  //     }
+  //   },
+  // );
+
+  /**
    * Undo command: Abandon the current change and restore repository state to before that change was processed.
    * This removes the current change conceptually and switches to the previous user message's change.
    */
@@ -583,7 +497,7 @@ Respond with only the change message, no additional text.`;
     description:
       "Abandon the current change and restore the repository state to before that change was processed",
     handler: async (args: string, ctx: ExtensionCommandContext) => {
-      if (!(await requireRepo(ctx))) return;
+      if (!(await isJujutsuRepo())) return;
 
       const userEntries = getUserEntries(ctx.sessionManager);
 
@@ -640,7 +554,7 @@ Respond with only the change message, no additional text.`;
     description:
       "Redo the last undo operation by switching back to the previous change",
     handler: async (args: string, ctx: ExtensionCommandContext) => {
-      if (!(await requireRepo(ctx))) return;
+      if (!(await isJujutsuRepo())) return;
 
       if (redoStack.length === 0) {
         ctx.ui.notify("No undo operation to redo", "warning");
@@ -675,24 +589,76 @@ Respond with only the change message, no additional text.`;
   });
 
   /**
-   * Enable hooks command: Enable automatic JJ hooks for change management
+   * Jujutsu settings command: Configure automatic hooks for change management
    */
-  pi.registerCommand("jujutsu-enable-hooks", {
-    description: "Enable automatic Jujutsu hooks for change management",
-    handler: async (args: string, ctx: ExtensionCommandContext) => {
-      hooksEnabled = true;
-      ctx.ui.notify("Jujutsu hooks enabled", "info");
-    },
-  });
+  pi.registerCommand("jujutsu", {
+    description: "Jujutsu settings (auto change management hooks)",
+    handler: async (_args, ctx) => {
+      if (!ctx.hasUI) {
+        ctx.ui.notify("Jujutsu settings require UI", "warning");
+        return;
+      }
 
-  /**
-   * Disable hooks command: Disable automatic JJ hooks for change management
-   */
-  pi.registerCommand("jujutsu-disable-hooks", {
-    description: "Disable automatic Jujutsu hooks for change management",
-    handler: async (args: string, ctx: ExtensionCommandContext) => {
-      hooksEnabled = false;
-      ctx.ui.notify("Jujutsu hooks disabled", "info");
+      const currentMark = " ✓";
+      const hooksOptions = [
+        {
+          enabled: true,
+          label: hooksEnabled ? `Enabled${currentMark}` : "Enabled",
+        },
+        {
+          enabled: false,
+          label: !hooksEnabled ? `Disabled${currentMark}` : "Disabled",
+        },
+      ];
+
+      const hooksChoice = await ctx.ui.select(
+        "Jujutsu auto change management hooks:",
+        hooksOptions.map((option) => option.label),
+      );
+      if (!hooksChoice) return;
+
+      const nextEnabled = hooksOptions.find(
+        (option) => option.label === hooksChoice,
+      )?.enabled;
+      if (nextEnabled === undefined) return;
+
+      const scopeOptions = [
+        {
+          scope: "session" as HookScope,
+          label: "Session only",
+        },
+        {
+          scope: "global" as HookScope,
+          label: "Global (all sessions)",
+        },
+      ];
+
+      const scopeChoice = await ctx.ui.select(
+        "Apply Jujutsu auto hooks setting to:",
+        scopeOptions.map((option) => option.label),
+      );
+      if (!scopeChoice) return;
+
+      const scope = scopeOptions.find(
+        (option) => option.label === scopeChoice,
+      )?.scope;
+      if (!scope) return;
+
+      if (scope === "global") {
+        const ok = setGlobalHooksEnabled(nextEnabled);
+        if (!ok) {
+          ctx.ui.notify("Failed to update global settings", "error");
+          return;
+        }
+      }
+
+      hooksEnabled = nextEnabled;
+      hookScope = scope;
+      persistHookEntry({ scope, hooksEnabled: nextEnabled });
+      ctx.ui.notify(
+        `Jujutsu hooks: ${hooksEnabled ? "Enabled" : "Disabled"} (${hookScope})`,
+        "info",
+      );
     },
   });
 }

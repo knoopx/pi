@@ -1,11 +1,11 @@
 ---
 name: nix-flakes
-description: Create reproducible builds, manage flake inputs, define devShells, and build packages with flake.nix. Use when initializing Nix projects, locking dependencies, or running nix build/develop commands.
+description: Creates reproducible builds, manages flake inputs, defines devShells, and builds packages with flake.nix. Use when initializing Nix projects, locking dependencies, or running nix build/develop commands.
 ---
 
-# Nix Flakes Skill
+# Nix Flakes
 
-Flakes are the modern way to manage Nix projects, providing hermeticity and reproducibility through a `flake.lock` file.
+Modern Nix project management with hermeticity and reproducibility through flake.lock.
 
 ## Core Commands
 
