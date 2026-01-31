@@ -7,6 +7,17 @@ import { fileURLToPath } from "url";
 
 export type SeverityFilter = "all" | "error" | "warning" | "info" | "hint";
 
+type SymbolItem = {
+  name?: string;
+  selectionRange?: { start: { line: number; character: number } };
+  range?: { start: { line: number; character: number } };
+  children?: SymbolItem[];
+};
+
+interface LspManager {
+  getDocumentSymbols(file: string): Promise<unknown[]>;
+}
+
 /**
  * Format diagnostic for display
  */
@@ -50,14 +61,14 @@ export function uriToPath(uri: string): string {
  * Find symbol position in document symbols
  */
 export function findSymbolPosition(
-  symbols: unknown[],
+  symbols: SymbolItem[],
   query: string,
 ): { line: number; character: number } | null {
   const q = query.toLowerCase();
   let exact: { line: number; character: number } | null = null;
   let partial: { line: number; character: number } | null = null;
 
-  const visit = (items: unknown[]) => {
+  const visit = (items: SymbolItem[]) => {
     for (const sym of items) {
       const name = String(sym?.name ?? "").toLowerCase();
       const pos = sym?.selectionRange?.start ?? sym?.range?.start;
@@ -80,12 +91,12 @@ export function findSymbolPosition(
  * Resolve position by searching for a symbol
  */
 export async function resolvePosition(
-  manager: unknown,
+  manager: LspManager,
   file: string,
   query: string,
 ): Promise<{ line: number; character: number } | null> {
   const symbols = await manager.getDocumentSymbols(file);
-  const pos = findSymbolPosition(symbols, query);
+  const pos = findSymbolPosition(symbols as SymbolItem[], query);
   if (pos) {
     return {
       line: pos.line,

@@ -7,7 +7,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as os from "node:os";
 
 import {
   marksmanServerConfig,
@@ -39,7 +38,6 @@ describe("Marksman server - Supported files", () => {
     describe("when checking server configuration", () => {
       it("then returns correct configuration for .md files", () => {
         const config = getMarksmanServerConfig();
-        const ext = path.extname("README.md");
 
         // Check if extension is supported
         expect(config.extensions).toContain(".md");

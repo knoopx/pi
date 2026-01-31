@@ -61,7 +61,7 @@ describe("LSP Client - Notification Functions", () => {
 
   beforeEach(() => {
     mockConnection = {
-      sendNotification: vi.fn().mockResolvedValue(undefined),
+      sendNotification: (vi.fn() as any).mockResolvedValue(undefined),
       sendRequest: vi.fn(),
     } as unknown as MessageConnection;
   });
@@ -200,7 +200,7 @@ describe("LSP Client - Request Functions", () => {
       it("then returns diagnostics array", async () => {
         const filePath = "/path/to/file.ts";
         const mockDiagnostics = [{ message: "error" }];
-        mockConnection.sendRequest.mockResolvedValue(mockDiagnostics);
+        (mockConnection.sendRequest as any).mockResolvedValue(mockDiagnostics);
 
         const result = await diagnostics(mockConnection, filePath);
 
@@ -219,7 +219,9 @@ describe("LSP Client - Request Functions", () => {
     describe("when request fails", () => {
       it("then returns empty array", async () => {
         const filePath = "/path/to/file.ts";
-        mockConnection.sendRequest.mockRejectedValue(new Error("failed"));
+        (mockConnection.sendRequest as any).mockRejectedValue(
+          new Error("failed"),
+        );
 
         const result = await diagnostics(mockConnection, filePath);
 
@@ -235,7 +237,7 @@ describe("LSP Client - Request Functions", () => {
         const line = 5;
         const character = 10;
         const mockHover = { contents: "hover text" };
-        mockConnection.sendRequest.mockResolvedValue(mockHover);
+        (mockConnection.sendRequest as any).mockResolvedValue(mockHover);
 
         const result = await hover(mockConnection, filePath, line, character);
 
@@ -257,7 +259,9 @@ describe("LSP Client - Request Functions", () => {
         const filePath = "/path/to/file.ts";
         const line = 5;
         const character = 10;
-        mockConnection.sendRequest.mockRejectedValue(new Error("failed"));
+        (mockConnection.sendRequest as any).mockRejectedValue(
+          new Error("failed"),
+        );
 
         const result = await hover(mockConnection, filePath, line, character);
 
@@ -273,7 +277,7 @@ describe("LSP Client - Request Functions", () => {
         const line = 5;
         const character = 10;
         const mockSignature = { signatures: [] };
-        mockConnection.sendRequest.mockResolvedValue(mockSignature);
+        (mockConnection.sendRequest as any).mockResolvedValue(mockSignature);
 
         const result = await signatureHelp(
           mockConnection,
@@ -300,7 +304,9 @@ describe("LSP Client - Request Functions", () => {
         const filePath = "/path/to/file.ts";
         const line = 5;
         const character = 10;
-        mockConnection.sendRequest.mockRejectedValue(new Error("failed"));
+        (mockConnection.sendRequest as any).mockRejectedValue(
+          new Error("failed"),
+        );
 
         const result = await signatureHelp(
           mockConnection,
@@ -321,7 +327,7 @@ describe("LSP Client - Request Functions", () => {
         const line = 5;
         const character = 10;
         const mockDefinition = [{ uri: "file://def.ts", range: {} }];
-        mockConnection.sendRequest.mockResolvedValue(mockDefinition);
+        (mockConnection.sendRequest as any).mockResolvedValue(mockDefinition);
 
         const result = await definition(
           mockConnection,
@@ -348,7 +354,9 @@ describe("LSP Client - Request Functions", () => {
         const filePath = "/path/to/file.ts";
         const line = 5;
         const character = 10;
-        mockConnection.sendRequest.mockRejectedValue(new Error("failed"));
+        (mockConnection.sendRequest as any).mockRejectedValue(
+          new Error("failed"),
+        );
 
         const result = await definition(
           mockConnection,
@@ -370,7 +378,7 @@ describe("LSP Client - Request Functions", () => {
         const character = 10;
         const includeDeclaration = true;
         const mockReferences = [{ uri: "file://ref.ts", range: {} }];
-        mockConnection.sendRequest.mockResolvedValue(mockReferences);
+        (mockConnection.sendRequest as any).mockResolvedValue(mockReferences);
 
         const result = await references(
           mockConnection,
@@ -401,7 +409,9 @@ describe("LSP Client - Request Functions", () => {
         const filePath = "/path/to/file.ts";
         const line = 5;
         const character = 10;
-        mockConnection.sendRequest.mockRejectedValue(new Error("failed"));
+        (mockConnection.sendRequest as any).mockRejectedValue(
+          new Error("failed"),
+        );
 
         const result = await references(
           mockConnection,
@@ -420,7 +430,7 @@ describe("LSP Client - Request Functions", () => {
       it("then returns symbols result", async () => {
         const filePath = "/path/to/file.ts";
         const mockSymbols = [{ name: "MyClass", kind: 5 }];
-        mockConnection.sendRequest.mockResolvedValue(mockSymbols);
+        (mockConnection.sendRequest as any).mockResolvedValue(mockSymbols);
 
         const result = await documentSymbols(mockConnection, filePath);
 
@@ -439,7 +449,9 @@ describe("LSP Client - Request Functions", () => {
     describe("when request fails", () => {
       it("then returns null", async () => {
         const filePath = "/path/to/file.ts";
-        mockConnection.sendRequest.mockRejectedValue(new Error("failed"));
+        (mockConnection.sendRequest as any).mockRejectedValue(
+          new Error("failed"),
+        );
 
         const result = await documentSymbols(mockConnection, filePath);
 
@@ -456,7 +468,7 @@ describe("LSP Client - Request Functions", () => {
         const character = 10;
         const newName = "newFunction";
         const mockRename = { changes: {} };
-        mockConnection.sendRequest.mockResolvedValue(mockRename);
+        (mockConnection.sendRequest as any).mockResolvedValue(mockRename);
 
         const result = await rename(
           mockConnection,
@@ -486,7 +498,9 @@ describe("LSP Client - Request Functions", () => {
         const line = 5;
         const character = 10;
         const newName = "newFunction";
-        mockConnection.sendRequest.mockRejectedValue(new Error("failed"));
+        (mockConnection.sendRequest as any).mockRejectedValue(
+          new Error("failed"),
+        );
 
         const result = await rename(
           mockConnection,
@@ -510,7 +524,7 @@ describe("LSP Client - Request Functions", () => {
         const endLine = 5;
         const endCharacter = 20;
         const mockActions = [{ title: "Fix error" }];
-        mockConnection.sendRequest.mockResolvedValue(mockActions);
+        (mockConnection.sendRequest as any).mockResolvedValue(mockActions);
 
         const result = await codeAction(
           mockConnection,
@@ -547,7 +561,9 @@ describe("LSP Client - Request Functions", () => {
         const startCharacter = 10;
         const endLine = 5;
         const endCharacter = 20;
-        mockConnection.sendRequest.mockRejectedValue(new Error("failed"));
+        (mockConnection.sendRequest as any).mockRejectedValue(
+          new Error("failed"),
+        );
 
         const result = await codeAction(
           mockConnection,
@@ -569,8 +585,8 @@ describe("LSP Client - Shutdown", () => {
 
   beforeEach(() => {
     mockConnection = {
-      sendNotification: vi.fn().mockResolvedValue(undefined),
-      sendRequest: vi.fn().mockResolvedValue(undefined),
+      sendNotification: (vi.fn() as any).mockResolvedValue(undefined),
+      sendRequest: (vi.fn() as any).mockResolvedValue(undefined),
     } as unknown as MessageConnection;
   });
 
@@ -589,7 +605,9 @@ describe("LSP Client - Shutdown", () => {
 
     describe("when shutdown fails", () => {
       it("then does not throw", async () => {
-        mockConnection.sendRequest.mockRejectedValue(new Error("failed"));
+        (mockConnection.sendRequest as any).mockRejectedValue(
+          new Error("failed"),
+        );
 
         await expect(shutdown(mockConnection)).resolves.toBeUndefined();
       });

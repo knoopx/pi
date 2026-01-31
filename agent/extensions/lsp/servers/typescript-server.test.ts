@@ -4,13 +4,12 @@
  * Tests TypeScript/JavaScript language server configuration and functionality
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 
 import {
-  typescriptServerConfig,
   getTypescriptServerConfig,
   findTypeScriptRoot,
   spawnTypeScriptLanguageServer,

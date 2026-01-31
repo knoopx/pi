@@ -9,11 +9,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 
-import {
-  pyrightServerConfig,
-  getPyrightServerConfig,
-  findPythonRoot,
-} from "./python-server";
+import { getPyrightServerConfig, findPythonRoot } from "./python-server";
 
 describe("pyrightServerConfig", () => {
   describe("given the Python server configuration", () => {
@@ -68,7 +64,7 @@ describe("Python server - Project markers", () => {
     if (fs.existsSync(testDir)) {
       try {
         fs.rmSync(testDir, { recursive: true, force: true });
-      } catch (e) {
+      } catch {
         // Ignore cleanup errors in case directory is already removed
       }
     }

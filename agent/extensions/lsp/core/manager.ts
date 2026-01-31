@@ -5,9 +5,8 @@
 import * as path from "node:path";
 import * as fs from "node:fs";
 
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 
-import { MessageConnection } from "vscode-jsonrpc";
 import { createMessageConnection } from "vscode-jsonrpc/node";
 import {
   InitializeRequest,
@@ -32,6 +31,7 @@ import {
   type WorkspaceEdit,
   type CodeAction,
   type Command,
+  type PublishDiagnosticsParams,
 } from "vscode-languageserver-protocol";
 import { normalizeFsPath } from "./utils";
 import { LSP_SERVERS } from "./server-configs";
@@ -45,8 +45,11 @@ let managerCwd: string | null = null;
 
 export function getOrCreateManager(cwd: string): LSPManager {
   // Check for global mock first (for testing)
-  if (typeof (globalThis as unknown).getOrCreateManager === "function") {
-    return (globalThis as unknown).getOrCreateManager(cwd);
+  const globalMock = globalThis as {
+    getOrCreateManager?: (cwd: string) => LSPManager;
+  };
+  if (typeof globalMock.getOrCreateManager === "function") {
+    return globalMock.getOrCreateManager(cwd);
   }
 
   if (!sharedManager || managerCwd !== cwd) {
@@ -99,26 +102,28 @@ export class LSPManager {
   } | null> {
     const l = await this.loadFile(fp);
     if (!l) return null;
-    await this.openOrUpdate(
-      l.clients,
-      l.absPath,
-      l.uri,
-      l.langId,
-      l.content,
-      true,
-    );
+    await this.openOrUpdate(l.clients, l.absPath, l.uri, l.langId, l.content);
     return l;
   }
 
   async touchFileAndWait(
     filePath: string,
     timeoutMs: number,
+    signal?: AbortSignal,
   ): Promise<{
     diagnostics: Diagnostic[];
     receivedResponse: boolean;
     unsupported?: boolean;
     error?: string;
   }> {
+    if (signal?.aborted) {
+      return {
+        diagnostics: [],
+        receivedResponse: false,
+        error: "Aborted",
+      };
+    }
+
     const absPath = this.resolve(filePath);
     if (!fs.existsSync(absPath)) {
       return {
@@ -130,6 +135,14 @@ export class LSPManager {
     }
 
     const clients = await this.getClientsForFile(absPath);
+    if (signal?.aborted) {
+      return {
+        diagnostics: [],
+        receivedResponse: false,
+        error: "Aborted",
+      };
+    }
+
     if (!clients.length) {
       return {
         diagnostics: [],
@@ -152,19 +165,47 @@ export class LSPManager {
     const uri = pathToFileURL(absPath).href;
     const langId = this.langId(absPath);
 
-    await this.openOrUpdate(clients, absPath, uri, langId, content, true);
+    // Clear stale diagnostics before opening/updating the file
+    for (const c of clients) {
+      c.diagnostics.delete(absPath);
+    }
+
+    await this.openOrUpdate(clients, absPath, uri, langId, content);
+
+    if (signal?.aborted) {
+      return {
+        diagnostics: [],
+        receivedResponse: false,
+        error: "Aborted",
+      };
+    }
 
     let responded = false;
     const diags: Diagnostic[] = [];
     for (const c of clients) {
-      const r = await this.waitForDiagnostics(c, absPath, timeoutMs, true);
+      if (signal?.aborted) break;
+      const r = await this.waitForDiagnostics(
+        c,
+        absPath,
+        timeoutMs,
+        true,
+        signal,
+      );
       if (r) responded = true;
       const fileDiags = c.diagnostics.get(absPath) || [];
       diags.push(...fileDiags);
     }
 
-    // If no diagnostics were received but the file was opened, assume success
-    const receivedResponse = responded || diags.length > 0 || true;
+    if (signal?.aborted) {
+      return {
+        diagnostics: [],
+        receivedResponse: false,
+        error: "Aborted",
+      };
+    }
+
+    // Only consider it a response if we actually received diagnostics or explicitly waited
+    const receivedResponse = responded || diags.length > 0;
 
     return {
       diagnostics: diags,
@@ -177,12 +218,15 @@ export class LSPManager {
   async getDiagnosticsForFiles(
     files: string[],
     _timeoutMs: number,
+    signal?: AbortSignal,
   ): Promise<FileDiagnosticsResult> {
     const unique = [...new Set(files.map((f) => this.resolve(f)))];
     const results: FileDiagnosticItem[] = [];
     const toClose: Map<LSPClient, string[]> = new Map();
 
     for (const absPath of unique) {
+      if (signal?.aborted) break;
+
       if (!fs.existsSync(absPath)) {
         results.push({
           file: absPath,
@@ -205,6 +249,8 @@ export class LSPManager {
         });
         continue;
       }
+
+      if (signal?.aborted) break;
 
       if (!clients.length) {
         results.push({
@@ -229,17 +275,27 @@ export class LSPManager {
         continue;
       }
 
-      const { uri, langId, isNew } = this.prepareFileForDiagnostics(
+      const { uri, langId } = this.prepareFileForDiagnostics(
         absPath,
         clients,
         toClose,
       );
 
+      // Clear stale diagnostics before opening/updating
+      for (const c of clients) {
+        c.diagnostics.delete(absPath);
+      }
+
       const waits = clients.map((c) =>
-        this.waitForDiagnostics(c, absPath, _timeoutMs, isNew),
+        this.waitForDiagnostics(c, absPath, _timeoutMs, false, signal),
       );
-      await this.openOrUpdate(clients, absPath, uri, langId, content, isNew);
+      await this.openOrUpdate(clients, absPath, uri, langId, content);
+
+      if (signal?.aborted) break;
+
       const waitResults = await Promise.all(waits);
+
+      if (signal?.aborted) break;
 
       const diags: Diagnostic[] = [];
       for (const c of clients) {
@@ -456,14 +512,7 @@ export class LSPManager {
   ): Promise<(CodeAction | Command)[]> {
     const l = await this.loadFile(fp);
     if (!l) return [];
-    await this.openOrUpdate(
-      l.clients,
-      l.absPath,
-      l.uri,
-      l.langId,
-      l.content,
-      true,
-    );
+    await this.openOrUpdate(l.clients, l.absPath, l.uri, l.langId, l.content);
 
     const start = this.toPos(startLine, startCol);
     const end = this.toPos(endLine ?? startLine, endCol ?? startCol);
@@ -510,10 +559,9 @@ export class LSPManager {
     absPath: string,
     clients: LSPClient[],
     toClose: Map<LSPClient, string[]>,
-  ): { uri: string; langId: string; isNew: boolean } {
+  ): { uri: string; langId: string } {
     const uri = pathToFileURL(absPath).href;
     const langId = this.langId(absPath);
-    const isNew = clients.some((c) => !c.openFiles.has(absPath));
 
     for (const c of clients) {
       if (!c.openFiles.has(absPath)) {
@@ -522,7 +570,7 @@ export class LSPManager {
       }
     }
 
-    return { uri, langId, isNew };
+    return { uri, langId };
   }
 
   async shutdown() {
@@ -930,11 +978,19 @@ export class LSPManager {
         // Listen for diagnostics
         connection.onNotification(
           "textDocument/publishDiagnostics",
-          (params) => {
+          (rawParams) => {
+            const params = rawParams as PublishDiagnosticsParams;
             const fileUri = params.uri;
-            const filePath = fileUri.startsWith("file://")
-              ? new URL(fileUri).pathname
-              : fileUri;
+            let filePath: string;
+            if (fileUri.startsWith("file://")) {
+              try {
+                filePath = fileURLToPath(fileUri);
+              } catch {
+                filePath = new URL(fileUri).pathname;
+              }
+            } else {
+              filePath = fileUri;
+            }
             client!.diagnostics.set(filePath, params.diagnostics);
           },
         );
@@ -971,14 +1027,21 @@ export class LSPManager {
     absPath: string,
     timeoutMs: number,
     _isNew: boolean,
+    signal?: AbortSignal,
   ): Promise<boolean> {
     const start = Date.now();
+    const checkInterval = 50; // Reduced from 100ms for faster response
+
     while (Date.now() - start < timeoutMs) {
+      if (signal?.aborted) {
+        return false;
+      }
       if (client.diagnostics.has(absPath)) {
         return true;
       }
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, checkInterval));
     }
+
     return false;
   }
 
@@ -988,15 +1051,17 @@ export class LSPManager {
     uri: string,
     langId: string,
     content: string,
-    isNew: boolean,
+    _isNew?: boolean,
   ): Promise<void> {
     for (const client of clients) {
       if (client.closed) continue;
 
       const openFile = client.openFiles.get(absPath);
+      const isFileOpen = openFile !== undefined;
       const version = openFile ? openFile.version + 1 : 1;
 
-      if (isNew) {
+      if (!isFileOpen) {
+        // File not open yet - send didOpen
         await client.connection.sendNotification("textDocument/didOpen", {
           textDocument: {
             uri,
@@ -1007,14 +1072,13 @@ export class LSPManager {
         });
         client.openFiles.set(absPath, { version, lastAccess: Date.now() });
       } else {
+        // File already open - send didChange with new content
         await client.connection.sendNotification("textDocument/didChange", {
           textDocument: { uri, version },
           contentChanges: [{ text: content }],
         });
-        if (openFile) {
-          openFile.version = version;
-          openFile.lastAccess = Date.now();
-        }
+        openFile.version = version;
+        openFile.lastAccess = Date.now();
       }
     }
   }

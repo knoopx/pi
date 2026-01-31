@@ -14,7 +14,7 @@ export const marksmanServerConfig: LSPServerConfig = {
     const cmd = which("marksman");
     if (!cmd) return undefined;
     return {
-      process: spawn(cmd, ["--stdio"], {
+      process: spawn(cmd, ["server"], {
         cwd: root,
         stdio: ["pipe", "pipe", "pipe"],
       }),

@@ -109,12 +109,14 @@ describe("normalizeFsPath", () => {
     });
   });
 
-  describe("given a non-existent path", () => {
-    it("then returns the path as-is", () => {
+  describe("given a relative path without ./ or ../", () => {
+    it("then resolves to absolute path", () => {
       const input = "nonexistent/file.ts";
       const result = normalizeFsPath(input);
 
-      expect(result).toBe(input);
+      // Should resolve to absolute path from current working directory
+      expect(result).toContain("nonexistent/file.ts");
+      expect(result.startsWith("/")).toBe(true);
     });
   });
 });
@@ -137,7 +139,7 @@ describe("formatHover", () => {
         const content = [
           { type: "text", text: "Line 1" },
           { type: "text", text: "Line 2" },
-        ];
+        ] as any;
         const result = formatHover(content);
 
         expect(result).toContain("Line 1");
@@ -152,7 +154,7 @@ describe("formatHover", () => {
           { type: "text", text: "Text" },
           { type: "markup", text: "Markup" },
           { type: "value", text: "Value" },
-        ];
+        ] as any;
         const result = formatHover(content);
 
         expect(result).toContain("Text");
@@ -166,7 +168,7 @@ describe("formatHover", () => {
   describe("given an object with value property", () => {
     describe("when formatting the hover", () => {
       it("then returns the value", () => {
-        const content = { value: "Object value" };
+        const content = { value: "Object value" } as any;
         const result = formatHover(content);
 
         expect(result).toBe("Object value");
@@ -215,7 +217,7 @@ describe("formatSignature", () => {
               parameters: [{ label: ["a", "b"] }],
             },
           ],
-        };
+        } as any;
         const result = formatSignature(help);
 
         expect(result).toContain("Parameters: a-b");

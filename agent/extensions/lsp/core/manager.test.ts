@@ -21,7 +21,7 @@ vi.mock("../servers/typescript-server", () => ({
     id: "typescript",
     name: "TypeScript",
     extensions: [".ts", ".tsx", ".js", ".jsx"],
-    spawn: vi.fn().mockResolvedValue(undefined),
+    spawn: (vi.fn() as any).mockResolvedValue(undefined),
   },
 }));
 
@@ -30,7 +30,7 @@ vi.mock("../servers/python-server", () => ({
     id: "pyright",
     name: "Pyright",
     extensions: [".py"],
-    spawn: vi.fn().mockResolvedValue(undefined),
+    spawn: (vi.fn() as any).mockResolvedValue(undefined),
   },
 }));
 
@@ -39,7 +39,7 @@ vi.mock("../servers/marksman-server", () => ({
     id: "marksman",
     name: "Marksman",
     extensions: [".md"],
-    spawn: vi.fn().mockResolvedValue(undefined),
+    spawn: (vi.fn() as any).mockResolvedValue(undefined),
   },
 }));
 

@@ -2,8 +2,6 @@
  * Python Language Server
  */
 
-import * as path from "node:path";
-import * as fs from "node:fs";
 import { type LSPServerConfig } from "../core/types";
 import { findRoot, spawnSimpleLanguageServer } from "../core/utils";
 

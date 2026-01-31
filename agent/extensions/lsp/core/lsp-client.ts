@@ -7,6 +7,7 @@
 import {
   MessageConnection,
   type Diagnostic,
+  type ServerCapabilities,
 } from "vscode-languageserver-protocol";
 import { ChildProcessWithoutNullStreams } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -140,7 +141,7 @@ export async function initializeLSPClient(
       onClose: () => {},
       onError: () => {},
       onNotification: () => {},
-    } as unknown,
+    } as unknown as MessageConnection,
     process: proc,
     diagnostics: new Map<string, Diagnostic[]>(),
     openFiles: new Map<string, OpenFile>(),
@@ -162,7 +163,9 @@ export async function initializeLSPClient(
     typeof initResult === "object" &&
     "capabilities" in initResult
   ) {
-    clientState.capabilities = (initResult as unknown).capabilities;
+    clientState.capabilities = (
+      initResult as { capabilities: ServerCapabilities }
+    ).capabilities;
   }
 
   // Send initialized notification

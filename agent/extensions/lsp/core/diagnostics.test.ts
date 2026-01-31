@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { type Diagnostic } from "vscode-languageserver-protocol";
 import {
   formatDiagnostic,
   filterDiagnosticsBySeverity,
@@ -26,7 +27,7 @@ describe("formatDiagnostic", () => {
           message: "Test error message",
         };
 
-        const result = formatDiagnostic(diagnostic as unknown);
+        const result = formatDiagnostic(diagnostic as Diagnostic);
 
         expect(result).toContain("ERROR");
         expect(result).toContain("Test error message");
@@ -42,7 +43,7 @@ describe("formatDiagnostic", () => {
           message: "Test error",
         };
 
-        const result = formatDiagnostic(diagnostic as unknown);
+        const result = formatDiagnostic(diagnostic as Diagnostic);
 
         expect(result).toContain("[6:11]"); // 1-indexed
       });
@@ -61,7 +62,7 @@ describe("formatDiagnostic", () => {
           message: "Test warning",
         };
 
-        const result = formatDiagnostic(diagnostic as unknown);
+        const result = formatDiagnostic(diagnostic as Diagnostic);
 
         expect(result).toContain("WARN");
         expect(result).toContain("Test warning");
@@ -81,7 +82,7 @@ describe("formatDiagnostic", () => {
           message: "Test info",
         };
 
-        const result = formatDiagnostic(diagnostic as unknown);
+        const result = formatDiagnostic(diagnostic as Diagnostic);
 
         expect(result).toContain("INFO");
       });
@@ -100,7 +101,7 @@ describe("formatDiagnostic", () => {
           message: "Test hint",
         };
 
-        const result = formatDiagnostic(diagnostic as unknown);
+        const result = formatDiagnostic(diagnostic as Diagnostic);
 
         expect(result).toContain("HINT");
       });
@@ -119,7 +120,7 @@ describe("formatDiagnostic", () => {
           message: "Test diagnostic",
         };
 
-        const result = formatDiagnostic(diagnostic as unknown);
+        const result = formatDiagnostic(diagnostic as Diagnostic);
 
         expect(result).toContain("WARN");
       });
@@ -138,7 +139,7 @@ describe("formatDiagnostic", () => {
           message: "Test diagnostic",
         };
 
-        const result = formatDiagnostic(diagnostic as unknown);
+        const result = formatDiagnostic(diagnostic as Diagnostic);
 
         expect(result).toBe("undefined [1:1] Test diagnostic");
       });
@@ -180,7 +181,7 @@ describe("filterDiagnosticsBySeverity", () => {
       },
       message: "Hint",
     },
-  ] as unknown[];
+  ] as Diagnostic[];
 
   describe("given filter 'all'", () => {
     describe("when filtering diagnostics", () => {
@@ -296,7 +297,7 @@ describe("uriToPath", () => {
 });
 
 describe("findSymbolPosition", () => {
-  const symbols: unknown[] = [
+  const symbols: any[] = [
     {
       name: "MyClass",
       selectionRange: { start: { line: 5, character: 6 } },
@@ -400,7 +401,7 @@ describe("resolvePosition", () => {
         };
 
         const result = await resolvePosition(
-          mockManager as unknown,
+          mockManager as any,
           "file.ts",
           "MyFunction",
         );
@@ -417,7 +418,7 @@ describe("resolvePosition", () => {
         };
 
         const result = await resolvePosition(
-          mockManager as unknown,
+          mockManager as any,
           "file.ts",
           "NonExistent",
         );

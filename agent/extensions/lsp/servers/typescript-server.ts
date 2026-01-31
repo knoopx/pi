@@ -28,10 +28,12 @@ export function findTypeScriptRoot(
 /**
  * Spawn TypeScript language server
  */
-export async function spawnTypeScriptLanguageServer(
-  root: string,
-): Promise<
-  { process: ChildProcessWithoutNullStreams; initOptions?: unknown } | undefined
+export async function spawnTypeScriptLanguageServer(root: string): Promise<
+  | {
+      process: ChildProcessWithoutNullStreams;
+      initOptions?: Record<string, unknown>;
+    }
+  | undefined
 > {
   // Fall back to local/PATH approach
   const local = path.join(root, "node_modules/.bin/typescript-language-server");

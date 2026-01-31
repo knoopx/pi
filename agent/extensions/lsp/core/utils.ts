@@ -4,18 +4,23 @@
 
 import * as path from "node:path";
 import * as fs from "node:fs";
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import { Type, type Static } from "@sinclair/typebox";
-import { Diagnostic } from "vscode-languageserver-protocol";
-import { fileURLToPath } from "url";
 import {
-  uriToPath,
-  findSymbolPosition,
-  resolvePosition,
-} from "./diagnostics.js";
+  spawn,
+  type ChildProcessWithoutNullStreams,
+  type ChildProcessByStdio,
+} from "node:child_process";
+import { type Readable } from "node:stream";
+import { Type, type Static } from "@sinclair/typebox";
+import {
+  type Hover,
+  type SignatureHelp,
+  type WorkspaceEdit,
+} from "vscode-languageserver-protocol";
+import { uriToPath } from "./diagnostics.js";
 
-if (!(globalThis as unknown).fs) {
-  (globalThis as unknown).fs = fs;
+const globalWithFs = globalThis as { fs?: typeof fs };
+if (!globalWithFs.fs) {
+  globalWithFs.fs = fs;
 }
 
 export { spawn, ChildProcessWithoutNullStreams };
@@ -42,7 +47,7 @@ export function which(cmd: string): string | undefined {
   const ext = process.platform === "win32" ? ".exe" : "";
 
   // If absolute path provided, check if it exists
-  const globalFs = (globalThis as unknown).fs;
+  const globalFs = (globalThis as any).fs;
   const exists = (p: string) =>
     (globalFs?.existsSync?.(p) ?? false) || fs.existsSync(p);
   const stat = (p: string) => globalFs?.statSync?.(p) ?? fs.statSync(p);
@@ -187,30 +192,34 @@ export function formatLocation(
     : display;
 }
 
-export function formatHover(contents: unknown): string {
+export function formatHover(
+  contents: Hover["contents"] | null | undefined,
+): string {
   if (typeof contents === "string") return contents;
   if (Array.isArray(contents))
     return contents
       .map((c) => {
         if (typeof c === "string") return c;
         // Only process items with type: "text" or type: "value"
-        const type = (c as unknown)?.type;
+        const type = (c as any)?.type;
         if (type === "text") {
-          return (c as unknown)?.text ?? "";
+          return (c as any)?.text ?? "";
         }
         if (type === "value") {
-          return (c as unknown)?.value ?? (c as unknown)?.text ?? "";
+          return (c as any)?.value ?? (c as any)?.text ?? "";
         }
         return "";
       })
       .filter(Boolean)
       .join("\n\n");
   if (contents && typeof contents === "object" && "value" in contents)
-    return String((contents as unknown).value);
+    return String((contents as any).value);
   return "";
 }
 
-export function formatSignature(help: unknown): string {
+export function formatSignature(
+  help: SignatureHelp | null | undefined,
+): string {
   if (!help?.signatures?.length) return "No signature help available.";
   const sig = help.signatures[help.activeSignature ?? 0] ?? help.signatures[0];
   let text = sig.label ?? "Signature";
@@ -218,7 +227,7 @@ export function formatSignature(help: unknown): string {
     text += `\n${typeof sig.documentation === "string" ? sig.documentation : (sig.documentation?.value ?? "")}`;
   if (sig.parameters?.length) {
     const params = sig.parameters
-      .map((p: unknown) =>
+      .map((p: any) =>
         typeof p.label === "string"
           ? p.label
           : Array.isArray(p.label)
@@ -232,7 +241,7 @@ export function formatSignature(help: unknown): string {
 }
 
 export function collectSymbols(
-  symbols: unknown[],
+  symbols: any[],
   depth = 0,
   lines: string[] = [],
   query?: string,
@@ -260,13 +269,7 @@ export function collectSymbols(
 function processWorkspaceEdits(
   lines: string[],
   cwd?: string,
-  edits?: Array<{
-    range: {
-      start: { line: number; character: number };
-      end: { line: number; character: number };
-    };
-    newText: string;
-  }>,
+  edits?: any[],
   uri?: string,
 ): void {
   if (!edits?.length) return;
@@ -281,16 +284,21 @@ function processWorkspaceEdits(
   }
 }
 
-export function formatWorkspaceEdit(edit: unknown, cwd?: string): string {
+export function formatWorkspaceEdit(
+  edit: WorkspaceEdit | null | undefined,
+  cwd?: string,
+): string {
   const lines: string[] = [];
+
+  if (!edit) return "No edits.";
 
   if (edit.documentChanges?.length) {
     for (const change of edit.documentChanges) {
-      if (change.textDocument?.uri) {
+      if ("textDocument" in change && change.textDocument?.uri) {
         processWorkspaceEdits(
           lines,
           cwd,
-          change.edits,
+          (change as any).edits,
           change.textDocument.uri,
         );
       }
@@ -299,14 +307,14 @@ export function formatWorkspaceEdit(edit: unknown, cwd?: string): string {
 
   if (edit.changes) {
     for (const [uri, edits] of Object.entries(edit.changes)) {
-      processWorkspaceEdits(lines, cwd, edits as unknown[], uri);
+      processWorkspaceEdits(lines, cwd, edits as any[], uri);
     }
   }
 
   return lines.length ? lines.join("\n") : "No edits.";
 }
 
-export function formatCodeActions(actions: unknown[]): string[] {
+export function formatCodeActions(actions: any[]): string[] {
   return actions.map((a, i) => {
     const title = a.title || a.command?.title || "Untitled action";
     const kind = a.kind ? ` (${a.kind})` : "";
@@ -316,16 +324,14 @@ export function formatCodeActions(actions: unknown[]): string[] {
 }
 
 /**
- * Normalize file system path
+ * Normalize file system path - always returns absolute path
  */
 export function normalizeFsPath(p: string): string {
   if (path.isAbsolute(p)) {
     return p;
   }
-  if (p.includes("../") || p.includes("./")) {
-    return path.resolve(p);
-  }
-  return p;
+  // Always resolve to absolute path for consistency
+  return path.resolve(p);
 }
 
 /**
@@ -342,7 +348,7 @@ export function findNearestFile(
     for (const t of targets) {
       const candidate = path.join(current, t);
       // Try global fs first (for memfs support in tests), then module fs
-      const globalFs = (globalThis as unknown).fs;
+      const globalFs = (globalThis as any).fs;
       if (globalFs && globalFs.existsSync && globalFs.existsSync(candidate)) {
         return candidate;
       }
@@ -409,7 +415,7 @@ export function spawnSimpleLanguageServer(
     const cmd = which(bin);
     if (!cmd) return undefined;
     try {
-      const child = spawn(cmd, args, {
+      const child: ChildProcessWithoutNullStreams = spawn(cmd, args, {
         cwd: root,
         stdio: ["pipe", "pipe", "pipe"],
       });
@@ -457,7 +463,7 @@ export async function spawnChecked(
       child.once("error", onError);
 
       timer = setTimeout(() => finish(child), 200);
-      (timer as unknown).unref?.();
+      (timer as any).unref?.();
     });
   } catch {
     return undefined;
@@ -489,7 +495,11 @@ export async function runCommand(
 ): Promise<boolean> {
   return await new Promise((resolve) => {
     try {
-      const p = spawn(cmd, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
+      const p: ChildProcessByStdio<null, Readable, Readable> = spawn(
+        cmd,
+        args,
+        { cwd, stdio: ["ignore", "pipe", "pipe"] },
+      );
       p.on("error", () => resolve(false));
       p.on("exit", (code) => resolve(code === 0));
     } catch {
