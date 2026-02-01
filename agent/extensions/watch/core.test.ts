@@ -23,20 +23,76 @@ vi.mock("node:path", () => ({
 describe("line parsing patterns", () => {
   describe("given PI anywhere in line", () => {
     const testCases = [
-      { input: "// do this !pi", expectedTrigger: true, scenario: "with !pi in comment" },
-      { input: "# implement this PI", expectedTrigger: false, scenario: "with PI in comment" },
-      { input: "-- make this faster !pi", expectedTrigger: true, scenario: "with -- marker" },
-      { input: "// !pi do this", expectedTrigger: true, scenario: "!pi at start of comment" },
-      { input: "# PI implement this", expectedTrigger: false, scenario: "PI at start of comment" },
-      { input: "  // comment !pi", expectedTrigger: true, scenario: "with whitespace" },
-      { input: "// comment pi", expectedTrigger: false, scenario: "lowercase pi" },
-      { input: "// comment PI", expectedTrigger: false, scenario: "uppercase PI" },
-      { input: "code // !pi action", expectedTrigger: true, scenario: "code before comment" },
-      { input: "console.log('hello !pi');", expectedTrigger: true, scenario: "!pi in string" },
-      { input: "const x = pi;", expectedTrigger: false, scenario: "pi as variable name" },
-      { input: "if (!pi) return;", expectedTrigger: true, scenario: "!pi in code condition" },
-      { input: "function !pi() {}", expectedTrigger: true, scenario: "!pi as function name" },
-      { input: "let !pi = true;", expectedTrigger: true, scenario: "!pi as variable" },
+      {
+        input: "// do this !pi",
+        expectedTrigger: true,
+        scenario: "with !pi in comment",
+      },
+      {
+        input: "# implement this PI",
+        expectedTrigger: false,
+        scenario: "with PI in comment",
+      },
+      {
+        input: "-- make this faster !pi",
+        expectedTrigger: true,
+        scenario: "with -- marker",
+      },
+      {
+        input: "// !pi do this",
+        expectedTrigger: true,
+        scenario: "!pi at start of comment",
+      },
+      {
+        input: "# PI implement this",
+        expectedTrigger: false,
+        scenario: "PI at start of comment",
+      },
+      {
+        input: "  // comment !pi",
+        expectedTrigger: true,
+        scenario: "with whitespace",
+      },
+      {
+        input: "// comment pi",
+        expectedTrigger: false,
+        scenario: "lowercase pi",
+      },
+      {
+        input: "// comment PI",
+        expectedTrigger: false,
+        scenario: "uppercase PI",
+      },
+      {
+        input: "code // !pi action",
+        expectedTrigger: true,
+        scenario: "code before comment",
+      },
+      {
+        input: "console.log('hello !pi');",
+        expectedTrigger: true,
+        scenario: "!pi in string",
+      },
+      {
+        input: "const x = pi;",
+        expectedTrigger: false,
+        scenario: "pi as variable name",
+      },
+      {
+        input: "if (!pi) return;",
+        expectedTrigger: true,
+        scenario: "!pi in code condition",
+      },
+      {
+        input: "function !pi() {}",
+        expectedTrigger: true,
+        scenario: "!pi as function name",
+      },
+      {
+        input: "let !pi = true;",
+        expectedTrigger: true,
+        scenario: "!pi as variable",
+      },
     ];
 
     testCases.forEach(({ input, expectedTrigger, scenario }) => {
@@ -113,19 +169,32 @@ describe("grouping consecutive lines", () => {
       },
     ];
 
-    testCases.forEach(({ input, expectedCount, expectedTriggers, scenario }) => {
-      it(`then should group ${scenario}`, () => {
-        const result = core.parsePIReferencesInFile("/test/file.ts", input.join("\n"));
-        expect(result).toHaveLength(expectedCount);
-        expect(result.reduce((sum, c) => sum + (c.hasTrigger ? 1 : 0), 0)).toBe(expectedTriggers);
-      });
-    });
+    testCases.forEach(
+      ({ input, expectedCount, expectedTriggers, scenario }) => {
+        it(`then should group ${scenario}`, () => {
+          const result = core.parsePIReferencesInFile(
+            "/test/file.ts",
+            input.join("\n"),
+          );
+          expect(result).toHaveLength(expectedCount);
+          expect(
+            result.reduce((sum, c) => sum + (c.hasTrigger ? 1 : 0), 0),
+          ).toBe(expectedTriggers);
+        });
+      },
+    );
   });
 
   describe("given non-pi lines between pi lines", () => {
     const testCases = [
       {
-        input: ["// pi comment", "code here", "// another pi", "more code", "// final pi"],
+        input: [
+          "// pi comment",
+          "code here",
+          "// another pi",
+          "more code",
+          "// final pi",
+        ],
         expectedGroups: 0,
         expectedTriggers: 0,
         scenario: "with code in between",
@@ -137,20 +206,33 @@ describe("grouping consecutive lines", () => {
         scenario: "all with triggers separated by code",
       },
       {
-        input: ["console.log('pi');", "let x = 1;", "const !pi = true;", "more code", "function pi() {}"],
+        input: [
+          "console.log('pi');",
+          "let x = 1;",
+          "const !pi = true;",
+          "more code",
+          "function pi() {}",
+        ],
         expectedGroups: 1,
         expectedTriggers: 1,
         scenario: "pi in code separated by regular code",
       },
     ];
 
-    testCases.forEach(({ input, expectedGroups, expectedTriggers, scenario }) => {
-      it(`then should create ${expectedGroups} groups for ${scenario}`, () => {
-        const result = core.parsePIReferencesInFile("/test/file.ts", input.join("\n"));
-        expect(result).toHaveLength(expectedGroups);
-        expect(result.reduce((sum, c) => sum + (c.hasTrigger ? 1 : 0), 0)).toBe(expectedTriggers);
-      });
-    });
+    testCases.forEach(
+      ({ input, expectedGroups, expectedTriggers, scenario }) => {
+        it(`then should create ${expectedGroups} groups for ${scenario}`, () => {
+          const result = core.parsePIReferencesInFile(
+            "/test/file.ts",
+            input.join("\n"),
+          );
+          expect(result).toHaveLength(expectedGroups);
+          expect(
+            result.reduce((sum, c) => sum + (c.hasTrigger ? 1 : 0), 0),
+          ).toBe(expectedTriggers);
+        });
+      },
+    );
   });
 });
 
@@ -227,16 +309,33 @@ describe("creating messages from comments", () => {
   const testCases = [
     {
       comments: [
-        { filePath: "/test/file.ts", lineNumber: 1, rawLines: ["// !pi fix this"], hasTrigger: true },
+        {
+          filePath: "/test/file.ts",
+          lineNumber: 1,
+          rawLines: ["// !pi fix this"],
+          hasTrigger: true,
+        },
       ],
-      expectedContent: "The PI comments below can be found in the code files.\nThey contain your instructions.\nLine numbers are provided for reference.\nRules:\n- Only make changes to files and lines that have PI comments.\n- Do not modify unknown other files or areas of files.\n- Follow the instructions in the PI comments strictly.\n- Be sure to remove all PI comments from the code during or after the changes.\n- After changes are finised say just \"Done\" and nothing else.\n\ntest/file.ts:\n1: // !pi fix this",
+      expectedContent:
+        'The PI comments below can be found in the code files.\nThey contain your instructions.\nLine numbers are provided for reference.\nRules:\n- Only make changes to files and lines that have PI comments.\n- Do not modify unknown other files or areas of files.\n- Follow the instructions in the PI comments strictly.\n- Be sure to remove all PI comments from the code during or after the changes.\n- After changes are finised say just "Done" and nothing else.\n\ntest/file.ts:\n1: // !pi fix this',
     },
     {
       comments: [
-        { filePath: "/test/file.ts", lineNumber: 1, rawLines: ["// pi step 1"], hasTrigger: false },
-        { filePath: "/test/file.ts", lineNumber: 3, rawLines: ["// pi step 2"], hasTrigger: false },
+        {
+          filePath: "/test/file.ts",
+          lineNumber: 1,
+          rawLines: ["// pi step 1"],
+          hasTrigger: false,
+        },
+        {
+          filePath: "/test/file.ts",
+          lineNumber: 3,
+          rawLines: ["// pi step 2"],
+          hasTrigger: false,
+        },
       ],
-      expectedContent: "The PI comments below can be found in the code files.\nThey contain your instructions.\nLine numbers are provided for reference.\nRules:\n- Only make changes to files and lines that have PI comments.\n- Do not modify unknown other files or areas of files.\n- Follow the instructions in the PI comments strictly.\n- Be sure to remove all PI comments from the code during or after the changes.\n- After changes are finised say just \"Done\" and nothing else.\n\ntest/file.ts:\n1: // pi step 1\n\ntest/file.ts:\n3: // pi step 2",
+      expectedContent:
+        'The PI comments below can be found in the code files.\nThey contain your instructions.\nLine numbers are provided for reference.\nRules:\n- Only make changes to files and lines that have PI comments.\n- Do not modify unknown other files or areas of files.\n- Follow the instructions in the PI comments strictly.\n- Be sure to remove all PI comments from the code during or after the changes.\n- After changes are finised say just "Done" and nothing else.\n\ntest/file.ts:\n1: // pi step 1\n\ntest/file.ts:\n3: // pi step 2',
     },
   ];
 
@@ -263,10 +362,18 @@ describe("path filtering", () => {
   describe("given patterns", () => {
     const testCases = [
       { path: "/project/.git/config", shouldIgnore: true, pattern: ".git" },
-      { path: "/project/node_modules/package.json", shouldIgnore: true, pattern: "node_modules" },
+      {
+        path: "/project/node_modules/package.json",
+        shouldIgnore: true,
+        pattern: "node_modules",
+      },
       { path: "/project/dist/bundle.js", shouldIgnore: true, pattern: "dist" },
-      { path: "/project/.pi/config", shouldIgnore: true, pattern: ".pi" },  // Updated since .pi is no longer ignored
-      { path: "/project/src/index.ts", shouldIgnore: false, pattern: "node_modules" },
+      { path: "/project/.pi/config", shouldIgnore: true, pattern: ".pi" }, // Updated since .pi is no longer ignored
+      {
+        path: "/project/src/index.ts",
+        shouldIgnore: false,
+        pattern: "node_modules",
+      },
       { path: "/project/README.md", shouldIgnore: false, pattern: "dist" },
     ];
 
@@ -280,18 +387,20 @@ describe("path filtering", () => {
 
   describe("given multiple patterns", () => {
     it("then should return true if any pattern matches", () => {
-      const result = core.shouldIgnorePath(
-        "/project/.git/config",
-        [/\.git/, /node_modules/, /dist/]
-      );
+      const result = core.shouldIgnorePath("/project/.git/config", [
+        /\.git/,
+        /node_modules/,
+        /dist/,
+      ]);
       expect(result).toBe(true);
     });
 
     it("then should return false if no patterns match", () => {
-      const result = core.shouldIgnorePath(
-        "/project/src/index.ts",
-        [/\.git/, /node_modules/, /dist/]
-      );
+      const result = core.shouldIgnorePath("/project/src/index.ts", [
+        /\.git/,
+        /node_modules/,
+        /dist/,
+      ]);
       expect(result).toBe(false);
     });
   });
@@ -310,9 +419,45 @@ describe("path filtering", () => {
 describe("trigger detection", () => {
   describe("given comments with triggers", () => {
     const testCases = [
-      { references: [{ filePath: "/test.ts", lineNumber: 1, rawLines: ["// !pi fix"], hasTrigger: true }], expected: true },
-      { references: [{ filePath: "/test.ts", lineNumber: 1, rawLines: ["// !pi fix"], hasTrigger: true }, { filePath: "/test2.ts", lineNumber: 1, rawLines: ["// pi step"], hasTrigger: false }], expected: true },
-      { references: [{ filePath: "/test.ts", lineNumber: 1, rawLines: ["// pi step"], hasTrigger: false }], expected: false },
+      {
+        references: [
+          {
+            filePath: "/test.ts",
+            lineNumber: 1,
+            rawLines: ["// !pi fix"],
+            hasTrigger: true,
+          },
+        ],
+        expected: true,
+      },
+      {
+        references: [
+          {
+            filePath: "/test.ts",
+            lineNumber: 1,
+            rawLines: ["// !pi fix"],
+            hasTrigger: true,
+          },
+          {
+            filePath: "/test2.ts",
+            lineNumber: 1,
+            rawLines: ["// pi step"],
+            hasTrigger: false,
+          },
+        ],
+        expected: true,
+      },
+      {
+        references: [
+          {
+            filePath: "/test.ts",
+            lineNumber: 1,
+            rawLines: ["// pi step"],
+            hasTrigger: false,
+          },
+        ],
+        expected: false,
+      },
       { references: [], expected: false },
     ];
 
@@ -331,11 +476,16 @@ describe("trigger detection", () => {
 describe("edge cases and error handling", () => {
   describe("given null or undefined input", () => {
     it("then should handle null file path", () => {
-      expect(() => core.readFileAndParsePIReferences(null as any)).not.toThrow();
+      expect(() =>
+        core.readFileAndParsePIReferences(null as any),
+      ).not.toThrow();
     });
 
     it("then should handle undefined content", () => {
-      const result = core.parsePIReferencesInFile("/test/file.ts", undefined as any);
+      const result = core.parsePIReferencesInFile(
+        "/test/file.ts",
+        undefined as any,
+      );
       expect(result).toHaveLength(0);
     });
   });
@@ -343,7 +493,10 @@ describe("edge cases and error handling", () => {
   describe("given very large files", () => {
     it("then should handle large files efficiently", () => {
       const largeContent = Array(1000).fill("// pi comment").join("\n");
-      const result = core.parsePIReferencesInFile("/test/file.ts", largeContent);
+      const result = core.parsePIReferencesInFile(
+        "/test/file.ts",
+        largeContent,
+      );
       expect(result).toHaveLength(0); // No triggers, so empty
     });
   });

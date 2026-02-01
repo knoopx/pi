@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as chokidar from "chokidar";
 import * as core from "./core";
 import { PIWatcher } from "./watcher";
-import type { TriggerReference, TriggerWatcherOptions, TriggerWatcherCallbacks } from "./types";
+import type {
+  TriggerReference,
+  TriggerWatcherOptions,
+  TriggerWatcherCallbacks,
+} from "./types";
 
 // ============================================
 // Mock Types and Functions
@@ -33,7 +37,10 @@ vi.mock("./types", () => ({
 }));
 
 type MockWatchFactory = ReturnType<typeof vi.fn> &
-  ((...args: unknown[]) => { on: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> });
+  ((...args: unknown[]) => {
+    on: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+  });
 
 const createMockWatchFactory = () => {
   const fsWatcher = {
@@ -78,11 +85,7 @@ describe("PIWatcher initialization", () => {
     });
 
     it("then should use default values", () => {
-      const watcher = new PIWatcher(
-        vi.fn() as any,
-        callbacks,
-        {}
-      );
+      const watcher = new PIWatcher(vi.fn() as any, callbacks, {});
 
       expect(watcher).toBeDefined();
     });
@@ -90,11 +93,7 @@ describe("PIWatcher initialization", () => {
 
   describe("given custom options", () => {
     it("then should merge custom options with defaults", () => {
-      const watcher = new PIWatcher(
-        vi.fn() as any,
-        callbacks,
-        options
-      );
+      const watcher = new PIWatcher(vi.fn() as any, callbacks, options);
 
       expect(watcher).toBeDefined();
     });
@@ -102,11 +101,7 @@ describe("PIWatcher initialization", () => {
 
   describe("given minimal callbacks", () => {
     it("then should use empty function defaults", () => {
-      const watcher = new PIWatcher(
-        vi.fn() as any,
-        {},
-        {}
-      );
+      const watcher = new PIWatcher(vi.fn() as any, {}, {});
 
       expect(watcher).toBeDefined();
     });
@@ -120,7 +115,10 @@ describe("file watching operations", () => {
   let watcher: PIWatcher;
   let callbacks: TriggerWatcherCallbacks;
   let mockWatch: MockWatchFactory;
-  let fsWatcher: { on: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> };
+  let fsWatcher: {
+    on: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     callbacks = {
@@ -141,7 +139,8 @@ describe("file watching operations", () => {
     mockWatch = created.mockWatch;
 
     watcher = new PIWatcher(
-      (paths: string | string[], options?: Record<string, unknown>) => mockWatch(paths, options),
+      (paths: string | string[], options?: Record<string, unknown>) =>
+        mockWatch(paths, options),
       callbacks,
     );
   });
@@ -159,7 +158,7 @@ describe("file watching operations", () => {
             stabilityThreshold: 500,
             pollInterval: 50,
           }),
-        })
+        }),
       );
     });
 
@@ -212,7 +211,10 @@ describe("file change event handling", () => {
   let watcher: PIWatcher;
   let callbacks: TriggerWatcherCallbacks;
   let mockWatch: MockWatchFactory;
-  let fsWatcher: { on: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> };
+  let fsWatcher: {
+    on: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     callbacks = {
@@ -226,7 +228,12 @@ describe("file change event handling", () => {
     vi.mocked(core.readFileAndParsePIReferences).mockReturnValue({
       content: "test",
       references: [
-        { filePath: "/test/file.ts", lineNumber: 1, rawLines: ["// !pi"], hasTrigger: true },
+        {
+          filePath: "/test/file.ts",
+          lineNumber: 1,
+          rawLines: ["// !pi"],
+          hasTrigger: true,
+        },
       ],
     });
 
@@ -235,7 +242,8 @@ describe("file change event handling", () => {
     mockWatch = created.mockWatch;
 
     watcher = new PIWatcher(
-      (paths: string | string[], options?: Record<string, unknown>) => mockWatch(paths, options),
+      (paths: string | string[], options?: Record<string, unknown>) =>
+        mockWatch(paths, options),
       callbacks,
     );
     watcher.watch("/test/path");
@@ -307,7 +315,8 @@ describe("pause and resume operations", () => {
     const mockWatch = created.mockWatch;
 
     watcher = new PIWatcher(
-      (paths: string | string[], options?: Record<string, unknown>) => mockWatch(paths, options),
+      (paths: string | string[], options?: Record<string, unknown>) =>
+        mockWatch(paths, options),
       callbacks,
     );
     watcher.watch("/test/path");
@@ -328,7 +337,14 @@ describe("pause and resume operations", () => {
     it("then should skip processing on file change", () => {
       vi.mocked(core.readFileAndParsePIReferences).mockReturnValue({
         content: "test",
-        references: [{ filePath: "/test.ts", lineNumber: 1, rawLines: ["// !pi"], hasTrigger: true }],
+        references: [
+          {
+            filePath: "/test.ts",
+            lineNumber: 1,
+            rawLines: ["// !pi"],
+            hasTrigger: true,
+          },
+        ],
       });
       vi.mocked(core.hasTrigger).mockReturnValue(true);
 
@@ -350,7 +366,14 @@ describe("pause and resume operations", () => {
     it("then should process file changes after resume", () => {
       vi.mocked(core.readFileAndParsePIReferences).mockReturnValue({
         content: "test",
-        references: [{ filePath: "/test.ts", lineNumber: 1, rawLines: ["// !pi"], hasTrigger: true }],
+        references: [
+          {
+            filePath: "/test.ts",
+            lineNumber: 1,
+            rawLines: ["// !pi"],
+            hasTrigger: true,
+          },
+        ],
       });
       vi.mocked(core.hasTrigger).mockReturnValue(true);
 
@@ -370,7 +393,10 @@ describe("comment processing", () => {
   let watcher: PIWatcher;
   let callbacks: TriggerWatcherCallbacks;
   let mockWatch: MockWatchFactory;
-  let fsWatcher: { on: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> };
+  let fsWatcher: {
+    on: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     callbacks = {
@@ -387,7 +413,8 @@ describe("comment processing", () => {
     mockWatch = created.mockWatch;
 
     watcher = new PIWatcher(
-      (paths: string | string[], options?: Record<string, unknown>) => mockWatch(paths, options),
+      (paths: string | string[], options?: Record<string, unknown>) =>
+        mockWatch(paths, options),
       callbacks,
     );
     watcher.watch("/test/path");
@@ -396,8 +423,18 @@ describe("comment processing", () => {
   describe("given file with !PI trigger", () => {
     it("then should call trigger callback with comments from that file", () => {
       const references: TriggerReference[] = [
-        { filePath: "/test/file.ts", lineNumber: 1, rawLines: ["// !pi fix this"], hasTrigger: true },
-        { filePath: "/test/file.ts", lineNumber: 2, rawLines: ["// pi step 2"], hasTrigger: false },
+        {
+          filePath: "/test/file.ts",
+          lineNumber: 1,
+          rawLines: ["// !pi fix this"],
+          hasTrigger: true,
+        },
+        {
+          filePath: "/test/file.ts",
+          lineNumber: 2,
+          rawLines: ["// pi step 2"],
+          hasTrigger: false,
+        },
       ];
       vi.mocked(core.readFileAndParsePIReferences).mockReturnValue({
         content: "test",
@@ -417,7 +454,12 @@ describe("comment processing", () => {
   describe("given file with only PI comments", () => {
     it("then should not call trigger callback", () => {
       const references: TriggerReference[] = [
-        { filePath: "/test/file.ts", lineNumber: 1, rawLines: ["// pi step"], hasTrigger: false },
+        {
+          filePath: "/test/file.ts",
+          lineNumber: 1,
+          rawLines: ["// pi step"],
+          hasTrigger: false,
+        },
       ];
       vi.mocked(core.readFileAndParsePIReferences).mockReturnValue({
         content: "test",
@@ -460,7 +502,8 @@ describe("ignored path handling", () => {
     const mockWatch = created.mockWatch;
 
     watcher = new PIWatcher(
-      (paths: string | string[], options?: Record<string, unknown>) => mockWatch(paths, options),
+      (paths: string | string[], options?: Record<string, unknown>) =>
+        mockWatch(paths, options),
       callbacks,
     );
     watcher.watch("/test/path");
@@ -471,7 +514,14 @@ describe("ignored path handling", () => {
       vi.mocked(core.shouldIgnorePath).mockReturnValue(true);
       vi.mocked(core.readFileAndParsePIReferences).mockReturnValue({
         content: "test",
-        references: [{ filePath: "/test/.git/config", lineNumber: 1, rawLines: ["// pi"], hasTrigger: false }],
+        references: [
+          {
+            filePath: "/test/.git/config",
+            lineNumber: 1,
+            rawLines: ["// pi"],
+            hasTrigger: false,
+          },
+        ],
       });
 
       const handleChange = (watcher as any).handleChange;
@@ -499,7 +549,10 @@ describe("ignored path handling", () => {
 describe("cleanup operations", () => {
   let watcher: PIWatcher;
   let callbacks: TriggerWatcherCallbacks;
-  let fsWatcher: { on: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> };
+  let fsWatcher: {
+    on: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     callbacks = {
@@ -520,7 +573,8 @@ describe("cleanup operations", () => {
     const mockWatch = created.mockWatch;
 
     watcher = new PIWatcher(
-      (paths: string | string[], options?: Record<string, unknown>) => mockWatch(paths, options),
+      (paths: string | string[], options?: Record<string, unknown>) =>
+        mockWatch(paths, options),
       callbacks,
     );
     watcher.watch("/test/path");
@@ -557,7 +611,10 @@ describe("cleanup operations", () => {
 describe("edge cases and error handling", () => {
   let watcher: PIWatcher;
   let callbacks: TriggerWatcherCallbacks;
-  let fsWatcher: { on: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> };
+  let fsWatcher: {
+    on: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     callbacks = {
@@ -578,7 +635,8 @@ describe("edge cases and error handling", () => {
     const mockWatch = created.mockWatch;
 
     watcher = new PIWatcher(
-      (paths: string | string[], options?: Record<string, unknown>) => mockWatch(paths, options),
+      (paths: string | string[], options?: Record<string, unknown>) =>
+        mockWatch(paths, options),
       callbacks,
     );
   });
@@ -604,7 +662,14 @@ describe("edge cases and error handling", () => {
     it("then should handle gracefully", () => {
       vi.mocked(core.readFileAndParsePIReferences).mockReturnValue({
         content: "// pi comment",
-        references: [{ filePath: "/test/file.ts", lineNumber: 1, rawLines: ["// pi comment"], hasTrigger: false }],
+        references: [
+          {
+            filePath: "/test/file.ts",
+            lineNumber: 1,
+            rawLines: ["// pi comment"],
+            hasTrigger: false,
+          },
+        ],
       });
 
       watcher.watch("/test/path");

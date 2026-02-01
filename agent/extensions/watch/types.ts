@@ -22,9 +22,7 @@ export interface TriggerWatcherOptions {
   pollInterval?: number;
 }
 
-export type TriggerWatcherCallback = (
-  referenece: TriggerReference,
-) => void;
+export type TriggerWatcherCallback = (referenece: TriggerReference) => void;
 
 export type TriggerCallback = (comments: TriggerReference[]) => void;
 

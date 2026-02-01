@@ -78,7 +78,10 @@ export default function (pi: ExtensionAPI) {
 
         onReady: () => {
           if (watchCtx?.hasUI) {
-            watchCtx.ui.notify(`Watching ${watchCwd} for PI references...`, "info");
+            watchCtx.ui.notify(
+              `Watching ${watchCwd} for PI references...`,
+              "info",
+            );
           }
         },
 
@@ -102,7 +105,8 @@ export default function (pi: ExtensionAPI) {
 
   // Register /watch command to toggle watch mode
   pi.registerCommand("watch", {
-    description: "Toggle file watching for PI references (usage: /watch [on|off])",
+    description:
+      "Toggle file watching for PI references (usage: /watch [on|off])",
     handler: async (args, ctx) => {
       const action = args.toLowerCase().trim() || "toggle";
 

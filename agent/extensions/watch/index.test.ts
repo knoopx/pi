@@ -38,7 +38,10 @@ vi.mock("./watcher.js", () => {
 
 interface MockCommand {
   description: string;
-  handler: (args: string, ctx: { ui: { notify: ReturnType<typeof vi.fn> } }) => Promise<void>;
+  handler: (
+    args: string,
+    ctx: { ui: { notify: ReturnType<typeof vi.fn> } },
+  ) => Promise<void>;
 }
 
 interface MockPi {
@@ -56,9 +59,11 @@ const createMockPi = (): MockPi => {
     on: vi.fn().mockImplementation((event: string, handler: unknown) => {
       handlers[event] = handler;
     }),
-    registerCommand: vi.fn().mockImplementation((name: string, options: MockCommand) => {
-      commands[name] = options;
-    }),
+    registerCommand: vi
+      .fn()
+      .mockImplementation((name: string, options: MockCommand) => {
+        commands[name] = options;
+      }),
     sendUserMessage: vi.fn(),
     _handlers: handlers,
     _commands: commands,
@@ -91,30 +96,41 @@ describe("Watch Extension", () => {
     describe("given extension is initialized", () => {
       describe("when registering command and event handlers", () => {
         it("then it should register /watch command", () => {
-          expect(mockPi.registerCommand).toHaveBeenCalledWith("watch", expect.objectContaining({
-            description: expect.any(String),
-            handler: expect.any(Function),
-          }));
+          expect(mockPi.registerCommand).toHaveBeenCalledWith(
+            "watch",
+            expect.objectContaining({
+              description: expect.any(String),
+              handler: expect.any(Function),
+            }),
+          );
         });
 
         it("then it should register session_start handler", () => {
           const calls = mockPi.on.mock.calls;
-          expect(calls.some((call: unknown[]) => call[0] === "session_start")).toBe(true);
+          expect(
+            calls.some((call: unknown[]) => call[0] === "session_start"),
+          ).toBe(true);
         });
 
         it("then it should register agent_start handler", () => {
           const calls = mockPi.on.mock.calls;
-          expect(calls.some((call: unknown[]) => call[0] === "agent_start")).toBe(true);
+          expect(
+            calls.some((call: unknown[]) => call[0] === "agent_start"),
+          ).toBe(true);
         });
 
         it("then it should register agent_end handler", () => {
           const calls = mockPi.on.mock.calls;
-          expect(calls.some((call: unknown[]) => call[0] === "agent_end")).toBe(true);
+          expect(calls.some((call: unknown[]) => call[0] === "agent_end")).toBe(
+            true,
+          );
         });
 
         it("then it should register session_shutdown handler", () => {
           const calls = mockPi.on.mock.calls;
-          expect(calls.some((call: unknown[]) => call[0] === "session_shutdown")).toBe(true);
+          expect(
+            calls.some((call: unknown[]) => call[0] === "session_shutdown"),
+          ).toBe(true);
         });
 
         it("then handlers should be async functions", () => {
@@ -148,7 +164,10 @@ describe("Watch Extension", () => {
         const watchCommand = mockPi._commands?.watch;
         await watchCommand?.handler("on", ctx);
 
-        expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Watch enabled"), "info");
+        expect(mockNotify).toHaveBeenCalledWith(
+          expect.stringContaining("Watch enabled"),
+          "info",
+        );
       });
     });
 
@@ -186,7 +205,10 @@ describe("Watch Extension", () => {
         const watchCommand = mockPi._commands?.watch;
         await watchCommand?.handler("", ctx);
 
-        expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Watch toggled on"), "info");
+        expect(mockNotify).toHaveBeenCalledWith(
+          expect.stringContaining("Watch toggled on"),
+          "info",
+        );
       });
 
       it("then it should toggle watch mode off when enabled", async () => {
@@ -286,7 +308,11 @@ describe("Watch Extension", () => {
   // Agent End Handler Tests
   // ============================================
   describe("agent_end event handler", () => {
-    let ctx: { hasUI: boolean; cwd: string; ui: { notify: ReturnType<typeof vi.fn> } };
+    let ctx: {
+      hasUI: boolean;
+      cwd: string;
+      ui: { notify: ReturnType<typeof vi.fn> };
+    };
 
     beforeEach(async () => {
       setupWatchExtension(mockPi as unknown as ExtensionAPI);
@@ -321,7 +347,7 @@ describe("Watch Extension", () => {
 
         expect(ctx.ui.notify).toHaveBeenCalledWith(
           expect.stringContaining("Watching"),
-          "info"
+          "info",
         );
       });
     });
