@@ -1,20 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { AgentToolResult } from "@mariozechner/pi-agent-core";
+import type { TextContent } from "@mariozechner/pi-ai";
 import setupPyPIExtension from "./index";
+import type { MockTool, MockExtensionAPI } from "../../test-utils";
+import { createMockExtensionAPI } from "../../test-utils";
 
-// ============================================
-// Extension Registration
-// ============================================
 describe("PyPI Extension", () => {
-  let mockPi: unknown;
+  let mockPi: MockExtensionAPI;
   let originalFetch: typeof globalThis.fetch;
 
   beforeEach(() => {
-    mockPi = {
-      registerTool: vi.fn(),
-      exec: vi.fn(),
-    };
+    mockPi = createMockExtensionAPI();
     originalFetch = globalThis.fetch;
-    setupPyPIExtension(mockPi);
+    setupPyPIExtension(mockPi as ExtensionAPI);
   });
 
   afterEach(() => {
@@ -45,16 +44,16 @@ describe("PyPI Extension", () => {
   // Search PyPI Packages
   // ============================================
   describe("search-pypi-packages", () => {
-    let registeredTool: unknown;
+    let registeredTool: MockTool;
 
     beforeEach(() => {
       registeredTool = mockPi.registerTool.mock.calls.find(
-        (call: unknown) => call[0].name === "search-pypi-packages",
-      )[0];
+        (call) => (call[0] as MockTool).name === "search-pypi-packages",
+      )![0] as MockTool;
     });
 
     describe("given a valid search query with HTML results", () => {
-      let result: unknown;
+      let result: AgentToolResult<Record<string, unknown>>;
 
       beforeEach(async () => {
         const mockHtml = `
@@ -95,22 +94,22 @@ describe("PyPI Extension", () => {
       });
 
       it("then it should return packages in compact format", () => {
-        expect(result.content[0].text).toBe(
+        expect((result.content[0] as TextContent).text).toBe(
           "requests 2.31.0: Python HTTP for Humans.\nrequests-oauthlib 1.3.1: OAuthlib authentication support for Requests.",
         );
         expect(result.details.query).toBe("requests");
       });
 
       it("then it should include the package name", () => {
-        expect(result.content[0].text).toContain("requests");
+        expect((result.content[0] as TextContent).text).toContain("requests");
       });
 
       it("then it should include the package description", () => {
-        expect(result.content[0].text).toContain("Python HTTP for Humans.");
+        expect((result.content[0] as TextContent).text).toContain("Python HTTP for Humans.");
       });
 
       it("then it should include multiple packages in results", () => {
-        expect(result.content[0].text).toContain("requests-oauthlib");
+        expect((result.content[0] as TextContent).text).toContain("requests-oauthlib");
       });
 
       it("then it should include the total count", () => {
@@ -119,7 +118,7 @@ describe("PyPI Extension", () => {
     });
 
     describe("given search fails and fallback succeeds", () => {
-      let result: unknown;
+      let result: AgentToolResult<Record<string, unknown>>;
 
       beforeEach(async () => {
         const mockFetch = vi
@@ -138,20 +137,20 @@ describe("PyPI Extension", () => {
               </a>
             </html>`,
           } as unknown);
-        globalThis.fetch = mockFetch;
+        globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
         result = await registeredTool.execute("tool1", { query: "requests" });
       });
 
       it("then it should fallback to direct package lookup", () => {
-        expect(result.content[0].text).toBe(
+        expect((result.content[0] as TextContent).text).toBe(
           "requests 2.31.0: Python HTTP for Humans.",
         );
         expect(result.details.total).toBe(1);
       });
 
       it("then it should include the package name from fallback", () => {
-        expect(result.content[0].text).toContain("requests");
+        expect((result.content[0] as TextContent).text).toContain("requests");
       });
     });
 
@@ -176,13 +175,13 @@ describe("PyPI Extension", () => {
           .mockResolvedValueOnce({
             ok: false,
           });
-        globalThis.fetch = mockFetch;
+        globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
         const result = await registeredTool.execute("tool1", {
           query: "nonexistent-pkg-xyz-123",
         });
 
-        expect(result.content[0].text).toContain("No packages found.");
+        expect((result.content[0] as TextContent).text).toContain("No packages found.");
         expect(result.details.total).toBe(0);
       });
     });
@@ -192,16 +191,16 @@ describe("PyPI Extension", () => {
   // PyPI Package Info
   // ============================================
   describe("pypi-package-info", () => {
-    let registeredTool: unknown;
+    let registeredTool: MockTool;
 
     beforeEach(() => {
       registeredTool = mockPi.registerTool.mock.calls.find(
-        (call: unknown) => call[0].name === "pypi-package-info",
-      )[0];
+        (call) => (call[0] as MockTool).name === "pypi-package-info",
+      )![0] as MockTool;
     });
 
     describe("given a valid package on PyPI", () => {
-      let result: unknown;
+      let result: AgentToolResult<Record<string, unknown>>;
 
       beforeEach(async () => {
         globalThis.fetch = vi.fn().mockImplementation(
@@ -235,34 +234,34 @@ describe("PyPI Extension", () => {
       });
 
       it("then it should return package in compact format", () => {
-        expect(result.content[0].text).toBe(
+        expect((result.content[0] as TextContent).text).toBe(
           "requests 2.31.0: Python HTTP for Humans. [Kenneth Reitz] Apache 2.0 https://requests.readthedocs.io/",
         );
         expect(result.details.package).toBe("requests");
       });
 
       it("then it should include the package name", () => {
-        expect(result.content[0].text).toContain("requests");
+        expect((result.content[0] as TextContent).text).toContain("requests");
       });
 
       it("then it should include the package version", () => {
-        expect(result.content[0].text).toContain("2.31.0");
+        expect((result.content[0] as TextContent).text).toContain("2.31.0");
       });
 
       it("then it should include the package summary", () => {
-        expect(result.content[0].text).toContain("Python HTTP for Humans.");
+        expect((result.content[0] as TextContent).text).toContain("Python HTTP for Humans.");
       });
 
       it("then it should include the author name", () => {
-        expect(result.content[0].text).toContain("Kenneth Reitz");
+        expect((result.content[0] as TextContent).text).toContain("Kenneth Reitz");
       });
 
       it("then it should include the license information", () => {
-        expect(result.content[0].text).toContain("Apache 2.0");
+        expect((result.content[0] as TextContent).text).toContain("Apache 2.0");
       });
 
       it("then it should include the homepage URL", () => {
-        expect(result.content[0].text).toContain(
+        expect((result.content[0] as TextContent).text).toContain(
           "https://requests.readthedocs.io/",
         );
       });
@@ -292,12 +291,12 @@ describe("PyPI Extension", () => {
           package: "big-package",
         });
 
-        expect(result.content[0].text).toContain("+10");
+        expect((result.content[0] as TextContent).text).toContain("+10");
       });
     });
 
     describe("given a package that does not exist on PyPI", () => {
-      let result: unknown;
+      let result: AgentToolResult<Record<string, unknown>>;
 
       beforeEach(async () => {
         globalThis.fetch = vi.fn().mockImplementation(
@@ -315,7 +314,7 @@ describe("PyPI Extension", () => {
       });
 
       it("then it should return not found message", () => {
-        expect(result.content[0].text).toContain("not found on PyPI");
+        expect((result.content[0] as TextContent).text).toContain("not found on PyPI");
         expect(result.details.package).toBe("nonexistent-pkg-xyz-123");
       });
     });
@@ -336,7 +335,7 @@ describe("PyPI Extension", () => {
           package: "requests",
         });
 
-        expect(result.content[0].text).toBe(
+        expect((result.content[0] as TextContent).text).toBe(
           "Error fetching package info: HTTP 500",
         );
       });
@@ -352,7 +351,7 @@ describe("PyPI Extension", () => {
           package: "requests",
         });
 
-        expect(result.content[0].text).toBe(
+        expect((result.content[0] as TextContent).text).toBe(
           "Failed to show package info: Error: Network error",
         );
       });
@@ -368,7 +367,7 @@ describe("PyPI Extension", () => {
           package: "requests",
         });
 
-        expect(result.content[0].text).toBe(
+        expect((result.content[0] as TextContent).text).toBe(
           "Failed to show package info: Error: Something went wrong",
         );
       });
