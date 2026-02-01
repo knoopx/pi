@@ -24,7 +24,7 @@ import type {
   Theme,
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { Text } from "@mariozechner/pi-tui";
+import { Text, SelectList, type SelectItem } from "@mariozechner/pi-tui";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -168,20 +168,51 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
 
       if (currentConfig) {
         // Already configured - offer options
-        const options = [
-          "Test Connection",
-          "Reconfigure",
-          "Remove Configuration",
-          "Cancel",
+        const options: SelectItem[] = [
+          {
+            value: "test",
+            label: "Test Connection",
+            description: "Verify the current configuration",
+          },
+          {
+            value: "reconfigure",
+            label: "Reconfigure",
+            description: "Set up a new connection",
+          },
+          {
+            value: "remove",
+            label: "Remove Configuration",
+            description: "Delete the current configuration",
+          },
+          {
+            value: "cancel",
+            label: "Cancel",
+            description: "Return without changes",
+          },
         ];
-        const choice = await ctx.ui.select(
-          `Home Assistant configured: ${currentConfig.url}`,
-          options,
-        );
 
-        if (choice === undefined || choice === "Cancel") return;
+        const selectList = new SelectList(options, 6, {
+          selectedPrefix: (text: string) => `\x1b[32m>\x1b[0m ${text}`,
+          selectedText: (text: string) => `\x1b[1m${text}\x1b[0m`,
+          description: (text: string) => `\x1b[90m${text}\x1b[0m`,
+          scrollInfo: (text: string) => `\x1b[90m${text}\x1b[0m`,
+          noMatch: (text: string) => `\x1b[31m${text}\x1b[0m`,
+        });
 
-        if (choice === "Test Connection") {
+        const choice = await new Promise<string | null>((resolve) => {
+          selectList.onSelect = (item: SelectItem) => resolve(item.value);
+          selectList.onCancel = () => resolve(null);
+          ctx.ui
+            .custom(() => selectList, {
+              overlay: true,
+              overlayOptions: { width: 60, anchor: "center" },
+            })
+            .then((result) => resolve(result as string | null));
+        });
+
+        if (!choice || choice === "cancel") return;
+
+        if (choice === "test") {
           // Test connection
           try {
             const result = await fetch(`${currentConfig.url}/api/`, {
@@ -205,7 +236,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
           return;
         }
 
-        if (choice === "Remove Configuration") {
+        if (choice === "remove") {
           // Remove configuration
           const confirm = await ctx.ui.confirm(
             "Remove Configuration",
@@ -218,7 +249,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
           return;
         }
 
-        // choice === "Reconfigure": fall through to setup
+        // choice === "reconfigure": fall through to setup
       }
 
       // Setup new configuration
@@ -732,38 +763,96 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
         }
 
         // Build selection options
-        const options = filtered.map((e) => {
+        const options: SelectItem[] = filtered.map((e) => {
           const name = (e.attributes.friendly_name as string) || e.entity_id;
           const stateIcon =
             e.state === "on" ? "●" : e.state === "off" ? "○" : "◌";
-          return `${stateIcon} ${name} (${e.entity_id}) - ${e.state}`;
+          return {
+            value: e.entity_id,
+            label: `${stateIcon} ${name}`,
+            description: `${e.entity_id} - ${e.state}`,
+          };
         });
 
-        const selected = await ctx.ui.select(
-          "Home Assistant Entities",
-          options,
-        );
-        if (selected === undefined) return;
+        const selectList = new SelectList(options, 12, {
+          selectedPrefix: (text: string) => `\x1b[32m>\x1b[0m ${text}`,
+          selectedText: (text: string) => `\x1b[1m${text}\x1b[0m`,
+          description: (text: string) => `\x1b[90m${text}\x1b[0m`,
+          scrollInfo: (text: string) => `\x1b[90m${text}\x1b[0m`,
+          noMatch: (text: string) => `\x1b[31m${text}\x1b[0m`,
+        });
 
-        const entity = filtered[Number(selected)];
+        const selectedEntityId = await new Promise<string | null>((resolve) => {
+          selectList.onSelect = (item: SelectItem) => resolve(item.value);
+          selectList.onCancel = () => resolve(null);
+          ctx.ui
+            .custom(() => selectList, {
+              overlay: true,
+              overlayOptions: { width: 80, anchor: "center" },
+            })
+            .then((result) => resolve(result as string | null));
+        });
+
+        if (!selectedEntityId) {
+          ctx.ui.notify("Cancelled", "info");
+          return;
+        }
+
+        const entity = filtered.find((e) => e.entity_id === selectedEntityId);
+        if (!entity) {
+          ctx.ui.notify("Entity not found", "error");
+          return;
+        }
 
         // Offer actions
-        const actions = [
-          "Toggle",
-          "Turn On",
-          "Turn Off",
-          "Get Details",
-          "Cancel",
+        const actionOptions: SelectItem[] = [
+          {
+            value: "toggle",
+            label: "Toggle",
+            description: "Toggle the entity state",
+          },
+          {
+            value: "turn_on",
+            label: "Turn On",
+            description: "Turn the entity on",
+          },
+          {
+            value: "turn_off",
+            label: "Turn Off",
+            description: "Turn the entity off",
+          },
+          {
+            value: "details",
+            label: "Get Details",
+            description: "Show entity details",
+          },
+          { value: "cancel", label: "Cancel", description: "Cancel action" },
         ];
-        const action = await ctx.ui.select(
-          `Action for ${entity.entity_id}`,
-          actions,
-        );
-        if (action === undefined || action === "Cancel") return;
+
+        const actionSelectList = new SelectList(actionOptions, 6, {
+          selectedPrefix: (text: string) => `\x1b[32m>\x1b[0m ${text}`,
+          selectedText: (text: string) => `\x1b[1m${text}\x1b[0m`,
+          description: (text: string) => `\x1b[90m${text}\x1b[0m`,
+          scrollInfo: (text: string) => `\x1b[90m${text}\x1b[0m`,
+          noMatch: (text: string) => `\x1b[31m${text}\x1b[0m`,
+        });
+
+        const action = await new Promise<string | null>((resolve) => {
+          actionSelectList.onSelect = (item: SelectItem) => resolve(item.value);
+          actionSelectList.onCancel = () => resolve(null);
+          ctx.ui
+            .custom(() => actionSelectList, {
+              overlay: true,
+              overlayOptions: { width: 60, anchor: "center" },
+            })
+            .then((result) => resolve(result as string | null));
+        });
+
+        if (!action || action === "cancel") return;
 
         const domain = entity.entity_id.split(".")[0];
 
-        if (action === "Toggle") {
+        if (action === "toggle") {
           // Toggle
           await haFetch(`/services/${domain}/toggle`, {
             method: "POST",
@@ -773,21 +862,21 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
             `/states/${entity.entity_id}`,
           );
           ctx.ui.notify(`${entity.entity_id} → ${newState.state}`, "info");
-        } else if (action === "Turn On") {
+        } else if (action === "turn_on") {
           // Turn On
           await haFetch(`/services/${domain}/turn_on`, {
             method: "POST",
             body: { entity_id: entity.entity_id },
           });
           ctx.ui.notify(`${entity.entity_id} turned on`, "info");
-        } else if (action === "Turn Off") {
+        } else if (action === "turn_off") {
           // Turn Off
           await haFetch(`/services/${domain}/turn_off`, {
             method: "POST",
             body: { entity_id: entity.entity_id },
           });
           ctx.ui.notify(`${entity.entity_id} turned off`, "info");
-        } else if (action === "Get Details") {
+        } else if (action === "details") {
           // Get Details - show in editor for LLM context
           const state = await haFetch<HAState>(`/states/${entity.entity_id}`);
           const details = [
