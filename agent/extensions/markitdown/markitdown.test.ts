@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
+import type { TextContent } from "@mariozechner/pi-ai";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import setupMarkitdownExtension from "./index";
 import type { MockTool, MockExtensionAPI } from "../../test-utils";
 import { createMockExtensionAPI } from "../../test-utils";
@@ -12,7 +14,7 @@ describe("Markitdown Extension", () => {
 
   beforeEach(() => {
     mockPi = createMockExtensionAPI();
-    setupMarkitdownExtension(mockPi);
+    setupMarkitdownExtension(mockPi as ExtensionAPI);
   });
 
   describe("given the extension is initialized", () => {
@@ -92,7 +94,7 @@ describe("Markitdown Extension", () => {
       });
 
       it("then it should return the converted content", () => {
-        expect(result.content[0].text).toBe(
+        expect((result.content[0] as TextContent).text).toBe(
           "# Converted Markdown Content\n\nThis is the converted content.",
         );
       });
@@ -135,7 +137,7 @@ describe("Markitdown Extension", () => {
       });
 
       it("then it should return the webpage content", () => {
-        expect(result.content[0].text).toBe(
+        expect((result.content[0] as TextContent).text).toBe(
           "# Webpage Title\n\nContent from the webpage.",
         );
       });
@@ -188,7 +190,7 @@ describe("Markitdown Extension", () => {
       });
 
       it("then it should return error in content", () => {
-        expect(result.content[0].text).toContain(
+        expect((result.content[0] as TextContent).text).toContain(
           "Error converting source: markitdown: file not found",
         );
       });
@@ -236,7 +238,7 @@ describe("Markitdown Extension", () => {
       });
 
       it("then it should return unexpected error in content", () => {
-        expect(result.content[0].text).toContain(
+        expect((result.content[0] as TextContent).text).toContain(
           "Unexpected error: Error: Command not found",
         );
       });
