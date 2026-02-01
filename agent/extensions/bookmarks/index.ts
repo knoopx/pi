@@ -234,16 +234,15 @@ export async function getBookmarksFromDB(query?: string): Promise<Bookmark[]> {
       // Clean up the temporary database file
       try {
         await fs.unlink(tempDbPath);
-      } catch (_cleanupError) {
+      } catch {
         // Ignore cleanup errors - the temp file will be cleaned up eventually
-        console.error("Failed to cleanup temp database:", _cleanupError);
       }
     }
   } catch (dbError) {
     // Clean up temp file if it exists
     try {
       await fs.unlink(tempDbPath).catch(() => {});
-    } catch (_cleanupError) {
+    } catch {
       // Ignore cleanup errors
     }
     throw dbError;
@@ -343,16 +342,15 @@ export async function getHistoryFromDB(query?: string): Promise<History[]> {
       // Clean up the temporary database file
       try {
         await fs.unlink(tempDbPath);
-      } catch (_cleanupError) {
+      } catch {
         // Ignore cleanup errors - the temp file will be cleaned up eventually
-        console.error("Failed to cleanup temp database:", _cleanupError);
       }
     }
   } catch (dbError) {
     // Clean up temp file if it exists
     try {
       await fs.unlink(tempDbPath).catch(() => {});
-    } catch (_cleanupError) {
+    } catch {
       // Ignore cleanup errors
     }
     throw dbError;
