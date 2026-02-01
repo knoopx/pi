@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.50.9",
-  "defaultProvider": "anthropic",
-  "defaultModel": "claude-opus-4-5",
+  "defaultProvider": "github-copilot",
+  "defaultModel": "grok-code-fast-1",
   "defaultThinkingLevel": "off",
   "theme": "custom",
   "permissionLevel": "low",
