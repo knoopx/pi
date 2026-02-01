@@ -43,6 +43,16 @@ interface Train {
   trainCancelled: boolean;
 }
 
+interface DepartureItem {
+  departureTime: string;
+  destination: string;
+  line: string;
+  platform: string;
+  delay: string;
+  trainType: string;
+  cancelled: boolean;
+}
+
 /**
  * Levenshtein distance for fuzzy string matching
  */
@@ -106,12 +116,12 @@ export async function getStations(): Promise<Station[]> {
     // Remove duplicates and sort alphabetically
     const uniqueStations = Array.from(
       new Map(stations.map((s: Station) => [s.id, s])).values(),
-    ).sort((a: unknown, b: unknown) =>
-      (a as Station).name.localeCompare((b as Station).name),
-    );
+    ) as Station[];
 
     cacheTimestamp = now;
-    cachedStations = stations;
+    cachedStations = uniqueStations.sort((a: Station, b: Station) =>
+      a.name.localeCompare(b.name),
+    );
     return uniqueStations as Station[];
   } catch (err) {
     console.error("Error fetching stations:", err);
@@ -122,7 +132,7 @@ export async function getStations(): Promise<Station[]> {
 /**
  * Get departures for a specific station
  */
-async function getDepartures(stationId: number): Promise<Train[]> {
+async function getDepartures(stationId: number): Promise<DepartureItem[]> {
   try {
     const response = await fetch(
       `https://serveisgrs.rodalies.gencat.cat/api/departures?stationId=${stationId}&minute=60&fullResponse=true&lang=en`,
@@ -138,7 +148,7 @@ async function getDepartures(stationId: number): Promise<Train[]> {
             new Date(b.departureDateHourSelectedStation).getTime(),
         )
         .slice(0, 10)
-        .map((train: Train) => ({
+        .map((train: Train): DepartureItem => ({
           departureTime: new Date(
             train.departureDateHourSelectedStation,
           ).toLocaleTimeString("en-US", {
@@ -228,7 +238,7 @@ export default function (pi: ExtensionAPI) {
                 ? { station: current, distance: nameDistance }
                 : best;
             },
-            null as { station: unknown; distance: number } | null,
+            null as { station: Station; distance: number } | null,
           );
 
           if (bestMatch && bestMatch.distance <= 3) {
@@ -268,7 +278,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       // Build response
-      const formatted = departures.map((dep: unknown) => ({
+      const formatted = departures.map((dep: DepartureItem) => ({
         departureTime: dep.departureTime,
         destination: dep.destination,
         line: dep.line,
@@ -303,24 +313,22 @@ export default function (pi: ExtensionAPI) {
         label: s.name,
       }));
 
-      const selectList = new SelectList(stationOptions, 12, {
+      const selectList = new SelectList(stationOptions as any, 12, {
         selectedPrefix: (text: string) => `\x1b[32m>\x1b[0m ${text}`,
         selectedText: (text: string) => `\x1b[1m${text}\x1b[0m`,
         description: (text: string) => `\x1b[90m${text}\x1b[0m`,
         scrollInfo: (text: string) => `\x1b[90m${text}\x1b[0m`,
         noMatch: (text: string) => `\x1b[31m${text}\x1b[0m`,
-      });
+      } as any) as any;
 
       // Use UI selection
       const selectedId = await new Promise<string | null>((resolve) => {
-        selectList.onSelect = (item: SelectItem) => resolve(item.value);
+        selectList.onSelect = (item: any) => resolve(item.value);
         selectList.onCancel = () => resolve(null);
-        ctx.ui
-          .custom(() => selectList, {
-            overlay: true,
-            overlayOptions: { width: 60, anchor: "center" },
-          })
-          .then((result) => resolve(result as string | null));
+        ((ctx as any).ui).custom(selectList, {
+          overlay: true,
+          overlayOptions: { width: 60 },
+        } as any);
       });
 
       if (!selectedId) {
@@ -335,25 +343,16 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      // Call our custom tool
-      const result = await (ctx as unknown).callTool("rodalies_departures", {
-        stationId: parseInt(station.value),
-      });
+      // Get departures directly
+      const departures = await getDepartures(parseInt(station.value));
 
-      if ((result as unknown).isError || (result as unknown).details?.error) {
-        ctx.ui.notify((result as unknown).content[0].text, "error");
-        return;
-      }
-
-      // Display departures
-      const departures = JSON.parse((result as unknown).content[0].text);
       if (departures.length === 0) {
         ctx.ui.notify("No departures found", "info");
         return;
       }
 
       // Show each departure
-      departures.forEach((dep: unknown) => {
+      departures.forEach((dep: DepartureItem) => {
         const message = `🕒 ${dep.departureTime} → ${dep.destination} (${dep.line}) | Platform: ${dep.platform} ${dep.delay ? `| Delay: ${dep.delay}` : ""}`;
         ctx.ui.notify(message, "info");
       });

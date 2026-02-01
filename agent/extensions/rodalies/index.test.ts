@@ -13,7 +13,7 @@ import {
 
 // Mock global fetch
 const mockFetch = vi.fn();
-globalThis.fetch = mockFetch;
+globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
 // ============================================================================
 // Levenshtein Distance Tests
@@ -144,7 +144,7 @@ describe("Station Resolution", () => {
             ? { station: current, distance: nameDistance }
             : best;
         },
-        null as { station: unknown; distance: number } | null,
+        null as { station: { id: number; name: string }; distance: number } | null,
       );
       expect(bestMatch).toBeDefined();
       expect(bestMatch?.distance).toBeLessThanOrEqual(3);
@@ -165,7 +165,7 @@ describe("Station Resolution", () => {
             ? { station: current, distance: nameDistance }
             : best;
         },
-        null as { station: unknown; distance: number } | null,
+        null as { station: { id: number; name: string }; distance: number } | null,
       );
       // Distance of 12 > 3 means no match
       expect(bestMatch?.distance).toBeGreaterThan(3);
