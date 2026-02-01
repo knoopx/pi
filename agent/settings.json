@@ -2,9 +2,7 @@
   "lastChangelogVersion": "0.50.9",
   "defaultProvider": "github-copilot",
   "defaultModel": "grok-code-fast-1",
-  "defaultThinkingLevel": "off",
   "theme": "custom",
-  "permissionLevel": "low",
   "lsp": {
     "hookMode": "edit_write"
   },
