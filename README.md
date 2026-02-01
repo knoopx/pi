@@ -2,7 +2,7 @@
 
 This is my personal [Pi Coding Agent](https://buildwithpi.ai/) configuration.
 
-# Creadits
+## Credits
 
 A significant part of code and ideas within this repostory are originally by:
 
