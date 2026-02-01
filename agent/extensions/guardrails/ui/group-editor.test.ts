@@ -426,10 +426,14 @@ describe("GroupEditor", () => {
           const output = editor.render(80);
 
           expect(output).toContain(" Test Groups");
-          expect(output).toContain("coreutils (1 rules)");
-          expect(output).toContain("typescript (1 rules)");
+          expect(
+            output.some((line) => line.includes("coreutils (1 rules)")),
+          ).toBe(true);
+          expect(
+            output.some((line) => line.includes("typescript (1 rules)")),
+          ).toBe(true);
           expect(output).toContain(
-            "↑/↓: navigate • Enter: edit rules • p: edit pattern • a: add • d: delete • Esc: close",
+            "  ↑/↓: navigate • Enter: edit rules • p: edit pattern • a: add • d: delete • Esc: close",
           );
         });
 
