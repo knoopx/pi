@@ -12,17 +12,18 @@ import weatherExtension from "./index";
 import { fetchWeather } from "./api";
 import { createWeatherErrorResult, formatWeatherSummary } from "./emoji";
 
-// Mock the API functions
+// Mock the API and emoji modules
 vi.mock("./api", () => ({
   fetchWeather: vi.fn(),
 }));
 
-// Mock the emoji functions
 vi.mock("./emoji", () => ({
   createWeatherErrorResult: vi.fn(),
-  formatWeatherSummary: vi.fn().mockReturnValue("☀️  20°C • Clear sky"),
-  formatHourlySummary: vi.fn().mockReturnValue(""),
+  formatWeatherSummary: vi.fn(),
+  formatHourlySummary: vi.fn(),
 }));
+
+type TextContent = { type: "text"; text: string };
 
 const mockWeatherDataCelsius = {
   latitude: 0,
@@ -53,6 +54,9 @@ const mockErrorResult = {
   details: { error: "Weather API error" },
 };
 
+const mockWeatherSummary = "☀️  20°C • Clear sky";
+const mockWeatherSummaryFahrenheit = "☀️  68°F • Clear sky";
+
 describe("Weather Extension", () => {
   let pi: ExtensionAPI;
   let context: ExtensionContext;
@@ -60,6 +64,8 @@ describe("Weather Extension", () => {
   let commandConfig: any;
 
   beforeEach(() => {
+    vi.clearAllMocks();
+
     pi = {
       registerTool: vi.fn(),
       registerCommand: vi.fn(),
@@ -191,6 +197,7 @@ describe("Weather Extension", () => {
 
     it("then execute returns formatted weather summary", async () => {
       vi.mocked(fetchWeather).mockResolvedValue(mockWeatherDataCelsius);
+      vi.mocked(formatWeatherSummary).mockReturnValue(mockWeatherSummary);
 
       const result = await toolConfig.execute(
         "tool-id",
@@ -199,9 +206,9 @@ describe("Weather Extension", () => {
         context,
       );
 
-      expect(result.content[0].text).toContain("☀️");
-      expect(result.content[0].text).toContain("20°C");
-      expect(result.content[0].text).toContain("Clear sky");
+      expect((result.content[0] as TextContent).text).toContain("☀️");
+      expect((result.content[0] as TextContent).text).toContain("20°C");
+      expect((result.content[0] as TextContent).text).toContain("Clear sky");
     });
 
     it("then execute handles errors gracefully", async () => {
@@ -239,11 +246,12 @@ describe("Weather Extension", () => {
       // Should use cache for second call
       expect(result1).toBeDefined();
       expect(result2).toBeDefined();
+      expect(vi.mocked(fetchWeather)).toHaveBeenCalledTimes(1);
     });
 
     it("then execute handles different units", async () => {
       vi.mocked(fetchWeather).mockResolvedValue(mockWeatherDataFahrenheit);
-      vi.mocked(formatWeatherSummary).mockReturnValue("☀️  68°F • Clear sky");
+      vi.mocked(formatWeatherSummary).mockReturnValue(mockWeatherSummaryFahrenheit);
 
       const result = await toolConfig.execute(
         "tool-id",
@@ -252,7 +260,7 @@ describe("Weather Extension", () => {
         context,
       );
 
-      expect(result.content[0].text).toContain("68°F");
+      expect((result.content[0] as TextContent).text).toContain("68°F");
       expect(result.details?.weather.unit).toBe("F");
     });
 
