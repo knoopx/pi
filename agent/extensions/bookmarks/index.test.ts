@@ -17,6 +17,7 @@ vi.mock("better-sqlite3", () => ({
 vi.mock("fs/promises", () => ({
   access: vi.fn(),
   copyFile: vi.fn(),
+  unlink: vi.fn(),
 }));
 
 describe("Bookmarks Extension", () => {
@@ -262,11 +263,11 @@ describe("Bookmarks Extension", () => {
         const { default: bookmarksExtension } = await import("./index");
         bookmarksExtension(mockPi);
 
-        expect(mockPi.registerTool).toHaveBeenCalledTimes(1);
+        expect(mockPi.registerTool).toHaveBeenCalledTimes(2);
         expect(mockPi.registerTool).toHaveBeenCalledWith(
           expect.objectContaining({
-            name: "search-bookmarks",
-            label: "Search Bookmarks",
+            name: "firefox-bookmarks",
+            label: "Firefox Bookmarks",
           }),
         );
       });
