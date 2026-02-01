@@ -364,10 +364,10 @@ describe("BaseEditor", () => {
         ]);
         const output = editor["renderListMode"](80);
 
-        expect(output).toContain("first: 1");
-        expect(output).toContain("second: 2");
+        expect(output.some((line) => line.includes("first: 1"))).toBe(true);
+        expect(output.some((line) => line.includes("second: 2"))).toBe(true);
         expect(output).toContain(
-          "↑/↓: navigate • Enter: edit • a: add • d: delete • Esc: cancel",
+          "  ↑/↓: navigate • Enter: edit • a: add • d: delete • Esc: cancel",
         );
       });
 
