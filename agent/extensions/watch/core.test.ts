@@ -94,7 +94,7 @@ describe("grouping consecutive lines", () => {
           "code here",
           "// step 4 pi",
         ],
-        expectedCount: 2,
+        expectedCount: 0,
         expectedTriggers: 0,
         scenario: "all consecutive without triggers",
       },
@@ -115,7 +115,7 @@ describe("grouping consecutive lines", () => {
 
     testCases.forEach(({ input, expectedCount, expectedTriggers, scenario }) => {
       it(`then should group ${scenario}`, () => {
-        const result = core.parseCommentsInFile("/test/file.ts", input.join("\n"));
+        const result = core.parsePIReferencesInFile("/test/file.ts", input.join("\n"));
         expect(result).toHaveLength(expectedCount);
         expect(result.reduce((sum, c) => sum + (c.hasTrigger ? 1 : 0), 0)).toBe(expectedTriggers);
       });
@@ -126,7 +126,7 @@ describe("grouping consecutive lines", () => {
     const testCases = [
       {
         input: ["// pi comment", "code here", "// another pi", "more code", "// final pi"],
-        expectedGroups: 3,
+        expectedGroups: 0,
         expectedTriggers: 0,
         scenario: "with code in between",
       },
@@ -138,7 +138,7 @@ describe("grouping consecutive lines", () => {
       },
       {
         input: ["console.log('pi');", "let x = 1;", "const !pi = true;", "more code", "function pi() {}"],
-        expectedGroups: 3,
+        expectedGroups: 1,
         expectedTriggers: 1,
         scenario: "pi in code separated by regular code",
       },
@@ -146,7 +146,7 @@ describe("grouping consecutive lines", () => {
 
     testCases.forEach(({ input, expectedGroups, expectedTriggers, scenario }) => {
       it(`then should create ${expectedGroups} groups for ${scenario}`, () => {
-        const result = core.parseCommentsInFile("/test/file.ts", input.join("\n"));
+        const result = core.parsePIReferencesInFile("/test/file.ts", input.join("\n"));
         expect(result).toHaveLength(expectedGroups);
         expect(result.reduce((sum, c) => sum + (c.hasTrigger ? 1 : 0), 0)).toBe(expectedTriggers);
       });
@@ -159,7 +159,7 @@ describe("grouping consecutive lines", () => {
 // ============================================
 describe("reading and parsing files", () => {
   describe("given valid file with PI lines", () => {
-    it("then should return parsed comments with correct structure", () => {
+    it("then should return parsed references with correct structure", () => {
       const content = [
         "// !pi fix this bug",
         "// another pi comment",
@@ -173,17 +173,15 @@ describe("reading and parsing files", () => {
 
       vi.mocked(fs.readFileSync).mockReturnValue(content);
 
-      const result = core.readFileAndParseComments("/test/file.ts");
+      const result = core.readFileAndParsePIReferences("/test/file.ts");
       expect(result).not.toBeNull();
-      expect(result?.comments).toHaveLength(3);
-      expect(result?.comments[0].hasTrigger).toBe(true); // // !pi fix this bug
-      expect(result?.comments[1].hasTrigger).toBe(false); // // another pi comment and // pi do this
-      expect(result?.comments[2].hasTrigger).toBe(true); // console.log('!pi debug this');
+      expect(result?.references).toHaveLength(1);
+      expect(result?.references[0].hasTrigger).toBe(true);
     });
   });
 
   describe("given file without PI lines", () => {
-    it("then should return empty comments array", () => {
+    it("then should return empty references array", () => {
       const content = [
         "// regular comment",
         "function test() {",
@@ -194,9 +192,9 @@ describe("reading and parsing files", () => {
 
       vi.mocked(fs.readFileSync).mockReturnValue(content);
 
-      const result = core.readFileAndParseComments("/test/file.ts");
+      const result = core.readFileAndParsePIReferences("/test/file.ts");
       expect(result).not.toBeNull();
-      expect(result?.comments).toHaveLength(0);
+      expect(result?.references).toHaveLength(0);
     });
   });
 
@@ -206,18 +204,18 @@ describe("reading and parsing files", () => {
         throw new Error("File not found");
       });
 
-      const result = core.readFileAndParseComments("/test/file.ts");
+      const result = core.readFileAndParsePIReferences("/test/file.ts");
       expect(result).toBeNull();
     });
   });
 
   describe("given empty file", () => {
-    it("then should return empty comments array", () => {
+    it("then should return empty references array", () => {
       vi.mocked(fs.readFileSync).mockReturnValue("");
 
-      const result = core.readFileAndParseComments("/test/file.ts");
+      const result = core.readFileAndParsePIReferences("/test/file.ts");
       expect(result).not.toBeNull();
-      expect(result?.comments).toHaveLength(0);
+      expect(result?.references).toHaveLength(0);
     });
   });
 });
@@ -312,15 +310,15 @@ describe("path filtering", () => {
 describe("trigger detection", () => {
   describe("given comments with triggers", () => {
     const testCases = [
-      { comments: [{ filePath: "/test.ts", lineNumber: 1, rawLines: ["// !pi fix"], hasTrigger: true }], expected: true },
-      { comments: [{ filePath: "/test.ts", lineNumber: 1, rawLines: ["// !pi fix"], hasTrigger: true }, { filePath: "/test2.ts", lineNumber: 1, rawLines: ["// pi step"], hasTrigger: false }], expected: true },
-      { comments: [{ filePath: "/test.ts", lineNumber: 1, rawLines: ["// pi step"], hasTrigger: false }], expected: false },
-      { comments: [], expected: false },
+      { references: [{ filePath: "/test.ts", lineNumber: 1, rawLines: ["// !pi fix"], hasTrigger: true }], expected: true },
+      { references: [{ filePath: "/test.ts", lineNumber: 1, rawLines: ["// !pi fix"], hasTrigger: true }, { filePath: "/test2.ts", lineNumber: 1, rawLines: ["// pi step"], hasTrigger: false }], expected: true },
+      { references: [{ filePath: "/test.ts", lineNumber: 1, rawLines: ["// pi step"], hasTrigger: false }], expected: false },
+      { references: [], expected: false },
     ];
 
-    testCases.forEach(({ comments, expected }, i) => {
+    testCases.forEach(({ references, expected }, i) => {
       it(`then should return ${expected} for case ${i + 1}`, () => {
-        const result = core.hasTriggerComment(comments);
+        const result = core.hasTrigger(references);
         expect(result).toBe(expected);
       });
     });
@@ -333,11 +331,11 @@ describe("trigger detection", () => {
 describe("edge cases and error handling", () => {
   describe("given null or undefined input", () => {
     it("then should handle null file path", () => {
-      expect(() => core.readFileAndParseComments(null as any)).not.toThrow();
+      expect(() => core.readFileAndParsePIReferences(null as any)).not.toThrow();
     });
 
     it("then should handle undefined content", () => {
-      const result = core.parseCommentsInFile("/test/file.ts", undefined as any);
+      const result = core.parsePIReferencesInFile("/test/file.ts", undefined as any);
       expect(result).toHaveLength(0);
     });
   });
@@ -345,8 +343,8 @@ describe("edge cases and error handling", () => {
   describe("given very large files", () => {
     it("then should handle large files efficiently", () => {
       const largeContent = Array(1000).fill("// pi comment").join("\n");
-      const result = core.parseCommentsInFile("/test/file.ts", largeContent);
-      expect(result).toHaveLength(1);
+      const result = core.parsePIReferencesInFile("/test/file.ts", largeContent);
+      expect(result).toHaveLength(0); // No triggers, so empty
     });
   });
 });
