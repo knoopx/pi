@@ -14,6 +14,12 @@
         "pattern": "^grep",
         "action": "block",
         "reason": "use `rg` (ripgrep) instead"
+      },
+      {
+        "context": "command",
+        "pattern": "^sed",
+        "action": "block",
+        "reason": "use `cm` or `ast-grep` instead"
       }
     ]
   },

@@ -13,7 +13,7 @@ import { glob } from "tinyglobby";
  * A group is activated if any file matching its pattern exists in the project.
  *
  * Configuration:
- * - Extension defaults: guardrails.json in extension directory
+ * - Extension defaults: defaults.json (used when no global config exists)
  * - Global settings: ~/.pi/agent/settings.json under key "guardrails"
  * - Command: /guardrails
  */

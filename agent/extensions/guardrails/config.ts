@@ -33,31 +33,34 @@ export type ResolvedConfig = GuardrailsGroup[];
 const GLOBAL_CONFIG_PATH = resolve(homedir(), ".pi/agent/settings.json");
 const EXTENSION_CONFIG_PATH = resolve(
   import.meta.dirname || __dirname,
-  "guardrails.json",
+  "defaults.json",
 );
 
 class ConfigLoader {
-  private extensionConfig: GuardrailsConfig | null = null;
+  private defaultsConfig: GuardrailsConfig | null = null;
   private globalConfig: GuardrailsConfig | null = null;
   private resolved: ResolvedConfig | null = null;
 
   async load(): Promise<void> {
-    this.extensionConfig = await this.loadConfigFile(EXTENSION_CONFIG_PATH);
-    this.globalConfig = await this.loadConfigFile(GLOBAL_CONFIG_PATH);
+    this.defaultsConfig = await this.loadDefaultsFile();
+    this.globalConfig = await this.loadGlobalFile();
     this.resolved = this.mergeConfigs();
   }
 
-  private async loadConfigFile(path: string): Promise<GuardrailsConfig | null> {
+  private async loadDefaultsFile(): Promise<GuardrailsConfig | null> {
     try {
-      const content = await readFile(path, "utf-8");
+      const content = await readFile(EXTENSION_CONFIG_PATH, "utf-8");
       const parsed = JSON.parse(content);
+      return Array.isArray(parsed) ? (parsed as GuardrailsConfig) : null;
+    } catch {
+      return null;
+    }
+  }
 
-      if (path === EXTENSION_CONFIG_PATH) {
-        // Extension config is directly the guardrails config (array of groups)
-        return Array.isArray(parsed) ? (parsed as GuardrailsConfig) : null;
-      }
-
-      // Global config is stored as arrays directly under guardrails key
+  private async loadGlobalFile(): Promise<GuardrailsConfig | null> {
+    try {
+      const content = await readFile(GLOBAL_CONFIG_PATH, "utf-8");
+      const parsed = JSON.parse(content);
       const guardrails = parsed.guardrails;
       return Array.isArray(guardrails)
         ? (guardrails as GuardrailsConfig)
@@ -68,19 +71,9 @@ class ConfigLoader {
   }
 
   private mergeConfigs(): ResolvedConfig {
-    const merged: ResolvedConfig = [];
-
-    // Extension config as base defaults
-    if (this.extensionConfig) {
-      merged.push(...this.extensionConfig.filter(this.isValidGroup));
-    }
-
-    // Global config overrides extension
-    if (this.globalConfig) {
-      merged.push(...this.globalConfig.filter(this.isValidGroup));
-    }
-
-    return merged;
+    // Use global config if it exists, otherwise use defaults
+    const config = this.globalConfig ?? this.defaultsConfig ?? [];
+    return config.filter(this.isValidGroup);
   }
 
   private isValidGroup(group: any): group is GuardrailsGroup {
@@ -138,19 +131,19 @@ class ConfigLoader {
   }
 
   hasGlobalConfig(): boolean {
-    return this.globalConfig !== null || this.extensionConfig !== null;
+    return this.globalConfig !== null;
   }
 
-  hasExtensionConfig(): boolean {
-    return this.extensionConfig !== null;
+  hasDefaultsConfig(): boolean {
+    return this.defaultsConfig !== null;
   }
 
   getGlobalConfig(): GuardrailsConfig {
-    return this.globalConfig ?? this.extensionConfig ?? [];
+    return this.globalConfig ?? [];
   }
 
-  getExtensionConfig(): GuardrailsConfig {
-    return this.extensionConfig ?? [];
+  getDefaultsConfig(): GuardrailsConfig {
+    return this.defaultsConfig ?? [];
   }
 }
 

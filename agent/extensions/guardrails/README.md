@@ -57,18 +57,14 @@ Prevents editing of auto-generated lock files:
 
 ## Configuration
 
-Configuration is loaded from two optional JSON files, merged in order (project overrides global):
+Configuration is loaded from:
 
 - **Global**: `~/.pi/agent/settings.json` under key `"guardrails"`
-- **Project**: `.pi/extensions/guardrails.json`
+- **Defaults**: Built-in `defaults.json` (used when no global config exists)
 
 ### Settings Command
 
-Run `/guardrails:settings` to open an interactive settings UI with two tabs:
-- **Local**: edit project-scoped config (`.pi/extensions/guardrails.json`)
-- **Global**: edit global config (`~/.pi/agent/settings.json`)
-
-Use `Tab` / `Shift+Tab` to switch tabs. Boolean settings can be toggled directly. Array/object settings (patterns, tools) require manual JSON editing.
+Run `/guardrails` to open an interactive settings UI for editing global config (`~/.pi/agent/settings.json`).
 
 ### Configuration Schema
 

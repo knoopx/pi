@@ -32,7 +32,7 @@ export class FormHandler {
     this.fields = fields;
 
     // Initialize inputs and selections
-    fields.forEach((field, index) => {
+    fields.forEach((field, _index) => {
       if (field.type === "text") {
         const input = new Input();
         input.onSubmit = () => this.trySubmitOrNext();

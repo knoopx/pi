@@ -4,7 +4,7 @@ import { configLoader } from "./config";
 describe("ConfigLoader", () => {
   describe("given valid global config exists", () => {
     describe("when loading configuration", () => {
-      it("then merges global and default config", async () => {
+      it("then uses global config", async () => {
         const mockGroups = [
           {
             group: "test",
@@ -19,12 +19,10 @@ describe("ConfigLoader", () => {
           },
         ];
 
-        vi.spyOn(configLoader as any, "loadConfigFile").mockResolvedValue(
+        vi.spyOn(configLoader as any, "loadGlobalFile").mockResolvedValue(
           mockGroups,
         );
-        vi.spyOn(configLoader as any, "mergeConfigs").mockReturnValue(
-          mockGroups,
-        );
+        vi.spyOn(configLoader as any, "loadDefaultsFile").mockResolvedValue(null);
 
         await configLoader.load();
 
@@ -36,11 +34,43 @@ describe("ConfigLoader", () => {
     });
   });
 
-  describe("given missing config file", () => {
+  describe("given no global config exists", () => {
+    describe("when loading configuration", () => {
+      it("then uses defaults config", async () => {
+        const mockGroups = [
+          {
+            group: "defaults",
+            pattern: "^defaults",
+            rules: [
+              {
+                pattern: "^defaults",
+                action: "block",
+                reason: "defaults block",
+              },
+            ],
+          },
+        ];
+
+        vi.spyOn(configLoader as any, "loadGlobalFile").mockResolvedValue(null);
+        vi.spyOn(configLoader as any, "loadDefaultsFile").mockResolvedValue(
+          mockGroups,
+        );
+
+        await configLoader.load();
+
+        const config = configLoader.getConfig();
+        expect(Array.isArray(config)).toBe(true);
+        expect(config).toHaveLength(1);
+        expect(config[0].group).toBe("defaults");
+      });
+    });
+  });
+
+  describe("given missing config files", () => {
     describe("when loading configuration", () => {
       it("then returns empty array", async () => {
-        vi.spyOn(configLoader as any, "loadConfigFile").mockResolvedValue(null);
-        vi.spyOn(configLoader as any, "mergeConfigs").mockReturnValue([]);
+        vi.spyOn(configLoader as any, "loadGlobalFile").mockResolvedValue(null);
+        vi.spyOn(configLoader as any, "loadDefaultsFile").mockResolvedValue(null);
 
         await configLoader.load();
 
@@ -70,21 +100,10 @@ describe("ConfigLoader", () => {
           },
         ];
 
-        // Mock the load to return the mixed config, but mergeConfigs should filter
-        vi.spyOn(configLoader as any, "loadConfigFile").mockResolvedValue(
+        vi.spyOn(configLoader as any, "loadGlobalFile").mockResolvedValue(
           mockConfig,
         );
-        // The real mergeConfigs will filter invalid entries
-        vi.spyOn(configLoader as any, "mergeConfigs").mockImplementation(() => {
-          return mockConfig.filter(
-            (group: any) =>
-              typeof group === "object" &&
-              group !== null &&
-              typeof group.group === "string" &&
-              typeof group.pattern === "string" &&
-              Array.isArray(group.rules),
-          );
-        });
+        vi.spyOn(configLoader as any, "loadDefaultsFile").mockResolvedValue(null);
 
         await configLoader.load();
         const config = configLoader.getConfig();

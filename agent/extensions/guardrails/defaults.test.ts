@@ -52,7 +52,7 @@ describe("Guardrails Defaults Configuration", () => {
       it("then is defined and active for all projects", () => {
         expect(coreutilsGroup).toBeDefined();
         expect(coreutilsGroup!.pattern).toBe("*");
-        expect(coreutilsGroup!.rules.length).toBe(2);
+        expect(coreutilsGroup!.rules.length).toBe(3);
       });
     });
 

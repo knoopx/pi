@@ -1,4 +1,3 @@
-import { Key, matchesKey } from "@mariozechner/pi-tui";
 import { BaseEditor } from "./editor-common";
 import { FormHandler } from "./form-handler";
 

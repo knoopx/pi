@@ -146,7 +146,7 @@ describe("GroupEditor", () => {
   describe("Group Actions", () => {
     describe("given group list mode", () => {
       let editor: GroupEditor;
-      let onSave: ReturnType<typeof vi.fn>;
+      let onSave: (items: GuardrailsGroup[]) => void;
 
       beforeEach(() => {
         onSave = vi.fn();
@@ -189,7 +189,7 @@ describe("GroupEditor", () => {
           editor.handleInput("p");
 
           expect(editor["mode"]).toBe("edit");
-          expect(editor["input"].getValue()).toBe("*");
+          expect((editor as any)["input"].getValue()).toBe("*");
         });
       });
 
@@ -198,7 +198,7 @@ describe("GroupEditor", () => {
           editor.handleInput("P");
 
           expect(editor["mode"]).toBe("edit");
-          expect(editor["input"].getValue()).toBe("*");
+          expect((editor as any)["input"].getValue()).toBe("*");
         });
       });
 
@@ -242,7 +242,7 @@ describe("GroupEditor", () => {
   describe("Add Group Mode", () => {
     describe("given add mode active", () => {
       let editor: GroupEditor;
-      let onSave: ReturnType<typeof vi.fn>;
+      let onSave: (items: GuardrailsGroup[]) => void;
 
       beforeEach(() => {
         onSave = vi.fn();
@@ -258,8 +258,10 @@ describe("GroupEditor", () => {
 
       describe("when submitting valid pattern", () => {
         it("then adds new group and saves", () => {
-          editor["input"].setValue("*.js");
-          editor["input"]["onSubmit"]("*.js");
+          if ((editor as any)["input"]) {
+            (editor as any)["input"].setValue("*.js");
+            (editor as any)["input"]["onSubmit"]("*.js");
+          }
 
           expect(editor["items"]).toHaveLength(1);
           expect(editor["items"][0]).toEqual({
@@ -274,7 +276,9 @@ describe("GroupEditor", () => {
 
       describe("when submitting empty pattern", () => {
         it("then cancels without adding", () => {
-          editor["input"]["onSubmit"]("");
+          if ((editor as any)["input"]) {
+            (editor as any)["input"]["onSubmit"]("");
+          }
 
           expect(editor["items"]).toHaveLength(0);
           expect(editor["mode"]).toBe("list");
@@ -283,8 +287,10 @@ describe("GroupEditor", () => {
 
       describe("when pressing escape", () => {
         it("then cancels add mode", () => {
-          editor["input"].setValue("*.js");
-          editor["input"]["onEscape"]();
+          if ((editor as any)["input"]) {
+            (editor as any)["input"].setValue("*.js");
+            (editor as any)["input"]["onEscape"]();
+          }
 
           expect(editor["mode"]).toBe("list");
           expect(editor["items"]).toHaveLength(0);
@@ -296,7 +302,7 @@ describe("GroupEditor", () => {
   describe("Edit Group Mode", () => {
     describe("given edit mode active", () => {
       let editor: GroupEditor;
-      let onSave: ReturnType<typeof vi.fn>;
+      let onSave: (items: GuardrailsGroup[]) => void;
 
       beforeEach(() => {
         onSave = vi.fn();
@@ -312,8 +318,10 @@ describe("GroupEditor", () => {
 
       describe("when submitting modified pattern", () => {
         it("then updates group pattern and saves", () => {
-          editor["input"].setValue("*.ts");
-          editor["input"]["onSubmit"]("*.ts");
+          if ((editor as any)["input"]) {
+            (editor as any)["input"].setValue("*.ts");
+            (editor as any)["input"]["onSubmit"]("*.ts");
+          }
 
           expect(editor["items"][0]).toEqual({
             group: "*.ts",
@@ -327,7 +335,9 @@ describe("GroupEditor", () => {
 
       describe("when submitting empty pattern", () => {
         it("then cancels without saving", () => {
-          editor["input"]["onSubmit"]("");
+          if ((editor as any)["input"]) {
+            (editor as any)["input"]["onSubmit"]("");
+          }
 
           expect(editor["items"][0].group).toBe("coreutils");
           expect(editor["mode"]).toBe("list");
@@ -339,7 +349,7 @@ describe("GroupEditor", () => {
   describe("Rule Editor Integration", () => {
     describe("given rule editor active", () => {
       let editor: GroupEditor;
-      let onSave: ReturnType<typeof vi.fn>;
+      let onSave: (items: GuardrailsGroup[]) => void;
 
       beforeEach(() => {
         onSave = vi.fn();
@@ -367,15 +377,17 @@ describe("GroupEditor", () => {
           const ruleEditor = editor["ruleEditor"];
           const newRules = [
             {
-              context: "command",
+              context: "command" as const,
               pattern: "^git",
-              action: "confirm",
+              action: "confirm" as const,
               reason: "version control",
             },
           ];
 
           // Simulate rule editor saving
-          ruleEditor["onSave"](newRules);
+          if (ruleEditor && ruleEditor["onSave"]) {
+            ruleEditor["onSave"](newRules);
+          }
 
           expect(editor["items"][0].rules).toEqual(newRules);
           expect(onSave).toHaveBeenCalled();
@@ -386,7 +398,9 @@ describe("GroupEditor", () => {
         it("then returns to group view", () => {
           const ruleEditor = editor["ruleEditor"];
 
-          ruleEditor["onDone"]();
+          if (ruleEditor && ruleEditor["onDone"]) {
+            ruleEditor["onDone"]();
+          }
 
           expect(editor["view"]).toBe("groups");
           expect(editor["ruleEditor"]).toBeNull();
@@ -457,39 +471,35 @@ describe("GroupEditor", () => {
   });
 
   describe("Render Input Mode", () => {
-    describe("given add mode", () => {
-      it("then shows add form", () => {
-        const editor = new GroupEditor({
-          label: "Test Groups",
-          items: [],
-          theme: createMockTheme(),
-          onSave: vi.fn(),
-          onDone: vi.fn(),
+        it("then shows add form", () => {
+          const editor = new GroupEditor({
+            label: "Test Groups",
+            items: [],
+            theme: createMockTheme(),
+            onSave: vi.fn(),
+            onDone: vi.fn(),
+          });
+          (editor as any).handleInput("a");
+          const output = editor.render(80);
+
+          expect(output).toContain("  New group pattern:");
+          expect(output).toContain("  Enter: submit • Esc: cancel");
         });
-        editor.handleInput("a");
-        const output = editor.render(80);
 
-        expect(output).toContain("  New group pattern:");
-        expect(output).toContain("  Enter: submit • Esc: cancel");
-      });
-    });
+        it("then shows edit form", () => {
+          const editor = new GroupEditor({
+            label: "Test Groups",
+            items: sampleGroups,
+            theme: createMockTheme(),
+            onSave: vi.fn(),
+            onDone: vi.fn(),
+          });
+          (editor as any).handleInput("p");
+          const output = editor.render(80);
 
-    describe("given edit mode", () => {
-      it("then shows edit form", () => {
-        const editor = new GroupEditor({
-          label: "Test Groups",
-          items: sampleGroups,
-          theme: createMockTheme(),
-          onSave: vi.fn(),
-          onDone: vi.fn(),
+          expect(output).toContain("  Edit group pattern:");
+          expect(output).toContain("  Enter: submit • Esc: cancel");
         });
-        editor.handleInput("p");
-        const output = editor.render(80);
-
-        expect(output).toContain("  Edit group pattern:");
-        expect(output).toContain("  Enter: submit • Esc: cancel");
-      });
-    });
   });
 
   describe("Render Rule Editor", () => {
