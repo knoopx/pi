@@ -26,16 +26,16 @@
     ]
   },
   "dependencies": {
-    "@mariozechner/pi-ai": "^0.50.7",
-    "@mariozechner/pi-coding-agent": "^0.50.7",
-    "@mariozechner/pi-tui": "^0.50.7",
+    "@mariozechner/pi-ai": "^0.50.9",
+    "@mariozechner/pi-coding-agent": "^0.50.9",
+    "@mariozechner/pi-tui": "^0.50.9",
     "@sinclair/typebox": "^0.34.48",
     "memfs": "^4.56.10",
-    "vscode-jsonrpc": "^8.2.0",
+    "vscode-jsonrpc": "^8.2.1",
     "vscode-languageserver-protocol": "^3.17.5"
   },
   "devDependencies": {
-    "@types/node": "^25.1.0",
+    "@types/node": "^25.2.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
