@@ -22,8 +22,8 @@
     ]
   },
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "^0.50.7",
-    "@mariozechner/pi-tui": "^0.50.7",
-    "tinyglobby": "^0.2.10"
+    "@mariozechner/pi-coding-agent": "^0.50.9",
+    "@mariozechner/pi-tui": "^0.50.9",
+    "tinyglobby": "^0.2.15"
   }
 }
