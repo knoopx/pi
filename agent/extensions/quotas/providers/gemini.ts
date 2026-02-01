@@ -7,7 +7,8 @@ export function createGeminiDeps(deps: BaseDependencies) {
   return deps;
 }
 
-const loadGeminiToken = (deps: BaseDependencies) => loadTokenFromPiAuthJson(deps, "google-gemini-cli");
+const loadGeminiToken = (deps: BaseDependencies) =>
+  loadTokenFromPiAuthJson(deps, "google-gemini-cli");
 
 const geminiConfig: ProviderConfig = {
   provider: "gemini",

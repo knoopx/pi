@@ -7,13 +7,15 @@ describe("GitHub Copilot Provider", () => {
     const mockDeps = {
       homedir: () => "/home/user",
       fileExists: vi.fn(() => true),
-      readFile: vi.fn(() => JSON.stringify({
-        "github-copilot": {
-          type: "oauth",
-          refresh: "ghu_test_token",
-          access: "test_access_token"
-        }
-      })),
+      readFile: vi.fn(() =>
+        JSON.stringify({
+          "github-copilot": {
+            type: "oauth",
+            refresh: "ghu_test_token",
+            access: "test_access_token",
+          },
+        }),
+      ),
       env: {},
       fetch: vi.fn(),
     };

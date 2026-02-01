@@ -8,7 +8,6 @@ import {
   createHttpErrorSnapshot,
   ProviderConfig,
 } from "./types";
-import * as path from "node:path";
 
 // Shared utility function to format remaining duration
 export function formatRemainingDuration(

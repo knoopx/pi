@@ -3,7 +3,8 @@ import { ProviderConfig } from "../types";
 import { RateWindow, BaseDependencies } from "../types";
 import { loadTokenFromPiAuthJson } from "../util";
 
-const loadAnthropicToken = (deps: BaseDependencies) => loadTokenFromPiAuthJson(deps, "anthropic");
+const loadAnthropicToken = (deps: BaseDependencies) =>
+  loadTokenFromPiAuthJson(deps, "anthropic");
 
 const anthropicConfig: ProviderConfig = {
   provider: "anthropic",
@@ -28,19 +29,26 @@ const anthropicConfig: ProviderConfig = {
         usedPercentPath: "utilization",
         resetPath: "resets_at",
       },
-    ].map(window => {
-      const windowData = window.path.split('.').reduce((obj, key) => obj?.[key], data);
-      if (!windowData) return null;
+    ]
+      .map((window) => {
+        const windowData = window.path
+          .split(".")
+          .reduce((obj, key) => obj?.[key], data);
+        if (!windowData) return null;
 
-      const usedPercent = windowData.utilization || windowData.used_percent || 0;
-      const resetAt = windowData.resets_at || windowData.reset_at;
+        const usedPercent =
+          windowData.utilization || windowData.used_percent || 0;
+        const resetAt = windowData.resets_at || windowData.reset_at;
 
-      return {
-        label: window.label,
-        usedPercent,
-        resetDescription: resetAt ? formatRemainingDuration(resetAt) : undefined,
-      };
-    }).filter(Boolean) as RateWindow[];
+        return {
+          label: window.label,
+          usedPercent,
+          resetDescription: resetAt
+            ? formatRemainingDuration(resetAt)
+            : undefined,
+        };
+      })
+      .filter(Boolean) as RateWindow[];
 
     // Handle extra usage which doesn't fit the generic pattern
     if (data.extra_usage?.is_enabled) {
