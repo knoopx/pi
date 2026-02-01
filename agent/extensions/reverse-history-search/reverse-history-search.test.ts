@@ -1,21 +1,18 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { ExtensionAPI, ExtensionContext, ExtensionUIContext } from "@mariozechner/pi-coding-agent";
 import setupExtension, { fuzzyMatch } from "./index";
+import type { MockExtensionAPI } from "../../test-utils";
+import { createMockExtensionAPI } from "../../test-utils";
 
 // ============================================
 // Extension Registration
 // ============================================
 describe("Reverse History Search Extension", () => {
-  let mockPi: unknown;
+  let mockPi: MockExtensionAPI;
 
   beforeEach(() => {
-    const mockExtensionAPI = {
-      on: vi.fn(),
-      registerTool: vi.fn(),
-      registerCommand: vi.fn(),
-      registerShortcut: vi.fn(),
-    } as unknown;
-    mockPi = mockExtensionAPI;
-    setupExtension(mockPi);
+    mockPi = createMockExtensionAPI();
+    setupExtension(mockPi as ExtensionAPI);
   });
 
   describe("given the extension is initialized", () => {
@@ -39,8 +36,8 @@ describe("Reverse History Search Extension", () => {
   // Shortcut Handler
   // ============================================
   describe("ctrl+r shortcut handler", () => {
-    let handler: unknown;
-    let mockCtx: unknown;
+    let handler: (ctx: ExtensionContext) => Promise<void>;
+    let mockCtx: ExtensionContext;
 
     beforeEach(() => {
       handler = mockPi.registerShortcut.mock.calls[0][1].handler;
@@ -51,7 +48,33 @@ describe("Reverse History Search Extension", () => {
           notify: vi.fn(),
           custom: vi.fn(),
           setEditorText: vi.fn(),
-        },
+          theme: {} as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+          select: vi.fn(),
+          confirm: vi.fn(),
+          input: vi.fn(),
+          setStatus: vi.fn(),
+          setWorkingMessage: vi.fn(),
+          setWidget: vi.fn(),
+          setFooter: vi.fn(),
+          setHeader: vi.fn(),
+          setTitle: vi.fn(),
+          getEditorText: vi.fn(),
+          editor: vi.fn(),
+          setEditorComponent: vi.fn(),
+          getAllThemes: vi.fn(),
+          getTheme: vi.fn(),
+          setTheme: vi.fn(),
+        } as ExtensionUIContext,
+        sessionManager: {} as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+        modelRegistry: {} as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+        model: undefined,
+        isIdle: vi.fn(),
+        abort: vi.fn(),
+        hasPendingMessages: vi.fn(),
+        shutdown: vi.fn(),
+        getContextUsage: vi.fn(),
+        compact: vi.fn(),
+        getSystemPrompt: vi.fn(),
       };
     });
 
