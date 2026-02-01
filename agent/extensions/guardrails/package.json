@@ -1,0 +1,29 @@
+{
+  "name": "guardrails",
+  "version": "1.0.0",
+  "description": "Guardrails extension for pi-coding-agent - provides command blocking and confirmation based on patterns",
+  "scripts": {
+    "test": "bun vitest run *.test.ts"
+  },
+  "keywords": [
+    "guardrails",
+    "security",
+    "blocking",
+    "confirmation",
+    "pi-coding-agent",
+    "extension"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "^0.50.7",
+    "@mariozechner/pi-tui": "^0.50.7",
+    "tinyglobby": "^0.2.10"
+  }
+}
