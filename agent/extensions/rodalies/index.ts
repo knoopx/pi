@@ -5,6 +5,7 @@ import type {
   AgentToolUpdateCallback,
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import { SelectList, type SelectItem } from "@mariozechner/pi-tui";
 
 // Cached stations to avoid repeated API calls
 export let cachedStations: Station[] | null = null;
@@ -297,24 +298,38 @@ export default function (pi: ExtensionAPI) {
       }
 
       // Create dropdown of stations
-      const stationOptions = stations.map((s) => ({
+      const stationOptions: SelectItem[] = stations.map((s) => ({
         value: s.id.toString(),
         label: s.name,
       }));
 
-      // Use UI selection
-      const selected = await ctx.ui.select(
-        "Select Station:",
-        stationOptions.map((opt) => opt.label),
-      );
+      const selectList = new SelectList(stationOptions, 12, {
+        selectedPrefix: (text: string) => `\x1b[32m>\x1b[0m ${text}`,
+        selectedText: (text: string) => `\x1b[1m${text}\x1b[0m`,
+        description: (text: string) => `\x1b[90m${text}\x1b[0m`,
+        scrollInfo: (text: string) => `\x1b[90m${text}\x1b[0m`,
+        noMatch: (text: string) => `\x1b[31m${text}\x1b[0m`,
+      });
 
-      if (!selected) {
+      // Use UI selection
+      const selectedId = await new Promise<string | null>((resolve) => {
+        selectList.onSelect = (item: SelectItem) => resolve(item.value);
+        selectList.onCancel = () => resolve(null);
+        ctx.ui
+          .custom(() => selectList, {
+            overlay: true,
+            overlayOptions: { width: 60, anchor: "center" },
+          })
+          .then((result) => resolve(result as string | null));
+      });
+
+      if (!selectedId) {
         ctx.ui.notify("Cancelled", "info");
         return;
       }
 
-      // Find station ID
-      const station = stationOptions.find((opt) => opt.label === selected);
+      // Find station
+      const station = stationOptions.find((opt) => opt.value === selectedId);
       if (!station) {
         ctx.ui.notify("Station not found", "error");
         return;
