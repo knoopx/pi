@@ -10,28 +10,38 @@ import type { Database } from "better-sqlite3";
 
 // Parameter schemas for bookmark tools
 export const SearchBookmarksParams = Type.Object({
-  query: Type.Optional(Type.String({
-    description: "Search query for bookmark title (returns all bookmarks if not provided)",
-  })),
-  limit: Type.Optional(Type.Number({
-    minimum: 1,
-    maximum: 1000,
-    description: "Maximum number of bookmarks to return (default: 50)",
-  })),
+  query: Type.Optional(
+    Type.String({
+      description:
+        "Search query for bookmark title (returns all bookmarks if not provided)",
+    }),
+  ),
+  limit: Type.Optional(
+    Type.Number({
+      minimum: 1,
+      maximum: 1000,
+      description: "Maximum number of bookmarks to return (default: 50)",
+    }),
+  ),
 });
 
 type SearchBookmarksParamsType = Static<typeof SearchBookmarksParams>;
 
 // Parameter schemas for history tools
 export const SearchHistoryParams = Type.Object({
-  query: Type.Optional(Type.String({
-    description: "Search query for history title or URL (returns all history if not provided)",
-  })),
-  limit: Type.Optional(Type.Number({
-    minimum: 1,
-    maximum: 1000,
-    description: "Maximum number of history entries to return (default: 50)",
-  })),
+  query: Type.Optional(
+    Type.String({
+      description:
+        "Search query for history title or URL (returns all history if not provided)",
+    }),
+  ),
+  limit: Type.Optional(
+    Type.Number({
+      minimum: 1,
+      maximum: 1000,
+      description: "Maximum number of history entries to return (default: 50)",
+    }),
+  ),
 });
 
 type SearchHistoryParamsType = Static<typeof SearchHistoryParams>;
