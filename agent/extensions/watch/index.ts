@@ -1,27 +1,22 @@
 /**
  * Watch Extension
  *
- * Watches for file changes in the current directory and scans for PI comments.
- * Collects PI comments until a PI! trigger is found, then sends all comments to the agent.
+ * Watches for file changes in the current directory and scans for PI references.
+ * Triggers actions immediately when !PI references are found.
  *
- * Comment styles supported: #, //, --
- * Position: PI can be at start or end of comment line
- * Case insensitive: pi, PI both work
+ * Any line containing PI (case insensitive) is considered a PI reference.
+ * Lines with !PI trigger actions with all PI references from the same file.
  *
- * PI - collects comment, doesn't trigger
- * !PI - triggers action with all collected comments
- *
- * Consecutive PI comments are grouped together.
- * Comments can span multiple files until a PI! is found.
- *
- * Usage:
- *   pi --watch
+ * Runtime Toggle:
+ *   /watch - Toggle watch mode on/off
+ *   /watch on - Enable watch mode
+ *   /watch off - Disable watch mode
  *
  * Examples:
  *   // !PI Add error handling
  *   // Add error handling !PI
- *   # pi refactor to be cleaner
- *   -- make this faster !PI
+ *   Fix this bug !PI
+ *   !PI refactor to be cleaner
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -31,70 +26,46 @@ interface WatchUI {
   notify: (message: string, type?: "error" | "warning" | "info") => void;
 }
 import { createMessage, DEFAULT_IGNORED_PATTERNS } from "./core";
-import type { ParsedComment } from "./types.js";
-import { CommentWatcher } from "./watcher.js";
+import type { TriggerReference } from "./types.js";
+import { PIWatcher } from "./watcher.js";
 
 export default function (pi: ExtensionAPI) {
-  // Register the --watch flag
-  pi.registerFlag("watch", {
-    description: "Watch current directory for file changes with PI comments",
-    type: "boolean",
-    default: false,
-  });
-
-  let commentWatcher: CommentWatcher | null = null;
+  // Track watch state as a runtime setting
+  let isWatchEnabled = false;
+  let piWatcher: PIWatcher | null = null;
   let watchCwd: string | null = null;
   let watchCtx: { hasUI: boolean; ui: WatchUI } | null = null;
 
-  // Pause watching while agent is editing files to avoid re-triggering
-  pi.on("agent_start", async () => {
-    commentWatcher?.pause();
-  });
-
-  pi.on("agent_end", async () => {
-    commentWatcher?.resume();
-    if (watchCtx?.hasUI && watchCwd) {
-      watchCtx.ui.notify(`Watching ${watchCwd} for PI comments...`, "info");
+  const stopWatching = () => {
+    if (piWatcher) {
+      piWatcher.close();
+      piWatcher = null;
     }
-  });
+  };
 
-  pi.on("session_start", async (_event, ctx) => {
-    if (!pi.getFlag("watch")) {
+  const startWatching = () => {
+    if (!watchCwd || !watchCtx || piWatcher) {
       return;
     }
 
-    const cwd = ctx.cwd;
-    watchCwd = cwd;
-    watchCtx = { hasUI: ctx.hasUI, ui: ctx.ui };
     const ignoredPatterns = DEFAULT_IGNORED_PATTERNS;
 
-    // Create comment watcher with Chokidar factory
-    commentWatcher = new CommentWatcher(
+    piWatcher = new PIWatcher(
       (paths: string | string[], options?: Record<string, unknown>) =>
         chokidar.watch(paths, options),
       {
-        onPIComment: (_comment: ParsedComment, allPending: ParsedComment[]) => {
-          if (!watchCtx?.hasUI) return;
-          const uniqueFiles = new Set(allPending.map((c) => c.filePath));
-          watchCtx.ui.notify(
-            `${allPending.length} PI comment${allPending.length > 1 ? "s" : ""} collected from ${uniqueFiles.size} file${uniqueFiles.size > 1 ? "s" : ""}.`,
-            "info",
-          );
-        },
+        onPITrigger: (references: TriggerReference[]) => {
+          if (references.length === 0) return;
 
-        onPITrigger: (comments: ParsedComment[]) => {
-          if (comments.length === 0) return;
-
-          // Send the message
-          const message = createMessage(comments);
+          const message = createMessage(references);
 
           try {
-            pi.sendUserMessage(message, { deliverAs: "followUp" });
+            pi.sendUserMessage(message);
 
             if (watchCtx?.hasUI) {
-              const uniqueFiles = new Set(comments.map((c) => c.filePath));
+              const uniqueFiles = new Set(references.map((c) => c.filePath));
               watchCtx.ui.notify(
-                `!PI comment found (sending ${comments.length} comment${comments.length > 1 ? "s" : ""} from ${uniqueFiles.size} file${uniqueFiles.size > 1 ? "s" : ""})`,
+                `!PI reference found (sending ${references.length} reference${references.length > 1 ? "s" : ""} from ${uniqueFiles.size} file${uniqueFiles.size > 1 ? "s" : ""})`,
                 "info",
               );
             }
@@ -107,7 +78,7 @@ export default function (pi: ExtensionAPI) {
 
         onReady: () => {
           if (watchCtx?.hasUI) {
-            watchCtx.ui.notify(`Watching ${cwd} for PI comments...`, "info");
+            watchCtx.ui.notify(`Watching ${watchCwd} for PI references...`, "info");
           }
         },
 
@@ -118,22 +89,83 @@ export default function (pi: ExtensionAPI) {
         },
       },
       {
-        cwd,
+        cwd: watchCwd,
         ignoredPatterns,
         ignoreInitial: true,
-        stabilityThreshold: 500,
-        pollInterval: 50,
+        stabilityThreshold: 100,
+        pollInterval: 25,
       },
     );
 
-    // Start watching
-    commentWatcher.watch(cwd);
+    piWatcher.watch(watchCwd);
+  };
+
+  // Register /watch command to toggle watch mode
+  pi.registerCommand("watch", {
+    description: "Toggle file watching for PI references (usage: /watch [on|off])",
+    handler: async (args, ctx) => {
+      const action = args.toLowerCase().trim() || "toggle";
+
+      if (action === "on") {
+        if (!isWatchEnabled) {
+          isWatchEnabled = true;
+          startWatching();
+          if (watchCwd) {
+            ctx.ui.notify(`Watch enabled for ${watchCwd}`, "info");
+          }
+        }
+      } else if (action === "off") {
+        if (isWatchEnabled) {
+          isWatchEnabled = false;
+          stopWatching();
+          ctx.ui.notify("Watch disabled", "info");
+        }
+      } else {
+        if (isWatchEnabled) {
+          isWatchEnabled = false;
+          stopWatching();
+          ctx.ui.notify("Watch toggled off", "info");
+        } else {
+          isWatchEnabled = true;
+          startWatching();
+          if (watchCwd) {
+            ctx.ui.notify(`Watch toggled on for ${watchCwd}`, "info");
+          }
+        }
+      }
+    },
+  });
+
+  // Pause watching while agent is editing files to avoid re-triggering
+  pi.on("agent_start", async () => {
+    piWatcher?.pause();
+  });
+
+  pi.on("agent_end", async () => {
+    piWatcher?.resume();
+    if (watchCtx?.hasUI && watchCwd && isWatchEnabled) {
+      watchCtx.ui.notify(`Watching ${watchCwd} for PI references...`, "info");
+    }
+  });
+
+  pi.on("session_start", async (_event, ctx) => {
+    if (!ctx) {
+      return;
+    }
+
+    watchCwd = ctx.cwd;
+    watchCtx = { hasUI: ctx.hasUI, ui: ctx.ui };
+    stopWatching();
+
+    if (isWatchEnabled) {
+      startWatching();
+    }
   });
 
   pi.on("session_shutdown", async () => {
-    if (commentWatcher) {
-      commentWatcher.close();
-      commentWatcher = null;
+    if (piWatcher) {
+      piWatcher.close();
+      piWatcher = null;
     }
     watchCwd = null;
     watchCtx = null;

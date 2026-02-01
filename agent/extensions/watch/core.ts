@@ -5,40 +5,52 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { ParsedComment } from "./types";
+import type { TriggerReference } from "./types";
 
 export const DEFAULT_IGNORED_PATTERNS = [
   /\.git/,
   /node_modules/,
   /dist/,
   /build/,
-  /\.pi/,
-];
-
-// Comment styles: #, //, --
-// Position: start OR end of line
-// Case insensitive
-// Variants: !PI, PI (with or without punctuation)
-const COMMENT_PATTERNS = [
-  // PI at end: // do this !pi, # implement this PI, // text PI:
-  /^(?:#|\/\/|--)\s*(.+?)\s*(?:!pi|pi)\s*[:\s]*$/i,
-  // PI at start: // !pi do this, # PI implement this, // PI: do this
-  /^(?:#|\/\/|--)\s*(?:!pi|pi)[:\s]*\s*(.+)$/i,
+  /\.pi\/agent\/sessions/,
 ];
 
 /**
- * Check if a line contains an AI comment.
+ * Check if a line contains a PI trigger.
  * Returns the hasTrigger flag.
  */
-function parseAIComment(line: string): boolean | null {
+export function lineHasTrigger(line: string): boolean | null {
+  if (typeof line !== "string") {
+    return null;
+  }
+
+  // Check the entire line for !pi anywhere (case insensitive)
   const trimmedLine = line.trim();
 
-  for (const pattern of COMMENT_PATTERNS) {
-    if (pattern.test(trimmedLine)) {
-      return trimmedLine.toLowerCase().includes("!pi");
-    }
+  // Look for !pi patterns (case insensitive)
+  const hasBangPi = /!pi\b/i.test(trimmedLine);
+
+  if (!hasBangPi) {
+    return null;
   }
-  return null;
+
+  // Return true if !pi is found
+  return true;
+}
+
+/**
+ * Check if a line contains any PI reference (with or without trigger).
+ */
+export function lineHasPI(line: string): boolean {
+  if (typeof line !== "string") {
+    return false;
+  }
+
+  // Check the entire line for pi anywhere (case insensitive)
+  const trimmedLine = line.trim();
+
+  // Look for pi patterns (case insensitive)
+  return /pi\b/i.test(trimmedLine);
 }
 
 /**
@@ -52,70 +64,72 @@ export function shouldIgnorePath(
 }
 
 /**
- * Find all AI comments in file content with grouping.
- * Consecutive AI comment lines are grouped together.
+ * Find all PI references in file content.
+ * When a trigger (!PI) is found, collects all PI references from the file.
  */
-function parseCommentsInFile(
+export function parsePIReferencesInFile(
   filePath: string,
   content: string,
-): ParsedComment[] {
-  const lines = content.split("\n");
-  const comments: ParsedComment[] = [];
-  let currentGroup: string[] = [];
-  let groupStartLine = 0;
-  let groupHasTrigger = false;
+): TriggerReference[] {
+  if (typeof content !== "string") {
+    return [];
+  }
 
+  const lines = content.split("\n");
+  const piLines: Array<{
+    lineNumber: number;
+    line: string;
+    hasTrigger: boolean;
+  }> = [];
+
+  // First pass: collect all PI lines
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const hasTrigger = parseAIComment(line);
-
-    if (hasTrigger !== null) {
-      if (currentGroup.length === 0) {
-        groupStartLine = i + 1;
-      }
-      currentGroup.push(line); // Store raw line with whitespace preserved
-      if (hasTrigger) {
-        groupHasTrigger = true;
-      }
-    } else {
-      // End of group
-      if (currentGroup.length > 0) {
-        comments.push({
-          filePath,
-          lineNumber: groupStartLine,
-          rawLines: [...currentGroup],
-          hasTrigger: groupHasTrigger,
-        });
-        currentGroup = [];
-        groupHasTrigger = false;
-      }
+    if (lineHasPI(line)) {
+      piLines.push({
+        lineNumber: i + 1,
+        line,
+        hasTrigger: !!lineHasTrigger(line),
+      });
     }
   }
 
-  // Handle group at end of file
-  if (currentGroup.length > 0) {
-    comments.push({
-      filePath,
-      lineNumber: groupStartLine,
-      rawLines: [...currentGroup],
-      hasTrigger: groupHasTrigger,
-    });
+  // If no PI lines found, return empty
+  if (piLines.length === 0) {
+    return [];
   }
 
-  return comments;
+  // Check if any PI line has a trigger
+  const hasAnyTrigger = piLines.some((pi) => pi.hasTrigger);
+
+  // If there's a trigger, return all PI lines as one group
+  if (hasAnyTrigger) {
+    return [
+      {
+        filePath,
+        lineNumber: Math.min(...piLines.map((pi) => pi.lineNumber)),
+        rawLines: piLines.map((pi) => pi.line),
+        hasTrigger: true,
+      },
+    ];
+  }
+
+  // No trigger found, return empty (no action needed)
+  return [];
 }
 
 /**
- * Read a file and parse AI comments.
+ * Read a file and parse PI references.
  */
-export function readFileAndParseComments(filePath: string): {
+export function readFileAndParsePIReferences(filePath: string): {
   content: string;
-  comments: ParsedComment[];
+  references: TriggerReference[];
 } | null {
   try {
-    const content = fs.readFileSync(filePath, "utf-8");
-    const comments = parseCommentsInFile(filePath, content);
-    return { content, comments };
+    const fileContent = fs.readFileSync(filePath, "utf-8");
+    const content = typeof fileContent === "string" ? fileContent : "";
+    const references = parsePIReferencesInFile(filePath, content);
+    return { content, references };
   } catch {
     return null;
   }
@@ -129,38 +143,39 @@ function getRelativePath(filePath: string, cwd: string): string {
 }
 
 /**
- * Check if unknown comment in the array has a trigger.
+ * Check if PI references array has a trigger (always true for returned references).
  */
-export function hasTriggerComment(comments: ParsedComment[]): boolean {
-  return comments.some((c) => c.hasTrigger);
+export function hasTrigger(references: TriggerReference[]): boolean {
+  return references.some((r) => r.hasTrigger);
 }
 
 /**
- * Create the user message for the PI agent.
+ * Create the user message for the agent.
  */
-export function createMessage(comments: ParsedComment[]): string {
-  if (comments.length === 0) {
+export function createMessage(references: TriggerReference[]): string {
+  if (references.length === 0) {
     return "";
   }
 
-  let message = "The PI comments below can be found in the code files.\n";
+  let message = "The !pi references below can be found in the code files.\n";
   message += "They contain your instructions.\n";
   message += "Line numbers are provided for reference.\n";
   message += "Rules:\n";
-  message += "- Only make changes to files and lines that have PI comments.\n";
-  message += "- Do not modify unknown other files or areas of files.\n";
-  message += "- Follow the instructions in the PI comments strictly.\n";
   message +=
-    "- Be sure to remove all PI comments from the code during or after the changes.\n";
+    "- Only make changes to files and lines that have !pi references.\n";
+  message += "- Do not modify unknown other files or areas of files.\n";
+  message += "- Follow the instructions in the !pi references strictly.\n";
+  message +=
+    "- Be sure to remove all !pi references from the code during or after the changes.\n";
   message +=
     '- After changes are finised say just "Done" and nothing else.\n\n';
 
-  for (const comment of comments) {
-    const relativePath = getRelativePath(comment.filePath, process.cwd());
+  for (const reference of references) {
+    const relativePath = getRelativePath(reference.filePath, process.cwd());
     message += `${relativePath}:\n`;
-    for (let i = 0; i < comment.rawLines.length; i++) {
-      const lineNumber = comment.lineNumber + i;
-      message += `${lineNumber}: ${comment.rawLines[i]}\n`;
+    for (let i = 0; i < reference.rawLines.length; i++) {
+      const lineNumber = reference.lineNumber + i;
+      message += `${lineNumber}: ${reference.rawLines[i]}\n`;
     }
     message += "\n";
   }

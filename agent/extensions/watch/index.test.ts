@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import setupWatchExtension from "./index";
-import { CommentWatcher } from "./watcher.js";
-import * as core from "./core";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 // ============================================
@@ -10,202 +8,351 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 // Mock the internal dependencies
 vi.mock("chokidar", () => ({
+  default: { watch: vi.fn() },
   watch: vi.fn(),
 }));
 
-interface MockWatcher {
+// Shared mock watcher instance
+let mockWatcherInstance: {
   pause: ReturnType<typeof vi.fn>;
   resume: ReturnType<typeof vi.fn>;
   watch: ReturnType<typeof vi.fn>;
   close: ReturnType<typeof vi.fn>;
-}
+} | null = null;
 
-vi.mock("./watcher.js", async () => {
-  const { vi } = await import("vitest");
+vi.mock("./watcher.js", () => {
+  class MockPIWatcher {
+    pause = vi.fn();
+    resume = vi.fn();
+    watch = vi.fn();
+    close = vi.fn();
 
-  // Create a mock constructor
-  const MockCommentWatcher = function () {
-    return {
-      pause: vi.fn(),
-      resume: vi.fn(),
-      watch: vi.fn(),
-      close: vi.fn(),
-    };
-  };
+    constructor() {
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
+      mockWatcherInstance = this;
+    }
+  }
 
-  return { CommentWatcher: vi.fn().mockImplementation(MockCommentWatcher) };
+  return { PIWatcher: MockPIWatcher };
 });
 
-interface MockPi {
-  registerFlag: ReturnType<typeof vi.fn>;
-  on: ReturnType<typeof vi.fn>;
-  getFlag: ReturnType<typeof vi.fn>;
-  sendUserMessage: ReturnType<typeof vi.fn>;
-  _handlers?: any;
+interface MockCommand {
+  description: string;
+  handler: (args: string, ctx: { ui: { notify: ReturnType<typeof vi.fn> } }) => Promise<void>;
 }
 
+interface MockPi {
+  on: ReturnType<typeof vi.fn>;
+  registerCommand: ReturnType<typeof vi.fn>;
+  sendUserMessage: ReturnType<typeof vi.fn>;
+  _handlers?: Record<string, unknown>;
+  _commands?: Record<string, MockCommand>;
+}
+
+const createMockPi = (): MockPi => {
+  const handlers: Record<string, unknown> = {};
+  const commands: Record<string, MockCommand> = {};
+  return {
+    on: vi.fn().mockImplementation((event: string, handler: unknown) => {
+      handlers[event] = handler;
+    }),
+    registerCommand: vi.fn().mockImplementation((name: string, options: MockCommand) => {
+      commands[name] = options;
+    }),
+    sendUserMessage: vi.fn(),
+    _handlers: handlers,
+    _commands: commands,
+  };
+};
+
 // ============================================
-// Extension Registration
+// Extension Registration Tests
 // ============================================
 describe("Watch Extension", () => {
   let mockPi: MockPi;
 
   beforeEach(() => {
-    mockPi = {
-      registerFlag: vi.fn(),
-      on: vi.fn().mockImplementation((event: string, handler: unknown) => {
-        // Store handlers for later invocation
-        if (!mockPi._handlers) {
-          mockPi._handlers = {} as unknown;
-        }
-        mockPi._handlers[event] = handler;
-      }),
-      getFlag: vi.fn(),
-      sendUserMessage: vi.fn(),
-    };
-
-    // Reset CommentWatcher mock for each test
-    vi.mocked(CommentWatcher).mockClear();
+    mockPi = createMockPi();
+    mockWatcherInstance = null;
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  describe("given the extension is initialized", () => {
-    describe("when registering flags", () => {
-      it("then it should register the watch flag", () => {
-        setupWatchExtension(mockPi as unknown as ExtensionAPI);
+  // ============================================
+  // Command Registration
+  // ============================================
+  describe("extension registration", () => {
+    beforeEach(() => {
+      setupWatchExtension(mockPi as unknown as ExtensionAPI);
+    });
 
-        expect(mockPi.registerFlag).toHaveBeenCalledWith(
-          "watch",
-          expect.objectContaining({
-            description:
-              "Watch current directory for file changes with PI comments",
-            type: "boolean",
-            default: false,
-          }),
-        );
+    describe("given extension is initialized", () => {
+      describe("when registering command and event handlers", () => {
+        it("then it should register /watch command", () => {
+          expect(mockPi.registerCommand).toHaveBeenCalledWith("watch", expect.objectContaining({
+            description: expect.any(String),
+            handler: expect.any(Function),
+          }));
+        });
+
+        it("then it should register session_start handler", () => {
+          const calls = mockPi.on.mock.calls;
+          expect(calls.some((call: unknown[]) => call[0] === "session_start")).toBe(true);
+        });
+
+        it("then it should register agent_start handler", () => {
+          const calls = mockPi.on.mock.calls;
+          expect(calls.some((call: unknown[]) => call[0] === "agent_start")).toBe(true);
+        });
+
+        it("then it should register agent_end handler", () => {
+          const calls = mockPi.on.mock.calls;
+          expect(calls.some((call: unknown[]) => call[0] === "agent_end")).toBe(true);
+        });
+
+        it("then it should register session_shutdown handler", () => {
+          const calls = mockPi.on.mock.calls;
+          expect(calls.some((call: unknown[]) => call[0] === "session_shutdown")).toBe(true);
+        });
+
+        it("then handlers should be async functions", () => {
+          Object.values(mockPi._handlers || {}).forEach((handler: unknown) => {
+            expect(typeof handler).toBe("function");
+          });
+        });
       });
+    });
+  });
 
-      it("then the watch flag should be boolean type", () => {
-        setupWatchExtension(mockPi as unknown as ExtensionAPI);
+  // ============================================
+  // Watch Command Tests
+  // ============================================
+  describe("/watch command", () => {
+    beforeEach(() => {
+      setupWatchExtension(mockPi as unknown as ExtensionAPI);
+    });
 
-        const watchFlagCall = mockPi.registerFlag.mock.calls.find(
-          (call: unknown) => call[0] === "watch",
-        );
-        expect(watchFlagCall![1].type).toBe("boolean");
-      });
+    describe("given /watch on is executed", () => {
+      it("then it should enable watch mode", async () => {
+        const mockNotify = vi.fn();
+        const ctx = { hasUI: true, cwd: "/test", ui: { notify: mockNotify } };
 
-      it("then the watch flag should default to false", () => {
-        setupWatchExtension(mockPi as unknown as ExtensionAPI);
+        // First trigger session_start to set watchCwd
+        const sessionStartHandler = mockPi._handlers?.session_start as
+          | ((event: unknown, context: typeof ctx) => Promise<void>)
+          | undefined;
+        await sessionStartHandler?.({}, ctx);
 
-        const watchFlagCall = mockPi.registerFlag.mock.calls.find(
-          (call: unknown) => call[0] === "watch",
-        );
-        expect(watchFlagCall![1].default).toBe(false);
+        const watchCommand = mockPi._commands?.watch;
+        await watchCommand?.handler("on", ctx);
+
+        expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Watch enabled"), "info");
       });
     });
 
-    describe("when registering event handlers", () => {
-      it("then it should register agent_start handler", () => {
-        setupWatchExtension(mockPi as unknown as ExtensionAPI);
+    describe("given /watch off is executed", () => {
+      it("then it should disable watch mode", async () => {
+        const mockNotify = vi.fn();
+        const ctx = { hasUI: true, cwd: "/test", ui: { notify: mockNotify } };
 
-        expect(mockPi.on).toHaveBeenCalledWith(
-          "agent_start",
-          expect.any(Function),
-        );
+        // First trigger session_start to set watchCwd
+        const sessionStartHandler = mockPi._handlers?.session_start as
+          | ((event: unknown, context: typeof ctx) => Promise<void>)
+          | undefined;
+        await sessionStartHandler?.({}, ctx);
+
+        const watchCommand = mockPi._commands?.watch;
+        await watchCommand?.handler("on", ctx);
+        mockNotify.mockClear();
+        await watchCommand?.handler("off", ctx);
+
+        expect(mockNotify).toHaveBeenCalledWith("Watch disabled", "info");
+      });
+    });
+
+    describe("given /watch (toggle) is executed", () => {
+      it("then it should toggle watch mode on when disabled", async () => {
+        const mockNotify = vi.fn();
+        const ctx = { hasUI: true, cwd: "/test", ui: { notify: mockNotify } };
+
+        // First trigger session_start to set watchCwd
+        const sessionStartHandler = mockPi._handlers?.session_start as
+          | ((event: unknown, context: typeof ctx) => Promise<void>)
+          | undefined;
+        await sessionStartHandler?.({}, ctx);
+
+        const watchCommand = mockPi._commands?.watch;
+        await watchCommand?.handler("", ctx);
+
+        expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Watch toggled on"), "info");
       });
 
-      it("then it should register agent_end handler", () => {
-        setupWatchExtension(mockPi as unknown as ExtensionAPI);
+      it("then it should toggle watch mode off when enabled", async () => {
+        const mockNotify = vi.fn();
+        const ctx = { hasUI: true, cwd: "/test", ui: { notify: mockNotify } };
 
-        expect(mockPi.on).toHaveBeenCalledWith(
-          "agent_end",
-          expect.any(Function),
+        // First trigger session_start to set watchCwd
+        const sessionStartHandler = mockPi._handlers?.session_start as
+          | ((event: unknown, context: typeof ctx) => Promise<void>)
+          | undefined;
+        await sessionStartHandler?.({}, ctx);
+
+        const watchCommand = mockPi._commands?.watch;
+        await watchCommand?.handler("on", ctx);
+        mockNotify.mockClear();
+        await watchCommand?.handler("", ctx);
+
+        expect(mockNotify).toHaveBeenCalledWith("Watch toggled off", "info");
+      });
+    });
+  });
+
+  // ============================================
+  // Session Start Handler Tests
+  // ============================================
+  describe("session_start event handler", () => {
+    beforeEach(() => {
+      setupWatchExtension(mockPi as unknown as ExtensionAPI);
+    });
+
+    describe("given watch mode is disabled", () => {
+      it("then it should not create watcher", async () => {
+        const handler = mockPi._handlers?.session_start as
+          | ((event: unknown, context: unknown) => Promise<void>)
+          | undefined;
+
+        await handler?.(
+          {},
+          { hasUI: true, cwd: "/test", ui: { notify: vi.fn() } },
         );
+
+        expect(mockWatcherInstance).toBeNull();
+      });
+    });
+
+    describe("given watch mode is enabled", () => {
+      it("then it should create a PIWatcher instance", async () => {
+        const ctx = { hasUI: true, cwd: "/test", ui: { notify: vi.fn() } };
+        const sessionStartHandler = mockPi._handlers?.session_start as
+          | ((event: unknown, context: typeof ctx) => Promise<void>)
+          | undefined;
+
+        // Start session first
+        await sessionStartHandler?.({}, ctx);
+
+        // Enable watch
+        const watchCommand = mockPi._commands?.watch;
+        await watchCommand?.handler("on", ctx);
+
+        expect(mockWatcherInstance).not.toBeNull();
+      });
+    });
+  });
+
+  // ============================================
+  // Agent Start Handler Tests
+  // ============================================
+  describe("agent_start event handler", () => {
+    beforeEach(async () => {
+      setupWatchExtension(mockPi as unknown as ExtensionAPI);
+
+      // Set up watcher
+      const ctx = { hasUI: true, cwd: "/test", ui: { notify: vi.fn() } };
+      const sessionStartHandler = mockPi._handlers?.session_start as
+        | ((event: unknown, context: typeof ctx) => Promise<void>)
+        | undefined;
+      await sessionStartHandler?.({}, ctx);
+
+      const watchCommand = mockPi._commands?.watch;
+      await watchCommand?.handler("on", ctx);
+    });
+
+    describe("given watcher is active", () => {
+      it("then it should pause the watcher", async () => {
+        const handler = mockPi._handlers?.agent_start as
+          | (() => Promise<void>)
+          | undefined;
+
+        await handler?.();
+
+        expect(mockWatcherInstance?.pause).toHaveBeenCalled();
+      });
+    });
+  });
+
+  // ============================================
+  // Agent End Handler Tests
+  // ============================================
+  describe("agent_end event handler", () => {
+    let ctx: { hasUI: boolean; cwd: string; ui: { notify: ReturnType<typeof vi.fn> } };
+
+    beforeEach(async () => {
+      setupWatchExtension(mockPi as unknown as ExtensionAPI);
+
+      ctx = { hasUI: true, cwd: "/test", ui: { notify: vi.fn() } };
+      const sessionStartHandler = mockPi._handlers?.session_start as
+        | ((event: unknown, context: typeof ctx) => Promise<void>)
+        | undefined;
+      await sessionStartHandler?.({}, ctx);
+
+      const watchCommand = mockPi._commands?.watch;
+      await watchCommand?.handler("on", ctx);
+    });
+
+    describe("given watcher is active", () => {
+      it("then it should resume the watcher", async () => {
+        const handler = mockPi._handlers?.agent_end as
+          | (() => Promise<void>)
+          | undefined;
+
+        await handler?.();
+
+        expect(mockWatcherInstance?.resume).toHaveBeenCalled();
       });
 
-      it("then it should register session_start handler", () => {
-        setupWatchExtension(mockPi as unknown as ExtensionAPI);
+      it("then it should notify UI if hasUI", async () => {
+        const handler = mockPi._handlers?.agent_end as
+          | (() => Promise<void>)
+          | undefined;
 
-        expect(mockPi.on).toHaveBeenCalledWith(
-          "session_start",
-          expect.any(Function),
-        );
-      });
+        await handler?.();
 
-      it("then it should register session_shutdown handler", () => {
-        setupWatchExtension(mockPi as unknown as ExtensionAPI);
-
-        expect(mockPi.on).toHaveBeenCalledWith(
-          "session_shutdown",
-          expect.any(Function),
+        expect(ctx.ui.notify).toHaveBeenCalledWith(
+          expect.stringContaining("Watching"),
+          "info"
         );
       });
     });
   });
 
   // ============================================
-  // Session Start Handler
+  // Session Shutdown Handler Tests
   // ============================================
-  describe("session_start event handler", () => {
-    let handler: unknown;
-
-    beforeEach(() => {
+  describe("session_shutdown event handler", () => {
+    beforeEach(async () => {
       setupWatchExtension(mockPi as unknown as ExtensionAPI);
-      handler = mockPi._handlers!.session_start;
+
+      const ctx = { hasUI: true, cwd: "/test", ui: { notify: vi.fn() } };
+      const sessionStartHandler = mockPi._handlers?.session_start as
+        | ((event: unknown, context: typeof ctx) => Promise<void>)
+        | undefined;
+      await sessionStartHandler?.({}, ctx);
+
+      const watchCommand = mockPi._commands?.watch;
+      await watchCommand?.handler("on", ctx);
     });
 
-    describe("given the watch flag is not enabled", () => {
-      it("then it should return early without creating watcher", async () => {
-        mockPi.getFlag.mockReturnValue(false);
+    describe("given watcher is active", () => {
+      it("then it should close the watcher", async () => {
+        const handler = mockPi._handlers?.session_shutdown as
+          | (() => Promise<void>)
+          | undefined;
 
-        await handler(
-          {},
-          { hasUI: true, cwd: "/test", ui: { notify: vi.fn() } },
-        );
+        await handler?.();
 
-        expect(mockPi.getFlag).toHaveBeenCalledWith("watch");
-        expect(CommentWatcher).not.toHaveBeenCalled();
-      });
-    });
-
-    describe("given the watch flag is enabled", () => {
-      beforeEach(() => {
-        mockPi.getFlag.mockReturnValue(true);
-      });
-
-      describe("when creating comment watcher", () => {
-        it("then it should create a CommentWatcher instance", async () => {
-          await handler(
-            {},
-            { hasUI: true, cwd: "/test", ui: { notify: vi.fn() } },
-          );
-
-          // Just check that some setup happened
-          expect(mockPi.getFlag).toHaveBeenCalledWith("watch");
-        });
-
-        it("then it should pass correct watcher options", async () => {
-          await handler(
-            {},
-            { hasUI: true, cwd: "/test", ui: { notify: vi.fn() } },
-          );
-
-          // Just check that some setup happened
-          expect(mockPi.getFlag).toHaveBeenCalledWith("watch");
-        });
-
-        it("then it should pass correct callback functions", async () => {
-          await handler(
-            {},
-            { hasUI: true, cwd: "/test", ui: { notify: vi.fn() } },
-          );
-
-          // Just check that some setup happened
-          expect(mockPi.getFlag).toHaveBeenCalledWith("watch");
-        });
+        expect(mockWatcherInstance?.close).toHaveBeenCalled();
       });
     });
   });

@@ -2,14 +2,14 @@
  * Type definitions for the comment watcher.
  */
 
-export interface ParsedComment {
+export interface TriggerReference {
   filePath: string;
   lineNumber: number;
   rawLines: string[]; // Full comment lines including markers and PI
   hasTrigger: boolean; // true for !PI, false for PI
 }
 
-export interface CommentWatcherOptions {
+export interface TriggerWatcherOptions {
   /** Patterns to ignore when watching files */
   ignoredPatterns?: RegExp[];
   /** Current working directory for relative paths */
@@ -22,16 +22,15 @@ export interface CommentWatcherOptions {
   pollInterval?: number;
 }
 
-export type CommentWatcherCallback = (
-  comment: ParsedComment,
-  allPending: ParsedComment[],
+export type TriggerWatcherCallback = (
+  referenece: TriggerReference,
 ) => void;
 
-export type TriggerCallback = (comments: ParsedComment[]) => void;
+export type TriggerCallback = (comments: TriggerReference[]) => void;
 
-export interface CommentWatcherCallbacks {
+export interface TriggerWatcherCallbacks {
   /** Called when a PI comment (without trigger) is found */
-  onPIComment?: CommentWatcherCallback;
+  onPIComment?: TriggerWatcherCallback;
   /** Called when a !PI comment (with trigger) is found */
   onPITrigger?: TriggerCallback;
   /** Called when the watcher is ready */

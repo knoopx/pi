@@ -1,0 +1,30 @@
+{
+  "name": "watch",
+  "version": "1.0.0",
+  "description": "File watch integration extension for pi-coding-agent",
+  "scripts": {
+    "test": "bun vitest run tests/*.test.ts"
+  },
+  "keywords": [
+    "watch",
+    "chokidar",
+    "pi-coding-agent",
+    "extension"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "^0.50.7",
+    "chokidar": "^4.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.1.0",
+    "typescript": "^5.9.3"
+  }
+}

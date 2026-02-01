@@ -1,56 +1,53 @@
 /**
- * CommentWatcher - Watches for file changes and detects PI comments.
+ * PIWatcher - Watches for file changes and detects PI references.
  *
  * This class provides a higher-level abstraction over file watching that:
  * 1. Watches files using a Chokidar-compatible watcher
- * 2. Parses files for PI comments
- * 3. Manages pending comments across files
- * 4. Emits callbacks for PI comments and triggers (PI!)
+ * 2. Parses files for PI references
+ * 3. Triggers actions immediately when !PI references are found
  *
  * Behavior:
- * - PI comments (without !) are collected as pending changes
- * - !PI comments trigger the sending of all pending comments
+ * - PI references (without !) are ignored
+ * - !PI references trigger actions with all PI references from the same file
  * - Event processing is paused while agent is editing files to avoid duplicates
  *
  * Usage:
- *   const watcher = new CommentWatcher(chokidarInstance, callbacks, options);
+ *   const watcher = new PIWatcher(chokidarInstance, callbacks, options);
  *   watcher.watch("/path/to/watch");
  */
 
 import {
   DEFAULT_IGNORED_PATTERNS,
-  hasTriggerComment,
-  readFileAndParseComments,
+  hasTrigger,
+  readFileAndParsePIReferences,
   shouldIgnorePath,
 } from "./core";
 import type {
-  CommentWatcherCallbacks,
-  CommentWatcherOptions,
+  TriggerWatcherCallbacks,
+  TriggerWatcherOptions,
   FSWatcherLike,
-  ParsedComment,
   WatcherFactory,
 } from "./types";
 
-const DEFAULT_OPTIONS: Required<CommentWatcherOptions> = {
+const DEFAULT_OPTIONS: Required<TriggerWatcherOptions> = {
   ignoredPatterns: DEFAULT_IGNORED_PATTERNS,
   cwd: process.cwd(),
   ignoreInitial: true,
-  stabilityThreshold: 500,
-  pollInterval: 50,
+  stabilityThreshold: 100,
+  pollInterval: 25,
 };
 
-export class CommentWatcher {
+export class PIWatcher {
   private fsWatcher: FSWatcherLike | null = null;
-  private pendingComments: Map<string, ParsedComment[]> = new Map();
-  private callbacks: Required<CommentWatcherCallbacks>;
-  private options: Required<CommentWatcherOptions>;
+  private callbacks: Required<TriggerWatcherCallbacks>;
+  private options: Required<TriggerWatcherOptions>;
   private isWatching = false;
   private isPaused = false;
 
   constructor(
     private watcherFactory: WatcherFactory,
-    callbacks: CommentWatcherCallbacks = {},
-    options: CommentWatcherOptions = {},
+    callbacks: TriggerWatcherCallbacks = {},
+    options: TriggerWatcherOptions = {},
   ) {
     this.options = { ...DEFAULT_OPTIONS, ...options };
     this.callbacks = {
@@ -62,7 +59,7 @@ export class CommentWatcher {
   }
 
   /**
-   * Start watching a path for AI comments.
+   * Start watching a path for PI references.
    */
   watch(watchPath: string): void {
     if (this.isWatching) {
@@ -115,7 +112,6 @@ export class CommentWatcher {
       this.fsWatcher = null;
     }
     this.isWatching = false;
-    this.clearPending();
   }
 
   /**
@@ -141,24 +137,6 @@ export class CommentWatcher {
   }
 
   /**
-   * Clear all pending comments.
-   */
-  clearPending(): void {
-    this.pendingComments.clear();
-  }
-
-  /**
-   * Get all currently pending comments.
-   */
-  getPendingComments(): ParsedComment[] {
-    const allComments: ParsedComment[] = [];
-    for (const fileComments of this.pendingComments.values()) {
-      allComments.push(...fileComments);
-    }
-    return allComments;
-  }
-
-  /**
    * Handle file change events from the file system watcher.
    */
   private handleChange(filePath: string): void {
@@ -171,42 +149,22 @@ export class CommentWatcher {
       return;
     }
 
-    const result = readFileAndParseComments(filePath);
+    const result = readFileAndParsePIReferences(filePath);
 
     if (!result) {
-      // File not readable - remove unknown pending comments for this file
-      this.pendingComments.delete(filePath);
       return;
     }
 
-    const { comments } = result;
+    const { references } = result;
 
-    if (comments.length === 0) {
-      // No AI comments - remove unknown pending for this file
-      this.pendingComments.delete(filePath);
+    if (references.length === 0) {
       return;
     }
 
-    // Update pending comments for this file
-    this.pendingComments.set(filePath, comments);
-
-    // Emit callbacks for each PI comment (non-trigger)
-    for (const comment of comments) {
-      if (!comment.hasTrigger) {
-        this.callbacks.onPIComment(comment, this.getPendingComments());
-      }
-    }
-
-    // Check if unknown comment has a trigger (!PI)
-    if (hasTriggerComment(comments)) {
-      // Collect all pending comments from all files
-      const allComments = this.getPendingComments();
-
-      // Emit trigger callback
-      this.callbacks.onPITrigger(allComments);
-
-      // Clear pending comments after sending
-      this.clearPending();
+    // Check if any reference has a trigger (!PI)
+    if (hasTrigger(references)) {
+      // Emit trigger callback with references from this file only
+      this.callbacks.onPITrigger(references);
     }
   }
 }
