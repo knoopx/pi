@@ -215,7 +215,7 @@ export async function getBookmarksFromDB(query?: string): Promise<Bookmark[]> {
 
         const matchingBookmarks = scoredBookmarks
           .filter((b) => b.similarity >= 0.6)
-          .sort((a, b) => b.dateAdded - a.dateAdded);
+          .sort((a, b) => b.similarity - a.similarity);
 
         bookmarks.push(...matchingBookmarks);
       } else {
