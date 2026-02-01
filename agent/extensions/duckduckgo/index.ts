@@ -71,7 +71,7 @@ async function searchDuckDuckGoPreloadUrl(
 
   try {
     // Configure request options
-    const requestOptions: any = {
+    const requestOptions = {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36",
@@ -187,7 +187,7 @@ async function searchDuckDuckGoPreloadUrl(
           let validResultsInCurrentPage = 0;
 
           // Process search results
-          jsonData.forEach((item: any) => {
+          jsonData.forEach((item: { n?: boolean; t?: string; u?: string; a?: string; i?: string; sn?: string }) => {
             // Exclude navigation items
             if (item.n) return;
 
@@ -230,6 +230,38 @@ async function searchDuckDuckGoPreloadUrl(
   }
 }
 
+/**
+ * Parse search results from HTML elements
+ */
+function parseSearchResults(
+  $: cheerio.CheerioAPI,
+  items: cheerio.Cheerio<any>,
+  results: SearchResult[],
+  maxResults: number
+): void {
+  items.each((_, el) => {
+    if (results.length >= maxResults) return false;
+
+    const titleEl = $(el).find("a.result__a");
+    const snippetEl = $(el).find(".result__snippet");
+    const title = titleEl.text().trim();
+    const url = titleEl.attr("href") || "";
+    const description = snippetEl.text().trim();
+    const sourceEl = $(el).find(".result__url");
+    const source = sourceEl.text().trim();
+
+    if (title && url && !$(el).hasClass("result--ad")) {
+      results.push({
+        title,
+        url,
+        description,
+        source,
+        engine: "duckduckgo",
+      });
+    }
+  });
+}
+
 async function searchDuckDuckGoHtml(
   query: string,
   maxResults = 10,
@@ -239,7 +271,7 @@ async function searchDuckDuckGoHtml(
   let offset = 0;
 
   // Configure request options
-  const requestOptions: any = {
+  const requestOptions = {
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       "User-Agent": "Apifox/1.0.0 (https://apifox.com)",
@@ -263,27 +295,7 @@ async function searchDuckDuckGoHtml(
       return results;
     }
 
-    items.each((_, el) => {
-      if (results.length >= maxResults) return false;
-
-      const titleEl = $(el).find("a.result__a");
-      const snippetEl = $(el).find(".result__snippet");
-      const title = titleEl.text().trim();
-      const url = titleEl.attr("href") || "";
-      const description = snippetEl.text().trim();
-      const sourceEl = $(el).find(".result__url");
-      const source = sourceEl.text().trim();
-
-      if (title && url && !$(el).hasClass("result--ad")) {
-        results.push({
-          title,
-          url,
-          description,
-          source,
-          engine: "duckduckgo",
-        });
-      }
-    });
+    parseSearchResults($, items, results, maxResults);
 
     while (results.length < maxResults && items.length > 0) {
       offset += items.length;
@@ -304,27 +316,7 @@ async function searchDuckDuckGoHtml(
       $ = cheerio.load(response.data);
       items = $("div.result");
 
-      items.each((_, el) => {
-        if (results.length >= maxResults) return false;
-
-        const titleEl = $(el).find("a.result__a");
-        const snippetEl = $(el).find(".result__snippet");
-        const title = titleEl.text().trim();
-        const url = titleEl.attr("href") || "";
-        const description = snippetEl.text().trim();
-        const sourceEl = $(el).find(".result__url");
-        const source = sourceEl.text().trim();
-
-        if (title && url && !$(el).hasClass("result--ad")) {
-          results.push({
-            title,
-            url,
-            description,
-            source,
-            engine: "duckduckgo",
-          });
-        }
-      });
+      parseSearchResults($, items, results, maxResults);
     }
 
     return results.slice(0, maxResults);
