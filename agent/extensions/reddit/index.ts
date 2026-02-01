@@ -162,6 +162,26 @@ interface RedditPost {
   score: number;
 }
 
+interface RedditApiChild {
+  data: {
+    id: string;
+    title: string;
+    author: string;
+    permalink: string;
+    created_utc: number;
+    selftext: string;
+    score: number;
+    subreddit: string;
+  };
+}
+
+interface RedditApiResponse {
+  kind: string;
+  data: {
+    children: RedditApiChild[];
+  };
+}
+
 interface JSONParseResult {
   subreddit: string;
   feedType: string;
@@ -234,7 +254,7 @@ function parseRedditJson(
     const subreddit = firstPost?.subreddit || "unknown";
 
     // Parse posts
-    const posts: RedditPost[] = response.data.children.map((child: unknown) => {
+    const posts: RedditPost[] = (response as RedditApiResponse).data.children.map((child: RedditApiChild) => {
       const postData = child.data;
       const createdUtc = postData.created_utc * 1000; // Convert to milliseconds
       const published = new Date(createdUtc).toISOString();
