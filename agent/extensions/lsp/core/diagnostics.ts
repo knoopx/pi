@@ -21,9 +21,28 @@ interface LspManager {
 /**
  * Format diagnostic for display
  */
-export function formatDiagnostic(d: Diagnostic): string {
+export function formatDiagnostic(d: Diagnostic, fileContent?: string): string {
   const sev = ["", "ERROR", "WARN", "INFO", "HINT"][d.severity ?? 2];
-  return `${sev} [${d.range.start.line + 1}:${d.range.start.character + 1}] ${d.message}`;
+  const lineNum = d.range.start.line + 1;
+  const colNum = d.range.start.character + 1;
+  let result = `${sev} [${lineNum}:${colNum}] ${d.message}`;
+
+  // Include the source line if file content is provided
+  if (fileContent) {
+    const lines = fileContent.split('\n');
+    if (lineNum <= lines.length) {
+      const sourceLine = lines[lineNum - 1];
+      if (sourceLine) {
+        // Add the source line with some indentation
+        result += `\n  ${sourceLine}`;
+        // Add a caret pointing to the error position
+        const caretPos = Math.min(colNum - 1, sourceLine.length);
+        result += `\n  ${' '.repeat(caretPos)}^`;
+      }
+    }
+  }
+
+  return result;
 }
 
 /**

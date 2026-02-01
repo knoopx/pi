@@ -27,7 +27,7 @@ describe("formatDiagnostic", () => {
           message: "Test error message",
         };
 
-        const result = formatDiagnostic(diagnostic as Diagnostic);
+        const result = formatDiagnostic(diagnostic as Diagnostic, undefined);
 
         expect(result).toContain("ERROR");
         expect(result).toContain("Test error message");
@@ -43,7 +43,7 @@ describe("formatDiagnostic", () => {
           message: "Test error",
         };
 
-        const result = formatDiagnostic(diagnostic as Diagnostic);
+        const result = formatDiagnostic(diagnostic as Diagnostic, undefined);
 
         expect(result).toContain("[6:11]"); // 1-indexed
       });
@@ -62,7 +62,7 @@ describe("formatDiagnostic", () => {
           message: "Test warning",
         };
 
-        const result = formatDiagnostic(diagnostic as Diagnostic);
+        const result = formatDiagnostic(diagnostic as Diagnostic, undefined);
 
         expect(result).toContain("WARN");
         expect(result).toContain("Test warning");
@@ -82,7 +82,7 @@ describe("formatDiagnostic", () => {
           message: "Test info",
         };
 
-        const result = formatDiagnostic(diagnostic as Diagnostic);
+        const result = formatDiagnostic(diagnostic as Diagnostic, undefined);
 
         expect(result).toContain("INFO");
       });
@@ -101,7 +101,7 @@ describe("formatDiagnostic", () => {
           message: "Test hint",
         };
 
-        const result = formatDiagnostic(diagnostic as Diagnostic);
+        const result = formatDiagnostic(diagnostic as Diagnostic, undefined);
 
         expect(result).toContain("HINT");
       });
@@ -120,7 +120,7 @@ describe("formatDiagnostic", () => {
           message: "Test diagnostic",
         };
 
-        const result = formatDiagnostic(diagnostic as Diagnostic);
+        const result = formatDiagnostic(diagnostic as Diagnostic, undefined);
 
         expect(result).toContain("WARN");
       });
@@ -139,9 +139,31 @@ describe("formatDiagnostic", () => {
           message: "Test diagnostic",
         };
 
-        const result = formatDiagnostic(diagnostic as Diagnostic);
+        const result = formatDiagnostic(diagnostic as Diagnostic, undefined);
 
         expect(result).toBe("undefined [1:1] Test diagnostic");
+      });
+    });
+  });
+
+  describe("given a diagnostic with file content provided", () => {
+    describe("when formatting the diagnostic", () => {
+      it("then includes the source line and caret", () => {
+        const diagnostic = {
+          severity: 1,
+          range: {
+            start: { line: 1, character: 9 },
+            end: { line: 1, character: 15 },
+          },
+          message: "Test error message",
+        };
+        const fileContent = 'console.log("hello");\n  const x = 1;\n';
+
+        const result = formatDiagnostic(diagnostic as Diagnostic, fileContent);
+
+        expect(result).toContain("ERROR [2:10] Test error message");
+        expect(result).toContain("  const x = 1;");
+        expect(result).toContain("          ^");
       });
     });
   });

@@ -85,7 +85,7 @@ function createMock<T>(): T {
 }
 
 // Mock external dependencies
-vi.mock("./core/manager.js", () => ({
+vi.mock("./core/manager", () => ({
   getOrCreateManager: vi.fn(),
   shutdownManager: vi.fn(),
 }));
@@ -129,7 +129,7 @@ vi.mock("./core/diagnostics.js", () => ({
   resolvePosition: vi.fn(),
 }));
 
-import { getOrCreateManager, shutdownManager } from "./core/manager.js";
+import { getOrCreateManager, shutdownManager } from "./core/manager";
 import {
   abortable,
   isAbortedError,
@@ -433,7 +433,7 @@ describe("LSP Extension", () => {
             mockCtx,
           );
 
-          expect(result.content[0].text).toContain("action: definition");
+          expect((result.content[0] as TextContent).text).toContain("action: definition");
         });
       });
 
@@ -469,7 +469,7 @@ describe("LSP Extension", () => {
             mockCtx,
           );
 
-          expect(result.content[0].text).toContain("action: definition");
+          expect((result.content[0] as TextContent).text).toContain("action: definition");
         });
       });
     });
@@ -533,7 +533,7 @@ describe("LSP Extension", () => {
             mockCtx,
           );
 
-          expect(result.content[0].text).toContain("action: diagnostics");
+          expect((result.content[0] as TextContent).text).toContain("action: diagnostics");
         });
       });
 
@@ -558,7 +558,7 @@ describe("LSP Extension", () => {
           );
 
           // When receivedResponse is false, tool returns cancelled result
-          expect(result.content[0].text).toContain("Cancelled");
+          expect((result.content[0] as TextContent).text).toContain("Cancelled");
         });
       });
     });
@@ -620,7 +620,7 @@ describe("LSP Extension", () => {
             mockCtx,
           );
 
-          expect(result.content[0].text).toContain(
+          expect((result.content[0] as TextContent).text).toContain(
             "action: workspace-diagnostics",
           );
         });
@@ -678,7 +678,7 @@ describe("LSP Extension", () => {
             mockCtx,
           );
 
-          expect(result.content[0].text).toContain("action: rename");
+          expect((result.content[0] as TextContent).text).toContain("action: rename");
         });
       });
     });
@@ -734,7 +734,7 @@ describe("LSP Extension", () => {
             mockCtx,
           );
 
-          expect(result.content[0].text).toContain("action: codeAction");
+          expect((result.content[0] as TextContent).text).toContain("action: codeAction");
         });
       });
     });
@@ -783,7 +783,7 @@ describe("LSP Extension", () => {
             abortController.signal,
           );
 
-          expect(result.content[0].text).toBe("Cancelled");
+          expect((result.content[0] as TextContent).text).toBe("Cancelled");
         });
       });
     });
@@ -1033,7 +1033,7 @@ describe("LSP Extension", () => {
           const result = await execute("tool-1", params, undefined, mockCtx);
 
           // When rename returns null, tool returns "No rename available" message
-          expect(result.content[0].text).toContain("No rename available");
+          expect((result.content[0] as TextContent).text).toContain("No rename available");
         });
       });
     });
@@ -1061,7 +1061,7 @@ describe("LSP Extension", () => {
           const result = await execute("tool-1", params, undefined, mockCtx);
 
           // When receivedResponse is false, tool returns cancelled result
-          expect(result.content[0].text).toContain("Cancelled");
+          expect((result.content[0] as TextContent).text).toContain("Cancelled");
         });
       });
 

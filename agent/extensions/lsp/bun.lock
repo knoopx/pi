@@ -10,7 +10,6 @@
         "@mariozechner/pi-tui": "^0.50.9",
         "@sinclair/typebox": "^0.34.48",
         "memfs": "^4.56.10",
-        "vscode-jsonrpc": "^8.2.1",
         "vscode-languageserver-protocol": "^3.17.5",
       },
       "devDependencies": {
@@ -577,7 +576,7 @@
 
     "undici-types": ["undici-types@7.16.0", "", {}, "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="],
 
-    "vscode-jsonrpc": ["vscode-jsonrpc@8.2.1", "", {}, "sha512-kdjOSJ2lLIn7r1rtrMbbNCHjyMPfRnowdKjBQ+mGq6NAW5QY2bEZC/khaC5OR8svbbjvLEaIXkOq45e2X9BIbQ=="],
+    "vscode-jsonrpc": ["vscode-jsonrpc@8.2.0", "", {}, "sha512-C+r0eKJUIfiDIfwJhria30+TYWPtuHJXHtI7J0YlOmKAo7ogxP20T0zxB7HZQIFhIyvoBPwWskjxrvAtfjyZfA=="],
 
     "vscode-languageserver-protocol": ["vscode-languageserver-protocol@3.17.5", "", { "dependencies": { "vscode-jsonrpc": "8.2.0", "vscode-languageserver-types": "3.17.5" } }, "sha512-mb1bvRJN8SVznADSGWM9u/b07H7Ecg0I3OgXDuLdn307rl/J3A9YD6/eYOssqhecL27hK1IPZAsaqh00i/Jljg=="],
 
@@ -648,8 +647,6 @@
     "path-scurry/lru-cache": ["lru-cache@11.2.5", "", {}, "sha512-vFrFJkWtJvJnD5hg+hJvVE8Lh/TcMzKnTgCWmtBipwI5yLX/iX+5UB2tfuyODF5E7k9xEzMdYgGqaSb1c0c5Yw=="],
 
     "rimraf/glob": ["glob@10.5.0", "", { "dependencies": { "foreground-child": "^3.1.0", "jackspeak": "^3.1.2", "minimatch": "^9.0.4", "minipass": "^7.1.2", "package-json-from-dist": "^1.0.0", "path-scurry": "^1.11.1" }, "bin": "dist/esm/bin.mjs" }, "sha512-DfXN8DfhJ7NH3Oe7cFmu3NCu1wKbkReJ8TorzSAFbSKrlNaQSKfIzqYqVY8zlbs2NLBbWpRiU52GX2PbaBVNkg=="],
-
-    "vscode-languageserver-protocol/vscode-jsonrpc": ["vscode-jsonrpc@8.2.0", "", {}, "sha512-C+r0eKJUIfiDIfwJhria30+TYWPtuHJXHtI7J0YlOmKAo7ogxP20T0zxB7HZQIFhIyvoBPwWskjxrvAtfjyZfA=="],
 
     "@aws-crypto/sha256-browser/@smithy/util-utf8/@smithy/util-buffer-from": ["@smithy/util-buffer-from@2.2.0", "", { "dependencies": { "@smithy/is-array-buffer": "^2.2.0", "tslib": "^2.6.2" } }, "sha512-IJdWBbTcMQ6DA0gdNhh/BwrLkDR+ADW5Kr1aZmd4k3DIF6ezMV4R2NIAmT08wQJ3yUK82thHWmC/TnK/wpMMIA=="],
 

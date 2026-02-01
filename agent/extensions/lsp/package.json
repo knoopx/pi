@@ -31,7 +31,6 @@
     "@mariozechner/pi-tui": "^0.50.9",
     "@sinclair/typebox": "^0.34.48",
     "memfs": "^4.56.10",
-    "vscode-jsonrpc": "^8.2.1",
     "vscode-languageserver-protocol": "^3.17.5"
   },
   "devDependencies": {

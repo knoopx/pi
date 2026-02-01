@@ -94,10 +94,22 @@ export function lspWorkspaceDiagnosticsTool(api: ExtensionAPI) {
         if (filtered.length) {
           filesWithIssues++;
           out.push(`${display}:`);
+
+          // Read file content to include source lines in diagnostics
+          let fileContent: string | undefined;
+          try {
+            const content = manager.readFile(manager.resolve(item.file));
+            if (content !== null) {
+              fileContent = content;
+            }
+          } catch {
+            // If we can't read the file, proceed without source lines
+          }
+
           for (const d of filtered) {
             if (d.severity === 1) errors++;
             else if (d.severity === 2) warnings++;
-            out.push(`  ${formatDiagnostic(d)}`);
+            out.push(`  ${formatDiagnostic(d, fileContent)}`);
           }
         }
       }

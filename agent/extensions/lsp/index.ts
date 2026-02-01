@@ -303,8 +303,16 @@ export default function (pi: ExtensionAPI) {
     if (diagnostics.length > MAX)
       notification += `\n... +${diagnostics.length - MAX} more`;
 
+    // Read file content to include source lines in diagnostics
+    let fileContent: string | undefined;
+    try {
+      fileContent = fs.readFileSync(absPath, "utf-8");
+    } catch {
+      // If we can't read the file, proceed without source lines
+    }
+
     const header = includeFileHeader ? `File: ${relativePath}\n` : "";
-    const output = `\n${header}This file has errors, please fix\n<file_diagnostics>\n${diagnostics.map(formatDiagnostic).join("\n")}\n</file_diagnostics>\n`;
+    const output = `\n${header}This file has errors, please fix\n<file_diagnostics>\n${diagnostics.map(d => formatDiagnostic(d, fileContent)).join("\n")}\n</file_diagnostics>\n`;
 
     return { notification, errorCount, output };
   }

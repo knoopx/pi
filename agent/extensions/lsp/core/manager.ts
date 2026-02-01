@@ -7,9 +7,8 @@ import * as fs from "node:fs";
 
 import { pathToFileURL, fileURLToPath } from "node:url";
 
-import { createMessageConnection } from "vscode-jsonrpc/node";
+import { createMessageConnection, StreamMessageReader, StreamMessageWriter } from "vscode-jsonrpc/node";
 import {
-  InitializeRequest,
   InitializeParams,
 } from "vscode-languageserver-protocol";
 
@@ -662,12 +661,8 @@ export class LSPManager {
       if (!spawnResult) return [];
 
       const connection = createMessageConnection(
-        new (await import("vscode-jsonrpc/node")).StreamMessageReader(
-          spawnResult.process.stdout,
-        ),
-        new (await import("vscode-jsonrpc/node")).StreamMessageWriter(
-          spawnResult.process.stdin,
-        ),
+        new StreamMessageReader(spawnResult.process.stdout),
+        new StreamMessageWriter(spawnResult.process.stdin),
       );
 
       client = {
@@ -713,11 +708,6 @@ export class LSPManager {
                   documentationFormat: ["markdown", "plaintext"],
                   deprecatedSupport: false,
                   preselectSupport: false,
-                  tagSupport: undefined,
-                  insertReplaceSupport: false,
-                  resolveSupport: undefined,
-                  insertTextModeSupport: undefined,
-                  labelDetailsSupport: undefined,
                 },
                 contextSupport: false,
               },
@@ -737,7 +727,6 @@ export class LSPManager {
               },
               definition: {
                 dynamicRegistration: true,
-                linkSupport: false,
               },
               references: {
                 dynamicRegistration: true,
@@ -754,10 +743,6 @@ export class LSPManager {
                   ],
                 },
                 hierarchicalDocumentSymbolSupport: true,
-                tagSupport: {
-                  valueSet: [1],
-                },
-                labelSupport: false,
               },
               codeAction: {
                 dynamicRegistration: true,
@@ -775,114 +760,18 @@ export class LSPManager {
                     ],
                   },
                 },
-                isPreferredSupport: false,
-                disabledSupport: false,
-                dataSupport: false,
-                resolveSupport: {
-                  properties: ["edit"],
-                },
-                honorsChangeAnnotations: false,
-              },
-              codeLens: {
-                dynamicRegistration: true,
-              },
-              formatting: {
-                dynamicRegistration: true,
-              },
-              rangeFormatting: {
-                dynamicRegistration: true,
-              },
-              onTypeFormatting: {
-                dynamicRegistration: true,
-              },
-              rename: {
-                dynamicRegistration: true,
-                prepareSupport: true,
-                honorsChangeAnnotations: false,
-              },
-              documentLink: {
-                dynamicRegistration: true,
-                tooltipSupport: false,
-              },
-              colorProvider: {
-                dynamicRegistration: true,
-              },
-              foldingRange: {
-                dynamicRegistration: true,
-                rangeLimit: undefined,
-                lineFoldingOnly: false,
-              },
-              declaration: {
-                dynamicRegistration: true,
-                linkSupport: false,
-              },
-              selectionRange: {
-                dynamicRegistration: true,
               },
               publishDiagnostics: {
                 relatedInformation: false,
-                versionSupport: false,
                 tagSupport: {
                   valueSet: [1, 2],
                 },
-                codeDescriptionSupport: false,
-                dataSupport: false,
-              },
-              callHierarchy: {
-                dynamicRegistration: true,
-              },
-              semanticTokens: {
-                dynamicRegistration: true,
-                requests: {
-                  range: true,
-                  full: { delta: true },
-                },
-                tokenTypes: [],
-                tokenModifiers: [],
-                formats: [],
-                overlappingTokenSupport: false,
-                multilineTokenSupport: false,
-                serverCancelSupport: false,
-                augmentsSyntaxTokens: false,
-              },
-              linkedEditingRange: {
-                dynamicRegistration: true,
-              },
-              typeDefinition: {
-                dynamicRegistration: true,
-                linkSupport: false,
-              },
-              implementation: {
-                dynamicRegistration: true,
-                linkSupport: false,
-              },
-              typeHierarchy: {
-                dynamicRegistration: true,
-              },
-              inlineValue: {
-                dynamicRegistration: true,
-              },
-              inlayHint: {
-                dynamicRegistration: true,
-                resolveSupport: {
-                  properties: [],
-                },
-              },
-              diagnostic: {
-                dynamicRegistration: true,
-                relatedDocumentSupport: false,
               },
             },
             workspace: {
               applyEdit: false,
               workspaceEdit: {
                 documentChanges: false,
-                resourceOperations: [],
-                failureHandling: "abort",
-                normalizesLineEndings: false,
-                changeAnnotationSupport: {
-                  groupsOnLabel: false,
-                },
               },
               didChangeConfiguration: {
                 dynamicRegistration: true,
@@ -898,63 +787,9 @@ export class LSPManager {
                     18, 19, 20, 21, 22, 23, 24, 25, 26,
                   ],
                 },
-                tagSupport: {
-                  valueSet: [1],
-                },
-              },
-              codeLens: {
-                refreshSupport: false,
-              },
-              executeCommand: {
-                dynamicRegistration: true,
               },
               workspaceFolders: false,
               configuration: false,
-              semanticTokens: {
-                refreshSupport: false,
-              },
-              fileOperations: {
-                didCreate: false,
-                willCreate: false,
-                didRename: false,
-                willRename: false,
-                didDelete: false,
-                willDelete: false,
-              },
-              inlineValue: {
-                refreshSupport: false,
-              },
-              inlayHint: {
-                refreshSupport: false,
-              },
-              diagnostics: {
-                refreshSupport: false,
-              },
-            },
-            window: {
-              workDoneProgress: false,
-              showMessage: {
-                messageActionItem: {
-                  additionalPropertiesSupport: false,
-                },
-              },
-              showDocument: {
-                support: false,
-              },
-            },
-            general: {
-              regularExpressions: {
-                engine: "ECMAScript",
-                version: "ES2020",
-              },
-              markdown: {
-                parser: "marked",
-                version: "1.1.0",
-              },
-              staleRequestSupport: {
-                cancel: true,
-                retryOnContentModified: [],
-              },
             },
           },
           initializationOptions: spawnResult.initOptions,
@@ -967,10 +802,10 @@ export class LSPManager {
         };
 
         const result = await connection.sendRequest(
-          InitializeRequest.type,
+          "initialize",
           initParams,
-        );
-        client.capabilities = result.capabilities;
+        ) as { capabilities: unknown } | undefined;
+        client.capabilities = result?.capabilities;
 
         // Send initialized notification
         connection.sendNotification("initialized", {});

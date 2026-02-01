@@ -70,10 +70,22 @@ export function lspDiagnosticsTool(api: ExtensionAPI) {
         result.diagnostics,
         sevFilter,
       );
+
+      // Read file content to include source lines in diagnostics
+      let fileContent: string | undefined;
+      try {
+        const content = manager.readFile(manager.resolve(file!));
+        if (content !== null) {
+          fileContent = content;
+        }
+      } catch {
+        // If we can't read the file, proceed without source lines
+      }
+
       const payload = !result.receivedResponse
         ? "Timeout: LSP server did not respond. Try again."
         : filtered.length
-          ? filtered.map(formatDiagnostic).join("\n")
+          ? filtered.map(d => formatDiagnostic(d, fileContent)).join("\n")
           : "No diagnostics.";
 
       return {

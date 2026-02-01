@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { MessageConnection } from "vscode-jsonrpc";
+import type { MessageConnection } from "vscode-languageserver-protocol";
 
 import {
   uriToPath,
