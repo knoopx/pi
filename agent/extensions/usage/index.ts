@@ -678,6 +678,7 @@ export {
   formatNumber,
   padLeft,
   padRight,
+  type UsageData,
 };
 
 export default function (pi: ExtensionAPI) {

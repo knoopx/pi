@@ -8,6 +8,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import type { Theme } from "@mariozechner/pi-coding-agent";
 import {
   getSessionsDir,
   UsageComponent,
@@ -16,13 +17,14 @@ import {
   formatNumber,
   padLeft,
   padRight,
+  type UsageData,
 } from "./index";
 
 // =============================================================================
 // Helper Functions
 // =============================================================================
 
-function createMockUsageData(): unknown {
+function createMockUsageData(): UsageData {
   return {
     today: {
       providers: new Map([
@@ -33,7 +35,12 @@ function createMockUsageData(): unknown {
             messages: 2,
             cost: 0.001,
             tokens: { total: 100, input: 60, output: 40, cache: 0 },
-            models: new Map([
+            models: new Map<string, {
+              sessions: Set<string>;
+              messages: number;
+              cost: number;
+              tokens: { total: number; input: number; output: number; cache: number };
+            }>([
               [
                 "model1",
                 {
@@ -79,7 +86,7 @@ function createMockUsageData(): unknown {
 const mockTheme = {
   fg: (_name: string, text: string) => text,
   bold: (text: string) => text,
-};
+} as Theme;
 
 // =============================================================================
 // Session Directory Tests
@@ -268,7 +275,7 @@ describe("padRight", () => {
 
 describe("UsageComponent", () => {
   let component: UsageComponent;
-  let mockData: unknown;
+  let mockData: UsageData;
   let mockRequestRender: ReturnType<typeof vi.fn>;
   let mockDone: ReturnType<typeof vi.fn>;
 
@@ -278,10 +285,10 @@ describe("UsageComponent", () => {
     mockData = createMockUsageData();
 
     component = new UsageComponent(
-      mockTheme as unknown,
+      mockTheme,
       mockData,
-      mockRequestRender as unknown,
-      mockDone as unknown,
+      mockRequestRender as () => void,
+      mockDone as () => void,
     );
   });
 
@@ -294,7 +301,7 @@ describe("UsageComponent", () => {
   describe("updateProviderOrder", () => {
     it("then filters providers with zero usage", () => {
       const emptyProviderStats = {
-        sessions: new Set(),
+        sessions: new Set<string>(),
         messages: 0,
         cost: 0,
         tokens: { total: 0, input: 0, output: 0, cache: 0 },
@@ -303,9 +310,11 @@ describe("UsageComponent", () => {
 
       mockData.today.providers.set("zero-usage-provider", emptyProviderStats);
 
-      (component as unknown).updateProviderOrder();
+      // @ts-expect-error - accessing private method for testing
+      component.updateProviderOrder();
 
-      expect(component["providerOrder"]).not.toContain("zero-usage-provider");
+      // @ts-expect-error - accessing private property for testing
+      expect(component.providerOrder).not.toContain("zero-usage-provider");
     });
 
     it("then sorts providers by cost descending", () => {
@@ -317,10 +326,13 @@ describe("UsageComponent", () => {
         models: new Map(),
       });
 
-      (component as unknown).updateProviderOrder();
+      // @ts-expect-error - accessing private method for testing
+      component.updateProviderOrder();
 
-      expect(component["providerOrder"][0]).toBe("provider2");
-      expect(component["providerOrder"][1]).toBe("provider1");
+      // @ts-expect-error - accessing private property for testing
+      expect(component.providerOrder[0]).toBe("provider2");
+      // @ts-expect-error - accessing private property for testing
+      expect(component.providerOrder[1]).toBe("provider1");
     });
   });
 
@@ -520,10 +532,10 @@ describe("UsageComponent", () => {
       };
 
       const emptyComponent = new UsageComponent(
-        mockTheme as unknown,
+        mockTheme,
         emptyData,
-        mockRequestRender as unknown,
-        mockDone as unknown,
+        mockRequestRender as () => void,
+        mockDone as () => void,
       );
 
       const lines = emptyComponent.render(80);
