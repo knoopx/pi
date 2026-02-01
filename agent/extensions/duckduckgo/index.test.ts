@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { TextContent } from "@mariozechner/pi-ai";
 import duckduckgoExtension from "./index";
 
 // Mock axios
@@ -43,7 +44,7 @@ describe("DuckDuckGo Extension", () => {
         new AbortController().signal
       );
 
-      expect(result.content[0].text).toContain("No results found");
+      expect((result.content[0] as TextContent).text).toContain("No results found");
       expect(result.details).toEqual({ query: "test query", limit: 5 });
     });
 
@@ -80,7 +81,7 @@ describe("DuckDuckGo Extension", () => {
         new AbortController().signal
       );
 
-      expect(result.content[0].text).toBe("Example Title\nhttps://example.com\nExample description\n");
+      expect((result.content[0] as TextContent).text).toBe("Example Title\nhttps://example.com\nExample description\n");
       expect(result.details.results).toBeDefined();
     });
   });
