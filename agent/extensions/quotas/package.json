@@ -1,0 +1,12 @@
+{
+  "name": "quotas",
+  "version": "1.0.0",
+  "description": "Usage quotas and limits tracking for AI providers",
+  "type": "module",
+  "pi": {
+    "extensions": ["./index.ts"]
+  },
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "^0.48.0"
+  }
+}
