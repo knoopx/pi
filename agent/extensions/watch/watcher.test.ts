@@ -25,17 +25,6 @@ vi.mock("./core", () => ({
   hasTrigger: vi.fn(),
 }));
 
-// Mock types
-vi.mock("./types", () => ({
-  DEFAULT_OPTIONS: {
-    ignoredPatterns: [/\.git/, /node_modules/, /dist/, /\.pi/],
-    cwd: "/test",
-    ignoreInitial: true,
-    stabilityThreshold: 500,
-    pollInterval: 50,
-  },
-}));
-
 type MockWatchFactory = ReturnType<typeof vi.fn> &
   ((...args: unknown[]) => {
     on: ReturnType<typeof vi.fn>;
@@ -236,6 +225,7 @@ describe("file change event handling", () => {
         },
       ],
     });
+    vi.mocked(core.hasTrigger).mockReturnValue(true);
 
     const created = createMockWatchFactory();
     fsWatcher = created.fsWatcher;

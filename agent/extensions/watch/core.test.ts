@@ -163,8 +163,8 @@ describe("grouping consecutive lines", () => {
           "function pi() {}",
           "// step 5 !pi",
         ],
-        expectedCount: 2,
-        expectedTriggers: 2,
+        expectedCount: 3,
+        expectedTriggers: 3,
         scenario: "mixed triggers in code and comments",
       },
     ];
@@ -257,8 +257,9 @@ describe("reading and parsing files", () => {
 
       const result = core.readFileAndParsePIReferences("/test/file.ts");
       expect(result).not.toBeNull();
-      expect(result?.references).toHaveLength(1);
+      expect(result?.references).toHaveLength(2);
       expect(result?.references[0].hasTrigger).toBe(true);
+      expect(result?.references[1].hasTrigger).toBe(true);
     });
   });
 
@@ -317,7 +318,7 @@ describe("creating messages from comments", () => {
         },
       ],
       expectedContent:
-        'The PI comments below can be found in the code files.\nThey contain your instructions.\nLine numbers are provided for reference.\nRules:\n- Only make changes to files and lines that have PI comments.\n- Do not modify unknown other files or areas of files.\n- Follow the instructions in the PI comments strictly.\n- Be sure to remove all PI comments from the code during or after the changes.\n- After changes are finised say just "Done" and nothing else.\n\ntest/file.ts:\n1: // !pi fix this',
+        'The PI comments below can be found in the code files.\nThey contain your instructions.\nLine numbers are provided for reference.\nRules:\n- Only make changes to files and lines that have PI comments.\n- Do not modify unknown other files or areas of files.\n- Follow the instructions in the PI comments strictly.\n- Be sure to remove all PI comments from the code during or after the changes.\n- After changes are finished say just "Done" and nothing else.\n\ntest/file.ts:\n1: // !pi fix this',
     },
     {
       comments: [
@@ -335,7 +336,7 @@ describe("creating messages from comments", () => {
         },
       ],
       expectedContent:
-        'The PI comments below can be found in the code files.\nThey contain your instructions.\nLine numbers are provided for reference.\nRules:\n- Only make changes to files and lines that have PI comments.\n- Do not modify unknown other files or areas of files.\n- Follow the instructions in the PI comments strictly.\n- Be sure to remove all PI comments from the code during or after the changes.\n- After changes are finised say just "Done" and nothing else.\n\ntest/file.ts:\n1: // pi step 1\n\ntest/file.ts:\n3: // pi step 2',
+        'The PI comments below can be found in the code files.\nThey contain your instructions.\nLine numbers are provided for reference.\nRules:\n- Only make changes to files and lines that have PI comments.\n- Do not modify unknown other files or areas of files.\n- Follow the instructions in the PI comments strictly.\n- Be sure to remove all PI comments from the code during or after the changes.\n- After changes are finished say just "Done" and nothing else.\n\ntest/file.ts:\n1: // pi step 1\n\ntest/file.ts:\n3: // pi step 2',
     },
   ];
 

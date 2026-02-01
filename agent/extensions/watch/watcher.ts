@@ -33,8 +33,8 @@ const DEFAULT_OPTIONS: Required<TriggerWatcherOptions> = {
   ignoredPatterns: DEFAULT_IGNORED_PATTERNS,
   cwd: process.cwd(),
   ignoreInitial: true,
-  stabilityThreshold: 100,
-  pollInterval: 25,
+  stabilityThreshold: 500,
+  pollInterval: 50,
 };
 
 export class PIWatcher {

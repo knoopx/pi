@@ -17,25 +17,22 @@ export const DEFAULT_IGNORED_PATTERNS = [
 
 /**
  * Check if a line contains a PI trigger.
- * Returns the hasTrigger flag.
+ * Returns true if !pi is found, false if pi but not !pi, null if no pi.
  */
 export function lineHasTrigger(line: string): boolean | null {
   if (typeof line !== "string") {
     return null;
   }
 
-  // Check the entire line for !pi anywhere (case insensitive)
   const trimmedLine = line.trim();
 
-  // Look for !pi patterns (case insensitive)
-  const hasBangPi = /!pi\b/i.test(trimmedLine);
-
-  if (!hasBangPi) {
+  // Check if line has pi
+  if (!/pi\b/i.test(trimmedLine)) {
     return null;
   }
 
-  // Return true if !pi is found
-  return true;
+  // Return true if !pi is found, false if pi but not !pi
+  return /!pi\b/i.test(trimmedLine);
 }
 
 /**
@@ -65,7 +62,7 @@ export function shouldIgnorePath(
 
 /**
  * Find all PI references in file content.
- * When a trigger (!PI) is found, collects all PI references from the file.
+ * Groups consecutive lines that have !pi triggers.
  */
 export function parsePIReferencesInFile(
   filePath: string,
@@ -76,46 +73,45 @@ export function parsePIReferencesInFile(
   }
 
   const lines = content.split("\n");
-  const piLines: Array<{
-    lineNumber: number;
-    line: string;
-    hasTrigger: boolean;
-  }> = [];
+  const references: TriggerReference[] = [];
+  let currentGroup: string[] = [];
+  let currentLineNumber = 0;
 
-  // First pass: collect all PI lines
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (lineHasPI(line)) {
-      piLines.push({
-        lineNumber: i + 1,
-        line,
-        hasTrigger: !!lineHasTrigger(line),
-      });
+    const hasTrigger = lineHasTrigger(line);
+
+    if (hasTrigger === true) {
+      // Start or continue a group
+      if (currentGroup.length === 0) {
+        currentLineNumber = i + 1;
+      }
+      currentGroup.push(line);
+    } else {
+      // End current group if it exists
+      if (currentGroup.length > 0) {
+        references.push({
+          filePath,
+          lineNumber: currentLineNumber,
+          rawLines: [...currentGroup],
+          hasTrigger: true,
+        });
+        currentGroup = [];
+      }
     }
   }
 
-  // If no PI lines found, return empty
-  if (piLines.length === 0) {
-    return [];
+  // Add final group if exists
+  if (currentGroup.length > 0) {
+    references.push({
+      filePath,
+      lineNumber: currentLineNumber,
+      rawLines: [...currentGroup],
+      hasTrigger: true,
+    });
   }
 
-  // Check if any PI line has a trigger
-  const hasAnyTrigger = piLines.some((pi) => pi.hasTrigger);
-
-  // If there's a trigger, return all PI lines as one group
-  if (hasAnyTrigger) {
-    return [
-      {
-        filePath,
-        lineNumber: Math.min(...piLines.map((pi) => pi.lineNumber)),
-        rawLines: piLines.map((pi) => pi.line),
-        hasTrigger: true,
-      },
-    ];
-  }
-
-  // No trigger found, return empty (no action needed)
-  return [];
+  return references;
 }
 
 /**
@@ -157,18 +153,17 @@ export function createMessage(references: TriggerReference[]): string {
     return "";
   }
 
-  let message = "The !pi references below can be found in the code files.\n";
+  let message = "The PI comments below can be found in the code files.\n";
   message += "They contain your instructions.\n";
   message += "Line numbers are provided for reference.\n";
   message += "Rules:\n";
-  message +=
-    "- Only make changes to files and lines that have !pi references.\n";
+  message += "- Only make changes to files and lines that have PI comments.\n";
   message += "- Do not modify unknown other files or areas of files.\n";
-  message += "- Follow the instructions in the !pi references strictly.\n";
+  message += "- Follow the instructions in the PI comments strictly.\n";
   message +=
-    "- Be sure to remove all !pi references from the code during or after the changes.\n";
+    "- Be sure to remove all PI comments from the code during or after the changes.\n";
   message +=
-    '- After changes are finised say just "Done" and nothing else.\n\n';
+    '- After changes are finished say just "Done" and nothing else.\n\n';
 
   for (const reference of references) {
     const relativePath = getRelativePath(reference.filePath, process.cwd());
