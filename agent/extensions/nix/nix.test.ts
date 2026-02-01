@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
+import type { TextContent } from "@mariozechner/pi-ai";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import setupNixExtension from "./index";
 import type { MockTool, MockExtensionAPI } from "../../test-utils";
+import { createMockExtensionAPI } from "../../test-utils";
 
 // ============================================
 // Extension Registration
@@ -11,11 +14,9 @@ describe("Nix Extension", () => {
   let originalFetch: typeof globalThis.fetch;
 
   beforeEach(() => {
-    mockPi = {
-      registerTool: vi.fn(),
-    };
+    mockPi = createMockExtensionAPI();
     originalFetch = globalThis.fetch;
-    setupNixExtension(mockPi);
+    setupNixExtension(mockPi as ExtensionAPI);
   });
 
   afterEach(() => {
@@ -58,8 +59,8 @@ describe("Nix Extension", () => {
 
     beforeEach(() => {
       registeredTool = mockPi.registerTool.mock.calls.find(
-        (call: [MockTool]) => call[0].name === "search-nix-packages",
-      )[0];
+        (call) => (call[0] as MockTool).name === "search-nix-packages",
+      )![0] as MockTool;
     });
 
     describe("given a valid package query", () => {
@@ -88,13 +89,13 @@ describe("Nix Extension", () => {
             }),
           preconnect: vi.fn(),
         }));
-        globalThis.fetch = mockFetch;
+        globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
         result = await registeredTool.execute("tool1", { query: "hello" });
       });
 
       it("then it should return formatted package results", () => {
-        expect(result.content[0].text).toBe(
+        expect((result.content[0] as TextContent).text).toBe(
           "hello hello 2.12.1: A simple hello world program [John Doe] GNU Hello prints a friendly greeting. https://www.gnu.org/software/hello/ GPL-3.0-or-later",
         );
         expect(result.details.query).toBe("hello");
@@ -102,25 +103,25 @@ describe("Nix Extension", () => {
       });
 
       it("then it should include the package name", () => {
-        expect(result.content[0].text).toContain("hello");
+        expect((result.content[0] as TextContent).text).toContain("hello");
       });
 
       it("then it should include the package version", () => {
-        expect(result.content[0].text).toContain("2.12.1");
+        expect((result.content[0] as TextContent).text).toContain("2.12.1");
       });
 
       it("then it should include the package description", () => {
-        expect(result.content[0].text).toContain(
+        expect((result.content[0] as TextContent).text).toContain(
           "A simple hello world program",
         );
       });
 
       it("then it should include the maintainer name", () => {
-        expect(result.content[0].text).toContain("John Doe");
+        expect((result.content[0] as TextContent).text).toContain("John Doe");
       });
 
       it("then it should include the license information", () => {
-        expect(result.content[0].text).toContain("GPL-3.0-or-later");
+        expect((result.content[0] as TextContent).text).toContain("GPL-3.0-or-later");
       });
     });
 
@@ -129,11 +130,11 @@ describe("Nix Extension", () => {
         const mockFetch = vi
           .fn()
           .mockRejectedValue(new Error("Network error")) as unknown;
-        globalThis.fetch = mockFetch;
+        globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
         const result = await registeredTool.execute("tool1", { query: "test" });
 
-        expect(result.content[0].text).toBe("Error: Network error");
+        expect((result.content[0] as TextContent).text).toBe("Error: Network error");
       });
     });
 
@@ -146,11 +147,11 @@ describe("Nix Extension", () => {
               preconnect: vi.fn(),
             }) as unknown,
         );
-        globalThis.fetch = mockFetch;
+        globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
         const result = await registeredTool.execute("tool1", { query: "test" });
 
-        expect(result.content[0].text).toBe(
+        expect((result.content[0] as TextContent).text).toBe(
           "Error: Search request failed: undefined",
         );
       });
@@ -165,8 +166,8 @@ describe("Nix Extension", () => {
 
     beforeEach(() => {
       registeredTool = mockPi.registerTool.mock.calls.find(
-        (call: [MockTool]) => call[0].name === "search-nix-options",
-      )[0];
+        (call) => (call[0] as MockTool).name === "search-nix-options",
+      )![0] as MockTool;
     });
 
     describe("given a valid option query", () => {
@@ -195,13 +196,13 @@ describe("Nix Extension", () => {
               preconnect: vi.fn(),
             }) as unknown,
         );
-        globalThis.fetch = mockFetch;
+        globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
         result = await registeredTool.execute("tool1", { query: "httpd" });
       });
 
       it("then it should return formatted option results", () => {
-        expect(result.content[0].text).toBe(
+        expect((result.content[0] as TextContent).text).toBe(
           "services.httpd.enable: Whether to enable the Apache HTTP Server. boolean false true",
         );
         expect(result.details.query).toBe("httpd");
@@ -209,25 +210,25 @@ describe("Nix Extension", () => {
       });
 
       it("then it should include the option name", () => {
-        expect(result.content[0].text).toContain("services.httpd.enable");
+        expect((result.content[0] as TextContent).text).toContain("services.httpd.enable");
       });
 
       it("then it should include the option description", () => {
-        expect(result.content[0].text).toContain(
+        expect((result.content[0] as TextContent).text).toContain(
           "Whether to enable the Apache HTTP Server.",
         );
       });
 
       it("then it should include the option type", () => {
-        expect(result.content[0].text).toContain("boolean");
+        expect((result.content[0] as TextContent).text).toContain("boolean");
       });
 
       it("then it should include the default value", () => {
-        expect(result.content[0].text).toContain("false");
+        expect((result.content[0] as TextContent).text).toContain("false");
       });
 
       it("then it should include the example value", () => {
-        expect(result.content[0].text).toContain("true");
+        expect((result.content[0] as TextContent).text).toContain("true");
       });
     });
   });
@@ -240,8 +241,8 @@ describe("Nix Extension", () => {
 
     beforeEach(() => {
       registeredTool = mockPi.registerTool.mock.calls.find(
-        (call: [MockTool]) => call[0].name === "search-home-manager-options",
-      )[0];
+        (call) => (call[0] as MockTool).name === "search-home-manager-options",
+      )![0] as MockTool;
     });
 
     describe("given a valid Home Manager option query", () => {
@@ -289,13 +290,13 @@ describe("Nix Extension", () => {
               preconnect: vi.fn(),
             }) as unknown,
         );
-        globalThis.fetch = mockFetch;
+        globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
         result = await registeredTool.execute("tool1", { query: "git" });
       });
 
       it("then it should return formatted option results", () => {
-        expect(result.content[0].text).toBe(
+        expect((result.content[0] as TextContent).text).toBe(
           "programs.git.enable: Whether to enable Git. boolean false true https://github.com/nix-community/home-manager/blob/master/modules/programs/git.nix",
         );
         expect(result.details.query).toBe("git");
@@ -303,27 +304,27 @@ describe("Nix Extension", () => {
       });
 
       it("then it should include the option title", () => {
-        expect(result.content[0].text).toContain("programs.git.enable");
+        expect((result.content[0] as TextContent).text).toContain("programs.git.enable");
       });
 
       it("then it should include the option description", () => {
-        expect(result.content[0].text).toContain("Whether to enable Git.");
+        expect((result.content[0] as TextContent).text).toContain("Whether to enable Git.");
       });
 
       it("then it should include the option type", () => {
-        expect(result.content[0].text).toContain("boolean");
+        expect((result.content[0] as TextContent).text).toContain("boolean");
       });
 
       it("then it should include the default value", () => {
-        expect(result.content[0].text).toContain("false");
+        expect((result.content[0] as TextContent).text).toContain("false");
       });
 
       it("then it should include the example value", () => {
-        expect(result.content[0].text).toContain("true");
+        expect((result.content[0] as TextContent).text).toContain("true");
       });
 
       it("then it should include the declaration URL", () => {
-        expect(result.content[0].text).toContain(
+        expect((result.content[0] as TextContent).text).toContain(
           "https://github.com/nix-community/home-manager/blob/master/modules/programs/git.nix",
         );
       });
