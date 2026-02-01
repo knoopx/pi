@@ -49,10 +49,12 @@ export function lspDiagnosticsTool(api: ExtensionAPI) {
       signal?: AbortSignal | undefined,
     ): Promise<AgentToolResult<Record<string, unknown>>> {
       if (signal?.aborted) return cancelledToolResult();
-      onUpdate?.({
-        content: [{ type: "text", text: "Working..." }],
-        details: { status: "working" },
-      });
+      if (typeof onUpdate === "function") {
+        onUpdate({
+          content: [{ type: "text", text: "Working..." }],
+          details: { status: "working" },
+        });
+      }
 
       const manager = getOrCreateManager(ctx.cwd);
       const { file, severity } = params as LspParamsType;
@@ -85,7 +87,7 @@ export function lspDiagnosticsTool(api: ExtensionAPI) {
       const payload = !result.receivedResponse
         ? "Timeout: LSP server did not respond. Try again."
         : filtered.length
-          ? filtered.map(d => formatDiagnostic(d, fileContent)).join("\n")
+          ? filtered.map((d) => formatDiagnostic(d, fileContent)).join("\n")
           : "No diagnostics.";
 
       return {

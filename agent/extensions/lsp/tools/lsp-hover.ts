@@ -51,10 +51,12 @@ export function lspHoverTool(api: ExtensionAPI) {
       signal?: AbortSignal | undefined,
     ): Promise<AgentToolResult<Record<string, unknown>>> {
       if (signal?.aborted) return cancelledToolResult();
-      onUpdate?.({
-        content: [{ type: "text", text: "Working..." }],
-        details: { status: "working" },
-      });
+      if (typeof onUpdate === "function") {
+        onUpdate({
+          content: [{ type: "text", text: "Working..." }],
+          details: { status: "working" },
+        });
+      }
 
       const manager = getOrCreateManager(ctx.cwd);
       const { file, line, column, query } = params as LspParamsType;

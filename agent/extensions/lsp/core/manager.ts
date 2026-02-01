@@ -7,10 +7,12 @@ import * as fs from "node:fs";
 
 import { pathToFileURL, fileURLToPath } from "node:url";
 
-import { createMessageConnection, StreamMessageReader, StreamMessageWriter } from "vscode-jsonrpc/node";
 import {
-  InitializeParams,
-} from "vscode-languageserver-protocol";
+  createMessageConnection,
+  StreamMessageReader,
+  StreamMessageWriter,
+} from "vscode-jsonrpc/node";
+import { InitializeParams } from "vscode-languageserver-protocol";
 
 import {
   type LSPClient,
@@ -801,10 +803,10 @@ export class LSPManager {
           ],
         };
 
-        const result = await connection.sendRequest(
+        const result = (await connection.sendRequest(
           "initialize",
           initParams,
-        ) as { capabilities: unknown } | undefined;
+        )) as { capabilities: unknown } | undefined;
         client.capabilities = result?.capabilities;
 
         // Send initialized notification

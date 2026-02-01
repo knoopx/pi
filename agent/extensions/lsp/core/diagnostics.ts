@@ -29,7 +29,7 @@ export function formatDiagnostic(d: Diagnostic, fileContent?: string): string {
 
   // Include the source line if file content is provided
   if (fileContent) {
-    const lines = fileContent.split('\n');
+    const lines = fileContent.split("\n");
     if (lineNum <= lines.length) {
       const sourceLine = lines[lineNum - 1];
       if (sourceLine) {
@@ -37,7 +37,7 @@ export function formatDiagnostic(d: Diagnostic, fileContent?: string): string {
         result += `\n  ${sourceLine}`;
         // Add a caret pointing to the error position
         const caretPos = Math.min(colNum - 1, sourceLine.length);
-        result += `\n  ${' '.repeat(caretPos)}^`;
+        result += `\n  ${" ".repeat(caretPos)}^`;
       }
     }
   }

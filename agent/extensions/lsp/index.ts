@@ -312,7 +312,7 @@ export default function (pi: ExtensionAPI) {
     }
 
     const header = includeFileHeader ? `File: ${relativePath}\n` : "";
-    const output = `\n${header}This file has errors, please fix\n<file_diagnostics>\n${diagnostics.map(d => formatDiagnostic(d, fileContent)).join("\n")}\n</file_diagnostics>\n`;
+    const output = `\n${header}This file has errors, please fix\n<file_diagnostics>\n${diagnostics.map((d) => formatDiagnostic(d, fileContent)).join("\n")}\n</file_diagnostics>\n`;
 
     return { notification, errorCount, output };
   }
