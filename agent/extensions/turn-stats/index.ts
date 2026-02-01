@@ -49,7 +49,7 @@ export function formatDuration(ms: number): string {
   return `${Math.floor(seconds)}s`;
 }
 
-export function formatTokens(tokens: number | undefined): string {
+export function formatTokens(tokens: number | undefined | null): string {
   if (tokens === undefined || tokens === null) {
     return "N/A";
   }
@@ -92,7 +92,8 @@ export function formatCost(
         cacheWrite?: number;
         total?: number;
       }
-    | undefined,
+    | undefined
+    | null,
 ): string {
   // If cost is undefined or null, return empty string
   if (!cost) {

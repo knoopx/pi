@@ -164,7 +164,7 @@ describe("formatTokens", () => {
 
     describe("when formatting null tokens", () => {
       it("then it should return 'N/A'", () => {
-        expect(formatTokens(null as unknown)).toBe("N/A");
+        expect(formatTokens(null)).toBe("N/A");
       });
     });
   });
@@ -281,7 +281,7 @@ describe("formatCost", () => {
 
     describe("when formatting null cost", () => {
       it("then it should return empty string (cost not included)", () => {
-        expect(formatCost(null as unknown)).toBe("");
+        expect(formatCost(null)).toBe("");
       });
     });
   });
