@@ -121,7 +121,9 @@ describe("Nix Extension", () => {
       });
 
       it("then it should include the license information", () => {
-        expect((result.content[0] as TextContent).text).toContain("GPL-3.0-or-later");
+        expect((result.content[0] as TextContent).text).toContain(
+          "GPL-3.0-or-later",
+        );
       });
     });
 
@@ -134,7 +136,9 @@ describe("Nix Extension", () => {
 
         const result = await registeredTool.execute("tool1", { query: "test" });
 
-        expect((result.content[0] as TextContent).text).toBe("Error: Network error");
+        expect((result.content[0] as TextContent).text).toBe(
+          "Error: Network error",
+        );
       });
     });
 
@@ -210,7 +214,9 @@ describe("Nix Extension", () => {
       });
 
       it("then it should include the option name", () => {
-        expect((result.content[0] as TextContent).text).toContain("services.httpd.enable");
+        expect((result.content[0] as TextContent).text).toContain(
+          "services.httpd.enable",
+        );
       });
 
       it("then it should include the option description", () => {
@@ -304,11 +310,15 @@ describe("Nix Extension", () => {
       });
 
       it("then it should include the option title", () => {
-        expect((result.content[0] as TextContent).text).toContain("programs.git.enable");
+        expect((result.content[0] as TextContent).text).toContain(
+          "programs.git.enable",
+        );
       });
 
       it("then it should include the option description", () => {
-        expect((result.content[0] as TextContent).text).toContain("Whether to enable Git.");
+        expect((result.content[0] as TextContent).text).toContain(
+          "Whether to enable Git.",
+        );
       });
 
       it("then it should include the option type", () => {
