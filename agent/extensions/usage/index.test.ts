@@ -35,12 +35,20 @@ function createMockUsageData(): UsageData {
             messages: 2,
             cost: 0.001,
             tokens: { total: 100, input: 60, output: 40, cache: 0 },
-            models: new Map<string, {
-              sessions: Set<string>;
-              messages: number;
-              cost: number;
-              tokens: { total: number; input: number; output: number; cache: number };
-            }>([
+            models: new Map<
+              string,
+              {
+                sessions: Set<string>;
+                messages: number;
+                cost: number;
+                tokens: {
+                  total: number;
+                  input: number;
+                  output: number;
+                  cache: number;
+                };
+              }
+            >([
               [
                 "model1",
                 {
