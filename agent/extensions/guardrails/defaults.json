@@ -102,24 +102,6 @@
 		]
 	},
 	{
-		"group": "typescript",
-		"pattern": "tsconfig.json",
-		"rules": [
-			{
-				"context": "file_content",
-				"pattern": "any",
-				"action": "block",
-				"reason": "`any` type usage is not allowed; use specific types instead"
-			},
-			{
-				"context": "file_content",
-				"pattern": "@ts-ignore",
-				"action": "block",
-				"reason": "`@ts-ignore` comments are not allowed; fix the underlying type issue instead"
-			}
-		]
-	},
-	{
 		"group": "testing",
 		"pattern": "*.test.ts",
 		"rules": [
