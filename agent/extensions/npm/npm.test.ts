@@ -105,7 +105,9 @@ describe("NPM Extension", () => {
       });
 
       it("then it should include the package name and version", () => {
-        expect((result.content[0] as TextContent).text).toContain("lodash 4.17.21");
+        expect((result.content[0] as TextContent).text).toContain(
+          "lodash 4.17.21",
+        );
       });
 
       it("then it should include the package description", () => {
@@ -115,7 +117,9 @@ describe("NPM Extension", () => {
       });
 
       it("then it should include the author name", () => {
-        expect((result.content[0] as TextContent).text).toContain("John-David Dalton");
+        expect((result.content[0] as TextContent).text).toContain(
+          "John-David Dalton",
+        );
       });
 
       it("then it should include the package keywords", () => {
@@ -141,7 +145,9 @@ describe("NPM Extension", () => {
         expect(mockFetch).toHaveBeenCalledWith(
           expect.stringContaining("size=10"),
         );
-        expect((result.content[0] as TextContent).text).toBe("No packages found.");
+        expect((result.content[0] as TextContent).text).toBe(
+          "No packages found.",
+        );
       });
     });
 
@@ -158,7 +164,9 @@ describe("NPM Extension", () => {
           query: "nonexistent-pkg-xyz-123",
         });
 
-        expect((result.content[0] as TextContent).text).toBe("No packages found.");
+        expect((result.content[0] as TextContent).text).toBe(
+          "No packages found.",
+        );
         expect(result.details.count).toBe(0);
       });
     });
@@ -281,7 +289,9 @@ describe("NPM Extension", () => {
       });
 
       it("then it should include the author name", () => {
-        expect((result.content[0] as TextContent).text).toContain("TJ Holowaychuk");
+        expect((result.content[0] as TextContent).text).toContain(
+          "TJ Holowaychuk",
+        );
       });
 
       it("then it should include the maintainers count", () => {
@@ -289,7 +299,9 @@ describe("NPM Extension", () => {
       });
 
       it("then it should include the homepage URL", () => {
-        expect((result.content[0] as TextContent).text).toContain("http://expressjs.com/");
+        expect((result.content[0] as TextContent).text).toContain(
+          "http://expressjs.com/",
+        );
       });
 
       it("then it should include the repository URL", () => {
