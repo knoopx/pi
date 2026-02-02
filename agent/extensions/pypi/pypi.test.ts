@@ -105,11 +105,15 @@ describe("PyPI Extension", () => {
       });
 
       it("then it should include the package description", () => {
-        expect((result.content[0] as TextContent).text).toContain("Python HTTP for Humans.");
+        expect((result.content[0] as TextContent).text).toContain(
+          "Python HTTP for Humans.",
+        );
       });
 
       it("then it should include multiple packages in results", () => {
-        expect((result.content[0] as TextContent).text).toContain("requests-oauthlib");
+        expect((result.content[0] as TextContent).text).toContain(
+          "requests-oauthlib",
+        );
       });
 
       it("then it should include the total count", () => {
@@ -181,7 +185,9 @@ describe("PyPI Extension", () => {
           query: "nonexistent-pkg-xyz-123",
         });
 
-        expect((result.content[0] as TextContent).text).toContain("No packages found.");
+        expect((result.content[0] as TextContent).text).toContain(
+          "No packages found.",
+        );
         expect(result.details.total).toBe(0);
       });
     });
@@ -249,11 +255,15 @@ describe("PyPI Extension", () => {
       });
 
       it("then it should include the package summary", () => {
-        expect((result.content[0] as TextContent).text).toContain("Python HTTP for Humans.");
+        expect((result.content[0] as TextContent).text).toContain(
+          "Python HTTP for Humans.",
+        );
       });
 
       it("then it should include the author name", () => {
-        expect((result.content[0] as TextContent).text).toContain("Kenneth Reitz");
+        expect((result.content[0] as TextContent).text).toContain(
+          "Kenneth Reitz",
+        );
       });
 
       it("then it should include the license information", () => {
@@ -314,7 +324,9 @@ describe("PyPI Extension", () => {
       });
 
       it("then it should return not found message", () => {
-        expect((result.content[0] as TextContent).text).toContain("not found on PyPI");
+        expect((result.content[0] as TextContent).text).toContain(
+          "not found on PyPI",
+        );
         expect(result.details.package).toBe("nonexistent-pkg-xyz-123");
       });
     });
