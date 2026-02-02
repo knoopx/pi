@@ -109,7 +109,7 @@
         "context": "file_content",
         "pattern": "any",
         "action": "block",
-        "reason": "`any` type usage is not allowed; use specific types instead"
+        "reason": "`any` type usage is not allowed; use specific types instead or `unknown`"
       },
       {
         "context": "file_content",

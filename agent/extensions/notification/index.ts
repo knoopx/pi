@@ -72,7 +72,8 @@ export default function (pi: ExtensionAPI) {
       }
 
       // Execute the command
-      const result = await pi.exec("bash", ["-c", command], { signal });
+      const options = signal ? { signal } : undefined;
+      const result = await pi.exec("bash", ["-c", command], options);
 
       if (result.code !== 0) {
         return {

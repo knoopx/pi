@@ -35,7 +35,8 @@ Supports URLs and local files.`,
           details: { source, status: "converting" },
         });
 
-        const result = await pi.exec("markitdown", [source], { signal });
+        const options = signal ? { signal } : undefined;
+        const result = await pi.exec("markitdown", [source], options);
 
         if (result.code === 0) {
           return {
