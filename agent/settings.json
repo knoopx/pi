@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.51.0",
-  "defaultProvider": "zai-coding-plan",
-  "defaultModel": "glm-4.7",
+  "defaultProvider": "github-copilot",
+  "defaultModel": "gpt-5.2",
   "theme": "custom",
   "lsp": {
     "hookMode": "edit_write"
