@@ -114,15 +114,14 @@ function setupPermissionGateHook(pi: ExtensionAPI, config: ResolvedConfig) {
 
             if (action === "block") {
               ctx.ui.notify(`Blocked: ${reason}`, "error");
-
-              return { block: true, reason };
+              return { block: true, reason: `Blocked: ${reason}` };
             } else if (action === "confirm") {
               const proceed = await ctx.ui.custom<boolean>(
                 (_tui, theme, _kb, done) =>
                   createConfirmationDialog(
                     {
                       title: "Dangerous Operation Detected",
-                      message: `This operation was blocked:`,
+                      message: `This operation was blocked: ${reason}`,
                       content: targetValue!,
                       confirmText: "y/enter: allow",
                       cancelText: "n/esc: deny",
@@ -136,7 +135,7 @@ function setupPermissionGateHook(pi: ExtensionAPI, config: ResolvedConfig) {
               if (!proceed) {
                 return {
                   block: true,
-                  reason: "User denied dangerous operation",
+                  reason: "Blocked: User denied dangerous operation",
                 };
               }
             }
