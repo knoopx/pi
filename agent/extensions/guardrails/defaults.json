@@ -1,188 +1,194 @@
 [
-	{
-		"group": "coreutils",
-		"pattern": "*",
-		"rules": [
-			{
-				"context": "command",
-				"pattern": "^find",
-				"action": "block",
-				"reason": "use `fd` instead"
-			},
-			{
-				"context": "command",
-				"pattern": "^grep",
-				"action": "block",
-				"reason": "use `rg` (ripgrep) instead"
-			},
-			{
-				"context": "command",
-				"pattern": "^sed",
-				"action": "block",
-				"reason": "use `cm` or `ast-grep` instead"
-			}
-		]
-	},
-	{
-		"group": "ast-grep",
-		"pattern": "*",
-		"rules": [
-			{
-				"context": "command",
-				"pattern": "^grep.+(require|import)*",
-				"action": "block",
-				"reason": "use `ast-grep` instead"
-			}
-		]
-	},
-	{
-		"group": "bun",
-		"pattern": "bun.lock",
-		"rules": [
-			{
-				"context": "command",
-				"pattern": "^npm",
-				"action": "block",
-				"reason": "use `bun` instead"
-			}
-		]
-	},
-	{
-		"group": "uv",
-		"pattern": "requirements.txt",
-		"rules": [
-			{
-				"context": "command",
-				"pattern": "^python",
-				"action": "block",
-				"reason": "use `uv run` instead"
-			},
-			{
-				"context": "command",
-				"pattern": "^pip",
-				"action": "block",
-				"reason": "use `uv pip` instead"
-			}
-		]
-	},
-	{
-		"group": "nix",
-		"pattern": "flake.nix",
-		"rules": [
-			{
-				"context": "command",
-				"pattern": "^nix\\s+run\\s+\\.\\/",
-				"action": "block",
-				"reason": "use nix run path:./my-flake#output instead"
-			}
-		]
-	},
-	{
-		"group": "privilege-escalation",
-		"pattern": "*",
-		"rules": [
-			{
-				"context": "command",
-				"pattern": "^(sudo|su)",
-				"action": "block",
-				"reason": "agents should instruct system administrators to perform privileged operations"
-			}
-		]
-	},
-	{
-		"group": "lock-files",
-		"pattern": "*",
-		"rules": [
-			{
-				"context": "file_name",
-				"pattern": "(package-lock\\.json|bun\\.lockb|yarn\\.lock|pnpm-lock\\.yaml|poetry\\.lock|uv\\.lock|Cargo\\.lock|Gemfile\\.lock|flake\\.lock)",
-				"action": "block",
-				"reason": "auto-generated lock files should not be edited directly"
-			}
-		]
-	},
-	{
-		"group": "testing",
-		"pattern": "*.test.ts",
-		"rules": [
-			{
-				"context": "file_content",
-				"pattern": "\\.skip\\(|describe\\.skip|xdescribe|xit\\(",
-				"action": "block",
-				"reason": "do not skip tests, fix or remove them instead"
-			}
-		]
-	},
-	{
-		"group": "linting",
-		"pattern": ".eslintrc.json",
-		"rules": [
-			{
-				"context": "file_content",
-				"pattern": "eslint-disable",
-				"action": "block",
-				"reason": "ESLint disable comments are not allowed; fix linting issues instead"
-			}
-		]
-	},
-	{
-		"group": "jj",
-		"pattern": ".jj",
-		"rules": [
-			{
-				"context": "command",
-				"pattern": "^jj\\s+revert",
-				"action": "block",
-				"reason": "jj revert is blocked."
-			},
-			{
-				"context": "command",
-				"pattern": "^jj\\s+restore",
-				"action": "block",
-				"reason": "jj restore is blocked."
-			},
-			{
-				"context": "command",
-				"pattern": "^jj\\s+(?:diffedit|simplify|forget|undo|recover)",
-				"action": "block",
-				"reason": "jj diffedit and related commands are blocked."
-			},
-			{
-				"context": "command",
-				"pattern": "^jj\\s+squash(?:(?!-m).)*",
-				"action": "block",
-				"reason": "jj squash without -m opens an editor. Use: jj squash -m \"message\""
-			},
-			{
-				"context": "command",
-				"pattern": "^jj\\s+split(?:(?!-m).)*",
-				"action": "block",
-				"reason": "jj split without -m opens an editor. Use: jj split -m \"message\" <files>"
-			},
-			{
-				"context": "command",
-				"pattern": "^jj\\s+resolve(?:(?!--list).)*",
-				"action": "block",
-				"reason": "jj resolve opens a merge tool. Use jj resolve --list to view conflicts."
-			},
-			{
-				"context": "command",
-				"pattern": "^jj\\s+describe(?:(?!-m).)*",
-				"action": "block",
-				"reason": "jj describe without -m opens an editor. Use: jj describe -m \"message\""
-			},
-			{
-				"context": "command",
-				"pattern": "^jj\\s+commit(?:(?!-m).)*",
-				"action": "block",
-				"reason": "jj commit without -m opens an editor. Use: jj commit -m \"message\""
-			},
-			{
-				"context": "command",
-				"pattern": "^jj\\s+-i|--interactive|--tool(?:(?!.*(?:--help|-h)).)*",
-				"action": "block",
-				"reason": "Interactive jj command blocked (-i/--interactive/--tool opens a diff editor)."
-			}
-		]
-	}
+  {
+    "group": "coreutils",
+    "pattern": "*",
+    "rules": [
+      {
+        "context": "command",
+        "pattern": "^find",
+        "action": "block",
+        "reason": "use `fd` instead"
+      },
+      {
+        "context": "command",
+        "pattern": "^grep",
+        "action": "block",
+        "reason": "use `rg` (ripgrep) instead"
+      }
+    ]
+  },
+  {
+    "group": "ast-grep",
+    "pattern": "*",
+    "rules": [
+      {
+        "context": "command",
+        "pattern": "^grep.+(require|import)*",
+        "action": "block",
+        "reason": "use `ast-grep` instead"
+      }
+    ]
+  },
+  {
+    "group": "bun",
+    "pattern": "bun.lock",
+    "rules": [
+      {
+        "context": "command",
+        "pattern": "^npm",
+        "action": "block",
+        "reason": "use `bun` instead"
+      }
+    ]
+  },
+    {
+    "group": "vitest",
+    "pattern": "bun.lock",
+    "rules": [
+      {
+        "context": "command",
+        "pattern": "^bun test",
+        "action": "block",
+        "reason": "`bun test` is bun testing framework, not vitest. use appropriate vitest commands instead"
+      }
+    ]
+  },
+  {
+    "group": "uv",
+    "pattern": "requirements.txt",
+    "rules": [
+      {
+        "context": "command",
+        "pattern": "^python",
+        "action": "block",
+        "reason": "use `uv run` instead"
+      },
+      {
+        "context": "command",
+        "pattern": "^pip",
+        "action": "block",
+        "reason": "use `uv pip` instead"
+      }
+    ]
+  },
+  {
+    "group": "nix",
+    "pattern": "flake.nix",
+    "rules": [
+      {
+        "context": "command",
+        "pattern": "^nix\\s+run\\s+\\.\\/",
+        "action": "block",
+        "reason": "use nix run path:./my-flake#output instead"
+      }
+    ]
+  },
+  {
+    "group": "privilege-escalation",
+    "pattern": "*",
+    "rules": [
+      {
+        "context": "command",
+        "pattern": "^(sudo|su)",
+        "action": "block",
+        "reason": "agents should instruct system administrators to perform privileged operations"
+      }
+    ]
+  },
+  {
+    "group": "lock-files",
+    "pattern": "*",
+    "rules": [
+      {
+        "context": "file_name",
+        "pattern": "(package-lock\\.json|bun\\.lockb|yarn\\.lock|pnpm-lock\\.yaml|poetry\\.lock|uv\\.lock|Cargo\\.lock|Gemfile\\.lock|flake\\.lock)",
+        "action": "block",
+        "reason": "auto-generated lock files should not be edited directly"
+      }
+    ]
+  },
+  {
+    "group": "testing",
+    "pattern": "*.test.ts",
+    "rules": [
+      {
+        "context": "file_content",
+        "pattern": "\\.skip\\(|describe\\.skip|xdescribe|xit\\(",
+        "action": "block",
+        "reason": "do not skip tests, fix or remove them instead"
+      }
+    ]
+  },
+  {
+    "group": "linting",
+    "pattern": ".eslintrc.json",
+    "rules": [
+      {
+        "context": "file_content",
+        "pattern": "eslint-disable",
+        "action": "block",
+        "reason": "ESLint disable comments are not allowed; fix linting issues instead"
+      }
+    ]
+  },
+  {
+    "group": "jj",
+    "pattern": ".jj",
+    "rules": [
+      {
+        "context": "command",
+        "pattern": "^jj\\s+revert",
+        "action": "block",
+        "reason": "jj revert is blocked."
+      },
+      {
+        "context": "command",
+        "pattern": "^jj\\s+restore",
+        "action": "block",
+        "reason": "jj restore is blocked."
+      },
+      {
+        "context": "command",
+        "pattern": "^jj\\s+(?:diffedit|simplify|forget|undo|recover)",
+        "action": "block",
+        "reason": "jj diffedit and related commands are blocked."
+      },
+      {
+        "context": "command",
+        "pattern": "^jj\\s+squash(?:(?!-m).)*",
+        "action": "block",
+        "reason": "jj squash without -m opens an editor. Use: jj squash -m \"message\""
+      },
+      {
+        "context": "command",
+        "pattern": "^jj\\s+split(?:(?!-m).)*",
+        "action": "block",
+        "reason": "jj split without -m opens an editor. Use: jj split -m \"message\" <files>"
+      },
+      {
+        "context": "command",
+        "pattern": "^jj\\s+resolve(?:(?!--list).)*",
+        "action": "block",
+        "reason": "jj resolve opens a merge tool. Use jj resolve --list to view conflicts."
+      },
+      {
+        "context": "command",
+        "pattern": "^jj\\s+describe(?:(?!-m).)*",
+        "action": "block",
+        "reason": "jj describe without -m opens an editor. Use: jj describe -m \"message\""
+      },
+      {
+        "context": "command",
+        "pattern": "^jj\\s+commit(?:(?!-m).)*",
+        "action": "block",
+        "reason": "jj commit without -m opens an editor. Use: jj commit -m \"message\""
+      },
+      {
+        "context": "command",
+        "pattern": "^jj\\s+-i|--interactive|--tool(?:(?!.*(?:--help|-h)).)*",
+        "action": "block",
+        "reason": "Interactive jj command blocked (-i/--interactive/--tool opens a diff editor)."
+      }
+    ]
+  }
 ]
