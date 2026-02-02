@@ -6,7 +6,17 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fetchStockData, formatStockSummary, type StockData } from "./index";
 
-type StockRange = "1d" | "1w" | "1m" | "3m" | "6m" | "1y" | "ytd" | "2y" | "5y" | "max";
+type StockRange =
+  | "1d"
+  | "1w"
+  | "1m"
+  | "3m"
+  | "6m"
+  | "1y"
+  | "ytd"
+  | "2y"
+  | "5y"
+  | "max";
 
 // Mock the global fetch function
 
@@ -267,7 +277,10 @@ describe("Stocks Extension", () => {
       });
 
       it("then it should return valid data anyway", async () => {
-        const result = await fetchStockData("AAPL", "invalid-range" as StockRange);
+        const result = await fetchStockData(
+          "AAPL",
+          "invalid-range" as StockRange,
+        );
         expect(result).toBeDefined();
         expect(result?.currentPrice).toBe(100.0);
       });
