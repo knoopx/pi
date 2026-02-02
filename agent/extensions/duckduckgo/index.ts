@@ -187,23 +187,32 @@ async function searchDuckDuckGoPreloadUrl(
           let validResultsInCurrentPage = 0;
 
           // Process search results
-          jsonData.forEach((item: { n?: boolean; t?: string; u?: string; a?: string; i?: string; sn?: string }) => {
-            // Exclude navigation items
-            if (item.n) return;
+          jsonData.forEach(
+            (item: {
+              n?: boolean;
+              t?: string;
+              u?: string;
+              a?: string;
+              i?: string;
+              sn?: string;
+            }) => {
+              // Exclude navigation items
+              if (item.n) return;
 
-            validResultsInCurrentPage++;
+              validResultsInCurrentPage++;
 
-            // If results already meet requirements, don't add more
-            if (results.length >= maxResults) return;
+              // If results already meet requirements, don't add more
+              if (results.length >= maxResults) return;
 
-            results.push({
-              title: item.t || "",
-              url: item.u || "",
-              description: item.a || "",
-              source: item.i || item.sn || "",
-              engine: "duckduckgo",
-            });
-          });
+              results.push({
+                title: item.t || "",
+                url: item.u || "",
+                description: item.a || "",
+                source: item.i || item.sn || "",
+                engine: "duckduckgo",
+              });
+            },
+          );
 
           // If current page has no valid results, assume there are no more results
           if (validResultsInCurrentPage === 0) {
@@ -237,7 +246,7 @@ function parseSearchResults(
   $: cheerio.CheerioAPI,
   items: cheerio.Cheerio<any>,
   results: SearchResult[],
-  maxResults: number
+  maxResults: number,
 ): void {
   items.each((_, el) => {
     if (results.length >= maxResults) return false;
