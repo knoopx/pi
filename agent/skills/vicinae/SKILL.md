@@ -82,13 +82,13 @@ import { List, ActionPanel, Action, Icon } from "@vicinae/api";
 
 export default function MyCommand() {
   return (
-    <List>
+    <List searchBarPlaceholder="Search items...">
       <List.Item
         title="Item"
         icon={Icon.Document}
         actions={
           <ActionPanel>
-            <Action title="Select" onAction={() => console.log("selected")} />
+            <Action icon={Icon.Eye} title="View" onAction={() => console.log("viewed")} />
           </ActionPanel>
         }
       />
@@ -96,6 +96,8 @@ export default function MyCommand() {
   );
 }
 ```
+
+**Important**: All actions must have an `icon` prop.
 
 ### No-View Command (src/action.ts)
 
@@ -150,9 +152,10 @@ function ListView() {
   return (
     <List.Item
       title="Go to Detail"
+      icon={Icon.Document}
       actions={
         <ActionPanel>
-          <Action title="View" onAction={() => push(<DetailView />)} />
+          <Action icon={Icon.Eye} title="View" onAction={() => push(<DetailView />)} />
         </ActionPanel>
       }
     />
