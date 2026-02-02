@@ -6,10 +6,11 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
 import { StringEnum } from "@mariozechner/pi-ai";
+import { Type } from "@sinclair/typebox";
+import { buildNotifySendArgs, normalizeToolExecuteArgs } from "./notify-send";
 
-export default function (pi: ExtensionAPI) {
+export default function notificationExtension(pi: ExtensionAPI) {
   pi.registerTool({
     name: "notify",
     label: "Send Notification",
@@ -41,46 +42,27 @@ export default function (pi: ExtensionAPI) {
         Type.String({ description: "Notification category" }),
       ),
     }),
-    async execute(toolCallId, params, onUpdate, ctx, signal) {
-      // Build the command
-      let command = "notify-send";
 
-      if (params.urgency) {
-        command += ` -u ${params.urgency}`;
-      }
+    async execute(_toolCallId, params, onUpdate, ctx, signal) {
+      const normalized = normalizeToolExecuteArgs(onUpdate, ctx, signal);
+      const options = normalized.signal
+        ? { signal: normalized.signal }
+        : undefined;
 
-      if (params.expireTime !== undefined) {
-        command += ` -t ${params.expireTime}`;
-      }
-
-      if (params.appName) {
-        command += ` -a "${params.appName}"`;
-      }
-
-      if (params.icon) {
-        command += ` -i "${params.icon}"`;
-      }
-
-      if (params.category) {
-        command += ` -c "${params.category}"`;
-      }
-
-      // Add summary and body
-      command += ` "${params.summary}"`;
-      if (params.body) {
-        command += ` "${params.body}"`;
-      }
-
-      // Execute the command
-      const options = signal ? { signal } : undefined;
-      const result = await pi.exec("bash", ["-c", command], options);
+      const args = buildNotifySendArgs(params);
+      const result = await pi.exec("notify-send", args, options);
 
       if (result.code !== 0) {
+        const message =
+          result.stderr ||
+          result.stdout ||
+          "notify-send failed. Is notify-send installed and available in PATH?";
+
         return {
           content: [
             {
               type: "text",
-              text: `Failed to send notification: ${result.stderr || result.stdout}`,
+              text: `Failed to send notification: ${message}`,
             },
           ],
           isError: true,
