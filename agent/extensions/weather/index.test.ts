@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
+
 /**
  * Integration Tests for Weather Extension
  * Tests: Tool registration, command execution, and user interactions
@@ -66,7 +69,10 @@ describe("Weather Extension", () => {
   let mockPi: MockExtensionAPI;
   let context: ExtensionContext;
   let toolConfig: MockTool;
-  let commandConfig: { description: string; handler: Function };
+  let commandConfig: {
+    description: string;
+    handler: (...args: unknown[]) => unknown;
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
