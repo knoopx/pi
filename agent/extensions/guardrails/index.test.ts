@@ -29,7 +29,7 @@ const { GroupEditor } = await import("./ui/group-editor");
 describe("Guardrails Extension", () => {
   const mockConfigLoader = vi.mocked(configLoader);
   const mockGlob = vi.mocked(glob);
-  const mockGroupEditor = vi.mocked(GroupEditor);
+  const _mockGroupEditor = vi.mocked(GroupEditor);
 
   beforeEach(() => {
     vi.clearAllMocks();

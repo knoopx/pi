@@ -1,10 +1,6 @@
 import { describe, it, expect } from "vitest";
 import defaults from "./defaults.json";
-import type {
-  GuardrailsGroup,
-  GuardrailsRule,
-  GuardrailsConfig,
-} from "./config";
+import type { GuardrailsConfig } from "./config";
 
 // Cast defaults to proper type since JSON import doesn't preserve types
 const typedDefaults = defaults as GuardrailsConfig;
@@ -18,7 +14,7 @@ describe("Guardrails Defaults Configuration", () => {
       });
 
       it("then each item is a valid group object", () => {
-        typedDefaults.forEach((group, index) => {
+        typedDefaults.forEach((group, _index) => {
           expect(typeof group).toBe("object");
           expect(group).not.toBeNull();
           expect(typeof group.group).toBe("string");
@@ -28,7 +24,7 @@ describe("Guardrails Defaults Configuration", () => {
           expect(group.rules.length).toBeGreaterThan(0);
 
           // Validate each rule
-          group.rules.forEach((rule, ruleIndex) => {
+          group.rules.forEach((rule, _ruleIndex) => {
             expect(typeof rule).toBe("object");
             expect(rule).not.toBeNull();
             expect(["command", "file_name", "file_content"]).toContain(

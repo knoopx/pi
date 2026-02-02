@@ -51,6 +51,22 @@ export async function isGroupActive(
   }
 }
 
+function getInputFieldAsString(
+  input: unknown,
+  field: string,
+): string | undefined {
+  if (!input || typeof input !== "object") {
+    return undefined;
+  }
+
+  const value = (input as Record<string, unknown>)[field];
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  return String(value);
+}
+
 /**
  * Permission gate that prompts user confirmation for blocked operations.
  * Uses groups config to define blocking rules based on context.
@@ -76,19 +92,19 @@ function setupPermissionGateHook(pi: ExtensionAPI, config: ResolvedConfig) {
           switch (rule.context) {
             case "command":
               if (toolName === "bash") {
-                targetValue = String(input.command ?? "");
+                targetValue = getInputFieldAsString(input, "command");
               }
               break;
             case "file_name":
               if (["read", "edit", "write"].includes(toolName)) {
-                targetValue = String(input.path ?? "");
+                targetValue = getInputFieldAsString(input, "path");
               }
               break;
             case "file_content":
               if (toolName === "edit") {
-                targetValue = String(input.newText ?? "");
+                targetValue = getInputFieldAsString(input, "newText");
               } else if (toolName === "write") {
-                targetValue = String(input.content ?? "");
+                targetValue = getInputFieldAsString(input, "content");
               }
               break;
           }

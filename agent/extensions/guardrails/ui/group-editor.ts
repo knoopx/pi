@@ -2,11 +2,12 @@ import { Key, matchesKey } from "@mariozechner/pi-tui";
 import { BaseEditor } from "./editor-common";
 import { RuleEditor } from "./rule-editor";
 import type { GuardrailsGroup, GuardrailsRule } from "../config";
+import type { Theme } from "@mariozechner/pi-coding-agent";
 
 export interface GroupEditorOptions {
   label: string;
   items: GuardrailsGroup[];
-  theme: any;
+  theme: Theme;
   onSave: (items: GuardrailsGroup[]) => void;
   onDone: () => void;
   maxVisible?: number;

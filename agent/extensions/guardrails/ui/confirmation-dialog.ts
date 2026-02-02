@@ -5,6 +5,7 @@ import {
   Text,
   wrapTextWithAnsi,
 } from "@mariozechner/pi-tui";
+import type { Theme } from "@mariozechner/pi-coding-agent";
 
 export interface ConfirmationDialogOptions {
   title: string;
@@ -13,11 +14,6 @@ export interface ConfirmationDialogOptions {
   confirmText?: string;
   cancelText?: string;
   danger?: boolean;
-}
-
-interface Theme {
-  fg: (color: string, text: string) => string;
-  bold: (text: string) => string;
 }
 
 /**
