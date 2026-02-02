@@ -352,9 +352,9 @@ Returns search results with titles, URLs, and descriptions.`,
     async execute(
       _toolCallId: string,
       params: SearchDuckDuckGoParamsType,
+      _signal: AbortSignal,
       _onUpdate: AgentToolUpdateCallback,
       _ctx: ExtensionContext,
-      _signal: AbortSignal,
     ) {
       const { query, limit = 10 } = params;
       const results = await searchDuckDuckGo(query, limit);

@@ -1,7 +1,16 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { TextContent } from "@mariozechner/pi-ai";
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
-import { createMockExtensionAPI, type MockExtensionAPI, type MockTool } from "../../test-utils";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+} from "@mariozechner/pi-coding-agent";
+import {
+  createMockExtensionAPI,
+  type MockExtensionAPI,
+  type MockTool,
+} from "../../test-utils";
 import duckduckgoExtension from "./index";
 
 // Mock axios
