@@ -144,7 +144,10 @@ describe("Station Resolution", () => {
             ? { station: current, distance: nameDistance }
             : best;
         },
-        null as { station: { id: number; name: string }; distance: number } | null,
+        null as {
+          station: { id: number; name: string };
+          distance: number;
+        } | null,
       );
       expect(bestMatch).toBeDefined();
       expect(bestMatch?.distance).toBeLessThanOrEqual(3);
@@ -165,7 +168,10 @@ describe("Station Resolution", () => {
             ? { station: current, distance: nameDistance }
             : best;
         },
-        null as { station: { id: number; name: string }; distance: number } | null,
+        null as {
+          station: { id: number; name: string };
+          distance: number;
+        } | null,
       );
       // Distance of 12 > 3 means no match
       expect(bestMatch?.distance).toBeGreaterThan(3);

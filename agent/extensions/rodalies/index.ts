@@ -148,25 +148,27 @@ async function getDepartures(stationId: number): Promise<DepartureItem[]> {
             new Date(b.departureDateHourSelectedStation).getTime(),
         )
         .slice(0, 10)
-        .map((train: Train): DepartureItem => ({
-          departureTime: new Date(
-            train.departureDateHourSelectedStation,
-          ).toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
+        .map(
+          (train: Train): DepartureItem => ({
+            departureTime: new Date(
+              train.departureDateHourSelectedStation,
+            ).toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }),
+            destination: train.destinationStation.name,
+            line: train.line.name,
+            platform: train.platformSelectedStation || "—",
+            delay: train.delay
+              ? train.delay > 0
+                ? `+${train.delay}min`
+                : `${train.delay}min`
+              : "",
+            trainType: train.trainType,
+            cancelled: train.trainCancelled,
           }),
-          destination: train.destinationStation.name,
-          line: train.line.name,
-          platform: train.platformSelectedStation || "—",
-          delay: train.delay
-            ? train.delay > 0
-              ? `+${train.delay}min`
-              : `${train.delay}min`
-            : "",
-          trainType: train.trainType,
-          cancelled: train.trainCancelled,
-        }));
+        );
 
       return sorted;
     }
@@ -325,7 +327,7 @@ export default function (pi: ExtensionAPI) {
       const selectedId = await new Promise<string | null>((resolve) => {
         selectList.onSelect = (item: any) => resolve(item.value);
         selectList.onCancel = () => resolve(null);
-        ((ctx as any).ui).custom(selectList, {
+        (ctx as any).ui.custom(selectList, {
           overlay: true,
           overlayOptions: { width: 60 },
         } as any);
