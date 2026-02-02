@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import type { ExtensionAPI, ExtensionContext, ExtensionUIContext } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+  ExtensionUIContext,
+} from "@mariozechner/pi-coding-agent";
 import setupExtension, { fuzzyMatch } from "./index";
 import type { MockExtensionAPI } from "../../test-utils";
 import { createMockExtensionAPI } from "../../test-utils";
