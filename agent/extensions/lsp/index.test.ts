@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck - Test file uses extensive mocking that doesn't match strict types
 /**
  * LSP Extension - Comprehensive BDD Tests
@@ -92,7 +93,7 @@ vi.mock("./core/manager", () => ({
 
 vi.mock("./core/utils.js", () => ({
   formatLocation: vi.fn(
-    (loc, cwd) => `${loc.uri}:${loc.range?.start?.line ?? 0}`,
+    (loc, _cwd) => `${loc.uri}:${loc.range?.start?.line ?? 0}`,
   ),
   formatHover: vi.fn(),
   formatSignature: vi.fn(),
@@ -430,6 +431,7 @@ describe("LSP Extension", () => {
             "tool-1",
             params,
             undefined,
+            undefined,
             mockCtx,
           );
 
@@ -467,6 +469,7 @@ describe("LSP Extension", () => {
           const result = await definitionToolExecute(
             "tool-1",
             params,
+            undefined,
             undefined,
             mockCtx,
           );
@@ -534,6 +537,7 @@ describe("LSP Extension", () => {
             "tool-1",
             params,
             undefined,
+            undefined,
             mockCtx,
           );
 
@@ -559,6 +563,7 @@ describe("LSP Extension", () => {
           const result = await diagnosticsToolExecute(
             "tool-1",
             params,
+            undefined,
             undefined,
             mockCtx,
           );
@@ -625,6 +630,7 @@ describe("LSP Extension", () => {
             "tool-1",
             params,
             undefined,
+            undefined,
             mockCtx,
           );
 
@@ -682,6 +688,7 @@ describe("LSP Extension", () => {
           const result = await renameToolExecute(
             "tool-1",
             params,
+            undefined,
             undefined,
             mockCtx,
           );
@@ -741,6 +748,7 @@ describe("LSP Extension", () => {
             "tool-1",
             params,
             undefined,
+            undefined,
             mockCtx,
           );
 
@@ -790,9 +798,9 @@ describe("LSP Extension", () => {
           const result = await definitionToolExecute(
             "tool-1",
             params,
+            abortController.signal,
             undefined,
             mockCtx,
-            abortController.signal,
           );
 
           expect((result.content[0] as TextContent).text).toBe("Cancelled");
@@ -803,7 +811,7 @@ describe("LSP Extension", () => {
 
   describe("Diagnostic Hook Integration", () => {
     let mockCtx: ExtensionContext;
-    let agentEndHandler: (
+    let _agentEndHandler: (
       event: unknown,
       ctx: ExtensionContext,
     ) => Promise<void>;
@@ -819,7 +827,7 @@ describe("LSP Extension", () => {
       } as unknown;
 
       lspExtension(mockPi);
-      agentEndHandler = mockPi.on.mock.calls.find(
+      _agentEndHandler = mockPi.on.mock.calls.find(
         ([event]: [string, unknown]) => event === "agent_end",
       )?.[1];
     });
@@ -1017,7 +1025,7 @@ describe("LSP Extension", () => {
           };
 
           await expect(
-            execute("tool-1", params, undefined, mockCtx),
+            execute("tool-1", params, undefined, undefined, mockCtx),
           ).rejects.toThrow();
         });
       });
@@ -1042,7 +1050,13 @@ describe("LSP Extension", () => {
             newName: "newSymbolName",
           };
 
-          const result = await execute("tool-1", params, undefined, mockCtx);
+          const result = await execute(
+            "tool-1",
+            params,
+            undefined,
+            undefined,
+            mockCtx,
+          );
 
           // When rename returns null, tool returns "No rename available" message
           expect((result.content[0] as TextContent).text).toContain(
@@ -1072,7 +1086,13 @@ describe("LSP Extension", () => {
             receivedResponse: false,
           });
 
-          const result = await execute("tool-1", params, undefined, mockCtx);
+          const result = await execute(
+            "tool-1",
+            params,
+            undefined,
+            undefined,
+            mockCtx,
+          );
 
           // When receivedResponse is false, tool returns cancelled result
           expect((result.content[0] as TextContent).text).toContain(
@@ -1100,7 +1120,7 @@ describe("LSP Extension", () => {
           };
 
           await expect(
-            execute("tool-1", params, undefined, mockCtx),
+            execute("tool-1", params, undefined, undefined, mockCtx),
           ).rejects.toThrow("Connection failed");
         });
       });
@@ -1127,7 +1147,13 @@ describe("LSP Extension", () => {
             error: "File not found",
           });
 
-          const result = await execute("tool-1", params, undefined, mockCtx);
+          const result = await execute(
+            "tool-1",
+            params,
+            undefined,
+            undefined,
+            mockCtx,
+          );
 
           expect(result.details.error).toBe("File not found");
         });
@@ -1190,7 +1216,13 @@ describe("LSP Extension", () => {
           ).mockResolvedValue(mockResult);
 
           const start = Date.now();
-          const result = await execute("tool-1", params, undefined, mockCtx);
+          const result = await execute(
+            "tool-1",
+            params,
+            undefined,
+            undefined,
+            mockCtx,
+          );
           const duration = Date.now() - start;
 
           expect(result.details.items).toHaveLength(100);

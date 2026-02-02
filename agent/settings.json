@@ -1,6 +1,6 @@
 {
   "lastChangelogVersion": "0.51.0",
-  "defaultProvider": "github-copilot",
+  "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.2",
   "theme": "custom",
   "lsp": {

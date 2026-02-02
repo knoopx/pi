@@ -42,9 +42,9 @@ export function lspSymbolTool(api: ExtensionAPI) {
     async execute(
       toolCallId: string,
       params: unknown,
+      signal: AbortSignal | undefined,
       onUpdate: AgentToolUpdateCallback<Record<string, unknown>> | undefined,
       ctx: ExtensionContext,
-      signal?: AbortSignal | undefined,
     ): Promise<AgentToolResult<Record<string, unknown>>> {
       if (signal?.aborted) return cancelledToolResult();
       if (typeof onUpdate === "function") {
