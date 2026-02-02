@@ -1,4 +1,8 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+  AgentToolUpdateCallback,
+} from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 export default function (pi: ExtensionAPI) {
@@ -20,7 +24,13 @@ Supports URLs and local files.`,
       }),
     }),
 
-    async execute(_toolCallId, params, onUpdate, ctx, signal) {
+    async execute(
+      _toolCallId: string,
+      params: unknown,
+      onUpdate: AgentToolUpdateCallback | undefined,
+      ctx: ExtensionContext,
+      signal?: AbortSignal,
+    ) {
       const { source } = params as { source: string };
 
       try {

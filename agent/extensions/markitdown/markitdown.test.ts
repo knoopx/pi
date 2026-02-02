@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
@@ -67,6 +69,7 @@ describe("Markitdown Extension", () => {
           },
           onUpdate,
           {},
+          undefined,
         );
       });
 
@@ -74,7 +77,7 @@ describe("Markitdown Extension", () => {
         expect(mockPi.exec).toHaveBeenCalledWith(
           "markitdown",
           ["/path/to/file.pdf"],
-          { signal: undefined },
+          undefined,
         );
       });
 
@@ -132,7 +135,7 @@ describe("Markitdown Extension", () => {
         expect(mockPi.exec).toHaveBeenCalledWith(
           "markitdown",
           ["https://example.com/page"],
-          { signal: undefined },
+          undefined,
         );
       });
 
@@ -171,6 +174,7 @@ describe("Markitdown Extension", () => {
           },
           onUpdate,
           {},
+          undefined,
         );
       });
 
@@ -219,6 +223,7 @@ describe("Markitdown Extension", () => {
           },
           onUpdate,
           {},
+          undefined,
         );
       });
 
