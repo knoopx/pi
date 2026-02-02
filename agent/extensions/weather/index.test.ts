@@ -9,6 +9,11 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import weatherExtension from "./index";
+import {
+  createMockExtensionAPI,
+  type MockExtensionAPI,
+  type MockTool,
+} from "../../test-utils";
 import { fetchWeather } from "./api";
 import { createWeatherErrorResult, formatWeatherSummary } from "./emoji";
 
@@ -58,19 +63,15 @@ const mockWeatherSummary = "☀️  20°C • Clear sky";
 const mockWeatherSummaryFahrenheit = "☀️  68°F • Clear sky";
 
 describe("Weather Extension", () => {
-  let pi: ExtensionAPI;
+  let mockPi: MockExtensionAPI;
   let context: ExtensionContext;
-  let toolConfig: any;
-  let commandConfig: any;
+  let toolConfig: MockTool;
+  let commandConfig: { description: string; handler: Function };
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    pi = {
-      registerTool: vi.fn(),
-      registerCommand: vi.fn(),
-    } as unknown as ExtensionAPI;
-
+    mockPi = createMockExtensionAPI();
     context = {
       hasUI: true,
       ui: {
@@ -78,10 +79,10 @@ describe("Weather Extension", () => {
       },
     } as unknown as ExtensionContext;
 
-    weatherExtension(pi);
+    weatherExtension(mockPi as ExtensionAPI);
 
-    toolConfig = vi.mocked(pi.registerTool).mock.calls[0][0];
-    commandConfig = vi.mocked(pi.registerCommand).mock.calls[0][1];
+    toolConfig = mockPi.registerTool.mock.calls[0][0] as MockTool;
+    commandConfig = mockPi.registerCommand.mock.calls[0][1];
   });
 
   // ============================================================================
@@ -90,7 +91,7 @@ describe("Weather Extension", () => {
 
   describe("given weather extension registered", () => {
     it("then registers weather tool", () => {
-      expect(pi.registerTool).toHaveBeenCalled();
+      expect(mockPi.registerTool).toHaveBeenCalled();
     });
 
     it("then tool name is 'weather'", () => {
@@ -158,11 +159,11 @@ describe("Weather Extension", () => {
 
   describe("given weather extension commands", () => {
     it("then registers weather command", () => {
-      expect(pi.registerCommand).toHaveBeenCalled();
+      expect(mockPi.registerCommand).toHaveBeenCalled();
     });
 
     it("then command name is 'weather'", () => {
-      expect(vi.mocked(pi.registerCommand).mock.calls[0][0]).toBe("weather");
+      expect(mockPi.registerCommand.mock.calls[0][0]).toBe("weather");
     });
 
     it("then command description is set", () => {
@@ -181,7 +182,7 @@ describe("Weather Extension", () => {
 
   describe("given weather tool execution", () => {
     it("then execute handles valid inputs", async () => {
-      vi.mocked(fetchWeather).mockResolvedValue(mockWeatherDataCelsius);
+      fetchWeather.mockResolvedValue(mockWeatherDataCelsius);
 
       const result = await toolConfig.execute(
         "tool-id",
@@ -196,8 +197,8 @@ describe("Weather Extension", () => {
     });
 
     it("then execute returns formatted weather summary", async () => {
-      vi.mocked(fetchWeather).mockResolvedValue(mockWeatherDataCelsius);
-      vi.mocked(formatWeatherSummary).mockReturnValue(mockWeatherSummary);
+      fetchWeather.mockResolvedValue(mockWeatherDataCelsius);
+      formatWeatherSummary.mockReturnValue(mockWeatherSummary);
 
       const result = await toolConfig.execute(
         "tool-id",
@@ -212,8 +213,8 @@ describe("Weather Extension", () => {
     });
 
     it("then execute handles errors gracefully", async () => {
-      vi.mocked(createWeatherErrorResult).mockReturnValue(mockErrorResult);
-      vi.mocked(fetchWeather).mockRejectedValue(new Error("Weather API error"));
+      createWeatherErrorResult.mockReturnValue(mockErrorResult);
+      fetchWeather.mockRejectedValue(new Error("Weather API error"));
 
       const result = await toolConfig.execute(
         "tool-id",
@@ -228,7 +229,7 @@ describe("Weather Extension", () => {
     });
 
     it("then execute caches results for 5 minutes", async () => {
-      vi.mocked(fetchWeather).mockResolvedValue(mockWeatherDataCelsius);
+      fetchWeather.mockResolvedValue(mockWeatherDataCelsius);
 
       const result1 = await toolConfig.execute(
         "tool-id",
@@ -246,12 +247,12 @@ describe("Weather Extension", () => {
       // Should use cache for second call
       expect(result1).toBeDefined();
       expect(result2).toBeDefined();
-      expect(vi.mocked(fetchWeather)).toHaveBeenCalledTimes(1);
+      expect(fetchWeather).toHaveBeenCalledTimes(1);
     });
 
     it("then execute handles different units", async () => {
-      vi.mocked(fetchWeather).mockResolvedValue(mockWeatherDataFahrenheit);
-      vi.mocked(formatWeatherSummary).mockReturnValue(mockWeatherSummaryFahrenheit);
+      fetchWeather.mockResolvedValue(mockWeatherDataFahrenheit);
+      formatWeatherSummary.mockReturnValue(mockWeatherSummaryFahrenheit);
 
       const result = await toolConfig.execute(
         "tool-id",
@@ -265,7 +266,7 @@ describe("Weather Extension", () => {
     });
 
     it("then execute uses IP-based location when coordinates not provided", async () => {
-      vi.mocked(fetchWeather).mockResolvedValue(mockWeatherDataCelsius);
+      fetchWeather.mockResolvedValue(mockWeatherDataCelsius);
 
       const result = await toolConfig.execute(
         "tool-id",
@@ -285,7 +286,7 @@ describe("Weather Extension", () => {
 
   describe("given weather command execution", () => {
     it("then command handler is callable", async () => {
-      vi.mocked(fetchWeather).mockResolvedValue(mockWeatherDataCelsius);
+      fetchWeather.mockResolvedValue(mockWeatherDataCelsius);
 
       await commandConfig.handler({}, context);
 
@@ -293,7 +294,7 @@ describe("Weather Extension", () => {
     });
 
     it("then command shows cached weather", async () => {
-      vi.mocked(fetchWeather).mockResolvedValue(mockWeatherDataCelsius);
+      fetchWeather.mockResolvedValue(mockWeatherDataCelsius);
 
       await commandConfig.handler({}, context);
 
@@ -301,8 +302,8 @@ describe("Weather Extension", () => {
     });
 
     it("then command handles errors gracefully", async () => {
-      vi.mocked(createWeatherErrorResult).mockReturnValue(mockErrorResult);
-      vi.mocked(fetchWeather).mockRejectedValue(new Error("Weather API error"));
+      createWeatherErrorResult.mockReturnValue(mockErrorResult);
+      fetchWeather.mockRejectedValue(new Error("Weather API error"));
 
       await commandConfig.handler({}, context);
 
