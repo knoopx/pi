@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { createConfirmationDialog } from "./confirmation-dialog";
 
 describe("ConfirmationDialog", () => {
-  const createMockTheme = (): any => ({
+  const createMockTheme = () => ({
     fg: vi.fn((color: string, text: string) => `${color}:${text}`),
     bold: vi.fn((text: string) => `**${text}**`),
   });

@@ -1,5 +1,4 @@
 import { Key, matchesKey } from "@mariozechner/pi-tui";
-import { DynamicBorder } from "@mariozechner/pi-coding-agent";
 import {
   Container,
   Spacer,
@@ -16,12 +15,17 @@ export interface ConfirmationDialogOptions {
   danger?: boolean;
 }
 
+interface Theme {
+  fg: (color: string, text: string) => string;
+  bold: (text: string) => string;
+}
+
 /**
  * Reusable confirmation dialog component for pi framework
  */
 export function createConfirmationDialog(
   options: ConfirmationDialogOptions,
-  theme: any,
+  theme: Theme,
   done: (confirmed: boolean) => void,
 ) {
   const {
@@ -34,10 +38,13 @@ export function createConfirmationDialog(
   } = options;
 
   const container = new Container();
+  const borderChar = danger ? "!" : "─";
   const borderColor = danger ? "error" : "warning";
-  const borderFn = (s: string) => theme.fg(borderColor, s);
 
-  container.addChild(new DynamicBorder(borderFn));
+  // Simple border using text
+  const borderLine = (s: string) => theme.fg(borderColor, s);
+
+  container.addChild(new Text(borderLine(borderChar.repeat(50)), 0, 0));
   container.addChild(new Text(theme.fg(borderColor, theme.bold(title)), 1, 0));
   container.addChild(new Spacer(1));
 
@@ -47,18 +54,18 @@ export function createConfirmationDialog(
   }
 
   if (content) {
-    container.addChild(new DynamicBorder((s: string) => theme.fg("muted", s)));
+    container.addChild(new Text(borderLine(borderChar.repeat(30)), 0, 0));
     container.addChild(
       new Text(wrapTextWithAnsi(theme.fg("text", content), 0).join("\n"), 1, 0),
     );
-    container.addChild(new DynamicBorder((s: string) => theme.fg("muted", s)));
+    container.addChild(new Text(borderLine(borderChar.repeat(30)), 0, 0));
     container.addChild(new Spacer(1));
   }
 
   container.addChild(
     new Text(theme.fg("dim", `${confirmText} • ${cancelText}`), 1, 0),
   );
-  container.addChild(new DynamicBorder(borderFn));
+  container.addChild(new Text(borderLine(borderChar.repeat(50)), 0, 0));
 
   return {
     render: (width: number) => {

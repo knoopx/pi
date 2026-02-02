@@ -22,7 +22,9 @@ describe("ConfigLoader", () => {
         vi.spyOn(configLoader as any, "loadGlobalFile").mockResolvedValue(
           mockGroups,
         );
-        vi.spyOn(configLoader as any, "loadDefaultsFile").mockResolvedValue(null);
+        vi.spyOn(configLoader as any, "loadDefaultsFile").mockResolvedValue(
+          null,
+        );
 
         await configLoader.load();
 
@@ -70,7 +72,9 @@ describe("ConfigLoader", () => {
     describe("when loading configuration", () => {
       it("then returns empty array", async () => {
         vi.spyOn(configLoader as any, "loadGlobalFile").mockResolvedValue(null);
-        vi.spyOn(configLoader as any, "loadDefaultsFile").mockResolvedValue(null);
+        vi.spyOn(configLoader as any, "loadDefaultsFile").mockResolvedValue(
+          null,
+        );
 
         await configLoader.load();
 
@@ -103,7 +107,9 @@ describe("ConfigLoader", () => {
         vi.spyOn(configLoader as any, "loadGlobalFile").mockResolvedValue(
           mockConfig,
         );
-        vi.spyOn(configLoader as any, "loadDefaultsFile").mockResolvedValue(null);
+        vi.spyOn(configLoader as any, "loadDefaultsFile").mockResolvedValue(
+          null,
+        );
 
         await configLoader.load();
         const config = configLoader.getConfig();

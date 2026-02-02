@@ -471,35 +471,35 @@ describe("GroupEditor", () => {
   });
 
   describe("Render Input Mode", () => {
-        it("then shows add form", () => {
-          const editor = new GroupEditor({
-            label: "Test Groups",
-            items: [],
-            theme: createMockTheme(),
-            onSave: vi.fn(),
-            onDone: vi.fn(),
-          });
-          (editor as any).handleInput("a");
-          const output = editor.render(80);
+    it("then shows add form", () => {
+      const editor = new GroupEditor({
+        label: "Test Groups",
+        items: [],
+        theme: createMockTheme(),
+        onSave: vi.fn(),
+        onDone: vi.fn(),
+      });
+      (editor as any).handleInput("a");
+      const output = editor.render(80);
 
-          expect(output).toContain("  New group pattern:");
-          expect(output).toContain("  Enter: submit • Esc: cancel");
-        });
+      expect(output).toContain("  New group pattern:");
+      expect(output).toContain("  Enter: submit • Esc: cancel");
+    });
 
-        it("then shows edit form", () => {
-          const editor = new GroupEditor({
-            label: "Test Groups",
-            items: sampleGroups,
-            theme: createMockTheme(),
-            onSave: vi.fn(),
-            onDone: vi.fn(),
-          });
-          (editor as any).handleInput("p");
-          const output = editor.render(80);
+    it("then shows edit form", () => {
+      const editor = new GroupEditor({
+        label: "Test Groups",
+        items: sampleGroups,
+        theme: createMockTheme(),
+        onSave: vi.fn(),
+        onDone: vi.fn(),
+      });
+      (editor as any).handleInput("p");
+      const output = editor.render(80);
 
-          expect(output).toContain("  Edit group pattern:");
-          expect(output).toContain("  Enter: submit • Esc: cancel");
-        });
+      expect(output).toContain("  Edit group pattern:");
+      expect(output).toContain("  Enter: submit • Esc: cancel");
+    });
   });
 
   describe("Render Rule Editor", () => {
