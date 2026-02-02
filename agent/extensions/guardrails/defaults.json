@@ -102,24 +102,6 @@
     ]
   },
   {
-    "group": "typescript",
-    "pattern": "tsconfig.json",
-    "rules": [
-      {
-        "context": "file_content",
-        "pattern": "any",
-        "action": "block",
-        "reason": "`any` type usage is not allowed; use specific types instead or `unknown`"
-      },
-      {
-        "context": "file_content",
-        "pattern": "@ts-ignore",
-        "action": "block",
-        "reason": "`@ts-ignore` comments are not allowed; fix the underlying type issue instead"
-      }
-    ]
-  },
-  {
     "group": "testing",
     "pattern": "*.test.ts",
     "rules": [
@@ -149,9 +131,21 @@
     "rules": [
       {
         "context": "command",
+        "pattern": "^jj\\s+revert",
+        "action": "block",
+        "reason": "jj revert is blocked."
+      },
+      {
+        "context": "command",
+        "pattern": "^jj\\s+restore",
+        "action": "block",
+        "reason": "jj restore is blocked."
+      },
+      {
+        "context": "command",
         "pattern": "^jj\\s+(?:diffedit|simplify|forget|undo|recover)",
         "action": "block",
-        "reason": "jj diffedit and related commands are blocked. Use jj restore instead."
+        "reason": "jj diffedit and related commands are blocked."
       },
       {
         "context": "command",
