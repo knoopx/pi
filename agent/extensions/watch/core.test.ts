@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as core from "./core";
-import type { TriggerReference } from "./types";
 
 // ============================================
 // Mock Types and Functions

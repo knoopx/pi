@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import * as chokidar from "chokidar";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as core from "./core";
 import { PIWatcher } from "./watcher";
 import type {
