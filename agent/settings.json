@@ -1,7 +1,7 @@
 {
-  "lastChangelogVersion": "0.50.9",
-  "defaultProvider": "github-copilot",
-  "defaultModel": "grok-code-fast-1",
+  "lastChangelogVersion": "0.51.0",
+  "defaultProvider": "zai-coding-plan",
+  "defaultModel": "glm-4.7",
   "theme": "custom",
   "lsp": {
     "hookMode": "edit_write"
