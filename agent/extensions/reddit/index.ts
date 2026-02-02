@@ -254,7 +254,9 @@ function parseRedditJson(
     const subreddit = firstPost?.subreddit || "unknown";
 
     // Parse posts
-    const posts: RedditPost[] = (response as RedditApiResponse).data.children.map((child: RedditApiChild) => {
+    const posts: RedditPost[] = (
+      response as RedditApiResponse
+    ).data.children.map((child: RedditApiChild) => {
       const postData = child.data;
       const createdUtc = postData.created_utc * 1000; // Convert to milliseconds
       const published = new Date(createdUtc).toISOString();
