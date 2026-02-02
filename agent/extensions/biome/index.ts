@@ -84,7 +84,7 @@ export default function (pi: ExtensionAPI) {
         const result = await pi.exec("biome", ["format", "--write", target]);
 
         if (result.code === 0) {
-          ctx.ui.notify(`Biome formatted: ${target}`, "success");
+          ctx.ui.notify(`Biome formatted: ${target}`, "info");
         } else {
           ctx.ui.notify(
             `Biome formatting failed: ${result.stderr || result.stdout || "Unknown error"}`,
