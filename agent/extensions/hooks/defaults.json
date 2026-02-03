@@ -1,6 +1,6 @@
 [
   {
-    "group": "prettier-format",
+    "group": "javascript",
     "pattern": "*",
     "hooks": [
       {
@@ -14,23 +14,17 @@
     ]
   },
   {
-    "group": "typescript-typecheck",
+    "group": "typescript",
     "pattern": "tsconfig.json",
     "hooks": [
       {
-        "event": "turn_end",
+        "event": "tool_result",
         "command": "bunx tsc --noEmit 2>&1 | head -50",
         "timeout": 60000,
         "notify": true
-      }
-    ]
-  },
-  {
-    "group": "eslint-check",
-    "pattern": "eslint.config.*",
-    "hooks": [
+      },
       {
-        "event": "turn_end",
+        "event": "tool_result",
         "command": "bunx eslint . --max-warnings 0 2>&1 | head -50",
         "timeout": 60000,
         "notify": true
@@ -38,16 +32,74 @@
     ]
   },
   {
-    "group": "pyright-check",
+    "group": "python",
     "pattern": "*",
     "hooks": [
       {
-        "event": "turn_end",
+        "event": "tool_result",
+        "context": "file_name",
+        "pattern": "\\.py$",
+        "command": "ruff format \"${file}\" && ruff check --fix \"${file}\" 2>&1 | head -50",
+        "timeout": 10000,
+        "notify": false
+      },
+      {
+        "event": "tool_result",
         "context": "file_name",
         "pattern": "\\.py$",
         "command": "pyright 2>&1 | head -50",
         "timeout": 60000,
         "notify": true
+      }
+    ]
+  },
+  {
+    "group": "shell",
+    "pattern": "*",
+    "hooks": [
+      {
+        "event": "tool_result",
+        "context": "file_name",
+        "pattern": "\\.(sh|bash)$",
+        "command": "shfmt -w \"${file}\"",
+        "timeout": 5000,
+        "notify": false
+      }
+    ]
+  },
+  {
+    "group": "rust",
+    "pattern": "*",
+    "hooks": [
+      {
+        "event": "tool_result",
+        "context": "file_name",
+        "pattern": "\\.rs$",
+        "command": "rustfmt \"${file}\"",
+        "timeout": 10000,
+        "notify": false
+      },
+      {
+        "event": "tool_result",
+        "context": "file_name",
+        "pattern": "\\.rs$",
+        "command": "cargo check 2>&1 | head -50",
+        "timeout": 120000,
+        "notify": true
+      }
+    ]
+  },
+  {
+    "group": "nix",
+    "pattern": "*",
+    "hooks": [
+      {
+        "event": "tool_result",
+        "context": "file_name",
+        "pattern": "\\.nix$",
+        "command": "alejandra -q \"${file}\"",
+        "timeout": 5000,
+        "notify": false
       }
     ]
   }
