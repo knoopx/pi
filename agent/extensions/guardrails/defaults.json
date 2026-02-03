@@ -7,13 +7,13 @@
         "context": "command",
         "pattern": "^find",
         "action": "block",
-        "reason": "use `fd` instead"
+        "reason": "use `fd` instead. Examples: `fd pattern`, `fd -e ts`, `fd -t f name`"
       },
       {
         "context": "command",
         "pattern": "^grep",
         "action": "block",
-        "reason": "use `rg` (ripgrep) instead"
+        "reason": "use `rg` (ripgrep) instead. Examples: `rg pattern`, `rg -t ts pattern`, `rg -l pattern`"
       }
     ]
   },
@@ -25,7 +25,7 @@
         "context": "command",
         "pattern": "^grep.+(require|import)*",
         "action": "block",
-        "reason": "use `ast-grep` instead"
+        "reason": "use `ast-grep` for AST-aware code search. Example: `ast-grep run --pattern 'import $NAME from $PATH' --lang typescript .` (see skill: ast-grep)"
       }
     ]
   },
@@ -37,11 +37,11 @@
         "context": "command",
         "pattern": "^npm",
         "action": "block",
-        "reason": "use `bun` instead"
+        "reason": "use `bun` instead. Examples: `bun add <pkg>`, `bun remove <pkg>`, `bun run <script>`, `bun install` (see skill: bun)"
       }
     ]
   },
-    {
+  {
     "group": "vitest",
     "pattern": "bun.lock",
     "rules": [
@@ -49,25 +49,25 @@
         "context": "command",
         "pattern": "^bun test",
         "action": "block",
-        "reason": "`bun test` is bun testing framework, not vitest. use appropriate vitest commands instead"
+        "reason": "`bun test` uses bun's test runner, not vitest. Use: `bun vitest run`, `bun vitest run -t 'pattern'`, or `bun vitest run --coverage` (see skill: vitest)"
       }
     ]
   },
   {
     "group": "uv",
-    "pattern": "requirements.txt",
+    "pattern": "pyproject.toml",
     "rules": [
       {
         "context": "command",
         "pattern": "^python",
         "action": "block",
-        "reason": "use `uv run` instead"
+        "reason": "use `uv run` instead. Examples: `uv run python script.py`, `uv run -m pytest`, `uv run --with requests script.py` (see skill: uv)"
       },
       {
         "context": "command",
         "pattern": "^pip",
         "action": "block",
-        "reason": "use `uv pip` instead"
+        "reason": "use `uv` instead. Examples: `uv add <pkg>`, `uv add --dev <pkg>`, `uv remove <pkg>`, `uv sync` (see skill: uv)"
       }
     ]
   },
@@ -77,9 +77,9 @@
     "rules": [
       {
         "context": "command",
-        "pattern": "^nix\\s+run\\s+\\.\\/",
+        "pattern": "^nix\\s+(run|build|develop)\\s+\\.",
         "action": "block",
-        "reason": "use nix run path:./my-flake#output instead"
+        "reason": "prefix local flake paths with `path:` to ensure all files are included. Use: `nix run path:.`, `nix build path:.#pkg`, `nix develop path:. --command <cmd>` (see skill: nix-flakes)"
       }
     ]
   },
@@ -91,7 +91,7 @@
         "context": "command",
         "pattern": "^(sudo|su)",
         "action": "block",
-        "reason": "agents should instruct system administrators to perform privileged operations"
+        "reason": "agents cannot perform privileged operations. Instruct the user to run the command manually or use `nh os switch` for NixOS system changes (see skill: nh)"
       }
     ]
   },
@@ -103,7 +103,7 @@
         "context": "file_name",
         "pattern": "(package-lock\\.json|bun\\.lockb|yarn\\.lock|pnpm-lock\\.yaml|poetry\\.lock|uv\\.lock|Cargo\\.lock|Gemfile\\.lock|flake\\.lock)",
         "action": "block",
-        "reason": "auto-generated lock files should not be edited directly"
+        "reason": "lock files are auto-generated. Use package manager commands: `bun install`, `uv sync`, `nix flake update`, `cargo update` (see skills: bun, uv, nix-flakes)"
       }
     ]
   },
@@ -115,19 +115,19 @@
         "context": "file_content",
         "pattern": "\\.skip\\(|describe\\.skip|xdescribe|xit\\(",
         "action": "block",
-        "reason": "do not skip tests, fix or remove them instead"
+        "reason": "skipped tests hide problems. Fix the test, delete it if obsolete, or use `it.todo('description')` for planned tests (see skill: vitest)"
       }
     ]
   },
   {
     "group": "linting",
-    "pattern": ".eslintrc.json",
+    "pattern": "eslint.config.js",
     "rules": [
       {
         "context": "file_content",
         "pattern": "eslint-disable",
         "action": "block",
-        "reason": "ESLint disable comments are not allowed; fix linting issues instead"
+        "reason": "fix linting issues instead of disabling rules. Run `eslint --fix .` to auto-fix, or refactor code to satisfy the rule (see skill: eslint)"
       }
     ]
   },
@@ -139,55 +139,55 @@
         "context": "command",
         "pattern": "^jj\\s+revert",
         "action": "block",
-        "reason": "jj revert is blocked."
+        "reason": "use `jj undo` to revert the last operation, or `jj abandon` to discard current change (see skill: jujutsu)"
       },
       {
         "context": "command",
         "pattern": "^jj\\s+restore",
         "action": "block",
-        "reason": "jj restore is blocked."
+        "reason": "use `jj edit <change-id>` to switch to a change, or `jj new --before @` to insert changes (see skill: jujutsu)"
       },
       {
         "context": "command",
         "pattern": "^jj\\s+(?:diffedit|simplify|forget|undo|recover)",
         "action": "block",
-        "reason": "jj diffedit and related commands are blocked."
+        "reason": "these commands open editors or are destructive. Use `jj st`, `jj diff`, `jj log` to inspect, then `jj abandon` or `jj edit` (see skill: jujutsu)"
       },
       {
         "context": "command",
-        "pattern": "^jj\\s+squash(?:(?!-m).)*",
+        "pattern": "^jj\\s+squash(?:(?!-m).)*$",
         "action": "block",
-        "reason": "jj squash without -m opens an editor. Use: jj squash -m \"message\""
+        "reason": "jj squash without -m opens an editor. Use: `jj squash -m 'message'` or `jj absorb` to auto-move changes (see skill: jujutsu)"
       },
       {
         "context": "command",
-        "pattern": "^jj\\s+split(?:(?!-m).)*",
+        "pattern": "^jj\\s+split(?:(?!-m).)*$",
         "action": "block",
-        "reason": "jj split without -m opens an editor. Use: jj split -m \"message\" <files>"
+        "reason": "jj split without -m opens an editor. Use: `jj split -m 'first part' <files>` to split non-interactively (see skill: jujutsu)"
       },
       {
         "context": "command",
-        "pattern": "^jj\\s+resolve(?:(?!--list).)*",
+        "pattern": "^jj\\s+resolve(?!.*--list).*$",
         "action": "block",
-        "reason": "jj resolve opens a merge tool. Use jj resolve --list to view conflicts."
+        "reason": "jj resolve opens a merge tool. Use `jj resolve --list` to view conflicts, then edit files directly (see skill: jujutsu)"
       },
       {
         "context": "command",
-        "pattern": "^jj\\s+describe(?:(?!-m).)*",
+        "pattern": "^jj\\s+describe(?:(?!-m).)*$",
         "action": "block",
-        "reason": "jj describe without -m opens an editor. Use: jj describe -m \"message\""
+        "reason": "jj describe without -m opens an editor. Use: `jj describe -m 'type(scope): description'` (see skill: jujutsu)"
       },
       {
         "context": "command",
-        "pattern": "^jj\\s+commit(?:(?!-m).)*",
+        "pattern": "^jj\\s+commit(?:(?!-m).)*$",
         "action": "block",
-        "reason": "jj commit without -m opens an editor. Use: jj commit -m \"message\""
+        "reason": "jj commit without -m opens an editor. Use: `jj commit -m 'type(scope): description'` (see skill: jujutsu)"
       },
       {
         "context": "command",
-        "pattern": "^jj\\s+-i|--interactive|--tool(?:(?!.*(?:--help|-h)).)*",
+        "pattern": "^jj\\s+.*(-i|--interactive|--tool)(?!.*--help).*$",
         "action": "block",
-        "reason": "Interactive jj command blocked (-i/--interactive/--tool opens a diff editor)."
+        "reason": "interactive jj commands open editors. Use non-interactive alternatives: `jj absorb`, `jj squash -m`, `jj split -m` (see skill: jujutsu)"
       }
     ]
   }

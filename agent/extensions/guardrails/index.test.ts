@@ -228,7 +228,7 @@ describe("Guardrails Extension", () => {
 
           expect(result).toEqual({
             block: true,
-            reason: "use `fd` instead",
+            reason: "Blocked: use `fd` instead",
           });
           expect(mockCtx.ui.notify).toHaveBeenCalledWith(
             "Blocked: use `fd` instead",
@@ -383,7 +383,8 @@ describe("Guardrails Extension", () => {
 
           expect(result).toEqual({
             block: true,
-            reason: "auto-generated lock files should not be edited directly",
+            reason:
+              "Blocked: auto-generated lock files should not be edited directly",
           });
         });
       });
@@ -476,7 +477,7 @@ describe("Guardrails Extension", () => {
 
           expect(result).toEqual({
             block: true,
-            reason: "`@ts-ignore` comments are not allowed",
+            reason: "Blocked: `@ts-ignore` comments are not allowed",
           });
         });
       });
@@ -566,7 +567,7 @@ describe("Guardrails Extension", () => {
 
           expect(result).toEqual({
             block: true,
-            reason: "User denied dangerous operation",
+            reason: "Blocked: User denied dangerous operation",
           });
         });
       });
