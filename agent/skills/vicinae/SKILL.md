@@ -88,7 +88,11 @@ export default function MyCommand() {
         icon={Icon.Document}
         actions={
           <ActionPanel>
-            <Action icon={Icon.Eye} title="View" onAction={() => console.log("viewed")} />
+            <Action
+              icon={Icon.Eye}
+              title="View"
+              onAction={() => console.log("viewed")}
+            />
           </ActionPanel>
         }
       />
@@ -155,7 +159,11 @@ function ListView() {
       icon={Icon.Document}
       actions={
         <ActionPanel>
-          <Action icon={Icon.Eye} title="View" onAction={() => push(<DetailView />)} />
+          <Action
+            icon={Icon.Eye}
+            title="View"
+            onAction={() => push(<DetailView />)}
+          />
         </ActionPanel>
       }
     />

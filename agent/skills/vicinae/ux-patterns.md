@@ -11,11 +11,7 @@ Use `List.actions` for actions that apply globally (create, refresh):
   searchBarPlaceholder="Search items..."
   actions={
     <ActionPanel>
-      <Action
-        icon={Icon.Plus}
-        title="Create New"
-        onAction={handleCreate}
-      />
+      <Action icon={Icon.Plus} title="Create New" onAction={handleCreate} />
       <Action
         icon={Icon.RotateClockwise}
         title="Refresh"
@@ -82,6 +78,7 @@ Use `List.Dropdown` as `searchBarAccessory` to filter by category:
 ```
 
 **Key points:**
+
 - Only show dropdown if more than 1 option
 - Use `tooltip` to describe the filter
 
@@ -110,12 +107,12 @@ Use `List.EmptyView` for empty states. It supports its own `actions` prop:
 
 ### EmptyView Props
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `title` | `string?` | Main heading text |
-| `description` | `string?` | Secondary description |
-| `icon` | `ImageLike?` | Icon to display |
-| `actions` | `ReactNode?` | ActionPanel for empty state |
+| Prop          | Type         | Description                 |
+| ------------- | ------------ | --------------------------- |
+| `title`       | `string?`    | Main heading text           |
+| `description` | `string?`    | Secondary description       |
+| `icon`        | `ImageLike?` | Icon to display             |
+| `actions`     | `ReactNode?` | ActionPanel for empty state |
 
 **Note:** Never use a fake `List.Item` with "No Items" title - always use `List.EmptyView`.
 
@@ -137,30 +134,34 @@ Show item count in section title:
 <ActionPanel>
   <Action icon={Icon.Eye} title="View" onAction={handleView} />
   <Action.OpenInBrowser icon={Icon.Link} title="Open" url="https://..." />
-  <Action.CopyToClipboard icon={Icon.CopyClipboard} title="Copy" content={text} />
+  <Action.CopyToClipboard
+    icon={Icon.CopyClipboard}
+    title="Copy"
+    content={text}
+  />
 </ActionPanel>
 ```
 
 ### Common Icon Mappings
 
-| Action Type | Icon |
-|-------------|------|
-| Create/Add | `Icon.Plus` |
-| Refresh | `Icon.RotateClockwise` |
-| View/Open | `Icon.Eye` |
-| Open URL | `Icon.Link` |
-| Copy | `Icon.CopyClipboard` |
-| Edit | `Icon.Pencil` |
-| Delete/Remove | `Icon.Trash` |
-| Download | `Icon.Download` |
-| Star/Favorite | `Icon.Star` |
-| Archive | `Icon.Tray` |
-| Folder | `Icon.Folder` |
-| Email | `Icon.Envelope` |
-| Play/Start | `Icon.Play` |
-| Stop | `Icon.Stop` |
-| Pause | `Icon.Pause` |
-| Restart | `Icon.ArrowClockwise` |
+| Action Type   | Icon                   |
+| ------------- | ---------------------- |
+| Create/Add    | `Icon.Plus`            |
+| Refresh       | `Icon.RotateClockwise` |
+| View/Open     | `Icon.Eye`             |
+| Open URL      | `Icon.Link`            |
+| Copy          | `Icon.CopyClipboard`   |
+| Edit          | `Icon.Pencil`          |
+| Delete/Remove | `Icon.Trash`           |
+| Download      | `Icon.Download`        |
+| Star/Favorite | `Icon.Star`            |
+| Archive       | `Icon.Tray`            |
+| Folder        | `Icon.Folder`          |
+| Email         | `Icon.Envelope`        |
+| Play/Start    | `Icon.Play`            |
+| Stop          | `Icon.Stop`            |
+| Pause         | `Icon.Pause`           |
+| Restart       | `Icon.ArrowClockwise`  |
 
 ## Keyboard Shortcuts
 
@@ -175,10 +176,12 @@ shortcut={{ modifiers: ["ctrl"], key: "s" }}  // Stop/Start
 ```
 
 **When to add shortcuts:**
+
 - Refresh action (if data can change)
 - Destructive actions users might repeat (bulk delete)
 
 **Don't add shortcuts for:**
+
 - Navigation actions (View, Open)
 - Copy actions
 - Edit actions
@@ -277,7 +280,7 @@ Group related actions in sections:
 ## Best Practices
 
 - **Every action needs an icon**: No exceptions
-- **Always add searchBarPlaceholder**: Improves discoverability  
+- **Always add searchBarPlaceholder**: Improves discoverability
 - **Shortcuts are optional**: Only for frequent actions (refresh, delete)
 - **Use mnemonics**: r=refresh, x=delete, s=start/stop, c=copy
 - **Toggle over pairs**: Single toggle instead of on/off actions

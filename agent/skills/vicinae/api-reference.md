@@ -103,9 +103,16 @@ Use `isShowingDetail` to show item details in a side panel:
   metadata={
     <Detail.Metadata>
       <Detail.Metadata.Label title="Status" text="Active" />
-      <Detail.Metadata.Label title="Type" text={{ value: "Important", color: "#ef4444" }} />
+      <Detail.Metadata.Label
+        title="Type"
+        text={{ value: "Important", color: "#ef4444" }}
+      />
       <Detail.Metadata.Separator />
-      <Detail.Metadata.Link title="Website" text="example.com" target="https://example.com" />
+      <Detail.Metadata.Link
+        title="Website"
+        text="example.com"
+        target="https://example.com"
+      />
       <Detail.Metadata.Separator />
       <Detail.Metadata.TagList title="Tags">
         <Detail.Metadata.TagList.Item text="Tag 1" color="#3b82f6" />
@@ -119,13 +126,13 @@ Use `isShowingDetail` to show item details in a side panel:
 
 #### Detail.Metadata Components
 
-| Component | Props | Description |
-|-----------|-------|-------------|
-| `Label` | `title`, `text`, `icon?` | Key-value label |
-| `Link` | `title`, `text`, `target` | Clickable link |
-| `Separator` | (none) | Visual divider |
-| `TagList` | `title`, `children` | List of colored tags |
-| `TagList.Item` | `text`, `color?` | Individual tag |
+| Component      | Props                     | Description          |
+| -------------- | ------------------------- | -------------------- |
+| `Label`        | `title`, `text`, `icon?`  | Key-value label      |
+| `Link`         | `title`, `text`, `target` | Clickable link       |
+| `Separator`    | (none)                    | Visual divider       |
+| `TagList`      | `title`, `children`       | List of colored tags |
+| `TagList.Item` | `text`, `color?`          | Individual tag       |
 
 ### Form
 
@@ -133,7 +140,10 @@ Use `isShowingDetail` to show item details in a side panel:
 <Form
   actions={
     <ActionPanel>
-      <Action.SubmitForm title="Save" onSubmit={(values) => console.log(values)} />
+      <Action.SubmitForm
+        title="Save"
+        onSubmit={(values) => console.log(values)}
+      />
     </ActionPanel>
   }
 >
@@ -168,7 +178,11 @@ Use `isShowingDetail` to show item details in a side panel:
   <ActionPanel.Section>
     <Action icon={Icon.Eye} title="View" onAction={handleAction} />
     <Action.OpenInBrowser icon={Icon.Link} title="Open" url="https://..." />
-    <Action.CopyToClipboard icon={Icon.CopyClipboard} title="Copy" content={text} />
+    <Action.CopyToClipboard
+      icon={Icon.CopyClipboard}
+      title="Copy"
+      content={text}
+    />
   </ActionPanel.Section>
   <ActionPanel.Section title="Manage">
     <Action
@@ -196,7 +210,11 @@ shortcut={{ modifiers: ["ctrl"], key: "r" }}  // Refresh
 
 ```typescript
 await showToast({ title: "Success", style: Toast.Style.Success });
-await showToast({ title: "Error", message: "Details", style: Toast.Style.Failure });
+await showToast({
+  title: "Error",
+  message: "Details",
+  style: Toast.Style.Failure,
+});
 await showHUD("Action completed");
 ```
 
@@ -211,9 +229,9 @@ const text = await Clipboard.readText();
 ### System
 
 ```typescript
-await open("https://...");    // Open URL/file
-await closeMainWindow();      // Close launcher
-await popToRoot();            // Navigate to root
+await open("https://..."); // Open URL/file
+await closeMainWindow(); // Close launcher
+await popToRoot(); // Navigate to root
 ```
 
 ### Navigation
@@ -227,29 +245,29 @@ pop();
 ## Icons
 
 ```tsx
-Icon.Plus             // Create/Add
-Icon.RotateClockwise  // Refresh
-Icon.Eye              // View
-Icon.Link             // Open URL
-Icon.CopyClipboard    // Copy
-Icon.Pencil           // Edit
-Icon.Trash            // Delete
-Icon.Download         // Download
-Icon.Star             // Favorite
-Icon.Tray             // Archive
-Icon.Folder           // Folder
-Icon.Envelope         // Email
-Icon.CheckCircle      // Complete
-Icon.Circle           // Incomplete
-Icon.Play             // Start
-Icon.Stop             // Stop
-Icon.Pause            // Pause
-Icon.ArrowClockwise   // Restart
-Icon.BlankDocument    // File/Document
-Icon.Person           // Contact
-Icon.Calendar         // Calendar
-Icon.BarChart         // Spreadsheet
-Icon.Image            // Image
+Icon.Plus; // Create/Add
+Icon.RotateClockwise; // Refresh
+Icon.Eye; // View
+Icon.Link; // Open URL
+Icon.CopyClipboard; // Copy
+Icon.Pencil; // Edit
+Icon.Trash; // Delete
+Icon.Download; // Download
+Icon.Star; // Favorite
+Icon.Tray; // Archive
+Icon.Folder; // Folder
+Icon.Envelope; // Email
+Icon.CheckCircle; // Complete
+Icon.Circle; // Incomplete
+Icon.Play; // Start
+Icon.Stop; // Stop
+Icon.Pause; // Pause
+Icon.ArrowClockwise; // Restart
+Icon.BlankDocument; // File/Document
+Icon.Person; // Contact
+Icon.Calendar; // Calendar
+Icon.BarChart; // Spreadsheet
+Icon.Image; // Image
 ```
 
 ## Common Import Pattern
@@ -345,7 +363,11 @@ export default function Command() {
           actions={
             <ActionPanel>
               <ActionPanel.Section>
-                <Action.OpenInBrowser icon={Icon.Link} title="Open" url={item.url} />
+                <Action.OpenInBrowser
+                  icon={Icon.Link}
+                  title="Open"
+                  url={item.url}
+                />
                 <Action.CopyToClipboard
                   icon={Icon.CopyClipboard}
                   title="Copy Link"
