@@ -386,8 +386,8 @@ Returns a list of matching bookmarks with details.`,
     async execute(
       _toolCallId: string,
       params: SearchBookmarksParamsType,
-      _signal: AbortSignal,
-      _onUpdate: AgentToolUpdateCallback,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ): Promise<AgentToolResult<unknown>> {
       try {
@@ -459,8 +459,8 @@ Returns a list of matching history entries with details.`,
     async execute(
       _toolCallId: string,
       params: SearchHistoryParamsType,
-      _signal: AbortSignal,
-      _onUpdate: AgentToolUpdateCallback,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ): Promise<AgentToolResult<unknown>> {
       try {

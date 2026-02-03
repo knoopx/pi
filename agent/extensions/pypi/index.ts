@@ -99,9 +99,9 @@ Returns matching packages with metadata.`,
     async execute(
       _toolCallId: string,
       params: SearchPyPIPackagesParamsType,
-      _onUpdate: AgentToolUpdateCallback,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
-      _signal: AbortSignal,
     ) {
       const { query, limit = 10 } = params;
 
@@ -226,9 +226,9 @@ Shows comprehensive package details from PyPI.`,
     async execute(
       _toolCallId: string,
       params: PyPIPackageInfoParamsType,
-      _onUpdate: AgentToolUpdateCallback,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
-      _signal: AbortSignal,
     ) {
       const { package: packageName } = params;
 

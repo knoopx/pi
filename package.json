@@ -21,10 +21,10 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@mariozechner/pi-agent-core": "^0.50.7",
-    "@mariozechner/pi-ai": "^0.50.7",
-    "@mariozechner/pi-coding-agent": "^0.50.7",
-    "@mariozechner/pi-tui": "^0.50.7",
+    "@mariozechner/pi-agent-core": "^0.51.3",
+    "@mariozechner/pi-ai": "^0.51.3",
+    "@mariozechner/pi-coding-agent": "^0.51.3",
+    "@mariozechner/pi-tui": "^0.51.3",
     "@sinclair/typebox": "^0.34.48",
     "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^12.6.2",

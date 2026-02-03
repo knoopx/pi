@@ -323,7 +323,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
       ),
     }),
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
+    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
       try {
         const states = await haFetch<HAState[]>("/states");
         let filtered = states;
@@ -406,7 +406,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
       }),
     }),
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
+    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
       try {
         const state = await haFetch<HAState>(`/states/${params.entity_id}`);
 
@@ -454,7 +454,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
       }),
     }),
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
+    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
       try {
         const domain = params.entity_id.split(".")[0];
         await haFetch<HAServiceResponse[]>(`/services/${domain}/toggle`, {
@@ -551,7 +551,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
       ),
     }),
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
+    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
       try {
         const domain = params.entity_id.split(".")[0];
         const serviceData: Record<string, unknown> = {
@@ -617,7 +617,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
       entity_id: Type.String({ description: "Entity ID to turn off" }),
     }),
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
+    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
       try {
         const domain = params.entity_id.split(".")[0];
         await haFetch<HAServiceResponse[]>(`/services/${domain}/turn_off`, {
@@ -668,7 +668,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
       ),
     }),
 
-    async execute(_toolCallId, params, _onUpdate, _ctx, _signal) {
+    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
       try {
         const result = await haFetch<HAServiceResponse[]>(
           `/services/${params.domain}/${params.service}`,

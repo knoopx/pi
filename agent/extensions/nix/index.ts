@@ -471,9 +471,9 @@ Returns detailed package information from nixpkgs.`,
     async execute(
       _toolCallId: string,
       params: SearchQueryParamsType,
-      _onUpdate: AgentToolUpdateCallback,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
-      _signal: AbortSignal,
     ) {
       const { query } = params;
 
@@ -525,9 +525,9 @@ Returns NixOS configuration option details.`,
     async execute(
       _toolCallId: string,
       params: SearchQueryParamsType,
-      _onUpdate: AgentToolUpdateCallback,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
-      _signal: AbortSignal,
     ) {
       const { query } = params;
 
@@ -575,9 +575,9 @@ Returns Home Manager configuration options.`,
     async execute(
       _toolCallId: string,
       params: SearchQueryParamsType,
-      _onUpdate: AgentToolUpdateCallback,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
-      _signal: AbortSignal,
     ) {
       const { query } = params;
 

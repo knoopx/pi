@@ -69,8 +69,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { parentId?: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -111,8 +111,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { fileId: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -153,8 +153,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { query: string; maxResults?: number },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -203,8 +203,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { query?: string; maxResults?: number },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -248,8 +248,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { messageId: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -292,8 +292,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { calendarId?: string; maxResults?: number },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -338,8 +338,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { calendarId: string; eventId: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -387,8 +387,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { query?: string; maxResults?: number },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -436,8 +436,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { maxResults?: number },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -482,8 +482,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { maxResults?: number },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -526,8 +526,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { resourceName: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -570,8 +570,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { query: string; maxResults?: number },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -614,8 +614,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { maxResults?: number },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -659,8 +659,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { tasklistId: string; maxResults?: number },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -714,8 +714,8 @@ Use this to:
         notes?: string;
         due?: string;
       },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -778,8 +778,8 @@ Use this to:
         due?: string;
         status?: string;
       },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -833,8 +833,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { tasklistId: string; taskId: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -879,8 +879,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { tasklistId: string; taskId: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -925,8 +925,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { tasklistId: string; taskId: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -967,8 +967,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { tasklistId: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -1012,8 +1012,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { maxResults?: number },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -1057,8 +1057,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { query: string; maxResults?: number },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -1101,8 +1101,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { noteId: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -1150,8 +1150,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { attachmentName: string; mimeType?: string; out?: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -1196,8 +1196,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { docId: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -1240,8 +1240,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { docId: string; format?: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -1286,8 +1286,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { title: string; content?: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -1326,8 +1326,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { docId: string; title: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -1365,8 +1365,8 @@ Use this to:
     async execute(
       _toolCallId,
       params: { docId: string },
-      signal,
-      _onUpdate: AgentToolUpdateCallback,
+      signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       try {

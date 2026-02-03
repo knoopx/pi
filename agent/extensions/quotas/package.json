@@ -7,6 +7,6 @@
     "extensions": ["./index.ts"]
   },
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "^0.51.0"
+    "@mariozechner/pi-coding-agent": "^0.51.3"
   }
 }

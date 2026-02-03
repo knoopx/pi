@@ -7,8 +7,8 @@
     "extensions": ["./index.ts"]
   },
   "dependencies": {
-    "@mariozechner/pi-ai": "^0.51.0",
-    "@mariozechner/pi-coding-agent": "^0.51.0",
+    "@mariozechner/pi-ai": "^0.51.3",
+    "@mariozechner/pi-coding-agent": "^0.51.3",
     "@sinclair/typebox": "^0.34.48",
     "axios": "^1.13.4",
     "cheerio": "^1.2.0"

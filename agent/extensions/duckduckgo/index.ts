@@ -352,8 +352,8 @@ Returns search results with titles, URLs, and descriptions.`,
     async execute(
       _toolCallId: string,
       params: SearchDuckDuckGoParamsType,
-      _signal: AbortSignal,
-      _onUpdate: AgentToolUpdateCallback,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
     ) {
       const { query, limit = 10 } = params;

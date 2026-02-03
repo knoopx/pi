@@ -7,17 +7,20 @@ import type { AgentToolResult } from "@mariozechner/pi-coding-agent";
 
 /**
  * Mock tool interface for testing extension tool registration
+ * Execute signature: (toolCallId, params, signal, onUpdate, ctx)
  */
 export interface MockTool {
 	name: string;
 	label?: string;
 	description?: string;
 	execute: (
-		id: string,
+		toolCallId: string,
 		params: unknown,
-		signal?: AbortSignal,
-		onUpdate?: (update: AgentToolResult<Record<string, unknown>>) => void,
-		ctx?: unknown,
+		signal: AbortSignal | undefined,
+		onUpdate:
+			| ((update: AgentToolResult<Record<string, unknown>>) => void)
+			| undefined,
+		ctx: unknown,
 	) => Promise<AgentToolResult<Record<string, unknown>>>;
 }
 
@@ -56,6 +59,7 @@ export interface MockExtensionAPI {
 	getThinkingLevel: ReturnType<typeof vi.fn>;
 	setThinkingLevel: ReturnType<typeof vi.fn>;
 	registerProvider: ReturnType<typeof vi.fn>;
+	getCommands: ReturnType<typeof vi.fn>;
 	events: unknown;
 	[key: string]: unknown;
 }
@@ -103,6 +107,7 @@ export function createMockExtensionAPI(): MockExtensionAPI {
 		getThinkingLevel: vi.fn(),
 		setThinkingLevel: vi.fn(),
 		registerProvider: vi.fn(),
+		getCommands: vi.fn(),
 		events: {},
 	};
 }

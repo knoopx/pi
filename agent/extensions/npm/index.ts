@@ -101,9 +101,9 @@ Returns matching packages with metadata.`,
     async execute(
       _toolCallId: string,
       params: SearchNpmPackagesParamsType,
-      _onUpdate: AgentToolUpdateCallback,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
-      _signal: AbortSignal,
     ) {
       const { query, size = 10 } = params;
       return await searchNpmPackages(query, size);
@@ -127,9 +127,9 @@ Returns detailed package metadata.`,
     async execute(
       _toolCallId: string,
       params: GetNpmPackageInfoParamsType,
-      _onUpdate: AgentToolUpdateCallback,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
-      _signal: AbortSignal,
     ) {
       const { package: pkg } = params;
       return await getNpmPackageInfo(pkg);
@@ -153,9 +153,9 @@ Returns all published package versions.`,
     async execute(
       _toolCallId: string,
       params: GetNpmPackageVersionsParamsType,
-      _onUpdate: AgentToolUpdateCallback,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback | undefined,
       _ctx: ExtensionContext,
-      _signal: AbortSignal,
     ) {
       const { package: pkg } = params;
       return await getNpmPackageVersions(pkg);
