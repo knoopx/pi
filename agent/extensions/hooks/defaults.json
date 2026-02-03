@@ -1,0 +1,54 @@
+[
+  {
+    "group": "prettier-format",
+    "pattern": "*",
+    "hooks": [
+      {
+        "event": "tool_result",
+        "context": "file_name",
+        "pattern": "\\.(js|jsx|ts|tsx|json|css|scss|less|html|md|yaml|yml)$",
+        "command": "bunx prettier --write \"${file}\"",
+        "timeout": 5000,
+        "notify": false
+      }
+    ]
+  },
+  {
+    "group": "typescript-typecheck",
+    "pattern": "tsconfig.json",
+    "hooks": [
+      {
+        "event": "turn_end",
+        "command": "bunx tsc --noEmit 2>&1 | head -50",
+        "timeout": 60000,
+        "notify": true
+      }
+    ]
+  },
+  {
+    "group": "eslint-check",
+    "pattern": "eslint.config.*",
+    "hooks": [
+      {
+        "event": "turn_end",
+        "command": "bunx eslint . --max-warnings 0 2>&1 | head -50",
+        "timeout": 60000,
+        "notify": true
+      }
+    ]
+  },
+  {
+    "group": "pyright-check",
+    "pattern": "*",
+    "hooks": [
+      {
+        "event": "turn_end",
+        "context": "file_name",
+        "pattern": "\\.py$",
+        "command": "pyright 2>&1 | head -50",
+        "timeout": 60000,
+        "notify": true
+      }
+    ]
+  }
+]
