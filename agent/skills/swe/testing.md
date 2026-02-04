@@ -11,7 +11,7 @@ Guidelines for test pyramid, BDD, test quality, and avoiding test anti-patterns.
        /  \     E2E Tests (few)
       /----\    - Critical user journeys
      /      \   - Slow, expensive
-    /--------\  
+    /--------\
    /          \ Integration Tests (some)
   /------------\- Component interactions
  /              \- Database, APIs
@@ -132,18 +132,18 @@ Business Need → Executable Specification → Working Software
 
 Organize tests around three phases:
 
-| Phase | Purpose | Example |
-|-------|---------|---------|
-| **Given** | Preconditions, initial state | "a registered user exists" |
-| **When** | Action being performed | "the user logs in with valid credentials" |
-| **Then** | Expected outcome | "the user should see their dashboard" |
+| Phase     | Purpose                      | Example                                   |
+| --------- | ---------------------------- | ----------------------------------------- |
+| **Given** | Preconditions, initial state | "a registered user exists"                |
+| **When**  | Action being performed       | "the user logs in with valid credentials" |
+| **Then**  | Expected outcome             | "the user should see their dashboard"     |
 
 ### Writing Good Scenarios
 
 ```
 ❌ BAD: Implementation details, unclear intent
 ─────────────────────────────────────────────────────
-"open browser, navigate to /login, find element with 
+"open browser, navigate to /login, find element with
 id email, type test@test.com, click submit button"
 
 ✅ GOOD: Business language, clear intent
@@ -175,6 +175,7 @@ BDD works best when three perspectives collaborate:
 3. **Testing**: What could go wrong?
 
 **Before writing code:**
+
 - Discuss requirements together
 - Write scenarios collaboratively
 - Agree on acceptance criteria
@@ -212,7 +213,9 @@ describe("UserService", () => {
       it("then it should reject with a validation error", async () => {
         const userService = new UserService();
 
-        await expect(userService.create(userData)).rejects.toThrow("Invalid email");
+        await expect(userService.create(userData)).rejects.toThrow(
+          "Invalid email",
+        );
       });
     });
   });
@@ -229,7 +232,10 @@ describe("User Login", () => {
     let user: User;
 
     beforeEach(async () => {
-      user = await createUser({ email: "alice@example.com", password: "secure123" });
+      user = await createUser({
+        email: "alice@example.com",
+        password: "secure123",
+      });
     });
 
     describe("when the user logs in with valid credentials", () => {
@@ -254,13 +260,17 @@ describe("User Login", () => {
 
     describe("when the user logs in with wrong password", () => {
       it("then login should fail with authentication error", async () => {
-        await expect(login(user.email, "wrongpassword")).rejects.toThrow("Invalid credentials");
+        await expect(login(user.email, "wrongpassword")).rejects.toThrow(
+          "Invalid credentials",
+        );
       });
     });
 
     describe("when the user logs in with non-existent email", () => {
       it("then login should fail with authentication error", async () => {
-        await expect(login("unknown@example.com", "secure123")).rejects.toThrow("Invalid credentials");
+        await expect(login("unknown@example.com", "secure123")).rejects.toThrow(
+          "Invalid credentials",
+        );
       });
     });
   });
@@ -268,7 +278,9 @@ describe("User Login", () => {
   describe("given no user is registered", () => {
     describe("when attempting to login", () => {
       it("then login should fail with authentication error", async () => {
-        await expect(login("nobody@example.com", "anypassword")).rejects.toThrow("Invalid credentials");
+        await expect(
+          login("nobody@example.com", "anypassword"),
+        ).rejects.toThrow("Invalid credentials");
       });
     });
   });
@@ -302,16 +314,16 @@ describe("User Registration", () => {
       let user: User;
 
       beforeEach(async () => {
-        user = await userService.create({ 
-          name: "Alice", 
-          email: "alice@example.com" 
+        user = await userService.create({
+          name: "Alice",
+          email: "alice@example.com",
         });
       });
 
       it("then a welcome email should be sent", () => {
         expect(emailService.send).toHaveBeenCalledWith(
           "alice@example.com",
-          expect.stringContaining("Welcome")
+          expect.stringContaining("Welcome"),
         );
       });
 
@@ -323,7 +335,7 @@ describe("User Registration", () => {
     describe("when registration fails due to invalid data", () => {
       it("then no email should be sent", async () => {
         await expect(
-          userService.create({ name: "", email: "invalid" })
+          userService.create({ name: "", email: "invalid" }),
         ).rejects.toThrow();
 
         expect(emailService.send).not.toHaveBeenCalled();
@@ -444,7 +456,7 @@ class TestUserLogin:
             def test_then_session_should_be_created(self, user_service, registered_user):
                 """Then a valid session should be created."""
                 session = user_service.login(
-                    registered_user.email, 
+                    registered_user.email,
                     "secure123"
                 )
 
@@ -468,7 +480,11 @@ describe("Order Discount Calculation", () => {
     const testCases = [
       { orderTotal: 50, expectedDiscount: 0, scenario: "order under $100" },
       { orderTotal: 100, expectedDiscount: 10, scenario: "order exactly $100" },
-      { orderTotal: 250, expectedDiscount: 25, scenario: "order between $100-$500" },
+      {
+        orderTotal: 250,
+        expectedDiscount: 25,
+        scenario: "order between $100-$500",
+      },
       { orderTotal: 500, expectedDiscount: 75, scenario: "order exactly $500" },
       { orderTotal: 1000, expectedDiscount: 150, scenario: "order over $500" },
     ];
@@ -558,25 +574,25 @@ cm tests functionName . --format ai
 
 ## Testing Anti-Patterns
 
-| Anti-Pattern | Problem | Solution |
-|--------------|---------|----------|
-| **Ice Cream Cone** | More E2E tests than unit tests | Invert the pyramid |
-| **Flaky Tests** | Tests randomly fail | Fix race conditions, use mocks |
-| **Slow Tests** | Test suite takes too long | Isolate, parallelize, mock I/O |
-| **Testing Implementation** | Tests break on refactor | Test behavior, not internals |
-| **No Assertions** | Tests without meaningful checks | Add specific assertions |
-| **Test Data Coupling** | Tests depend on shared state | Isolate test data |
+| Anti-Pattern               | Problem                         | Solution                       |
+| -------------------------- | ------------------------------- | ------------------------------ |
+| **Ice Cream Cone**         | More E2E tests than unit tests  | Invert the pyramid             |
+| **Flaky Tests**            | Tests randomly fail             | Fix race conditions, use mocks |
+| **Slow Tests**             | Test suite takes too long       | Isolate, parallelize, mock I/O |
+| **Testing Implementation** | Tests break on refactor         | Test behavior, not internals   |
+| **No Assertions**          | Tests without meaningful checks | Add specific assertions        |
+| **Test Data Coupling**     | Tests depend on shared state    | Isolate test data              |
 
 ### BDD Anti-Patterns
 
-| Anti-Pattern | Problem | Solution |
-|--------------|---------|----------|
-| **UI-focused steps** | Brittle, hard to read | Use domain language |
-| **Too many steps** | Hard to understand | Split into focused scenarios |
-| **Incidental details** | Noise obscures intent | Include only relevant data |
-| **No clear outcome** | Can't tell what's tested | End with business assertion |
-| **Coupled scenarios** | Order-dependent tests | Make scenarios independent |
-| **Developer jargon** | Business can't validate | Use ubiquitous language |
+| Anti-Pattern           | Problem                  | Solution                     |
+| ---------------------- | ------------------------ | ---------------------------- |
+| **UI-focused steps**   | Brittle, hard to read    | Use domain language          |
+| **Too many steps**     | Hard to understand       | Split into focused scenarios |
+| **Incidental details** | Noise obscures intent    | Include only relevant data   |
+| **No clear outcome**   | Can't tell what's tested | End with business assertion  |
+| **Coupled scenarios**  | Order-dependent tests    | Make scenarios independent   |
+| **Developer jargon**   | Business can't validate  | Use ubiquitous language      |
 
 ### Detecting Test Anti-Patterns
 
