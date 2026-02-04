@@ -187,7 +187,16 @@ async function runHookCommand(
 }
 
 /**
+ * Result from processing hooks - can block tool execution on failure.
+ */
+interface ProcessHooksResult {
+  block: true;
+  reason: string;
+}
+
+/**
  * Process hooks for a given event.
+ * For tool_call events, returns a block result if any hook command fails.
  */
 async function processHooks(
   pi: ExtensionAPI,
@@ -196,7 +205,7 @@ async function processHooks(
   ctx: ExtensionContext,
   toolName?: string,
   input?: unknown,
-): Promise<void> {
+): Promise<ProcessHooksResult | undefined> {
   // Extract file path from tool input if available
   const filePath = getInputFieldAsString(input, "path");
 
@@ -240,8 +249,18 @@ async function processHooks(
           );
         }
       }
+
+      // For tool_call events, block the tool if hook command failed
+      if (!success && event === "tool_call") {
+        const reason = output
+          ? `Hook failed: ${group.group}: ${rule.command}\n${output}`
+          : `Hook failed: ${group.group}: ${rule.command}`;
+        return { block: true, reason };
+      }
     }
   }
+
+  return undefined;
 }
 
 /**
@@ -260,7 +279,7 @@ function setupHooks(pi: ExtensionAPI, config: ResolvedConfig): void {
   // Tool events (skip "read" tool to avoid noise on every file read)
   pi.on("tool_call", async (event: ToolCallEvent, ctx) => {
     if (event.toolName === "read") return;
-    await processHooks(
+    return processHooks(
       pi,
       config,
       "tool_call",
@@ -308,6 +327,7 @@ function registerReloadCommand(pi: ExtensionAPI): void {
   pi.registerCommand("hooks-reload", {
     description: "Reload hooks configuration from disk",
     handler: async (_args, ctx) => {
+      if (!ctx.hasUI) return;
       try {
         await configLoader.load();
         const config = configLoader.getConfig();
@@ -321,6 +341,7 @@ function registerReloadCommand(pi: ExtensionAPI): void {
   pi.registerCommand("hooks-list", {
     description: "List all configured hooks",
     handler: async (_args, ctx) => {
+      if (!ctx.hasUI) return;
       const config = configLoader.getConfig();
 
       if (config.length === 0) {
