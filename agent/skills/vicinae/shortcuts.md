@@ -1,75 +1,91 @@
 # Vicinae Keyboard Shortcuts
 
-Linux-optimized shortcuts (use `Ctrl`, not `Cmd`).
+Use `Ctrl` for common actions, `Shift` for destructive actions.
 
 ## Standard Shortcuts
 
-### Primary Actions
+### Common Actions
 
-| Shortcut     | Action                 |
-| ------------ | ---------------------- |
-| `Ctrl+Enter` | Execute primary action |
-| `Ctrl+Space` | Toggle state           |
+| Shortcut | Action  | Notes                |
+| -------- | ------- | -------------------- |
+| `Ctrl+R` | Refresh | Reload/refresh data  |
+| `Ctrl+N` | New     | Create new item      |
+| `Ctrl+E` | Edit    | Edit selected item   |
+| `Ctrl+O` | Open    | Open in external app |
+| `Ctrl+D` | Details | Toggle detail view   |
 
-### Copy Operations
+### Destructive Actions
 
-| Shortcut       | Action                 |
-| -------------- | ---------------------- |
-| `Ctrl+C`       | Copy primary content   |
-| `Ctrl+Shift+C` | Copy secondary content |
-
-### CRUD Operations
-
-| Shortcut      | Action     |
-| ------------- | ---------- |
-| `Ctrl+N`      | Create new |
-| `Ctrl+E`      | Edit       |
-| `Ctrl+Delete` | Delete     |
+| Shortcut       | Action        | Notes                 |
+| -------------- | ------------- | --------------------- |
+| `Shift+Delete` | Delete/Remove | Move to trash, remove |
 
 ### Navigation
 
-| Shortcut | Action         |
-| -------- | -------------- |
-| `Ctrl+[` | Go back        |
-| `Ctrl+]` | Go forward     |
-| `Ctrl+I` | Toggle details |
-| `Ctrl+R` | Refresh        |
-
-### Connection/Network
-
-| Shortcut | Action      |
-| -------- | ----------- |
-| `Ctrl+C` | Connect     |
-| `Ctrl+D` | Disconnect  |
-| `Ctrl+S` | Scan        |
-| `Ctrl+F` | Forget/Find |
+| Shortcut | Action     |
+| -------- | ---------- |
+| `Ctrl+[` | Go back    |
+| `Ctrl+]` | Go forward |
 
 ## Implementation
 
 ```tsx
+// Refresh action
 <Action
-  title="Connect"
-  shortcut={{ modifiers: ["ctrl"], key: "c" }}
-  onAction={handleConnect}
+  title="Refresh"
+  icon={Icon.RotateClockwise}
+  shortcut={{ modifiers: ["ctrl"], key: "r" }}
+  onAction={handleRefresh}
 />
 
-<Action
-  title="Copy Name"
-  shortcut={{ modifiers: ["ctrl"], key: "c" }}
-  onAction={() => Clipboard.copy(name)}
-/>
-
+// Delete action (destructive)
 <Action
   title="Delete"
-  shortcut={{ modifiers: ["ctrl"], key: "delete" }}
+  icon={Icon.Trash}
   style={Action.Style.Destructive}
+  shortcut={{ modifiers: ["shift"], key: "delete" }}
   onAction={handleDelete}
+/>
+
+// Create new
+<Action
+  title="Create Item"
+  icon={Icon.Plus}
+  shortcut={{ modifiers: ["ctrl"], key: "n" }}
+  onAction={handleCreate}
+/>
+
+// Edit
+<Action
+  title="Edit"
+  icon={Icon.Pencil}
+  shortcut={{ modifiers: ["ctrl"], key: "e" }}
+  onAction={handleEdit}
 />
 ```
 
 ## Guidelines
 
-- Use `Ctrl` modifier (never `Cmd`)
-- Use `Ctrl+Shift` for secondary/destructive actions
-- Keep shortcuts consistent across similar actions
-- Don't conflict with system shortcuts
+1. **Use `Ctrl` for common actions** - Refresh, New, Edit, Open
+2. **Use `Shift+Delete` for destructive actions** - Clear, intentional deletion
+3. **Keep shortcuts consistent** - Same action = same shortcut across extensions
+4. **Mnemonics** - Use letter that matches action (R=Refresh, N=New, E=Edit)
+
+## Modifier Reference
+
+| Modifier | Usage                         |
+| -------- | ----------------------------- |
+| `ctrl`   | Common actions (refresh, new) |
+| `shift`  | Destructive actions (delete)  |
+| `alt`    | Secondary/alternate actions   |
+
+## Anti-Patterns
+
+❌ `Ctrl+Backspace` - Conflicts with text editing
+❌ `Ctrl+C` - Conflicts with copy
+❌ `Ctrl+V` - Conflicts with paste
+❌ `Cmd+...` - Not available on Linux
+
+✅ `Ctrl+R` - Refresh
+✅ `Shift+Delete` - Clear delete intent
+✅ `Ctrl+N` - New item

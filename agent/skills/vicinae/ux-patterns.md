@@ -167,12 +167,9 @@ Show item count in section title:
 
 **Most extensions don't use shortcuts at all.** Only add them for critical repeat actions.
 
-If you do add shortcuts, use single-letter mnemonics with `ctrl`:
-
 ```tsx
-shortcut={{ modifiers: ["ctrl"], key: "r" }}  // Refresh (most common)
-shortcut={{ modifiers: ["ctrl"], key: "x" }}  // Delete/Remove
-shortcut={{ modifiers: ["ctrl"], key: "s" }}  // Stop/Start
+shortcut={{ modifiers: ["ctrl"], key: "r" }}     // Refresh (most common)
+shortcut={{ modifiers: ["shift"], key: "delete" }} // Delete/Remove
 ```
 
 **When to add shortcuts:**
@@ -252,7 +249,7 @@ Prefer single toggle actions over separate on/off:
 
 // DO add only essential shortcuts
 <Action title="Refresh" shortcut={{ modifiers: ["ctrl"], key: "r" }} />
-<Action title="Delete" shortcut={{ modifiers: ["ctrl"], key: "x" }} />
+<Action title="Delete" shortcut={{ modifiers: ["shift"], key: "delete" }} />
 ```
 
 ## ActionPanel Organization
@@ -271,7 +268,7 @@ Group related actions in sections:
       icon={Icon.Trash}
       title="Delete"
       style={Action.Style.Destructive}
-      shortcut={{ modifiers: ["ctrl"], key: "x" }}
+      shortcut={{ modifiers: ["shift"], key: "delete" }}
     />
   </ActionPanel.Section>
 </ActionPanel>
@@ -282,7 +279,7 @@ Group related actions in sections:
 - **Every action needs an icon**: No exceptions
 - **Always add searchBarPlaceholder**: Improves discoverability
 - **Shortcuts are optional**: Only for frequent actions (refresh, delete)
-- **Use mnemonics**: r=refresh, x=delete, s=start/stop, c=copy
+- **Use mnemonics**: r=refresh, Shift+Delete=delete
 - **Toggle over pairs**: Single toggle instead of on/off actions
 - **Destructive actions last**: Put delete/remove at the end
 - **Use style={Action.Style.Destructive}**: For dangerous actions

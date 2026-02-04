@@ -147,6 +147,36 @@ import {
 } from "@vicinae/api";
 ```
 
+## Keyboard Shortcuts
+
+Use `Ctrl` for common actions, `Shift+Delete` for destructive:
+
+| Shortcut       | Action  |
+| -------------- | ------- |
+| `Ctrl+R`       | Refresh |
+| `Shift+Delete` | Delete  |
+| `Ctrl+N`       | New     |
+| `Ctrl+E`       | Edit    |
+
+```tsx
+<Action
+  title="Refresh"
+  icon={Icon.RotateClockwise}
+  shortcut={{ modifiers: ["ctrl"], key: "r" }}
+  onAction={handleRefresh}
+/>
+
+<Action
+  title="Delete"
+  icon={Icon.Trash}
+  style={Action.Style.Destructive}
+  shortcut={{ modifiers: ["shift"], key: "delete" }}
+  onAction={handleDelete}
+/>
+```
+
+See [Keyboard Shortcuts](./shortcuts.md) for full reference.
+
 ## Navigation
 
 ```tsx
