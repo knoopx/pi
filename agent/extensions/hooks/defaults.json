@@ -19,12 +19,16 @@
     "hooks": [
       {
         "event": "tool_result",
+        "context": "file_name",
+        "pattern": "\\.(ts|tsx|js|jsx)$",
         "command": "bunx tsc --noEmit 2>&1 | head -50",
         "timeout": 60000,
         "notify": true
       },
       {
         "event": "tool_result",
+        "context": "file_name",
+        "pattern": "\\.(ts|tsx|js|jsx)$",
         "command": "bunx eslint . --max-warnings 0 2>&1 | head -50",
         "timeout": 60000,
         "notify": true
