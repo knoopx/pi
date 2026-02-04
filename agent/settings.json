@@ -1,7 +1,7 @@
 {
-  "lastChangelogVersion": "0.51.0",
-  "defaultProvider": "local",
-  "defaultModel": "glm-4.7-flash",
+  "lastChangelogVersion": "0.51.6",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.2-codex",
   "theme": "custom",
   "lsp": {
     "hookMode": "edit_write"
