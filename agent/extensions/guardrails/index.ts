@@ -74,6 +74,9 @@ function getInputFieldAsString(
  */
 function setupPermissionGateHook(pi: ExtensionAPI, config: ResolvedConfig) {
   pi.on("tool_call", async (event, ctx) => {
+    // Skip "read" tool to avoid noise on every file read
+    if (event.toolName === "read") return;
+
     const toolName = event.toolName;
     const input = event.input;
 
@@ -96,7 +99,7 @@ function setupPermissionGateHook(pi: ExtensionAPI, config: ResolvedConfig) {
               }
               break;
             case "file_name":
-              if (["read", "edit", "write"].includes(toolName)) {
+              if (["edit", "write"].includes(toolName)) {
                 targetValue = getInputFieldAsString(input, "path");
               }
               break;
@@ -113,9 +116,19 @@ function setupPermissionGateHook(pi: ExtensionAPI, config: ResolvedConfig) {
             const { action, reason } = rule;
 
             if (action === "block") {
-              ctx.ui.notify(`Blocked: ${reason}`, "error");
+              if (ctx.hasUI) {
+                ctx.ui.notify(`Blocked: ${reason}`, "error");
+              }
               return { block: true, reason: `Blocked: ${reason}` };
             } else if (action === "confirm") {
+              // In non-interactive mode, block by default (can't confirm without UI)
+              if (!ctx.hasUI) {
+                return {
+                  block: true,
+                  reason: `Blocked: ${reason} (no UI for confirmation)`,
+                };
+              }
+
               const proceed = await ctx.ui.custom<boolean>(
                 (_tui, theme, _kb, done) =>
                   createConfirmationDialog(
@@ -153,6 +166,8 @@ export function registerSettingsCommand(pi: ExtensionAPI): void {
   pi.registerCommand("guardrails", {
     description: "Configure guardrails groups",
     handler: async (_args, ctx) => {
+      if (!ctx.hasUI) return;
+
       const currentConfig = configLoader.getGlobalConfig();
 
       await ctx.ui.custom((_tui, theme, _kb, done) => {
