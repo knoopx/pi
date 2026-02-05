@@ -1,0 +1,17 @@
+{
+  "name": "transformers-js",
+  "version": "1.0.0",
+  "description": "Transformers.js ML inference tools - run Hugging Face models locally",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
+    "@mariozechner/pi-ai": "^0.51.3",
+    "@mariozechner/pi-coding-agent": "^0.51.3",
+    "@sinclair/typebox": "^0.34.48"
+  }
+}
