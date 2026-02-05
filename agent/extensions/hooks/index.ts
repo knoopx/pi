@@ -299,20 +299,12 @@ async function processHooks(
     } else {
       // All hooks passed - send success message
       const successCount = successes.length;
-      const hasOutput = successes.some((s) => s.output);
+      const successLines = successes.map((s) => {
+        const header = `[${s.group}] ${s.command}`;
+        return s.output ? `${header}\n${s.output}` : header;
+      });
 
-      let successMessage: string;
-      if (hasOutput) {
-        const outputLines = successes
-          .filter((s) => s.output)
-          .map((s) => `[${s.group}] ${s.command}\n${s.output}`);
-        successMessage =
-          outputLines.length > 0
-            ? `All ${successCount} hook(s) passed.\n\n${outputLines.join("\n\n")}`
-            : `All ${successCount} hook(s) passed.`;
-      } else {
-        successMessage = `All ${successCount} hook(s) passed.`;
-      }
+      const successMessage = `All ${successCount} hook(s) passed.\n\n${successLines.join("\n\n")}`;
 
       pi.sendMessage(
         {
