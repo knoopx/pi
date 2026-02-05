@@ -32,12 +32,12 @@ export default function ttsExtension(pi: ExtensionAPI) {
       const escaped = params.text.replace(/'/g, "'\\''");
       pi.exec("sh", [
         "-c",
-        `pkill -f '^tts ' 2>/dev/null; sh -c "
-playing=\$(playerctl --all-players -f '{{playerName}}' --status Playing 2>/dev/null)
+        `pkill -f '^tts ' 2>/dev/null; sh -c '
+playing=$(playerctl --all-players -f "{{playerName}} {{status}}" status 2>/dev/null | grep Playing | cut -d" " -f1)
 playerctl --all-players pause 2>/dev/null
-tts '${escaped}' &>/dev/null
-for player in \$playing; do playerctl -p \"\$player\" play 2>/dev/null; done
-" &`,
+tts '"'"'${escaped}'"'"' &>/dev/null
+for player in $playing; do playerctl -p "$player" play 2>/dev/null; done
+' &`,
       ]);
 
       return {
