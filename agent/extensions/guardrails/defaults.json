@@ -8,12 +8,6 @@
         "pattern": "^find",
         "action": "block",
         "reason": "use `fd` instead. Examples: `fd pattern`, `fd -e ts`, `fd -t f name`"
-      },
-      {
-        "context": "command",
-        "pattern": "^grep",
-        "action": "block",
-        "reason": "use `rg` (ripgrep) instead. Examples: `rg pattern`, `rg -t ts pattern`, `rg -l pattern`"
       }
     ]
   },
