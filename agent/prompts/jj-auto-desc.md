@@ -4,6 +4,8 @@ description: Update Jujutsu change descriptions to follow conventional commit fo
 
 Update Jujutsu change descriptions to follow conventional commit format.
 
+Use the **conventional-commits** skill (Conventional Commits v1.0.0) for type/scope rules, breaking changes, footers, and examples.
+
 <format>
 `type(scope): <icon> short description`
 
@@ -19,7 +21,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore
 2. For each revision not following the format:
    - Review the diff: `jj diff --git --color never -r <revision>`
    - Update description: `jj desc -r <revision> -m "type(scope): icon description"`
-</workflow>
+     </workflow>
 
 <examples>
 ```bash
