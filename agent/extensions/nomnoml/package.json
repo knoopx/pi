@@ -1,0 +1,16 @@
+{
+  "name": "nomnoml",
+  "version": "1.0.0",
+  "description": "Render nomnoml diagrams locally (text to SVG) without any server",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "^0.51.3",
+    "@sinclair/typebox": "^0.34.48",
+    "nomnoml": "^1.7.0"
+  }
+}
