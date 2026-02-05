@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { ImageContent, TextContent } from "@mariozechner/pi-ai";
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
 
 import setupNomnomlExtension from "./index";
 import type { MockExtensionAPI, MockTool } from "../../test-utils";
@@ -17,23 +14,23 @@ describe("Nomnoml Extension", () => {
     setupNomnomlExtension(mockPi as ExtensionAPI);
   });
 
-  it("registers the render_nomnoml tool", () => {
-    expect(mockPi.registerTool).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: "render_nomnoml",
-        label: "Render nomnoml",
-      }),
+  it("registers the nomnoml render tool", () => {
+    const toolNames = mockPi.registerTool.mock.calls.map(
+      (call) => call[0].name,
     );
+    expect(toolNames).toContain("nomnoml-display");
   });
 
-  describe("render_nomnoml tool", () => {
+  describe("nomnoml-display tool", () => {
     let tool: MockTool;
 
     beforeEach(() => {
-      tool = mockPi.registerTool.mock.calls[0][0];
+      tool = mockPi.registerTool.mock.calls.find(
+        (call) => call[0].name === "nomnoml-display",
+      )?.[0] as MockTool;
     });
 
-    it("attaches an SVG image when the model supports images", async () => {
+    it("attaches a PNG image when the model supports images", async () => {
       const result = await tool.execute(
         "tool1",
         {
@@ -52,40 +49,15 @@ describe("Nomnoml Extension", () => {
 
       const image = result.content[1] as ImageContent;
       expect(image.type).toBe("image");
-      expect(image.mimeType).toBe("image/svg+xml");
+      expect(image.mimeType).toBe("image/png");
       expect(image.data.length).toBeGreaterThan(0);
 
       expect(result.details).toEqual({
         rendered: true,
-        format: "svg",
+        format: "png",
         outputFile: null,
         attached: true,
       });
-    });
-
-    it("writes the SVG to outputFile when provided", async () => {
-      const out = join(tmpdir(), `pi-nomnoml-${Date.now()}.svg`);
-
-      const result = await tool.execute(
-        "tool1",
-        {
-          source: "[A]->[B]",
-          outputFile: out,
-        },
-        undefined,
-        undefined,
-        { model: { input: ["text", "image"] } },
-      );
-
-      expect(result.details).toEqual({
-        rendered: true,
-        format: "svg",
-        outputFile: out,
-        attached: true,
-      });
-
-      const written = await readFile(out, "utf8");
-      expect(written).toContain("<svg");
     });
   });
 });

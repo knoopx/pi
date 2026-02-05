@@ -117,30 +117,24 @@ Common directives:
 4. Iterate:
    - If diagram is too dense, split into multiple diagrams (by subsystem).
 
-## Rendering (CLI)
+## Rendering (tool)
 
-If a rendered asset is needed, use one of these approaches.
+If a rendered asset is needed, use the nomnoml tools instead of CLI.
 
-### Option A: use the online renderer
+### Option A: quick preview
 
-- Open https://nomnoml.com
-- Paste the nomnoml text
-- Export SVG/PNG
+Use the tool to render directly in chat:
 
-### Option B: use the npm CLI (when Node tooling is available)
+- `nomnoml-display` with inline `source` for a quick preview.
 
-Typical install/use (varies by environment):
+### Option B: render to SVG
 
-```bash
-# one-off run
-npx nomnoml-cli -i diagram.nomnoml -o diagram.svg
+Use the tool to render and optionally write a file:
 
-# or install
-npm i -g nomnoml-cli
-nomnoml diagram.nomnoml --output diagram.svg
-```
+- `nomnoml-render` with inline `source` and optional `outputFile`.
+- `nomnoml-render-file` with `inputFile` and optional `outputFile`.
 
-If the CLI isn’t available, still produce the `.nomnoml` source file so it can be rendered later.
+If rendering isn’t required, still produce the `.nomnoml` source file so it can be rendered later.
 
 ## Patterns
 
