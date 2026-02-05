@@ -12,6 +12,11 @@
     "@huggingface/transformers": "^3.8.1",
     "@mariozechner/pi-ai": "^0.51.3",
     "@mariozechner/pi-coding-agent": "^0.51.3",
-    "@sinclair/typebox": "^0.34.48"
+    "@sinclair/typebox": "^0.34.48",
+    "onnxruntime-node": "^1.19.2",
+    "wavefile": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/pngjs": "^6.0.5"
   }
 }
