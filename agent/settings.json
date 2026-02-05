@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.51.0",
+  "lastChangelogVersion": "0.51.6",
   "defaultProvider": "local",
   "defaultModel": "glm-4.7-flash",
   "theme": "custom",

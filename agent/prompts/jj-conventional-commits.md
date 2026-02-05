@@ -19,6 +19,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore
    ```
 
 2. For each revision not following the format:
+   - Review the files: `jj file list -r <revision>`
    - Review the diff: `jj diff --git --color never -r <revision>`
    - Update description: `jj desc -r <revision> -m "type(scope): icon description"`
      </workflow>
