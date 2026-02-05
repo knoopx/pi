@@ -52,7 +52,7 @@ async function runGogJson<T>(
 
 export default function gogExtension(pi: ExtensionAPI) {
   pi.registerTool({
-    name: "list-drive-files",
+    name: "list-google-drive-files",
     label: "List Google Drive Files",
     description: `List files in Google Drive (root or specific folder).
 
@@ -96,7 +96,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "get-drive-file",
+    name: "get-google-drive-file",
     label: "Get Google Drive File Details",
     description: `Get detailed information about a specific Google Drive file.
 
@@ -135,7 +135,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "search-drive-files",
+    name: "search-google-drive-files",
     label: "Search Google Drive Files",
     description: `Full-text search across Google Drive.
 
@@ -180,7 +180,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "search-gmail-messages",
+    name: "search-google-gmail-messages",
     label: "Search Gmail Messages",
     description: `Search Gmail threads using Gmail query syntax.
 
@@ -322,7 +322,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "get-calendar-event",
+    name: "get-google-calendar-event",
     label: "Get Calendar Event Details",
     description: `Get details of a specific calendar event.
 
@@ -369,8 +369,8 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "search-calendar-events",
-    label: "Search Calendar Events",
+    name: "search-google-calendar-events",
+    label: "Search Google Calendar Events",
     description: `Search events in Google Calendar.
 
 Use this to:
@@ -417,7 +417,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "list-calendars",
+    name: "list-google-calendars",
     label: "List Google Calendars",
     description: `List all calendars in Google Calendar.
 
@@ -463,7 +463,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "list-contacts",
+    name: "list-google-contacts",
     label: "List Google Contacts",
     description: `List all contacts from Google Contacts.
 
@@ -509,7 +509,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "get-contact",
+    name: "get-google-contact",
     label: "Get Google Contact Details",
     description: `Get detailed information about a specific contact.
 
@@ -550,7 +550,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "search-contacts",
+    name: "search-google-contacts",
     label: "Search Google Contacts",
     description: `Search contacts by name, email, or phone number.
 
@@ -597,7 +597,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "list-task-lists",
+    name: "list-google-task-lists",
     label: "List Google Task Lists",
     description: `List all task lists from Google Tasks.
 
@@ -641,7 +641,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "list-tasks",
+    name: "list-google-tasks",
     label: "List Google Tasks",
     description: `List tasks from a specific task list.
 
@@ -686,7 +686,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "add-task",
+    name: "add-google-task",
     label: "Add Google Task",
     description: `Add a new task to a task list.
 
@@ -748,7 +748,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "update-task",
+    name: "update-google-task",
     label: "Update Google Task",
     description: `Update an existing task.
 
@@ -818,7 +818,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "complete-task",
+    name: "complete-google-task",
     label: "Complete Google Task",
     description: `Mark a task as completed.
 
@@ -864,7 +864,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "uncomplete-task",
+    name: "uncomplete-google-task",
     label: "Uncomplete Google Task",
     description: `Mark a task as incomplete (needs action).
 
@@ -910,7 +910,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "delete-task",
+    name: "delete-google-task",
     label: "Delete Google Task",
     description: `Delete a task from a task list.
 
@@ -953,8 +953,8 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "clear-tasks",
-    label: "Clear Completed Tasks",
+    name: "clear-google-tasks",
+    label: "Clear Completed Google Tasks",
     description: `Clear all completed tasks from a task list.
 
 Use this to:
@@ -995,193 +995,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "list-keep-notes",
-    label: "List Google Keep Notes",
-    description: `List all notes from Google Keep.
-
-Use this to:
-- View all your Keep notes
-- Get note IDs for other operations
-- Browse your notes
-- Manage your note collection`,
-    parameters: Type.Object({
-      maxResults: Type.Optional(
-        Type.Number({ description: "Maximum number of notes (default: 10)" }),
-      ),
-    }),
-    async execute(
-      _toolCallId,
-      params: { maxResults?: number },
-      signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        const args = ["keep", "list", "--json"];
-        if (params.maxResults) {
-          args.push("--max-results", String(params.maxResults));
-        }
-        const notes = await runGogJson<unknown[]>(pi, args, signal);
-        const content =
-          Array.isArray(notes) && notes.length > 0
-            ? notes.map((n) => JSON.stringify(n)).join("\n")
-            : "No notes found";
-        return {
-          content: [{ type: "text", text: content }],
-          details: { notes },
-        };
-      } catch (error) {
-        return createErrorResult(
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-  });
-
-  pi.registerTool({
-    name: "search-keep-notes",
-    label: "Search Google Keep Notes",
-    description: `Search Keep notes by text.
-
-Use this to:
-- Find notes by content
-- Search through your notes
-- Discover specific information
-- Filter notes by criteria`,
-    parameters: Type.Object({
-      query: Type.String({ description: "Search query" }),
-      maxResults: Type.Optional(
-        Type.Number({ description: "Maximum number of results (default: 10)" }),
-      ),
-    }),
-    async execute(
-      _toolCallId,
-      params: { query: string; maxResults?: number },
-      signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        const args = ["keep", "search", "--json", params.query];
-        if (params.maxResults) {
-          args.push("--max-results", String(params.maxResults));
-        }
-        const notes = await runGogJson<unknown[]>(pi, args, signal);
-        const content =
-          Array.isArray(notes) && notes.length > 0
-            ? notes.map((n) => JSON.stringify(n)).join("\n")
-            : "No notes found";
-        return {
-          content: [{ type: "text", text: content }],
-          details: { notes },
-        };
-      } catch (error) {
-        return createErrorResult(
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-  });
-
-  pi.registerTool({
-    name: "get-keep-note",
-    label: "Get Google Keep Note",
-    description: `Get a note from Google Keep.
-
-Use this to:
-- View note content
-- Get note details
-- Read note information
-- Retrieve specific note by ID`,
-    parameters: Type.Object({
-      noteId: Type.String({
-        description: "Note ID or name (e.g., notes/abc123)",
-      }),
-    }),
-    async execute(
-      _toolCallId,
-      params: { noteId: string },
-      signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        const note = await runGogJson<unknown>(
-          pi,
-          ["keep", "get", "--json", params.noteId],
-          signal,
-        );
-        const content = JSON.stringify(note, null, 2);
-        return {
-          content: [{ type: "text", text: content }],
-          details: { note },
-        };
-      } catch (error) {
-        return createErrorResult(
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-  });
-
-  pi.registerTool({
-    name: "keep-attachment",
-    label: "Download Keep Attachment",
-    description: `Download an attachment from a Keep note.
-
-Use this to:
-- Download note attachments
-- Get file content
-- Retrieve attachment data
-- Save attachments locally`,
-    parameters: Type.Object({
-      attachmentName: Type.String({
-        description: "Attachment name (e.g., notes/abc123/attachments/xyz789)",
-      }),
-      mimeType: Type.Optional(
-        Type.String({
-          description: "MIME type of attachment (e.g., image/jpeg)",
-        }),
-      ),
-      out: Type.Optional(
-        Type.String({ description: "Output file path (optional)" }),
-      ),
-    }),
-    async execute(
-      _toolCallId,
-      params: { attachmentName: string; mimeType?: string; out?: string },
-      signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        const args = ["keep", "attachment", "--json", params.attachmentName];
-        if (params.mimeType) {
-          args.push("--mime-type", params.mimeType);
-        }
-        if (params.out) {
-          args.push("--out", params.out);
-        }
-        await runGogCommand(pi, args, signal);
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Attachment ${params.attachmentName} downloaded successfully${params.out ? ` to ${params.out}` : ""}`,
-            },
-          ],
-          details: { attachmentName: params.attachmentName },
-        };
-      } catch (error) {
-        return createErrorResult(
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-  });
-
-  pi.registerTool({
-    name: "get-docs-info",
+    name: "get-google-docs-info",
     label: "Get Google Doc Info",
     description: `Get metadata for a Google Doc.
 
@@ -1220,7 +1034,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "export-docs",
+    name: "export-google-docs",
     label: "Export Google Doc",
     description: `Export a Google Doc to PDF, DOCX, or TXT format.
 
@@ -1268,7 +1082,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "create-docs",
+    name: "create-google-docs",
     label: "Create Google Doc",
     description: `Create a new Google Doc.
 
@@ -1310,7 +1124,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "copy-docs",
+    name: "copy-google-docs",
     label: "Copy Google Doc",
     description: `Copy a Google Doc to create a new document.
 
@@ -1350,7 +1164,7 @@ Use this to:
   });
 
   pi.registerTool({
-    name: "cat-docs",
+    name: "cat-google-docs",
     label: "View Google Doc as Text",
     description: `Print a Google Doc as plain text.
 
