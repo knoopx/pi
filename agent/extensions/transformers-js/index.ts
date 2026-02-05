@@ -247,7 +247,7 @@ const DepthEstimationParams = Type.Object({
   ...ImageInputParams,
   model: Type.Optional(
     Type.String({
-      description: "Model ID (default: Xenova/dpt-hybrid-midas)",
+      description: "Model ID (default: Xenova/depth-anything-small-hf)",
     }),
   ),
 });
@@ -612,7 +612,7 @@ Alternative models:
         const { image, model } = params;
         const remover = await getPipeline<
           (input: unknown) => Promise<RawImageLike[]>
-        >("background-removal", model || "briaai/RMBG-2.0", onUpdate);
+        >("background-removal", model || "Xenova/modnet", onUpdate);
 
         const input = await loadImage(image);
         const results = await remover(input);
@@ -676,7 +676,7 @@ Alternative models:
           ) => Promise<DepthEstimationResult | DepthEstimationResult[]>
         >(
           "depth-estimation",
-          model || "depth-anything/Depth-Anything-V2-Small-hf",
+          model || "Xenova/depth-anything-small-hf",
           onUpdate,
         );
 
@@ -738,7 +738,7 @@ Alternative models:
           (input: unknown) => Promise<ImageToTextResult | ImageToTextResult[]>
         >(
           "image-to-text",
-          model || "Salesforce/blip-image-captioning-base",
+          model || "Xenova/vit-gpt2-image-captioning",
           onUpdate,
         );
 
@@ -843,7 +843,7 @@ Alternative models:
           ) => Promise<ClassificationResult[] | ClassificationResult[][]>
         >(
           "zero-shot-image-classification",
-          model || "openai/clip-vit-large-patch14",
+          model || "Xenova/clip-vit-base-patch32",
           onUpdate,
         );
 
@@ -905,7 +905,7 @@ Alternative models:
         const { image, model, threshold = 0.3 } = params;
         const detector = await getPipeline<
           (imageInput: unknown) => Promise<ObjectDetectionResult[]>
-        >("object-detection", model || "facebook/detr-resnet-50", onUpdate);
+        >("object-detection", model || "Xenova/yolos-tiny", onUpdate);
 
         const input = await loadImage(image);
         const results = await detector(input);
