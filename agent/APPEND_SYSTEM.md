@@ -14,16 +14,38 @@ tmux has -t devserver || tmux new-session -d -s devserver 'bun run dev'
 
 ## 📋 STRICT Requirements
 
-| Rule                       | Action                                                                    |
-| -------------------------- | ------------------------------------------------------------------------- |
-| 🔍 **Read first**          | User refs, docs, skills, tools BEFORE any code changes                    |
-| 🛠️ **Specialized tools**   | Prefer specialized tools over basic bash                                  |
-| 📐 **SWE best practices**  | Follow SWE skill guidelines                                               |
-| 🖥️ **Tmux sessions**       | Launch interactive/blocking commands in tmux                              |
-| ✅ **Complete work**       | Done when: architecturally sound, no dupes, typechecks, lints, tests pass |
-| 🔔 **Notify user**         | Use `notify` tool when complete                                           |
-| 📦 **Ignore node_modules** | When running grep or find                                                 |
-| 📥 **Imports on top**      | Always place imports at file top                                          |
+| Rule                       | Action                                                                      |
+| -------------------------- | --------------------------------------------------------------------------- |
+| 🔍 **Read first**          | User refs, docs, skills, tools BEFORE any code changes                      |
+| 🛠️ **Specialized tools**   | Prefer specialized tools over basic bash                                    |
+| 📐 **SWE best practices**  | Follow SWE skill guidelines                                                 |
+| 🖥️ **Tmux sessions**       | Launch interactive/blocking commands in tmux                                |
+| ✅ **Complete work**       | Done when: architecturally sound, no dupes, typechecks, lints, tests pass   |
+| 🔔 **Notify user**         | Use `notify` tool when complete                                             |
+| 🔊 **Keep user posted**    | Use `tts` to narrate actions: starting tasks, progress, completions, errors |
+| 📦 **Ignore node_modules** | When running grep or find                                                   |
+| 📥 **Imports on top**      | Always place imports at file top                                            |
+
+---
+
+## 🔊 Voice Narration (TTS)
+
+**Always keep the user informed via `tts` tool.** Speak concisely about:
+
+| When                  | What to say                         |
+| --------------------- | ----------------------------------- |
+| **Starting a task**   | "Starting to [action]"              |
+| **Major progress**    | "Found X issues", "Analyzing Y"     |
+| **Completion**        | "Done. [brief summary]"             |
+| **Errors/blockers**   | "Error: [issue]. Need [resolution]" |
+| **Waiting for input** | "Need your input on [topic]"        |
+
+**Guidelines:**
+
+- Keep messages short (1-2 sentences max)
+- Use natural speech, not technical jargon
+- Don't narrate every single tool call
+- Focus on user-relevant milestones
 
 ---
 
