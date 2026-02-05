@@ -123,9 +123,26 @@ export function formatCost(
 }
 
 /**
- * Simplified format for output tokens, duration, and cost
- * Format: ↓<output_tokens> <duration> <cost>
- * Example: ↓1.9K 36s $0.01 (without cost if 0)
+ * Format tokens per second
+ * @param tokens Output tokens
+ * @param durationMs Duration in milliseconds
+ * @returns Formatted tokens/s string (e.g., "52.3 tok/s")
+ */
+export function formatTokensPerSecond(
+  tokens: number | undefined,
+  durationMs: number,
+): string {
+  if (tokens === undefined || tokens === null || durationMs <= 0) {
+    return "";
+  }
+  const tokensPerSecond = tokens / (durationMs / 1000);
+  return `${tokensPerSecond.toFixed(1)} tok/s`;
+}
+
+/**
+ * Simplified format for output tokens, duration, tokens/s, and cost
+ * Format: ↓<output_tokens> <duration> <tok/s> <cost>
+ * Example: ↓1.9K 36s 52.3 tok/s $0.01 (without cost if 0)
  */
 export function formatSimpleOutput(
   output: number | undefined,
@@ -142,13 +159,18 @@ export function formatSimpleOutput(
 ): string {
   const outputStr = formatTokens(output);
   const durationStr = formatDuration(durationMs);
+  const tokPerSecStr = formatTokensPerSecond(output, durationMs);
   const costStr = formatCost(cost);
 
-  // Only include cost if it's non-empty
-  if (costStr) {
-    return `↓${outputStr} ${durationStr} ${costStr}`;
+  // Build the output string with optional parts
+  let result = `↓${outputStr} ${durationStr}`;
+  if (tokPerSecStr) {
+    result += ` ${tokPerSecStr}`;
   }
-  return `↓${outputStr} ${durationStr}`;
+  if (costStr) {
+    result += ` ${costStr}`;
+  }
+  return result;
 }
 
 /**
@@ -159,6 +181,8 @@ export default function (pi: ExtensionAPI) {
   const turnStartTimes = new Map<number, number>();
   // Track agent start time for total agent duration
   let agentStartTime: number | null = null;
+  // Track last turn end timestamp for total agent duration
+  let lastTurnEndTimestamp: number | null = null;
   // Accumulate all token usage stats for the agent
   let totalOutputTokens = 0;
 
@@ -185,12 +209,14 @@ export default function (pi: ExtensionAPI) {
     const startTime = turnStartTimes.get(event.turnIndex);
 
     if (startTime) {
-      const durationMs = Date.now() - startTime;
-      turnStartTimes.delete(event.turnIndex);
-
-      // Get token information from the message
       const message = event.message;
       const assistantMessage = message as AssistantMessage | undefined;
+      const turnEndTimestamp = assistantMessage?.timestamp ?? Date.now();
+      const durationMs = turnEndTimestamp - startTime;
+      turnStartTimes.delete(event.turnIndex);
+      lastTurnEndTimestamp = turnEndTimestamp;
+
+      // Get token information from the message
       const usage = assistantMessage?.usage;
       const outputTokens = usage?.output;
       const cost = usage?.cost;
@@ -253,7 +279,8 @@ export default function (pi: ExtensionAPI) {
    */
   pi.on("agent_end", async (_event: AgentEndEvent, ctx: ExtensionContext) => {
     if (agentStartTime) {
-      const totalDurationMs = Date.now() - agentStartTime;
+      const endTimestamp = lastTurnEndTimestamp ?? Date.now();
+      const totalDurationMs = endTimestamp - agentStartTime;
 
       // Format simple output: ↓<output_tokens> <duration> <cost>
       const notificationStr = formatSimpleOutput(
@@ -289,6 +316,7 @@ export default function (pi: ExtensionAPI) {
   function resetCounters(): void {
     turnStartTimes.clear();
     agentStartTime = null;
+    lastTurnEndTimestamp = null;
     totalOutputTokens = 0;
     totalCostInput = 0;
     totalCostOutput = 0;
