@@ -113,7 +113,7 @@ export function substituteVariables(
 /**
  * Check if a hook rule matches the current context.
  */
-function doesRuleMatch(
+export function doesRuleMatch(
   rule: HookRule,
   toolName?: string,
   input?: unknown,
@@ -195,8 +195,18 @@ interface ProcessHooksResult {
 }
 
 /**
+ * Collected hook failure for reporting.
+ */
+interface HookFailure {
+  group: string;
+  command: string;
+  output: string;
+}
+
+/**
  * Process hooks for a given event.
  * For tool_call events, returns a block result if any hook command fails.
+ * For other events, collects all failures and sends them to the agent.
  */
 async function processHooks(
   pi: ExtensionAPI,
@@ -216,6 +226,9 @@ async function processHooks(
     cwd: ctx.cwd,
   };
 
+  // Collect failures for non-tool_call events
+  const failures: HookFailure[] = [];
+
   for (const group of config) {
     const isActive = await isGroupActive(group.pattern, ctx.cwd);
     if (!isActive) {
@@ -232,14 +245,30 @@ async function processHooks(
       }
 
       const { success, output } = await runHookCommand(pi, rule, ctx, vars);
-      const shouldNotify = rule.notify !== false;
 
-      // Skip notification for skipped commands (empty output and success)
-      if (success && !output) {
+      // Skip notification if notify is explicitly false
+      if (rule.notify === false) {
+        // Still check for blocking on failure
+        if (!success && event === "tool_call") {
+          const reason = output
+            ? `Hook failed: ${group.group}: ${rule.command}\n${output}`
+            : `Hook failed: ${group.group}: ${rule.command}`;
+          return { block: true, reason };
+        }
+        // Collect failure even if notify is false (agent should know)
+        if (!success && event !== "tool_call") {
+          failures.push({ group: group.group, command: rule.command, output });
+        }
         continue;
       }
 
-      if (shouldNotify && ctx.hasUI) {
+      // Skip notification for successful commands with no output (quiet success)
+      // unless notify is explicitly set to true
+      if (success && !output && rule.notify !== true) {
+        continue;
+      }
+
+      if (ctx.hasUI) {
         if (success) {
           ctx.ui.notify(`✓ ${group.group}: ${rule.command}`, "info");
         } else {
@@ -257,7 +286,29 @@ async function processHooks(
           : `Hook failed: ${group.group}: ${rule.command}`;
         return { block: true, reason };
       }
+
+      // Collect failure for aggregated reporting
+      if (!success && event !== "tool_call") {
+        failures.push({ group: group.group, command: rule.command, output });
+      }
     }
+  }
+
+  // Send aggregated failures to the agent
+  if (failures.length > 0) {
+    const errorLines = failures.map((f) => {
+      const header = `[${f.group}] ${f.command}`;
+      return f.output ? `${header}\n${f.output}` : header;
+    });
+    const errorMessage = `${errorLines.join("\n\n")}`;
+    pi.sendMessage(
+      {
+        customType: "hook_error",
+        content: errorMessage,
+        display: true,
+      },
+      { triggerTurn: false },
+    );
   }
 
   return undefined;
