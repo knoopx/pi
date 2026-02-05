@@ -470,11 +470,15 @@ Use this to:
 Returns labels with confidence scores.
 
 Alternative models:
-- google/vit-base-patch16-224 (Google ViT)
-- apple/mobilevit-small (lightweight)
-- timm/resnet50.a1_in1k (ResNet-50)
-- Falconsai/nsfw_image_detection (NSFW)
-- dima806/fairface_age_image_detection (age)`,
+- Xenova/mobilevit-small (lightweight)
+- Xenova/resnet-50 (ResNet-50)
+- Xenova/resnet-18 (ResNet-18)
+- onnx-community/mobilenet_v2_1.0_224 (MobileNet)
+- AdamCodd/vit-base-nsfw-detector (NSFW)
+- onnx-community/fairface_age_image_detection-ONNX (age)
+- onnx-community/gender-classification-ONNX (gender)
+- Xenova/facial_emotions_image_detection (emotions)
+- onnx-community/swin-finetuned-food101-ONNX (Food-101)`,
     parameters: ImageClassificationParams,
 
     async execute(
@@ -530,11 +534,11 @@ Use this to:
 Returns segment labels, scores, and mask images.
 
 Alternative models:
-- Xenova/segformer-b0-finetuned-ade-512-512 (SegFormer)
-- nvidia/segformer-b1-finetuned-ade-512-512 (larger)
-- facebook/mask2former-swin-large-cityscapes-semantic
-- mattmdjaga/segformer_b2_clothes (clothing)
-- jonathandinu/face-parsing (faces)`,
+- Xenova/segformer-b0-finetuned-ade-512-512 (SegFormer B0)
+- Xenova/segformer-b2-finetuned-ade-512-512 (SegFormer B2)
+- Xenova/segformer-b2-finetuned-cityscapes-1024-1024 (Cityscapes)
+- Xenova/segformer_b2_clothes (clothing)
+- Xenova/face-parsing (faces)`,
     parameters: ImageSegmentationParams,
 
     async execute(
@@ -596,9 +600,10 @@ Use this to:
 Returns the processed image(s).
 
 Alternative models:
-- Xenova/modnet (lightweight)
-- briaai/RMBG-1.4
-- ZhengPeng7/BiRefNet`,
+- Xenova/modnet (lightweight, default)
+- briaai/RMBG-1.4 (high quality)
+- onnx-community/ormbg-ONNX (Open RMBG)
+- onnx-community/ISNet-ONNX (ISNet)`,
     parameters: BackgroundRemovalParams,
 
     async execute(
@@ -655,10 +660,11 @@ Use this to:
 Returns a depth image and metadata.
 
 Alternative models:
-- Xenova/dpt-hybrid-midas (DPT MiDaS)
-- Intel/zoedepth-nyu-kitti (ZoeDepth)
-- depth-anything/Depth-Anything-V2-Base-hf (V2 base)
-- depth-anything/Depth-Anything-V2-Large-hf (V2 large)`,
+- Xenova/depth-anything-small-hf (fast, default)
+- Xenova/depth-anything-base-hf (balanced)
+- Xenova/glpn-kitti (GLPN KITTI)
+- Xenova/glpn-nyu (GLPN NYU)
+- onnx-community/DepthPro-ONNX (Apple DepthPro)`,
     parameters: DepthEstimationParams,
 
     async execute(
@@ -720,9 +726,11 @@ Use this to:
 Returns generated text.
 
 Alternative models:
-- Xenova/vit-gpt2-image-captioning (lightweight)
-- Salesforce/blip-image-captioning-large (BLIP large)
-- microsoft/trocr-large-printed (OCR)`,
+- Xenova/vit-gpt2-image-captioning (captioning, default)
+- Xenova/trocr-small-printed (OCR printed, fast)
+- Xenova/trocr-base-printed (OCR printed)
+- Xenova/trocr-small-handwritten (OCR handwritten, fast)
+- Xenova/trocr-base-handwritten (OCR handwritten)`,
     parameters: ImageToTextParams,
 
     async execute(
@@ -764,10 +772,7 @@ Use this to:
 
 Returns answers extracted from the document.
 
-Alternative models:
-- naver-clova-ix/donut-base-finetuned-docvqa
-- impira/layoutlm-document-qa (LayoutLM)
-- impira/layoutlm-invoices (invoices)`,
+Model: Xenova/donut-base-finetuned-docvqa (default)`,
     parameters: DocumentQuestionAnsweringParams,
 
     async execute(
@@ -819,11 +824,14 @@ Use this to:
 Returns labels with confidence scores.
 
 Alternative models:
-- Xenova/clip-vit-base-patch32 (fast)
+- Xenova/clip-vit-base-patch32 (fast, default)
 - Xenova/clip-vit-base-patch16 (CLIP B/16)
-- openai/clip-vit-large-patch14-336 (high-res)
-- google/siglip-so400m-patch14-384 (SigLIP)
-- patrickjohncyh/fashion-clip (fashion)`,
+- Xenova/clip-vit-large-patch14 (CLIP L/14)
+- Xenova/clip-vit-large-patch14-336 (high-res)
+- Xenova/siglip-base-patch16-224 (SigLIP base)
+- Xenova/siglip-large-patch16-384 (SigLIP large)
+- Xenova/chinese-clip-vit-base-patch16 (Chinese)
+- onnx-community/StreetCLIP-ONNX (geolocation)`,
     parameters: ZeroShotImageClassificationParams,
 
     async execute(
@@ -888,10 +896,8 @@ Use this to:
 Returns detected objects with confidence scores and bounding boxes.
 
 Alternative models:
-- Xenova/yolos-tiny (fast)
-- hustvl/yolos-small (YOLOS small)
-- PekingU/rtdetr_r50vd_coco_o365 (RT-DETR)
-- microsoft/table-transformer-detection (tables)`,
+- Xenova/yolos-tiny (fast, default)
+- Xenova/detr-resnet-50 (DETR ResNet-50)`,
     parameters: ObjectDetectionParams,
 
     async execute(
@@ -943,8 +949,8 @@ Use this to:
 Returns detected objects with confidence scores and bounding boxes.
 
 Alternative models:
-- google/owlv2-base-patch16 (OWLv2)
-- google/owlv2-large-patch14 (OWLv2 large)`,
+- Xenova/owlvit-base-patch32 (fast, default)
+- Xenova/owlvit-base-patch16 (OWL-ViT B/16)`,
     parameters: ZeroShotObjectDetectionParams,
 
     async execute(
@@ -1012,11 +1018,7 @@ Use this to:
 
 Returns labels with confidence scores.
 
-Alternative models:
-- MIT/ast-finetuned-audioset-10-10-0.4593 (AudioSet)
-- speechbrain/emotion-recognition-wav2vec2-IEMOCAP (emotion)
-- speechbrain/lang-id-voxlingua107-ecapa (language ID)
-- audeering/wav2vec2-large-robust-24-ft-age-gender (age/gender)`,
+Model: Xenova/wav2vec2-large-xlsr-53-gender-recognition-librispeech (gender recognition, default)`,
     parameters: AudioClassificationParams,
 
     async execute(
@@ -1071,8 +1073,7 @@ Use this to:
 
 Returns labels with confidence scores.
 
-Alternative models:
-- laion/clap-htsat-fused (LAION CLAP fused)`,
+Model: Xenova/clap-htsat-unfused (CLAP, default)`,
     parameters: ZeroShotAudioClassificationParams,
 
     async execute(
@@ -1137,10 +1138,15 @@ Returns the transcription text.
 
 Alternative models:
 - Xenova/whisper-tiny.en (fastest, English)
-- Xenova/whisper-tiny (fast, multilingual)
-- Xenova/whisper-base (balanced)
-- Xenova/whisper-small (good accuracy)
-- onnx-community/whisper-large-v3 (best accuracy)`,
+- Xenova/whisper-base.en (fast, English)
+- Xenova/whisper-small.en (balanced, English)
+- Xenova/whisper-medium.en (accurate, English)
+- Xenova/whisper-base (multilingual)
+- Xenova/whisper-small (multilingual)
+- Xenova/whisper-large-v3 (best accuracy)
+- onnx-community/whisper-large-v3-turbo (fast, high quality)
+- distil-whisper/distil-small.en (distilled, fast)
+- distil-whisper/distil-large-v2 (distilled, accurate)`,
     parameters: AutomaticSpeechRecognitionParams,
 
     async execute(
@@ -1196,9 +1202,11 @@ Use this to:
 Returns a base64-encoded WAV audio payload in details.
 
 Alternative models:
-- Xenova/mms-tts-eng (MMS TTS English)
-- myshell-ai/MeloTTS-English (MeloTTS)
-- myshell-ai/MeloTTS-Spanish (Spanish)`,
+- Xenova/mms-tts-eng (English, default)
+- Xenova/mms-tts-spa (Spanish)
+- Xenova/mms-tts-fra (French)
+- Xenova/mms-tts-deu (German)
+- Xenova/mms-tts-por (Portuguese)`,
     parameters: TextToSpeechParams,
 
     async execute(
@@ -1215,7 +1223,7 @@ Alternative models:
             input: string,
             options?: { speaker_embeddings?: string; speed?: number },
           ) => Promise<RawAudioLike>
-        >("text-to-speech", model || "Xenova/speecht5_tts", onUpdate);
+        >("text-to-speech", model || "Xenova/mms-tts-eng", onUpdate);
 
         const result = await synthesizer(text, {
           speaker_embeddings: speakerEmbeddings,

@@ -3,12 +3,15 @@ import { Buffer } from "node:buffer";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { pipelineMock, rawImageReadMock } = vi.hoisted(() => {
-  return {
-    pipelineMock: vi.fn(),
-    rawImageReadMock: vi.fn(),
-  };
-});
+const { pipelineMock, rawImageReadMock, readFileMock, waveFileMock } =
+  vi.hoisted(() => {
+    return {
+      pipelineMock: vi.fn(),
+      rawImageReadMock: vi.fn(),
+      readFileMock: vi.fn(),
+      waveFileMock: vi.fn(),
+    };
+  });
 
 vi.mock("@huggingface/transformers", () => {
   return {
@@ -16,6 +19,18 @@ vi.mock("@huggingface/transformers", () => {
     RawImage: {
       read: rawImageReadMock,
     },
+  };
+});
+
+vi.mock("node:fs/promises", () => {
+  return {
+    readFile: readFileMock,
+  };
+});
+
+vi.mock("wavefile", () => {
+  return {
+    WaveFile: waveFileMock,
   };
 });
 
@@ -101,13 +116,11 @@ describe("transformers-js extension", () => {
 
         const toolNames = tools.map((tool) => tool.name);
 
-        expect(mockPi.registerTool).toHaveBeenCalledTimes(15);
+        expect(mockPi.registerTool).toHaveBeenCalledTimes(13);
         expect(toolNames).toEqual([
           "ml-image-classification",
-          "ml-image-feature-extraction",
           "ml-image-segmentation",
           "ml-background-removal",
-          "ml-image-to-image",
           "ml-depth-estimation",
           "ml-image-to-text",
           "ml-document-question-answering",
@@ -145,7 +158,7 @@ describe("transformers-js extension", () => {
         expect(pipelineMock).toHaveBeenCalledWith(
           "image-classification",
           "Xenova/vit-base-patch16-224",
-          { dtype: "q8" },
+          { dtype: "q8", device: "cpu" },
         );
         expect(rawImageReadMock).toHaveBeenCalledWith("image.png");
         expect(result.content[0].text).toContain("cat: 90.0%");
@@ -160,6 +173,20 @@ describe("transformers-js extension", () => {
           .fn()
           .mockResolvedValue([{ label: "speech", score: 0.7 }]);
         pipelineMock.mockResolvedValue(classifier);
+
+        // Mock readFile to return a buffer
+        readFileMock.mockResolvedValue(Buffer.from([0, 0, 0, 0]));
+
+        // Mock WaveFile as a constructor function
+        waveFileMock.mockImplementation(function (this: {
+          toBitDepth: () => void;
+          toSampleRate: () => void;
+          getSamples: () => Float32Array;
+        }) {
+          this.toBitDepth = () => {};
+          this.toSampleRate = () => {};
+          this.getSamples = () => new Float32Array([0.1, 0.2]);
+        });
 
         const { tools } = await setupExtension();
         const tool = getTool(tools, "ml-audio-classification");
@@ -270,10 +297,8 @@ describe("transformers-js extension", () => {
   describe("given tool execution failures", () => {
     const errorCases = [
       { name: "ml-image-classification", params: { image: "image.png" } },
-      { name: "ml-image-feature-extraction", params: { image: "image.png" } },
       { name: "ml-image-segmentation", params: { image: "image.png" } },
       { name: "ml-background-removal", params: { image: "image.png" } },
-      { name: "ml-image-to-image", params: { image: "image.png" } },
       { name: "ml-depth-estimation", params: { image: "image.png" } },
       { name: "ml-image-to-text", params: { image: "image.png" } },
       {

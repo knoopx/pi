@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "Transformers.js ML inference tools - run Hugging Face models locally",
   "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "verify": "bun run scripts/verify-models.ts",
+    "verify:quick": "bun run scripts/verify-models.ts --quick"
+  },
   "pi": {
     "extensions": [
       "./index.ts"

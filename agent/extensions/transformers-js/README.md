@@ -1,210 +1,262 @@
-# transformers-js Extension
+# Transformers.js Extension
 
-This extension exposes Hugging Face Transformers.js pipelines as pi tools for image and audio workflows.
+Run machine learning models locally using [Transformers.js](https://huggingface.co/docs/transformers.js). This extension provides vision and audio processing tools that work entirely on your CPU - no GPU or cloud API required.
 
-## References
+## Features
 
-- Transformers.js docs: https://huggingface.co/docs/transformers.js/index
-- Transformers.js site: https://huggingface.github.io/transformers.js/
-- Browse compatible models: https://huggingface.co/models?library=transformers.js
+- **13 ML Tools** covering image and audio processing
+- **82 Verified Models** that work out of the box
+- **Lazy Loading** - models only download when first used
+- **Cached Pipelines** - subsequent calls reuse loaded models
+- **Quantized Models** - optimized for CPU inference (q8)
 
-## Tools
+## Available Tools
 
-### Vision
+| Tool                                | Description                         | Default Model        |
+| ----------------------------------- | ----------------------------------- | -------------------- |
+| `ml-image-classification`           | Classify images into categories     | ViT base             |
+| `ml-image-segmentation`             | Segment images into labeled regions | DETR panoptic        |
+| `ml-background-removal`             | Remove backgrounds from images      | MODNet               |
+| `ml-depth-estimation`               | Generate depth maps                 | Depth Anything small |
+| `ml-image-to-text`                  | Caption images or OCR               | ViT-GPT2             |
+| `ml-document-question-answering`    | Answer questions about documents    | Donut DocVQA         |
+| `ml-zero-shot-image-classification` | Classify with custom labels         | CLIP B/32            |
+| `ml-object-detection`               | Detect objects with bounding boxes  | YOLOS tiny           |
+| `ml-zero-shot-object-detection`     | Detect custom object classes        | OWL-ViT B/32         |
+| `ml-audio-classification`           | Classify audio clips                | Wav2Vec2 gender      |
+| `ml-zero-shot-audio-classification` | Classify audio with custom labels   | CLAP                 |
+| `ml-automatic-speech-recognition`   | Transcribe speech to text           | Whisper tiny.en      |
+| `ml-text-to-speech`                 | Generate speech from text           | MMS TTS English      |
 
-| Tool                                | Default Model                               | Description                              |
-| ----------------------------------- | ------------------------------------------- | ---------------------------------------- |
-| `ml-image-classification`           | `Xenova/vit-base-patch16-224`               | Classify images using transformer models |
-| `ml-image-segmentation`             | `Xenova/detr-resnet-50-panoptic`            | Segment images into labeled regions      |
-| `ml-background-removal`             | `briaai/RMBG-2.0`                           | Remove backgrounds from images           |
-| `ml-depth-estimation`               | `depth-anything/Depth-Anything-V2-Small-hf` | Generate depth maps from images          |
-| `ml-image-to-text`                  | `Salesforce/blip-image-captioning-base`     | Generate captions/text from images       |
-| `ml-document-question-answering`    | `Xenova/donut-base-finetuned-docvqa`        | Answer questions about document images   |
-| `ml-zero-shot-image-classification` | `openai/clip-vit-large-patch14`             | Classify images with custom labels       |
-| `ml-object-detection`               | `facebook/detr-resnet-50`                   | Detect objects with bounding boxes       |
-| `ml-zero-shot-object-detection`     | `Xenova/owlvit-base-patch32`                | Detect objects with custom labels        |
+## Verified Models
 
-### Audio
+All models below have been tested and confirmed working. Pass any model ID to the `model` parameter.
 
-| Tool                                | Default Model                                                  | Description                               |
-| ----------------------------------- | -------------------------------------------------------------- | ----------------------------------------- |
-| `ml-audio-classification`           | `Xenova/wav2vec2-large-xlsr-53-gender-recognition-librispeech` | Classify audio (e.g., gender recognition) |
-| `ml-zero-shot-audio-classification` | `Xenova/clap-htsat-unfused`                                    | Classify audio with custom labels         |
-| `ml-automatic-speech-recognition`   | `onnx-community/whisper-large-v3-turbo`                        | Transcribe speech to text (Whisper)       |
-| `ml-text-to-speech`                 | `Xenova/speecht5_tts`                                          | Generate speech from text                 |
+### Image Classification (13 models)
 
-## Alternative Models
+| Model                                                        | Description           |
+| ------------------------------------------------------------ | --------------------- |
+| `Xenova/vit-base-patch16-224`                                | ViT base (default)    |
+| `Xenova/mobilevit-small`                                     | MobileViT small       |
+| `onnx-community/mobilenet_v2_1.0_224`                        | MobileNet V2          |
+| `Xenova/resnet-50`                                           | ResNet-50             |
+| `Xenova/resnet-18`                                           | ResNet-18             |
+| `Xenova/swin-tiny-patch4-window7-224`                        | Swin tiny             |
+| `Xenova/convnext-tiny-224`                                   | ConvNeXt tiny         |
+| `onnx-community/dinov2-with-registers-small-with-attentions` | DINOv2 small          |
+| `AdamCodd/vit-base-nsfw-detector`                            | NSFW detector         |
+| `Xenova/facial_emotions_image_detection`                     | Facial emotions       |
+| `onnx-community/fairface_age_image_detection-ONNX`           | Age detection         |
+| `onnx-community/gender-classification-ONNX`                  | Gender classification |
+| `onnx-community/swin-finetuned-food101-ONNX`                 | Food-101 classifier   |
 
-All models can be overridden via the `model` parameter. Below are popular alternatives:
+### Image Segmentation (8 models)
+
+| Model                                                | Description              |
+| ---------------------------------------------------- | ------------------------ |
+| `Xenova/detr-resnet-50-panoptic`                     | DETR panoptic (default)  |
+| `Xenova/segformer-b0-finetuned-ade-512-512`          | SegFormer B0 ADE         |
+| `Xenova/segformer-b2-finetuned-ade-512-512`          | SegFormer B2 ADE         |
+| `Xenova/segformer-b2-finetuned-cityscapes-1024-1024` | SegFormer B2 Cityscapes  |
+| `Xenova/segformer_b2_clothes`                        | Clothing segmentation B2 |
+| `Xenova/segformer_b0_clothes`                        | Clothing segmentation B0 |
+| `jonathandinu/face-parsing`                          | Face parsing             |
+| `Xenova/face-parsing`                                | Face parsing (Xenova)    |
+
+### Background Removal (4 models)
+
+| Model                       | Description             |
+| --------------------------- | ----------------------- |
+| `Xenova/modnet`             | MODNet (default)        |
+| `briaai/RMBG-1.4`           | RMBG 1.4 (high quality) |
+| `onnx-community/ormbg-ONNX` | Open RMBG               |
+| `onnx-community/ISNet-ONNX` | ISNet                   |
+
+### Depth Estimation (5 models)
+
+| Model                            | Description                    |
+| -------------------------------- | ------------------------------ |
+| `Xenova/depth-anything-small-hf` | Depth Anything small (default) |
+| `Xenova/depth-anything-base-hf`  | Depth Anything base            |
+| `Xenova/glpn-kitti`              | GLPN KITTI                     |
+| `Xenova/glpn-nyu`                | GLPN NYU                       |
+| `onnx-community/DepthPro-ONNX`   | Apple DepthPro                 |
+
+### Image to Text (5 models)
+
+| Model                              | Description                   |
+| ---------------------------------- | ----------------------------- |
+| `Xenova/vit-gpt2-image-captioning` | ViT-GPT2 captioning (default) |
+| `Xenova/trocr-small-printed`       | TrOCR small printed           |
+| `Xenova/trocr-base-printed`        | TrOCR base printed            |
+| `Xenova/trocr-small-handwritten`   | TrOCR small handwritten       |
+| `Xenova/trocr-base-handwritten`    | TrOCR base handwritten        |
+
+### Document Question Answering (1 model)
+
+| Model                                | Description            |
+| ------------------------------------ | ---------------------- |
+| `Xenova/donut-base-finetuned-docvqa` | Donut DocVQA (default) |
+
+### Zero-Shot Image Classification (14 models)
+
+| Model                                                    | Description              |
+| -------------------------------------------------------- | ------------------------ |
+| `Xenova/clip-vit-base-patch32`                           | CLIP B/32 (default)      |
+| `Xenova/clip-vit-base-patch16`                           | CLIP B/16                |
+| `Xenova/clip-vit-large-patch14`                          | CLIP L/14                |
+| `Xenova/clip-vit-large-patch14-336`                      | CLIP L/14 336px          |
+| `Xenova/chinese-clip-vit-base-patch16`                   | Chinese CLIP B/16        |
+| `Xenova/chinese-clip-vit-large-patch14`                  | Chinese CLIP L/14        |
+| `Xenova/chinese-clip-vit-large-patch14-336px`            | Chinese CLIP L/14 336px  |
+| `Xenova/siglip-base-patch16-224`                         | SigLIP base 224          |
+| `Xenova/siglip-base-patch16-256`                         | SigLIP base 256          |
+| `Xenova/siglip-base-patch16-384`                         | SigLIP base 384          |
+| `Xenova/siglip-base-patch16-512`                         | SigLIP base 512          |
+| `Xenova/siglip-large-patch16-384`                        | SigLIP large 384         |
+| `onnx-community/TinyCLIP-ViT-8M-16-Text-3M-YFCC15M-ONNX` | TinyCLIP 8M              |
+| `onnx-community/StreetCLIP-ONNX`                         | StreetCLIP (geolocation) |
+
+### Object Detection (2 models)
+
+| Model                   | Description          |
+| ----------------------- | -------------------- |
+| `Xenova/yolos-tiny`     | YOLOS tiny (default) |
+| `Xenova/detr-resnet-50` | DETR ResNet-50       |
+
+### Zero-Shot Object Detection (2 models)
+
+| Model                        | Description            |
+| ---------------------------- | ---------------------- |
+| `Xenova/owlvit-base-patch32` | OWL-ViT B/32 (default) |
+| `Xenova/owlvit-base-patch16` | OWL-ViT B/16           |
+
+### Audio Classification (1 model)
+
+| Model                                                          | Description                  |
+| -------------------------------------------------------------- | ---------------------------- |
+| `Xenova/wav2vec2-large-xlsr-53-gender-recognition-librispeech` | Gender recognition (default) |
+
+### Zero-Shot Audio Classification (1 model)
+
+| Model                       | Description            |
+| --------------------------- | ---------------------- |
+| `Xenova/clap-htsat-unfused` | CLAP unfused (default) |
+
+### Automatic Speech Recognition (21 models)
+
+| Model                                               | Description                               |
+| --------------------------------------------------- | ----------------------------------------- |
+| `Xenova/whisper-tiny.en`                            | Whisper tiny.en (default)                 |
+| `Xenova/whisper-base.en`                            | Whisper base.en                           |
+| `Xenova/whisper-small.en`                           | Whisper small.en                          |
+| `Xenova/whisper-medium.en`                          | Whisper medium.en                         |
+| `Xenova/whisper-base`                               | Whisper base (multilingual)               |
+| `Xenova/whisper-small`                              | Whisper small (multilingual)              |
+| `Xenova/whisper-medium`                             | Whisper medium (multilingual)             |
+| `Xenova/whisper-large`                              | Whisper large (multilingual)              |
+| `Xenova/whisper-large-v3`                           | Whisper large v3                          |
+| `onnx-community/whisper-tiny`                       | ONNX Whisper tiny                         |
+| `onnx-community/whisper-tiny.en`                    | ONNX Whisper tiny.en                      |
+| `onnx-community/whisper-base`                       | ONNX Whisper base                         |
+| `onnx-community/whisper-small`                      | ONNX Whisper small                        |
+| `onnx-community/whisper-large-v3-turbo`             | ONNX Whisper large v3 turbo               |
+| `onnx-community/whisper-tiny_timestamped`           | ONNX Whisper tiny (timestamped)           |
+| `onnx-community/whisper-base_timestamped`           | ONNX Whisper base (timestamped)           |
+| `onnx-community/whisper-small_timestamped`          | ONNX Whisper small (timestamped)          |
+| `onnx-community/whisper-large-v3-turbo_timestamped` | ONNX Whisper large v3 turbo (timestamped) |
+| `distil-whisper/distil-small.en`                    | Distil-Whisper small.en                   |
+| `distil-whisper/distil-medium.en`                   | Distil-Whisper medium.en                  |
+| `distil-whisper/distil-large-v2`                    | Distil-Whisper large v2                   |
+
+### Text to Speech (5 models)
+
+| Model                | Description               |
+| -------------------- | ------------------------- |
+| `Xenova/mms-tts-eng` | MMS TTS English (default) |
+| `Xenova/mms-tts-spa` | MMS TTS Spanish           |
+| `Xenova/mms-tts-fra` | MMS TTS French            |
+| `Xenova/mms-tts-deu` | MMS TTS German            |
+| `Xenova/mms-tts-por` | MMS TTS Portuguese        |
+
+## Usage Examples
 
 ### Image Classification
 
-| Model                                  | Description                   |
-| -------------------------------------- | ----------------------------- |
-| `Xenova/vit-base-patch16-224`          | ViT base model (default)      |
-| `google/vit-base-patch16-224`          | Google's ViT base             |
-| `apple/mobilevit-small`                | Apple MobileViT (lightweight) |
-| `timm/mobilenetv3_small_100.lamb_in1k` | MobileNetV3 small             |
-| `timm/resnet50.a1_in1k`                | ResNet-50                     |
-| `Falconsai/nsfw_image_detection`       | NSFW detection                |
-| `dima806/fairface_age_image_detection` | Age detection                 |
+```typescript
+// Default model
+ml - image - classification({ image: "photo.jpg" });
 
-### Object Detection
-
-| Model                                   | Description              |
-| --------------------------------------- | ------------------------ |
-| `facebook/detr-resnet-50`               | DETR ResNet-50 (default) |
-| `Xenova/yolos-tiny`                     | YOLOS tiny (fast)        |
-| `hustvl/yolos-small`                    | YOLOS small              |
-| `PekingU/rtdetr_r50vd_coco_o365`        | RT-DETR (real-time)      |
-| `microsoft/table-transformer-detection` | Table detection          |
-
-### Image Segmentation
-
-| Model                                                 | Description             |
-| ----------------------------------------------------- | ----------------------- |
-| `Xenova/detr-resnet-50-panoptic`                      | DETR panoptic (default) |
-| `Xenova/segformer-b0-finetuned-ade-512-512`           | SegFormer B0            |
-| `nvidia/segformer-b0-finetuned-ade-512-512`           | NVIDIA SegFormer B0     |
-| `nvidia/segformer-b1-finetuned-ade-512-512`           | NVIDIA SegFormer B1     |
-| `facebook/mask2former-swin-large-cityscapes-semantic` | Mask2Former             |
-| `mattmdjaga/segformer_b2_clothes`                     | Clothing segmentation   |
-| `jonathandinu/face-parsing`                           | Face parsing            |
-
-### Background Removal
-
-| Model                 | Description          |
-| --------------------- | -------------------- |
-| `briaai/RMBG-2.0`     | RMBG 2.0 (default)   |
-| `briaai/RMBG-1.4`     | RMBG 1.4             |
-| `Xenova/modnet`       | MODNet (lightweight) |
-| `ZhengPeng7/BiRefNet` | BiRefNet             |
-
-### Depth Estimation
-
-| Model                                       | Description                       |
-| ------------------------------------------- | --------------------------------- |
-| `depth-anything/Depth-Anything-V2-Small-hf` | Depth Anything V2 small (default) |
-| `Xenova/dpt-hybrid-midas`                   | DPT Hybrid MiDaS                  |
-| `Intel/zoedepth-nyu-kitti`                  | ZoeDepth                          |
-| `LiheYoung/depth-anything-large-hf`         | Depth Anything large              |
-| `depth-anything/Depth-Anything-V2-Base-hf`  | Depth Anything V2 base            |
-| `depth-anything/Depth-Anything-V2-Large-hf` | Depth Anything V2 large           |
-
-### Image Captioning (Image-to-Text)
-
-| Model                                    | Description            |
-| ---------------------------------------- | ---------------------- |
-| `Salesforce/blip-image-captioning-base`  | BLIP base (default)    |
-| `Salesforce/blip-image-captioning-large` | BLIP large             |
-| `Xenova/vit-gpt2-image-captioning`       | ViT-GPT2 (lightweight) |
-| `microsoft/trocr-large-printed`          | TrOCR (OCR)            |
-
-### Document Question Answering
-
-| Model                                        | Description            |
-| -------------------------------------------- | ---------------------- |
-| `Xenova/donut-base-finetuned-docvqa`         | Donut DocVQA (default) |
-| `naver-clova-ix/donut-base-finetuned-docvqa` | Donut original         |
-| `impira/layoutlm-document-qa`                | LayoutLM               |
-| `impira/layoutlm-invoices`                   | LayoutLM for invoices  |
-
-### Zero-Shot Image Classification
-
-| Model                               | Description             |
-| ----------------------------------- | ----------------------- |
-| `openai/clip-vit-large-patch14`     | CLIP ViT-L/14 (default) |
-| `Xenova/clip-vit-base-patch32`      | CLIP ViT-B/32 (fast)    |
-| `Xenova/clip-vit-base-patch16`      | CLIP ViT-B/16           |
-| `openai/clip-vit-large-patch14-336` | CLIP ViT-L/14 high-res  |
-| `google/siglip-so400m-patch14-384`  | SigLIP                  |
-| `patrickjohncyh/fashion-clip`       | Fashion CLIP            |
-
-### Speech Recognition (ASR)
-
-| Model                                   | Description                            |
-| --------------------------------------- | -------------------------------------- |
-| `onnx-community/whisper-large-v3-turbo` | Whisper large v3 turbo (default, best) |
-| `openai/whisper-large-v3`               | Whisper large v3                       |
-| `Xenova/whisper-small`                  | Whisper small                          |
-| `Xenova/whisper-base`                   | Whisper base                           |
-| `Xenova/whisper-tiny.en`                | Whisper tiny English (fastest)         |
-| `Xenova/whisper-tiny`                   | Whisper tiny multilingual              |
-
-### Audio Classification
-
-| Model                                                          | Description                   |
-| -------------------------------------------------------------- | ----------------------------- |
-| `Xenova/wav2vec2-large-xlsr-53-gender-recognition-librispeech` | Gender recognition (default)  |
-| `MIT/ast-finetuned-audioset-10-10-0.4593`                      | Audio Spectrogram Transformer |
-| `speechbrain/emotion-recognition-wav2vec2-IEMOCAP`             | Emotion recognition           |
-| `speechbrain/lang-id-voxlingua107-ecapa`                       | Language identification       |
-| `audeering/wav2vec2-large-robust-24-ft-age-gender`             | Age & gender                  |
-
-### Zero-Shot Audio Classification
-
-| Model                       | Description      |
-| --------------------------- | ---------------- |
-| `Xenova/clap-htsat-unfused` | CLAP (default)   |
-| `laion/clap-htsat-fused`    | LAION CLAP fused |
-
-### Text-to-Speech
-
-| Model                        | Description        |
-| ---------------------------- | ------------------ |
-| `Xenova/speecht5_tts`        | SpeechT5 (default) |
-| `Xenova/mms-tts-eng`         | MMS TTS English    |
-| `myshell-ai/MeloTTS-English` | MeloTTS English    |
-| `myshell-ai/MeloTTS-Spanish` | MeloTTS Spanish    |
-
-## Audio Processing
-
-Audio tools support both local files and URLs. Audio is automatically preprocessed:
-
-- Converted to 32-bit float format
-- Resampled to 16kHz (required by speech models)
-- Stereo channels merged to mono
-
-Supported format: WAV files (uses `wavefile` package for Node.js compatibility).
-
-## Usage
-
-Tools are registered when the extension loads. Each tool accepts the parameters defined in `index.ts` and returns a text result plus structured details.
-
-Example (speech recognition):
-
-```ts
-const result = await tool.execute(
-  "call",
-  { audio: "/path/to/audio.wav" },
-  undefined,
-  onUpdate,
-  ctx,
-);
-// result.content[0].text: " And so my fellow Americans..."
+// Specific model
+ml -
+  image -
+  classification({
+    image: "photo.jpg",
+    model: "onnx-community/swin-finetuned-food101-ONNX",
+  });
 ```
 
-Example (object detection with custom model):
+### Zero-Shot Classification
 
-```ts
-const result = await tool.execute(
-  "call",
-  {
-    image: "/path/to/image.png",
-    model: "Xenova/yolos-tiny", // Use faster model
-    threshold: 0.4,
-  },
-  undefined,
-  onUpdate,
-  ctx,
-);
+```typescript
+ml -
+  zero -
+  shot -
+  image -
+  classification({
+    image: "photo.jpg",
+    labels: ["cat", "dog", "bird", "fish"],
+  });
+```
+
+### Speech Recognition
+
+```typescript
+// English (fastest)
+ml - automatic - speech - recognition({ audio: "recording.wav" });
+
+// Large model for best accuracy
+ml -
+  automatic -
+  speech -
+  recognition({
+    audio: "recording.wav",
+    model: "onnx-community/whisper-large-v3-turbo",
+  });
+
+// With timestamps
+ml -
+  automatic -
+  speech -
+  recognition({
+    audio: "recording.wav",
+    model: "onnx-community/whisper-base_timestamped",
+    returnTimestamps: true,
+  });
+```
+
+### Text to Speech
+
+```typescript
+ml - text - to - speech({ text: "Hello, world!" });
+// Returns base64-encoded WAV audio in details.audioBase64
+```
+
+## Verification
+
+Run the model verification script to test all models:
+
+```bash
+# Quick test (default models only)
+bun run verify:quick
+
+# Full verification (all 82 models)
+bun run verify
 ```
 
 ## Notes
 
-- Pipelines are cached per task/model to avoid reloading models.
-- First use of a model can be slow; the tool emits an update during load.
-- Some tools attach images to the response content when available.
-- Text-to-speech returns base64-encoded WAV data in tool details.
-- Audio processing uses `wavefile` since `AudioContext` is not available in Node.js.
-- Models prefixed with `Xenova/` are optimized for transformers.js.
+- First use of a model downloads it (~50MB-500MB depending on model)
+- Models are cached in `~/.cache/huggingface/`
+- All models run on CPU with 8-bit quantization
+- Some models may take 10-30+ seconds on first inference
