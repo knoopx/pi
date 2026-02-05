@@ -14,17 +14,17 @@ tmux has -t devserver || tmux new-session -d -s devserver 'bun run dev'
 
 ## 📋 STRICT Requirements
 
-| Rule                       | Action                                                                      |
-| -------------------------- | --------------------------------------------------------------------------- |
-| 🔍 **Read first**          | User refs, docs, skills, tools BEFORE any code changes                      |
-| 🛠️ **Specialized tools**   | Prefer specialized tools over basic bash                                    |
-| 📐 **SWE best practices**  | Follow SWE skill guidelines                                                 |
-| 🖥️ **Tmux sessions**       | Launch interactive/blocking commands in tmux                                |
-| ✅ **Complete work**       | Done when: architecturally sound, no dupes, typechecks, lints, tests pass   |
-| 🔔 **Notify user**         | Use `notify` tool when complete                                             |
-| 🔊 **Keep user posted**    | Use `tts` to narrate actions: starting tasks, progress, completions, errors |
-| 📦 **Ignore node_modules** | When running grep or find                                                   |
-| 📥 **Imports on top**      | Always place imports at file top                                            |
+| Rule                       | Action                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 🔍 **Read first**          | User refs, docs, skills, tools BEFORE any code changes                                                        |
+| 🛠️ **Specialized tools**   | Prefer specialized tools over basic bash                                                                      |
+| 📐 **SWE best practices**  | Follow SWE skill guidelines                                                                                   |
+| 🖥️ **Tmux sessions**       | Launch interactive/blocking commands in tmux                                                                  |
+| ✅ **Complete work**       | Done when: architecturally sound, no dupes, typechecks, lints, tests pass                                     |
+| 🔔 **Notify user**         | Use `notify` tool when complete                                                                               |
+| 🔊 **Keep user posted**    | Use `tts` to narrate actions: starting tasks, progress, completions, errors - keep messages short and concise |
+| 📦 **Ignore node_modules** | When running grep or find                                                                                     |
+| 📥 **Imports on top**      | Always place imports at file top                                                                              |
 
 ---
 
