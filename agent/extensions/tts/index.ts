@@ -4,6 +4,7 @@
  * Provides a tool to convert text to speech using the tts CLI.
  * Supports direct text input: tts 'text'
  * Also supports piped input: echo 'text' | tts
+ * Automatically pauses active Linux media players during speech and resumes them afterwards.
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -27,11 +28,16 @@ export default function ttsExtension(pi: ExtensionAPI) {
       _onUpdate,
       _ctx,
     ) {
-      // Kill any previous tts process, then spawn new one in background
+      // Kill any previous tts process, then spawn new one in background with media player pause/resume
       const escaped = params.text.replace(/'/g, "'\\''");
       pi.exec("sh", [
         "-c",
-        `pkill -f '^tts ' 2>/dev/null; tts '${escaped}' &>/dev/null &`,
+        `pkill -f '^tts ' 2>/dev/null; sh -c "
+playing=\$(playerctl --all-players -f '{{playerName}}' --status Playing 2>/dev/null)
+playerctl --all-players pause 2>/dev/null
+tts '${escaped}' &>/dev/null
+for player in \$playing; do playerctl -p \"\$player\" play 2>/dev/null; done
+" &`,
       ]);
 
       return {
