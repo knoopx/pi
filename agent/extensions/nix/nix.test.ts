@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
@@ -92,7 +91,13 @@ describe("Nix Extension", () => {
         }));
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        result = await registeredTool.execute("tool1", { query: "hello" });
+        result = await registeredTool.execute(
+          "tool1",
+          { query: "hello" },
+          undefined,
+          undefined,
+          {},
+        );
       });
 
       it("then it should return formatted package results", () => {
@@ -135,7 +140,13 @@ describe("Nix Extension", () => {
           .mockRejectedValue(new Error("Network error")) as unknown;
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        const result = await registeredTool.execute("tool1", { query: "test" });
+        const result = await registeredTool.execute(
+          "tool1",
+          { query: "test" },
+          undefined,
+          undefined,
+          {},
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           "Error: Network error",
@@ -154,7 +165,13 @@ describe("Nix Extension", () => {
         );
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        const result = await registeredTool.execute("tool1", { query: "test" });
+        const result = await registeredTool.execute(
+          "tool1",
+          { query: "test" },
+          undefined,
+          undefined,
+          {},
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           "Error: Search request failed: undefined",
@@ -203,7 +220,13 @@ describe("Nix Extension", () => {
         );
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        result = await registeredTool.execute("tool1", { query: "httpd" });
+        result = await registeredTool.execute(
+          "tool1",
+          { query: "httpd" },
+          undefined,
+          undefined,
+          {},
+        );
       });
 
       it("then it should return formatted option results", () => {
@@ -299,7 +322,13 @@ describe("Nix Extension", () => {
         );
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        result = await registeredTool.execute("tool1", { query: "git" });
+        result = await registeredTool.execute(
+          "tool1",
+          { query: "git" },
+          undefined,
+          undefined,
+          {},
+        );
       });
 
       it("then it should return formatted option results", () => {
