@@ -7,11 +7,7 @@ description: Searches code by AST patterns and performs structural refactoring a
 
 Structural code search and rewriting using AST matching.
 
-## Quick Start
-
-### Pattern Syntax
-
-ast-grep uses pattern placeholders to match and capture AST nodes:
+## Pattern Syntax
 
 | Pattern  | Description                                                 |
 | -------- | ----------------------------------------------------------- |
@@ -20,13 +16,13 @@ ast-grep uses pattern placeholders to match and capture AST nodes:
 | `$_`     | Anonymous placeholder (matches any single node, no capture) |
 | `$$$_`   | Anonymous spread placeholder (matches any number of nodes)  |
 
-**Shell quoting tip:** Escape `$` as `\$VAR` or wrap the pattern in single quotes to avoid shell expansion.
+**Shell quoting:** Escape `$` as `\$VAR` or wrap in single quotes.
 
-### Supported Languages
+## Supported Languages
 
 javascript, typescript, tsx, html, css, python, go, rust, java, c, cpp, csharp, ruby, php, yaml
 
-### Commands
+## Commands
 
 | Command         | Description                          |
 | --------------- | ------------------------------------ |
@@ -34,11 +30,8 @@ javascript, typescript, tsx, html, css, python, go, rust, java, c, cpp, csharp, 
 | `ast-grep scan` | Scan and rewrite by configuration    |
 | `ast-grep test` | Test ast-grep rules                  |
 | `ast-grep new`  | Create new project or rules          |
-| `ast-grep lsp`  | Start language server                |
 
-## Basic Search
-
-Find patterns in code:
+## Search Examples
 
 ```bash
 # Find console.log calls
@@ -58,56 +51,72 @@ ast-grep run --pattern 'def $NAME($$$ARGS): $$$BODY' --lang python .
 
 # Find Go error handling
 ast-grep run --pattern 'if $ERR != nil { $$$BODY }' --lang go .
+
+# Find all function calls
+ast-grep run --pattern '$FUNCTION($$$_)' --lang typescript .
+
+# Find specific function calls
+ast-grep run --pattern 'fetch($$$_)' --lang typescript .
+
+# Find try-catch blocks
+ast-grep run --pattern 'try { $$$BODY } catch ($$$_)' --lang typescript .
+
+# Find Promise error handling
+ast-grep run --pattern '.catch($$$_)' --lang typescript .
 ```
 
 ## Search and Replace (Dry Run)
 
-Preview refactoring changes without modifying files:
-
 ```bash
-# Replace == with === (preview)
+# Replace == with ===
 ast-grep run --pattern '$A == $B' --rewrite '$A === $B' --lang javascript .
 
-# Convert function to arrow function (preview)
+# Replace != with !==
+ast-grep run --pattern '$A != $B' --rewrite '$A !== $B' --lang typescript .
+
+# Convert function to arrow function
 ast-grep run --pattern 'function $NAME($$$ARGS) { $$$BODY }' \
   --rewrite 'const $NAME = ($$$ARGS) => { $$$BODY }' --lang javascript .
 
-# Replace var with let (preview)
+# Replace var with let
 ast-grep run --pattern 'var $NAME = $VALUE' --rewrite 'let $NAME = $VALUE' --lang javascript .
 
-# Add optional chaining (preview)
+# Add optional chaining
 ast-grep run --pattern '$OBJ && $OBJ.$PROP' --rewrite '$OBJ?.$PROP' --lang javascript .
+
+# Replace console.log with logger
+ast-grep run --pattern 'console.log($$$_)' --rewrite 'logger.info($$$_)' --lang typescript .
 ```
 
 ## Apply Changes
 
-Apply refactoring to files:
-
 ```bash
-# Apply changes (use --update-all)
+# Apply changes with --update-all
 ast-grep run --pattern '$A == $B' --rewrite '$A === $B' --lang javascript --update-all .
 ```
 
-## Project Setup
+## Configuration-Based Rules
 
-```bash
-# Initialize a new ast-grep project
-ast-grep new my-refactor-rules
-
-# Add rules to your project
-cat > rules/my-rule.yaml << 'EOF'
+```yaml
+# rules/my-rules.yaml
 patterns:
-  - pattern: 'console.log($$$ARGS)'
-    rewrite: 'logger.info($$$ARGS)'
+  - pattern: "console.log($$$_)"
+    rewrite: "logger.info($$$_)"
     languages: [javascript, typescript]
-EOF
-
-# Run your custom rules
-ast-grep scan --project my-refactor-rules
+    message: "Use logger instead of console.log"
 ```
 
-## Related Tools
+```bash
+# Run custom rules
+ast-grep scan --project my-rules
 
-- **codemapper**: Alternative pattern-based refactoring tool
-- **typescript**: Type-safe AST manipulation
-- **python**: AST parsing and manipulation
+# Dry-run preview
+ast-grep scan --project my-rules --dry-run
+```
+
+## Tips
+
+- Use `--dry-run` to preview changes before applying
+- Use `--update-all` to apply to all matching files
+- Use single quotes for patterns with `$` variables
+- Combine with `--verbose` for detailed matching info

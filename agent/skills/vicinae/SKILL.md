@@ -14,9 +14,9 @@ Extensions for Vicinae launcher using TypeScript and React.
 - [Project Structure](#project-structure)
 - [Command Types](#command-types)
 - [Development Workflow](#development-workflow)
-- Advanced: [UX Patterns](./ux-patterns.md)
-- Advanced: [API Reference](./api-reference.md)
-- Advanced: [Keyboard Shortcuts](./shortcuts.md)
+- Advanced: [UX Patterns](./references/ux-patterns.md)
+- Advanced: [API Reference](./references/api-reference.md)
+- Advanced: [Keyboard Shortcuts](./references/shortcuts.md)
 
 ## Core Concepts
 
@@ -175,7 +175,7 @@ Use `Ctrl` for common actions, `Shift+Delete` for destructive:
 />
 ```
 
-See [Keyboard Shortcuts](./shortcuts.md) for full reference.
+See [Keyboard Shortcuts](./references/shortcuts.md) for full reference.
 
 ## Navigation
 

@@ -1,6 +1,6 @@
 ---
 name: digest
-description: Analyze and organize content by extracting key insights and structuring information by topic. Use when summarizing articles, processing feeds, creating topic-based reports, or distilling large content into actionable summaries.
+description: Analyzes and organizes content by extracting key insights and structuring information by topic. Use when summarizing articles, processing feeds, creating topic-based reports, or distilling large content into actionable summaries.
 ---
 
 # Content Digest

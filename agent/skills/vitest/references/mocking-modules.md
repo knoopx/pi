@@ -6,9 +6,9 @@ Mock external dependencies using `vi.mock()` for isolated unit tests.
 
 ```typescript
 import { beforeEach, expect, it, vi } from "vitest";
-import { getUserService } from './user-service';
+import { getUserService } from "./user-service";
 
-vi.mock('./user-service');
+vi.mock("./user-service");
 
 describe("UserService", () => {
   beforeEach(() => {
@@ -30,9 +30,9 @@ describe("UserService", () => {
 
 ```typescript
 import { describe, it, expect } from "vitest";
-import { EmailService } from './email-service';
+import { EmailService } from "./email-service";
 
-vi.mock('./email-service', () => ({
+vi.mock("./email-service", () => ({
   EmailService: vi.fn().mockImplementation(() => ({
     send: vi.fn().mockResolvedValue(true),
   })),
@@ -52,21 +52,16 @@ describe("NotificationService", () => {
 ## Mocking with Return Values
 
 ```typescript
-vi.mock('./api', () => ({
+vi.mock("./api", () => ({
   fetchData: vi.fn().mockResolvedValue({
     data: "test data",
   }),
 }));
 
-vi.mock('./database', () => ({
+vi.mock("./database", () => ({
   query: vi.fn().mockResolvedValue([
     { id: 1, name: "Alice" },
     { id: 2, name: "Bob" },
   ]),
 }));
 ```
-
-## See Also
-
-- [Mocking Filesystem](./filesystem-mocking.md)
-- [Mocking Requests](./requests-mocking.md)

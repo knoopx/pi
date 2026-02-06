@@ -10,87 +10,67 @@ Fast all-in-one JavaScript runtime, bundler, test runner, and package manager.
 ## Quick Start
 
 ```bash
-# Create new project
-bun init
-
-# Install dependencies
-bun install
-
-# Run a script
-bun run ./file.ts
-
-# Run tests
-bun test
+bun init              # Create new project
+bun install           # Install dependencies
+bun run ./file.ts     # Run a script
+bun test              # Run tests
 ```
-
-## Contents
-
-- [Package Management](./REFERENCE.md#package-management)
-- [Running Code](./REFERENCE.md#running-code)
-- [Testing](./REFERENCE.md#testing)
-- [Building](./REFERENCE.md#building)
-- [Configuration](./REFERENCE.md#configuration)
-- [Workspaces](./REFERENCE.md#workspaces)
-- [Environment Variables](./REFERENCE.md#environment-variables)
 
 ## Package Management
 
-### Installation
-
 ```bash
+# Installation
 bun add <pkg>              # Production dep
 bun add -d <pkg>           # Dev dependency
 bun add --optional <pkg>   # Optional dep
 bun add -g <pkg>           # Global install
-```
+bun add <pkg>@^1.0.0       # Specific version
+bun add <owner>/<repo>     # From git
 
-### Management
-
-```bash
+# Management
 bun remove <pkg>           # Remove package
 bun update                 # Update all
+bun update <pkg>           # Update specific
 bun outdated               # Show outdated
 bun audit                  # Security audit
 bun why <pkg>              # Why installed
-bun info <pkg>             # Show package metadata
+bun info <pkg>             # Package metadata
 bun publish                # Publish to npm
 bun patch <pkg>            # Patch a package
 bun link                   # Link local package
 bun unlink                 # Unlink local package
 ```
 
-See [Package Management](./REFERENCE.md#package-management) for details.
-
 ## Running Code
 
 ```bash
 bun run ./file.ts          # Execute file
-bun run dev               # Run script
-bun -e "code"             # Eval code
-bun exec ./script.sh      # Run shell script
+bun run dev                # Run script from package.json
+bun -e "code"              # Eval code
+bun exec ./script.sh       # Run shell script
+bun run ./cli.ts arg1 arg2 # With arguments
 
-# Long-running/watch mode (use tmux for background)
+# Long-running/watch mode (use tmux)
 tmux new -d -s dev 'bun run --watch ./file.ts'
 tmux new -d -s hot 'bun run --hot ./file.ts'
 tmux new -d -s repl 'bun repl'
 ```
 
-See [Running Code](./REFERENCE.md#running-code) for details.
-
 ## Testing
 
 ```bash
 bun test                   # Run all tests
-bun test --coverage       # With coverage
-bun test -t "pattern"     # Filter by name
-bun test --bail 3         # Stop after N failures
-bun test -u               # Update snapshots
+bun test tests/test.ts     # Specific file
+bun test --coverage        # With coverage
+bun test -t "pattern"      # Filter by name
+bun test --bail 3          # Stop after N failures
+bun test -u                # Update snapshots
+bun test --timeout 5000    # With timeout
+bun test --verbose         # Verbose output
 
-# Watch mode (use tmux for background)
+# Watch mode (use tmux)
 tmux new -d -s test 'bun test --watch'
 ```
-
-See [Testing](./REFERENCE.md#testing) for details.
 
 ## Building
 
@@ -98,11 +78,10 @@ See [Testing](./REFERENCE.md#testing) for details.
 bun build ./src/index.ts              # Bundle
 bun build --production ./src/index.ts # Minified
 bun build --target=node ./src/index.ts # Node target
-bun build --compile ./cli.ts          # Executable
+bun build --compile ./cli.ts          # Standalone executable
 bun build --splitting ./src/index.ts  # Code splitting
+bun build --outdir ./dist ./src/index.ts # Output directory
 ```
-
-See [Building](./REFERENCE.md#building) for details.
 
 ## Configuration
 
@@ -110,9 +89,8 @@ See [Building](./REFERENCE.md#building) for details.
 
 ```toml
 [install]
-linker = "hoisted"           # or "isolated"
-minimumReleaseAge = 259200   # Security (3 days)
-optional = true
+linker = "hoisted"
+minimumReleaseAge = 259200
 
 [test]
 timeout = 5000
@@ -121,13 +99,24 @@ coverage = { reporter = ["text"] }
 [build]
 minify = true
 sourcemap = "external"
+outdir = "dist"
 ```
 
-See [Configuration](./REFERENCE.md#configuration) for details.
+### package.json
+
+```json
+{
+  "name": "my-project",
+  "type": "module",
+  "module": "src/index.ts",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "test": "bun test"
+  }
+}
+```
 
 ## Workspaces
-
-### Root package.json
 
 ```json
 {
@@ -139,36 +128,24 @@ See [Configuration](./REFERENCE.md#configuration) for details.
 }
 ```
 
-### Workspace Commands
-
 ```bash
 bun run --workspaces test    # Run in all workspaces
 bun add <pkg> --filter <ws>  # Add to specific workspace
-bun remove <pkg> --filter <ws> # Remove from workspace
 ```
-
-See [Workspaces](./REFERENCE.md#workspaces) for details.
 
 ## Environment Variables
 
 ```bash
 bun run --env-file=.env dev  # Load .env
-process.env.VAR             # Access in code
+VAR=value bun run ./file.ts  # Set inline
+process.env.VAR              # Access in code
 ```
-
-See [Environment Variables](./REFERENCE.md#environment-variables) for details.
 
 ## Tips
 
 - Use `bunx` for one-off CLIs (auto-installs)
 - Commit `bun.lock` for reproducible installs
-- `--frozen-lockfile` in CI to prevent changes
-- `bun run -i` auto-installs missing deps
+- Use `--frozen-lockfile` in CI
+- Use `bun run -i` to auto-install missing deps
 - Standalone executables: `bun build --compile`
-- Use tmux for watch/hot modes: `tmux new -d -s dev 'bun run --watch'`
-
-## Related Skills
-
-- **typescript**: TypeScript configuration and type checking
-- **vitest**: Test utilities and mocking
-- **ast-grep**: Pattern matching for refactoring
+- Use tmux for watch/hot modes

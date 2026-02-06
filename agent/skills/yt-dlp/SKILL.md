@@ -1,6 +1,6 @@
 ---
 name: yt-dlp
-description: Download videos from YouTube and other sites using yt-dlp. Use when downloading videos, extracting metadata, or batch downloading multiple files.
+description: Downloads videos from YouTube and other sites using yt-dlp. Use when downloading videos, extracting metadata, or batch downloading multiple files.
 ---
 
 # yt-dlp Cheatsheet
@@ -20,17 +20,6 @@ yt-dlp -f best https://url
 yt-dlp -o "filename.%(ext)s" https://url
 ```
 
-## Contents
-
-- [Basic Download](./REFERENCE.md#basic-download)
-- [Format Selection](./REFERENCE.md#format-selection)
-- [Output Options](./REFERENCE.md#output-options)
-- [Playlist Handling](./REFERENCE.md#playlist-handling)
-- [Authentication](./REFERENCE.md#authentication)
-- [Metadata Extraction](./REFERENCE.md#metadata-extraction)
-- [Advanced Options](./REFERENCE.md#advanced-options)
-- [Batch Processing](./REFERENCE.md#batch-processing)
-
 ## Basic Download
 
 ```bash
@@ -44,7 +33,6 @@ yt-dlp https://url
 yt-dlp -f best https://url
 ```
 
-See [Basic Download](./REFERENCE.md#basic-download) for details.
 
 ## Format Selection
 
@@ -68,7 +56,6 @@ yt-dlp --list-formats https://url
 yt-dlp -f "bestvideo[ext=mp4]+bestaudio/best" https://url
 ```
 
-See [Format Selection](./REFERENCE.md#format-selection) for details.
 
 ## Output Options
 
@@ -92,7 +79,6 @@ yt-dlp --limit 1M https://url
 yt-dlp --retries 5 https://url
 ```
 
-See [Output Options](./REFERENCE.md#output-options) for details.
 
 ## Playlist Handling
 
@@ -113,7 +99,6 @@ yt-dlp --playlist-start 5 https://url
 yt-dlp --ignore-errors https://url
 ```
 
-See [Playlist Handling](./REFERENCE.md#playlist-handling) for details.
 
 ## Authentication
 
@@ -128,7 +113,6 @@ yt-dlp --cookies cookies.txt https://url
 yt-dlp --username user --password pass https://url
 ```
 
-See [Authentication](./REFERENCE.md#authentication) for details.
 
 ## Metadata Extraction
 
@@ -149,7 +133,6 @@ yt-dlp --get-description https://url
 yt-dlp --get-uploader https://url
 ```
 
-See [Metadata Extraction](./REFERENCE.md#metadata-extraction) for details.
 
 ## Advanced Options
 
@@ -173,7 +156,6 @@ yt-dlp -o "downloads/%(title)s.%(ext)s" https://url
 yt-dlp --concurrent-connections 10 https://url
 ```
 
-See [Advanced Options](./REFERENCE.md#advanced-options) for details.
 
 ## Batch Processing
 
@@ -185,7 +167,6 @@ yt-dlp --batch-file urls.txt
 yt-dlp --download-archive archive.txt https://url
 ```
 
-See [Batch Processing](./REFERENCE.md#batch-processing) for details.
 
 ## Tips
 

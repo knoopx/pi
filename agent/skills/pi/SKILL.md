@@ -108,12 +108,11 @@ Create `~/.pi/agent/models.json` for custom providers:
 }
 ```
 
-See [REFERENCE.md](REFERENCE.md) for complete reference.
-
 ## Detailed Documentation
 
-- **Skills**: See [SKILL-REFERENCE.md](SKILL-REFERENCE.md)
-- **Templates**: See [TEMPLATE-REFERENCE.md](TEMPLATE-REFERENCE.md)
-- **Packages**: See [PACKAGES.md](PACKAGES.md)
-- **Sessions**: See [SESSION.md](SESSION.md)
-- **Configuration**: See [CONFIG.md](CONFIG.md)
+- **Extensions**: See [extensions.md](./references/extensions.md)
+- **Skills**: See [skills.md](./references/skills.md)
+- **Templates**: See [templates.md](./references/templates.md)
+- **Packages**: See [packages.md](./references/packages.md)
+- **Sessions**: See [sessions.md](./references/sessions.md)
+- **Configuration**: See [config.md](./references/config.md)

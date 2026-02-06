@@ -3,8 +3,6 @@ name: typescript
 description: Configures TypeScript projects, defines types and interfaces, writes generics, and implements type guards. Use when setting up tsconfig.json, creating type definitions, or ensuring type safety in JS/TS codebases.
 ---
 
-References are relative to /home/knoopx/.pi/agent/skills/typescript.
-
 # TypeScript
 
 Type-safe JavaScript with static typing and modern features.
@@ -12,19 +10,14 @@ Type-safe JavaScript with static typing and modern features.
 ## Quick Start
 
 ```bash
-# Initialize project
-bun init --typescript
-
-# Type check
-bunx tsc --noEmit
-
-# Run tests
-vitest run
+bun init --typescript    # Initialize project
+bunx tsc --noEmit        # Type check
+vitest run               # Run tests
 ```
 
 ## Configuration
 
-### tsconfig.json (Strict)
+### tsconfig.json
 
 ```json
 {
@@ -46,6 +39,15 @@ vitest run
   "exclude": ["node_modules"]
 }
 ```
+
+### Strict Mode Options
+
+| Option                | Description                     |
+| --------------------- | ------------------------------- |
+| `strictNullChecks`    | Enforce strict null checks      |
+| `strictFunctionTypes` | Strict function parameter types |
+| `noImplicitAny`       | Disallow implicit any types     |
+| `alwaysStrict`        | Apply all strict checks         |
 
 ## Type Definitions
 
@@ -70,18 +72,28 @@ interface User {
   email: string;
 }
 
-// Type for function signatures
+// Type for unions and function signatures
+type Status = "loading" | "success" | "error";
 type CreateUser = (data: Partial<User>) => Promise<User>;
 
-// Discriminated union (branded types)
+// Discriminated union
 type Result<T> = { ok: true; value: T } | { ok: false; error: Error };
+```
+
+### Utility Types
+
+```typescript
+type PartialUser = Partial<User>;
+type RequiredUser = Required<User>;
+type ReadonlyUser = Readonly<User>;
+type UserName = Pick<User, "name">;
+type UserWithoutEmail = Omit<User, "email">;
 ```
 
 ## Functions
 
-### Function Declaration
-
 ```typescript
+// Basic function
 function add(a: number, b: number): number {
   return a + b;
 }
@@ -105,19 +117,22 @@ function format(input: number): string;
 function format(input: string | number): string {
   return String(input);
 }
+
+// Async function
+async function fetchData(url: string): Promise<unknown> {
+  const response = await fetch(url);
+  return response.json();
+}
 ```
 
 ## Classes
 
 ```typescript
 class Person {
-  name: string;
-  private age: number;
-
-  constructor(name: string, age: number) {
-    this.name = name;
-    this.age = age;
-  }
+  constructor(
+    public name: string,
+    private age: number,
+  ) {}
 
   greet(): string {
     return `Hello, ${this.name}`;
@@ -126,12 +141,18 @@ class Person {
 
 // Inheritance
 class Employee extends Person {
-  role: string;
-
-  constructor(name: string, age: number, role: string) {
+  constructor(
+    name: string,
+    age: number,
+    public role: string,
+  ) {
     super(name, age);
-    this.role = role;
   }
+}
+
+// Abstract class
+abstract class Shape {
+  abstract area(): number;
 }
 ```
 
@@ -146,7 +167,6 @@ function wrap<T>(value: T): { value: T } {
 // Generic class
 class Container<T> {
   constructor(private value: T) {}
-
   get(): T {
     return this.value;
   }
@@ -165,9 +185,18 @@ function isString(value: unknown): value is string {
   return typeof value === "string";
 }
 
+function isUser(value: unknown): value is User {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    "name" in value
+  );
+}
+
 function process(value: unknown) {
   if (isString(value)) {
-    console.log(value.toUpperCase()); // value is string here
+    console.log(value.toUpperCase()); // value is string
   }
 }
 ```
@@ -202,6 +231,16 @@ function safeParse(json: string): Result<unknown> {
 }
 ```
 
+## Compilation
+
+```bash
+tsc                    # Compile
+tsc --noEmit           # Type check only
+tsc --watch            # Watch mode (use tmux)
+
+tmux new -d -s tsc 'tsc --watch'
+```
+
 ## Best Practices
 
 - Use `strict: true` in tsconfig
@@ -211,27 +250,10 @@ function safeParse(json: string): Result<unknown> {
 - Make invalid states unrepresentable
 - Type at boundaries (API inputs/outputs)
 
-## Compilation
-
-```bash
-tsc                    # Compile
-tsc --noEmit          # Type check only
-tsc --project tsconfig.json  # Specific config
-
-# Watch mode (use tmux for background)
-tmux new -d -s tsc 'tsc --watch'
-```
-
 ## Tips
 
 - `tsc --noEmit` for fast type checking
 - Gradual adoption with `allowJs: true`
-- Path mapping for clean imports: `"@/*": ["src/*"]`
+- Path mapping: `"@/*": ["src/*"]`
 - Declaration files: `"declaration": true`
-- Source maps: `"sourceMap": true`
-
-## Related Skills
-
-- **vitest**: Test utilities and mocking
-- **bun**: Package management and scripting
-- **ast-grep**: Pattern matching for refactoring
+- Use `// @ts-expect-error` with error messages

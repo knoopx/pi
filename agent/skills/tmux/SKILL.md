@@ -20,36 +20,24 @@ Terminal multiplexer for background processes, output capture, and session manag
 
 ## Running Background Processes
 
-### Start a Detached Session
-
 ```bash
-# Run a command in a new detached session
+# Run command in new detached session
 tmux new-session -d -s myserver 'python -m http.server 8080'
 
-# With a specific working directory
+# With specific working directory
 tmux new-session -d -s build -c /path/to/project 'make build'
 
-# Run shell command and keep session alive after completion
+# Keep session alive after command completes
 tmux new-session -d -s task 'command; exec bash'
-```
 
-### Run and Wait for Completion
-
-```bash
-# Run command and wait for it to finish
-tmux new-session -d -s job 'long-running-command'
-tmux wait-for job-done  # Blocks until signaled
-
-# In the command, signal completion:
-tmux new-session -d -s job 'long-running-command; tmux wait-for -S job-done'
+# Run only if session doesn't exist
+tmux has -t myserver || tmux new-session -d -s myserver 'command'
 ```
 
 ## Capturing Output
 
-### Capture Pane Contents
-
 ```bash
-# Capture visible output (prints to stdout)
+# Capture visible output
 tmux capture-pane -t mysession -p
 
 # Capture entire scrollback history
@@ -58,64 +46,91 @@ tmux capture-pane -t mysession -p -S -
 # Capture last N lines
 tmux capture-pane -t mysession -p -S -100
 
-# Capture specific line range (0 = first visible, negative = scrollback)
-tmux capture-pane -t mysession -p -S -50 -E -1
-
 # Save to file
 tmux capture-pane -t mysession -p > output.txt
 
-# Capture with escape sequences (preserves colors)
+# Capture with escape sequences (colors)
 tmux capture-pane -t mysession -p -e
 ```
 
 ## Sending Input
 
-### Send Keys to Session
-
 ```bash
-# Send text to the active pane
+# Send text and Enter
 tmux send-keys -t mysession 'echo hello' Enter
 
-# Send multiple keystrokes
-tmux send-keys -t mysession 'cd /path/to/project' Enter
+# Send without Enter
+tmux send-keys -t mysession 'some-text'
 
-# Send without Enter key
-tmux send-keys -t mysession 'some-text' C-m  # Ctrl+M (Enter)
+# Send Ctrl+C
+tmux send-keys -t mysession C-c
 ```
 
 ## Session Management
 
-### List All Sessions
-
 ```bash
-# List all tmux sessions
+# List sessions
 tmux list-sessions
+tmux ls
 
-# List with format
-tmux list-sessions -F "#{session_name}: #{session_windows} windows"
-```
-
-### Kill Sessions
-
-```bash
-# Kill a specific session
+# Kill specific session
 tmux kill-session -t myserver
 
 # Kill all sessions
 tmux kill-server
-```
 
-### Check if Session Exists
-
-```bash
 # Check if session exists
 tmux has -t mysession
+```
 
-# If not exists, start it
+## Wait for Completion
+
+```bash
+# Signal completion from command
+tmux new-session -d -s job 'command; tmux wait-for -S job-done'
+
+# Wait for signal
+tmux wait-for job-done
+```
+
+## Common Patterns
+
+### Development Servers
+
+```bash
+tmux new-session -d -s backend 'bun run backend'
+tmux new-session -d -s frontend 'bun run frontend'
+tmux new-session -d -s tests 'vitest --watch'
+```
+
+### Run and Capture Output
+
+```bash
+tmux new-session -d -s job 'command'
+sleep 0.5
+output=$(tmux capture-pane -t job -p)
+echo "$output"
+```
+
+### Conditional Session
+
+```bash
 tmux has -t myserver || tmux new-session -d -s myserver 'command'
 ```
 
-## Related Skills
+### Cleanup
 
-- **vitest**: Running tests with watch mode
-- **bun**: Development servers and watch mode
+```bash
+tmux kill-session -t backend
+tmux kill-session -t frontend
+tmux kill-server  # Kill all
+```
+
+## Tips
+
+- Use `tmux new-session -d` for background processes
+- Use `tmux capture-pane -p -S -` for full scrollback
+- Use `tmux has -t name` to check session existence
+- Use `tmux kill-server` to clean up all sessions
+- Use `-c /path` to set working directory
+- Use `exec bash` to keep session alive after command

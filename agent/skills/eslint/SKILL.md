@@ -7,13 +7,23 @@ description: Lints JavaScript and TypeScript code, configures rules, and fixes i
 
 Pluggable linting for JavaScript and TypeScript.
 
-## Quick Start
-
-### Install (Flat Config - ESLint 9+)
+## Installation
 
 ```bash
 bun add -D eslint @eslint/js typescript-eslint globals
 ```
+
+## Running ESLint
+
+```bash
+eslint .                   # Lint all files
+eslint --fix .             # Auto-fix issues
+eslint src/file.ts         # Specific file
+eslint --format json .     # JSON output
+eslint --format stylish .  # Styled output
+```
+
+## Configuration (Flat Config - ESLint 9+)
 
 ### eslint.config.js (Recommended)
 
@@ -68,47 +78,82 @@ export default tseslint.config(
 );
 ```
 
-## Running ESLint
+## Common Rules
 
-```bash
-# Run ESLint
-eslint .
+### TypeScript Rules
 
-# Run ESLint with fix
-eslint --fix .
-
-# Run on specific file
-eslint src/file.ts
-
-# Run with format output
-eslint --format json .
-
-# Show diagnostics
-eslint --format stylish .
-
-# Run in watch mode
-eslint --watch .
+```javascript
+{
+  rules: {
+    "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/consistent-type-imports": ["warn", {
+      prefer: "type-imports",
+      fixStyle: "separate-type-imports"
+    }],
+  }
+}
 ```
 
-## Common Plugins
+### JavaScript Rules
 
-### React
+```javascript
+{
+  rules: {
+    "no-console": ["warn", { allow: ["warn", "error"] }],
+    "no-var": "warn",
+    "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+  }
+}
+```
+
+## File-Specific Configuration
+
+```javascript
+export default tseslint.config(
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    files: ["src/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "error",
+    },
+  },
+  {
+    files: ["tests/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+  {
+    ignores: ["dist/", "node_modules/"],
+  },
+);
+```
+
+## Ignore Patterns
+
+```javascript
+{
+  ignores: ["dist/", "node_modules/", "*.config.js", "coverage/", "build/"];
+}
+```
+
+## React Plugin
 
 ```bash
 bun add -D eslint-plugin-react eslint-plugin-react-hooks eslint-plugin-react-refresh
 ```
 
 ```javascript
-import js from "@eslint/js";
-import tseslint from "typescript-eslint";
-import globals from "globals";
 import reactPlugin from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 
 export default tseslint.config(
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
+  // ...base config
   {
     plugins: {
       react: reactPlugin,
@@ -121,20 +166,30 @@ export default tseslint.config(
       "react-refresh/only-export-components": "warn",
     },
   },
-  {
-    ignores: ["dist/", "node_modules/"],
-  },
 );
 ```
 
-### Testing
+## CI Integration
 
-```bash
-bun add -D eslint-plugin-jest
+### GitHub Actions
+
+```yaml
+name: Lint
+on: [push, pull_request]
+jobs:
+  eslint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bun run lint
 ```
 
-## Related Skills
+### Git Hooks (husky)
 
-- **typescript**: TypeScript configuration and types
-- **vitest**: Test setup and configuration
-- **bun**: Package management and installation
+```bash
+bun add -D husky
+echo 'bun lint' > .husky/pre-commit
+chmod +x .husky/pre-commit
+```

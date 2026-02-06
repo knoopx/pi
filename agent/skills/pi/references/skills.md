@@ -207,7 +207,6 @@ SKILL.md is a table of contents that points to detailed materials. Pi loads refe
 
 ## Advanced features
 
-**Form filling**: See [FORMS.md](FORMS.md)
 **API reference**: See [REFERENCE.md](REFERENCE.md)
 ```
 
