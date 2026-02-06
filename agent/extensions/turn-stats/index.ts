@@ -141,8 +141,8 @@ export function formatTokensPerSecond(
 
 /**
  * Simplified format for output tokens, duration, tokens/s, and cost
- * Format: ↓<output_tokens> <duration> <tok/s> <cost>
- * Example: ↓1.9K 36s 52.3 tok/s $0.01 (without cost if 0)
+ * Format: ↓<output_tokens> | <duration> | <tok/s> | <cost>
+ * Example: ↓1.9K | 36s | 52.3 tok/s | $0.01 (without cost if 0)
  */
 export function formatSimpleOutput(
   output: number | undefined,
@@ -162,13 +162,13 @@ export function formatSimpleOutput(
   const tokPerSecStr = formatTokensPerSecond(output, durationMs);
   const costStr = formatCost(cost);
 
-  // Build the output string with optional parts
-  let result = `↓${outputStr} ${durationStr}`;
+  // Build the output string with separators between metrics
+  let result = `↓${outputStr} | ${durationStr}`;
   if (tokPerSecStr) {
-    result += ` ${tokPerSecStr}`;
+    result += ` | ${tokPerSecStr}`;
   }
   if (costStr) {
-    result += ` ${costStr}`;
+    result += ` | ${costStr}`;
   }
   return result;
 }

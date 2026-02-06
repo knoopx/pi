@@ -290,43 +290,49 @@ describe("formatCost", () => {
 describe("formatSimpleOutput", () => {
   describe("given only output tokens and duration", () => {
     describe("when formatting output: 1900, duration: 36000ms (36s)", () => {
-      it("then it should return '↓1.9K 36s'", () => {
-        expect(formatSimpleOutput(1900, 36000, undefined)).toBe("↓1.9K 36s");
+      it("then it should return '↓1.9K | 36s | 52.8 tok/s'", () => {
+        expect(formatSimpleOutput(1900, 36000, undefined)).toBe(
+          "↓1.9K | 36s | 52.8 tok/s",
+        );
       });
     });
 
     describe("when formatting output: 500, duration: 92000ms (1m 32s)", () => {
-      it("then it should return '↓500 1m 32s'", () => {
-        expect(formatSimpleOutput(500, 92000, undefined)).toBe("↓500 1m 32s");
+      it("then it should return '↓500 | 1m 32s | 5.4 tok/s'", () => {
+        expect(formatSimpleOutput(500, 92000, undefined)).toBe(
+          "↓500 | 1m 32s | 5.4 tok/s",
+        );
       });
     });
   });
 
   describe("given output tokens, duration, and cost", () => {
     describe("when formatting output: 1900, duration: 36000ms, total cost: $0.01", () => {
-      it("then it should return '↓1.9K 36s $0.01'", () => {
+      it("then it should return '↓1.9K | 36s | 52.8 tok/s | $0.01'", () => {
         expect(formatSimpleOutput(1900, 36000, { total: 0.01 })).toBe(
-          "↓1.9K 36s $0.01",
+          "↓1.9K | 36s | 52.8 tok/s | $0.01",
         );
       });
     });
 
     describe("when formatting output: 500, duration: 92000ms, individual costs: input $0.005, output $0.005", () => {
-      it("then it should return '↓500 1m 32s $0.01'", () => {
+      it("then it should return '↓500 | 1m 32s | 5.4 tok/s | $0.01'", () => {
         expect(
           formatSimpleOutput(500, 92000, { input: 0.005, output: 0.005 }),
-        ).toBe("↓500 1m 32s $0.01");
+        ).toBe("↓500 | 1m 32s | 5.4 tok/s | $0.01");
       });
     });
 
     describe("when formatting output: 1234, duration: 5000ms, total cost: $0", () => {
-      it("then it should return '↓1.2K 5s' (cost not included when 0)", () => {
-        expect(formatSimpleOutput(1234, 5000, { total: 0 })).toBe("↓1.2K 5s");
+      it("then it should return '↓1.2K | 5s | 246.8 tok/s' (cost not included when 0)", () => {
+        expect(formatSimpleOutput(1234, 5000, { total: 0 })).toBe(
+          "↓1.2K | 5s | 246.8 tok/s",
+        );
       });
     });
 
     describe("when formatting output: 1234, duration: 5000ms, individual costs with total $0", () => {
-      it("then it should return '↓1.2K 5s' (cost not included when 0)", () => {
+      it("then it should return '↓1.2K | 5s | 246.8 tok/s' (cost not included when 0)", () => {
         expect(
           formatSimpleOutput(1234, 5000, {
             input: 0,
@@ -334,29 +340,29 @@ describe("formatSimpleOutput", () => {
             cacheRead: 0,
             cacheWrite: 0,
           }),
-        ).toBe("↓1.2K 5s");
+        ).toBe("↓1.2K | 5s | 246.8 tok/s");
       });
     });
   });
 
   describe("given output tokens and duration with only cache costs", () => {
     describe("when formatting output: 500, duration: 10000ms, cacheRead cost: $0.001, cacheWrite cost: $0.002", () => {
-      it("then it should return '↓500 10s $0.00' (cost is $0.003 > 0, formatted as $0.00)", () => {
+      it("then it should return '↓500 | 10s | 50.0 tok/s | $0.00' (cost is $0.003 > 0, formatted as $0.00)", () => {
         expect(
           formatSimpleOutput(500, 10000, {
             cacheRead: 0.001,
             cacheWrite: 0.002,
           }),
-        ).toBe("↓500 10s $0.00");
+        ).toBe("↓500 | 10s | 50.0 tok/s | $0.00");
       });
     });
   });
 
   describe("given undefined output tokens", () => {
     describe("when formatting undefined output, duration: 36000ms, cost: $0.01", () => {
-      it("then it should return '↓N/A 36s $0.01'", () => {
+      it("then it should return '↓N/A | 36s | $0.01'", () => {
         expect(formatSimpleOutput(undefined, 36000, { total: 0.01 })).toBe(
-          "↓N/A 36s $0.01",
+          "↓N/A | 36s | $0.01",
         );
       });
     });
@@ -375,17 +381,17 @@ describe("Turn Stats Extension Integration", () => {
     describe("when formatting the complete turn output", () => {
       it("then it should show tokens, duration, and cost", () => {
         const result = formatSimpleOutput(outputTokens, durationMs, cost);
-        expect(result).toBe("↓1.9K 36s $0.01");
+        expect(result).toBe("↓1.9K | 36s | 52.8 tok/s | $0.01");
       });
     });
 
     describe("when checking the individual components", () => {
       it("then output tokens should be formatted as '1.9K'", () => {
         const tokensPart = (result: string) => {
-          const match = result.match(/↓([^ ]+)/);
-          return match ? match[1] : null;
+          const match = result.match(/↓([^|]+)/);
+          return match ? match[1].trim() : null;
         };
-        expect(tokensPart("↓1.9K 36s $0.01")).toBe("1.9K");
+        expect(tokensPart("↓1.9K | 36s | 52.8 tok/s | $0.01")).toBe("1.9K");
       });
 
       it("then duration should be formatted as '36s'", () => {
@@ -393,7 +399,7 @@ describe("Turn Stats Extension Integration", () => {
           const match = result.match(/36s/);
           return match ? match[0] : null;
         };
-        expect(durationPart("↓1.9K 36s $0.01")).toBe("36s");
+        expect(durationPart("↓1.9K | 36s | 52.8 tok/s | $0.01")).toBe("36s");
       });
 
       it("then cost should be formatted as '$0.01'", () => {
@@ -401,7 +407,7 @@ describe("Turn Stats Extension Integration", () => {
           const match = result.match(/\$[0-9.]+$/);
           return match ? match[0] : null;
         };
-        expect(costPart("↓1.9K 36s $0.01")).toBe("$0.01");
+        expect(costPart("↓1.9K | 36s | 52.8 tok/s | $0.01")).toBe("$0.01");
       });
     });
   });
