@@ -21,7 +21,7 @@
         "event": "tool_result",
         "context": "file_name",
         "pattern": "\\.(ts|tsx|js|jsx)$",
-        "command": "bunx tsc --noEmit 2>&1 | grep \"${file}\" | head -50",
+        "command": "tsgo 2>&1 | { grep \"${file}\" || true; }",
         "timeout": 60000,
         "notify": true
       },
@@ -29,7 +29,7 @@
         "event": "tool_result",
         "context": "file_name",
         "pattern": "\\.(ts|tsx|js|jsx)$",
-        "command": "bunx eslint \"${file}\" --max-warnings 0 2>&1 | head -50",
+        "command": "bunx eslint \"${file}\"",
         "timeout": 60000,
         "notify": true
       }
@@ -51,7 +51,7 @@
         "event": "tool_result",
         "context": "file_name",
         "pattern": "\\.py$",
-        "command": "pyright 2>&1 | grep \"${file}\" | head -50",
+        "command": "pyright 2>&1 | { grep \"${file}\" || true; } | head -50",
         "timeout": 60000,
         "notify": true
       }
