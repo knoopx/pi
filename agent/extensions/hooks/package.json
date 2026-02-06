@@ -1,19 +1,20 @@
 {
-	"name": "hooks",
-	"version": "1.0.0",
-	"description": "Run shell commands after pi events based on patterns",
-	"type": "module",
-	"scripts": {
-		"test": "bun vitest run *.test.ts"
-	},
-	"pi": {
-		"extensions": [
-			"./index.ts"
-		]
-	},
-	"dependencies": {
-		"@mariozechner/pi-coding-agent": "^0.48.0",
-		"@sinclair/typebox": "^0.34.47",
-		"tinyglobby": "^0.2.12"
-	}
+  "name": "hooks",
+  "version": "1.0.0",
+  "description": "Run shell commands after pi events based on patterns",
+  "type": "module",
+  "scripts": {
+    "test": "bun vitest run *.test.ts"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "^0.48.0",
+    "@sinclair/typebox": "^0.34.47",
+    "picocolors": "^1.1.1",
+    "tinyglobby": "^0.2.12"
+  }
 }

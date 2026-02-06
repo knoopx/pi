@@ -4,13 +4,10 @@ import type {
   ToolCallEvent,
   ToolResultEvent,
 } from "@mariozechner/pi-coding-agent";
+import pc from "picocolors";
 import { glob } from "tinyglobby";
-import {
-  configLoader,
-  type HookEvent,
-  type HookRule,
-  type ResolvedConfig,
-} from "./config";
+import { configLoader } from "./config";
+import type { HookEvent, HookRule, HooksConfig, HooksGroup } from "./schema";
 
 /**
  * Hooks Extension
@@ -28,78 +25,63 @@ import {
  * - tool_call, tool_result
  * - agent_start, agent_end
  * - turn_start, turn_end
- *
- * For tool_call/tool_result events, you can specify a context:
- * - tool_name: Match against the tool name
- * - file_name: Match against file paths in tool input
- * - command: Match against bash commands
  */
 
-export default async function (pi: ExtensionAPI) {
-  await configLoader.load();
-  const config = configLoader.getConfig();
+const SKIP_TOOLS = new Set(["read"]);
 
-  setupHooks(pi, config);
-  registerReloadCommand(pi);
-}
-
-/**
- * Check if a hooks group should be active based on file pattern matching.
- */
-export async function isGroupActive(
-  pattern: string,
-  root: string,
-): Promise<boolean> {
-  try {
-    if (pattern === "*") {
-      return true;
-    }
-
-    const matches = await glob([pattern], {
-      cwd: root,
-      absolute: false,
-      dot: true,
-      onlyDirectories: false,
-    });
-
-    return matches.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Extract a string field from an unknown input object.
- */
-function getInputFieldAsString(
-  input: unknown,
-  field: string,
-): string | undefined {
-  if (!input || typeof input !== "object") {
-    return undefined;
-  }
-
-  const value = (input as Record<string, unknown>)[field];
-  if (value === undefined || value === null) {
-    return undefined;
-  }
-
-  return String(value);
-}
-
-/**
- * Variables available for substitution in hook commands.
- */
 interface HookVariables {
   file?: string;
   tool?: string;
   cwd: string;
 }
 
-/**
- * Substitute variables in a command string.
- * Supports: ${file}, ${tool}, ${cwd}
- */
+interface HookResult {
+  success: boolean;
+  output: string;
+  group: string;
+  command: string;
+}
+
+interface BlockResult {
+  block: true;
+  reason: string;
+}
+
+export default async function hooksExtension(pi: ExtensionAPI): Promise<void> {
+  await configLoader.load();
+  let currentVersion = configLoader.getVersion();
+
+  const getConfig = (): HooksConfig => {
+    const newVersion = configLoader.getVersion();
+    if (newVersion !== currentVersion) {
+      currentVersion = newVersion;
+    }
+    return configLoader.getConfig();
+  };
+
+  registerEventHandlers(pi, getConfig);
+  registerCommands(pi);
+}
+
+export async function isGroupActive(
+  pattern: string,
+  root: string,
+): Promise<boolean> {
+  if (pattern === "*") return true;
+
+  try {
+    const matches = await glob([pattern], {
+      cwd: root,
+      absolute: false,
+      dot: true,
+      onlyDirectories: false,
+    });
+    return matches.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 export function substituteVariables(
   command: string,
   vars: HookVariables,
@@ -110,62 +92,61 @@ export function substituteVariables(
     .replace(/\$\{cwd\}/g, vars.cwd);
 }
 
-/**
- * Check if a hook rule matches the current context.
- */
 export function doesRuleMatch(
   rule: HookRule,
   toolName?: string,
   input?: unknown,
 ): boolean {
-  // If no context/pattern specified, always match
-  if (!rule.context || !rule.pattern) {
-    return true;
-  }
+  if (!rule.context || !rule.pattern) return true;
+
+  const targetValue = getContextValue(rule.context, toolName, input);
+  if (targetValue === undefined) return false;
 
   try {
-    const rulePattern = new RegExp(rule.pattern);
-    let targetValue: string | undefined;
-
-    switch (rule.context) {
-      case "tool_name":
-        targetValue = toolName;
-        break;
-      case "file_name":
-        if (toolName && ["read", "edit", "write", "bash"].includes(toolName)) {
-          targetValue = getInputFieldAsString(input, "path");
-        }
-        break;
-      case "command":
-        if (toolName === "bash") {
-          targetValue = getInputFieldAsString(input, "command");
-        }
-        break;
-    }
-
-    return targetValue !== undefined && rulePattern.test(targetValue);
+    return new RegExp(rule.pattern).test(targetValue);
   } catch {
     return false;
   }
 }
 
-/**
- * Run a hook command and return the result.
- */
-async function runHookCommand(
+function getContextValue(
+  context: string,
+  toolName?: string,
+  input?: unknown,
+): string | undefined {
+  switch (context) {
+    case "tool_name":
+      return toolName;
+    case "file_name":
+      return getInputField(input, "path");
+    case "command":
+      return toolName === "bash" ? getInputField(input, "command") : undefined;
+    default:
+      return undefined;
+  }
+}
+
+function getInputField(input: unknown, field: string): string | undefined {
+  if (!input || typeof input !== "object") return undefined;
+  const value = (input as Record<string, unknown>)[field];
+  return value != null ? String(value) : undefined;
+}
+
+async function runHook(
   pi: ExtensionAPI,
   rule: HookRule,
+  group: HooksGroup,
   ctx: ExtensionContext,
   vars: HookVariables,
-): Promise<{ success: boolean; output: string }> {
-  const timeout = rule.timeout ?? 30000;
-  const cwd = rule.cwd ?? ctx.cwd;
+): Promise<HookResult> {
   const command = substituteVariables(rule.command, vars);
 
-  // Skip if command contains unsubstituted variables (e.g., ${file} when no file)
   if (command.includes("${")) {
-    return { success: true, output: "" };
+    return { success: true, output: "", group: group.group, command };
   }
+
+  const timeout = rule.timeout ?? 30000;
+  const cwd = rule.cwd ?? ctx.cwd;
 
   try {
     const result = await pi.exec("sh", ["-c", `set -o pipefail; ${command}`], {
@@ -177,168 +158,109 @@ async function runHookCommand(
       .filter(Boolean)
       .join("\n")
       .trim();
-    const success = result.code === 0;
 
-    return { success, output };
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, output: errorMessage };
+    return {
+      success: result.code === 0,
+      output,
+      group: group.group,
+      command,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      output: error instanceof Error ? error.message : String(error),
+      group: group.group,
+      command,
+    };
   }
 }
 
-/**
- * Result from processing hooks - can block tool execution on failure.
- */
-interface ProcessHooksResult {
-  block: true;
-  reason: string;
-}
-
-/**
- * Collected hook failure for reporting.
- */
-interface HookFailure {
-  group: string;
-  command: string;
-  output: string;
-}
-
-/**
- * Collected hook success for reporting.
- */
-interface HookSuccess {
-  group: string;
-  command: string;
-  output?: string;
-}
-
-/**
- * Process hooks for a given event.
- * For tool_call events, returns a block result if any hook command fails.
- * For other events, collects all results and sends them to the agent.
- */
 async function processHooks(
   pi: ExtensionAPI,
-  config: ResolvedConfig,
+  config: HooksConfig,
   event: HookEvent,
   ctx: ExtensionContext,
   toolName?: string,
   input?: unknown,
-): Promise<ProcessHooksResult | undefined> {
-  // Extract file path from tool input if available
-  const filePath = getInputFieldAsString(input, "path");
+): Promise<BlockResult | undefined> {
+  const filePath = getInputField(input, "path");
+  const vars: HookVariables = { file: filePath, tool: toolName, cwd: ctx.cwd };
 
-  // Build variables for substitution
-  const vars: HookVariables = {
-    file: filePath,
-    tool: toolName,
-    cwd: ctx.cwd,
-  };
-
-  // Collect results for non-tool_call events
-  const failures: HookFailure[] = [];
-  const successes: HookSuccess[] = [];
+  const results: HookResult[] = [];
 
   for (const group of config) {
-    const isActive = await isGroupActive(group.pattern, ctx.cwd);
-    if (!isActive) {
-      continue;
-    }
+    if (!(await isGroupActive(group.pattern, ctx.cwd))) continue;
 
     for (const rule of group.hooks) {
-      if (rule.event !== event) {
-        continue;
-      }
+      if (rule.event !== event) continue;
+      if (!doesRuleMatch(rule, toolName, input)) continue;
 
-      if (!doesRuleMatch(rule, toolName, input)) {
-        continue;
-      }
+      const result = await runHook(pi, rule, group, ctx, vars);
 
-      const { success, output } = await runHookCommand(pi, rule, ctx, vars);
-
-      // Still check for blocking on failure
-      if (!success && event === "tool_call") {
-        const reason = output
-          ? `Hook failed: ${group.group}: ${rule.command}\n${output}`
-          : `Hook failed: ${group.group}: ${rule.command}`;
+      if (!result.success && event === "tool_call") {
+        const reason = result.output
+          ? `Hook failed: ${result.group}: ${result.command}\n${result.output}`
+          : `Hook failed: ${result.group}: ${result.command}`;
         return { block: true, reason };
       }
 
-      // Collect results for aggregated reporting (only for notify=true rules)
-      if (event !== "tool_call" && rule.notify !== false) {
-        if (success) {
-          successes.push({
-            group: group.group,
-            command: rule.command,
-            output: output || undefined,
-          });
-        } else {
-          failures.push({ group: group.group, command: rule.command, output });
-        }
+      if (rule.notify !== false) {
+        results.push(result);
       }
     }
   }
 
-  // Always send results to the agent when hooks were executed
-  if (failures.length > 0 || successes.length > 0) {
-    if (failures.length > 0) {
-      // Send failures
-      const errorLines = failures.map((f) => {
-        const header = `[${f.group}] ${f.command}`;
-        return f.output ? `${header}\n${f.output}` : header;
-      });
-      const errorMessage = errorLines.join("\n\n");
-      pi.sendMessage(
-        {
-          customType: "hook_error",
-          content: errorMessage,
-          display: true,
-        },
-        { triggerTurn: false },
-      );
-    } else {
-      // All hooks passed - send success message
-      const successCount = successes.length;
-      const successLines = successes.map((s) => {
-        const header = `[${s.group}] ${s.command}`;
-        return s.output ? `${header}\n${s.output}` : header;
-      });
-
-      const successMessage = `All ${successCount} hook(s) passed.\n\n${successLines.join("\n\n")}`;
-
-      pi.sendMessage(
-        {
-          customType: "hook_success",
-          content: successMessage,
-          display: true,
-        },
-        { triggerTurn: false },
-      );
-    }
+  if (results.length > 0) {
+    sendHookResults(pi, results);
   }
 
   return undefined;
 }
 
-/**
- * Setup all event hooks.
- */
-function setupHooks(pi: ExtensionAPI, config: ResolvedConfig): void {
-  // Session events
+function sendHookResults(pi: ExtensionAPI, results: HookResult[]): void {
+  const grouped = new Map<string, HookResult[]>();
+  for (const r of results) {
+    const list = grouped.get(r.group) ?? [];
+    list.push(r);
+    grouped.set(r.group, list);
+  }
+
+  const lines: string[] = [];
+  for (const [group, hooks] of grouped) {
+    lines.push(pc.bold(pc.cyan(`[${group}]`)));
+    for (const r of hooks) {
+      const icon = r.success ? pc.green("✅") : pc.red("❌");
+      const cmd = r.success ? pc.dim(r.command) : pc.yellow(r.command);
+      lines.push(`    ${icon} ${cmd}`);
+      if (r.output) {
+        lines.push(r.success ? pc.dim(r.output) : pc.red(r.output));
+      }
+    }
+  }
+
+  pi.sendMessage(
+    { customType: "hook", content: lines.join("\n"), display: true },
+    { triggerTurn: false },
+  );
+}
+
+function registerEventHandlers(
+  pi: ExtensionAPI,
+  getConfig: () => HooksConfig,
+): void {
   pi.on("session_start", async (_event, ctx) => {
-    await processHooks(pi, config, "session_start", ctx);
+    await processHooks(pi, getConfig(), "session_start", ctx);
   });
 
   pi.on("session_shutdown", async (_event, ctx) => {
-    await processHooks(pi, config, "session_shutdown", ctx);
+    await processHooks(pi, getConfig(), "session_shutdown", ctx);
   });
 
-  // Tool events (skip "read" tool to avoid noise on every file read)
   pi.on("tool_call", async (event: ToolCallEvent, ctx) => {
-    if (event.toolName === "read") return;
+    if (SKIP_TOOLS.has(event.toolName)) return;
     return processHooks(
       pi,
-      config,
+      getConfig(),
       "tool_call",
       ctx,
       event.toolName,
@@ -347,10 +269,10 @@ function setupHooks(pi: ExtensionAPI, config: ResolvedConfig): void {
   });
 
   pi.on("tool_result", async (event: ToolResultEvent, ctx) => {
-    if (event.toolName === "read") return;
+    if (SKIP_TOOLS.has(event.toolName)) return;
     await processHooks(
       pi,
-      config,
+      getConfig(),
       "tool_result",
       ctx,
       event.toolName,
@@ -358,29 +280,24 @@ function setupHooks(pi: ExtensionAPI, config: ResolvedConfig): void {
     );
   });
 
-  // Agent events
   pi.on("agent_start", async (_event, ctx) => {
-    await processHooks(pi, config, "agent_start", ctx);
+    await processHooks(pi, getConfig(), "agent_start", ctx);
   });
 
   pi.on("agent_end", async (_event, ctx) => {
-    await processHooks(pi, config, "agent_end", ctx);
+    await processHooks(pi, getConfig(), "agent_end", ctx);
   });
 
-  // Turn events
   pi.on("turn_start", async (_event, ctx) => {
-    await processHooks(pi, config, "turn_start", ctx);
+    await processHooks(pi, getConfig(), "turn_start", ctx);
   });
 
   pi.on("turn_end", async (_event, ctx) => {
-    await processHooks(pi, config, "turn_end", ctx);
+    await processHooks(pi, getConfig(), "turn_end", ctx);
   });
 }
 
-/**
- * Register the /hooks-reload command to reload configuration.
- */
-function registerReloadCommand(pi: ExtensionAPI): void {
+function registerCommands(pi: ExtensionAPI): void {
   pi.registerCommand("hooks-reload", {
     description: "Reload hooks configuration from disk",
     handler: async (_args, ctx) => {
@@ -396,7 +313,7 @@ function registerReloadCommand(pi: ExtensionAPI): void {
   });
 
   pi.registerCommand("hooks-list", {
-    description: "List all configured hooks",
+    description: "List all configured hooks with their active status",
     handler: async (_args, ctx) => {
       if (!ctx.hasUI) return;
       const config = configLoader.getConfig();
