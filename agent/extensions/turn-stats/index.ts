@@ -198,7 +198,7 @@ export default function (pi: ExtensionAPI) {
    * Records the start time for each turn
    */
   pi.on("turn_start", async (event: TurnStartEvent, _ctx: ExtensionContext) => {
-    turnStartTimes.set(event.turnIndex, event.timestamp);
+    turnStartTimes.set(event.turnIndex, Date.now());
   });
 
   /**
@@ -207,57 +207,60 @@ export default function (pi: ExtensionAPI) {
    */
   pi.on("turn_end", async (event: TurnEndEvent, ctx: ExtensionContext) => {
     const startTime = turnStartTimes.get(event.turnIndex);
+    turnStartTimes.delete(event.turnIndex);
 
-    if (startTime) {
-      const message = event.message;
-      const assistantMessage = message as AssistantMessage | undefined;
-      const turnEndTimestamp = assistantMessage?.timestamp ?? Date.now();
-      const durationMs = turnEndTimestamp - startTime;
-      turnStartTimes.delete(event.turnIndex);
-      lastTurnEndTimestamp = turnEndTimestamp;
-
-      // Get token information from the message
-      const usage = assistantMessage?.usage;
-      const outputTokens = usage?.output;
-      const cost = usage?.cost;
-      const costInput = cost?.input;
-      const costOutput = cost?.output;
-      const costCacheRead = cost?.cacheRead;
-      const costCacheWrite = cost?.cacheWrite;
-      const costTotal = cost?.total;
-
-      // Accumulate all token stats
-      if (outputTokens !== undefined) {
-        totalOutputTokens += outputTokens;
-      }
-
-      // Accumulate cost breakdown
-      if (costInput !== undefined) {
-        totalCostInput += costInput;
-      }
-      if (costOutput !== undefined) {
-        totalCostOutput += costOutput;
-      }
-      if (costCacheRead !== undefined) {
-        totalCostCacheRead += costCacheRead;
-      }
-      if (costCacheWrite !== undefined) {
-        totalCostCacheWrite += costCacheWrite;
-      }
-      if (costTotal !== undefined) {
-        totalCost += costTotal;
-      }
-
-      // Format simple output: ↓<output_tokens> <duration> <cost>
-      const notificationStr = formatSimpleOutput(
-        outputTokens,
-        durationMs,
-        cost,
-      );
-
-      // Notify user if UI is available
-      ctx.ui.notify(notificationStr, "info");
+    // Only track assistant messages with usage data
+    const message = event.message;
+    if (!message || message.role !== "assistant") {
+      return;
     }
+
+    const assistantMessage = message as AssistantMessage;
+    const usage = assistantMessage.usage;
+    if (!usage) {
+      return;
+    }
+
+    const turnEndTimestamp = Date.now();
+    const durationMs = startTime ? turnEndTimestamp - startTime : 0;
+    lastTurnEndTimestamp = turnEndTimestamp;
+
+    // Get token information from the message
+    const outputTokens = usage.output;
+    const cost = usage.cost;
+    const costInput = cost?.input;
+    const costOutput = cost?.output;
+    const costCacheRead = cost?.cacheRead;
+    const costCacheWrite = cost?.cacheWrite;
+    const costTotal = cost?.total;
+
+    // Accumulate all token stats
+    if (outputTokens !== undefined) {
+      totalOutputTokens += outputTokens;
+    }
+
+    // Accumulate cost breakdown
+    if (costInput !== undefined) {
+      totalCostInput += costInput;
+    }
+    if (costOutput !== undefined) {
+      totalCostOutput += costOutput;
+    }
+    if (costCacheRead !== undefined) {
+      totalCostCacheRead += costCacheRead;
+    }
+    if (costCacheWrite !== undefined) {
+      totalCostCacheWrite += costCacheWrite;
+    }
+    if (costTotal !== undefined) {
+      totalCost += costTotal;
+    }
+
+    // Format simple output: ↓<output_tokens> <duration> <cost>
+    const notificationStr = formatSimpleOutput(outputTokens, durationMs, cost);
+
+    // Notify user if UI is available
+    ctx.ui.notify(notificationStr, "info");
   });
 
   /**
