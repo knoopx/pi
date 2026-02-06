@@ -1,10 +1,16 @@
 /**
- * /usage - Usage statistics dashboard
+ * Usage Statistics Extensions
  *
- * Shows an inline view with usage stats grouped by provider.
- * - Tab cycles: Today → This Week → All Time
- * - Arrow keys navigate providers
- * - Enter expands/collapses to show models
+ * /usage - Usage statistics dashboard
+ *   Shows an inline view with usage stats grouped by provider.
+ *   - Tab cycles: Today → This Week → All Time
+ *   - Arrow keys navigate providers
+ *   - Enter expands/collapses to show models
+ *
+ * /tool-usage - Tool usage analysis
+ *   Shows an inline view with tool usage stats from sessions.
+ *   - Tab cycles: By Tool → By Date → By Session
+ *   - Arrow keys navigate rows
  */
 
 import type {
@@ -667,6 +673,385 @@ class UsageComponent {
 }
 
 // =============================================================================
+// Tool Usage Analysis
+// =============================================================================
+
+interface ToolCall {
+  name: string;
+  sessionId: string;
+  timestamp: string;
+}
+
+interface ToolStats {
+  totalSessions: number;
+  totalToolCalls: number;
+  byTool: Record<string, number>;
+  bySession: Record<string, { count: number; tools: Record<string, number> }>;
+  byDate: Record<string, { count: number; tools: Record<string, number> }>;
+}
+
+async function findToolSessionFiles(
+  sessionsDir: string,
+): Promise<{ dir: string; file: string }[]> {
+  const results: { dir: string; file: string }[] = [];
+  try {
+    const sessionDirs = await readdir(sessionsDir);
+    for (const dir of sessionDirs) {
+      if (dir === "subagents") continue;
+      const dirPath = join(sessionsDir, dir);
+      try {
+        const files = await readdir(dirPath);
+        for (const file of files) {
+          if (file.endsWith(".jsonl")) {
+            results.push({ dir, file: join(dirPath, file) });
+          }
+        }
+      } catch {
+        // Skip non-directories
+      }
+    }
+  } catch {
+    // Return empty if we can't read sessions dir
+  }
+  return results;
+}
+
+async function parseToolSession(
+  filePath: string,
+): Promise<{ sessionId: string | null; toolCalls: ToolCall[] }> {
+  const content = await readFile(filePath, "utf-8");
+  const lines = content.trim().split("\n");
+  let sessionId: string | null = null;
+  const toolCalls: ToolCall[] = [];
+
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    try {
+      const entry = JSON.parse(line);
+      if (entry.type === "session" && entry.id) {
+        sessionId = entry.id;
+      }
+      if (entry.type === "message" && entry.message?.content && sessionId) {
+        const contents = Array.isArray(entry.message.content)
+          ? entry.message.content
+          : [entry.message.content];
+        for (const content of contents) {
+          if (content?.type === "toolCall" && content.name) {
+            toolCalls.push({
+              name: content.name,
+              sessionId,
+              timestamp: entry.timestamp,
+            });
+          }
+        }
+      }
+    } catch {
+      // Skip malformed lines
+    }
+  }
+  return { sessionId, toolCalls };
+}
+
+function aggregateToolStats(
+  allToolCalls: ToolCall[],
+  sessionCount: number,
+): ToolStats {
+  const stats: ToolStats = {
+    totalSessions: sessionCount,
+    totalToolCalls: allToolCalls.length,
+    byTool: {},
+    bySession: {},
+    byDate: {},
+  };
+
+  for (const call of allToolCalls) {
+    stats.byTool[call.name] = (stats.byTool[call.name] || 0) + 1;
+
+    if (!stats.bySession[call.sessionId]) {
+      stats.bySession[call.sessionId] = { count: 0, tools: {} };
+    }
+    stats.bySession[call.sessionId].count++;
+    stats.bySession[call.sessionId].tools[call.name] =
+      (stats.bySession[call.sessionId].tools[call.name] || 0) + 1;
+
+    const date = call.timestamp?.split("T")[0] || "unknown";
+    if (!stats.byDate[date]) {
+      stats.byDate[date] = { count: 0, tools: {} };
+    }
+    stats.byDate[date].count++;
+    stats.byDate[date].tools[call.name] =
+      (stats.byDate[date].tools[call.name] || 0) + 1;
+  }
+
+  return stats;
+}
+
+type ToolTabName = "byTool" | "byDate" | "bySession";
+
+const TOOL_TAB_LABELS: Record<ToolTabName, string> = {
+  byTool: "By Tool",
+  byDate: "By Date",
+  bySession: "By Session",
+};
+
+const TOOL_TAB_ORDER: ToolTabName[] = ["byTool", "byDate", "bySession"];
+
+class ToolUsageComponent {
+  private activeTab: ToolTabName = "byTool";
+  private data: ToolStats;
+  private selectedIndex = 0;
+  private theme: Theme;
+  private requestRender: () => void;
+  private done: () => void;
+
+  constructor(
+    theme: Theme,
+    data: ToolStats,
+    requestRender: () => void,
+    done: () => void,
+  ) {
+    this.theme = theme;
+    this.data = data;
+    this.requestRender = requestRender;
+    this.done = done;
+  }
+
+  private getRowCount(): number {
+    switch (this.activeTab) {
+      case "byTool":
+        return Math.min(Object.keys(this.data.byTool).length, 20);
+      case "byDate":
+        return Object.keys(this.data.byDate).length;
+      case "bySession":
+        return Math.min(Object.keys(this.data.bySession).length, 20);
+      default:
+        return 0;
+    }
+  }
+
+  handleInput(data: string): void {
+    const normalized = data.toLowerCase();
+    const matches = (key: Parameters<typeof matchesKey>[1]) =>
+      matchesKey(data, key) || normalized === key;
+
+    if (matches("escape") || matches("q")) {
+      this.done();
+      return;
+    }
+
+    if (matches("tab") || matches("right")) {
+      const idx = TOOL_TAB_ORDER.indexOf(this.activeTab);
+      this.activeTab = TOOL_TAB_ORDER[(idx + 1) % TOOL_TAB_ORDER.length]!;
+      this.selectedIndex = 0;
+      this.requestRender();
+    } else if (matches("shift+tab") || matches("left")) {
+      const idx = TOOL_TAB_ORDER.indexOf(this.activeTab);
+      this.activeTab =
+        TOOL_TAB_ORDER[
+          (idx - 1 + TOOL_TAB_ORDER.length) % TOOL_TAB_ORDER.length
+        ]!;
+      this.selectedIndex = 0;
+      this.requestRender();
+    } else if (matches("up")) {
+      if (this.selectedIndex > 0) {
+        this.selectedIndex--;
+        this.requestRender();
+      }
+    } else if (matches("down")) {
+      const maxIdx = this.getRowCount() - 1;
+      if (this.selectedIndex < maxIdx) {
+        this.selectedIndex++;
+        this.requestRender();
+      }
+    }
+  }
+
+  render(_width: number): string[] {
+    return [
+      ...this.renderTitle(),
+      ...this.renderTabs(),
+      ...this.renderContent(),
+      ...this.renderInsights(),
+      ...this.renderHelp(),
+    ];
+  }
+
+  private renderTitle(): string[] {
+    const th = this.theme;
+    return [
+      th.fg("accent", th.bold("Tool Usage Statistics")),
+      "",
+      `Sessions: ${formatNumber(this.data.totalSessions)}  |  Tool Calls: ${formatNumber(this.data.totalToolCalls)}`,
+      "",
+    ];
+  }
+
+  private renderTabs(): string[] {
+    const th = this.theme;
+    const tabs = TOOL_TAB_ORDER.map((tab) => {
+      const label = TOOL_TAB_LABELS[tab];
+      return tab === this.activeTab
+        ? th.fg("accent", `[${label}]`)
+        : th.fg("dim", ` ${label} `);
+    }).join("  ");
+    return [tabs, ""];
+  }
+
+  private renderContent(): string[] {
+    switch (this.activeTab) {
+      case "byTool":
+        return this.renderByTool();
+      case "byDate":
+        return this.renderByDate();
+      case "bySession":
+        return this.renderBySession();
+      default:
+        return [];
+    }
+  }
+
+  private renderByTool(): string[] {
+    const th = this.theme;
+    const lines: string[] = [];
+    const sortedTools = Object.entries(this.data.byTool)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 20);
+
+    if (sortedTools.length === 0) {
+      lines.push(th.fg("dim", "  No tool usage data"));
+      return lines;
+    }
+
+    const maxNameLen = Math.max(
+      ...sortedTools.map(([name]) => name.length),
+      10,
+    );
+    const maxCount = sortedTools[0]?.[1] || 0;
+    const barWidth = 30;
+
+    for (let i = 0; i < sortedTools.length; i++) {
+      const [name, count] = sortedTools[i]!;
+      const pct = ((count / this.data.totalToolCalls) * 100).toFixed(1);
+      const barLen = Math.round((count / maxCount) * barWidth);
+      const bar = "█".repeat(barLen);
+      const isSelected = i === this.selectedIndex;
+
+      const nameStr = isSelected
+        ? th.fg("accent", name.padEnd(maxNameLen))
+        : name.padEnd(maxNameLen);
+      const countStr = String(count).padStart(6);
+      const pctStr = `(${pct.padStart(5)}%)`;
+
+      lines.push(
+        `  ${nameStr}  ${countStr}  ${th.fg("dim", pctStr)}  ${th.fg("accent", bar)}`,
+      );
+    }
+
+    return [...lines, ""];
+  }
+
+  private renderByDate(): string[] {
+    const th = this.theme;
+    const lines: string[] = [];
+    const sortedDates = Object.entries(this.data.byDate).sort(([a], [b]) =>
+      b.localeCompare(a),
+    ); // Most recent first
+
+    if (sortedDates.length === 0) {
+      lines.push(th.fg("dim", "  No date data"));
+      return lines;
+    }
+
+    for (let i = 0; i < sortedDates.length; i++) {
+      const [date, data] = sortedDates[i]!;
+      const topTools = Object.entries(data.tools)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([t, c]) => `${t}(${c})`)
+        .join(", ");
+
+      const isSelected = i === this.selectedIndex;
+      const dateStr = isSelected ? th.fg("accent", date) : date;
+      const countStr = String(data.count).padStart(5);
+
+      lines.push(
+        `  ${dateStr}  ${countStr} calls  → ${th.fg("dim", topTools)}`,
+      );
+    }
+
+    return [...lines, ""];
+  }
+
+  private renderBySession(): string[] {
+    const th = this.theme;
+    const lines: string[] = [];
+    const sortedSessions = Object.entries(this.data.bySession)
+      .sort(([, a], [, b]) => b.count - a.count)
+      .slice(0, 20);
+
+    if (sortedSessions.length === 0) {
+      lines.push(th.fg("dim", "  No session data"));
+      return lines;
+    }
+
+    for (let i = 0; i < sortedSessions.length; i++) {
+      const [session, data] = sortedSessions[i]!;
+      const shortName = truncateToWidth(
+        session.replace(/--/g, "/").replace(/^\//, ""),
+        40,
+      );
+      const topTools = Object.entries(data.tools)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([t, c]) => `${t}(${c})`)
+        .join(", ");
+
+      const isSelected = i === this.selectedIndex;
+      const nameStr = isSelected
+        ? th.fg("accent", padRight(shortName, 42))
+        : padRight(shortName, 42);
+      const countStr = String(data.count).padStart(5);
+
+      lines.push(`  ${nameStr} ${countStr} → ${th.fg("dim", topTools)}`);
+    }
+
+    return [...lines, ""];
+  }
+
+  private renderInsights(): string[] {
+    const th = this.theme;
+    const lines: string[] = [th.fg("border", "─".repeat(70)), ""];
+
+    const sortedTools = Object.entries(this.data.byTool).sort(
+      ([, a], [, b]) => b - a,
+    );
+    const topTool = sortedTools[0];
+    if (topTool) {
+      const pct = ((topTool[1] / this.data.totalToolCalls) * 100).toFixed(1);
+      lines.push(
+        `  Most used: ${th.fg("accent", topTool[0])} (${topTool[1]} calls, ${pct}%)`,
+      );
+    }
+
+    const avgPerSession = (
+      this.data.totalToolCalls / this.data.totalSessions
+    ).toFixed(1);
+    lines.push(
+      `  Avg per session: ${avgPerSession}  |  Unique tools: ${Object.keys(this.data.byTool).length}`,
+    );
+
+    return [...lines, ""];
+  }
+
+  private renderHelp(): string[] {
+    return [this.theme.fg("dim", "[Tab/←→] view  [↑↓] select  [q] close")];
+  }
+
+  invalidate(): void {}
+  dispose(): void {}
+}
+
+// =============================================================================
 // Extension Entry Point
 // =============================================================================
 
@@ -681,7 +1066,100 @@ export {
   type UsageData,
 };
 
+async function collectToolStats(
+  signal?: AbortSignal,
+): Promise<ToolStats | null> {
+  const sessionsDir = getSessionsDir();
+  const sessionFiles = await findToolSessionFiles(sessionsDir);
+  if (signal?.aborted) return null;
+
+  const allToolCalls: ToolCall[] = [];
+  let sessionCount = 0;
+
+  for (const { file } of sessionFiles) {
+    if (signal?.aborted) return null;
+    try {
+      const { sessionId, toolCalls } = await parseToolSession(file);
+      if (sessionId) sessionCount++;
+      allToolCalls.push(...toolCalls);
+    } catch {
+      // Skip files that can't be parsed
+    }
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  }
+
+  return aggregateToolStats(allToolCalls, sessionCount);
+}
+
 export default function (pi: ExtensionAPI) {
+  pi.registerCommand("tool-usage", {
+    description: "Show tool usage statistics dashboard",
+    handler: async (_args: string, ctx: ExtensionCommandContext) => {
+      if (!ctx.hasUI) {
+        return;
+      }
+
+      const data = await ctx.ui.custom<ToolStats | null>(
+        (tui, theme, _kb, done) => {
+          const loader = new CancellableLoader(
+            tui,
+            (s: string) => theme.fg("accent", s),
+            (s: string) => theme.fg("muted", s),
+            "Loading Tool Usage...",
+          );
+          let finished = false;
+          const finish = (value: ToolStats | null) => {
+            if (finished) return;
+            finished = true;
+            loader.dispose();
+            done(value);
+          };
+
+          loader.onAbort = () => finish(null);
+
+          collectToolStats(loader.signal)
+            .then(finish)
+            .catch(() => finish(null));
+
+          return loader;
+        },
+      );
+
+      if (!data) {
+        return;
+      }
+
+      await ctx.ui.custom<void>((tui, theme, _kb, done) => {
+        const container = new Container();
+
+        container.addChild(new Spacer(1));
+        container.addChild(
+          new DynamicBorder((s: string) => theme.fg("border", s)),
+        );
+        container.addChild(new Spacer(1));
+
+        const toolUsage = new ToolUsageComponent(
+          theme,
+          data,
+          () => tui.requestRender(),
+          () => done(),
+        );
+
+        return {
+          render: (w: number) => {
+            const borderLines = container.render(w);
+            const usageLines = toolUsage.render(w);
+            const bottomBorder = theme.fg("border", "─".repeat(w));
+            return [...borderLines, ...usageLines, "", bottomBorder];
+          },
+          invalidate: () => container.invalidate(),
+          handleInput: (input: string) => toolUsage.handleInput(input),
+          dispose: () => {},
+        };
+      });
+    },
+  });
+
   pi.registerCommand("usage", {
     description: "Show usage statistics dashboard",
     handler: async (_args: string, ctx: ExtensionCommandContext) => {
