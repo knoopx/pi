@@ -15,7 +15,22 @@ const anthropicConfig: ProviderConfig = {
     Authorization: `Bearer ${token}`,
     "anthropic-beta": "oauth-2025-04-20",
   }),
-  customProcessor: (data) => {
+  customProcessor: (rawData) => {
+    type WindowData = {
+      utilization?: number;
+      used_percent?: number;
+      resets_at?: string | number;
+      reset_at?: string | number;
+    };
+    type DataType = Record<string, WindowData | undefined> & {
+      extra_usage?: {
+        is_enabled?: boolean;
+        used_credits?: number;
+        utilization?: number;
+      };
+    };
+    const data = rawData as DataType;
+
     const windows = [
       {
         path: "five_hour",
@@ -31,9 +46,7 @@ const anthropicConfig: ProviderConfig = {
       },
     ]
       .map((window) => {
-        const windowData = window.path
-          .split(".")
-          .reduce((obj, key) => obj?.[key], data);
+        const windowData = data[window.path];
         if (!windowData) return null;
 
         const usedPercent =

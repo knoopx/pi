@@ -23,8 +23,14 @@ const geminiConfig: ProviderConfig = {
   }),
   customProcessor: (data) => {
     // Aggregate quotas by model type
+    const d = data as {
+      buckets?: Array<{
+        modelId?: string;
+        remainingFraction?: number;
+      }>;
+    };
     const quotas: Record<string, number> = {};
-    for (const bucket of data.buckets || []) {
+    for (const bucket of d.buckets || []) {
       const model = bucket.modelId || "unknown";
       const frac = bucket.remainingFraction ?? 1;
       if (!quotas[model] || frac < quotas[model]) {

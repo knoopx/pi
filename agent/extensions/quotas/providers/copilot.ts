@@ -4,11 +4,12 @@ import { BaseDependencies } from "../types";
 import { loadTokenFromPiAuthJson } from "../util";
 
 export function loadGithubToken(deps: BaseDependencies): string | undefined {
-  return loadTokenFromPiAuthJson(
-    deps,
-    "github-copilot",
-    (data) => data["github-copilot"]?.refresh || data["github-copilot"]?.access,
-  );
+  return loadTokenFromPiAuthJson(deps, "github-copilot", (data) => {
+    const copilot = data["github-copilot"] as
+      | { refresh?: string; access?: string }
+      | undefined;
+    return copilot?.refresh || copilot?.access;
+  });
 }
 
 const copilotConfig: ProviderConfig = {

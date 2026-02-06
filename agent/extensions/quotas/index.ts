@@ -26,7 +26,16 @@ function createFsOperation<T>(operation: () => T, fallback?: T): T {
 }
 
 // Simple fetch implementation using Node.js built-ins
-async function nodeFetch(url: string, options: any = {}): Promise<any> {
+interface FetchOptions {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+}
+
+async function nodeFetch(
+  url: string,
+  options: FetchOptions = {},
+): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const parsedUrl = new URL(url);
     const isHttps = parsedUrl.protocol === "https:";
@@ -117,26 +126,19 @@ export default function quotasExtension(pi: ExtensionAPI) {
   let currentUsage: UsageSnapshot | undefined;
   let lastContext: ExtensionContext | undefined;
 
-  function detectAndFetchUsage(model: any): Promise<UsageSnapshot | null> {
-    if (
-      model?.provider?.toLowerCase().includes("anthropic") ||
-      model?.id?.toLowerCase().includes("claude")
-    ) {
+  function detectAndFetchUsage(
+    model: { provider?: string; id?: string } | undefined,
+  ): Promise<UsageSnapshot | null> {
+    const provider = model?.provider?.toLowerCase() ?? "";
+    const id = model?.id?.toLowerCase() ?? "";
+
+    if (provider.includes("anthropic") || id.includes("claude")) {
       return fetchAnthropicUsage(deps);
-    } else if (
-      model?.provider?.toLowerCase().includes("openai") ||
-      model?.id?.toLowerCase().includes("gpt")
-    ) {
+    } else if (provider.includes("openai") || id.includes("gpt")) {
       return fetchOpenAIUsage(deps);
-    } else if (
-      model?.provider?.toLowerCase().includes("github") ||
-      model?.provider?.toLowerCase().includes("copilot")
-    ) {
+    } else if (provider.includes("github") || provider.includes("copilot")) {
       return fetchCopilotUsage(deps);
-    } else if (
-      model?.provider?.toLowerCase().includes("google") ||
-      model?.id?.toLowerCase().includes("gemini")
-    ) {
+    } else if (provider.includes("google") || id.includes("gemini")) {
       return fetchGeminiUsage(deps);
     }
     return Promise.resolve(null);
@@ -172,12 +174,12 @@ export default function quotasExtension(pi: ExtensionAPI) {
   });
 
   // Register context-setting event handlers
-  ["session_start", "model_select"].forEach((event) => {
-    pi.on(event as any, async (_event, ctx) => {
-      lastContext = ctx;
-      await refreshUsage();
-    });
-  });
+  const handleContextEvent = async (_event: unknown, ctx: ExtensionContext) => {
+    lastContext = ctx;
+    await refreshUsage();
+  };
+  pi.on("session_start", handleContextEvent);
+  pi.on("model_select", handleContextEvent);
 
   // Auto-refresh every 5 minutes
   setInterval(refreshUsage, 5 * 60 * 1000);

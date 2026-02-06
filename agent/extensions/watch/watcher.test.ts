@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as core from "./core";
 import { PIWatcher } from "./watcher";

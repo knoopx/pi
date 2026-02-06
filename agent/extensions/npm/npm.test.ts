@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any */
 // @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";

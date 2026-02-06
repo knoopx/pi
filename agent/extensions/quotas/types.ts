@@ -8,13 +8,13 @@ export interface ProviderConfig {
   headers: (token: string) => Record<string, string>;
   windows?: Array<{
     path: string;
-    label: string | ((data: any, windowData: any) => string);
+    label: string | ((data: unknown, windowData: unknown) => string);
     usedPercentPath?: string;
     usedPercentTransform?: (val: number) => number;
     resetPath?: string;
     fixedLabel?: string;
   }>;
-  customProcessor?: (data: any) => RateWindow[];
+  customProcessor?: (data: unknown) => RateWindow[];
 }
 
 // Shared types for quota providers
@@ -35,7 +35,7 @@ export interface BaseDependencies {
   homedir(): string;
   fileExists(path: string): boolean;
   readFile(path: string): string | undefined;
-  fetch(url: string, options?: any): Promise<any>;
+  fetch(url: string, options?: Record<string, unknown>): Promise<unknown>;
 }
 
 // Helper function to create error snapshots

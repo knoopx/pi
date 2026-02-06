@@ -85,23 +85,26 @@ class ConfigLoader {
     return config.filter(this.isValidGroup);
   }
 
-  private isValidGroup(group: any): group is GuardrailsGroup {
+  private isValidGroup(group: unknown): group is GuardrailsGroup {
+    const g = group as Record<string, unknown>;
     return (
       typeof group === "object" &&
       group !== null &&
-      typeof group.group === "string" &&
-      typeof group.pattern === "string" &&
-      Array.isArray(group.rules) &&
-      group.rules.every(
-        (rule: any) =>
+      typeof g.group === "string" &&
+      typeof g.pattern === "string" &&
+      Array.isArray(g.rules) &&
+      g.rules.every((rule: unknown) => {
+        const r = rule as Record<string, unknown>;
+        return (
           typeof rule === "object" &&
           rule !== null &&
-          typeof rule.pattern === "string" &&
-          (rule.includes === undefined || typeof rule.includes === "string") &&
-          (rule.excludes === undefined || typeof rule.excludes === "string") &&
-          (rule.action === "block" || rule.action === "confirm") &&
-          typeof rule.reason === "string",
-      )
+          typeof r.pattern === "string" &&
+          (r.includes === undefined || typeof r.includes === "string") &&
+          (r.excludes === undefined || typeof r.excludes === "string") &&
+          (r.action === "block" || r.action === "confirm") &&
+          typeof r.reason === "string"
+        );
+      })
     );
   }
 

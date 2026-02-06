@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";

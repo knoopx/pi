@@ -152,7 +152,7 @@ async function loadAudio(source: string): Promise<Float32Array> {
   wav.toBitDepth("32f"); // Pipeline expects input as Float32Array
   wav.toSampleRate(16000); // Whisper expects 16kHz sampling rate
 
-  let audioData = wav.getSamples() as Float32Array | Float32Array[];
+  let audioData = wav.getSamples() as unknown as Float32Array | Float32Array[];
 
   // Handle stereo audio - merge channels
   if (Array.isArray(audioData)) {
@@ -863,7 +863,7 @@ Alternative models:
             ? { hypothesis_template: hypothesisTemplate }
             : undefined,
         );
-        const output = normalizeNestedArray(results);
+        const output = normalizeNestedArray<ClassificationResult>(results);
 
         const resultText = output
           .map((result) => `${result.label}: ${formatScore(result.score)}`)
@@ -980,7 +980,7 @@ Alternative models:
           labels,
           topK !== undefined ? { threshold, top_k: topK } : { threshold },
         );
-        const output = normalizeNestedArray(results);
+        const output = normalizeNestedArray<ObjectDetectionResult>(results);
         const filtered = output.filter((result) => result.score >= threshold);
 
         const resultText = (filtered.length ? filtered : output)
@@ -1105,7 +1105,7 @@ Model: Xenova/clap-htsat-unfused (CLAP, default)`,
             ? { hypothesis_template: hypothesisTemplate }
             : undefined,
         );
-        const output = normalizeNestedArray(results);
+        const output = normalizeNestedArray<ClassificationResult>(results);
 
         const resultText = output
           .map((result) => `${result.label}: ${formatScore(result.score)}`)

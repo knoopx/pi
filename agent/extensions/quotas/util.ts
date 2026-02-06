@@ -41,27 +41,29 @@ export function formatRemainingDuration(
 export function createRateLimitProcessor(
   windows: Array<{
     path: string;
-    label: string | ((data: any, windowData: any) => string);
+    label: string | ((data: unknown, windowData: unknown) => string);
     usedPercentPath?: string;
     usedPercentTransform?: (val: number) => number;
     resetPath?: string;
     fixedLabel?: string;
   }>,
-): (data: any) => RateWindow[] {
+): (data: unknown) => RateWindow[] {
+  type AnyRecord = Record<string, unknown>;
+  const getPath = (obj: unknown, path: string): unknown =>
+    path.split(".").reduce((o, k) => (o as AnyRecord)?.[k], obj);
+
   return (data) => {
     const result: RateWindow[] = [];
 
     for (const window of windows) {
-      const windowData = window.path
-        .split(".")
-        .reduce((obj, key) => obj?.[key], data);
+      const windowData = getPath(data, window.path) as AnyRecord | undefined;
       if (!windowData) continue;
 
       let usedPercent = window.usedPercentPath
-        ? window.usedPercentPath
-            .split(".")
-            .reduce((obj, key) => obj?.[key], windowData) || 0
-        : windowData.utilization || windowData.used_percent || 0;
+        ? (getPath(windowData, window.usedPercentPath) as number) || 0
+        : (windowData.utilization as number) ||
+          (windowData.used_percent as number) ||
+          0;
 
       if (window.usedPercentTransform) {
         usedPercent = window.usedPercentTransform(usedPercent);
@@ -72,23 +74,26 @@ export function createRateLimitProcessor(
           ? window.label(data, windowData)
           : window.fixedLabel || window.label;
 
-      let resetAt;
+      let resetAt: string | number | undefined;
       if (window.resetPath) {
         if (window.resetPath.startsWith("/")) {
           // Absolute path from root data
-          resetAt = window.resetPath
-            .slice(1)
-            .split(".")
-            .reduce((obj, key) => obj?.[key], data);
+          resetAt = getPath(data, window.resetPath.slice(1)) as
+            | string
+            | number
+            | undefined;
         } else {
           // Relative path from windowData
-          resetAt = window.resetPath
-            .split(".")
-            .reduce((obj, key) => obj?.[key], windowData);
+          resetAt = getPath(windowData, window.resetPath) as
+            | string
+            | number
+            | undefined;
         }
       }
       if (!resetAt) {
-        resetAt = windowData.resets_at || windowData.reset_at;
+        resetAt =
+          (windowData.resets_at as string | number | undefined) ||
+          (windowData.reset_at as string | number | undefined);
       }
 
       result.push({
@@ -114,11 +119,11 @@ export async function createGenericProvider(config: ProviderConfig) {
     }
 
     try {
-      const res = await deps.fetch(config.apiUrl, {
+      const res = (await deps.fetch(config.apiUrl, {
         method: config.method || "GET",
         headers: config.headers(token),
         body: config.body,
-      });
+      })) as { ok: boolean; status: number; json: () => Promise<unknown> };
 
       if (!res.ok) {
         return createHttpErrorSnapshot(
@@ -151,7 +156,7 @@ export async function createGenericProvider(config: ProviderConfig) {
 export function loadTokenFromPiAuthJson(
   deps: BaseDependencies,
   providerKey: string,
-  tokenSelector?: (data: any) => string | undefined,
+  tokenSelector?: (data: Record<string, unknown>) => string | undefined,
 ): string | undefined {
   const piAuthPath = path.join(deps.homedir(), ".pi", "agent", "auth.json");
   try {

@@ -8,6 +8,7 @@ import type { TextContent } from "@mariozechner/pi-ai";
 import { Type, type Static } from "@sinclair/typebox";
 import axios from "axios";
 import * as cheerio from "cheerio";
+import type { Element } from "domhandler";
 
 // Define types
 interface SearchResult {
@@ -244,7 +245,7 @@ async function searchDuckDuckGoPreloadUrl(
  */
 function parseSearchResults(
   $: cheerio.CheerioAPI,
-  items: cheerio.Cheerio<any>,
+  items: cheerio.Cheerio<Element>,
   results: SearchResult[],
   maxResults: number,
 ): void {

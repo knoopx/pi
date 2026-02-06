@@ -18,10 +18,9 @@ const openaiConfig: ProviderConfig = {
   windows: [
     {
       path: "rate_limit.primary_window",
-      label: (data, windowData) => {
-        const hours = Math.round(
-          (windowData.limit_window_seconds || 10800) / 3600,
-        );
+      label: (_data, windowData) => {
+        const wd = windowData as { limit_window_seconds?: number };
+        const hours = Math.round((wd.limit_window_seconds || 10800) / 3600);
         return `${hours}h`;
       },
       usedPercentPath: "used_percent",
@@ -29,10 +28,9 @@ const openaiConfig: ProviderConfig = {
     },
     {
       path: "rate_limit.secondary_window",
-      label: (data, windowData) => {
-        const hours = Math.round(
-          (windowData.limit_window_seconds || 86400) / 3600,
-        );
+      label: (_data, windowData) => {
+        const wd = windowData as { limit_window_seconds?: number };
+        const hours = Math.round((wd.limit_window_seconds || 86400) / 3600);
         return hours >= 144 ? "Week" : hours >= 24 ? "Day" : `${hours}h`;
       },
       usedPercentPath: "used_percent",

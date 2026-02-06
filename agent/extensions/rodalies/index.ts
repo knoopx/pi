@@ -315,6 +315,7 @@ export default function (pi: ExtensionAPI) {
         label: s.name,
       }));
 
+      /* eslint-disable @typescript-eslint/no-explicit-any */
       const selectList = new SelectList(stationOptions as any, 12, {
         selectedPrefix: (text: string) => `\x1b[32m>\x1b[0m ${text}`,
         selectedText: (text: string) => `\x1b[1m${text}\x1b[0m`,
@@ -325,13 +326,14 @@ export default function (pi: ExtensionAPI) {
 
       // Use UI selection
       const selectedId = await new Promise<string | null>((resolve) => {
-        selectList.onSelect = (item: any) => resolve(item.value);
+        selectList.onSelect = (item: { value: string }) => resolve(item.value);
         selectList.onCancel = () => resolve(null);
         (ctx as any).ui.custom(selectList, {
           overlay: true,
           overlayOptions: { width: 60 },
         } as any);
       });
+      /* eslint-enable @typescript-eslint/no-explicit-any */
 
       if (!selectedId) {
         ctx.ui.notify("Cancelled", "info");
