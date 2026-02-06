@@ -1,7 +1,35 @@
-import { describe, it, expect, vi } from "vitest";
-import { configLoader } from "./config";
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+  type Mock,
+} from "vitest";
+import { readFile } from "node:fs/promises";
+
+// Mock fs before importing configLoader
+vi.mock("node:fs/promises", () => ({
+  readFile: vi.fn(),
+  writeFile: vi.fn(),
+  mkdir: vi.fn(),
+}));
+
+// Import after mocking
+const { configLoader } = await import("./config");
 
 describe("ConfigLoader", () => {
+  const mockReadFile = readFile as unknown as Mock;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
   describe("given valid global config exists", () => {
     describe("when loading configuration", () => {
       it("then uses global config", async () => {
@@ -11,6 +39,7 @@ describe("ConfigLoader", () => {
             pattern: "^test",
             rules: [
               {
+                context: "command",
                 pattern: "^test",
                 action: "block",
                 reason: "test block",
@@ -19,12 +48,14 @@ describe("ConfigLoader", () => {
           },
         ];
 
-        vi.spyOn(configLoader as any, "loadGlobalFile").mockResolvedValue(
-          mockGroups,
-        );
-        vi.spyOn(configLoader as any, "loadDefaultsFile").mockResolvedValue(
-          null,
-        );
+        // Mock defaults file to return valid defaults
+        mockReadFile.mockImplementation((path: unknown) => {
+          if (String(path).includes("settings.json")) {
+            return Promise.resolve(JSON.stringify({ guardrails: mockGroups }));
+          }
+          // defaults.json
+          return Promise.resolve(JSON.stringify([]));
+        });
 
         await configLoader.load();
 
@@ -45,6 +76,7 @@ describe("ConfigLoader", () => {
             pattern: "^defaults",
             rules: [
               {
+                context: "command",
                 pattern: "^defaults",
                 action: "block",
                 reason: "defaults block",
@@ -53,10 +85,13 @@ describe("ConfigLoader", () => {
           },
         ];
 
-        vi.spyOn(configLoader as any, "loadGlobalFile").mockResolvedValue(null);
-        vi.spyOn(configLoader as any, "loadDefaultsFile").mockResolvedValue(
-          mockGroups,
-        );
+        mockReadFile.mockImplementation((path: unknown) => {
+          if (String(path).includes("settings.json")) {
+            return Promise.reject(new Error("File not found"));
+          }
+          // defaults.json
+          return Promise.resolve(JSON.stringify(mockGroups));
+        });
 
         await configLoader.load();
 
@@ -71,10 +106,7 @@ describe("ConfigLoader", () => {
   describe("given missing config files", () => {
     describe("when loading configuration", () => {
       it("then returns empty array", async () => {
-        vi.spyOn(configLoader as any, "loadGlobalFile").mockResolvedValue(null);
-        vi.spyOn(configLoader as any, "loadDefaultsFile").mockResolvedValue(
-          null,
-        );
+        mockReadFile.mockRejectedValue(new Error("File not found"));
 
         await configLoader.load();
 
@@ -96,6 +128,7 @@ describe("ConfigLoader", () => {
             pattern: "^test",
             rules: [
               {
+                context: "command",
                 pattern: "^test",
                 action: "block",
                 reason: "test block",
@@ -104,12 +137,12 @@ describe("ConfigLoader", () => {
           },
         ];
 
-        vi.spyOn(configLoader as any, "loadGlobalFile").mockResolvedValue(
-          mockConfig,
-        );
-        vi.spyOn(configLoader as any, "loadDefaultsFile").mockResolvedValue(
-          null,
-        );
+        mockReadFile.mockImplementation((path: unknown) => {
+          if (String(path).includes("settings.json")) {
+            return Promise.resolve(JSON.stringify({ guardrails: mockConfig }));
+          }
+          return Promise.reject(new Error("File not found"));
+        });
 
         await configLoader.load();
         const config = configLoader.getConfig();

@@ -7,20 +7,24 @@ Security hooks to prevent potentially dangerous operations.
 Guardrails comes with a comprehensive set of default rules to prevent common issues:
 
 ### JavaScript/Node.js Commands
+
 - `node` - Blocked in favor of bun or bunx
 - `npm` - Blocked in favor of bun or bunx
 
 ### Python Commands
+
 - `pip` - Blocked in favor of uv or uvx
 - `python`, `python2`, `python3` - Blocked in favor of uv or uvx
   - Exceptions: Virtual environment python commands are allowed (e.g., `.venv/bin/python`)
 
 ### Git Commands
+
 - Write operations - Only read-only git commands are allowed:
   - ✅ `git status`, `git diff`, `git show`
   - ❌ `git add`, `git commit`, `git push`, `git checkout`, etc.
 
 ### JJ (JetBrains Jump) Commands
+
 - Various jj commands blocked or require confirmation:
   - `jj diffedit`, `jj simplify`, `jj forget`, `jj undo`, `jj recover` - Blocked
   - `jj squash` without `-m` - Blocked (opens editor)
@@ -31,6 +35,7 @@ Guardrails comes with a comprehensive set of default rules to prevent common iss
   - `jj -i/--interactive/--tool` - Blocked (opens diff editor)
 
 ### Nix Commands
+
 - Local flake references - Must use proper prefixes:
   - ✅ `nix run path:./my-flake#output`
   - ✅ `nix run github:user/repo#output`
@@ -38,13 +43,16 @@ Guardrails comes with a comprehensive set of default rules to prevent common iss
   - ❌ `nix run ./my-flake#output`
 
 ### Privilege Escalation Commands
+
 - `sudo` and `su` - Blocked to prevent privilege escalation
   - ❌ `sudo apt update`
   - ❌ `su root`
   - Rationale: Agents should instruct system administrators to perform privileged operations
 
 ### File Edit Blocking - Lock Files
+
 Prevents editing of auto-generated lock files:
+
 - `package-lock.json` - Use bun install or bun update instead
 - `bun.lockb` - Use bun install or bun update instead
 - `yarn.lock` - Use yarn install or yarn upgrade instead
@@ -61,10 +69,6 @@ Configuration is loaded from:
 
 - **Global**: `~/.pi/agent/settings.json` under key `"guardrails"`
 - **Defaults**: Built-in `defaults.json` (used when no global config exists)
-
-### Settings Command
-
-Run `/guardrails` to open an interactive settings UI for editing global config (`~/.pi/agent/settings.json`).
 
 ### Configuration Schema
 
@@ -95,21 +99,21 @@ All fields are optional. Missing fields use defaults shown above.
 
 Array of groups with patterns and rules.
 
-| Key | Required | Description |
-|---|---|---|
-| `group` | Required | Name of the group (human-readable identifier) |
+| Key       | Required | Description                                       |
+| --------- | -------- | ------------------------------------------------- |
+| `group`   | Required | Name of the group (human-readable identifier)     |
 | `pattern` | Required | Regex pattern to match the item (command or file) |
-| `rules` | Required | Array of rule objects |
+| `rules`   | Required | Array of rule objects                             |
 
 #### `rules`
 
 Each rule defines what to do when the group pattern matches.
 
-| Key | Required | Description |
-|---|---|---|
-| `pattern` | Required | Regex pattern to match the specific item |
-| `action` | Required | `"block"` or `"confirm"` - whether to auto-block or prompt |
-| `reason` | Required | Human-readable reason for blocking |
+| Key       | Required | Description                                                |
+| --------- | -------- | ---------------------------------------------------------- |
+| `pattern` | Required | Regex pattern to match the specific item                   |
+| `action`  | Required | `"block"` or `"confirm"` - whether to auto-block or prompt |
+| `reason`  | Required | Human-readable reason for blocking                         |
 
 ### Examples
 

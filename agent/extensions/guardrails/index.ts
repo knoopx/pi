@@ -1,8 +1,6 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { configLoader } from "./config";
-import type { ResolvedConfig, GuardrailsGroup } from "./config";
-import { GroupEditor } from "./ui/group-editor";
-import { createConfirmationDialog } from "./ui/confirmation-dialog";
+import type { ResolvedConfig } from "./config";
 import { glob } from "tinyglobby";
 
 /**
@@ -15,7 +13,6 @@ import { glob } from "tinyglobby";
  * Configuration:
  * - Extension defaults: defaults.json (used when no global config exists)
  * - Global settings: ~/.pi/agent/settings.json under key "guardrails"
- * - Command: /guardrails
  */
 
 export default async function (pi: ExtensionAPI) {
@@ -23,7 +20,6 @@ export default async function (pi: ExtensionAPI) {
   const config = configLoader.getConfig();
 
   setupPermissionGateHook(pi, config);
-  registerSettingsCommand(pi);
 }
 
 /**
@@ -145,20 +141,9 @@ function setupPermissionGateHook(pi: ExtensionAPI, config: ResolvedConfig) {
                 };
               }
 
-              const proceed = await ctx.ui.custom<boolean>(
-                (_tui, theme, _kb, done) =>
-                  createConfirmationDialog(
-                    {
-                      title: "Dangerous Operation Detected",
-                      message: `This operation was blocked: ${reason}`,
-                      content: targetValue!,
-                      confirmText: "y/enter: allow",
-                      cancelText: "n/esc: deny",
-                      danger: true,
-                    },
-                    theme,
-                    done,
-                  ),
+              const proceed = await ctx.ui.confirm(
+                "Dangerous Operation Detected",
+                `${reason}\n\n${targetValue}`,
               );
 
               if (!proceed) {
@@ -175,40 +160,5 @@ function setupPermissionGateHook(pi: ExtensionAPI, config: ResolvedConfig) {
       }
     }
     return;
-  });
-}
-
-export function registerSettingsCommand(pi: ExtensionAPI): void {
-  pi.registerCommand("guardrails", {
-    description: "Configure guardrails groups",
-    handler: async (_args, ctx) => {
-      if (!ctx.hasUI) return;
-
-      const currentConfig = configLoader.getGlobalConfig();
-
-      await ctx.ui.custom((_tui, theme, _kb, done) => {
-        const groupEditor = new GroupEditor({
-          label: "Guardrails Groups",
-          items: [...currentConfig],
-          theme,
-          onSave: async (groups: GuardrailsGroup[]) => {
-            try {
-              await configLoader.saveGlobal(groups);
-              ctx.ui.notify("Guardrails saved", "info");
-              done(undefined);
-            } catch (error) {
-              ctx.ui.notify(`Failed to save: ${error}`, "error");
-            }
-          },
-          onDone: () => done(undefined),
-        });
-
-        return {
-          render: (width: number) => groupEditor.render(width),
-          invalidate: () => groupEditor.invalidate(),
-          handleInput: (data: string) => groupEditor.handleInput(data),
-        };
-      });
-    },
   });
 }

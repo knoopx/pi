@@ -1,36 +1,59 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import guardrailsExtension, {
-  isGroupActive,
-  registerSettingsCommand,
-} from "./index";
-import { configLoader } from "./config";
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterAll,
+  type Mock,
+} from "vitest";
 
-// Mock dependencies
-vi.mock("./config", () => ({
-  configLoader: {
-    load: vi.fn(),
-    getConfig: vi.fn(),
-    getGlobalConfig: vi.fn(),
-    saveGlobal: vi.fn(),
-  },
-}));
+// Use doMock instead of mock to avoid hoisting pollution
+let guardrailsExtension: typeof import("./index").default;
+let isGroupActive: typeof import("./index").isGroupActive;
+let configLoader: {
+  load: Mock;
+  getConfig: Mock;
+  getGlobalConfig: Mock;
+  saveGlobal: Mock;
+};
+let glob: Mock;
 
-vi.mock("./ui/group-editor", () => ({
-  GroupEditor: vi.fn(),
-}));
+beforeAll(async () => {
+  // Setup mocks before imports
+  vi.doMock("./config", () => ({
+    configLoader: {
+      load: vi.fn(),
+      getConfig: vi.fn(),
+      getGlobalConfig: vi.fn(),
+      saveGlobal: vi.fn(),
+    },
+  }));
 
-vi.mock("tinyglobby", () => ({
-  glob: vi.fn(),
-}));
+  vi.doMock("tinyglobby", () => ({
+    glob: vi.fn(),
+  }));
 
-const { glob } = await import("tinyglobby");
-const { GroupEditor } = await import("./ui/group-editor");
+  // Import after mocking
+  const guardrailsExtensionModule = await import("./index");
+  guardrailsExtension = guardrailsExtensionModule.default;
+  isGroupActive = guardrailsExtensionModule.isGroupActive;
+
+  const configModule = await import("./config");
+  configLoader = configModule.configLoader as unknown as typeof configLoader;
+
+  const globModule = await import("tinyglobby");
+  glob = globModule.glob as unknown as Mock;
+});
+
+afterAll(() => {
+  vi.doUnmock("./config");
+  vi.doUnmock("tinyglobby");
+  vi.resetModules();
+});
 
 describe("Guardrails Extension", () => {
-  const mockConfigLoader = vi.mocked(configLoader);
-  const mockGlob = vi.mocked(glob);
-  const _mockGroupEditor = vi.mocked(GroupEditor);
-
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -46,14 +69,14 @@ describe("Guardrails Extension", () => {
 
     describe("given pattern matches files", () => {
       beforeEach(() => {
-        mockGlob.mockResolvedValue(["package.json"]);
+        glob.mockResolvedValue(["package.json"]);
       });
 
       it("then returns true", async () => {
         const result = await isGroupActive("*.json", "/test");
 
         expect(result).toBe(true);
-        expect(mockGlob).toHaveBeenCalledWith(["*.json"], {
+        expect(glob).toHaveBeenCalledWith(["*.json"], {
           cwd: "/test",
           absolute: false,
           dot: true,
@@ -64,7 +87,7 @@ describe("Guardrails Extension", () => {
 
     describe("given pattern matches no files", () => {
       beforeEach(() => {
-        mockGlob.mockResolvedValue([]);
+        glob.mockResolvedValue([]);
       });
 
       it("then returns false", async () => {
@@ -76,7 +99,7 @@ describe("Guardrails Extension", () => {
 
     describe("given glob throws error", () => {
       beforeEach(() => {
-        mockGlob.mockRejectedValue(new Error("Permission denied"));
+        glob.mockRejectedValue(new Error("Permission denied"));
       });
 
       it("then returns false", async () => {
@@ -90,8 +113,8 @@ describe("Guardrails Extension", () => {
   describe("guardrailsExtension", () => {
     describe("given valid config", () => {
       beforeEach(() => {
-        mockConfigLoader.load.mockResolvedValue();
-        mockConfigLoader.getConfig.mockReturnValue([
+        configLoader.load.mockResolvedValue(undefined);
+        configLoader.getConfig.mockReturnValue([
           {
             group: "coreutils",
             pattern: "*",
@@ -113,84 +136,16 @@ describe("Guardrails Extension", () => {
           registerCommand: vi.fn(),
         };
 
-        await guardrailsExtension(mockPI as any);
+        await guardrailsExtension(
+          mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+        );
 
-        expect(mockConfigLoader.load).toHaveBeenCalled();
-        expect(mockConfigLoader.getConfig).toHaveBeenCalled();
+        expect(configLoader.load).toHaveBeenCalled();
+        expect(configLoader.getConfig).toHaveBeenCalled();
         expect(mockPI.on).toHaveBeenCalledWith(
           "tool_call",
           expect.any(Function),
         );
-        expect(mockPI.registerCommand).toHaveBeenCalledWith(
-          "guardrails",
-          expect.any(Object),
-        );
-      });
-    });
-  });
-
-  describe("registerSettingsCommand", () => {
-    describe("given pi instance", () => {
-      it("then registers guardrails command", () => {
-        const mockPI = {
-          registerCommand: vi.fn(),
-        };
-
-        registerSettingsCommand(mockPI as any);
-
-        expect(mockPI.registerCommand).toHaveBeenCalledWith("guardrails", {
-          description: "Configure guardrails groups",
-          handler: expect.any(Function),
-        });
-      });
-    });
-
-    describe("when command handler is called with UI", () => {
-      it("then loads global config and shows editor", async () => {
-        const mockPI = {
-          registerCommand: vi.fn(),
-        };
-
-        registerSettingsCommand(mockPI as any);
-
-        const commandHandler = mockPI.registerCommand.mock.calls[0][1].handler;
-        const mockCtx = {
-          hasUI: true,
-          ui: {
-            custom: vi.fn().mockReturnValue({}),
-            notify: vi.fn(),
-          },
-        };
-
-        mockConfigLoader.getGlobalConfig.mockReturnValue([]);
-
-        await commandHandler([], mockCtx);
-
-        expect(mockConfigLoader.getGlobalConfig).toHaveBeenCalled();
-        expect(mockCtx.ui.custom).toHaveBeenCalled();
-      });
-    });
-
-    describe("when command handler is called without UI", () => {
-      it("then returns early without showing editor", async () => {
-        const mockPI = {
-          registerCommand: vi.fn(),
-        };
-
-        registerSettingsCommand(mockPI as any);
-
-        const commandHandler = mockPI.registerCommand.mock.calls[0][1].handler;
-        const mockCtx = {
-          hasUI: false,
-          ui: {
-            custom: vi.fn(),
-            notify: vi.fn(),
-          },
-        };
-
-        await commandHandler([], mockCtx);
-
-        expect(mockCtx.ui.custom).not.toHaveBeenCalled();
       });
     });
   });
@@ -199,8 +154,8 @@ describe("Guardrails Extension", () => {
     describe("given coreutils blocking rules", () => {
       beforeEach(() => {
         // Mock config loader
-        mockConfigLoader.load.mockResolvedValue();
-        mockConfigLoader.getConfig.mockReturnValue([
+        configLoader.load.mockResolvedValue(undefined);
+        configLoader.getConfig.mockReturnValue([
           {
             group: "coreutils",
             pattern: "*",
@@ -216,7 +171,7 @@ describe("Guardrails Extension", () => {
         ]);
 
         // Mock glob to return matches (group is active)
-        mockGlob.mockResolvedValue(["package.json"]);
+        glob.mockResolvedValue(["package.json"]);
       });
 
       describe("when find command is executed", () => {
@@ -226,7 +181,9 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(mockPI as any);
+          await guardrailsExtension(
+            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          );
 
           // Get the tool_call handler
           const toolCallHandler = mockPI.on.mock.calls.find(
@@ -245,7 +202,7 @@ describe("Guardrails Extension", () => {
             hasUI: true,
             ui: {
               notify: vi.fn(),
-              custom: vi.fn(),
+              confirm: vi.fn(),
             },
           };
 
@@ -269,7 +226,9 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(mockPI as any);
+          await guardrailsExtension(
+            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -284,7 +243,7 @@ describe("Guardrails Extension", () => {
             cwd: "/test/project",
             ui: {
               notify: vi.fn(),
-              custom: vi.fn(),
+              confirm: vi.fn(),
             },
           };
 
@@ -298,8 +257,8 @@ describe("Guardrails Extension", () => {
 
     describe("given inactive groups", () => {
       beforeEach(() => {
-        mockConfigLoader.load.mockResolvedValue();
-        mockConfigLoader.getConfig.mockReturnValue([
+        configLoader.load.mockResolvedValue(undefined);
+        configLoader.getConfig.mockReturnValue([
           {
             group: "bun-specific",
             pattern: "bun.lock",
@@ -315,7 +274,7 @@ describe("Guardrails Extension", () => {
         ]);
 
         // Mock glob to return no matches (group is inactive)
-        mockGlob.mockResolvedValue([]);
+        glob.mockResolvedValue([]);
       });
 
       describe("when npm command is executed in non-bun project", () => {
@@ -325,7 +284,9 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(mockPI as any);
+          await guardrailsExtension(
+            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -340,7 +301,7 @@ describe("Guardrails Extension", () => {
             cwd: "/test/project",
             ui: {
               notify: vi.fn(),
-              custom: vi.fn(),
+              confirm: vi.fn(),
             },
           };
 
@@ -354,8 +315,8 @@ describe("Guardrails Extension", () => {
 
     describe("given lock file blocking rules", () => {
       beforeEach(() => {
-        mockConfigLoader.load.mockResolvedValue();
-        mockConfigLoader.getConfig.mockReturnValue([
+        configLoader.load.mockResolvedValue(undefined);
+        configLoader.getConfig.mockReturnValue([
           {
             group: "lock-files",
             pattern: "*",
@@ -371,7 +332,7 @@ describe("Guardrails Extension", () => {
           },
         ]);
 
-        mockGlob.mockResolvedValue(["package.json"]);
+        glob.mockResolvedValue(["package.json"]);
       });
 
       describe("when editing package-lock.json", () => {
@@ -381,7 +342,9 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(mockPI as any);
+          await guardrailsExtension(
+            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -400,7 +363,7 @@ describe("Guardrails Extension", () => {
             cwd: "/test/project",
             ui: {
               notify: vi.fn(),
-              custom: vi.fn(),
+              confirm: vi.fn(),
             },
           };
 
@@ -421,7 +384,9 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(mockPI as any);
+          await guardrailsExtension(
+            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -436,7 +401,7 @@ describe("Guardrails Extension", () => {
             cwd: "/test/project",
             ui: {
               notify: vi.fn(),
-              custom: vi.fn(),
+              confirm: vi.fn(),
             },
           };
 
@@ -449,8 +414,8 @@ describe("Guardrails Extension", () => {
 
     describe("given TypeScript content blocking rules", () => {
       beforeEach(() => {
-        mockConfigLoader.load.mockResolvedValue();
-        mockConfigLoader.getConfig.mockReturnValue([
+        configLoader.load.mockResolvedValue(undefined);
+        configLoader.getConfig.mockReturnValue([
           {
             group: "typescript",
             pattern: "tsconfig.json",
@@ -466,7 +431,7 @@ describe("Guardrails Extension", () => {
         ]);
 
         // Mock tsconfig.json exists
-        mockGlob.mockResolvedValue(["tsconfig.json"]);
+        glob.mockResolvedValue(["tsconfig.json"]);
       });
 
       describe("when writing file with @ts-ignore", () => {
@@ -476,7 +441,9 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(mockPI as any);
+          await guardrailsExtension(
+            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -494,7 +461,7 @@ describe("Guardrails Extension", () => {
             cwd: "/test/project",
             ui: {
               notify: vi.fn(),
-              custom: vi.fn(),
+              confirm: vi.fn(),
             },
           };
 
@@ -510,8 +477,8 @@ describe("Guardrails Extension", () => {
 
     describe("given confirm action rules", () => {
       beforeEach(() => {
-        mockConfigLoader.load.mockResolvedValue();
-        mockConfigLoader.getConfig.mockReturnValue([
+        configLoader.load.mockResolvedValue(undefined);
+        configLoader.getConfig.mockReturnValue([
           {
             group: "dangerous",
             pattern: "*",
@@ -526,7 +493,7 @@ describe("Guardrails Extension", () => {
           },
         ]);
 
-        mockGlob.mockResolvedValue(["package.json"]);
+        glob.mockResolvedValue(["package.json"]);
       });
 
       describe("when dangerous command is executed and user confirms", () => {
@@ -536,7 +503,9 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(mockPI as any);
+          await guardrailsExtension(
+            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -552,14 +521,14 @@ describe("Guardrails Extension", () => {
             hasUI: true,
             ui: {
               notify: vi.fn(),
-              custom: vi.fn().mockResolvedValue(true), // User confirms
+              confirm: vi.fn().mockResolvedValue(true), // User confirms
             },
           };
 
           const result = await toolCallHandler(mockEvent, mockCtx);
 
           expect(result).toBeUndefined(); // Operation allowed
-          expect(mockCtx.ui.custom).toHaveBeenCalled();
+          expect(mockCtx.ui.confirm).toHaveBeenCalled();
         });
       });
 
@@ -570,7 +539,9 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(mockPI as any);
+          await guardrailsExtension(
+            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -586,7 +557,7 @@ describe("Guardrails Extension", () => {
             hasUI: true,
             ui: {
               notify: vi.fn(),
-              custom: vi.fn().mockResolvedValue(false), // User denies
+              confirm: vi.fn().mockResolvedValue(false), // User denies
             },
           };
 
@@ -606,7 +577,9 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(mockPI as any);
+          await guardrailsExtension(
+            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -622,7 +595,7 @@ describe("Guardrails Extension", () => {
             hasUI: false,
             ui: {
               notify: vi.fn(),
-              custom: vi.fn(),
+              confirm: vi.fn(),
             },
           };
 
@@ -632,15 +605,15 @@ describe("Guardrails Extension", () => {
             block: true,
             reason: expect.stringContaining("no UI for confirmation"),
           });
-          expect(mockCtx.ui.custom).not.toHaveBeenCalled();
+          expect(mockCtx.ui.confirm).not.toHaveBeenCalled();
         });
       });
     });
 
     describe("given rules with includes pattern", () => {
       beforeEach(() => {
-        mockConfigLoader.load.mockResolvedValue();
-        mockConfigLoader.getConfig.mockReturnValue([
+        configLoader.load.mockResolvedValue(undefined);
+        configLoader.getConfig.mockReturnValue([
           {
             group: "includes-test",
             pattern: "*",
@@ -656,7 +629,7 @@ describe("Guardrails Extension", () => {
           },
         ]);
 
-        mockGlob.mockResolvedValue(["package.json"]);
+        glob.mockResolvedValue(["package.json"]);
       });
 
       describe("when command matches pattern and includes", () => {
@@ -666,7 +639,9 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(mockPI as any);
+          await guardrailsExtension(
+            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -682,7 +657,7 @@ describe("Guardrails Extension", () => {
             hasUI: true,
             ui: {
               notify: vi.fn(),
-              custom: vi.fn(),
+              confirm: vi.fn(),
             },
           };
 
@@ -702,7 +677,9 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(mockPI as any);
+          await guardrailsExtension(
+            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -718,7 +695,7 @@ describe("Guardrails Extension", () => {
             hasUI: true,
             ui: {
               notify: vi.fn(),
-              custom: vi.fn(),
+              confirm: vi.fn(),
             },
           };
 
@@ -731,8 +708,8 @@ describe("Guardrails Extension", () => {
 
     describe("given rules with excludes pattern", () => {
       beforeEach(() => {
-        mockConfigLoader.load.mockResolvedValue();
-        mockConfigLoader.getConfig.mockReturnValue([
+        configLoader.load.mockResolvedValue(undefined);
+        configLoader.getConfig.mockReturnValue([
           {
             group: "excludes-test",
             pattern: "*",
@@ -748,7 +725,7 @@ describe("Guardrails Extension", () => {
           },
         ]);
 
-        mockGlob.mockResolvedValue(["package.json"]);
+        glob.mockResolvedValue(["package.json"]);
       });
 
       describe("when command matches pattern but also excludes", () => {
@@ -758,7 +735,9 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(mockPI as any);
+          await guardrailsExtension(
+            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -774,7 +753,7 @@ describe("Guardrails Extension", () => {
             hasUI: true,
             ui: {
               notify: vi.fn(),
-              custom: vi.fn(),
+              confirm: vi.fn(),
             },
           };
 
@@ -791,7 +770,9 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(mockPI as any);
+          await guardrailsExtension(
+            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -807,7 +788,7 @@ describe("Guardrails Extension", () => {
             hasUI: true,
             ui: {
               notify: vi.fn(),
-              custom: vi.fn(),
+              confirm: vi.fn(),
             },
           };
 
@@ -823,8 +804,8 @@ describe("Guardrails Extension", () => {
 
     describe("given malformed regex patterns", () => {
       beforeEach(() => {
-        mockConfigLoader.load.mockResolvedValue();
-        mockConfigLoader.getConfig.mockReturnValue([
+        configLoader.load.mockResolvedValue(undefined);
+        configLoader.getConfig.mockReturnValue([
           {
             group: "broken",
             pattern: "*",
@@ -839,7 +820,7 @@ describe("Guardrails Extension", () => {
           },
         ]);
 
-        mockGlob.mockResolvedValue(["package.json"]);
+        glob.mockResolvedValue(["package.json"]);
       });
 
       describe("when command is executed", () => {
@@ -849,7 +830,9 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(mockPI as any);
+          await guardrailsExtension(
+            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -864,7 +847,7 @@ describe("Guardrails Extension", () => {
             cwd: "/test/project",
             ui: {
               notify: vi.fn(),
-              custom: vi.fn(),
+              confirm: vi.fn(),
             },
           };
 
