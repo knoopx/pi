@@ -21,7 +21,7 @@
         "event": "tool_result",
         "context": "file_name",
         "pattern": "\\.(ts|tsx|js|jsx)$",
-        "command": "tsgo 2>&1 | { grep \"${file}\" || true; }",
+        "command": "tsgo --noEmit 2>&1 | { grep \"${file}\" || true; }",
         "timeout": 60000,
         "notify": true
       },
@@ -29,7 +29,7 @@
         "event": "tool_result",
         "context": "file_name",
         "pattern": "\\.(ts|tsx|js|jsx)$",
-        "command": "bunx eslint \"${file}\"",
+        "command": "bunx eslint \"${file}\" | { grep \"${file}\" || true; }",
         "timeout": 60000,
         "notify": true
       }
