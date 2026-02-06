@@ -12,6 +12,15 @@ import { dirname, resolve } from "node:path";
 export interface GuardrailsRule {
   context: "command" | "file_name" | "file_content";
   pattern: string;
+  /**
+   * Optional pattern that must also match for the rule to apply.
+   */
+  includes?: string;
+  /**
+   * Optional pattern that exempts the rule from applying.
+   * If this pattern matches, the rule is skipped (even if `pattern` matches).
+   */
+  excludes?: string;
   action: "block" | "confirm";
   reason: string;
 }
@@ -88,6 +97,8 @@ class ConfigLoader {
           typeof rule === "object" &&
           rule !== null &&
           typeof rule.pattern === "string" &&
+          (rule.includes === undefined || typeof rule.includes === "string") &&
+          (rule.excludes === undefined || typeof rule.excludes === "string") &&
           (rule.action === "block" || rule.action === "confirm") &&
           typeof rule.reason === "string",
       )

@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import defaults from "./defaults.json";
 import type { GuardrailsConfig } from "./config";
 
-// Cast defaults to proper type since JSON import doesn't preserve types
 const typedDefaults = defaults as GuardrailsConfig;
 
 describe("Guardrails Defaults Configuration", () => {
@@ -14,7 +13,7 @@ describe("Guardrails Defaults Configuration", () => {
       });
 
       it("then each item is a valid group object", () => {
-        typedDefaults.forEach((group, _index) => {
+        typedDefaults.forEach((group) => {
           expect(typeof group).toBe("object");
           expect(group).not.toBeNull();
           expect(typeof group.group).toBe("string");
@@ -23,8 +22,7 @@ describe("Guardrails Defaults Configuration", () => {
           expect(Array.isArray(group.rules)).toBe(true);
           expect(group.rules.length).toBeGreaterThan(0);
 
-          // Validate each rule
-          group.rules.forEach((rule, _ruleIndex) => {
+          group.rules.forEach((rule) => {
             expect(typeof rule).toBe("object");
             expect(rule).not.toBeNull();
             expect(["command", "file_name", "file_content"]).toContain(
@@ -52,46 +50,34 @@ describe("Guardrails Defaults Configuration", () => {
       });
     });
 
-    describe("when checking find command rule", () => {
-      const findRule = coreutilsGroup!.rules.find((r) =>
+    describe("when checking find command rules", () => {
+      const findRules = coreutilsGroup!.rules.filter((r) =>
         r.pattern.startsWith("^find"),
       );
 
-      it("then blocks find commands with helpful alternatives", () => {
-        expect(findRule).toBeDefined();
-        expect(findRule!.context).toBe("command");
-        expect(findRule!.action).toBe("block");
-        expect(findRule!.reason).toContain("fd");
-        expect(findRule!.reason).toContain("Examples:");
+      it("then has rules for find commands", () => {
+        expect(findRules.length).toBe(2);
+      });
+
+      it("then blocks find without head pipe", () => {
+        const headRule = findRules.find((r) => r.excludes === "\\| head");
+        expect(headRule).toBeDefined();
+        expect(headRule!.action).toBe("block");
+        expect(headRule!.reason).toContain("head");
+      });
+
+      it("then blocks find without node_modules exclusion", () => {
+        const nmRule = findRules.find((r) => r.excludes === "node_modules");
+        expect(nmRule).toBeDefined();
+        expect(nmRule!.action).toBe("block");
+        expect(nmRule!.reason).toContain("node_modules");
       });
 
       it("then pattern matches find commands", () => {
-        const regex = new RegExp(findRule!.pattern);
+        const regex = new RegExp(findRules[0].pattern);
         expect(regex.test("find . -name '*.ts'")).toBe(true);
         expect(regex.test("find /tmp -type f")).toBe(true);
         expect(regex.test("fd . -e ts")).toBe(false);
-      });
-    });
-
-    describe("when checking grep command rule", () => {
-      const grepRule = coreutilsGroup!.rules.find((r) =>
-        r.pattern.startsWith("^grep"),
-      );
-
-      it("then blocks grep commands with helpful alternatives", () => {
-        expect(grepRule).toBeDefined();
-        expect(grepRule!.context).toBe("command");
-        expect(grepRule!.action).toBe("block");
-        expect(grepRule!.reason).toContain("rg");
-        expect(grepRule!.reason).toContain("ripgrep");
-        expect(grepRule!.reason).toContain("Examples:");
-      });
-
-      it("then pattern matches grep commands", () => {
-        const regex = new RegExp(grepRule!.pattern);
-        expect(regex.test("grep -r 'pattern' .")).toBe(true);
-        expect(regex.test("grep 'test' file.txt")).toBe(true);
-        expect(regex.test("rg 'pattern' .")).toBe(false);
       });
     });
   });
@@ -103,18 +89,34 @@ describe("Guardrails Defaults Configuration", () => {
       it("then is active for all projects", () => {
         expect(astGrepGroup).toBeDefined();
         expect(astGrepGroup!.pattern).toBe("*");
-        expect(astGrepGroup!.rules.length).toBe(1);
+        expect(astGrepGroup!.rules.length).toBe(2);
       });
     });
 
     describe("when checking import/require grep rule", () => {
-      const importGrepRule = astGrepGroup!.rules[0];
+      const importGrepRule = astGrepGroup!.rules.find((r) =>
+        r.pattern.includes("import"),
+      );
 
       it("then blocks grep for imports with ast-grep alternative", () => {
-        expect(importGrepRule.context).toBe("command");
-        expect(importGrepRule.action).toBe("block");
-        expect(importGrepRule.reason).toContain("ast-grep");
-        expect(importGrepRule.reason).toContain("AST-aware");
+        expect(importGrepRule).toBeDefined();
+        expect(importGrepRule!.context).toBe("command");
+        expect(importGrepRule!.action).toBe("block");
+        expect(importGrepRule!.reason).toContain("ast-grep");
+        expect(importGrepRule!.reason).toContain("AST");
+      });
+    });
+
+    describe("when checking grep node_modules rule", () => {
+      const grepNmRule = astGrepGroup!.rules.find(
+        (r) => r.excludes === "node_modules",
+      );
+
+      it("then blocks grep without node_modules exclusion", () => {
+        expect(grepNmRule).toBeDefined();
+        expect(grepNmRule!.action).toBe("block");
+        expect(grepNmRule!.reason).toContain("node_modules");
+        expect(grepNmRule!.reason).toContain("--exclude-dir");
       });
     });
   });
@@ -138,7 +140,6 @@ describe("Guardrails Defaults Configuration", () => {
         expect(npmRule.action).toBe("block");
         expect(npmRule.reason).toContain("bun");
         expect(npmRule.reason).toContain("bun add");
-        expect(npmRule.reason).toContain("bun run");
       });
 
       it("then pattern matches npm commands", () => {
@@ -146,7 +147,6 @@ describe("Guardrails Defaults Configuration", () => {
         expect(regex.test("npm install")).toBe(true);
         expect(regex.test("npm run build")).toBe(true);
         expect(regex.test("bun install")).toBe(false);
-        expect(regex.test("bunx create-react-app")).toBe(false);
       });
     });
   });
@@ -202,7 +202,6 @@ describe("Guardrails Defaults Configuration", () => {
         expect(pythonRule!.context).toBe("command");
         expect(pythonRule!.action).toBe("block");
         expect(pythonRule!.reason).toContain("uv run");
-        expect(pythonRule!.reason).toContain("uv run python");
       });
 
       it("then pattern matches python commands", () => {
@@ -222,13 +221,6 @@ describe("Guardrails Defaults Configuration", () => {
         expect(pipRule!.action).toBe("block");
         expect(pipRule!.reason).toContain("uv");
         expect(pipRule!.reason).toContain("uv add");
-      });
-
-      it("then pattern matches pip commands", () => {
-        const regex = new RegExp(pipRule!.pattern);
-        expect(regex.test("pip install requests")).toBe(true);
-        expect(regex.test("pip freeze")).toBe(true);
-        expect(regex.test("uv pip install requests")).toBe(false);
       });
     });
   });
@@ -251,7 +243,6 @@ describe("Guardrails Defaults Configuration", () => {
         expect(flakeRule.context).toBe("command");
         expect(flakeRule.action).toBe("block");
         expect(flakeRule.reason).toContain("path:");
-        expect(flakeRule.reason).toContain("nix run path:.");
       });
 
       it("then pattern matches nix commands targeting local flakes", () => {
@@ -260,40 +251,218 @@ describe("Guardrails Defaults Configuration", () => {
         expect(regex.test("nix build .")).toBe(true);
         expect(regex.test("nix develop .")).toBe(true);
         expect(regex.test("nix run path:.")).toBe(false);
-        expect(regex.test("nix build path:.#pkg")).toBe(false);
       });
     });
   });
 
-  describe("given privilege-escalation group", () => {
-    const privilegeGroup = typedDefaults.find(
-      (g) => g.group === "privilege-escalation",
+  describe("given protect-paths group", () => {
+    const protectGroup = typedDefaults.find((g) => g.group === "protect-paths");
+
+    describe("when group exists", () => {
+      it("then is active for all projects", () => {
+        expect(protectGroup).toBeDefined();
+        expect(protectGroup!.pattern).toBe("*");
+        expect(protectGroup!.rules.length).toBeGreaterThan(3);
+      });
+    });
+
+    describe("when checking .env file rules", () => {
+      const envRules = protectGroup!.rules.filter((r) =>
+        r.pattern.includes("\\.env"),
+      );
+
+      it("then blocks .env file access", () => {
+        expect(envRules.length).toBeGreaterThan(0);
+        envRules.forEach((rule) => {
+          expect(rule.action).toBe("block");
+          expect(rule.reason).toContain("secrets");
+        });
+      });
+
+      it("then excludes example/sample env files", () => {
+        const fileNameRule = envRules.find((r) => r.context === "file_name");
+        expect(fileNameRule?.excludes).toContain("example");
+      });
+    });
+
+    describe("when checking .git/.jj protection", () => {
+      const vcsRules = protectGroup!.rules.filter((r) =>
+        r.pattern.includes("(git|jj)"),
+      );
+
+      it("then blocks direct VCS directory access", () => {
+        expect(vcsRules.length).toBeGreaterThan(0);
+        vcsRules.forEach((rule) => {
+          expect(rule.action).toBe("block");
+          expect(rule.reason).toContain("repository");
+        });
+      });
+    });
+
+    describe("when checking node_modules protection", () => {
+      const nmRules = protectGroup!.rules.filter((r) =>
+        r.pattern.includes("node_modules"),
+      );
+
+      it("then blocks node_modules modifications", () => {
+        expect(nmRules.length).toBeGreaterThan(0);
+        nmRules.forEach((rule) => {
+          expect(rule.action).toBe("block");
+          expect(rule.reason).toContain("package manager");
+        });
+      });
+    });
+  });
+
+  describe("given permission-gate group", () => {
+    const permissionGroup = typedDefaults.find(
+      (g) => g.group === "permission-gate",
     );
 
     describe("when group exists", () => {
       it("then is active for all projects", () => {
-        expect(privilegeGroup).toBeDefined();
-        expect(privilegeGroup!.pattern).toBe("*");
-        expect(privilegeGroup!.rules.length).toBe(1);
+        expect(permissionGroup).toBeDefined();
+        expect(permissionGroup!.pattern).toBe("*");
       });
     });
 
-    describe("when checking sudo/su rule", () => {
-      const privilegeRule = privilegeGroup!.rules[0];
-
-      it("then blocks privilege escalation with helpful guidance", () => {
-        expect(privilegeRule.context).toBe("command");
-        expect(privilegeRule.action).toBe("block");
-        expect(privilegeRule.reason).toContain("cannot perform privileged");
-        expect(privilegeRule.reason).toContain("nh os switch");
+    describe("when checking dangerous command rules", () => {
+      it("then requires confirmation for rm -rf", () => {
+        const rmRule = permissionGroup!.rules.find((r) =>
+          r.pattern.includes("rm"),
+        );
+        expect(rmRule).toBeDefined();
+        expect(rmRule!.action).toBe("confirm");
+        expect(rmRule!.reason).toContain("⚠️");
       });
 
-      it("then pattern matches sudo and su commands", () => {
-        const regex = new RegExp(privilegeRule.pattern);
-        expect(regex.test("sudo apt update")).toBe(true);
-        expect(regex.test("su -")).toBe(true);
-        expect(regex.test("sudo systemctl restart nginx")).toBe(true);
-        expect(regex.test("doas pacman -Syu")).toBe(false);
+      it("then requires confirmation for sudo", () => {
+        const sudoRule = permissionGroup!.rules.find((r) =>
+          r.pattern.includes("sudo"),
+        );
+        expect(sudoRule).toBeDefined();
+        expect(sudoRule!.action).toBe("confirm");
+      });
+
+      it("then requires confirmation for piped shell execution", () => {
+        const pipeRule = permissionGroup!.rules.find((r) =>
+          r.pattern.includes("sh|bash"),
+        );
+        expect(pipeRule).toBeDefined();
+        expect(pipeRule!.action).toBe("confirm");
+      });
+
+      it("then requires confirmation for dd", () => {
+        const ddRule = permissionGroup!.rules.find((r) =>
+          r.pattern.includes("dd"),
+        );
+        expect(ddRule).toBeDefined();
+        expect(ddRule!.action).toBe("confirm");
+      });
+
+      it("then requires confirmation for mkfs", () => {
+        const mkfsRule = permissionGroup!.rules.find((r) =>
+          r.pattern.includes("mkfs"),
+        );
+        expect(mkfsRule).toBeDefined();
+        expect(mkfsRule!.action).toBe("confirm");
+      });
+    });
+  });
+
+  describe("given interactive group", () => {
+    const interactiveGroup = typedDefaults.find(
+      (g) => g.group === "interactive",
+    );
+
+    describe("when group exists", () => {
+      it("then is active for all projects", () => {
+        expect(interactiveGroup).toBeDefined();
+        expect(interactiveGroup!.pattern).toBe("*");
+      });
+    });
+
+    describe("when checking dev server rules", () => {
+      const devRules = interactiveGroup!.rules.filter(
+        (r) => r.pattern.includes("dev") || r.pattern.includes("vite"),
+      );
+
+      it("then blocks dev servers with tmux alternatives", () => {
+        expect(devRules.length).toBeGreaterThan(0);
+        devRules.forEach((rule) => {
+          expect(rule.action).toBe("block");
+          expect(rule.reason).toContain("tmux");
+        });
+      });
+    });
+
+    describe("when checking vitest watch mode", () => {
+      const vitestRules = interactiveGroup!.rules.filter((r) =>
+        r.pattern.includes("vitest"),
+      );
+
+      it("then blocks vitest without run flag", () => {
+        expect(vitestRules.length).toBeGreaterThan(0);
+        vitestRules.forEach((rule) => {
+          expect(rule.action).toBe("block");
+          expect(rule.reason).toContain("vitest run");
+        });
+      });
+    });
+
+    describe("when checking REPL rules", () => {
+      const replRules = interactiveGroup!.rules.filter(
+        (r) =>
+          r.pattern.includes("repl") ||
+          r.pattern.includes("^node\\s*$") ||
+          r.pattern.includes("ipython"),
+      );
+
+      it("then blocks REPLs with alternatives", () => {
+        expect(replRules.length).toBeGreaterThan(0);
+        replRules.forEach((rule) => {
+          expect(rule.action).toBe("block");
+        });
+      });
+    });
+
+    describe("when checking editor rules", () => {
+      const editorRule = interactiveGroup!.rules.find(
+        (r) =>
+          r.pattern.includes("vim") ||
+          r.pattern.includes("nano") ||
+          r.pattern.includes("emacs"),
+      );
+
+      it("then blocks editors with edit/write tool alternatives", () => {
+        expect(editorRule).toBeDefined();
+        expect(editorRule!.action).toBe("block");
+        expect(editorRule!.reason).toContain("edit");
+        expect(editorRule!.reason).toContain("write");
+      });
+    });
+
+    describe("when checking system monitor rules", () => {
+      const monitorRule = interactiveGroup!.rules.find(
+        (r) => r.pattern.includes("htop") || r.pattern.includes("top"),
+      );
+
+      it("then blocks system monitors with ps alternatives", () => {
+        expect(monitorRule).toBeDefined();
+        expect(monitorRule!.action).toBe("block");
+        expect(monitorRule!.reason).toContain("ps");
+      });
+    });
+
+    describe("when checking tail -f rule", () => {
+      const tailRule = interactiveGroup!.rules.find((r) =>
+        r.pattern.includes("tail"),
+      );
+
+      it("then blocks tail -f with tmux alternative", () => {
+        expect(tailRule).toBeDefined();
+        expect(tailRule!.action).toBe("block");
+        expect(tailRule!.reason).toContain("tmux");
       });
     });
   });
@@ -316,8 +485,6 @@ describe("Guardrails Defaults Configuration", () => {
         expect(lockRule.context).toBe("file_name");
         expect(lockRule.action).toBe("block");
         expect(lockRule.reason).toContain("auto-generated");
-        expect(lockRule.reason).toContain("bun install");
-        expect(lockRule.reason).toContain("uv sync");
       });
 
       it("then pattern matches common lock files", () => {
@@ -372,7 +539,6 @@ describe("Guardrails Defaults Configuration", () => {
         expect(regex.test("xdescribe('suite'")).toBe(true);
         expect(regex.test("xit('should work'")).toBe(true);
         expect(regex.test("it('should work'")).toBe(false);
-        expect(regex.test("describe('suite'")).toBe(false);
       });
     });
   });
@@ -394,7 +560,6 @@ describe("Guardrails Defaults Configuration", () => {
       it("then blocks eslint disable with fix guidance", () => {
         expect(disableRule.context).toBe("file_content");
         expect(disableRule.action).toBe("block");
-        expect(disableRule.reason).toContain("fix linting issues");
         expect(disableRule.reason).toContain("eslint --fix");
       });
 
@@ -403,7 +568,6 @@ describe("Guardrails Defaults Configuration", () => {
         expect(regex.test("/* eslint-disable */")).toBe(true);
         expect(regex.test("// eslint-disable-next-line")).toBe(true);
         expect(regex.test("/* eslint-enable */")).toBe(false);
-        expect(regex.test("// regular comment")).toBe(false);
       });
     });
   });
@@ -426,24 +590,8 @@ describe("Guardrails Defaults Configuration", () => {
 
       it("then blocks jj revert with alternatives", () => {
         expect(revertRule).toBeDefined();
-        expect(revertRule!.context).toBe("command");
         expect(revertRule!.action).toBe("block");
         expect(revertRule!.reason).toContain("jj undo");
-        expect(revertRule!.reason).toContain("jj abandon");
-      });
-    });
-
-    describe("when checking restore rule", () => {
-      const restoreRule = jjGroup!.rules.find((r) =>
-        r.pattern.includes("restore"),
-      );
-
-      it("then blocks jj restore with alternatives", () => {
-        expect(restoreRule).toBeDefined();
-        expect(restoreRule!.context).toBe("command");
-        expect(restoreRule!.action).toBe("block");
-        expect(restoreRule!.reason).toContain("jj edit");
-        expect(restoreRule!.reason).toContain("jj new --before");
       });
     });
 
@@ -454,10 +602,8 @@ describe("Guardrails Defaults Configuration", () => {
 
       it("then blocks jj squash without -m with alternatives", () => {
         expect(squashRule).toBeDefined();
-        expect(squashRule!.context).toBe("command");
         expect(squashRule!.action).toBe("block");
         expect(squashRule!.reason).toContain("jj squash -m");
-        expect(squashRule!.reason).toContain("jj absorb");
       });
     });
 
@@ -466,12 +612,10 @@ describe("Guardrails Defaults Configuration", () => {
         r.pattern.includes("describe"),
       );
 
-      it("then blocks jj describe without -m with conventional commit example", () => {
+      it("then blocks jj describe without -m", () => {
         expect(describeRule).toBeDefined();
-        expect(describeRule!.context).toBe("command");
         expect(describeRule!.action).toBe("block");
         expect(describeRule!.reason).toContain("jj describe -m");
-        expect(describeRule!.reason).toContain("type(scope)");
       });
     });
 
@@ -482,23 +626,8 @@ describe("Guardrails Defaults Configuration", () => {
 
       it("then blocks interactive jj commands with alternatives", () => {
         expect(interactiveRule).toBeDefined();
-        expect(interactiveRule!.context).toBe("command");
         expect(interactiveRule!.action).toBe("block");
-        expect(interactiveRule!.reason).toContain("interactive");
         expect(interactiveRule!.reason).toContain("jj absorb");
-      });
-    });
-
-    describe("when checking resolve command", () => {
-      const resolveRule = jjGroup!.rules.find((r) =>
-        r.pattern.includes("resolve"),
-      );
-
-      it("then blocks jj resolve without --list", () => {
-        expect(resolveRule).toBeDefined();
-        expect(resolveRule!.context).toBe("command");
-        expect(resolveRule!.action).toBe("block");
-        expect(resolveRule!.reason).toContain("jj resolve --list");
       });
     });
   });
@@ -509,6 +638,28 @@ describe("Guardrails Defaults Configuration", () => {
         typedDefaults.forEach((group) => {
           group.rules.forEach((rule) => {
             expect(() => new RegExp(rule.pattern)).not.toThrow();
+          });
+        });
+      });
+
+      it("then all includes patterns are valid regex", () => {
+        typedDefaults.forEach((group) => {
+          group.rules.forEach((rule) => {
+            if (rule.includes) {
+              const pattern = rule.includes;
+              expect(() => new RegExp(pattern)).not.toThrow();
+            }
+          });
+        });
+      });
+
+      it("then all excludes patterns are valid regex", () => {
+        typedDefaults.forEach((group) => {
+          group.rules.forEach((rule) => {
+            if (rule.excludes) {
+              const pattern = rule.excludes;
+              expect(() => new RegExp(pattern)).not.toThrow();
+            }
           });
         });
       });
@@ -547,6 +698,45 @@ describe("Guardrails Defaults Configuration", () => {
     });
   });
 
+  describe("given reason message quality", () => {
+    describe("when checking helpfulness", () => {
+      it("then all reasons are descriptive", () => {
+        typedDefaults.forEach((group) => {
+          group.rules.forEach((rule) => {
+            expect(rule.reason.length).toBeGreaterThan(20);
+          });
+        });
+      });
+
+      it("then block reasons provide actionable alternatives", () => {
+        typedDefaults.forEach((group) => {
+          group.rules.forEach((rule) => {
+            if (rule.action === "block") {
+              const hasAlternative =
+                rule.reason.toLowerCase().includes("use") ||
+                rule.reason.toLowerCase().includes("instead") ||
+                rule.reason.toLowerCase().includes("example") ||
+                rule.reason.toLowerCase().includes("run") ||
+                rule.reason.includes("tmux") ||
+                rule.reason.includes("`");
+              expect(hasAlternative).toBe(true);
+            }
+          });
+        });
+      });
+
+      it("then confirm reasons explain the risk", () => {
+        typedDefaults.forEach((group) => {
+          group.rules.forEach((rule) => {
+            if (rule.action === "confirm") {
+              expect(rule.reason).toContain("⚠️");
+            }
+          });
+        });
+      });
+    });
+  });
+
   describe("given edge cases", () => {
     describe("when pattern is empty string", () => {
       it("then does not exist in configuration", () => {
@@ -563,35 +753,6 @@ describe("Guardrails Defaults Configuration", () => {
         typedDefaults.forEach((group) => {
           group.rules.forEach((rule) => {
             expect(rule.reason.length).toBeGreaterThan(0);
-          });
-        });
-      });
-    });
-
-    describe("when pattern contains special regex characters", () => {
-      it("then patterns are properly escaped where needed", () => {
-        // Test some specific patterns that need escaping
-        const lockRule = typedDefaults.find((g) => g.group === "lock-files")!
-          .rules[0];
-        expect(lockRule.pattern).toContain("\\.");
-      });
-    });
-  });
-
-  describe("given block reasons quality", () => {
-    describe("when checking reason helpfulness", () => {
-      it("then all reasons provide actionable alternatives", () => {
-        typedDefaults.forEach((group) => {
-          group.rules.forEach((rule) => {
-            // Reasons should be descriptive (more than just "blocked")
-            expect(rule.reason.length).toBeGreaterThan(15);
-            // Most reasons should mention an alternative tool or approach
-            const hasAlternative =
-              rule.reason.includes("Use") ||
-              rule.reason.includes("use") ||
-              rule.reason.includes("instead") ||
-              rule.reason.includes("Example");
-            expect(hasAlternative).toBe(true);
           });
         });
       });

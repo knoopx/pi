@@ -113,6 +113,22 @@ function setupPermissionGateHook(pi: ExtensionAPI, config: ResolvedConfig) {
           }
 
           if (targetValue && rulePattern.test(targetValue)) {
+            // Check includes: if specified, must also match
+            if (rule.includes) {
+              const includesPattern = new RegExp(rule.includes);
+              if (!includesPattern.test(targetValue)) {
+                continue;
+              }
+            }
+
+            // Check excludes: if specified and matches, skip this rule
+            if (rule.excludes) {
+              const excludesPattern = new RegExp(rule.excludes);
+              if (excludesPattern.test(targetValue)) {
+                continue;
+              }
+            }
+
             const { action, reason } = rule;
 
             if (action === "block") {

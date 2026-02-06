@@ -145,8 +145,8 @@ describe("Guardrails Extension", () => {
       });
     });
 
-    describe("when command handler is called", () => {
-      it("then loads global config", async () => {
+    describe("when command handler is called with UI", () => {
+      it("then loads global config and shows editor", async () => {
         const mockPI = {
           registerCommand: vi.fn(),
         };
@@ -155,6 +155,7 @@ describe("Guardrails Extension", () => {
 
         const commandHandler = mockPI.registerCommand.mock.calls[0][1].handler;
         const mockCtx = {
+          hasUI: true,
           ui: {
             custom: vi.fn().mockReturnValue({}),
             notify: vi.fn(),
@@ -167,6 +168,29 @@ describe("Guardrails Extension", () => {
 
         expect(mockConfigLoader.getGlobalConfig).toHaveBeenCalled();
         expect(mockCtx.ui.custom).toHaveBeenCalled();
+      });
+    });
+
+    describe("when command handler is called without UI", () => {
+      it("then returns early without showing editor", async () => {
+        const mockPI = {
+          registerCommand: vi.fn(),
+        };
+
+        registerSettingsCommand(mockPI as any);
+
+        const commandHandler = mockPI.registerCommand.mock.calls[0][1].handler;
+        const mockCtx = {
+          hasUI: false,
+          ui: {
+            custom: vi.fn(),
+            notify: vi.fn(),
+          },
+        };
+
+        await commandHandler([], mockCtx);
+
+        expect(mockCtx.ui.custom).not.toHaveBeenCalled();
       });
     });
   });
@@ -218,6 +242,7 @@ describe("Guardrails Extension", () => {
 
           const mockCtx = {
             cwd: "/test/project",
+            hasUI: true,
             ui: {
               notify: vi.fn(),
               custom: vi.fn(),
@@ -228,10 +253,10 @@ describe("Guardrails Extension", () => {
 
           expect(result).toEqual({
             block: true,
-            reason: "Blocked: use `fd` instead",
+            reason: expect.stringContaining("Blocked:"),
           });
           expect(mockCtx.ui.notify).toHaveBeenCalledWith(
-            "Blocked: use `fd` instead",
+            expect.stringContaining("Blocked:"),
             "error",
           );
         });
@@ -524,6 +549,7 @@ describe("Guardrails Extension", () => {
 
           const mockCtx = {
             cwd: "/test/project",
+            hasUI: true,
             ui: {
               notify: vi.fn(),
               custom: vi.fn().mockResolvedValue(true), // User confirms
@@ -557,6 +583,7 @@ describe("Guardrails Extension", () => {
 
           const mockCtx = {
             cwd: "/test/project",
+            hasUI: true,
             ui: {
               notify: vi.fn(),
               custom: vi.fn().mockResolvedValue(false), // User denies
@@ -568,6 +595,227 @@ describe("Guardrails Extension", () => {
           expect(result).toEqual({
             block: true,
             reason: "Blocked: User denied dangerous operation",
+          });
+        });
+      });
+
+      describe("when dangerous command is executed without UI", () => {
+        it("then blocks automatically", async () => {
+          const mockPI = {
+            on: vi.fn(),
+            registerCommand: vi.fn(),
+          };
+
+          await guardrailsExtension(mockPI as any);
+
+          const toolCallHandler = mockPI.on.mock.calls.find(
+            (call) => call[0] === "tool_call",
+          )?.[1];
+
+          const mockEvent = {
+            toolName: "bash",
+            input: { command: "rm -rf /tmp/test" },
+          };
+
+          const mockCtx = {
+            cwd: "/test/project",
+            hasUI: false,
+            ui: {
+              notify: vi.fn(),
+              custom: vi.fn(),
+            },
+          };
+
+          const result = await toolCallHandler(mockEvent, mockCtx);
+
+          expect(result).toEqual({
+            block: true,
+            reason: expect.stringContaining("no UI for confirmation"),
+          });
+          expect(mockCtx.ui.custom).not.toHaveBeenCalled();
+        });
+      });
+    });
+
+    describe("given rules with includes pattern", () => {
+      beforeEach(() => {
+        mockConfigLoader.load.mockResolvedValue();
+        mockConfigLoader.getConfig.mockReturnValue([
+          {
+            group: "includes-test",
+            pattern: "*",
+            rules: [
+              {
+                context: "command",
+                pattern: "^find",
+                includes: "--delete",
+                action: "block",
+                reason: "find with --delete is dangerous",
+              },
+            ],
+          },
+        ]);
+
+        mockGlob.mockResolvedValue(["package.json"]);
+      });
+
+      describe("when command matches pattern and includes", () => {
+        it("then blocks the operation", async () => {
+          const mockPI = {
+            on: vi.fn(),
+            registerCommand: vi.fn(),
+          };
+
+          await guardrailsExtension(mockPI as any);
+
+          const toolCallHandler = mockPI.on.mock.calls.find(
+            (call) => call[0] === "tool_call",
+          )?.[1];
+
+          const mockEvent = {
+            toolName: "bash",
+            input: { command: "find . -name '*.tmp' --delete" },
+          };
+
+          const mockCtx = {
+            cwd: "/test/project",
+            hasUI: true,
+            ui: {
+              notify: vi.fn(),
+              custom: vi.fn(),
+            },
+          };
+
+          const result = await toolCallHandler(mockEvent, mockCtx);
+
+          expect(result).toEqual({
+            block: true,
+            reason: "Blocked: find with --delete is dangerous",
+          });
+        });
+      });
+
+      describe("when command matches pattern but not includes", () => {
+        it("then allows the operation", async () => {
+          const mockPI = {
+            on: vi.fn(),
+            registerCommand: vi.fn(),
+          };
+
+          await guardrailsExtension(mockPI as any);
+
+          const toolCallHandler = mockPI.on.mock.calls.find(
+            (call) => call[0] === "tool_call",
+          )?.[1];
+
+          const mockEvent = {
+            toolName: "bash",
+            input: { command: "find . -name '*.ts'" },
+          };
+
+          const mockCtx = {
+            cwd: "/test/project",
+            hasUI: true,
+            ui: {
+              notify: vi.fn(),
+              custom: vi.fn(),
+            },
+          };
+
+          const result = await toolCallHandler(mockEvent, mockCtx);
+
+          expect(result).toBeUndefined();
+        });
+      });
+    });
+
+    describe("given rules with excludes pattern", () => {
+      beforeEach(() => {
+        mockConfigLoader.load.mockResolvedValue();
+        mockConfigLoader.getConfig.mockReturnValue([
+          {
+            group: "excludes-test",
+            pattern: "*",
+            rules: [
+              {
+                context: "command",
+                pattern: "^find",
+                excludes: "\\| head",
+                action: "block",
+                reason: "use `fd` instead",
+              },
+            ],
+          },
+        ]);
+
+        mockGlob.mockResolvedValue(["package.json"]);
+      });
+
+      describe("when command matches pattern but also excludes", () => {
+        it("then allows the operation", async () => {
+          const mockPI = {
+            on: vi.fn(),
+            registerCommand: vi.fn(),
+          };
+
+          await guardrailsExtension(mockPI as any);
+
+          const toolCallHandler = mockPI.on.mock.calls.find(
+            (call) => call[0] === "tool_call",
+          )?.[1];
+
+          const mockEvent = {
+            toolName: "bash",
+            input: { command: "find . -name '*.ts' | head -20" },
+          };
+
+          const mockCtx = {
+            cwd: "/test/project",
+            hasUI: true,
+            ui: {
+              notify: vi.fn(),
+              custom: vi.fn(),
+            },
+          };
+
+          const result = await toolCallHandler(mockEvent, mockCtx);
+
+          expect(result).toBeUndefined();
+        });
+      });
+
+      describe("when command matches pattern and not excludes", () => {
+        it("then blocks the operation", async () => {
+          const mockPI = {
+            on: vi.fn(),
+            registerCommand: vi.fn(),
+          };
+
+          await guardrailsExtension(mockPI as any);
+
+          const toolCallHandler = mockPI.on.mock.calls.find(
+            (call) => call[0] === "tool_call",
+          )?.[1];
+
+          const mockEvent = {
+            toolName: "bash",
+            input: { command: "find . -name '*.ts'" },
+          };
+
+          const mockCtx = {
+            cwd: "/test/project",
+            hasUI: true,
+            ui: {
+              notify: vi.fn(),
+              custom: vi.fn(),
+            },
+          };
+
+          const result = await toolCallHandler(mockEvent, mockCtx);
+
+          expect(result).toEqual({
+            block: true,
+            reason: "Blocked: use `fd` instead",
           });
         });
       });
