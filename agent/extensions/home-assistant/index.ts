@@ -132,6 +132,15 @@ async function haFetch<T>(
   return response.json() as Promise<T>;
 }
 
+// Helper for error results
+function errorResult(error: unknown): AgentToolResult<{ error: string }> {
+  const message = error instanceof Error ? error.message : String(error);
+  return {
+    content: [{ type: "text", text: `Error: ${message}` }],
+    details: { error: message },
+  };
+}
+
 // Format entity state for display
 function formatState(entity: HAState): string {
   const domain = entity.entity_id.split(".")[0];
@@ -158,6 +167,28 @@ function formatState(entity: HAState): string {
 
   return `${name}: ${stateStr}`;
 }
+
+// Format entity state details for display
+function formatStateDetails(state: HAState): string {
+  return [
+    `Entity: ${state.entity_id}`,
+    `State: ${state.state}`,
+    `Last changed: ${state.last_changed}`,
+    `Attributes:`,
+    ...Object.entries(state.attributes).map(
+      ([k, v]) => `  ${k}: ${JSON.stringify(v)}`,
+    ),
+  ].join("\n");
+}
+
+// Common SelectList styling options
+const SELECT_LIST_STYLES = {
+  selectedPrefix: (text: string) => `\x1b[32m>\x1b[0m ${text}`,
+  selectedText: (text: string) => `\x1b[1m${text}\x1b[0m`,
+  description: (text: string) => `\x1b[90m${text}\x1b[0m`,
+  scrollInfo: (text: string) => `\x1b[90m${text}\x1b[0m`,
+  noMatch: (text: string) => `\x1b[31m${text}\x1b[0m`,
+};
 
 export default function homeAssistantExtension(pi: ExtensionAPI) {
   // Command: Configure Home Assistant
@@ -191,13 +222,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
           },
         ];
 
-        const selectList = new SelectList(options, 6, {
-          selectedPrefix: (text: string) => `\x1b[32m>\x1b[0m ${text}`,
-          selectedText: (text: string) => `\x1b[1m${text}\x1b[0m`,
-          description: (text: string) => `\x1b[90m${text}\x1b[0m`,
-          scrollInfo: (text: string) => `\x1b[90m${text}\x1b[0m`,
-          noMatch: (text: string) => `\x1b[31m${text}\x1b[0m`,
-        });
+        const selectList = new SelectList(options, 6, SELECT_LIST_STYLES);
 
         const choice = await new Promise<string | null>((resolve) => {
           selectList.onSelect = (item: SelectItem) => resolve(item.value);
@@ -375,12 +400,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
           },
         };
       } catch (error) {
-        return {
-          content: [
-            { type: "text", text: `Error: ${(error as Error).message}` },
-          ],
-          details: { error: (error as Error).message },
-        };
+        return errorResult(error);
       }
     },
 
@@ -410,18 +430,8 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
       try {
         const state = await haFetch<HAState>(`/states/${params.entity_id}`);
 
-        const output = [
-          `Entity: ${state.entity_id}`,
-          `State: ${state.state}`,
-          `Last changed: ${state.last_changed}`,
-          `Attributes:`,
-          ...Object.entries(state.attributes).map(
-            ([k, v]) => `  ${k}: ${JSON.stringify(v)}`,
-          ),
-        ].join("\n");
-
         return {
-          content: [{ type: "text", text: output }],
+          content: [{ type: "text", text: formatStateDetails(state) }],
           details: state,
         };
       } catch (error) {
@@ -475,12 +485,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
           details: { entity_id: params.entity_id, new_state: newState.state },
         };
       } catch (error) {
-        return {
-          content: [
-            { type: "text", text: `Error: ${(error as Error).message}` },
-          ],
-          details: { error: (error as Error).message },
-        };
+        return errorResult(error);
       }
     },
 
@@ -590,12 +595,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
           details: { entity_id: params.entity_id, state: newState },
         };
       } catch (error) {
-        return {
-          content: [
-            { type: "text", text: `Error: ${(error as Error).message}` },
-          ],
-          details: { error: (error as Error).message },
-        };
+        return errorResult(error);
       }
     },
 
@@ -630,12 +630,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
           details: { entity_id: params.entity_id, new_state: "off" },
         };
       } catch (error) {
-        return {
-          content: [
-            { type: "text", text: `Error: ${(error as Error).message}` },
-          ],
-          details: { error: (error as Error).message },
-        };
+        return errorResult(error);
       }
     },
 
@@ -692,12 +687,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
           },
         };
       } catch (error) {
-        return {
-          content: [
-            { type: "text", text: `Error: ${(error as Error).message}` },
-          ],
-          details: { error: (error as Error).message },
-        };
+        return errorResult(error);
       }
     },
 
@@ -774,13 +764,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
           };
         });
 
-        const selectList = new SelectList(options, 12, {
-          selectedPrefix: (text: string) => `\x1b[32m>\x1b[0m ${text}`,
-          selectedText: (text: string) => `\x1b[1m${text}\x1b[0m`,
-          description: (text: string) => `\x1b[90m${text}\x1b[0m`,
-          scrollInfo: (text: string) => `\x1b[90m${text}\x1b[0m`,
-          noMatch: (text: string) => `\x1b[31m${text}\x1b[0m`,
-        });
+        const selectList = new SelectList(options, 12, SELECT_LIST_STYLES);
 
         const selectedEntityId = await new Promise<string | null>((resolve) => {
           selectList.onSelect = (item: SelectItem) => resolve(item.value);
@@ -829,13 +813,11 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
           { value: "cancel", label: "Cancel", description: "Cancel action" },
         ];
 
-        const actionSelectList = new SelectList(actionOptions, 6, {
-          selectedPrefix: (text: string) => `\x1b[32m>\x1b[0m ${text}`,
-          selectedText: (text: string) => `\x1b[1m${text}\x1b[0m`,
-          description: (text: string) => `\x1b[90m${text}\x1b[0m`,
-          scrollInfo: (text: string) => `\x1b[90m${text}\x1b[0m`,
-          noMatch: (text: string) => `\x1b[31m${text}\x1b[0m`,
-        });
+        const actionSelectList = new SelectList(
+          actionOptions,
+          6,
+          SELECT_LIST_STYLES,
+        );
 
         const action = await new Promise<string | null>((resolve) => {
           actionSelectList.onSelect = (item: SelectItem) => resolve(item.value);
@@ -879,16 +861,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
         } else if (action === "details") {
           // Get Details - show in editor for LLM context
           const state = await haFetch<HAState>(`/states/${entity.entity_id}`);
-          const details = [
-            `Entity: ${state.entity_id}`,
-            `State: ${state.state}`,
-            `Last changed: ${state.last_changed}`,
-            `Attributes:`,
-            ...Object.entries(state.attributes).map(
-              ([k, v]) => `  ${k}: ${JSON.stringify(v)}`,
-            ),
-          ].join("\n");
-          ctx.ui.setEditorText(details);
+          ctx.ui.setEditorText(formatStateDetails(state));
         }
       } catch (error) {
         ctx.ui.notify(`Error: ${(error as Error).message}`, "error");

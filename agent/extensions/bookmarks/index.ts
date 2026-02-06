@@ -142,15 +142,28 @@ export function extractDomain(url: string): string {
   }
 }
 
+/**
+ * Format Firefox timestamp (microseconds) as YYYY-MM-DD
+ */
+function formatFirefoxDate(timestamp: number): string {
+  const date = new Date(timestamp / 1000); // Firefox uses microseconds
+  return date.toISOString().split("T")[0];
+}
+
 export function getFirefoxProfilePath(_profileName?: string): string {
   const home = process.env.HOME || "/home/user";
   // Default profile path based on profiles.ini
   return `${home}/.mozilla/firefox/knoopx/places.sqlite`;
 }
 
-export async function getBookmarksFromDB(query?: string): Promise<Bookmark[]> {
+/**
+ * Execute a query against the Firefox places database with proper temp file handling
+ */
+async function withFirefoxDb<TRow, TResult>(
+  sql: string,
+  rowMapper: (row: TRow) => TResult,
+): Promise<TResult[]> {
   const placesPath = getFirefoxProfilePath();
-
   const fs = await import("fs/promises");
 
   // Check if database exists
@@ -167,79 +180,26 @@ export async function getBookmarksFromDB(query?: string): Promise<Bookmark[]> {
   const tempDbPath = placesPath + ".tmp";
 
   try {
-    // Copy the database file
     await fs.copyFile(placesPath, tempDbPath);
-
     const sqlite3 = await import("better-sqlite3");
     const db: Database = sqlite3.default(tempDbPath);
     db.pragma("journal_mode = WAL");
 
     try {
-      const bookmarks: Bookmark[] = [];
-
-      // Get all bookmarks first (deduplicated in SQL)
-      const rows = db
-        .prepare(
-          `
-          SELECT b.id, p.url, b.title, MAX(b.dateAdded) as dateAdded
-          FROM moz_bookmarks b
-          JOIN moz_places p ON b.fk = p.id
-          WHERE p.url LIKE 'http%' OR p.url LIKE 'https%'
-          GROUP BY p.url
-          ORDER BY dateAdded DESC
-          LIMIT 1000
-        `,
-        )
-        .all() as BookmarkRowWithUrl[];
-
-      const allBookmarks = rows.map((row: BookmarkRowWithUrl) => ({
-        id: String(row.id),
-        title: row.title || new URL(row.url).hostname,
-        url: row.url,
-        domain: extractDomain(row.url),
-        dateAdded: row.dateAdded || Date.now(),
-      }));
-
-      if (query) {
-        // Similarity search
-        const scoredBookmarks = allBookmarks.map((bookmark) => {
-          const similarity = similarityScore(
-            bookmark.title.toLowerCase(),
-            query.toLowerCase(),
-          );
-          return {
-            ...bookmark,
-            similarity,
-          };
-        });
-
-        const matchingBookmarks = scoredBookmarks
-          .filter((b) => b.similarity >= 0.6)
-          .sort((a, b) => b.similarity - a.similarity);
-
-        bookmarks.push(...matchingBookmarks);
-      } else {
-        // List all bookmarks (already sorted by dateAdded DESC)
-        bookmarks.push(...allBookmarks);
-      }
-
-      // Close database connection
+      const rows = db.prepare(sql).all() as TRow[];
       db.close();
-
-      return bookmarks;
+      return rows.map(rowMapper);
     } catch (dbError) {
       db.close();
       throw dbError;
     } finally {
-      // Clean up the temporary database file
       try {
         await fs.unlink(tempDbPath);
       } catch {
-        // Ignore cleanup errors - the temp file will be cleaned up eventually
+        // Ignore cleanup errors
       }
     }
   } catch (dbError) {
-    // Clean up temp file if it exists
     try {
       await fs.unlink(tempDbPath).catch(() => {});
     } catch {
@@ -249,112 +209,88 @@ export async function getBookmarksFromDB(query?: string): Promise<Bookmark[]> {
   }
 }
 
+/**
+ * Filter and sort items by similarity to a query
+ */
+function filterBySimilarity<T extends { similarity?: number }>(
+  items: T[],
+  query: string,
+  getSimilarity: (item: T, query: string) => number,
+  sortFn?: (a: T, b: T) => number,
+): T[] {
+  const scored = items.map((item) => ({
+    ...item,
+    similarity: getSimilarity(item, query),
+  }));
+
+  const filtered = scored.filter((item) => item.similarity >= 0.6);
+  return sortFn ? filtered.sort(sortFn) : filtered;
+}
+
+export async function getBookmarksFromDB(query?: string): Promise<Bookmark[]> {
+  const allBookmarks = await withFirefoxDb<BookmarkRowWithUrl, Bookmark>(
+    `SELECT b.id, p.url, b.title, MAX(b.dateAdded) as dateAdded
+     FROM moz_bookmarks b
+     JOIN moz_places p ON b.fk = p.id
+     WHERE p.url LIKE 'http%' OR p.url LIKE 'https%'
+     GROUP BY p.url
+     ORDER BY dateAdded DESC
+     LIMIT 1000`,
+    (row) => ({
+      id: String(row.id),
+      title: row.title || new URL(row.url).hostname,
+      url: row.url,
+      domain: extractDomain(row.url),
+      dateAdded: row.dateAdded || Date.now(),
+    }),
+  );
+
+  if (!query) return allBookmarks;
+
+  return filterBySimilarity(
+    allBookmarks,
+    query,
+    (bookmark, q) =>
+      similarityScore(bookmark.title.toLowerCase(), q.toLowerCase()),
+    (a, b) => (b.similarity ?? 0) - (a.similarity ?? 0),
+  );
+}
+
 export async function getHistoryFromDB(query?: string): Promise<History[]> {
-  const placesPath = getFirefoxProfilePath();
+  const allHistory = await withFirefoxDb<HistoryRowWithUrl, History>(
+    `SELECT p.id, p.url, p.title, p.visit_count as visitCount, MAX(p.last_visit_date) as lastVisit
+     FROM moz_places p
+     WHERE (p.url LIKE 'http%' OR p.url LIKE 'https%')
+       AND p.visit_count > 0
+       AND p.last_visit_date > 0
+     GROUP BY p.url
+     ORDER BY last_visit_date DESC
+     LIMIT 1000`,
+    (row) => ({
+      id: String(row.id),
+      title: row.title || new URL(row.url).hostname,
+      url: row.url,
+      domain: extractDomain(row.url),
+      visitCount: row.visitCount || 0,
+      lastVisit: row.lastVisit || 0,
+    }),
+  );
 
-  const fs = await import("fs/promises");
+  if (!query) return allHistory;
 
-  // Check if database exists
-  const dbExists = await fs
-    .access(placesPath)
-    .then(() => true)
-    .catch(() => false);
-
-  if (!dbExists) {
-    throw new Error("Firefox database not found at expected location");
-  }
-
-  // Create a temporary copy of the database to avoid locking issues
-  const tempDbPath = placesPath + ".tmp";
-
-  try {
-    // Copy the database file
-    await fs.copyFile(placesPath, tempDbPath);
-
-    const sqlite3 = await import("better-sqlite3");
-    const db: Database = sqlite3.default(tempDbPath);
-    db.pragma("journal_mode = WAL");
-
-    try {
-      const history: History[] = [];
-
-      // Get all history entries (deduplicated in SQL)
-      const rows = db
-        .prepare(
-          `
-          SELECT p.id, p.url, p.title, p.visit_count, MAX(p.last_visit_date) as last_visit_date
-          FROM moz_places p
-          WHERE (p.url LIKE 'http%' OR p.url LIKE 'https%')
-            AND p.visit_count > 0
-            AND p.last_visit_date > 0
-          GROUP BY p.url
-          ORDER BY last_visit_date DESC
-          LIMIT 1000
-        `,
-        )
-        .all() as HistoryRowWithUrl[];
-
-      const allHistory = rows.map((row: HistoryRowWithUrl) => ({
-        id: String(row.id),
-        title: row.title || new URL(row.url).hostname,
-        url: row.url,
-        domain: extractDomain(row.url),
-        visitCount: row.visitCount || 0,
-        lastVisit: row.lastVisit || 0,
-      }));
-
-      if (query) {
-        // Similarity search on title and URL
-        const scoredHistory = allHistory.map((entry) => {
-          const titleSimilarity = similarityScore(
-            entry.title.toLowerCase(),
-            query.toLowerCase(),
-          );
-          const urlSimilarity = similarityScore(
-            entry.url.toLowerCase(),
-            query.toLowerCase(),
-          );
-          const similarity = Math.max(titleSimilarity, urlSimilarity);
-          return {
-            ...entry,
-            similarity,
-          };
-        });
-
-        const matchingHistory = scoredHistory
-          .filter((h) => h.similarity >= 0.6)
-          .sort((a, b) => b.lastVisit - a.lastVisit);
-
-        history.push(...matchingHistory);
-      } else {
-        // List all history (already sorted by lastVisit DESC)
-        history.push(...allHistory);
-      }
-
-      // Close database connection
-      db.close();
-
-      return history;
-    } catch (dbError) {
-      db.close();
-      throw dbError;
-    } finally {
-      // Clean up the temporary database file
-      try {
-        await fs.unlink(tempDbPath);
-      } catch {
-        // Ignore cleanup errors - the temp file will be cleaned up eventually
-      }
-    }
-  } catch (dbError) {
-    // Clean up temp file if it exists
-    try {
-      await fs.unlink(tempDbPath).catch(() => {});
-    } catch {
-      // Ignore cleanup errors
-    }
-    throw dbError;
-  }
+  return filterBySimilarity(
+    allHistory,
+    query,
+    (entry, q) => {
+      const titleSim = similarityScore(
+        entry.title.toLowerCase(),
+        q.toLowerCase(),
+      );
+      const urlSim = similarityScore(entry.url.toLowerCase(), q.toLowerCase());
+      return Math.max(titleSim, urlSim);
+    },
+    (a, b) => b.lastVisit - a.lastVisit,
+  );
 }
 
 function createErrorResult(message: string): AgentToolResult<unknown> {
@@ -397,17 +333,11 @@ Returns a list of matching bookmarks with details.`,
         try {
           const bookmarks = await getBookmarksFromDB(query);
 
-          // Format date as YYYY-MM-DD
-          const formatDate = (timestamp: number): string => {
-            const date = new Date(timestamp / 1000); // Firefox uses microseconds
-            return date.toISOString().split("T")[0];
-          };
-
           // Build content
           const content = bookmarks
             .slice(0, limit) // Use the limit parameter
             .map((bookmark) => {
-              const dateStr = formatDate(bookmark.dateAdded);
+              const dateStr = formatFirefoxDate(bookmark.dateAdded);
               let line = `• ${bookmark.title} - ${bookmark.url}`;
               if (bookmark.domain) {
                 line += ` (${bookmark.domain})`;
@@ -469,17 +399,11 @@ Returns a list of matching history entries with details.`,
         try {
           const history = await getHistoryFromDB(query);
 
-          // Format date as YYYY-MM-DD
-          const formatDate = (timestamp: number): string => {
-            const date = new Date(timestamp / 1000); // Firefox uses microseconds
-            return date.toISOString().split("T")[0];
-          };
-
           // Build content
           const content = history
             .slice(0, limit)
             .map((entry) => {
-              const dateStr = formatDate(entry.lastVisit);
+              const dateStr = formatFirefoxDate(entry.lastVisit);
               let line = `• ${entry.title} - ${entry.url}`;
               if (entry.domain) {
                 line += ` (${entry.domain})`;

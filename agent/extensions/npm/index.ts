@@ -74,6 +74,67 @@ function textResult(
   return { content, details };
 }
 
+/**
+ * Fetch npm package data with standardized error handling
+ */
+async function fetchNpmPackage(
+  pkg: string,
+  errorContext: string,
+): Promise<
+  | { ok: true; data: NpmPackageResponse }
+  | { ok: false; result: AgentToolResult<Record<string, unknown>> }
+> {
+  try {
+    const response = await fetch(
+      `https://registry.npmjs.org/${encodeURIComponent(pkg)}`,
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return {
+          ok: false,
+          result: {
+            content: [{ type: "text", text: `Package "${pkg}" not found.` }],
+            details: { package: pkg, status: 404 },
+          },
+        };
+      }
+      return {
+        ok: false,
+        result: {
+          content: [
+            {
+              type: "text",
+              text: `Failed to ${errorContext}: ${response.statusText}`,
+            },
+          ],
+          details: {
+            package: pkg,
+            status: response.status,
+            statusText: response.statusText,
+          },
+        },
+      };
+    }
+
+    const data = (await response.json()) as NpmPackageResponse;
+    return { ok: true, data };
+  } catch (error) {
+    return {
+      ok: false,
+      result: {
+        content: [
+          {
+            type: "text",
+            text: `Error ${errorContext}: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
+        details: { package: pkg },
+      },
+    };
+  }
+}
+
 function extractStringOrProperty<
   T extends { [K in P]?: string },
   P extends string,
@@ -229,141 +290,61 @@ async function searchNpmPackages(
 async function getNpmPackageInfo(
   pkg: string,
 ): Promise<AgentToolResult<Record<string, unknown>>> {
-  try {
-    const response = await fetch(
-      `https://registry.npmjs.org/${encodeURIComponent(pkg)}`,
-    );
+  const fetchResult = await fetchNpmPackage(pkg, "get package info");
+  if (!fetchResult.ok) return fetchResult.result;
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        return {
-          content: [{ type: "text", text: `Package "${pkg}" not found.` }],
-          details: {
-            package: pkg,
-            status: 404,
-          },
-        };
-      }
+  const data = fetchResult.data;
+  const latestVersion = String(data?.["dist-tags"]?.latest ?? "");
+  const latestInfo = data?.versions?.[latestVersion];
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Failed to get package info: ${response.statusText}`,
-          },
-        ],
-        details: {
-          package: pkg,
-          status: response.status,
-          statusText: response.statusText,
-        },
-      };
-    }
+  const info = {
+    name: String(data?.name ?? pkg),
+    description: String(data?.description ?? ""),
+    author: extractStringOrProperty(data?.author, "name") || "Unknown",
+    maintainers: Array.isArray(data?.maintainers)
+      ? data.maintainers
+          .map((m: NpmMaintainer) => m?.name)
+          .filter(Boolean)
+          .join(", ")
+      : "Unknown",
+    homepage: String(data?.homepage ?? ""),
+    repository: extractStringOrProperty(data?.repository, "url"),
+    license: String(latestInfo?.license ?? "Unknown"),
+    latestVersion,
+    keywords: Array.isArray(data?.keywords) ? data.keywords.join(", ") : "None",
+    dependencies: latestInfo?.dependencies
+      ? Object.keys(latestInfo.dependencies).length
+      : 0,
+    devDependencies: latestInfo?.devDependencies
+      ? Object.keys(latestInfo.devDependencies).length
+      : 0,
+  };
 
-    const data = (await response.json()) as NpmPackageResponse;
-    const latestVersion = String(data?.["dist-tags"]?.latest ?? "");
-    const latestInfo = data?.versions?.[latestVersion];
+  const result = `${info.name} ${info.latestVersion}: ${info.description} [${info.author}] ${info.license} ${info.homepage} ${info.repository} ${info.keywords} ${info.dependencies} ${info.devDependencies}`;
 
-    const info = {
-      name: String(data?.name ?? pkg),
-      description: String(data?.description ?? ""),
-      author: extractStringOrProperty(data?.author, "name") || "Unknown",
-      maintainers: Array.isArray(data?.maintainers)
-        ? data.maintainers
-            .map((m: NpmMaintainer) => m?.name)
-            .filter(Boolean)
-            .join(", ")
-        : "Unknown",
-      homepage: String(data?.homepage ?? ""),
-      repository: extractStringOrProperty(data?.repository, "url"),
-      license: String(latestInfo?.license ?? "Unknown"),
-      latestVersion,
-      keywords: Array.isArray(data?.keywords)
-        ? data.keywords.join(", ")
-        : "None",
-      dependencies: latestInfo?.dependencies
-        ? Object.keys(latestInfo.dependencies).length
-        : 0,
-      devDependencies: latestInfo?.devDependencies
-        ? Object.keys(latestInfo.devDependencies).length
-        : 0,
-    };
-
-    const result = `${info.name} ${info.latestVersion}: ${info.description} [${info.author}] ${info.license} ${info.homepage} ${info.repository} ${info.keywords} ${info.dependencies} ${info.devDependencies}`;
-
-    return textResult(result, { package: pkg, info });
-  } catch (error) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error getting package info: ${error instanceof Error ? error.message : String(error)}`,
-        },
-      ],
-      details: { package: pkg },
-    };
-  }
+  return textResult(result, { package: pkg, info });
 }
 
 async function getNpmPackageVersions(
   pkg: string,
 ): Promise<AgentToolResult<Record<string, unknown>>> {
-  try {
-    const response = await fetch(
-      `https://registry.npmjs.org/${encodeURIComponent(pkg)}`,
-    );
+  const fetchResult = await fetchNpmPackage(pkg, "get package versions");
+  if (!fetchResult.ok) return fetchResult.result;
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        return {
-          content: [{ type: "text", text: `Package "${pkg}" not found.` }],
-          details: {
-            package: pkg,
-            status: 404,
-          },
-        };
-      }
+  const data = fetchResult.data;
+  const versions = Object.keys(data?.versions ?? {});
+  const distTags = (data?.["dist-tags"] ?? {}) as Record<string, string>;
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Failed to get package versions: ${response.statusText}`,
-          },
-        ],
-        details: {
-          package: pkg,
-          status: response.status,
-          statusText: response.statusText,
-        },
-      };
-    }
+  const result = `${data?.name ?? pkg} ${versions.length} versions ${Object.entries(
+    distTags,
+  )
+    .map(([t, v]) => `${t}:${v}`)
+    .join(",")} ${versions.join(",")}`;
 
-    const data = (await response.json()) as NpmPackageResponse;
-    const versions = Object.keys(data?.versions ?? {});
-    const distTags = (data?.["dist-tags"] ?? {}) as Record<string, string>;
-
-    const result = `${data?.name ?? pkg} ${versions.length} versions ${Object.entries(
-      distTags,
-    )
-      .map(([t, v]) => `${t}:${v}`)
-      .join(",")} ${versions.join(",")}`;
-
-    return textResult(result, {
-      package: pkg,
-      count: versions.length,
-      distTags,
-      versions,
-    });
-  } catch (error) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error getting package versions: ${error instanceof Error ? error.message : String(error)}`,
-        },
-      ],
-      details: { package: pkg },
-    };
-  }
+  return textResult(result, {
+    package: pkg,
+    count: versions.length,
+    distTags,
+    versions,
+  });
 }

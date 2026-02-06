@@ -80,6 +80,35 @@ function createPypiErrorResult(
   };
 }
 
+/**
+ * Try to fetch a package directly by name from PyPI JSON API
+ */
+async function tryDirectPackageLookup(
+  query: string,
+  signal?: AbortSignal,
+): Promise<AgentToolResult<Record<string, unknown>> | null> {
+  try {
+    const response = await fetch(
+      `https://pypi.org/pypi/${encodeURIComponent(query)}/json`,
+      { signal },
+    );
+
+    if (!response.ok) return null;
+
+    const text = await response.text();
+    const data = JSON.parse(text) as PyPIPackageResponse;
+    const info = data.info;
+    return textResult(`${info.name} ${info.version}: ${info.summary || "-"}`, {
+      query,
+      total: 1,
+      returned: 1,
+      info,
+    });
+  } catch {
+    return null;
+  }
+}
+
 export default function (pi: ExtensionAPI) {
   // Tool to search for packages
   pi.registerTool({
@@ -117,26 +146,10 @@ Returns matching packages with metadata.`,
 
         if (!response.ok) {
           // Fallback: try to fetch the package directly if it's an exact name
-          const directResponse = await fetch(
-            `https://pypi.org/pypi/${encodeURIComponent(query)}/json`,
-            { signal: _signal },
+          const directResult = await tryDirectPackageLookup(query, _signal);
+          return (
+            directResult ?? createPypiErrorResult(`No packages found.`, query)
           );
-
-          if (directResponse.ok) {
-            const text = await directResponse.text();
-            try {
-              const data = JSON.parse(text) as PyPIPackageResponse;
-              const info = data.info;
-              return textResult(
-                `${info.name} ${info.version}: ${info.summary || "-"}`,
-                { query, total: 1, returned: 1, info },
-              );
-            } catch {
-              return createPypiErrorResult(`No packages found.`, query);
-            }
-          }
-
-          return createPypiErrorResult(`No packages found.`, query);
         }
 
         // Parse HTML response to extract package info (PyPI doesn't have a JSON search API)
@@ -166,27 +179,10 @@ Returns matching packages with metadata.`,
 
         if (packages.length === 0) {
           // Try direct package lookup as fallback
-          const fallbackResponse = await fetch(
-            `https://pypi.org/pypi/${encodeURIComponent(query)}/json`,
-            { signal: _signal },
+          const directResult = await tryDirectPackageLookup(query, _signal);
+          return (
+            directResult ?? createPypiErrorResult(`No packages found.`, query)
           );
-
-          if (fallbackResponse.ok) {
-            // Use text() instead of json() to avoid issues with Response object
-            const text = await fallbackResponse.text();
-            try {
-              const data = JSON.parse(text) as PyPIPackageResponse;
-              const info = data.info;
-              return textResult(
-                `${info.name} ${info.version}: ${info.summary || "-"}`,
-                { query, total: 1, returned: 1, info },
-              );
-            } catch {
-              return createPypiErrorResult(`No packages found.`, query);
-            }
-          }
-
-          return createPypiErrorResult(`No packages found.`, query);
         }
 
         const output = packages
