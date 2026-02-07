@@ -128,7 +128,7 @@ export function formatCost(
  * @param durationMs Duration in milliseconds
  * @returns Formatted tokens/s string (e.g., "52.3 tok/s")
  */
-export function formatTokensPerSecond(
+function formatTokensPerSecond(
   tokens: number | undefined,
   durationMs: number,
 ): string {

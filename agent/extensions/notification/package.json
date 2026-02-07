@@ -1,0 +1,17 @@
+{
+  "name": "notification",
+  "version": "1.0.0",
+  "description": "Desktop notifications using notify-send with optional TTS",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-ai": "^0.51.3",
+    "@mariozechner/pi-coding-agent": "^0.51.3",
+    "@mariozechner/pi-tui": "^0.51.3",
+    "@sinclair/typebox": "^0.34.48"
+  }
+}

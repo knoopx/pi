@@ -12,7 +12,7 @@ export const HookEventSchema = Type.Union([
   Type.Literal("turn_end"),
 ]);
 
-export const HookContextSchema = Type.Union([
+const HookContextSchema = Type.Union([
   Type.Literal("tool_name"),
   Type.Literal("file_name"),
   Type.Literal("command"),
@@ -37,7 +37,7 @@ export const HooksGroupSchema = Type.Object({
 export const HooksConfigSchema = Type.Array(HooksGroupSchema);
 
 export type HookEvent = Static<typeof HookEventSchema>;
-export type HookContext = Static<typeof HookContextSchema>;
+type _HookContext = Static<typeof HookContextSchema>;
 export type HookRule = Static<typeof HookRuleSchema>;
 export type HooksGroup = Static<typeof HooksGroupSchema>;
 export type HooksConfig = Static<typeof HooksConfigSchema>;

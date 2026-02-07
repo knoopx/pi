@@ -28,8 +28,6 @@
     "@sinclair/typebox": "^0.34.48",
     "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^12.6.2",
-    "chokidar": "^5.0.0",
-    "node-ical": "^0.24.0",
-    "vscode-languageserver-protocol": "^3.17.5"
+    "chokidar": "^5.0.0"
   }
 }

@@ -9,7 +9,7 @@ import { Type, type Static } from "@sinclair/typebox";
 import type { Database } from "better-sqlite3";
 
 // Parameter schemas for bookmark tools
-export const SearchBookmarksParams = Type.Object({
+const SearchBookmarksParams = Type.Object({
   query: Type.Optional(
     Type.String({
       description:
@@ -28,7 +28,7 @@ export const SearchBookmarksParams = Type.Object({
 type SearchBookmarksParamsType = Static<typeof SearchBookmarksParams>;
 
 // Parameter schemas for history tools
-export const SearchHistoryParams = Type.Object({
+const SearchHistoryParams = Type.Object({
   query: Type.Optional(
     Type.String({
       description:
@@ -256,7 +256,7 @@ export async function getBookmarksFromDB(query?: string): Promise<Bookmark[]> {
   );
 }
 
-export async function getHistoryFromDB(query?: string): Promise<History[]> {
+async function getHistoryFromDB(query?: string): Promise<History[]> {
   const allHistory = await withFirefoxDb<HistoryRowWithUrl, History>(
     `SELECT p.id, p.url, p.title, p.visit_count as visitCount, MAX(p.last_visit_date) as lastVisit
      FROM moz_places p

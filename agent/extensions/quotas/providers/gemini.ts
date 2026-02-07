@@ -3,7 +3,7 @@ import { createGenericProvider } from "../util";
 import { ProviderConfig } from "../types";
 import { loadTokenFromPiAuthJson } from "../util";
 
-export function createGeminiDeps(deps: BaseDependencies) {
+function _createGeminiDeps(deps: BaseDependencies) {
   return deps;
 }
 

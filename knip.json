@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["agent/extensions/*/index.ts"],
+  "project": ["agent/**/*.ts"],
+  "ignore": ["agent/extensions/*/node_modules/**"],
+  "ignoreDependencies": [
+    "axios",
+    "cheerio",
+    "domhandler",
+    "tinyglobby",
+    "picocolors",
+    "nomnoml",
+    "sharp",
+    "@huggingface/transformers",
+    "wavefile"
+  ],
+  "ignoreBinaries": ["tsc"],
+  "rules": {
+    "enumMembers": "off"
+  }
+}

@@ -39,7 +39,7 @@ export interface BaseDependencies {
 }
 
 // Helper function to create error snapshots
-export function createErrorSnapshot(
+function createErrorSnapshot(
   provider: string,
   displayName: string,
   error: string,

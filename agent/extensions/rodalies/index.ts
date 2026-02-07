@@ -8,9 +8,9 @@ import { Type } from "@sinclair/typebox";
 import { SelectList, type SelectItem } from "@mariozechner/pi-tui";
 
 // Cached stations to avoid repeated API calls
-export let cachedStations: Station[] | null = null;
+let cachedStations: Station[] | null = null;
 const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
-export let cacheTimestamp = 0;
+let cacheTimestamp = 0;
 
 /** Reset cache state - exported for testing */
 export function resetCache(): void {

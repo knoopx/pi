@@ -36,21 +36,6 @@ export function lineHasTrigger(line: string): boolean | null {
 }
 
 /**
- * Check if a line contains any PI reference (with or without trigger).
- */
-export function lineHasPI(line: string): boolean {
-  if (typeof line !== "string") {
-    return false;
-  }
-
-  // Check the entire line for pi anywhere (case insensitive)
-  const trimmedLine = line.trim();
-
-  // Look for pi patterns (case insensitive)
-  return /pi\b/i.test(trimmedLine);
-}
-
-/**
  * Check if a path should be ignored based on ignore patterns.
  */
 export function shouldIgnorePath(

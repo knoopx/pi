@@ -9,7 +9,7 @@ import { dirname, resolve } from "node:path";
  * ResolvedConfig is the internal schema (all fields required, defaults applied).
  */
 
-export interface GuardrailsRule {
+interface GuardrailsRule {
   context: "command" | "file_name" | "file_content";
   pattern: string;
   /**
