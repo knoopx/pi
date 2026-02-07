@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import type { ImageContent, TextContent } from "@mariozechner/pi-ai";
+import type { ImageContent } from "@mariozechner/pi-ai";
 
 import setupNomnomlExtension from "./index";
 import type { MockExtensionAPI, MockTool } from "../../test-utils";
@@ -43,11 +43,7 @@ describe("Nomnoml Extension", () => {
         },
       );
 
-      const summary = result.content[0] as TextContent;
-      expect(summary.type).toBe("text");
-      expect(summary.text).toContain("Rendered nomnoml diagram");
-
-      const image = result.content[1] as ImageContent;
+      const image = result.content[0] as ImageContent;
       expect(image.type).toBe("image");
       expect(image.mimeType).toBe("image/png");
       expect(image.data.length).toBeGreaterThan(0);

@@ -368,7 +368,7 @@ describe("NPM Extension", () => {
         });
 
         expect((result.content[0] as TextContent).text).toBe(
-          "Error getting package info: Network error",
+          "Error get package info: Network error",
         );
       });
     });
@@ -488,7 +488,7 @@ describe("NPM Extension", () => {
         });
 
         expect((result.content[0] as TextContent).text).toBe(
-          "Error getting package versions: Network error",
+          "Error get package versions: Network error",
         );
       });
     });
