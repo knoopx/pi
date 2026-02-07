@@ -9,7 +9,7 @@
     ]
   },
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "^0.51.3",
+    "@mariozechner/pi-coding-agent": "^0.52.7",
     "@sinclair/typebox": "^0.34.48",
     "nomnoml": "^1.7.0",
     "sharp": "^0.34.5"
