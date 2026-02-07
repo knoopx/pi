@@ -229,9 +229,9 @@ function sendHookResults(pi: ExtensionAPI, results: HookResult[]): void {
   for (const [group, hooks] of grouped) {
     lines.push(pc.bold(pc.cyan(`[${group}]`)));
     for (const r of hooks) {
-      const icon = r.success ? pc.green("✅") : pc.red("❌");
+      const icon = r.success ? pc.green("✓") : pc.red("✗");
       const cmd = r.success ? pc.dim(r.command) : pc.yellow(r.command);
-      lines.push(`    ${icon} ${cmd}`);
+      lines.push(`${icon} ${cmd}`);
       if (r.output) {
         lines.push(r.success ? pc.dim(r.output) : pc.red(r.output));
       }

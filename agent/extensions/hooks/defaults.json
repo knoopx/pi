@@ -36,28 +36,6 @@
     ]
   },
   {
-    "group": "python",
-    "pattern": "*",
-    "hooks": [
-      {
-        "event": "tool_result",
-        "context": "file_name",
-        "pattern": "\\.py$",
-        "command": "ruff format \"${file}\" && ruff check --fix \"${file}\" 2>&1 | head -50",
-        "timeout": 10000,
-        "notify": false
-      },
-      {
-        "event": "tool_result",
-        "context": "file_name",
-        "pattern": "\\.py$",
-        "command": "pyright 2>&1 | { grep \"${file}\" || true; } | head -50",
-        "timeout": 60000,
-        "notify": true
-      }
-    ]
-  },
-  {
     "group": "shell",
     "pattern": "*",
     "hooks": [
@@ -72,27 +50,20 @@
     ]
   },
   {
-    "group": "rust",
+    "group": "nu",
     "pattern": "*",
     "hooks": [
       {
         "event": "tool_result",
         "context": "file_name",
-        "pattern": "\\.rs$",
-        "command": "rustfmt \"${file}\"",
-        "timeout": 10000,
-        "notify": false
-      },
-      {
-        "event": "tool_result",
-        "context": "file_name",
-        "pattern": "\\.rs$",
-        "command": "cargo check 2>&1 | head -50",
-        "timeout": 120000,
+        "pattern": "\\.nu$",
+        "command": "nu --ide-check \"${file}\"",
+        "timeout": 5000,
         "notify": true
       }
     ]
   },
+
   {
     "group": "nix",
     "pattern": "*",
