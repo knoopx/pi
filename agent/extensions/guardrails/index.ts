@@ -137,7 +137,7 @@ function setupPermissionGateHook(pi: ExtensionAPI, config: ResolvedConfig) {
                 };
               }
 
-              const proceed = await ctx.ui.confirm(targetValue);
+              const proceed = await ctx.ui.confirm(reason, targetValue);
 
               if (!proceed) {
                 return {
