@@ -128,28 +128,21 @@ function setupPermissionGateHook(pi: ExtensionAPI, config: ResolvedConfig) {
             const { action, reason } = rule;
 
             if (action === "block") {
-              if (ctx.hasUI) {
-                ctx.ui.notify(`Blocked: ${reason}`, "error");
-              }
               return { block: true, reason: `Blocked: ${reason}` };
             } else if (action === "confirm") {
-              // In non-interactive mode, block by default (can't confirm without UI)
               if (!ctx.hasUI) {
                 return {
                   block: true,
-                  reason: `Blocked: ${reason} (no UI for confirmation)`,
+                  reason: `Blocked: ${reason}`,
                 };
               }
 
-              const proceed = await ctx.ui.confirm(
-                "Dangerous Operation Detected",
-                `${reason}\n\n${targetValue}`,
-              );
+              const proceed = await ctx.ui.confirm(targetValue);
 
               if (!proceed) {
                 return {
                   block: true,
-                  reason: "Blocked: User denied dangerous operation",
+                  reason: "Blocked: User denied execution",
                 };
               }
             }

@@ -12,7 +12,7 @@
       },
       {
         "context": "command",
-        "pattern": "^find",
+        "pattern": "^find\\s+(\\.|\\./)\\s",
         "excludes": "node_modules",
         "action": "block",
         "reason": "find will crawl node_modules (slow and noisy). Add `-not -path '*/node_modules/*'` to exclude. Example: `find . -name '*.ts' -not -path '*/node_modules/*' | head -20`"
@@ -25,13 +25,13 @@
     "rules": [
       {
         "context": "command",
-        "pattern": "^grep.+(require|import)*",
+        "pattern": "^grep.+(require|import)",
         "action": "block",
         "reason": "grep cannot reliably match imports/requires across line breaks or variations. Use ast-grep for AST-aware search: `ast-grep run --pattern 'import $NAME from $PATH' --lang typescript .` (see skill: ast-grep)"
       },
       {
         "context": "command",
-        "pattern": "^grep",
+        "pattern": "^grep\\s.*-r.*\\s\\.$|^grep\\s.*-r.*\\s\\.\\s|^grep\\s.*-r.*\\s\\./",
         "excludes": "node_modules",
         "action": "block",
         "reason": "grep will search node_modules (slow, irrelevant matches). Add `--exclude-dir=node_modules`. Example: `grep -r 'pattern' . --exclude-dir=node_modules`"
