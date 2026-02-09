@@ -1,0 +1,27 @@
+{
+  "name": "markdown-rag",
+  "version": "1.0.0",
+  "description": "RAG extension for markdown files using mdast AST parsing",
+  "type": "module",
+  "scripts": {
+    "test": "bun vitest run tests/*.test.ts"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
+    "@mariozechner/pi-coding-agent": "^0.48.0",
+    "@mariozechner/pi-agent-core": "^0.48.0",
+    "@mariozechner/pi-ai": "^0.48.0",
+    "@sinclair/typebox": "^0.34.47",
+    "glob": "^11.0.0",
+    "mdast-util-from-markdown": "^2.0.2",
+    "mdast-util-to-string": "^4.0.0",
+    "mdast-util-gfm": "^3.1.0",
+    "micromark-extension-gfm": "^3.0.0",
+    "unist-util-visit": "^5.0.0"
+  }
+}
