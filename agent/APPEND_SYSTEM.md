@@ -109,6 +109,7 @@ tmux has -t devserver || tmux new-session -d -s devserver 'bun run dev'
   2. Extract logic to named functions
   3. Break down expressions
 - **Acceptable comments only**: `TODO:`, `FIXME:`, doc links, legal headers, warnings
+- **Avoid superfluous wording**: Don't use words like "consolidated", "unified", "simplified" unless they add specific meaning
 
 ### File Organization
 
