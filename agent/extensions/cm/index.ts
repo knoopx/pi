@@ -9,7 +9,6 @@ const MAX_OUTPUT_BYTES = 50 * 1024;
 const MAX_OUTPUT_LINES = 2000;
 
 const OutputFormat = StringEnum(["default", "human", "ai"] as const);
-const ContextMode = StringEnum(["minimal", "full"] as const);
 
 const CommonFlagProps = {
   path: Type.Optional(
@@ -156,22 +155,7 @@ async function runCm(
 }
 
 export default function cmExtension(pi: ExtensionAPI) {
-  pi.registerTool({
-    name: "cm-help",
-    label: "CM Help",
-    description:
-      "Show cm help text. Optionally show help for a specific cm command.",
-    parameters: Type.Object({
-      command: Type.Optional(
-        Type.String({ description: "Optional cm subcommand name, e.g. query" }),
-      ),
-    }),
-    async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = params.command ? [params.command, "--help"] : ["--help"];
-      return runCm(pi, args, signal);
-    },
-  });
-
+  // cm-stats: Display project statistics
   pi.registerTool({
     name: "cm-stats",
     label: "CM Stats",
@@ -186,28 +170,20 @@ export default function cmExtension(pi: ExtensionAPI) {
     },
   });
 
+  // cm-map: Generate a project map showing files and symbols
   pi.registerTool({
     name: "cm-map",
     label: "CM Map",
-    description: "Generate a project map showing files and symbols.",
+    description:
+      "Generate a project map showing files and symbols at different detail levels.",
     parameters: Type.Object({
       ...CommonFlagProps,
       level: Type.Optional(
         Type.Integer({
           minimum: 1,
           maximum: 3,
-          description: "Detail level: 1, 2, or 3",
-        }),
-      ),
-      exportsOnly: Type.Optional(
-        Type.Boolean({ description: "Show only exported/public symbols" }),
-      ),
-      full: Type.Optional(
-        Type.Boolean({ description: "Include anonymous/lambda functions" }),
-      ),
-      context: Type.Optional(
-        Type.Union([ContextMode, Type.String()], {
-          description: "Context amount: minimal or full",
+          description:
+            "Detail level: 1=overview, 2=files with counts, 3=full symbols",
         }),
       ),
     }),
@@ -216,37 +192,54 @@ export default function cmExtension(pi: ExtensionAPI) {
       appendPath(args, params.path);
       if (params.level !== undefined)
         args.push("--level", String(params.level));
-      if (params.exportsOnly) args.push("--exports-only");
-      if (params.full) args.push("--full");
-      if (params.context) args.push("--context", params.context);
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-query: Search symbols by name across the codebase
   pi.registerTool({
     name: "cm-query",
     label: "CM Query",
-    description: "Search symbols by name across the codebase.",
+    description:
+      "Search symbols by name across the codebase. Fuzzy matching by default.",
     parameters: Type.Object({
       ...CommonFlagProps,
       symbol: Type.String({ description: "Symbol name to search for" }),
       exact: Type.Optional(
-        Type.Boolean({ description: "Enable exact matching" }),
+        Type.Boolean({
+          description: "Use exact matching instead of fuzzy (default is fuzzy)",
+        }),
       ),
       showBody: Type.Optional(
-        Type.Boolean({ description: "Include symbol body/implementation" }),
+        Type.Boolean({ description: "Show the actual code implementation" }),
       ),
       exportsOnly: Type.Optional(
-        Type.Boolean({ description: "Only exported symbols" }),
+        Type.Boolean({ description: "Show only exported/public symbols" }),
       ),
       full: Type.Optional(
         Type.Boolean({ description: "Include anonymous/lambda functions" }),
       ),
       context: Type.Optional(
-        Type.Union([ContextMode, Type.String()], {
-          description: "Context amount: minimal or full",
+        Type.String({
+          description:
+            "Context level: 'minimal' (signatures only) or 'full' (includes docstrings)",
         }),
+      ),
+      type: Type.Optional(
+        Type.String({
+          description:
+            "Filter by symbol type: function, class, method, enum, static, heading, code_block",
+        }),
+      ),
+      fast: Type.Optional(
+        Type.Boolean({
+          description:
+            "Enable fast mode explicitly (auto-enabled for 1000+ files)",
+        }),
+      ),
+      limit: Type.Optional(
+        Type.Integer({ description: "Maximum number of results to return" }),
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
@@ -257,11 +250,16 @@ export default function cmExtension(pi: ExtensionAPI) {
       if (params.exportsOnly) args.push("--exports-only");
       if (params.full) args.push("--full");
       if (params.context) args.push("--context", params.context);
+      if (params.type) args.push("--type", params.type);
+      if (params.fast) args.push("--fast");
+      if (params.limit !== undefined)
+        args.push("--limit", String(params.limit));
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-inspect: Analyze one file and list all symbols it contains
   pi.registerTool({
     name: "cm-inspect",
     label: "CM Inspect",
@@ -269,64 +267,54 @@ export default function cmExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       ...CommonFlagProps,
       filePath: Type.String({ description: "File to inspect" }),
+      showBody: Type.Optional(
+        Type.Boolean({ description: "Show the actual code implementation" }),
+      ),
       full: Type.Optional(
         Type.Boolean({ description: "Include anonymous/lambda functions" }),
       ),
-      context: Type.Optional(
-        Type.Union([ContextMode, Type.String()], {
-          description: "Context amount: minimal or full",
-        }),
+      exportsOnly: Type.Optional(
+        Type.Boolean({ description: "Show only exported/public symbols" }),
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
       const args = ["inspect", params.filePath];
+      if (params.showBody) args.push("--show-body");
       if (params.full) args.push("--full");
-      if (params.context) args.push("--context", params.context);
+      if (params.exportsOnly) args.push("--exports-only");
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-deps: Analyze import relationships and symbol usage
   pi.registerTool({
     name: "cm-deps",
     label: "CM Deps",
-    description: "Analyze import relationships and symbol usage dependencies.",
+    description:
+      "Analyze import relationships and symbol usage. Use direction='used-by' to find reverse dependencies.",
     parameters: Type.Object({
       ...CommonFlagProps,
-      circular: Type.Optional(
-        Type.Boolean({ description: "Show only circular dependencies" }),
-      ),
-      unused: Type.Optional(
-        Type.Boolean({ description: "Show unused files/modules" }),
-      ),
-      unusedSymbols: Type.Optional(
-        Type.Boolean({ description: "Show unused symbols" }),
+      target: Type.String({
+        description: "File path (./src/auth.py) or symbol name (authenticate)",
+      }),
+      direction: Type.Optional(
+        Type.String({
+          description:
+            "'imports' (what target imports) or 'used-by' (what uses target). Default: imports",
+        }),
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = ["deps"];
+      const args = ["deps", params.target];
       appendPath(args, params.path);
-      if (params.circular) args.push("--circular");
-      if (params.unused) args.push("--unused");
-      if (params.unusedSymbols) args.push("--unused-symbols");
+      if (params.direction) args.push("--direction", params.direction);
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
-  pi.registerTool({
-    name: "cm-index",
-    label: "CM Index",
-    description: "Validate that files can be indexed correctly.",
-    parameters: Type.Object({ ...CommonFlagProps }),
-    async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = ["index"];
-      appendPath(args, params.path);
-      appendCommonFlags(args, params);
-      return runCm(pi, args, signal);
-    },
-  });
-
+  // cm-diff: Show symbol-level changes between current code and a git commit
   pi.registerTool({
     name: "cm-diff",
     label: "CM Diff",
@@ -335,59 +323,51 @@ export default function cmExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       ...CommonFlagProps,
       commit: Type.String({
-        description: "Git ref to compare against (e.g. main, HEAD~1)",
+        description: "Git ref to compare against (e.g. main, HEAD~1, v1.0)",
       }),
-      showBody: Type.Optional(
-        Type.Boolean({ description: "Include symbol body in diff output" }),
-      ),
-      breaking: Type.Optional(
-        Type.Boolean({ description: "Focus on breaking API changes" }),
+      full: Type.Optional(
+        Type.Boolean({ description: "Include anonymous/lambda functions" }),
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
       const args = ["diff", params.commit];
       appendPath(args, params.path);
-      if (params.showBody) args.push("--show-body");
-      if (params.breaking) args.push("--breaking");
+      if (params.full) args.push("--full");
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-callers: Find all callers of a function/method symbol
   pi.registerTool({
     name: "cm-callers",
     label: "CM Callers",
-    description: "Find all callers of a function/method symbol.",
+    description:
+      "Find all callers of a function/method symbol. Use qualified names (e.g. Foo::new) to reduce noise.",
     parameters: Type.Object({
       ...CommonFlagProps,
       symbol: Type.String({ description: "Target symbol name" }),
-      exact: Type.Optional(
-        Type.Boolean({ description: "Enable exact matching" }),
-      ),
-      showBody: Type.Optional(
-        Type.Boolean({ description: "Include symbol body" }),
-      ),
-      full: Type.Optional(
-        Type.Boolean({ description: "Include anonymous/lambda functions" }),
-      ),
-      context: Type.Optional(
-        Type.Union([ContextMode, Type.String()], {
-          description: "Context amount: minimal or full",
+      fuzzy: Type.Optional(
+        Type.Boolean({
+          description: "Enable fuzzy matching for symbol lookup",
         }),
+      ),
+      limit: Type.Optional(
+        Type.Integer({ description: "Maximum number of results to return" }),
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
       const args = ["callers", params.symbol];
       appendPath(args, params.path);
-      if (params.exact) args.push("--exact");
-      if (params.showBody) args.push("--show-body");
-      if (params.full) args.push("--full");
-      if (params.context) args.push("--context", params.context);
+      if (params.fuzzy) args.push("--fuzzy");
+      if (params.limit !== undefined)
+        args.push("--limit", String(params.limit));
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-callees: Find all functions/methods called by a symbol
   pi.registerTool({
     name: "cm-callees",
     label: "CM Callees",
@@ -395,33 +375,27 @@ export default function cmExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       ...CommonFlagProps,
       symbol: Type.String({ description: "Target symbol name" }),
-      exact: Type.Optional(
-        Type.Boolean({ description: "Enable exact matching" }),
-      ),
-      showBody: Type.Optional(
-        Type.Boolean({ description: "Include symbol body" }),
-      ),
-      full: Type.Optional(
-        Type.Boolean({ description: "Include anonymous/lambda functions" }),
-      ),
-      context: Type.Optional(
-        Type.Union([ContextMode, Type.String()], {
-          description: "Context amount: minimal or full",
+      fuzzy: Type.Optional(
+        Type.Boolean({
+          description: "Enable fuzzy matching for symbol lookup",
         }),
+      ),
+      limit: Type.Optional(
+        Type.Integer({ description: "Maximum number of results to return" }),
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
       const args = ["callees", params.symbol];
       appendPath(args, params.path);
-      if (params.exact) args.push("--exact");
-      if (params.showBody) args.push("--show-body");
-      if (params.full) args.push("--full");
-      if (params.context) args.push("--context", params.context);
+      if (params.fuzzy) args.push("--fuzzy");
+      if (params.limit !== undefined)
+        args.push("--limit", String(params.limit));
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-tests: Find test functions that call a given symbol
   pi.registerTool({
     name: "cm-tests",
     label: "CM Tests",
@@ -429,19 +403,20 @@ export default function cmExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       ...CommonFlagProps,
       symbol: Type.String({ description: "Target symbol name" }),
-      exact: Type.Optional(
-        Type.Boolean({ description: "Enable exact matching" }),
+      fuzzy: Type.Optional(
+        Type.Boolean({ description: "Enable fuzzy matching" }),
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
       const args = ["tests", params.symbol];
       appendPath(args, params.path);
-      if (params.exact) args.push("--exact");
+      if (params.fuzzy) args.push("--fuzzy");
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-untested: Find functions and methods not called by any tests
   pi.registerTool({
     name: "cm-untested",
     label: "CM Untested",
@@ -455,18 +430,22 @@ export default function cmExtension(pi: ExtensionAPI) {
     },
   });
 
+  // cm-since: Show API changes since a git commit
   pi.registerTool({
     name: "cm-since",
     label: "CM Since",
     description:
-      "Show API changes since a git commit, optionally only breaking changes.",
+      "Show API changes since a git commit. Use --breaking to show only breaking changes.",
     parameters: Type.Object({
       ...CommonFlagProps,
       commit: Type.String({
         description: "Git ref baseline (e.g. main, v1.0, HEAD~1)",
       }),
       breaking: Type.Optional(
-        Type.Boolean({ description: "Only show breaking changes" }),
+        Type.Boolean({
+          description:
+            "Only show breaking changes (deleted symbols, signature changes)",
+        }),
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
@@ -478,10 +457,12 @@ export default function cmExtension(pi: ExtensionAPI) {
     },
   });
 
+  // cm-entrypoints: Find exported symbols with no internal callers
   pi.registerTool({
     name: "cm-entrypoints",
     label: "CM Entrypoints",
-    description: "Find exported symbols with no internal callers.",
+    description:
+      "Find exported symbols with no internal callers. Useful for finding public API surface or dead code.",
     parameters: Type.Object({ ...CommonFlagProps }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
       const args = ["entrypoints"];
@@ -491,56 +472,73 @@ export default function cmExtension(pi: ExtensionAPI) {
     },
   });
 
+  // cm-trace: Find the shortest call path from one symbol to another
   pi.registerTool({
     name: "cm-trace",
     label: "CM Trace",
-    description: "Find the shortest call path from one symbol to another.",
+    description:
+      "Find the shortest call path from one symbol to another using BFS.",
     parameters: Type.Object({
       ...CommonFlagProps,
       fromSymbol: Type.String({ description: "Start symbol" }),
       toSymbol: Type.String({ description: "Destination symbol" }),
-      reverse: Type.Optional(
-        Type.Boolean({ description: "Reverse the trace direction" }),
-      ),
-      exact: Type.Optional(
-        Type.Boolean({ description: "Enable exact symbol matching" }),
+      fuzzy: Type.Optional(
+        Type.Boolean({ description: "Enable fuzzy matching for symbol names" }),
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
       const args = ["trace", params.fromSymbol, params.toSymbol];
       appendPath(args, params.path);
-      if (params.reverse) args.push("--reverse");
-      if (params.exact) args.push("--exact");
+      if (params.fuzzy) args.push("--fuzzy");
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-impact: Quick breakage report for a symbol
   pi.registerTool({
     name: "cm-impact",
     label: "CM Impact",
     description:
-      "Quick breakage report for a symbol (definition, callers, tests).",
+      "Quick breakage report for a symbol: definition + callers + tests. Run after editing a function.",
     parameters: Type.Object({
       ...CommonFlagProps,
       symbol: Type.String({ description: "Target symbol name" }),
       exact: Type.Optional(
-        Type.Boolean({ description: "Enable exact matching" }),
+        Type.Boolean({ description: "Use exact matching (default is fuzzy)" }),
+      ),
+      includeDocs: Type.Optional(
+        Type.Boolean({
+          description: "Include markdown headings/code blocks as candidates",
+        }),
+      ),
+      limit: Type.Optional(
+        Type.Integer({
+          description: "Maximum callers/tests to show (default: 10 each)",
+        }),
+      ),
+      all: Type.Optional(
+        Type.Boolean({ description: "Show full lists (ignores --limit)" }),
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
       const args = ["impact", params.symbol];
       appendPath(args, params.path);
       if (params.exact) args.push("--exact");
+      if (params.includeDocs) args.push("--include-docs");
+      if (params.limit !== undefined)
+        args.push("--limit", String(params.limit));
+      if (params.all) args.push("--all");
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-test-deps: List production symbols used by a test file
   pi.registerTool({
     name: "cm-test-deps",
     label: "CM Test Deps",
-    description: "List production symbols used by a test file.",
+    description: "List production (non-test) symbols called by a test file.",
     parameters: Type.Object({
       ...CommonFlagProps,
       testFile: Type.String({ description: "Path to a test file" }),
@@ -553,6 +551,7 @@ export default function cmExtension(pi: ExtensionAPI) {
     },
   });
 
+  // cm-blame: Show who last modified a symbol and when
   pi.registerTool({
     name: "cm-blame",
     label: "CM Blame",
@@ -560,49 +559,37 @@ export default function cmExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       ...CommonFlagProps,
       symbol: Type.String({ description: "Target symbol name" }),
-      filePath: Type.Optional(
-        Type.String({
-          description: "Optional file path to disambiguate symbol",
-        }),
-      ),
-      exact: Type.Optional(
-        Type.Boolean({ description: "Enable exact matching" }),
-      ),
+      filePath: Type.String({
+        description: "Path to the file containing the symbol",
+      }),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = ["blame", params.symbol];
-      if (params.filePath) args.push(params.filePath);
-      if (params.exact) args.push("--exact");
+      const args = ["blame", params.symbol, params.filePath];
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-history: Show git evolution history for a symbol
   pi.registerTool({
     name: "cm-history",
     label: "CM History",
-    description: "Show git evolution history for a symbol.",
+    description: "Show the evolution of a symbol across git history.",
     parameters: Type.Object({
       ...CommonFlagProps,
       symbol: Type.String({ description: "Target symbol name" }),
-      filePath: Type.Optional(
-        Type.String({
-          description: "Optional file path to disambiguate symbol",
-        }),
-      ),
-      exact: Type.Optional(
-        Type.Boolean({ description: "Enable exact matching" }),
-      ),
+      filePath: Type.String({
+        description: "Path to the file containing the symbol",
+      }),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = ["history", params.symbol];
-      if (params.filePath) args.push(params.filePath);
-      if (params.exact) args.push("--exact");
+      const args = ["history", params.symbol, params.filePath];
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-implements: Find all classes/structs implementing an interface or trait
   pi.registerTool({
     name: "cm-implements",
     label: "CM Implements",
@@ -610,96 +597,120 @@ export default function cmExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       ...CommonFlagProps,
       interfaceName: Type.String({ description: "Interface or trait name" }),
-      exact: Type.Optional(
-        Type.Boolean({ description: "Enable exact matching" }),
+      fuzzy: Type.Optional(
+        Type.Boolean({ description: "Enable fuzzy matching" }),
+      ),
+      traitOnly: Type.Optional(
+        Type.Boolean({
+          description:
+            "Only show trait implementations (filter out inherent impls)",
+        }),
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
       const args = ["implements", params.interfaceName];
       appendPath(args, params.path);
-      if (params.exact) args.push("--exact");
+      if (params.fuzzy) args.push("--fuzzy");
+      if (params.traitOnly) args.push("--trait-only");
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-types: Analyze parameter and return types for a symbol
   pi.registerTool({
     name: "cm-types",
     label: "CM Types",
-    description: "Analyze parameter and return types for a symbol.",
+    description:
+      "Analyze parameter and return types for a symbol and locate their definitions.",
     parameters: Type.Object({
       ...CommonFlagProps,
       symbol: Type.String({ description: "Target symbol name" }),
-      exact: Type.Optional(
-        Type.Boolean({ description: "Enable exact matching" }),
+      fuzzy: Type.Optional(
+        Type.Boolean({ description: "Enable fuzzy matching" }),
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
       const args = ["types", params.symbol];
       appendPath(args, params.path);
-      if (params.exact) args.push("--exact");
+      if (params.fuzzy) args.push("--fuzzy");
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-schema: Display the field schema for a data structure symbol
   pi.registerTool({
     name: "cm-schema",
     label: "CM Schema",
-    description: "Display the field schema for a data structure symbol.",
+    description:
+      "Display field schema for data structures (structs, classes, dataclasses, interfaces).",
     parameters: Type.Object({
       ...CommonFlagProps,
-      typeName: Type.String({
-        description: "Type/class/struct/dataclass name",
+      symbol: Type.String({
+        description: "Type/class/struct/interface name",
       }),
-      exact: Type.Optional(
-        Type.Boolean({ description: "Enable exact matching" }),
+      fuzzy: Type.Optional(
+        Type.Boolean({ description: "Enable fuzzy matching" }),
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = ["schema", params.typeName];
+      const args = ["schema", params.symbol];
       appendPath(args, params.path);
-      if (params.exact) args.push("--exact");
+      if (params.fuzzy) args.push("--fuzzy");
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-snapshot: Save a named codebase snapshot for future comparison
   pi.registerTool({
     name: "cm-snapshot",
     label: "CM Snapshot",
-    description: "Save a named codebase snapshot for future comparison.",
+    description:
+      "Save a named codebase snapshot for future comparison, or list/delete snapshots.",
     parameters: Type.Object({
       ...CommonFlagProps,
-      name: Type.String({ description: "Snapshot name" }),
+      name: Type.Optional(
+        Type.String({ description: "Snapshot name (required unless --list)" }),
+      ),
+      list: Type.Optional(
+        Type.Boolean({ description: "List all saved snapshots" }),
+      ),
+      delete: Type.Optional(
+        Type.String({ description: "Delete a snapshot by name" }),
+      ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = ["snapshot", params.name];
-      appendPath(args, params.path);
+      const args = ["snapshot"];
+      if (params.list) {
+        args.push("--list");
+      } else if (params.delete) {
+        args.push("--delete", params.delete);
+      } else if (params.name) {
+        args.push(params.name);
+        appendPath(args, params.path);
+      }
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
   });
 
+  // cm-compare: Compare current codebase symbols against a saved snapshot
   pi.registerTool({
     name: "cm-compare",
     label: "CM Compare",
-    description: "Compare current codebase symbols against a saved snapshot.",
+    description:
+      "Compare current codebase symbols against a saved snapshot. Shows ADDED, DELETED, MODIFIED, SIGNATURE_CHANGED.",
     parameters: Type.Object({
       ...CommonFlagProps,
-      name: Type.String({ description: "Snapshot name" }),
-      showBody: Type.Optional(
-        Type.Boolean({ description: "Include symbol body in compare output" }),
-      ),
-      breaking: Type.Optional(
-        Type.Boolean({ description: "Focus on breaking API changes" }),
-      ),
+      snapshot: Type.String({
+        description: "Snapshot name to compare against",
+      }),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = ["compare", params.name];
+      const args = ["compare", params.snapshot];
       appendPath(args, params.path);
-      if (params.showBody) args.push("--show-body");
-      if (params.breaking) args.push("--breaking");
       appendCommonFlags(args, params);
       return runCm(pi, args, signal);
     },
