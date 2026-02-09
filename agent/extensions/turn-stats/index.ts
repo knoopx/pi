@@ -140,7 +140,7 @@ function formatTokensPerSecond(
 }
 
 /**
- * Simplified format for output tokens, duration, tokens/s, and cost
+ * Format for output tokens, duration, tokens/s, and cost
  * Format: ↓<output_tokens> | <duration> | <tok/s> | <cost>
  * Example: ↓1.9K | 36s | 52.3 tok/s | $0.01 (without cost if 0)
  */
