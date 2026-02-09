@@ -1,0 +1,730 @@
+---
+title: MCP Server Handler
+sidebar_label: MCP Server
+---
+
+The MCP (Model Context Protocol) Server handler allows you to run a lightweight,
+stateless MCP server on your gateway that automatically transforms your API
+routes into MCP tools.
+
+This enables your API gateway to seamlessly serve external AI tools and agents
+through [Model Context Protocol](https://modelcontextprotocol.io/introduction)
+interactions by using your existing APIs, without needing to duplicate
+functionality or rebuild business logic in your backend.
+
+Each MCP Server handler has a 1:1 relationship with a route. That means one
+route can host one server. A gateway may have any number of MCP servers.
+
+A single MCP server may have many tools and prompts, where each tool interfaces
+with an API route in your gateway. You can compose multiple MCP servers on
+different routes to tailor MCP tools and prompts for each server's specific
+purpose.
+
+The MCP Server Handler works by re-invoking configured routes on the gateway. It
+does **_not_** go back out to HTTP: it keeps requests _within_ the gateway while
+still re-invoking the policy pipeline for your routes. This means that if you
+configure an MCP server with policies, routes with policies, and configure those
+routes as tools, the policy pipelines for both will be invoked. First the MCP
+server handler inbound policies, then the inbound policies for the tool's route,
+then the outbound policies for the tool's route, and finally, the outbound
+policies for the MCP server handler.
+
+## Setup via Portal
+
+Open the **Route Designer** by navigating to the **Files** tab, then click
+**routes.oas.json**. For any route definition, select **MCP Server** from the
+**Request Handlers** drop-down. Set the method to **POST**.
+
+Configure the handler with the following required options:
+
+- **Server Name** - The name of the MCP server. AI MCP clients will read this
+  name when they initialize with the server.
+- **Server Version** - The version of your MCP server. AI MCP clients read this
+  version when they initialize with the server and may make autonomous decisions
+  based on the versioning of your MCP server and the instructions they've been
+  given.
+
+Next, configure your routes to be transformed into MCP tools or prompts (see
+Configuration section below).
+
+## Setup via routes.oas.json
+
+The MCP Server handler can be manually added to the **routes.oas.json** file
+with the following route configuration:
+
+```json
+"paths": {
+  "/mcp": {
+    "x-zuplo-path": {
+      "pathMode": "open-api"
+    },
+    "post": {
+      "summary": "MCP Server",
+      "x-zuplo-route": {
+        "corsPolicy": "none",
+        "handler": {
+
+          // The MCP Server Handler handler
+          // and required options
+
+          "export": "mcpServerHandler",
+          "module": "$import(@zuplo/runtime)",
+          "options": {
+            "name": "example-mcp-server",
+            "version": "1.0.0",
+            "debugMode": false,
+          }
+        },
+        "policies": {
+          "inbound": []
+        }
+      }
+    }
+  }
+}
+```
+
+## Configuration
+
+The MCP Server handler requires the following configurations:
+
+- `name` (optional) - The name identifier of the MCP server.
+- `version` (optional) - The version of the MCP server.
+- `debugMode` (optional, default `false`) - Verbose logs on server startup,
+  initialization, tool listing, and tool calls. NOT recommended for production
+  environments.
+- `operations` - An array of operation references to register with the MCP
+  server. Each operation can be a tool, prompt, or resource based on its
+  `x-zuplo-route.mcp` configuration.
+
+### MCP `2025-06-18` Global Options
+
+:::danger
+
+These options are part of the new
+[MCP specification (2025-06-18)](https://modelcontextprotocol.io/specification/2025-06-18).
+Some MCP clients **may not yet support these features** and output schemas may
+not be considered valid by various clients given MCP has not yet adopted an
+exact JSON schema dialect. If you experience compatibility issues with your MCP
+client, ensure your `outputSchema` is a valid `type: object` JSON Schema and
+`structuredContent` is also of `type: object`.
+
+:::
+
+- `includeOutputSchema` (optional, default: `false`) - Whether to include output
+  schema from the route's OpenAPI response schema. When `true`, the schema from
+  successful responses (2xx) will be used as `outputSchema` for MCP tools.
+- `includeStructuredContent` (optional, default: `false`) - Whether to include
+  structured content in responses. When `true`, response JSON will be parsed and
+  included as `structuredContent`. When `false`, only `text` content will be
+  returned.
+
+### Operations
+
+Configure MCP tools, prompts, and resources using the `operations`
+configuration. Specify OpenAPI files and the exact operation IDs you want to
+expose:
+
+```json
+"paths": {
+  "/mcp": {
+    "post": {
+      "x-zuplo-route": {
+        "handler": {
+          "export": "mcpServerHandler",
+          "module": "$import(@zuplo/runtime)",
+          "options": {
+            "name": "My MCP Server",
+            "version": "1.0.0",
+            "operations": [
+              {
+                "file": "./config/weather.oas.json",
+                "id": "getCurrentWeather"
+              },
+              {
+                "file": "./config/todos.oas.json",
+                "id": "createTodo"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+- `file`: Path to an OpenAPI JSON spec file (relative to the project root)
+- `id`: The specific operation ID to include from the targeted file
+
+This approach provides explicit control over exactly which API operations become
+MCP tools, prompts, or resources.
+
+### Deprecated Configurations
+
+:::caution
+
+The `files`, `prompts`, and `resources` configuration options are **deprecated**
+and will be removed in a future version. Please migrate to the `operations`
+configuration option described above.
+
+:::
+
+<details>
+<summary>Legacy Configuration Options (Deprecated)</summary>
+
+Prior to `operations`, specific configuration arrays were used:
+
+- `files`: For tools
+- `prompts`: For prompts
+- `resources`: For resources
+
+```json
+"post": {
+  "operationId": "mcp-server",
+  "x-zuplo-route": {
+    "handler": {
+      "export": "mcpServerHandler",
+      "module": "$import(@zuplo/runtime)",
+      "options": {
+        "files": [
+          {
+            "path": "./config/weather.oas.json",
+            "operationIds": [
+              "getCurrentWeather"
+            ]
+          }
+        ],
+        "prompts": [
+          {
+            "path": "./config/weather.oas.json",
+            "operationIds": [
+              "weatherPrompt"
+            ]
+          }
+        ]
+      }
+    }
+  }
+```
+
+Please migrate these to the unified `operations` array.
+
+</details>
+
+### MCP Tools
+
+Tools are the main way that AI agents can discover capabilities from MCP
+servers. They are flexible, lite weight ways to execute some functionality,
+query some data, or perform an action on the user's behalf.
+
+Routes configured as MCP prompts may include the `x-zuplo-route.mcp` extension
+with `type: "tool"` in their OpenAPI definition. By default, without the
+`x-zuplo-route.mcp` configuration, the MCP server handler will assume the
+provided operation is a "tool". See [MCP Server Tools](../mcp-server/tools.mdx)
+for detailed documentation.
+
+### Custom MCP Tools
+
+Create custom tools as routes with full programmatic control using dedicated
+OpenAPI specifications and custom handler functions.
+
+This approach provides maximum flexibility for complex workflows. See
+[MCP Server Custom Tools](../mcp-server/custom-tools.mdx) for detailed
+documentation.
+
+### MCP Prompts
+
+In addition to tools, MCP servers can expose prompts - reusable, parameterized
+prompt templates that AI clients can request and execute. Configure prompts
+using the `operations` array in your MCP server options, just like tools.
+
+Routes configured as MCP prompts must include the `x-zuplo-route.mcp` extension
+with `type: "prompt"` in their OpenAPI definition. See
+[MCP Server Prompts](../mcp-server/prompts.mdx) for detailed documentation.
+
+### MCP Resources
+
+MCP servers can also expose resources - static read-only content like
+documentation, configuration files, or any other data an AI system might need.
+Like tools and prompts, configure resources using the `operations` array in your
+MCP server options.
+
+Routes configured as MCP resources must use the GET method and must include the
+`x-zuplo-route.mcp` extension with `type: "resource"` in their OpenAPI
+definition.
+
+See [MCP Server Resources](../mcp-server/resources.mdx) for detailed
+documentation.
+
+### Route `x-zuplo-route.mcp` configuration
+
+You can customize individual tools, prompts, and resources using the
+`x-zuplo-route.mcp` property in your OpenAPI definition. This allows you to
+define the type of MCP capability and provide specific metadata.
+
+```json
+"paths": {
+  "/weather/current": {
+    "get": {
+      "operationId": "getCurrentWeather",
+      "summary": "Get current weather",
+      "x-zuplo-route": {
+        "handler": { ... },
+        "mcp": {
+          "type": "tool",
+          "name": "get_current_weather",
+          "description": "Retrieve current weather conditions for a specified location",
+          "enabled": true
+        }
+      }
+    }
+  },
+  "/prompts/greeting": {
+    "post": {
+      "operationId": "greeting-prompt",
+      "x-zuplo-route": {
+        "handler": { ... },
+        "mcp": {
+          "type": "prompt",
+          "name": "greeting_generator",
+          "description": "Generate a personalized greeting"
+        }
+      }
+    }
+  }
+}
+```
+
+**Common options:**
+
+- `type`: The type of MCP capability (`tool`, `prompt`, `resource`, or
+  `graphql`). Defaults to `tool` if not specified.
+- `name`: Override the name shown to AI systems (defaults to `operationId`)
+- `description`: Override the description for AI consumption (defaults to route
+  description/summary)
+- `enabled`: Whether this operation should be available in the MCP server.
+
+See the respective [tools](../mcp-server/tools.mdx),
+[prompts](../mcp-server/prompts.mdx) and
+[resources](../mcp-server/resources.mdx) documentation for type-specific
+options.
+
+## Authentication
+
+### OAuth Authentication
+
+The MCP Protocol natively supports OAuth authentication to enable MCP Clients to
+authenticate and authorize themselves when calling tools. For more information,
+see the
+[official MCP Authentication documentation](https://modelcontextprotocol.io/specification/draft/basic/authorization).
+
+Zuplo allows you to configure any of the built-in OAuth policies (like Auth0,
+Okta, etc.) on the MCP Server route to secure it. To enable OAuth
+authentication, you will need to have an OAuth Authorization server configured.
+Specifically, the OAuth Authorization server will need to support the following
+things:
+
+1. (Optional but recommended) OAuth 2.0 Dynamic Client Registration
+2. Authorization Code Grant with PKCE
+3. Refresh Tokens
+
+For an example of a basic configuration of an Authorization Server with Auth0,
+see:
+[Setting up Auth0 as an Authentication Server for MCP OAuth Authentication](../articles/configuring-auth0-for-mcp-auth).
+
+Once you have configured your authorization server, you can do the following to
+enable OAuth authentication on your MCP Server:
+
+1. Create an OAuth policy on your MCP Server route. This policy will need to
+   have the option `"oAuthResourceMetadataEnabled": true`, for example:
+
+   ```json
+   {
+     "name": "mcp-oauth-inbound",
+     "policyType": "oauth-inbound",
+     "handler": {
+       "export": "Auth0JwtInboundPolicy",
+       "module": "$import(@zuplo/runtime)",
+       "options": {
+         "auth0Domain": "my-auth0-domain.us.auth0.com",
+         "audience": "https://my-mcp-audience",
+         "oAuthResourceMetadataEnabled": true
+       }
+     }
+   }
+   ```
+
+   In this example, the audience should be the identifier of the Auth0 API you
+   want your MCP Server to be protected by. For more information on configuring
+   OAuth JWT policies, see the
+   [OAuth Policy docs](../articles/oauth-authentication.mdx).
+
+2. Add the OAuth policy to the MCP Server route. For example:
+
+   ```json
+   "paths": {
+     "/mcp": {
+       "post": {
+         "x-zuplo-route": {
+           // etc. etc.
+           // other properties and route handlers for MCP
+
+           "policies": {
+             "inbound": [
+               "mcp-oauth-inbound"
+             ]
+           }
+         }
+       }
+     }
+   }
+   ```
+
+3. Add the `OAuthProtectedResourcePlugin` to your `runtimeInit` function in the
+   `zuplo.runtime.ts` file:
+
+   ```ts
+   import { OAuthProtectedResourcePlugin } from "@zuplo/runtime";
+
+   export function runtimeInit(runtime: RuntimeExtensions) {
+     runtime.addPlugin(
+       new OAuthProtectedResourcePlugin({
+         authorizationServers: ["https://your-auth0-domain.us.auth0.com"],
+         resourceName: "My MCP OAuth Resource",
+       }),
+     );
+   }
+   ```
+
+   See the
+   [OAuth Protected Resource Plugin docs](../programmable-api/oauth-protected-resource-plugin)
+   for more details.
+
+### API Key Auth
+
+An MCP server on Zuplo can be configured to use an API key from a query
+parameter using the
+[Query Parameter to Header Policy](../../policies/query-param-to-header-inbound).
+
+:::warning
+
+Currently, API keys aren't supported directly by MCP. But using a API key via
+query params transformed through your Zuplo gateway is a great way to get up and
+running quickly with an MCP server.
+
+:::
+
+Configure the policy to expect a query param and inject it as an Auth header:
+
+```json
+{
+  "policies": [
+    {
+      "name": "mcp-query-param-to-header-inbound",
+      "policyType": "query-param-to-header-inbound",
+      "handler": {
+        "export": "QueryParamToHeaderInboundPolicy",
+        "module": "$import(@zuplo/runtime)",
+        "options": {
+          "queryParam": "apiKey",
+          "headerName": "Authorization",
+          "headerValue": "Bearer {value}"
+        }
+      }
+    }
+
+    // etc. etc. other policies, your API key policy
+  ]
+}
+```
+
+Then, to secure your MCP endpoint, add the "query param to header" policy
+**_before_** your API key policy:
+
+```json
+{
+  "paths": {
+    "/mcp": {
+      "post": {
+        "x-zuplo-route": {
+          // etc. etc.
+          // other properties and route handlers for MCP
+
+          "policies": {
+            "inbound": [
+              "mcp-query-param-to-header-inbound",
+              "api-key-auth-inbound"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Will will effectively transform the query param into a `Authorization: Bearer`
+header and pass those through to other routes on your gateway.
+
+Then, when using MCP clients, simply add your API key as a query param! For
+example, in Cursor:
+
+```json
+{
+  "mcpServers": {
+    "my-zuplo-mcp-server": {
+      "url": "https://my-server.zuplo.com/mcp?apiKey=123abc"
+    }
+  }
+}
+```
+
+## Testing
+
+### MCP Inspector
+
+Use the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), a
+developer focused tool for building MCP servers, to quickly and easily test out
+your MCP server:
+
+```sh
+npx @modelcontextprotocol/inspector
+```
+
+By default, this will start a local MCP proxy and web app that you can use on
+`localhost` to connect to your server, list tools, call tools, view message
+history, and more.
+
+To connect to your remote Zuplo MCP server in the Inspector UI:
+
+1. Set the **Transport Type** to "Streamable HTTP"
+2. Set the **URL** to your Zuplo gateway with the route used by the MCP Server
+   Handler (that is, `https://my-gateway.zuplo.dev/mcp`)
+3. If you have configured OAuth authentication, you will need to login using the
+   OAuth flow using the **Open Auth Settings** button.
+4. Hit **Connect**.
+
+### Curl
+
+For more fine grained debugging, utilize
+[MCP JSON RPC 2.0 messages](https://modelcontextprotocol.io/specification/2025-03-26/basic)
+directly with curl. There are lots of different interactions and message flows
+supported by MCP, but some useful ones include:
+
+#### Ping
+
+To send a
+[simple "ping" message](https://modelcontextprotocol.io/specification/2025-03-26/basic/utilities/ping),
+which can be useful for testing availability of your MCP server:
+
+```sh
+curl https://my-gateway.zuplo.dev/mcp \
+    -X POST \
+    -H 'accept: application/json, text/event-stream' \
+    -d '{
+  "jsonrpc": "2.0",
+  "id": "0",
+  "method": "ping"
+}'
+```
+
+#### List tools
+
+To see
+[what tools a server has registered](https://modelcontextprotocol.io/specification/2025-03-26/server/tools#listing-tools):
+
+```sh
+curl https://my-gateway.zuplo.dev/mcp \
+    -X POST \
+    -H 'accept: application/json, text/event-stream' \
+    -d '{
+  "jsonrpc": "2.0",
+  "id": "0",
+  "method": "tools/list"
+}'
+```
+
+#### List prompts
+
+To see what prompts a server has available:
+
+```sh
+curl https://my-gateway.zuplo.dev/mcp \
+    -X POST \
+    -H 'accept: application/json, text/event-stream' \
+    -d '{
+  "jsonrpc": "2.0",
+  "id": "0",
+  "method": "prompts/list"
+}'
+```
+
+#### List resources
+
+To see what resources a server has available:
+
+```sh
+curl https://my-gateway.zuplo.dev/mcp \
+    -X POST \
+    -H 'accept: application/json, text/event-stream' \
+    -d '{
+  "jsonrpc": "2.0",
+  "id": "0",
+  "method": "resources/list"
+}'
+```
+
+#### Call tool
+
+To
+[manually invoke a tool by name](https://modelcontextprotocol.io/specification/2025-03-26/server/tools#calling-tools):
+
+```sh
+curl https://my-gateway.zuplo.dev/mcp \
+    -X POST \
+    -H 'accept: application/json, text/event-stream' \
+    -d '{
+  "jsonrpc": "2.0",
+  "id": "1",
+  "method": "tools/call",
+  "params": {
+    "name": "my_tool",
+    "arguments": {}
+  }
+}'
+```
+
+For more complex tools, you'll need to provide the schema compliant `arguments`.
+Note the `inputSchema` for the tool from `tools/list` to appropriately craft the
+`arguments`.
+
+#### Get prompt
+
+To execute a prompt with parameters:
+
+```sh
+curl https://my-gateway.zuplo.dev/mcp \
+    -X POST \
+    -H 'accept: application/json, text/event-stream' \
+    -d '{
+  "jsonrpc": "2.0",
+  "id": "1",
+  "method": "prompts/get",
+  "params": {
+    "name": "my_prompt",
+    "arguments": {
+      "param1": "value1"
+    }
+  }
+}'
+```
+
+For prompts with parameters, provide the required `arguments` object based on
+the prompt's schema from `prompts/list`.
+
+#### Read resource
+
+To read a resource by its URI:
+
+```sh
+curl https://my-gateway.zuplo.dev/mcp \
+    -X POST \
+    -H 'accept: application/json, text/event-stream' \
+    -d '{
+  "jsonrpc": "2.0",
+  "id": "1",
+  "method": "resources/read",
+  "params": {
+    "uri": "mcp://resources/my_resource"
+  }
+}'
+```
+
+Use the URI from `resources/list` to specify which resource to read.
+
+:::tip
+
+Read more about how calling tools works in
+[the Model Context Protocol server specification](https://modelcontextprotocol.io/specification/2025-03-26/server/tools).
+
+:::
+
+### OAuth Testing
+
+If you have configured OAuth authentication for your MCP Server, you can use the
+MCP Inspector to test the OAuth flow.
+
+Hit the **Open Auth Settings** button in the Inspector UI to start the OAuth
+flow. When first setting up the OAuth flow, it's recommmended to use the
+**Guided OAuth Flow** which you will see when you open the OAuth settings. This
+will allow you to debug the flow step by step.
+
+The OAuth flow involves the following steps, as shown in the MCP inspector
+guided auth flow. After you've checked each step, click the **Continue** button
+in the MCP Inspector UI to move to the next step.
+
+1. **Metadata Discovery**: The MCP Inspector will make a request to the
+   `.well-known/oauth-protected-resource` endpoint to learn about the OAuth
+   configuration. The MCP Inspector will then make a request to the
+   Authorization server which you configured in the
+   `OAuthProtectedResourcePlugin`, which will return the metadata it needs to
+   continue with the OAuth flow.
+
+   If you see errors in this part, check that you have correctly added the
+   `OAuthProtectedResourcePlugin` to your `zuplo.runtime.ts` file, and that you
+   have correctly configured the `authorizationServers` value to be the
+   canonical URL of your Authorization server, and registered an OAuth policy to
+   the route of your MCP server.
+
+2. **Client Registration**: The MCP Inspector will try to use
+   [Dynamic Client Registration](https://modelcontextprotocol.io/specification/draft/basic/authorization#dynamic-client-registration)
+   to register a new client with the Authorization server. Note that not all MCP
+   Clients require this, however at this time, the MCP Inspector does. You will
+   need to enable Dynamic Client Registration on your Authorization server if
+   you want to test the full flow through the MCP Inspector.
+
+   If you see errors in this step, check that you have enabled Dynamic Client
+   Registration on your Authorization server.
+
+3. **Preparing Authorization**: The MCP Inspector will then redirect the user to
+   the authorization server to login and authorize the MCP Client. Click the
+   redirect link in the Authorization URL section to be prompted to login. After
+   logging in, you will be given a code to copy in to the next step.
+
+4. **Request Authorization and acquire authorization code**: Take the copied
+   code from the last step and paste it in to the MCP Inspector and input it
+   into the box.
+
+5. **Token Request**: The MCP Inspector will do PKCE and make a request to the
+   `token` endpoint of your Authorization server to exchange the authorization
+   code for an access token. This is attached as the Authorization header when
+   calling your MCP server, typically as a Bearer token.
+
+6. **Authentication Complete**: You should now see a success message in the MCP
+   Inspector. You can now hit the **Connect** button to connect to your MCP
+   server.
+
+If you see errors in the flow in steps 2-6, check that you have correctly
+configured your Authorization server to support the OAuth 2.0 Authorization Code
+Grant with PKCE and Refresh Tokens.
+
+### MCP Client
+
+By connecting to an LLM enabled MCP Client, you can test the true end to end
+experience.
+
+Many clients (like OpenAI, Claude Desktop, or Cursor) let you define the remote
+server URL and the name. For example,
+[in Cursor](https://docs.cursor.com/context/model-context-protocol), you can add
+your MCP server like so:
+
+```json
+{
+  "mcpServers": {
+    "my-custom-mcp-server": {
+      "url": "https://my-gateway.zuplo.dev/mcp"
+    }
+  }
+}
+```
