@@ -13,9 +13,9 @@ Types: feat, fix, docs, style, refactor, perf, test, chore
 </format>
 
 <workflow>
-1. Review mutable changes without descriptions:
+1. Review mutable changes without descriptions (excluding empty changes):
    ```bash
-   jj log -r 'mutable() & description("")' --no-graph -T 'change_id ++ "\n"'
+   jj log -r 'mutable() & description("") & ~empty()' --no-graph -T 'change_id ++ "\n"'
    ```
 
 2. For each revision without description:
