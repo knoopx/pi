@@ -121,6 +121,24 @@ ${workflowLines}
           }
           return;
         }
+
+        case "drop": {
+          if (!change) return;
+          const prevIndex = selectedIndex;
+          await pi.exec("jj", ["abandon", change.changeId], { cwd });
+          selectedChangeIds.delete(change.changeId);
+          changeCache.clear();
+          fileIndex = 0;
+          diffScroll = 0;
+          await loadChanges();
+          selectedIndex = Math.min(prevIndex, Math.max(0, changes.length - 1));
+          selectedChange = changes[selectedIndex] || null;
+          if (selectedChange) {
+            await loadFilesAndDiff(selectedChange);
+          }
+          onNotify?.(`Dropped change ${change.changeId}`, "info");
+          return;
+        }
       }
     } catch (error) {
       const msg = formatErrorMessage(error);
@@ -359,6 +377,7 @@ ${workflowLines}
               "f fixup",
             selectedChange && onInsert && "i insert",
             selectedChange && onBookmark && "b bookmark",
+            selectedChange && "ctrl+d drop",
           )
         : buildHelpText(
             "tab ↑↓ nav",
@@ -441,6 +460,13 @@ ${workflowLines}
         selectedIndex < changes.length - 1
       ) {
         void executeAction("squash");
+      }
+      return;
+    }
+
+    if (focus === "changes" && matchesKey(data, "ctrl+d")) {
+      if (selectedChange) {
+        void executeAction("drop");
       }
       return;
     }
