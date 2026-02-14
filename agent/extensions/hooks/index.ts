@@ -1,8 +1,10 @@
 import type {
+  AgentEndEvent,
   ExtensionAPI,
   ExtensionContext,
   ToolCallEvent,
   ToolResultEvent,
+  TurnEndEvent,
 } from "@mariozechner/pi-coding-agent";
 import pc from "picocolors";
 import { glob } from "tinyglobby";
@@ -46,6 +48,75 @@ interface HookResult {
 interface BlockResult {
   block: true;
   reason: string;
+}
+
+function containsAbortText(text: string): boolean {
+  const normalized = text.toLowerCase();
+  return (
+    normalized.includes("operation aborted") ||
+    normalized.includes("aborted") ||
+    normalized.includes("cancelled") ||
+    normalized.includes("canceled")
+  );
+}
+
+function extractTextContent(
+  content: Array<unknown> | undefined,
+  extraText?: string,
+): string {
+  const contentText = (content ?? [])
+    .map((item) => {
+      if (typeof item === "string") return item;
+      if (item && typeof item === "object" && "text" in item) {
+        const value = (item as { text?: unknown }).text;
+        return typeof value === "string" ? value : "";
+      }
+      return "";
+    })
+    .join("\n");
+
+  return [contentText, extraText ?? ""].filter(Boolean).join("\n");
+}
+
+function isAbortedToolResult(event: ToolResultEvent): boolean {
+  if (!event.isError) return false;
+  return containsAbortText(extractTextContent(event.content));
+}
+
+function isAbortedTurnEnd(event: TurnEndEvent): boolean {
+  const message = (event as { message?: unknown }).message as
+    | {
+        role?: string;
+        stopReason?: string;
+        errorMessage?: string;
+      }
+    | undefined;
+
+  if (!message) return false;
+  if (message.role === "assistant" && message.stopReason === "aborted") {
+    return true;
+  }
+
+  return containsAbortText(message.errorMessage ?? "");
+}
+
+function isAbortedAgentEnd(event: AgentEndEvent): boolean {
+  const messages = (event as { messages?: unknown[] }).messages ?? [];
+
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i] as {
+      role?: string;
+      stopReason?: string;
+      errorMessage?: string;
+    };
+
+    if (message.role !== "assistant") continue;
+    if (message.stopReason === "aborted") return true;
+    if (containsAbortText(message.errorMessage ?? "")) return true;
+    return false;
+  }
+
+  return false;
 }
 
 export default async function hooksExtension(pi: ExtensionAPI): Promise<void> {
@@ -253,11 +324,14 @@ function registerEventHandlers(
   pi: ExtensionAPI,
   getConfig: () => HooksConfig,
 ): void {
+  let abortedInCurrentTurn = false;
+
   pi.on("session_start", async (_event, ctx) => {
     await processHooks(pi, getConfig(), "session_start", ctx);
   });
 
   pi.on("session_shutdown", async (_event, ctx) => {
+    if (abortedInCurrentTurn) return;
     await processHooks(pi, getConfig(), "session_shutdown", ctx);
   });
 
@@ -275,6 +349,12 @@ function registerEventHandlers(
 
   pi.on("tool_result", async (event: ToolResultEvent, ctx) => {
     if (SKIP_TOOLS.has(event.toolName)) return;
+
+    if (isAbortedToolResult(event)) {
+      abortedInCurrentTurn = true;
+      return;
+    }
+
     await processHooks(
       pi,
       getConfig(),
@@ -289,15 +369,18 @@ function registerEventHandlers(
     await processHooks(pi, getConfig(), "agent_start", ctx);
   });
 
-  pi.on("agent_end", async (_event, ctx) => {
+  pi.on("agent_end", async (event: AgentEndEvent, ctx) => {
+    if (abortedInCurrentTurn || isAbortedAgentEnd(event)) return;
     await processHooks(pi, getConfig(), "agent_end", ctx);
   });
 
   pi.on("turn_start", async (_event, ctx) => {
+    abortedInCurrentTurn = false;
     await processHooks(pi, getConfig(), "turn_start", ctx);
   });
 
-  pi.on("turn_end", async (_event, ctx) => {
+  pi.on("turn_end", async (event: TurnEndEvent, ctx) => {
+    if (abortedInCurrentTurn || isAbortedTurnEnd(event)) return;
     await processHooks(pi, getConfig(), "turn_end", ctx);
   });
 }
