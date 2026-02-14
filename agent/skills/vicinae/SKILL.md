@@ -1,6 +1,6 @@
 ---
 name: vicinae
-description: Builds Vicinae launcher extensions with TypeScript and React, defines commands, and creates List/Form/Detail views. Use when creating new extensions, implementing view/no-view commands, or building Raycast-compatible extensions.
+description: Builds Vicinae launcher extensions with TypeScript and React, defines commands, and creates List/Form/Detail views. Use when creating new extensions and implementing view/no-view commands.
 ---
 
 # Vicinae Extensions
@@ -119,8 +119,12 @@ export default async function QuickAction() {
 npm run build         # Production build
 npx tsc --noEmit      # Type check
 
-# Dev mode with watch (use tmux for background)
-tmux new -d -s vicinae-dev 'npm run dev'
+# Run Vicinae dev server in tmux
+# Creates the session only if it does not exist
+tmux has -t vicinae-dev || tmux new-session -d -s vicinae-dev 'bunx vici develop'
+
+# Read logs
+tmux capture-pane -t vicinae-dev -p -S -
 ```
 
 ## Common APIs
@@ -222,16 +226,6 @@ Access in code:
 
 ```typescript
 const { apiKey } = getPreferenceValues();
-```
-
-## Raycast Compatibility
-
-Vicinae runs most Raycast extensions. To test:
-
-```bash
-cd raycast-extension
-npm install --save-dev @vicinae/api
-npx vici develop
 ```
 
 ## Related Skills
