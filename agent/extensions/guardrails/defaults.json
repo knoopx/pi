@@ -1,37 +1,5 @@
 [
   {
-    "group": "coreutils",
-    "pattern": "*",
-    "rules": [
-      {
-        "context": "command",
-        "pattern": "^find",
-        "excludes": "\\| head",
-        "action": "block",
-        "reason": "find can produce thousands of results. Pipe to `| head -n 20` to limit output. Example: `find . -name '*.ts' | head -20`"
-      }
-    ]
-  },
-  {
-    "group": "ast-grep",
-    "pattern": "*",
-    "rules": [
-      {
-        "context": "command",
-        "pattern": "^grep.+(require|import)",
-        "action": "block",
-        "reason": "grep cannot reliably match imports/requires across line breaks or variations. Use ast-grep for AST-aware search: `ast-grep run --pattern 'import $NAME from $PATH' --lang typescript .` (see skill: ast-grep)"
-      },
-      {
-        "context": "command",
-        "pattern": "^grep\\s.*-r.*\\s\\.$|^grep\\s.*-r.*\\s\\.\\s|^grep\\s.*-r.*\\s\\./",
-        "excludes": "node_modules",
-        "action": "block",
-        "reason": "grep will search node_modules (slow, irrelevant matches). Add `--exclude-dir=node_modules`. Example: `grep -r 'pattern' . --exclude-dir=node_modules`"
-      }
-    ]
-  },
-  {
     "group": "bun",
     "pattern": "bun.lock",
     "rules": [
@@ -89,20 +57,6 @@
     "group": "protect-paths",
     "pattern": "*",
     "rules": [
-      {
-        "context": "file_name",
-        "pattern": "\\.env($|[^.])",
-        "excludes": "\\.(example|sample|test)$",
-        "action": "block",
-        "reason": ".env files contain secrets (API keys, passwords). Never read, commit, or expose them. To see expected variables, check .env.example. To add new env vars, update .env.example with placeholder values"
-      },
-      {
-        "context": "command",
-        "pattern": "(cat|less|head|tail|vim|nano|code)\\s+[^|]*\\.env($|[^.])",
-        "excludes": "\\.(example|sample|test)",
-        "action": "block",
-        "reason": ".env files contain secrets (API keys, passwords). Never read, commit, or expose them. To see expected variables, check .env.example instead"
-      },
       {
         "context": "file_name",
         "pattern": "(^|/)\\.(git|jj)/",
@@ -360,6 +314,18 @@
         "pattern": "^jj\\s+.*(-i|--interactive|--tool)(?!.*--help).*$",
         "action": "block",
         "reason": "interactive jj flags (-i, --interactive, --tool) open editors/TUIs which don't work in this environment. Use non-interactive alternatives: `jj absorb` (auto-fixup), `jj squash -m`, `jj split -m '<msg>' <files>` (see skill: jujutsu)"
+      }
+    ]
+  },
+  {
+    "group": "podman",
+    "pattern": "*",
+    "rules": [
+      {
+        "context": "command",
+        "pattern": "^docker\\s",
+        "action": "block",
+        "reason": "use Podman instead of Docker. Podman is a drop-in replacement with rootless containers by default. Replace `docker` with `podman`: `podman run`, `podman build`, `podman compose`, etc. (see skill: podman)"
       }
     ]
   }
