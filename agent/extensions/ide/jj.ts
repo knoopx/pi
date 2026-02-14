@@ -134,9 +134,22 @@ export async function setBookmarkToChange(
   bookmarkName: string,
   changeId: string,
 ): Promise<void> {
-  await pi.exec("jj", ["bookmark", "set", bookmarkName, "-r", changeId], {
-    cwd,
-  });
+  const normalizedBookmarkName = bookmarkName.split("@")[0]?.trim();
+  if (!normalizedBookmarkName) {
+    throw new Error("Bookmark name is required");
+  }
+
+  const result = await pi.exec(
+    "jj",
+    ["bookmark", "set", normalizedBookmarkName, "-r", changeId],
+    {
+      cwd,
+    },
+  );
+
+  if (result.code !== 0) {
+    throw new Error(result.stderr || "Failed to set bookmark");
+  }
 }
 
 /**
