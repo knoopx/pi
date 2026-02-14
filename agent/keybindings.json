@@ -1,4 +1,23 @@
 {
   "expandTools": [],
-  "toggleThinking": []
+  "toggleThinking": [],
+  "cycleModelForward": [],
+  "cycleModelBackward": [],
+  "toggleSessionPath": [],
+  "renameSession": [],
+  "toggleInputInfo": [],
+
+  "cursorLeft": "left",
+  "cursorRight": "right",
+  "cursorWordLeft": ["ctrl+left", "alt+left"],
+  "cursorWordRight": ["ctrl+right", "alt+right"],
+  "cursorLineStart": "home",
+  "cursorLineEnd": "end",
+
+  "deleteCharBackward": "backspace",
+  "deleteCharForward": "delete",
+  "deleteWordBackward": "ctrl+w",
+  "deleteWordForward": ["alt+d", "alt+delete"],
+  "deleteToLineStart": [],
+  "deleteToLineEnd": []
 }
