@@ -399,6 +399,7 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
       helpText: "",
       leftFocus: focus === "workspaces",
       rightFocus: focus === "files",
+      leftRatio: 0.28,
       rightSplit: true,
       rightTopRatio: 0.3,
     });

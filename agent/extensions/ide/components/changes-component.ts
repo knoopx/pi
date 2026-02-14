@@ -350,6 +350,7 @@ ${workflowLines}
       helpText: "",
       leftFocus: focus === "changes",
       rightFocus: focus === "files",
+      leftRatio: 0.28,
       rightSplit: true,
       rightTopRatio: 0.3,
     });
