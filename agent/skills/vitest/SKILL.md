@@ -104,15 +104,14 @@ Integration points                 UI layout (use visual tests)
 Security-sensitive code           Configuration files
 ```
 
-### Test Quality Checklist
+### Quality Guidelines
 
-- [ ] Tests are independent and isolated
-- [ ] Tests are deterministic (no flakiness)
-- [ ] Test names describe behavior being tested
-- [ ] Each test has a single reason to fail
-- [ ] Tests run fast (< 100ms for unit tests)
-- [ ] Tests use meaningful assertions
-- [ ] Setup/teardown is minimal and clear
+- Independent: no shared state between tests
+- Deterministic: same result every run
+- Descriptive: names explain behavior under test
+- Focused: one assertion focus per test
+- Fast: unit tests under 100ms
+- Clear: minimal setup, obvious assertions
 
 ### BDD Best Practices
 
