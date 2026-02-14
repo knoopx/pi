@@ -178,3 +178,23 @@ export async function listBookmarks(
 
   return names;
 }
+
+/**
+ * Forget a bookmark (including tracked remotes for the same name)
+ */
+export async function forgetBookmark(
+  pi: ExtensionAPI,
+  cwd: string,
+  bookmarkRef: string,
+): Promise<void> {
+  const bookmarkName = bookmarkRef.split("@")[0]?.trim();
+  if (!bookmarkName) {
+    return;
+  }
+
+  await pi.exec(
+    "jj",
+    ["bookmark", "forget", "--include-remotes", bookmarkName],
+    { cwd },
+  );
+}

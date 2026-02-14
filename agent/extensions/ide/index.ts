@@ -32,6 +32,7 @@ import { createSymbolsComponent } from "./components/symbols-component";
 import { createFilesComponent } from "./components/files-component";
 import { createChangesComponent } from "./components/changes-component";
 import { createBookmarkPromptComponent } from "./components/bookmark-prompt-component";
+import { createBookmarksComponent } from "./components/bookmarks-component";
 import { listBookmarks, setBookmarkToChange } from "./jj";
 
 function formatFileStats(ws: AgentWorkspace): string {
@@ -373,6 +374,41 @@ export default function ideExtension(pi: ExtensionAPI) {
   });
 
   /**
+   * /bookmarks - Browse bookmarks and forget selected
+   */
+  pi.registerCommand("bookmarks", {
+    description: "Browse bookmarks (name@remote), insert, refresh, and forget",
+    handler: async (_args, ctx) => {
+      if (!ctx.hasUI) {
+        return;
+      }
+
+      await ctx.ui.custom<void>(
+        (tui, theme, keybindings, done) => {
+          return createBookmarksComponent(
+            pi,
+            tui,
+            theme,
+            keybindings,
+            done,
+            ctx.cwd,
+            (text) => ctx.ui.setEditorText(text),
+          );
+        },
+        {
+          overlay: true,
+          overlayOptions: {
+            width: "70%",
+            maxHeight: "90%",
+            minWidth: 60,
+            anchor: "center",
+          },
+        },
+      );
+    },
+  });
+
+  /**
    * /changes - Browse jujutsu changes on current branch with diff preview
    */
   pi.registerCommand("changes", {
@@ -483,6 +519,39 @@ export default function ideExtension(pi: ExtensionAPI) {
         const currentText = ctx.ui.getEditorText();
         ctx.ui.setEditorText(currentText + ref);
       }
+    },
+  });
+
+  /**
+   * Ctrl+B shortcut to open bookmarks browser
+   */
+  pi.registerShortcut(Key.ctrl("b"), {
+    description: "Open bookmarks browser",
+    handler: async (ctx) => {
+      if (!ctx.hasUI) return;
+
+      await ctx.ui.custom<void>(
+        (tui, theme, keybindings, done) => {
+          return createBookmarksComponent(
+            pi,
+            tui,
+            theme,
+            keybindings,
+            done,
+            ctx.cwd,
+            (text) => ctx.ui.setEditorText(text),
+          );
+        },
+        {
+          overlay: true,
+          overlayOptions: {
+            width: "70%",
+            maxHeight: "90%",
+            minWidth: 60,
+            anchor: "center",
+          },
+        },
+      );
     },
   });
 

@@ -24,6 +24,19 @@ Browse code symbols (functions, classes, methods) with source preview. Enter ins
 
 ![Symbols](screenshots/symbols.png)
 
+### `/bookmarks`
+
+Browse bookmarks in `name@remote` format.
+
+**Bookmarks pane:**
+| Key | Action |
+| ------- | ---------------------- |
+| `↑/↓` | Navigate |
+| `f` | Forget selected bookmark |
+| `i` | Insert selected bookmark |
+| `r` | Refresh list |
+| `Esc` | Exit |
+
 ### `/changes`
 
 Browse mutable jujutsu changes on current branch with diff preview.
