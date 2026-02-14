@@ -277,11 +277,12 @@ ${workflowLines}
       const isMarked = selectedChangeIds.has(change.changeId);
 
       const bookmarks = bookmarksByChange.get(change.changeId) || [];
-      const bookmarkLabel = bookmarks.length > 0 ? bookmarks.join(",") : "-";
+      const bookmarkLabel =
+        bookmarks.length > 0 ? `<${bookmarks.join(",")}> ` : "";
       const idLabel = change.changeId.slice(0, 8);
 
       const marker = isMarked ? "●" : "○";
-      const leftText = ` ${marker} ${bookmarkLabel} ${change.description}`;
+      const leftText = ` ${marker} ${bookmarkLabel}${change.description}`;
       const rightText = theme.fg("dim", ` ${idLabel}`);
 
       const availableLeftWidth = Math.max(1, width - idLabel.length - 1);
