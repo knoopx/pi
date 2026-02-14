@@ -166,52 +166,47 @@ export async function listBookmarks(
 export async function listBookmarksByChange(
   pi: ExtensionAPI,
   cwd: string,
-): Promise<Array<{ bookmark: string; changeId: string }>> {
-  const result = await pi.exec("jj", ["bookmark", "list", "--all-remotes"], {
-    cwd,
-  });
+): Promise<Array<{ bookmark: string; changeId: string; description: string }>> {
+  const result = await pi.exec(
+    "jj",
+    [
+      "bookmark",
+      "list",
+      "--all-remotes",
+      "-T",
+      'self.name() ++ "\t" ++ coalesce(self.remote(), "") ++ "\t" ++ coalesce(self.normal_target().change_id().short(), "") ++ "\t" ++ coalesce(self.normal_target().description().first_line(), "") ++ "\n"',
+    ],
+    { cwd },
+  );
 
   if (result.code !== 0) {
     return [];
   }
 
   const seen = new Set<string>();
-  const entries: Array<{ bookmark: string; changeId: string }> = [];
-  let currentLocalName: string | null = null;
+  const entries: Array<{
+    bookmark: string;
+    changeId: string;
+    description: string;
+  }> = [];
 
-  for (const rawLine of result.stdout.split("\n")) {
-    const line = rawLine.trimEnd();
-    if (!line.trim()) {
+  for (const line of result.stdout.split("\n")) {
+    const [name, remote, changeId, description] = line.split("\t");
+    if (!name || !changeId) {
       continue;
     }
 
-    const localMatch = line.match(/^([^:\s]+):\s+([a-z0-9]+)/i);
-    if (localMatch) {
-      currentLocalName = localMatch[1] || null;
-      const changeId = localMatch[2] || "";
-      const localName = currentLocalName;
-      if (!localName) {
-        continue;
-      }
-
-      const bookmark = localName.includes("@") ? localName : `${localName}@`;
-      if (changeId && !seen.has(bookmark)) {
-        seen.add(bookmark);
-        entries.push({ bookmark, changeId });
-      }
+    const bookmark = remote ? `${name}@${remote}` : `${name}@`;
+    if (seen.has(bookmark)) {
       continue;
     }
 
-    const remoteMatch = line.match(/^\s*@([^:]+):\s+([a-z0-9]+)/i);
-    if (remoteMatch && currentLocalName) {
-      const remote = remoteMatch[1] || "";
-      const changeId = remoteMatch[2] || "";
-      const bookmark = `${currentLocalName}@${remote}`;
-      if (remote && changeId && !seen.has(bookmark)) {
-        seen.add(bookmark);
-        entries.push({ bookmark, changeId });
-      }
-    }
+    seen.add(bookmark);
+    entries.push({
+      bookmark,
+      changeId,
+      description: description || "(no description)",
+    });
   }
 
   return entries;

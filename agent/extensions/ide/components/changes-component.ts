@@ -5,7 +5,13 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { matchesKey } from "@mariozechner/pi-tui";
-import { pad, buildHelpText, ensureWidth, truncateAnsi } from "./utils";
+import {
+  pad,
+  buildHelpText,
+  ensureWidth,
+  formatBookmarkReference,
+  truncateAnsi,
+} from "./utils";
 import {
   calculateDimensions,
   renderSplitPanel,
@@ -296,7 +302,9 @@ ${workflowLines}
 
       const bookmarks = bookmarksByChange.get(change.changeId) || [];
       const bookmarkLabel =
-        bookmarks.length > 0 ? `<${bookmarks.join(",")}> ` : "";
+        bookmarks.length > 0
+          ? `${formatBookmarkReference(theme, bookmarks.join(","))} `
+          : "";
       const idLabel = change.changeId.slice(0, 8);
 
       const marker = isMarked ? "●" : "○";

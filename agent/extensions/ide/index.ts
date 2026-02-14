@@ -33,7 +33,7 @@ import { createFilesComponent } from "./components/files-component";
 import { createChangesComponent } from "./components/changes-component";
 import { createBookmarkPromptComponent } from "./components/bookmark-prompt-component";
 import { createBookmarksComponent } from "./components/bookmarks-component";
-import { listBookmarks, setBookmarkToChange } from "./jj";
+import { setBookmarkToChange } from "./jj";
 
 function formatFileStats(ws: AgentWorkspace): string {
   if (!ws.fileStats) return "";
@@ -82,17 +82,16 @@ export default function ideExtension(pi: ExtensionAPI) {
       return null;
     }
 
-    const bookmarks = await listBookmarks(pi, ctx.cwd);
-
     const bookmarkName = await ctx.ui.custom<string | null>(
       (tui, theme, keybindings, done) => {
         return createBookmarkPromptComponent(
+          pi,
           tui,
           theme,
           keybindings,
           done,
           changeId,
-          bookmarks,
+          ctx.cwd,
         );
       },
       {

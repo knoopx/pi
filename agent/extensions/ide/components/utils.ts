@@ -1,3 +1,4 @@
+import type { Theme } from "@mariozechner/pi-coding-agent";
 import sliceAnsi from "slice-ansi";
 import stringWidth from "string-width";
 
@@ -30,4 +31,11 @@ export function buildHelpText(
   ...items: (string | false | null | undefined)[]
 ): string {
   return items.filter(Boolean).join(" • ");
+}
+
+export function formatBookmarkReference(
+  theme: Theme,
+  bookmark: string,
+): string {
+  return theme.fg("accent", `<${bookmark}>`);
 }

@@ -1,6 +1,11 @@
-import type { KeybindingsManager, Theme } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  KeybindingsManager,
+  Theme,
+} from "@mariozechner/pi-coding-agent";
 import { Input, matchesKey } from "@mariozechner/pi-tui";
 import { renderListRows } from "./split-panel";
+import { formatBookmarkReference } from "./utils";
 
 function fuzzyScore(candidate: string, query: string): number {
   const text = candidate.toLowerCase();
@@ -43,17 +48,73 @@ function filterBookmarks(bookmarks: string[], query: string): string[] {
 }
 
 export function createBookmarkPromptComponent(
+  pi: ExtensionAPI,
   tui: { requestRender: () => void },
-  _theme: Theme,
+  theme: Theme,
   _keybindings: KeybindingsManager,
   done: (result: string | null) => void,
   _changeId: string,
-  bookmarks: string[],
+  cwd: string,
 ) {
   const input = new Input();
   input.focused = true;
 
   let selectedIndex = 0;
+  let loading = true;
+  let error: string | null = null;
+  let bookmarks: string[] = [];
+
+  async function loadBookmarks(): Promise<void> {
+    try {
+      loading = true;
+      error = null;
+      tui.requestRender();
+
+      const result = await pi.exec(
+        "jj",
+        [
+          "bookmark",
+          "list",
+          "--all-remotes",
+          "-T",
+          'self.name() ++ "\\t" ++ coalesce(self.remote(), "") ++ "\\n"',
+        ],
+        { cwd },
+      );
+
+      if (result.code !== 0) {
+        error = result.stderr || "Failed to load bookmarks";
+        bookmarks = [];
+        return;
+      }
+
+      const seen = new Set<string>();
+      const loaded: string[] = [];
+
+      for (const line of result.stdout.split("\n")) {
+        const [name, remote] = line.split("\t");
+        if (!name) {
+          continue;
+        }
+
+        const bookmark = remote ? `${name}@${remote}` : `${name}@`;
+        if (seen.has(bookmark)) {
+          continue;
+        }
+
+        seen.add(bookmark);
+        loaded.push(bookmark);
+      }
+
+      bookmarks = loaded;
+    } catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+      bookmarks = [];
+    } finally {
+      loading = false;
+      tui.requestRender();
+    }
+  }
 
   function getCandidates(): string[] {
     const query = input.getValue().trim();
@@ -72,6 +133,15 @@ export function createBookmarkPromptComponent(
 
   function render(width: number): string[] {
     const inputRows = input.render(width);
+
+    if (loading) {
+      return [...inputRows, theme.fg("dim", " Loading bookmarks...")];
+    }
+
+    if (error) {
+      return [...inputRows, theme.fg("error", ` Error: ${error}`)];
+    }
+
     const candidates = getCandidates();
     selectedIndex = Math.min(selectedIndex, Math.max(0, candidates.length - 1));
 
@@ -80,11 +150,13 @@ export function createBookmarkPromptComponent(
     }
 
     const listRows = renderListRows(
-      candidates.map((candidate) => ({ text: candidate })),
+      candidates.map((candidate) => ({
+        text: formatBookmarkReference(theme, candidate),
+      })),
       width,
       8,
       selectedIndex,
-      _theme,
+      theme,
     );
 
     return [...inputRows, ...listRows];
@@ -127,6 +199,8 @@ export function createBookmarkPromptComponent(
     }
     tui.requestRender();
   }
+
+  void loadBookmarks();
 
   return {
     render,

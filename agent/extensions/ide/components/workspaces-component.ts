@@ -256,10 +256,28 @@ export function createWorkspacesComponent(
 
     try {
       switch (action) {
-        case "attach":
+        case "attach": {
           done();
-          await pi.exec("tmux", ["attach", "-t", ws.name]);
+
+          if (process.env.TMUX) {
+            await pi.exec("tmux", ["switch-client", "-t", ws.name]);
+            break;
+          }
+
+          const terminalResult = await pi.exec("wezterm", [
+            "start",
+            "--",
+            "tmux",
+            "attach",
+            "-t",
+            ws.name,
+          ]);
+
+          if (terminalResult.code !== 0) {
+            await pi.exec("tmux", ["attach", "-t", ws.name]);
+          }
           break;
+        }
 
         case "rebase": {
           done();

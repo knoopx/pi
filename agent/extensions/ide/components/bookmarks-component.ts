@@ -4,9 +4,20 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { matchesKey } from "@mariozechner/pi-tui";
-import { renderListRows } from "./split-panel";
-import { buildHelpText, ensureWidth, pad, truncateAnsi } from "./utils";
-import { forgetBookmark, listBookmarks } from "../jj";
+import {
+  buildHelpText,
+  ensureWidth,
+  formatBookmarkReference,
+  pad,
+  truncateAnsi,
+} from "./utils";
+import { forgetBookmark, listBookmarksByChange } from "../jj";
+
+interface BookmarkEntry {
+  bookmark: string;
+  changeId: string;
+  description: string;
+}
 
 export function createBookmarksComponent(
   pi: ExtensionAPI,
@@ -17,7 +28,7 @@ export function createBookmarksComponent(
   cwd: string,
   onInsert?: (text: string) => void,
 ) {
-  let bookmarks: string[] = [];
+  let bookmarks: BookmarkEntry[] = [];
   let selectedIndex = 0;
   let loading = true;
   let error: string | null = null;
@@ -28,7 +39,14 @@ export function createBookmarksComponent(
     try {
       loading = true;
       error = null;
-      bookmarks = await listBookmarks(pi, cwd);
+
+      const entries = await listBookmarksByChange(pi, cwd);
+      bookmarks = entries.map((entry) => ({
+        bookmark: entry.bookmark,
+        changeId: entry.changeId,
+        description: entry.description || "(no description)",
+      }));
+
       selectedIndex = Math.min(
         selectedIndex,
         Math.max(0, bookmarks.length - 1),
@@ -49,7 +67,7 @@ export function createBookmarksComponent(
     }
 
     try {
-      await forgetBookmark(pi, cwd, selected);
+      await forgetBookmark(pi, cwd, selected.bookmark);
       await load();
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
@@ -81,7 +99,7 @@ export function createBookmarksComponent(
 
   async function pushSelectedBookmark(): Promise<void> {
     const selected = bookmarks[selectedIndex];
-    const bookmarkName = selected?.split("@")[0]?.trim();
+    const bookmarkName = selected?.bookmark.split("@")[0]?.trim();
     if (!bookmarkName) {
       return;
     }
@@ -154,20 +172,30 @@ export function createBookmarksComponent(
           theme.fg("border", "│"),
       );
     } else {
-      const rows = renderListRows(
-        bookmarks.map((bookmark) => ({ text: bookmark })),
-        width - 2,
-        contentHeight,
-        selectedIndex,
-        theme,
-      );
+      let startIdx = 0;
+      if (selectedIndex >= contentHeight) {
+        startIdx = selectedIndex - contentHeight + 1;
+      }
 
-      for (const row of rows) {
-        lines.push(
-          theme.fg("border", "│") +
-            ensureWidth(row, width - 2) +
-            theme.fg("border", "│"),
-        );
+      for (
+        let i = 0;
+        i < contentHeight && startIdx + i < bookmarks.length;
+        i++
+      ) {
+        const idx = startIdx + i;
+        const entry = bookmarks[idx]!;
+        const isSelected = idx === selectedIndex;
+
+        const shortId = entry.changeId.slice(-8);
+        const right = ` ${shortId}`;
+        const leftWidth = Math.max(1, width - 2 - right.length);
+        const reference = formatBookmarkReference(theme, entry.bookmark);
+        const leftText = ` ${reference} ${entry.description}`;
+        const left = ensureWidth(truncateAnsi(leftText, leftWidth), leftWidth);
+        const row = ensureWidth(left + theme.fg("dim", right), width - 2);
+        const styled = isSelected ? theme.fg("accent", theme.bold(row)) : row;
+
+        lines.push(theme.fg("border", "│") + styled + theme.fg("border", "│"));
       }
     }
 
@@ -243,7 +271,7 @@ export function createBookmarksComponent(
     if (data === "i") {
       const selected = bookmarks[selectedIndex];
       if (selected && onInsert) {
-        onInsert(selected);
+        onInsert(selected.bookmark);
         done();
       }
       return;

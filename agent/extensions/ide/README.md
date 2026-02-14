@@ -30,6 +30,8 @@ Browse code symbols (functions, classes, methods) with source preview. Enter ins
 
 Browse bookmarks in `name@remote` format (`name@` for local bookmarks).
 
+![Bookmarks](screenshots/bookmarks.png)
+
 **Bookmarks pane:**
 | Key | Action |
 | ------- | ---------------------- |
@@ -92,10 +94,6 @@ Review all workspaces and their changes.
 | `d` | Discard file |
 | `PgUp/PgDn` | Scroll diff |
 | `Esc` | Exit |
-
-### `/workspace <task>`
-
-Create a new jujutsu workspace and spawn a subagent with the given task. The subagent inherits full conversation context via session forking.
 
 ## Keyboard Shortcuts
 
