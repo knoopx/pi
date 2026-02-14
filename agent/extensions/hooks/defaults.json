@@ -32,6 +32,12 @@
         "command": "bunx eslint \"${file}\" | { grep \"${file}\" || true; }",
         "timeout": 60000,
         "notify": true
+      },
+      {
+        "event": "agent_end",
+        "command": "bunx eslint .",
+        "timeout": 120000,
+        "notify": true
       }
     ]
   },
