@@ -176,7 +176,12 @@ export async function listBookmarksByChange(
     if (localMatch) {
       currentLocalName = localMatch[1] || null;
       const changeId = localMatch[2] || "";
-      const bookmark = `${currentLocalName}@`;
+      const localName = currentLocalName;
+      if (!localName) {
+        continue;
+      }
+
+      const bookmark = localName.includes("@") ? localName : `${localName}@`;
       if (changeId && !seen.has(bookmark)) {
         seen.add(bookmark);
         entries.push({ bookmark, changeId });
