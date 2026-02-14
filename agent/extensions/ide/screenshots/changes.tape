@@ -13,8 +13,9 @@ Enter
 Sleep 3s
 Show
 
-# Open changes browser with Ctrl+K
-Ctrl+k
+# Open changes browser using the command
+Type "/changes"
+Enter
 Sleep 2s
 
 Screenshot changes.png

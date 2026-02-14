@@ -13,8 +13,9 @@ Enter
 Sleep 3s
 Show
 
-# Open bookmarks browser with Ctrl+B
-Ctrl+b
+# Open bookmarks browser using the command
+Type "/bookmarks"
+Enter
 Sleep 2s
 
 Screenshot bookmarks.png

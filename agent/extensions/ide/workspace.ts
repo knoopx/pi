@@ -365,18 +365,22 @@ export async function getWorkspaceDiff(
   workspacePath: string,
   filePath?: string,
 ): Promise<string> {
-  // Update stale working copy first
   await updateStaleWorkspace(pi, workspacePath);
 
-  const fileArg = filePath ? `'${filePath}'` : "";
+  const fileArg = filePath ? `'${filePath.replace(/'/g, `'"'"'`)}'` : "";
   const result = await pi.exec(
     "bash",
-    ["-c", `jj diff --git --color=never -r @ ${fileArg} | diff-so-fancy`],
+    [
+      "-c",
+      `set -o pipefail; jj diff --git --color=never -r @ ${fileArg} | diff-so-fancy`,
+    ],
     { cwd: workspacePath },
   );
 
   if (result.code !== 0) {
-    return `Failed to get diff: ${result.stderr}`;
+    const details =
+      result.stderr.trim() || result.stdout.trim() || "unknown error";
+    return `Failed to get diff: ${details}`;
   }
 
   return result.stdout;
