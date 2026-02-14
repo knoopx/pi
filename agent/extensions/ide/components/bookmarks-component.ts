@@ -58,6 +58,58 @@ export function createBookmarksComponent(
     }
   }
 
+  async function fetchBookmarks(): Promise<void> {
+    try {
+      loading = true;
+      error = null;
+      invalidate();
+      tui.requestRender();
+
+      const result = await pi.exec("jj", ["git", "fetch"], { cwd });
+      if (result.code !== 0) {
+        error = result.stderr || "Failed to fetch bookmarks";
+      }
+
+      await load();
+    } catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+      loading = false;
+      invalidate();
+      tui.requestRender();
+    }
+  }
+
+  async function pushSelectedBookmark(): Promise<void> {
+    const selected = bookmarks[selectedIndex];
+    const bookmarkName = selected?.split("@")[0]?.trim();
+    if (!bookmarkName) {
+      return;
+    }
+
+    try {
+      loading = true;
+      error = null;
+      invalidate();
+      tui.requestRender();
+
+      const result = await pi.exec(
+        "jj",
+        ["git", "push", "--bookmark", bookmarkName],
+        { cwd },
+      );
+      if (result.code !== 0) {
+        error = result.stderr || `Failed to push bookmark '${bookmarkName}'`;
+      }
+
+      await load();
+    } catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+      loading = false;
+      invalidate();
+      tui.requestRender();
+    }
+  }
+
   function invalidate(): void {
     cachedLines = [];
     cachedWidth = 0;
@@ -131,7 +183,7 @@ export function createBookmarksComponent(
         theme.fg(
           "dim",
           pad(
-            ` ${buildHelpText("↑↓ nav", "f forget", "i insert", "r refresh", "esc close")}`,
+            ` ${buildHelpText("↑↓ nav", "f forget", "i insert", "g fetch", "p push", "r refresh", "esc close")}`,
             width - 2,
           ),
         ) +
@@ -175,6 +227,16 @@ export function createBookmarksComponent(
 
     if (data === "r") {
       void load();
+      return;
+    }
+
+    if (data === "g") {
+      void fetchBookmarks();
+      return;
+    }
+
+    if (data === "p") {
+      void pushSelectedBookmark();
       return;
     }
 
