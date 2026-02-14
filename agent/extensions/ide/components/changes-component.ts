@@ -77,7 +77,7 @@ export function createChangesComponent(
           const workflowLines = ids
             .map(
               (id, index) =>
-                `${index + 1}. Review: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "type(scope): icon description"\``,
+                `${index + 1}. Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "type(scope): icon description"\``,
             )
             .join("\n");
 
