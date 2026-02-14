@@ -39,6 +39,7 @@ Browse mutable jujutsu changes on current branch with diff preview.
 | `d` | Describe change |
 | `f` | Fixup (squash into parent) |
 | `i` | Insert change ID |
+| `b` | Move bookmark to change ID |
 
 **Files pane:**
 | Key | Action |

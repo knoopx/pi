@@ -36,6 +36,7 @@ export function createChangesComponent(
   done: (result: void) => void,
   cwd: string,
   onInsert?: (text: string) => void,
+  onBookmark?: (changeId: string) => Promise<string | null>,
 ) {
   let changes: MutableChange[] = [];
   let selectedIndex = 0;
@@ -90,8 +91,6 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
           fileIndex = 0;
           diffScroll = 0;
           await loadChanges();
-          // After squash, the parent (which was at prevIndex) is now at prevIndex
-          // since the squashed change was removed
           selectedIndex = Math.min(prevIndex, changes.length - 1);
           selectedChange = changes[selectedIndex] || null;
           if (selectedChange) {
@@ -279,6 +278,7 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
               selectedIndex < changes.length - 1 &&
               "f fixup",
             selectedChange && onInsert && "i insert",
+            selectedChange && onBookmark && "b bookmark",
           )
         : buildHelpText(
             "tab ↑↓ nav",
@@ -324,7 +324,6 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
       return;
     }
 
-    // e key: edit change (in changes panel) or open file in VSCode (in files panel)
     if (data === "e") {
       if (focus === "files" && files[fileIndex]) {
         const file = files[fileIndex]!;
@@ -335,7 +334,6 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
       return;
     }
 
-    // Global hotkey: d for describe
     if (data === "d" && focus === "changes") {
       if (selectedChange) {
         void executeAction("describe");
@@ -343,7 +341,6 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
       return;
     }
 
-    // Global hotkey: f for fixup (squash into parent)
     if (data === "f") {
       if (
         selectedChange &&
@@ -355,11 +352,28 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
       return;
     }
 
-    // Global hotkey: i for insert change id into editor
     if (data === "i") {
       if (selectedChange && onInsert) {
         onInsert(selectedChange.changeId);
         done();
+      }
+      return;
+    }
+
+    if (data === "b" && focus === "changes") {
+      if (selectedChange && onBookmark) {
+        void (async () => {
+          const bookmarkName = await onBookmark(selectedChange.changeId);
+          if (!bookmarkName) {
+            return;
+          }
+
+          diffContent = [
+            `Updated bookmark '${bookmarkName}' to ${selectedChange.changeId}`,
+          ];
+          invalidate();
+          tui.requestRender();
+        })();
       }
       return;
     }
@@ -387,7 +401,6 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
         }
       }
     } else if (focus === "files") {
-      // Discard file changes
       if (data === "d" && selectedChange && files[fileIndex]) {
         const file = files[fileIndex]!;
         void (async () => {

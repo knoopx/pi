@@ -31,6 +31,8 @@ import { createWorkspacesComponent } from "./components/workspaces-component";
 import { createSymbolsComponent } from "./components/symbols-component";
 import { createFilesComponent } from "./components/files-component";
 import { createChangesComponent } from "./components/changes-component";
+import { createBookmarkPromptComponent } from "./components/bookmark-prompt-component";
+import { listBookmarks, setBookmarkToChange } from "./jj";
 
 function formatFileStats(ws: AgentWorkspace): string {
   if (!ws.fileStats) return "";
@@ -71,6 +73,46 @@ async function spawnWorkspaceAgent(
 }
 
 export default function ideExtension(pi: ExtensionAPI) {
+  async function promptAndSetBookmark(
+    ctx: ExtensionContext,
+    changeId: string,
+  ): Promise<string | null> {
+    if (!ctx.hasUI) {
+      return null;
+    }
+
+    const bookmarks = await listBookmarks(pi, ctx.cwd);
+
+    const bookmarkName = await ctx.ui.custom<string | null>(
+      (tui, theme, keybindings, done) => {
+        return createBookmarkPromptComponent(
+          tui,
+          theme,
+          keybindings,
+          done,
+          changeId,
+          bookmarks,
+        );
+      },
+      {
+        overlay: true,
+        overlayOptions: {
+          width: "50%",
+          minWidth: 40,
+          maxHeight: 8,
+          anchor: "center",
+        },
+      },
+    );
+
+    if (!bookmarkName) {
+      return null;
+    }
+
+    await setBookmarkToChange(pi, ctx.cwd, bookmarkName, changeId);
+    return bookmarkName;
+  }
+
   /**
    * Always expand tool output
    */
@@ -350,6 +392,7 @@ export default function ideExtension(pi: ExtensionAPI) {
             done,
             ctx.cwd,
             (text) => ctx.ui.setEditorText(text),
+            (changeId) => promptAndSetBookmark(ctx, changeId),
           );
         },
         {
@@ -486,6 +529,7 @@ export default function ideExtension(pi: ExtensionAPI) {
             done,
             ctx.cwd,
             (text) => ctx.ui.setEditorText(text),
+            (changeId) => promptAndSetBookmark(ctx, changeId),
           );
         },
         {

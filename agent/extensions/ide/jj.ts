@@ -124,3 +124,57 @@ export async function restoreFile(
 ): Promise<void> {
   await pi.exec("jj", ["restore", "-r", changeId, filePath], { cwd });
 }
+
+/**
+ * Move a bookmark to a change
+ */
+export async function setBookmarkToChange(
+  pi: ExtensionAPI,
+  cwd: string,
+  bookmarkName: string,
+  changeId: string,
+): Promise<void> {
+  await pi.exec("jj", ["bookmark", "set", bookmarkName, "-r", changeId], {
+    cwd,
+  });
+}
+
+/**
+ * List bookmark names (local and remotes) as name@remote
+ */
+export async function listBookmarks(
+  pi: ExtensionAPI,
+  cwd: string,
+): Promise<string[]> {
+  const result = await pi.exec(
+    "jj",
+    [
+      "bookmark",
+      "list",
+      "--all-remotes",
+      "-T",
+      'name ++ "@" ++ remote ++ "\\n"',
+    ],
+    {
+      cwd,
+    },
+  );
+
+  if (result.code !== 0) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const names: string[] = [];
+
+  for (const raw of result.stdout.split("\n")) {
+    const name = raw.trim();
+    if (!name || seen.has(name)) {
+      continue;
+    }
+    seen.add(name);
+    names.push(name);
+  }
+
+  return names;
+}
