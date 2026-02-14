@@ -5,13 +5,12 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { matchesKey } from "@mariozechner/pi-tui";
-import { pad, buildHelpText } from "./utils";
+import { pad, buildHelpText, ensureWidth, truncateAnsi } from "./utils";
 import {
   calculateDimensions,
   renderSplitPanel,
   renderDiffRows,
   renderFileChangeRows,
-  renderChangeRows,
   calculateDiffScroll,
   formatErrorMessage,
 } from "./split-panel";
@@ -21,6 +20,7 @@ import {
   loadChangedFiles,
   getDiff,
   restoreFile,
+  listBookmarksByChange,
 } from "../jj";
 
 interface ChangeCache {
@@ -37,6 +37,7 @@ export function createChangesComponent(
   cwd: string,
   onInsert?: (text: string) => void,
   onBookmark?: (changeId: string) => Promise<string | null>,
+  onNotify?: (message: string, type?: "info" | "error") => void,
 ) {
   let changes: MutableChange[] = [];
   let selectedIndex = 0;
@@ -49,6 +50,7 @@ export function createChangesComponent(
   let loading = true;
   let cachedLines: string[] = [];
   let cachedWidth = 0;
+  let bookmarksByChange = new Map<string, string[]>();
   const changeCache = new Map<string, ChangeCache>();
 
   async function executeAction(action: string): Promise<void> {
@@ -110,6 +112,22 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
   async function loadChanges(): Promise<void> {
     try {
       changes = await loadMutableChanges(pi, cwd);
+
+      const bookmarkEntries = await listBookmarksByChange(pi, cwd);
+      const nextBookmarksByChange = new Map<string, string[]>();
+
+      for (const change of changes) {
+        const bookmarks = bookmarkEntries
+          .filter(
+            (entry) =>
+              change.changeId.startsWith(entry.changeId) ||
+              entry.changeId.startsWith(change.changeId),
+          )
+          .map((entry) => entry.bookmark);
+        nextBookmarksByChange.set(change.changeId, bookmarks);
+      }
+
+      bookmarksByChange = nextBookmarksByChange;
       loading = false;
 
       if (changes.length > 0) {
@@ -215,14 +233,34 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
       ];
     }
 
-    return renderChangeRows(
-      changes,
-      width,
-      height,
-      selectedIndex,
-      focus === "changes",
-      theme,
-    );
+    const rows: string[] = [];
+    const visibleCount = height;
+    let startIdx = 0;
+    if (selectedIndex >= visibleCount) {
+      startIdx = selectedIndex - visibleCount + 1;
+    }
+
+    for (let i = 0; i < visibleCount && startIdx + i < changes.length; i++) {
+      const idx = startIdx + i;
+      const change = changes[idx]!;
+      const isSelected = idx === selectedIndex && focus === "changes";
+
+      const bookmarks = bookmarksByChange.get(change.changeId) || [];
+      const bookmarkLabel = bookmarks.length > 0 ? bookmarks.join(",") : "-";
+      const idLabel = change.changeId.slice(0, 8);
+
+      const leftText = ` ${bookmarkLabel} ${change.description}`;
+      const rightText = theme.fg("dim", ` ${idLabel}`);
+
+      const availableLeftWidth = Math.max(1, width - idLabel.length - 1);
+      const leftTruncated = truncateAnsi(leftText, availableLeftWidth);
+      const leftPadded = ensureWidth(leftTruncated, availableLeftWidth);
+
+      const line = ensureWidth(leftPadded + rightText, width);
+      rows.push(isSelected ? theme.fg("accent", theme.bold(line)) : line);
+    }
+
+    return rows;
   }
 
   function getFileRows(width: number, height: number): string[] {
@@ -363,16 +401,21 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
     if (data === "b" && focus === "changes") {
       if (selectedChange && onBookmark) {
         void (async () => {
-          const bookmarkName = await onBookmark(selectedChange.changeId);
-          if (!bookmarkName) {
-            return;
+          try {
+            const bookmarkName = await onBookmark(selectedChange.changeId);
+            if (!bookmarkName) {
+              return;
+            }
+            onNotify?.(
+              `Updated bookmark '${bookmarkName}' to ${selectedChange.changeId}`,
+              "info",
+            );
+          } catch (error) {
+            onNotify?.(
+              `Failed to update bookmark: ${formatErrorMessage(error)}`,
+              "error",
+            );
           }
-
-          diffContent = [
-            `Updated bookmark '${bookmarkName}' to ${selectedChange.changeId}`,
-          ];
-          invalidate();
-          tui.requestRender();
         })();
       }
       return;

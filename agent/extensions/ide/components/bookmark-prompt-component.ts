@@ -1,74 +1,138 @@
 import type { KeybindingsManager, Theme } from "@mariozechner/pi-coding-agent";
-import { matchesKey, SelectList, type SelectItem } from "@mariozechner/pi-tui";
-import { buildHelpText, pad } from "./utils";
+import { Input, matchesKey } from "@mariozechner/pi-tui";
+import { renderListRows } from "./split-panel";
+
+function fuzzyScore(candidate: string, query: string): number {
+  const text = candidate.toLowerCase();
+  const q = query.toLowerCase();
+
+  if (!q) {
+    return 1;
+  }
+
+  const containsIndex = text.indexOf(q);
+  if (containsIndex >= 0) {
+    return 1000 - containsIndex;
+  }
+
+  let qi = 0;
+  let score = 0;
+  let lastMatch = -1;
+
+  for (let i = 0; i < text.length && qi < q.length; i++) {
+    if (text[i] === q[qi]) {
+      score += lastMatch >= 0 ? Math.max(1, 8 - (i - lastMatch)) : 8;
+      lastMatch = i;
+      qi++;
+    }
+  }
+
+  return qi === q.length ? score : -1;
+}
+
+function filterBookmarks(bookmarks: string[], query: string): string[] {
+  if (!query) {
+    return bookmarks;
+  }
+
+  return bookmarks
+    .map((bookmark) => ({ bookmark, score: fuzzyScore(bookmark, query) }))
+    .filter((item) => item.score >= 0)
+    .sort((a, b) => b.score - a.score)
+    .map((item) => item.bookmark);
+}
 
 export function createBookmarkPromptComponent(
   tui: { requestRender: () => void },
-  theme: Theme,
+  _theme: Theme,
   _keybindings: KeybindingsManager,
   done: (result: string | null) => void,
-  changeId: string,
+  _changeId: string,
   bookmarks: string[],
 ) {
-  const items: SelectItem[] = bookmarks.map((bookmark) => ({
-    value: bookmark,
-    label: bookmark,
-  }));
+  const input = new Input();
+  input.focused = true;
 
-  const selectList = new SelectList(
-    items,
-    Math.min(Math.max(items.length, 4), 12),
-    {
-      selectedPrefix: (text: string) => theme.fg("accent", `${text}`),
-      selectedText: (text: string) => theme.fg("accent", theme.bold(text)),
-      description: (text: string) => theme.fg("muted", text),
-      scrollInfo: (text: string) => theme.fg("dim", text),
-      noMatch: (text: string) => theme.fg("warning", text),
-    },
-  );
+  let selectedIndex = 0;
 
-  selectList.onSelect = (item: SelectItem) => done(item.value);
-  selectList.onCancel = () => done(null);
+  function getCandidates(): string[] {
+    const query = input.getValue().trim();
+    const filtered = filterBookmarks(bookmarks, query);
 
-  function render(width: number): string[] {
-    const title = theme.fg(
-      "accent",
-      pad(` Select bookmark for ${changeId.slice(0, 8)}`, width),
-    );
-    const separator = theme.fg("border", "─".repeat(width));
-    const help = theme.fg(
-      "dim",
-      pad(` ${buildHelpText("↑↓ nav", "enter select", "esc cancel")}`, width),
-    );
-
-    if (items.length === 0) {
-      return [
-        title,
-        separator,
-        pad(theme.fg("dim", " No bookmarks found"), width),
-        separator,
-        theme.fg("dim", pad(" Press Esc to cancel", width)),
-      ];
+    if (filtered.length > 0) {
+      return filtered;
     }
 
-    return [title, separator, ...selectList.render(width), separator, help];
+    if (query.length > 0) {
+      return [query];
+    }
+
+    return [];
+  }
+
+  function render(width: number): string[] {
+    const inputRows = input.render(width);
+    const candidates = getCandidates();
+    selectedIndex = Math.min(selectedIndex, Math.max(0, candidates.length - 1));
+
+    if (candidates.length === 0) {
+      return inputRows;
+    }
+
+    const listRows = renderListRows(
+      candidates.map((candidate) => ({ text: candidate })),
+      width,
+      8,
+      selectedIndex,
+      _theme,
+    );
+
+    return [...inputRows, ...listRows];
+  }
+
+  function handleInput(data: string): void {
+    if (matchesKey(data, "escape")) {
+      done(null);
+      return;
+    }
+
+    if (matchesKey(data, "up")) {
+      selectedIndex = Math.max(0, selectedIndex - 1);
+      tui.requestRender();
+      return;
+    }
+
+    if (matchesKey(data, "down")) {
+      const candidates = getCandidates();
+      selectedIndex = Math.min(candidates.length - 1, selectedIndex + 1);
+      tui.requestRender();
+      return;
+    }
+
+    if (matchesKey(data, "enter")) {
+      const candidates = getCandidates();
+      if (candidates.length === 0) {
+        done(null);
+        return;
+      }
+      done(candidates[selectedIndex] || null);
+      return;
+    }
+
+    const before = input.getValue();
+    input.handleInput(data);
+    const after = input.getValue();
+    if (before !== after) {
+      selectedIndex = 0;
+    }
+    tui.requestRender();
   }
 
   return {
     render,
-    handleInput(data: string) {
-      if (items.length === 0) {
-        if (matchesKey(data, "escape") || matchesKey(data, "enter")) {
-          done(null);
-        }
-        return;
-      }
-
-      selectList.handleInput(data);
-      tui.requestRender();
-    },
+    handleInput,
     invalidate() {
-      selectList.invalidate();
+      input.invalidate();
     },
     dispose() {},
   };

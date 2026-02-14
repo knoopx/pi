@@ -429,6 +429,7 @@ export default function ideExtension(pi: ExtensionAPI) {
             ctx.cwd,
             (text) => ctx.ui.setEditorText(text),
             (changeId) => promptAndSetBookmark(ctx, changeId),
+            (message, type = "info") => ctx.ui.notify(message, type),
           );
         },
         {
@@ -599,6 +600,7 @@ export default function ideExtension(pi: ExtensionAPI) {
             ctx.cwd,
             (text) => ctx.ui.setEditorText(text),
             (changeId) => promptAndSetBookmark(ctx, changeId),
+            (message, type = "info") => ctx.ui.notify(message, type),
           );
         },
         {

@@ -146,37 +146,57 @@ export async function listBookmarks(
   pi: ExtensionAPI,
   cwd: string,
 ): Promise<string[]> {
-  const result = await pi.exec(
-    "jj",
-    [
-      "bookmark",
-      "list",
-      "--all-remotes",
-      "-T",
-      'name ++ "@" ++ remote ++ "\\n"',
-    ],
-    {
-      cwd,
-    },
-  );
+  const entries = await listBookmarksByChange(pi, cwd);
+  return entries.map((entry) => entry.bookmark);
+}
+
+export async function listBookmarksByChange(
+  pi: ExtensionAPI,
+  cwd: string,
+): Promise<Array<{ bookmark: string; changeId: string }>> {
+  const result = await pi.exec("jj", ["bookmark", "list", "--all-remotes"], {
+    cwd,
+  });
 
   if (result.code !== 0) {
     return [];
   }
 
   const seen = new Set<string>();
-  const names: string[] = [];
+  const entries: Array<{ bookmark: string; changeId: string }> = [];
+  let currentLocalName: string | null = null;
 
-  for (const raw of result.stdout.split("\n")) {
-    const name = raw.trim();
-    if (!name || seen.has(name)) {
+  for (const rawLine of result.stdout.split("\n")) {
+    const line = rawLine.trimEnd();
+    if (!line.trim()) {
       continue;
     }
-    seen.add(name);
-    names.push(name);
+
+    const localMatch = line.match(/^([^:\s]+):\s+([a-z0-9]+)/i);
+    if (localMatch) {
+      currentLocalName = localMatch[1] || null;
+      const changeId = localMatch[2] || "";
+      const bookmark = `${currentLocalName}@`;
+      if (changeId && !seen.has(bookmark)) {
+        seen.add(bookmark);
+        entries.push({ bookmark, changeId });
+      }
+      continue;
+    }
+
+    const remoteMatch = line.match(/^\s*@([^:]+):\s+([a-z0-9]+)/i);
+    if (remoteMatch && currentLocalName) {
+      const remote = remoteMatch[1] || "";
+      const changeId = remoteMatch[2] || "";
+      const bookmark = `${currentLocalName}@${remote}`;
+      if (remote && changeId && !seen.has(bookmark)) {
+        seen.add(bookmark);
+        entries.push({ bookmark, changeId });
+      }
+    }
   }
 
-  return names;
+  return entries;
 }
 
 /**
