@@ -5,7 +5,9 @@ A development environment extension for pi that provides code browsing, jujutsu 
 ## Features
 
 - **Code browsing** - Browse files and symbols with syntax-highlighted previews
-- **Jujutsu integration** - Track changes per prompt, browse change history
+- **Jujutsu integration** - Track changes per prompt, browse change history, and manage bookmarks
+- **Bookmark workflows** - Fuzzy bookmark picker, create bookmark from input, and bookmark browser (`name@remote`)
+- **Multi-select changes** - Select multiple changes and describe all selected IDs in one action
 - **Workspace management** - Spawn subagents in isolated jj workspaces
 - **Rich diffs** - Colorized diffs via diff-so-fancy
 - **Quick navigation** - Keyboard shortcuts for fast access
@@ -26,7 +28,7 @@ Browse code symbols (functions, classes, methods) with source preview. Enter ins
 
 ### `/bookmarks`
 
-Browse bookmarks in `name@remote` format.
+Browse bookmarks in `name@remote` format (`name@` for local bookmarks).
 
 **Bookmarks pane:**
 | Key | Action |
@@ -48,11 +50,12 @@ Browse mutable jujutsu changes on current branch with diff preview.
 | ------- | -------------------------- |
 | `Tab` | Switch focus |
 | `↑/↓` | Navigate |
+| `Space` | Toggle selected change |
 | `e` | Edit change |
-| `d` | Describe change |
+| `d` | Describe selected changes (or focused change) |
 | `f` | Fixup (squash into parent) |
 | `i` | Insert change ID |
-| `b` | Move bookmark to change ID |
+| `b` | Set bookmark on change (fuzzy picker + create from input) |
 
 **Files pane:**
 | Key | Action |
@@ -96,12 +99,13 @@ Create a new jujutsu workspace and spawn a subagent with the given task. The sub
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action             |
-| -------- | ------------------ |
-| `Ctrl+P` | Open file picker   |
-| `Ctrl+T` | Open symbol picker |
-| `Ctrl+J` | Open workspaces    |
-| `Ctrl+K` | Open changes       |
+| Shortcut | Action                 |
+| -------- | ---------------------- |
+| `Ctrl+P` | Open file picker       |
+| `Ctrl+T` | Open symbol picker     |
+| `Ctrl+B` | Open bookmarks browser |
+| `Ctrl+J` | Open workspaces        |
+| `Ctrl+K` | Open changes           |
 
 ## Automatic Change Tracking
 
