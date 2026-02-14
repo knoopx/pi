@@ -51,17 +51,37 @@ export function createChangesComponent(
   let cachedLines: string[] = [];
   let cachedWidth = 0;
   let bookmarksByChange = new Map<string, string[]>();
+  const selectedChangeIds = new Set<string>();
   const changeCache = new Map<string, ChangeCache>();
 
+  function getDescribeTargets(): MutableChange[] {
+    if (selectedChangeIds.size > 0) {
+      return changes.filter((change) => selectedChangeIds.has(change.changeId));
+    }
+    return selectedChange ? [selectedChange] : [];
+  }
+
   async function executeAction(action: string): Promise<void> {
-    if (!selectedChange) return;
     const change = selectedChange;
 
     try {
       switch (action) {
         case "describe": {
+          const targets = getDescribeTargets();
+          if (targets.length === 0) {
+            return;
+          }
+
           done();
-          const task = `Describe jujutsu change ${change.changeId} using conventional commit format.
+          const ids = targets.map((target) => target.changeId);
+          const workflowLines = ids
+            .map(
+              (id, index) =>
+                `${index + 1}. Review: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "type(scope): icon description"\``,
+            )
+            .join("\n");
+
+          const task = `Describe jujutsu changes ${ids.join(", ")} using conventional commit format.
 
 Use the **conventional-commits** skill for type/scope rules.
 
@@ -73,20 +93,21 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
 </format>
 
 <workflow>
-1. Review the diff: \`jj diff --git --color never -r ${change.changeId}\`
-2. Add description: \`jj desc -r ${change.changeId} -m "type(scope): icon description"\`
+${workflowLines}
 </workflow>`;
           pi.sendUserMessage(task);
           return;
         }
 
         case "edit": {
+          if (!change) return;
           done();
           await pi.exec("jj", ["edit", change.changeId], { cwd });
           return;
         }
 
         case "squash": {
+          if (!change) return;
           const prevIndex = selectedIndex;
           await pi.exec("jj", ["squash", "-u", "-r", change.changeId], { cwd });
           changeCache.clear();
@@ -128,6 +149,14 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
       }
 
       bookmarksByChange = nextBookmarksByChange;
+
+      const existingIds = new Set(changes.map((change) => change.changeId));
+      for (const changeId of selectedChangeIds) {
+        if (!existingIds.has(changeId)) {
+          selectedChangeIds.delete(changeId);
+        }
+      }
+
       loading = false;
 
       if (changes.length > 0) {
@@ -243,13 +272,16 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
     for (let i = 0; i < visibleCount && startIdx + i < changes.length; i++) {
       const idx = startIdx + i;
       const change = changes[idx]!;
-      const isSelected = idx === selectedIndex && focus === "changes";
+      const isCursor = idx === selectedIndex;
+      const isFocusedCursor = isCursor && focus === "changes";
+      const isMarked = selectedChangeIds.has(change.changeId);
 
       const bookmarks = bookmarksByChange.get(change.changeId) || [];
       const bookmarkLabel = bookmarks.length > 0 ? bookmarks.join(",") : "-";
       const idLabel = change.changeId.slice(0, 8);
 
-      const leftText = ` ${bookmarkLabel} ${change.description}`;
+      const marker = isMarked ? "●" : "○";
+      const leftText = ` ${marker} ${bookmarkLabel} ${change.description}`;
       const rightText = theme.fg("dim", ` ${idLabel}`);
 
       const availableLeftWidth = Math.max(1, width - idLabel.length - 1);
@@ -257,7 +289,13 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
       const leftPadded = ensureWidth(leftTruncated, availableLeftWidth);
 
       const line = ensureWidth(leftPadded + rightText, width);
-      rows.push(isSelected ? theme.fg("accent", theme.bold(line)) : line);
+      if (isFocusedCursor) {
+        rows.push(theme.fg("accent", theme.bold(line)));
+      } else if (isCursor) {
+        rows.push(theme.bold(line));
+      } else {
+        rows.push(line);
+      }
     }
 
     return rows;
@@ -305,12 +343,15 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
       theme,
     );
 
+    const describeTargetCount =
+      selectedChangeIds.size || (selectedChange ? 1 : 0);
     const helpText =
       focus === "changes"
         ? buildHelpText(
             "tab ↑↓ nav",
+            "space select",
             selectedChange && "e edit",
-            selectedChange && "d describe",
+            describeTargetCount > 0 && `d describe(${describeTargetCount})`,
             selectedChange &&
               changes.length > 1 &&
               selectedIndex < changes.length - 1 &&
@@ -373,8 +414,21 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
     }
 
     if (data === "d" && focus === "changes") {
-      if (selectedChange) {
+      if (selectedChange || selectedChangeIds.size > 0) {
         void executeAction("describe");
+      }
+      return;
+    }
+
+    if (data === " " && focus === "changes") {
+      if (selectedChange) {
+        if (selectedChangeIds.has(selectedChange.changeId)) {
+          selectedChangeIds.delete(selectedChange.changeId);
+        } else {
+          selectedChangeIds.add(selectedChange.changeId);
+        }
+        invalidate();
+        tui.requestRender();
       }
       return;
     }
