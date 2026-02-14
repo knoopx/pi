@@ -38,6 +38,12 @@
         "command": "bunx eslint .",
         "timeout": 120000,
         "notify": true
+      },
+      {
+        "event": "agent_end",
+        "command": "bunx jscpd --ignore \"**/node_modules/**,**/dist/**,**/.jj/**\" --min-lines 10 --threshold 5 .",
+        "timeout": 120000,
+        "notify": true
       }
     ]
   },
