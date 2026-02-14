@@ -1,0 +1,19 @@
+{
+  "name": "ide",
+  "version": "1.0.0",
+  "description": "Manage pi subagents in isolated jujutsu workspaces",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-ai": "^0.51.3",
+    "@mariozechner/pi-coding-agent": "^0.51.3",
+    "@mariozechner/pi-tui": "^0.51.3",
+    "@sinclair/typebox": "^0.34.48",
+    "slice-ansi": "^8.0.0",
+    "string-width": "^8.1.1"
+  }
+}
