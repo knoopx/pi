@@ -28,6 +28,7 @@ import type { HookEvent, HookRule, HooksConfig, HooksGroup } from "./schema";
  */
 
 const SKIP_TOOLS = new Set(["read"]);
+const NON_BLOCKING_TOOLS = new Set(["edit", "write"]);
 
 interface HookVariables {
   file?: string;
@@ -197,7 +198,11 @@ async function processHooks(
 
       const result = await runHook(pi, rule, group, ctx, vars);
 
-      if (!result.success && event === "tool_call") {
+      if (
+        !result.success &&
+        event === "tool_call" &&
+        (!toolName || !NON_BLOCKING_TOOLS.has(toolName))
+      ) {
         const reason = result.output
           ? `Hook failed: ${result.group}: ${result.command}\n${result.output}`
           : `Hook failed: ${result.group}: ${result.command}`;
