@@ -1,5 +1,12 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
-import { pad, ensureWidth, truncateAnsi, getChangeIcon } from "./utils";
+import {
+  pad,
+  ensureWidth,
+  truncateAnsi,
+  getChangeIcon,
+  getFileStatusIcon,
+  getFileIcon,
+} from "./utils";
 
 /**
  * Render a row in a split panel layout
@@ -358,7 +365,9 @@ export function renderFileChangeRows(
     const idx = startIdx + i;
     const file = files[idx]!;
     const isSelected = idx === fileIndex && isFocused;
-    const plainText = ` ${file.status} ${file.path}`;
+    const statusIcon = getFileStatusIcon(file.status);
+    const fileIcon = getFileIcon(file.path);
+    const plainText = ` ${statusIcon} ${fileIcon} ${file.path}`;
     const truncated = truncateAnsi(plainText, width);
     const padded = pad(truncated, width);
 
@@ -371,9 +380,11 @@ export function renderFileChangeRows(
           : file.status === "D"
             ? "toolDiffRemoved"
             : "warning";
-      const styledStatus = theme.fg(statusColor, file.status);
-      const restOfLine = padded.slice(1 + file.status.length);
-      rows.push(" " + styledStatus + restOfLine);
+      // Find where status icon ends and apply color only to it
+      const styledStatus = theme.fg(statusColor, statusIcon);
+      // Skip the leading space and status icon width
+      const afterStatus = padded.slice(3); // " " + statusIcon (2 chars width)
+      rows.push(" " + styledStatus + afterStatus);
     }
   }
 

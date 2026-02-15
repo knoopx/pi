@@ -367,28 +367,32 @@ describe("utils", () => {
     beforeEach(() => {
       mockTheme = {
         fg: vi.fn((color, text) => `[${color}]${text}[/${color}]`),
+        inverse: vi.fn((text) => `[inverse]${text}[/inverse]`),
       } as unknown as Theme;
     });
 
     describe("given a bookmark name", () => {
-      it("then formats with angle brackets and accent color", () => {
+      it("then formats with icon and inverse accent background", () => {
         const result = formatBookmarkReference(mockTheme, "main");
-        expect(result).toBe("[accent]<main>[/accent]");
-        expect(mockTheme.fg).toHaveBeenCalledWith("accent", "<main>");
+        expect(result).toBe("[inverse][accent] 󰃀 main [/accent][/inverse]");
+        expect(mockTheme.fg).toHaveBeenCalledWith("accent", " 󰃀 main ");
+        expect(mockTheme.inverse).toHaveBeenCalled();
       });
     });
 
     describe("given empty bookmark", () => {
-      it("then returns empty angle brackets", () => {
+      it("then returns icon with empty name", () => {
         const result = formatBookmarkReference(mockTheme, "");
-        expect(result).toBe("[accent]<>[/accent]");
+        expect(result).toBe("[inverse][accent] 󰃀  [/accent][/inverse]");
       });
     });
 
     describe("given bookmark with special characters", () => {
       it("then preserves special characters", () => {
         const result = formatBookmarkReference(mockTheme, "feature/test-123");
-        expect(result).toBe("[accent]<feature/test-123>[/accent]");
+        expect(result).toBe(
+          "[inverse][accent] 󰃀 feature/test-123 [/accent][/inverse]",
+        );
       });
     });
   });

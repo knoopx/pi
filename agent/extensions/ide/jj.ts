@@ -320,3 +320,85 @@ export async function undoOp(
   }
   return { success: false, error: result.stderr };
 }
+
+/** Blame info for a line */
+export interface BlameInfo {
+  author: string;
+  changeId: string;
+  timestamp: string;
+  line: number;
+}
+
+/**
+ * Get blame info for a file
+ */
+export async function getBlame(
+  pi: ExtensionAPI,
+  cwd: string,
+  filePath: string,
+): Promise<BlameInfo[]> {
+  const result = await pi.exec(
+    "jj",
+    ["file", "annotate", "--ignore-working-copy", filePath],
+    { cwd },
+  );
+
+  if (result.code !== 0) return [];
+
+  // Parse jj annotate output: "changeId author timestamp lineNum: content"
+  // Example: "vznzwsql knoopx   2026-02-14 23:04:06    1: /**"
+  return result.stdout
+    .split("\n")
+    .map((line, index) => {
+      // Format: "changeId author timestamp lineNum: content"
+      const match = line.match(
+        /^(\w+)\s+(\S+)\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+\d+:/,
+      );
+      if (!match) return null;
+
+      const [, changeId, author, timestamp] = match;
+      return {
+        author: author || "",
+        changeId: changeId || "",
+        timestamp: timestamp || "",
+        line: index + 1,
+      };
+    })
+    .filter((b): b is BlameInfo => b !== null);
+}
+
+/**
+ * Get current branch/bookmark label for status display
+ */
+export async function getVcsLabel(
+  pi: ExtensionAPI,
+  cwd: string,
+): Promise<string | null> {
+  // Get current change bookmarks
+  const result = await pi.exec(
+    "jj",
+    ["log", "-r", "@", "--no-graph", "-T", 'separate(" ", bookmarks) ++ "\\n"'],
+    { cwd },
+  );
+
+  if (result.code !== 0) return null;
+
+  const bookmarks = result.stdout.trim();
+  if (bookmarks) {
+    return `󰃀 ${bookmarks}`;
+  }
+
+  // Fall back to change ID
+  const changeResult = await pi.exec(
+    "jj",
+    ["log", "-r", "@", "--no-graph", "-T", 'change_id.short() ++ "\\n"'],
+    { cwd },
+  );
+
+  if (changeResult.code === 0) {
+    const changeId = changeResult.stdout.trim();
+    return changeId ? `◎ ${changeId}` : null;
+  }
+
+  return null;
+}

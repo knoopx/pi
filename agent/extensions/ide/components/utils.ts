@@ -2,28 +2,168 @@ import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
 import sliceAnsi from "slice-ansi";
 import stringWidth from "string-width";
 
-/** Symbol type icons for codemapper output */
+/** Symbol type icons for codemapper output (Nerd Font) */
 const SYMBOL_TYPE_ICONS: Record<string, string> = {
-  f: "ƒ", // function
-  m: "○", // method
-  c: "⬢", // class
-  if: "◎", // interface
-  ty: "τ", // type
-  h: "#", // heading
-  cb: "⟨⟩", // code block
-  e: "≡", // enum
-  v: "α", // variable
-  function: "ƒ",
-  method: "○",
-  class: "⬢",
-  interface: "◎",
-  type: "τ",
-  enum: "≡",
+  f: "󰊕", // function
+  m: "󰆧", // method
+  c: "󰠱", // class
+  if: "󰰮", // interface
+  ty: "󰗴", // type
+  h: "󰉫", // heading
+  cb: "󰅩", // code block
+  e: "󰙅", // enum
+  v: "󰀫", // variable
+  function: "󰊕",
+  method: "󰆧",
+  class: "󰠱",
+  interface: "󰰮",
+  type: "󰗴",
+  enum: "󰙅",
+  variable: "󰀫",
+  property: "󰜢",
+  constant: "󰏿",
+  module: "󰆧",
+  namespace: "󰅩",
+  struct: "󰙅",
 };
 
 /** Get icon for a symbol type, with fallback */
 export function getSymbolIcon(type: string): string {
-  return SYMBOL_TYPE_ICONS[type] || "•";
+  return SYMBOL_TYPE_ICONS[type] || "󰈚";
+}
+
+/** File extension to Nerd Font icon mapping */
+const FILE_ICONS: Record<string, string> = {
+  // TypeScript/JavaScript
+  ".ts": "󰛦",
+  ".tsx": "󰜈",
+  ".mts": "󰛦",
+  ".cts": "󰛦",
+  ".js": "󰌞",
+  ".jsx": "󰜈",
+  ".mjs": "󰌞",
+  ".cjs": "󰌞",
+  // Web
+  ".html": "󰌝",
+  ".css": "󰌜",
+  ".scss": "󰌜",
+  ".less": "󰌜",
+  ".vue": "󰡄",
+  ".svelte": "󰡄",
+  // Data/Config
+  ".json": "󰘦",
+  ".yaml": "󰈙",
+  ".yml": "󰈙",
+  ".toml": "󰈙",
+  ".xml": "󰈙",
+  ".env": "󰈙",
+  // Documentation
+  ".md": "󰍔",
+  ".mdx": "󰍔",
+  ".txt": "󰈙",
+  ".rst": "󰍔",
+  // Languages
+  ".py": "󰌠",
+  ".rs": "󱘗",
+  ".go": "󰟓",
+  ".rb": "󰴭",
+  ".php": "󰌟",
+  ".java": "󰬷",
+  ".kt": "󱈙",
+  ".c": "󰙱",
+  ".cpp": "󰙲",
+  ".h": "󰙱",
+  ".hpp": "󰙲",
+  ".cs": "󰌛",
+  ".swift": "󰛥",
+  ".lua": "󰢱",
+  ".sh": "󰆍",
+  ".bash": "󰆍",
+  ".zsh": "󰆍",
+  ".fish": "󰆍",
+  // Nix
+  ".nix": "󱄅",
+  // Images
+  ".png": "󰋩",
+  ".jpg": "󰋩",
+  ".jpeg": "󰋩",
+  ".gif": "󰋩",
+  ".svg": "󰋩",
+  ".ico": "󰋩",
+  ".webp": "󰋩",
+  // Git
+  ".gitignore": "󰊢",
+  ".gitmodules": "󰊢",
+  ".gitattributes": "󰊢",
+  // Lock files
+  ".lock": "󰌾",
+};
+
+/** Special filenames to icon mapping */
+const FILENAME_ICONS: Record<string, string> = {
+  "package.json": "󰎙",
+  "tsconfig.json": "󰛦",
+  Dockerfile: "󰡨",
+  "docker-compose.yml": "󰡨",
+  "docker-compose.yaml": "󰡨",
+  ".dockerignore": "󰡨",
+  Makefile: "󱁤",
+  "CMakeLists.txt": "󱁤",
+  "flake.nix": "󱄅",
+  "flake.lock": "󱄅",
+  "Cargo.toml": "󱘗",
+  "Cargo.lock": "󱘗",
+  "go.mod": "󰟓",
+  "go.sum": "󰟓",
+  "requirements.txt": "󰌠",
+  "pyproject.toml": "󰌠",
+  Gemfile: "󰴭",
+  "Gemfile.lock": "󰴭",
+  LICENSE: "󰿃",
+  "README.md": "󰍔",
+  "CHANGELOG.md": "󰍔",
+  "AGENTS.md": "󰍔",
+};
+
+/** File status icons (Nerd Font) */
+const FILE_STATUS_ICONS: Record<string, string> = {
+  A: "󰐕", // added
+  M: "󰏫", // modified
+  D: "󰍴", // deleted
+  R: "󰑕", // renamed
+  C: "󰆏", // copied
+};
+
+/** Get icon for file status (A/M/D/R/C) */
+export function getFileStatusIcon(status: string): string {
+  return FILE_STATUS_ICONS[status] || status;
+}
+
+/** Get Nerd Font icon for a file path */
+export function getFileIcon(filePath: string): string {
+  // Check for directory
+  if (filePath.endsWith("/")) return "󰉋";
+
+  // Extract filename
+  const parts = filePath.split("/");
+  const filename = parts[parts.length - 1] || "";
+
+  // Check special filenames first
+  if (FILENAME_ICONS[filename]) {
+    return FILENAME_ICONS[filename]!;
+  }
+
+  // Check extension
+  const dotIndex = filename.lastIndexOf(".");
+  if (dotIndex > 0) {
+    const ext = filename.slice(dotIndex).toLowerCase();
+    if (FILE_ICONS[ext]) {
+      return FILE_ICONS[ext]!;
+    }
+  }
+
+  // Default file icon
+  return "󰈙";
 }
 
 /**
@@ -102,7 +242,7 @@ export function formatBookmarkReference(
   theme: Theme,
   bookmark: string,
 ): string {
-  return theme.fg("accent", `<${bookmark}>`);
+  return theme.inverse(theme.fg("accent", ` 󰃀 ${bookmark} `));
 }
 
 /**
