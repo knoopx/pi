@@ -1,5 +1,5 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
-import { pad, ensureWidth, truncateAnsi } from "./utils";
+import { pad, ensureWidth, truncateAnsi, getChangeIcon } from "./utils";
 
 /**
  * Render a row in a split panel layout
@@ -466,13 +466,7 @@ export function renderChangeRows(
     const isSelected = idx === selectedIndex && isFocused;
     const isCurrent = idx === 0;
 
-    const icon = isCurrent
-      ? change.empty
-        ? "◎"
-        : "◉"
-      : change.empty
-        ? "○"
-        : "●";
+    const icon = getChangeIcon(isCurrent, change.empty);
     const shortId = change.changeId.slice(0, 8);
     const desc = truncateAnsi(change.description, width - 13);
     const text = ` ${icon} ${shortId} ${desc}`;

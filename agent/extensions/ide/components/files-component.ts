@@ -9,7 +9,7 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { loadFilePreviewWithBat } from "./utils";
+import { loadFilePreviewWithBat, runCmCommand } from "./utils";
 
 interface FileInfo extends ListPickerItem {
   path: string;
@@ -24,20 +24,6 @@ export function createFilesComponent(
   initialQuery: string,
   cwd: string,
 ): ListPickerComponent & { invalidate: () => void } {
-  // Helper to run cm commands and display output
-  async function runCmCommand(
-    picker: ListPickerComponent,
-    command: string,
-    args: string[],
-  ): Promise<void> {
-    const result = await pi.exec("cm", [command, ...args, "--format", "ai"], {
-      cwd,
-    });
-    const output =
-      result.code === 0 ? result.stdout : `Error: ${result.stderr}`;
-    picker.setPreview(output.split("\n"));
-  }
-
   // Create actions that will be bound to the picker
   function createActions(
     picker: ListPickerComponent,
@@ -47,21 +33,21 @@ export function createFilesComponent(
         key: "i",
         label: "inspect",
         handler: async (item) => {
-          await runCmCommand(picker, "inspect", [item.path]);
+          await runCmCommand(pi, picker, cwd, "inspect", [item.path]);
         },
       },
       {
         key: "d",
         label: "deps",
         handler: async (item) => {
-          await runCmCommand(picker, "deps", [item.path]);
+          await runCmCommand(pi, picker, cwd, "deps", [item.path]);
         },
       },
       {
         key: "u",
         label: "used-by",
         handler: async (item) => {
-          await runCmCommand(picker, "deps", [
+          await runCmCommand(pi, picker, cwd, "deps", [
             item.path,
             "--direction",
             "used-by",

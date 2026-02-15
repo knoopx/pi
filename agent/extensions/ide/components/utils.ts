@@ -1,4 +1,5 @@
 import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
+import type { ListPickerComponent } from "./list-picker";
 import sliceAnsi from "slice-ansi";
 import stringWidth from "string-width";
 
@@ -79,4 +80,76 @@ export function formatBookmarkReference(
   bookmark: string,
 ): string {
   return theme.fg("accent", `<${bookmark}>`);
+}
+
+/**
+ * Run a codemapper command and display output in picker preview
+ */
+export async function runCmCommand(
+  pi: ExtensionAPI,
+  picker: ListPickerComponent,
+  cwd: string,
+  command: string,
+  args: string[],
+): Promise<void> {
+  const result = await pi.exec("cm", [command, ...args, "--format", "ai"], {
+    cwd,
+  });
+  const output = result.code === 0 ? result.stdout : `Error: ${result.stderr}`;
+  picker.setPreview(output.split("\n"));
+}
+
+/**
+ * Format multiple bookmark references with proper spacing
+ */
+export function formatBookmarkLabels(
+  theme: Theme,
+  bookmarks: string[],
+): string {
+  if (bookmarks.length === 0) return "";
+  return (
+    bookmarks.map((b) => formatBookmarkReference(theme, b)).join(" ") + " "
+  );
+}
+
+/**
+ * Get jj-style change icon based on working copy and empty status
+ * - ◉ working copy with content
+ * - ◎ working copy, empty
+ * - ● has content
+ * - ○ empty
+ */
+export function getChangeIcon(
+  isWorkingCopy: boolean,
+  isEmpty: boolean,
+): string {
+  if (isWorkingCopy) {
+    return isEmpty ? "◎" : "◉";
+  }
+  return isEmpty ? "○" : "●";
+}
+
+/**
+ * Format a change row with icon, selection marker, bookmarks, and description
+ */
+export function formatChangeRow(
+  theme: Theme,
+  opts: {
+    isWorkingCopy: boolean;
+    isEmpty: boolean;
+    isSelected: boolean;
+    bookmarks: string[];
+    description: string;
+    changeId: string;
+  },
+): { leftText: string; rightText: string } {
+  const icon = getChangeIcon(opts.isWorkingCopy, opts.isEmpty);
+  const selectionMarker = opts.isSelected ? "▸" : " ";
+  const bookmarkLabel = formatBookmarkLabels(theme, opts.bookmarks);
+  const idLabel = opts.changeId.slice(0, 8);
+
+  const leftText = ` ${selectionMarker}${icon} ${bookmarkLabel}${opts.description}`;
+  const rightText = theme.fg("dim", ` ${idLabel}`);
+
+  return { leftText, rightText };
 }

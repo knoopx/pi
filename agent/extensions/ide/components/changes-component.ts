@@ -1,6 +1,6 @@
 import path from "node:path";
 import { matchesKey } from "@mariozechner/pi-tui";
-import { ensureWidth, formatBookmarkReference, truncateAnsi } from "./utils";
+import { ensureWidth, formatChangeRow, truncateAnsi } from "./utils";
 import {
   calculateDimensions,
   calculateDiffScroll,
@@ -348,28 +348,17 @@ ${workflowLines}
       const isMarked = selectedChangeIds.has(change.changeId);
       const isWorkingCopy = idx === 0; // First change is @ (working copy)
 
-      // Icon based on working copy and empty status (jj style)
-      const icon = isWorkingCopy
-        ? change.empty
-          ? "◎"
-          : "◉"
-        : change.empty
-          ? "○"
-          : "●";
-
-      // Selection marker for multi-select
-      const selectionMarker = isMarked ? "▸" : " ";
-
       const bookmarks = bookmarksByChange.get(change.changeId) || [];
-      const bookmarkLabels = bookmarks
-        .map((b) => formatBookmarkReference(theme, b))
-        .join(" ");
-      const bookmarkLabel = bookmarkLabels ? `${bookmarkLabels} ` : "";
+      const { leftText, rightText } = formatChangeRow(theme, {
+        isWorkingCopy,
+        isEmpty: change.empty,
+        isSelected: isMarked,
+        bookmarks,
+        description: change.description,
+        changeId: change.changeId,
+      });
+
       const idLabel = change.changeId.slice(0, 8);
-
-      const leftText = ` ${selectionMarker}${icon} ${bookmarkLabel}${change.description}`;
-      const rightText = theme.fg("dim", ` ${idLabel}`);
-
       const availableLeftWidth = Math.max(1, width - idLabel.length - 1);
       const leftTruncated = truncateAnsi(leftText, availableLeftWidth);
       const leftPadded = ensureWidth(leftTruncated, availableLeftWidth);

@@ -9,7 +9,7 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { loadFilePreviewWithBat } from "./utils";
+import { loadFilePreviewWithBat, runCmCommand } from "./utils";
 
 /** Symbol type icons */
 const SYMBOL_TYPE_ICONS: Record<string, string> = {
@@ -41,20 +41,6 @@ export function createSymbolsComponent(
   initialQuery: string,
   cwd: string,
 ): ListPickerComponent & { invalidate: () => void } {
-  // Helper to run cm commands and display output
-  async function runCmCommand(
-    picker: ListPickerComponent,
-    command: string,
-    args: string[],
-  ): Promise<void> {
-    const result = await pi.exec("cm", [command, ...args, "--format", "ai"], {
-      cwd,
-    });
-    const output =
-      result.code === 0 ? result.stdout : `Error: ${result.stderr}`;
-    picker.setPreview(output.split("\n"));
-  }
-
   // Create actions that will be bound to the picker
   function createActions(
     picker: ListPickerComponent,
@@ -64,42 +50,42 @@ export function createSymbolsComponent(
         key: "c",
         label: "callers",
         handler: async (item) => {
-          await runCmCommand(picker, "callers", [item.name]);
+          await runCmCommand(pi, picker, cwd, "callers", [item.name]);
         },
       },
       {
         key: "C",
         label: "callees",
         handler: async (item) => {
-          await runCmCommand(picker, "callees", [item.name]);
+          await runCmCommand(pi, picker, cwd, "callees", [item.name]);
         },
       },
       {
         key: "t",
         label: "tests",
         handler: async (item) => {
-          await runCmCommand(picker, "tests", [item.name]);
+          await runCmCommand(pi, picker, cwd, "tests", [item.name]);
         },
       },
       {
         key: "T",
         label: "types",
         handler: async (item) => {
-          await runCmCommand(picker, "types", [item.name]);
+          await runCmCommand(pi, picker, cwd, "types", [item.name]);
         },
       },
       {
         key: "s",
         label: "schema",
         handler: async (item) => {
-          await runCmCommand(picker, "schema", [item.name]);
+          await runCmCommand(pi, picker, cwd, "schema", [item.name]);
         },
       },
       {
         key: "i",
         label: "impact",
         handler: async (item) => {
-          await runCmCommand(picker, "impact", [item.name]);
+          await runCmCommand(pi, picker, cwd, "impact", [item.name]);
         },
       },
     ];
