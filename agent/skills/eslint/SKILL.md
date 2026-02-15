@@ -185,11 +185,3 @@ jobs:
       - run: bun install
       - run: bun run lint
 ```
-
-### Git Hooks (husky)
-
-```bash
-bun add -D husky
-echo 'bun lint' > .husky/pre-commit
-chmod +x .husky/pre-commit
-```
