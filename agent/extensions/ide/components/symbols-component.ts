@@ -9,7 +9,7 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { loadFilePreviewWithBat, getSymbolIcon } from "./utils";
+import { formatSymbolListEntry, loadFilePreviewWithBat } from "./utils";
 import type { CmActionType } from "./cm-results-component";
 
 export interface SymbolInfo extends ListPickerItem {
@@ -160,11 +160,8 @@ export function createSymbolsComponent(
             s.name.toLowerCase().includes(query) ||
             s.path.toLowerCase().includes(query),
         ),
-      formatItem: (item, _width, theme) => {
-        const icon = getSymbolIcon(item.type);
-        const pathShort = item.path.replace(/^\.\//, "");
-        return `${icon} ${item.name} ${theme.fg("dim", `${pathShort}:${item.startLine}`)}`;
-      },
+      formatItem: (item, _width, theme) =>
+        formatSymbolListEntry(theme, { ...item, line: item.startLine }),
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
     },
   );

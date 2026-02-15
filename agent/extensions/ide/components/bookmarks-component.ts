@@ -4,12 +4,13 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import {
-  createListPicker,
+  createNonSelectableListPicker,
   type ListPickerItem,
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { forgetBookmark, listBookmarksByChange } from "../jj";
+import { formatBookmarkReference } from "./utils";
+import { forgetBookmark, getDiff, listBookmarksByChange } from "../jj";
 
 interface BookmarkEntry extends ListPickerItem {
   bookmark: string;
@@ -70,7 +71,7 @@ export function createBookmarksComponent(
     },
   ];
 
-  const picker = createListPicker<BookmarkEntry>(
+  const picker = createNonSelectableListPicker<BookmarkEntry>(
     pi,
     tui,
     theme,
@@ -99,25 +100,13 @@ export function createBookmarksComponent(
         ),
       formatItem: (item, _width, theme) => {
         const shortId = item.changeId.slice(-8);
-        return `${theme.fg("accent", item.bookmark)} ${item.description} ${theme.fg("dim", shortId)}`;
+        const bookmarkLabel = formatBookmarkReference(theme, item.bookmark);
+        const separator = theme.fg("dim", " · ");
+        const idLabel = theme.fg("dim", shortId);
+        return `${bookmarkLabel}${separator}${item.description}${separator}${idLabel}`;
       },
       loadPreview: async (item) => {
-        // Show diff for the bookmark's change
-        const result = await pi.exec(
-          "jj",
-          ["diff", "--git", "--color=always", "-r", item.changeId],
-          { cwd },
-        );
-        if (result.code === 0 && result.stdout.trim()) {
-          return result.stdout.split("\n");
-        }
-        // Fallback to log if no diff
-        const logResult = await pi.exec(
-          "jj",
-          ["log", "--color=always", "-r", item.changeId, "--no-graph"],
-          { cwd },
-        );
-        return logResult.stdout.split("\n");
+        return getDiff(pi, cwd, item.changeId);
       },
     },
   );

@@ -59,7 +59,9 @@ export function createListPicker<T extends ListPickerItem>(
   done: (result: T | null) => void,
   initialQuery: string,
   config: ListPickerConfig<T>,
+  options?: { selectable?: boolean },
 ): ListPickerComponent {
+  const applySelectionStyle = options?.selectable ?? true;
   let items: T[] = [];
   let filteredItems: T[] = [];
   let selectedIndex = 0;
@@ -165,7 +167,11 @@ export function createListPicker<T extends ListPickerItem>(
       const formatted = config.formatItem(item, width, theme);
       const text = " " + truncateAnsi(formatted, width - 2);
       const padded = ensureWidth(text, width);
-      rows.push(isSelected ? theme.fg("accent", theme.bold(padded)) : padded);
+      rows.push(
+        applySelectionStyle && isSelected
+          ? theme.fg("accent", theme.bold(padded))
+          : padded,
+      );
     }
 
     return rows;
@@ -368,4 +374,25 @@ export function createListPicker<T extends ListPickerItem>(
   }
 
   return { render, handleInput, dispose, setPreview, invalidate, reload };
+}
+
+export function createNonSelectableListPicker<T extends ListPickerItem>(
+  pi: ExtensionAPI,
+  tui: ListPickerTui,
+  theme: Theme,
+  keybindings: KeybindingsManager,
+  done: (result: T | null) => void,
+  initialQuery: string,
+  config: ListPickerConfig<T>,
+): ListPickerComponent {
+  return createListPicker(
+    pi,
+    tui,
+    theme,
+    keybindings,
+    done,
+    initialQuery,
+    config,
+    { selectable: false },
+  );
 }

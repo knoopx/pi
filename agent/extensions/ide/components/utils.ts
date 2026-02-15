@@ -32,6 +32,25 @@ export function getSymbolIcon(type: string): string {
   return SYMBOL_TYPE_ICONS[type] || "󰈚";
 }
 
+export function formatSymbolListEntry(
+  theme: Theme,
+  opts: {
+    type: string;
+    name: string;
+    path: string;
+    line: number;
+    signature?: string;
+  },
+): string {
+  const icon = getSymbolIcon(opts.type);
+  const pathShort = opts.path.replace(/^\.\//, "");
+  const signatureText = opts.signature
+    ? theme.fg("dim", ` ${opts.signature}`)
+    : "";
+  const location = theme.fg("dim", `${pathShort}:${opts.line}`);
+  return `${icon} ${opts.name}${signatureText} ${location}`;
+}
+
 /** File extension to Nerd Font icon mapping */
 const FILE_ICONS: Record<string, string> = {
   // TypeScript/JavaScript
@@ -242,7 +261,7 @@ export function formatBookmarkReference(
   theme: Theme,
   bookmark: string,
 ): string {
-  return theme.inverse(theme.fg("accent", ` 󰃀 ${bookmark} `));
+  return theme.inverse(theme.fg("accent", `󰃀 ${bookmark}`));
 }
 
 /**
@@ -290,11 +309,11 @@ export function formatChangeRow(
   },
 ): { leftText: string; rightText: string } {
   const icon = getChangeIcon(opts.isWorkingCopy, opts.isEmpty);
-  const selectionMarker = opts.isSelected ? "▸" : " ";
+  const selectionMarker = opts.isSelected ? "󰄵" : "󰄱";
   const bookmarkLabel = formatBookmarkLabels(theme, opts.bookmarks);
   const idLabel = opts.changeId.slice(0, 8);
 
-  const leftText = ` ${selectionMarker}${icon} ${bookmarkLabel}${opts.description}`;
+  const leftText = ` ${selectionMarker} ${icon} ${bookmarkLabel}${opts.description}`;
   const rightText = theme.fg("dim", ` ${idLabel}`);
 
   return { leftText, rightText };
