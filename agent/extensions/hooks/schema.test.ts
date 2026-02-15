@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateConfig, isValidConfig } from "./schema";
+import { validateConfig, isValidConfig, parseHookOutput } from "./schema";
 
 describe("validateConfig", () => {
   it("accepts valid config", () => {
@@ -167,5 +167,87 @@ describe("isValidConfig", () => {
       ];
       expect(isValidConfig(config)).toBe(true);
     }
+  });
+});
+
+describe("parseHookOutput", () => {
+  it("parses valid JSON output", () => {
+    const output = parseHookOutput('{"decision": "block", "reason": "test"}');
+    expect(output).toEqual({ decision: "block", reason: "test" });
+  });
+
+  it("parses JSON with continue field", () => {
+    const output = parseHookOutput(
+      '{"continue": false, "stopReason": "Build failed"}',
+    );
+    expect(output).toEqual({ continue: false, stopReason: "Build failed" });
+  });
+
+  it("parses hookSpecificOutput for PreToolUse", () => {
+    const output = parseHookOutput(
+      JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: "tool_call",
+          permissionDecision: "deny",
+          permissionDecisionReason: "Blocked by policy",
+        },
+      }),
+    );
+    expect(output?.hookSpecificOutput?.permissionDecision).toBe("deny");
+    expect(output?.hookSpecificOutput?.permissionDecisionReason).toBe(
+      "Blocked by policy",
+    );
+  });
+
+  it("parses additionalContext", () => {
+    const output = parseHookOutput(
+      JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: "session_start",
+          additionalContext: "Extra context for Claude",
+        },
+      }),
+    );
+    expect(output?.hookSpecificOutput?.additionalContext).toBe(
+      "Extra context for Claude",
+    );
+  });
+
+  it("returns undefined for non-JSON output", () => {
+    expect(parseHookOutput("plain text")).toBeUndefined();
+    expect(parseHookOutput("not json at all")).toBeUndefined();
+    expect(parseHookOutput("Error: something failed")).toBeUndefined();
+  });
+
+  it("returns undefined for empty string", () => {
+    expect(parseHookOutput("")).toBeUndefined();
+    expect(parseHookOutput("   ")).toBeUndefined();
+  });
+
+  it("returns undefined for invalid JSON", () => {
+    expect(parseHookOutput("{invalid json}")).toBeUndefined();
+    expect(parseHookOutput('{"unclosed": ')).toBeUndefined();
+  });
+
+  it("returns undefined for non-object JSON", () => {
+    expect(parseHookOutput("[]")).toBeUndefined();
+    expect(parseHookOutput('"string"')).toBeUndefined();
+    expect(parseHookOutput("123")).toBeUndefined();
+    expect(parseHookOutput("null")).toBeUndefined();
+  });
+
+  it("handles JSON with whitespace", () => {
+    const output = parseHookOutput('  \n  {"decision": "block"}  \n  ');
+    expect(output).toEqual({ decision: "block" });
+  });
+
+  it("parses suppressOutput field", () => {
+    const output = parseHookOutput('{"suppressOutput": true}');
+    expect(output?.suppressOutput).toBe(true);
+  });
+
+  it("parses systemMessage field", () => {
+    const output = parseHookOutput('{"systemMessage": "Warning: check this"}');
+    expect(output?.systemMessage).toBe("Warning: check this");
   });
 });

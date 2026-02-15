@@ -9,23 +9,33 @@ import type {
 import pc from "picocolors";
 import { glob } from "tinyglobby";
 import { configLoader } from "./config";
-import type { HookEvent, HookRule, HooksConfig, HooksGroup } from "./schema";
+import type {
+  HookEvent,
+  HookInput,
+  HookOutput,
+  HookRule,
+  HooksConfig,
+  HooksGroup,
+} from "./schema";
+import { parseHookOutput } from "./schema";
 
 /**
  * Hooks Extension
  *
- * Run shell commands after pi events based on patterns.
- * Groups define file patterns and hook rules for running commands.
- * A group is activated if any file matching its pattern exists in the project.
+ * Run shell commands at specific points in pi's lifecycle.
+ * Inspired by Claude Code hooks: https://code.claude.com/docs/en/hooks
  *
- * Configuration:
- * - Extension defaults: defaults.json (used when no global config exists)
- * - Global settings: ~/.pi/agent/settings.json under key "hooks"
+ * Features:
+ * - JSON input via stdin (Claude Code compatible)
+ * - JSON output for decision control (allow/deny/block)
+ * - Exit code 2 for blocking tool calls
+ * - Variable substitution (${file}, ${tool}, ${cwd})
+ * - Group-based activation via file patterns
  *
  * Supported events:
  * - session_start, session_shutdown
- * - tool_call, tool_result
- * - agent_start, agent_end
+ * - tool_call (PreToolUse), tool_result (PostToolUse)
+ * - agent_start, agent_end (Stop)
  * - turn_start, turn_end
  */
 
@@ -40,7 +50,10 @@ interface HookVariables {
 
 interface HookResult {
   success: boolean;
-  output: string;
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+  output: HookOutput | undefined;
   group: string;
   command: string;
 }
@@ -123,12 +136,12 @@ export default async function hooksExtension(pi: ExtensionAPI): Promise<void> {
   await configLoader.load();
   let currentVersion = configLoader.getVersion();
 
-  const getConfig = (): HooksConfig => {
+  const getConfig = async (cwd: string): Promise<HooksConfig> => {
     const newVersion = configLoader.getVersion();
     if (newVersion !== currentVersion) {
       currentVersion = newVersion;
     }
-    return configLoader.getConfig();
+    return configLoader.getConfigForProject(cwd);
   };
 
   registerEventHandlers(pi, getConfig);
@@ -204,35 +217,96 @@ function getInputField(input: unknown, field: string): string | undefined {
   return value != null ? String(value) : undefined;
 }
 
+/**
+ * Build JSON input for hook stdin (Claude Code compatible format).
+ */
+function buildHookInput(
+  event: HookEvent,
+  ctx: ExtensionContext,
+  toolName?: string,
+  input?: unknown,
+  toolCallId?: string,
+  toolResponse?: { content?: unknown[]; details?: unknown; isError?: boolean },
+): HookInput {
+  const hookInput: HookInput = {
+    cwd: ctx.cwd,
+    hook_event_name: event,
+  };
+
+  if (toolName) {
+    hookInput.tool_name = toolName;
+  }
+
+  if (input && typeof input === "object") {
+    hookInput.tool_input = input as Record<string, unknown>;
+  }
+
+  if (toolCallId) {
+    hookInput.tool_call_id = toolCallId;
+  }
+
+  if (toolResponse) {
+    hookInput.tool_response = {
+      content: toolResponse.content,
+      details: toolResponse.details as Record<string, unknown> | undefined,
+      isError: toolResponse.isError,
+    };
+  }
+
+  return hookInput;
+}
+
 async function runHook(
   pi: ExtensionAPI,
   rule: HookRule,
   group: HooksGroup,
   ctx: ExtensionContext,
   vars: HookVariables,
+  hookInput: HookInput,
 ): Promise<HookResult> {
   const command = substituteVariables(rule.command, vars);
 
+  // Skip if variables weren't substituted
   if (command.includes("${")) {
-    return { success: true, output: "", group: group.group, command };
+    return {
+      success: true,
+      exitCode: 0,
+      stdout: "",
+      stderr: "",
+      output: undefined,
+      group: group.group,
+      command,
+    };
   }
 
   const timeout = rule.timeout ?? 30000;
   const cwd = rule.cwd ?? ctx.cwd;
 
-  try {
-    const result = await pi.exec("sh", ["-c", `set -o pipefail; ${command}`], {
-      timeout,
-      cwd,
-    });
+  // Prepare JSON input for stdin
+  const stdinInput = JSON.stringify(hookInput);
 
-    const output = [result.stdout, result.stderr]
-      .filter(Boolean)
-      .join("\n")
-      .trim();
+  try {
+    // Run hook with JSON input via stdin
+    const result = await pi.exec(
+      "sh",
+      [
+        "-c",
+        `set -o pipefail; echo '${stdinInput.replace(/'/g, "'\\''")}' | ${command}`,
+      ],
+      { timeout, cwd },
+    );
+
+    const stdout = result.stdout?.trim() ?? "";
+    const stderr = result.stderr?.trim() ?? "";
+
+    // Parse JSON output if exit code is 0
+    const output = result.code === 0 ? parseHookOutput(stdout) : undefined;
 
     return {
       success: result.code === 0,
+      exitCode: result.code ?? 1,
+      stdout,
+      stderr,
       output,
       group: group.group,
       command,
@@ -240,11 +314,88 @@ async function runHook(
   } catch (error) {
     return {
       success: false,
-      output: error instanceof Error ? error.message : String(error),
+      exitCode: 1,
+      stdout: "",
+      stderr: error instanceof Error ? error.message : String(error),
+      output: undefined,
       group: group.group,
       command,
     };
   }
+}
+
+/**
+ * Determine if a hook result should block the action.
+ *
+ * Blocking conditions:
+ * 1. Exit code 2 (explicit block)
+ * 2. JSON output with decision: "block"
+ * 3. JSON output with hookSpecificOutput.permissionDecision: "deny"
+ */
+function shouldBlock(
+  result: HookResult,
+  event: HookEvent,
+  toolName?: string,
+): { block: boolean; reason: string } {
+  // Exit code 2 = blocking error (Claude Code convention)
+  if (result.exitCode === 2) {
+    const reason =
+      result.stderr || `Hook blocked: ${result.group}: ${result.command}`;
+    return { block: true, reason };
+  }
+
+  // Check JSON output for blocking decision
+  if (result.output) {
+    const { output } = result;
+
+    // continue: false stops everything
+    if (output.continue === false) {
+      return {
+        block: true,
+        reason: output.stopReason || "Hook stopped processing",
+      };
+    }
+
+    // decision: "block" for tool_call, tool_result, agent_end
+    if (output.decision === "block" && output.reason) {
+      return { block: true, reason: output.reason };
+    }
+
+    // hookSpecificOutput.permissionDecision: "deny" for tool_call (PreToolUse)
+    if (event === "tool_call" && output.hookSpecificOutput) {
+      const { permissionDecision, permissionDecisionReason } =
+        output.hookSpecificOutput;
+      if (permissionDecision === "deny") {
+        return {
+          block: true,
+          reason: permissionDecisionReason || "Hook denied permission",
+        };
+      }
+    }
+  }
+
+  // Non-zero exit codes (other than 2) are non-blocking errors
+  // unless it's a tool_call/agent_end and not an edit/write tool
+  if (
+    !result.success &&
+    (event === "tool_call" || event === "agent_end") &&
+    (!toolName || !NON_BLOCKING_TOOLS.has(toolName))
+  ) {
+    const reason = result.stderr || result.stdout || "Hook failed";
+    return {
+      block: true,
+      reason: `Hook failed: ${result.group}: ${result.command}\n${reason}`,
+    };
+  }
+
+  return { block: false, reason: "" };
+}
+
+/**
+ * Extract additional context from hook output.
+ */
+function getAdditionalContext(result: HookResult): string | undefined {
+  return result.output?.hookSpecificOutput?.additionalContext;
 }
 
 async function processHooks(
@@ -254,11 +405,24 @@ async function processHooks(
   ctx: ExtensionContext,
   toolName?: string,
   input?: unknown,
+  toolCallId?: string,
+  toolResponse?: { content?: unknown[]; details?: unknown; isError?: boolean },
 ): Promise<BlockResult | undefined> {
   const filePath = getInputField(input, "path");
   const vars: HookVariables = { file: filePath, tool: toolName, cwd: ctx.cwd };
 
+  // Build JSON input for hooks
+  const hookInput = buildHookInput(
+    event,
+    ctx,
+    toolName,
+    input,
+    toolCallId,
+    toolResponse,
+  );
+
   const results: HookResult[] = [];
+  const additionalContexts: string[] = [];
 
   for (const group of config) {
     if (!(await isGroupActive(group.pattern, ctx.cwd))) continue;
@@ -267,25 +431,64 @@ async function processHooks(
       if (rule.event !== event) continue;
       if (!doesRuleMatch(rule, toolName, input)) continue;
 
-      const result = await runHook(pi, rule, group, ctx, vars);
+      const result = await runHook(pi, rule, group, ctx, vars, hookInput);
 
-      if (
-        !result.success &&
-        event === "tool_call" &&
-        (!toolName || !NON_BLOCKING_TOOLS.has(toolName))
-      ) {
-        const reason = result.output
-          ? `Hook failed: ${result.group}: ${result.command}\n${result.output}`
-          : `Hook failed: ${result.group}: ${result.command}`;
-        return { block: true, reason };
+      // Check for blocking
+      const blockCheck = shouldBlock(result, event, toolName);
+      if (blockCheck.block) {
+        // For agent_end, send error to agent to trigger a new turn for fixing
+        if (event === "agent_end") {
+          pi.sendMessage(
+            {
+              customType: "hook-error",
+              content: `Hook error:\n${blockCheck.reason}`,
+              display: true,
+            },
+            { triggerTurn: true },
+          );
+          return undefined;
+        }
+        return { block: true, reason: blockCheck.reason };
       }
 
-      if (rule.notify !== false) {
+      // Collect additional context
+      const additionalContext = getAdditionalContext(result);
+      if (additionalContext) {
+        additionalContexts.push(additionalContext);
+      }
+
+      // Show system messages
+      if (result.output?.systemMessage) {
+        pi.sendMessage(
+          {
+            customType: "hook-warning",
+            content: result.output.systemMessage,
+            display: true,
+          },
+          { triggerTurn: false },
+        );
+      }
+
+      // Collect results for notification (unless suppressed)
+      if (rule.notify !== false && !result.output?.suppressOutput) {
         results.push(result);
       }
     }
   }
 
+  // Send additional context as a message to Claude
+  if (additionalContexts.length > 0) {
+    pi.sendMessage(
+      {
+        customType: "hook-context",
+        content: additionalContexts.join("\n\n"),
+        display: false,
+      },
+      { triggerTurn: false },
+    );
+  }
+
+  // Send hook results notification
   if (results.length > 0) {
     sendHookResults(pi, results);
   }
@@ -308,8 +511,17 @@ function sendHookResults(pi: ExtensionAPI, results: HookResult[]): void {
       const icon = r.success ? pc.green("✓") : pc.red("✗");
       const cmd = r.success ? pc.dim(r.command) : pc.yellow(r.command);
       lines.push(`${icon} ${cmd}`);
-      if (r.output) {
-        lines.push(r.success ? pc.dim(r.output) : pc.red(r.output));
+
+      // Show output only on failure (stderr preferred, fallback to stdout)
+      if (!r.success) {
+        const displayOutput = r.stderr || r.stdout;
+        if (displayOutput && !r.output?.suppressOutput) {
+          // Don't show raw JSON output
+          const isJson = displayOutput.trim().startsWith("{");
+          if (!isJson) {
+            lines.push(pc.red(displayOutput));
+          }
+        }
       }
     }
   }
@@ -322,28 +534,29 @@ function sendHookResults(pi: ExtensionAPI, results: HookResult[]): void {
 
 function registerEventHandlers(
   pi: ExtensionAPI,
-  getConfig: () => HooksConfig,
+  getConfig: (cwd: string) => Promise<HooksConfig>,
 ): void {
   let abortedInCurrentTurn = false;
 
   pi.on("session_start", async (_event, ctx) => {
-    await processHooks(pi, getConfig(), "session_start", ctx);
+    await processHooks(pi, await getConfig(ctx.cwd), "session_start", ctx);
   });
 
   pi.on("session_shutdown", async (_event, ctx) => {
     if (abortedInCurrentTurn) return;
-    await processHooks(pi, getConfig(), "session_shutdown", ctx);
+    await processHooks(pi, await getConfig(ctx.cwd), "session_shutdown", ctx);
   });
 
   pi.on("tool_call", async (event: ToolCallEvent, ctx) => {
     if (SKIP_TOOLS.has(event.toolName)) return;
     return processHooks(
       pi,
-      getConfig(),
+      await getConfig(ctx.cwd),
       "tool_call",
       ctx,
       event.toolName,
       event.input,
+      event.toolCallId,
     );
   });
 
@@ -357,31 +570,37 @@ function registerEventHandlers(
 
     await processHooks(
       pi,
-      getConfig(),
+      await getConfig(ctx.cwd),
       "tool_result",
       ctx,
       event.toolName,
       event.input,
+      event.toolCallId,
+      {
+        content: event.content,
+        details: event.details,
+        isError: event.isError,
+      },
     );
   });
 
   pi.on("agent_start", async (_event, ctx) => {
-    await processHooks(pi, getConfig(), "agent_start", ctx);
+    await processHooks(pi, await getConfig(ctx.cwd), "agent_start", ctx);
   });
 
   pi.on("agent_end", async (event: AgentEndEvent, ctx) => {
     if (abortedInCurrentTurn || isAbortedAgentEnd(event)) return;
-    await processHooks(pi, getConfig(), "agent_end", ctx);
+    return processHooks(pi, await getConfig(ctx.cwd), "agent_end", ctx);
   });
 
   pi.on("turn_start", async (_event, ctx) => {
     abortedInCurrentTurn = false;
-    await processHooks(pi, getConfig(), "turn_start", ctx);
+    await processHooks(pi, await getConfig(ctx.cwd), "turn_start", ctx);
   });
 
   pi.on("turn_end", async (event: TurnEndEvent, ctx) => {
     if (abortedInCurrentTurn || isAbortedTurnEnd(event)) return;
-    await processHooks(pi, getConfig(), "turn_end", ctx);
+    await processHooks(pi, await getConfig(ctx.cwd), "turn_end", ctx);
   });
 }
 

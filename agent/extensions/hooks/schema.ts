@@ -42,6 +42,61 @@ export type HookRule = Static<typeof HookRuleSchema>;
 export type HooksGroup = Static<typeof HooksGroupSchema>;
 export type HooksConfig = Static<typeof HooksConfigSchema>;
 
+/**
+ * JSON input passed to hooks via stdin (Claude Code compatible).
+ */
+export interface HookInput {
+  /** Current session identifier */
+  session_id?: string;
+  /** Current working directory */
+  cwd: string;
+  /** Name of the event that fired */
+  hook_event_name: HookEvent;
+  /** Tool name (for tool_call, tool_result) */
+  tool_name?: string;
+  /** Tool input parameters (for tool_call, tool_result) */
+  tool_input?: Record<string, unknown>;
+  /** Tool call ID (for tool_call, tool_result) */
+  tool_call_id?: string;
+  /** Tool response (for tool_result) */
+  tool_response?: {
+    content?: unknown[];
+    details?: Record<string, unknown>;
+    isError?: boolean;
+  };
+}
+
+/**
+ * JSON output from hooks (Claude Code compatible).
+ * Hooks can return structured decisions via JSON on stdout.
+ */
+export interface HookOutput {
+  /** If false, Claude stops processing entirely */
+  continue?: boolean;
+  /** Message shown to user when continue is false */
+  stopReason?: string;
+  /** If true, hides stdout from output */
+  suppressOutput?: boolean;
+  /** Warning message shown to user */
+  systemMessage?: string;
+  /** Block decision (for tool_call, tool_result, agent_end) */
+  decision?: "block";
+  /** Reason for blocking */
+  reason?: string;
+  /** Event-specific output (Claude Code's hookSpecificOutput) */
+  hookSpecificOutput?: {
+    hookEventName: HookEvent;
+    /** Permission decision for tool_call (PreToolUse) */
+    permissionDecision?: "allow" | "deny" | "ask";
+    /** Reason for permission decision */
+    permissionDecisionReason?: string;
+    /** Modified tool input (for tool_call) */
+    updatedInput?: Record<string, unknown>;
+    /** Additional context to inject */
+    additionalContext?: string;
+  };
+}
+
 export function validateConfig(data: unknown): HooksConfig {
   if (!Value.Check(HooksConfigSchema, data)) {
     const errors = [...Value.Errors(HooksConfigSchema, data)];
@@ -53,4 +108,21 @@ export function validateConfig(data: unknown): HooksConfig {
 
 export function isValidConfig(data: unknown): data is HooksConfig {
   return Value.Check(HooksConfigSchema, data);
+}
+
+/**
+ * Parse JSON output from hook stdout.
+ * Returns undefined if not valid JSON or not an object.
+ */
+export function parseHookOutput(stdout: string): HookOutput | undefined {
+  const trimmed = stdout.trim();
+  if (!trimmed.startsWith("{")) return undefined;
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (typeof parsed !== "object" || parsed === null) return undefined;
+    return parsed as HookOutput;
+  } catch {
+    return undefined;
+  }
 }

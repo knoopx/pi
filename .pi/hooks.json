@@ -1,0 +1,14 @@
+[
+  {
+    "group": "typescript",
+    "pattern": "tsconfig.json",
+    "hooks": [
+      {
+        "event": "agent_end",
+        "command": "bunx jscpd --exitCode 1 --silent --ignore \"**/node_modules/**,**/dist/**,**/.jj/**,**/*.test.ts,**/*.test.js\" agent/extensions/",
+        "timeout": 120000,
+        "notify": true
+      }
+    ]
+  }
+]

@@ -24,7 +24,13 @@
         "command": "tsgo --noEmit 2>&1 | { grep \"${file}\" || true; }",
         "timeout": 60000,
         "notify": true
-      },
+      }
+    ]
+  },
+  {
+    "group": "eslint",
+    "pattern": "eslint.config.{js,mjs,cjs}",
+    "hooks": [
       {
         "event": "tool_result",
         "context": "file_name",
@@ -36,12 +42,6 @@
       {
         "event": "agent_end",
         "command": "bunx eslint .",
-        "timeout": 120000,
-        "notify": true
-      },
-      {
-        "event": "agent_end",
-        "command": "bunx jscpd --ignore \"**/node_modules/**,**/dist/**,**/.jj/**\" --min-lines 10 --threshold 5 .",
         "timeout": 120000,
         "notify": true
       }

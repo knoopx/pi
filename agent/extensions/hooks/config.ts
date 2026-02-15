@@ -8,16 +8,19 @@ const EXTENSION_CONFIG_PATH = resolve(
   import.meta.dirname || __dirname,
   "defaults.json",
 );
+const PROJECT_CONFIG_FILE = ".pi/hooks.json";
 
 class ConfigLoader {
   private defaultsConfig: HooksConfig | null = null;
   private globalConfig: HooksConfig | null = null;
   private resolved: HooksConfig | null = null;
   private configVersion = 0;
+  private projectConfigCache = new Map<string, HooksConfig | null>();
 
   async load(): Promise<void> {
     this.defaultsConfig = await this.loadDefaultsFile();
     this.globalConfig = await this.loadGlobalFile();
+    this.projectConfigCache.clear();
     this.resolved = this.mergeConfigs();
     this.configVersion++;
   }
@@ -43,8 +46,51 @@ class ConfigLoader {
     }
   }
 
-  private mergeConfigs(): HooksConfig {
-    return this.globalConfig ?? this.defaultsConfig ?? [];
+  private async loadProjectFile(cwd: string): Promise<HooksConfig | null> {
+    try {
+      const projectConfigPath = resolve(cwd, PROJECT_CONFIG_FILE);
+      const content = await readFile(projectConfigPath, "utf-8");
+      const parsed = JSON.parse(content);
+      return isValidConfig(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private mergeConfigs(projectConfig?: HooksConfig | null): HooksConfig {
+    // Global config completely overrides defaults (existing behavior)
+    if (this.globalConfig) return this.globalConfig;
+
+    // Project config extends defaults
+    if (projectConfig && this.defaultsConfig) {
+      return this.mergeGroupConfigs(this.defaultsConfig, projectConfig);
+    }
+
+    return projectConfig ?? this.defaultsConfig ?? [];
+  }
+
+  private mergeGroupConfigs(
+    base: HooksConfig,
+    override: HooksConfig,
+  ): HooksConfig {
+    const result = [...base];
+    const groupMap = new Map(result.map((g, i) => [g.group, i]));
+
+    for (const overrideGroup of override) {
+      const existingIndex = groupMap.get(overrideGroup.group);
+      if (existingIndex !== undefined) {
+        // Merge hooks into existing group
+        result[existingIndex] = {
+          ...result[existingIndex],
+          hooks: [...result[existingIndex].hooks, ...overrideGroup.hooks],
+        };
+      } else {
+        // Add new group
+        result.push(overrideGroup);
+      }
+    }
+
+    return result;
   }
 
   getConfig(): HooksConfig {
@@ -52,6 +98,15 @@ class ConfigLoader {
       throw new Error("Config not loaded. Call load() first.");
     }
     return this.resolved;
+  }
+
+  async getConfigForProject(cwd: string): Promise<HooksConfig> {
+    if (!this.projectConfigCache.has(cwd)) {
+      const projectConfig = await this.loadProjectFile(cwd);
+      this.projectConfigCache.set(cwd, projectConfig);
+    }
+    const projectConfig = this.projectConfigCache.get(cwd);
+    return this.mergeConfigs(projectConfig);
   }
 
   getVersion(): number {
