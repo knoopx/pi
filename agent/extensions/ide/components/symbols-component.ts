@@ -161,7 +161,7 @@ export function createSymbolsComponent(
             s.path.toLowerCase().includes(query),
         ),
       formatItem: (item) => {
-        const icon = SYMBOL_TYPE_ICONS[item.type] || "•";
+        const icon = getSymbolIcon(item.type);
         const pathShort = item.path.replace(/^\.\//, "");
         return `${icon} ${item.name} ${pathShort}:${item.startLine}`;
       },

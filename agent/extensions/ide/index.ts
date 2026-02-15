@@ -500,9 +500,8 @@ async function openFilesPicker(
   });
 
   if (result) {
-    const ref = ` ${result.path}`;
     const currentText = ctx.ui.getEditorText();
-    ctx.ui.setEditorText(currentText + ref);
+    ctx.ui.setEditorText(currentText + result.path);
   }
 }
 
@@ -534,9 +533,8 @@ async function openSymbolsPicker(
   });
 
   if (result) {
-    const ref = ` ${result.path}:${result.startLine}`;
     const currentText = ctx.ui.getEditorText();
-    ctx.ui.setEditorText(currentText + ref);
+    ctx.ui.setEditorText(currentText + `${result.path}:${result.startLine}`);
   }
 }
 
