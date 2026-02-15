@@ -47,6 +47,27 @@ function filterBookmarks(bookmarks: string[], query: string): string[] {
     .map((item) => item.bookmark);
 }
 
+function frameRows(theme: Theme, rows: string[], width: number): string[] {
+  const innerWidth = Math.max(1, width - 2);
+  const top =
+    theme.fg("borderAccent", "┌") +
+    theme.fg("borderAccent", "─".repeat(innerWidth)) +
+    theme.fg("borderAccent", "┐");
+  const bottom =
+    theme.fg("borderAccent", "└") +
+    theme.fg("borderAccent", "─".repeat(innerWidth)) +
+    theme.fg("borderAccent", "┘");
+
+  const content = rows.map(
+    (row) =>
+      theme.fg("borderAccent", "│") +
+      pad(row, innerWidth) +
+      theme.fg("borderAccent", "│"),
+  );
+
+  return [top, ...content, bottom];
+}
+
 export function createBookmarkPromptComponent(
   pi: ExtensionAPI,
   tui: { requestRender: () => void },
