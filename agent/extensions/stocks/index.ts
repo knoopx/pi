@@ -146,7 +146,7 @@ export async function fetchStockData(
     let latestIdx = quote.close.length - 1;
     while (
       latestIdx >= 0 &&
-      (quote.close[latestIdx] == null || isNaN(quote.close[latestIdx]!))
+      (quote.close[latestIdx] == null || isNaN(quote.close[latestIdx]))
     ) {
       latestIdx--;
     }
@@ -209,8 +209,7 @@ export default function (pi: ExtensionAPI) {
   ): Promise<StockData> => {
     const key = `${symbol}:${range}`;
     if (
-      cached &&
-      cached.key === key &&
+      cached?.key === key &&
       Date.now() - cached.timestamp < 300000
     ) {
       return cached.data;

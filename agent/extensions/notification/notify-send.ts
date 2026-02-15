@@ -3,7 +3,7 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 
-export type NotifyToolParams = {
+export interface NotifyToolParams {
   summary: string;
   body?: string;
   urgency?: "low" | "normal" | "critical";
@@ -11,7 +11,7 @@ export type NotifyToolParams = {
   appName?: string;
   icon?: string;
   category?: string;
-};
+}
 
 export function buildNotifySendArgs(params: NotifyToolParams): string[] {
   const args: string[] = [];

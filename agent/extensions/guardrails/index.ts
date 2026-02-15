@@ -34,7 +34,7 @@ export async function isGroupActive(
       return true;
     }
 
-    const matches = await glob([pattern], {
+    const matches = await glob(pattern, {
       cwd: root,
       absolute: false,
       dot: true,

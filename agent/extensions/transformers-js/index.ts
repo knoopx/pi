@@ -10,9 +10,10 @@ import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { ImageContent, TextContent } from "@mariozechner/pi-ai";
 import { Type, type Static } from "@sinclair/typebox";
 
+import type * as Transformers from "@huggingface/transformers";
+
 // Lazy import transformers to avoid loading at startup
-let transformersModule: typeof import("@huggingface/transformers") | null =
-  null;
+let transformersModule: typeof Transformers | null = null;
 
 async function getTransformers() {
   if (!transformersModule) {
@@ -57,31 +58,31 @@ async function getPipeline<T>(
 
 type ToolContent = TextContent | ImageContent;
 
-type RawImageData = {
+interface RawImageData {
   data: Uint8Array | Uint8ClampedArray;
   width: number;
   height: number;
   channels: number;
-};
+}
 
-type RawAudioLike = {
+interface RawAudioLike {
   toWav: () => ArrayBuffer;
   sampling_rate: number;
   audio: Float32Array;
-};
+}
 
-type TensorLike = {
+interface TensorLike {
   dims?: number[];
   size?: number;
   type?: string;
   data?: ArrayLike<number>;
-};
+}
 
-type RawImageLike = {
+interface RawImageLike {
   width: number;
   height: number;
   data: Uint8Array | Uint8ClampedArray;
-};
+}
 
 async function rawImageToContent(
   image: unknown,

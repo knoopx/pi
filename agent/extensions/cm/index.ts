@@ -38,14 +38,14 @@ const CommonFlagProps = {
   ),
 };
 
-type CommonFlags = {
+interface CommonFlags {
   path?: string;
   format?: string;
   cacheDir?: string;
   noCache?: boolean;
   rebuildCache?: boolean;
   extensions?: string[];
-};
+}
 
 function appendCommonFlags(args: string[], params: CommonFlags) {
   if (params.format) {

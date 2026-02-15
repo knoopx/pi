@@ -159,9 +159,9 @@ export function getFirefoxProfilePath(_profileName?: string): string {
 /**
  * Execute a query against the Firefox places database with proper temp file handling
  */
-async function withFirefoxDb<TRow, TResult>(
+async function withFirefoxDb<TResult>(
   sql: string,
-  rowMapper: (row: TRow) => TResult,
+  rowMapper: (row: unknown) => TResult,
 ): Promise<TResult[]> {
   const placesPath = getFirefoxProfilePath();
   const fs = await import("fs/promises");
@@ -186,7 +186,7 @@ async function withFirefoxDb<TRow, TResult>(
     db.pragma("journal_mode = WAL");
 
     try {
-      const rows = db.prepare(sql).all() as TRow[];
+      const rows = db.prepare(sql).all();
       db.close();
       return rows.map(rowMapper);
     } catch (dbError) {
@@ -228,7 +228,7 @@ function filterBySimilarity<T extends { similarity?: number }>(
 }
 
 export async function getBookmarksFromDB(query?: string): Promise<Bookmark[]> {
-  const allBookmarks = await withFirefoxDb<BookmarkRowWithUrl, Bookmark>(
+  const allBookmarks = await withFirefoxDb<Bookmark>(
     `SELECT b.id, p.url, b.title, MAX(b.dateAdded) as dateAdded
      FROM moz_bookmarks b
      JOIN moz_places p ON b.fk = p.id
@@ -236,13 +236,16 @@ export async function getBookmarksFromDB(query?: string): Promise<Bookmark[]> {
      GROUP BY p.url
      ORDER BY dateAdded DESC
      LIMIT 1000`,
-    (row) => ({
-      id: String(row.id),
-      title: row.title || new URL(row.url).hostname,
-      url: row.url,
-      domain: extractDomain(row.url),
-      dateAdded: row.dateAdded || Date.now(),
-    }),
+    (row) => {
+      const bookmarkRow = row as BookmarkRowWithUrl;
+      return {
+        id: String(bookmarkRow.id),
+        title: bookmarkRow.title || new URL(bookmarkRow.url).hostname,
+        url: bookmarkRow.url,
+        domain: extractDomain(bookmarkRow.url),
+        dateAdded: bookmarkRow.dateAdded || Date.now(),
+      };
+    },
   );
 
   if (!query) return allBookmarks;
@@ -257,7 +260,7 @@ export async function getBookmarksFromDB(query?: string): Promise<Bookmark[]> {
 }
 
 async function getHistoryFromDB(query?: string): Promise<History[]> {
-  const allHistory = await withFirefoxDb<HistoryRowWithUrl, History>(
+  const allHistory = await withFirefoxDb<History>(
     `SELECT p.id, p.url, p.title, p.visit_count as visitCount, MAX(p.last_visit_date) as lastVisit
      FROM moz_places p
      WHERE (p.url LIKE 'http%' OR p.url LIKE 'https%')
@@ -266,14 +269,17 @@ async function getHistoryFromDB(query?: string): Promise<History[]> {
      GROUP BY p.url
      ORDER BY last_visit_date DESC
      LIMIT 1000`,
-    (row) => ({
-      id: String(row.id),
-      title: row.title || new URL(row.url).hostname,
-      url: row.url,
-      domain: extractDomain(row.url),
-      visitCount: row.visitCount || 0,
-      lastVisit: row.lastVisit || 0,
-    }),
+    (row) => {
+      const historyRow = row as HistoryRowWithUrl;
+      return {
+        id: String(historyRow.id),
+        title: historyRow.title || new URL(historyRow.url).hostname,
+        url: historyRow.url,
+        domain: extractDomain(historyRow.url),
+        visitCount: historyRow.visitCount || 0,
+        lastVisit: historyRow.lastVisit || 0,
+      };
+    },
   );
 
   if (!query) return allHistory;

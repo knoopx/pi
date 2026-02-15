@@ -195,14 +195,20 @@ async function showSelectList(
 ): Promise<string | null> {
   const selectList = new SelectList(options, visibleCount, SELECT_LIST_STYLES);
   return new Promise<string | null>((resolve) => {
-    selectList.onSelect = (item: SelectItem) => resolve(item.value);
-    selectList.onCancel = () => resolve(null);
-    ctx.ui
+    selectList.onSelect = (item: SelectItem) => {
+      resolve(item.value);
+    };
+    selectList.onCancel = () => {
+      resolve(null);
+    };
+    void ctx.ui
       .custom(() => selectList, {
         overlay: true,
         overlayOptions: { width, anchor: "center" },
       })
-      .then((result) => resolve(result as string | null));
+      .then((result) => {
+        resolve(result as string | null);
+      });
   });
 }
 

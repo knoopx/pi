@@ -74,7 +74,7 @@ function containsAbortText(text: string): boolean {
 }
 
 function extractTextContent(
-  content: Array<unknown> | undefined,
+  content: unknown[] | undefined,
   extraText?: string,
 ): string {
   const contentText = (content ?? [])

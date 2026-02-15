@@ -1,13 +1,14 @@
 import * as path from "node:path";
-import {
+import type {
   BaseDependencies,
   UsageSnapshot,
   RateWindow,
   WindowConfig,
+  ProviderConfig} from "./types";
+import {
   createAuthErrorSnapshot,
   createNetworkErrorSnapshot,
-  createHttpErrorSnapshot,
-  ProviderConfig,
+  createHttpErrorSnapshot
 } from "./types";
 
 // Shared utility function to format remaining duration

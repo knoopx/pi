@@ -80,17 +80,17 @@ export class PIWatcher {
     this.fsWatcher
       .on("add", (...args: unknown[]) => {
         if (args.length > 0 && typeof args[0] === "string") {
-          this.handleChange(args[0] as string);
+          this.handleChange(args[0]);
         }
       })
       .on("change", (...args: unknown[]) => {
         if (args.length > 0 && typeof args[0] === "string") {
-          this.handleChange(args[0] as string);
+          this.handleChange(args[0]);
         }
       })
       .on("unlink", (...args: unknown[]) => {
         if (args.length > 0 && typeof args[0] === "string") {
-          this.handleChange(args[0] as string);
+          this.handleChange(args[0]);
         }
       })
       .on("ready", () => {
@@ -98,7 +98,7 @@ export class PIWatcher {
       })
       .on("error", (...args: unknown[]) => {
         if (args.length > 0 && args[0] instanceof Error) {
-          this.callbacks.onError(args[0] as Error);
+          this.callbacks.onError(args[0]);
         }
       });
   }

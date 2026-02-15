@@ -151,11 +151,11 @@ Returns matching packages with metadata.`,
         const packageRegex =
           /<a class="package-snippet"[^>]*href="\/project\/([^/]+)\/"[^>]*>[\s\S]*?<span class="package-snippet__name">([^<]+)<\/span>[\s\S]*?<span class="package-snippet__version">([^<]+)<\/span>[\s\S]*?<p class="package-snippet__description">([^<]*)<\/p>/g;
 
-        const packages: Array<{
+        const packages: {
           name: string;
           version: string;
           description: string;
-        }> = [];
+        }[] = [];
         let match;
 
         while (

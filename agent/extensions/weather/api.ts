@@ -1,4 +1,4 @@
-import { WeatherInfo, WeatherUnit } from "./types";
+import type { WeatherInfo, WeatherUnit } from "./types";
 import {
   openWeatherWMOToEmoji,
   moonPhaseAlt,

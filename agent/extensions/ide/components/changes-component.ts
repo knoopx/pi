@@ -40,7 +40,7 @@ export type OnFileCmAction = (
 
 export function createChangesComponent(
   { pi, tui, theme, cwd }: BaseComponentParams,
-  done: (result: void) => void,
+  done: () => void,
   onInsert?: (text: string) => void,
   onBookmark?: (changeId: string) => Promise<string | null>,
   onNotify?: (message: string, type?: "info" | "error") => void,
@@ -60,6 +60,10 @@ export function createChangesComponent(
 
   // Navigation handlers - defined inline to access current array values
   function navigateChanges(direction: "up" | "down"): void {
+    if (changes.length === 0) {
+      return;
+    }
+
     const maxIndex = changes.length - 1;
     const newIndex =
       direction === "up"
@@ -68,16 +72,18 @@ export function createChangesComponent(
 
     if (newIndex !== selectionState.selectedIndex) {
       selectionState.selectedIndex = newIndex;
-      selectedChange = changes[newIndex] || null;
-      if (selectedChange) {
-        void loadFilesAndDiff(selectedChange);
-      }
+      selectedChange = changes[newIndex];
+      void loadFilesAndDiff(selectedChange);
       invalidateCache(loadingState);
       tui.requestRender();
     }
   }
 
   function navigateFiles(direction: "up" | "down"): void {
+    if (files.length === 0 || selectedChange === null) {
+      return;
+    }
+
     const maxIndex = files.length - 1;
     const newIndex =
       direction === "up"
@@ -86,10 +92,8 @@ export function createChangesComponent(
 
     if (newIndex !== selectionState.fileIndex) {
       selectionState.fileIndex = newIndex;
-      const file = files[newIndex] || null;
-      if (selectedChange && file) {
-        void loadDiff(selectedChange, file.path);
-      }
+      const file = files[newIndex];
+      void loadDiff(selectedChange, file.path);
       invalidateCache(loadingState);
       tui.requestRender();
     }
@@ -136,7 +140,7 @@ export function createChangesComponent(
           const workflowLines = ids
             .map(
               (id, index) =>
-                `${index + 1}. Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "type(scope): icon description"\``,
+                `${String(index + 1)}. Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "type(scope): icon description"\``,
             )
             .join("\n");
 
@@ -173,13 +177,18 @@ ${workflowLines}
           selectionState.fileIndex = 0;
           selectionState.diffScroll = 0;
           await loadChanges();
-          selectionState.selectedIndex = Math.min(
-            prevIndex,
-            changes.length - 1,
-          );
-          selectedChange = changes[selectionState.selectedIndex] || null;
-          if (selectedChange) {
+          if (changes.length > 0) {
+            selectionState.selectedIndex = Math.min(
+              prevIndex,
+              changes.length - 1,
+            );
+            selectedChange = changes[selectionState.selectedIndex];
             await loadFilesAndDiff(selectedChange);
+          } else {
+            selectionState.selectedIndex = 0;
+            selectedChange = null;
+            files = [];
+            diffContent = [];
           }
           return;
         }
@@ -193,13 +202,18 @@ ${workflowLines}
           selectionState.fileIndex = 0;
           selectionState.diffScroll = 0;
           await loadChanges();
-          selectionState.selectedIndex = Math.min(
-            prevIndex,
-            Math.max(0, changes.length - 1),
-          );
-          selectedChange = changes[selectionState.selectedIndex] || null;
-          if (selectedChange) {
+          if (changes.length > 0) {
+            selectionState.selectedIndex = Math.min(
+              prevIndex,
+              Math.max(0, changes.length - 1),
+            );
+            selectedChange = changes[selectionState.selectedIndex];
             await loadFilesAndDiff(selectedChange);
+          } else {
+            selectionState.selectedIndex = 0;
+            selectedChange = null;
+            files = [];
+            diffContent = [];
           }
           onNotify?.(`Dropped change ${change.changeId}`, "info");
           return;
@@ -244,7 +258,7 @@ ${workflowLines}
       loadingState.loading = false;
 
       if (changes.length > 0) {
-        selectedChange = changes[0]!;
+        selectedChange = changes[0];
         await loadFilesAndDiff(selectedChange);
       }
 
@@ -265,7 +279,7 @@ ${workflowLines}
       if (cache) {
         files = cache.files;
         selectionState.fileIndex = 0;
-        const diffKey = files[0]?.path || "";
+        const diffKey = files[0]?.path ?? "";
         const cachedDiff = cache.diffs.get(diffKey);
         if (cachedDiff) {
           diffContent = cachedDiff;
@@ -297,7 +311,7 @@ ${workflowLines}
     change: MutableChange,
     filePath?: string,
   ): Promise<void> {
-    const diffKey = filePath || "";
+    const diffKey = filePath ?? "";
 
     const cache = changeCache.get(change.changeId);
     if (cache) {
@@ -351,13 +365,13 @@ ${workflowLines}
 
     for (let i = 0; i < visibleCount && startIdx + i < changes.length; i++) {
       const idx = startIdx + i;
-      const change = changes[idx]!;
+      const change = changes[idx];
       const isCursor = idx === selectionState.selectedIndex;
       const isFocusedCursor = isCursor && selectionState.focus === "left";
       const isMarked = selectedChangeIds.has(change.changeId);
       const isWorkingCopy = idx === 0; // First change is @ (working copy)
 
-      const bookmarks = bookmarksByChange.get(change.changeId) || [];
+      const bookmarks = bookmarksByChange.get(change.changeId) ?? [];
       const { leftText, rightText } = formatChangeRow(theme, {
         isWorkingCopy,
         isEmpty: change.empty,
@@ -415,18 +429,18 @@ ${workflowLines}
       rightTopRatio: 0.3,
     });
 
-    const leftTitle = ` Changes (${changes.length})`;
+    const leftTitle = ` Changes (${String(changes.length)})`;
     const rightTopTitle = " Files";
     const rightBottomTitle = selectedChange
-      ? ` Diff: ${files[selectionState.fileIndex]?.path || "all"} (${selectedChange.changeId.slice(0, 8)})`
+      ? ` Diff: ${files[selectionState.fileIndex]?.path ?? "all"} (${selectedChange.changeId.slice(0, 8)})`
       : " Diff";
 
     const changeRows = getChangeRows(dims.leftW, dims.contentH);
-    const fileRows = getFileRows(dims.rightW, dims.rightTopH || 5);
+    const fileRows = getFileRows(dims.rightW, dims.rightTopH ?? 5);
     const diffRows = renderDiffRows(
       diffContent,
       dims.rightW,
-      dims.rightBottomH || 10,
+      dims.rightBottomH ?? 10,
       selectionState.diffScroll,
       theme,
     );
@@ -438,7 +452,7 @@ ${workflowLines}
       [
         "space select",
         selectedChange && "e edit",
-        describeTargetCount > 0 && `d describe(${describeTargetCount})`,
+        describeTargetCount > 0 && `d describe(${String(describeTargetCount)})`,
         selectedChange &&
           changes.length > 1 &&
           selectionState.selectedIndex < changes.length - 1 &&
@@ -494,7 +508,7 @@ ${workflowLines}
 
     if (data === "e") {
       if (selectionState.focus === "right" && files[selectionState.fileIndex]) {
-        const file = files[selectionState.fileIndex]!;
+        const file = files[selectionState.fileIndex];
         void pi.exec("code", [path.join(cwd, file.path)]);
       } else if (selectionState.focus === "left" && selectedChange) {
         void executeAction("edit");
@@ -580,20 +594,20 @@ ${workflowLines}
       } else if (matchesKey(data, "down")) {
         navigateChanges("down");
       }
-    } else if (selectionState.focus === "right") {
+    } else {
       if (data === "d" && selectedChange && files[selectionState.fileIndex]) {
-        const file = files[selectionState.fileIndex]!;
+        const file = files[selectionState.fileIndex];
         void (async () => {
-          await restoreFile(pi, cwd, selectedChange!.changeId, file.path);
-          changeCache.delete(selectedChange!.changeId);
-          await loadFilesAndDiff(selectedChange!);
+          await restoreFile(pi, cwd, selectedChange.changeId, file.path);
+          changeCache.delete(selectedChange.changeId);
+          await loadFilesAndDiff(selectedChange);
         })();
         return;
       }
 
       // cm actions on files
       if (onFileCmAction && files[selectionState.fileIndex]) {
-        const file = files[selectionState.fileIndex]!;
+        const file = files[selectionState.fileIndex];
         if (matchesKey(data, "ctrl+i")) {
           void onFileCmAction(file.path, "inspect");
           return;
@@ -630,7 +644,9 @@ ${workflowLines}
   return {
     render,
     handleInput,
-    invalidate: () => invalidateCache(loadingState),
+    invalidate: () => {
+      invalidateCache(loadingState);
+    },
     dispose,
   };
 }

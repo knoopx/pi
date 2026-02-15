@@ -10,7 +10,7 @@ import { fetchAnthropicUsage } from "./providers/anthropic";
 import { fetchOpenAIUsage } from "./providers/openai";
 import { fetchCopilotUsage } from "./providers/copilot";
 import { fetchGeminiUsage } from "./providers/gemini";
-import { BaseDependencies, UsageSnapshot } from "./types";
+import type { BaseDependencies, UsageSnapshot } from "./types";
 
 interface Dependencies extends BaseDependencies {
   env: Record<string, string | undefined>;
@@ -182,5 +182,10 @@ export default function quotasExtension(pi: ExtensionAPI) {
   pi.on("model_select", handleContextEvent);
 
   // Auto-refresh every 5 minutes
-  setInterval(refreshUsage, 5 * 60 * 1000);
+  setInterval(
+    () => {
+      void refreshUsage();
+    },
+    5 * 60 * 1000,
+  );
 }

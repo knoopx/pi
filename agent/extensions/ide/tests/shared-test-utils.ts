@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 
 /**
@@ -84,7 +85,7 @@ export function createComponentTestSetup<T extends Record<string, unknown>>(
 
     testInputHandling: (
       component: { handleInput: Mock },
-      inputs: Array<{ input: string; description: string }>,
+      inputs: { input: string; description: string }[],
     ) => {
       inputs.forEach(({ input, description }) => {
         it(`handles ${description}`, () => {
@@ -110,7 +111,9 @@ export function createAsyncTestHelpers() {
   return {
     waitForRender: (requestRender: Mock) =>
       new Promise<void>((resolve) => {
-        requestRender.mockImplementation(() => resolve());
+        requestRender.mockImplementation(() => {
+          resolve();
+        });
       }),
 
     expectCalledWith: (mock: Mock, ...args: unknown[]) => {
@@ -128,23 +131,20 @@ export function createAsyncTestHelpers() {
  */
 export function createMockData() {
   return {
-    createMockFileChange: (path: string, status: string = "modified") => ({
+    createMockFileChange: (path: string, status = "modified") => ({
       path,
       status,
       oldPath: undefined,
     }),
 
-    createMockChange: (
-      changeId: string,
-      description: string = "test change",
-    ) => ({
+    createMockChange: (changeId: string, description = "test change") => ({
       changeId,
       description,
       author: "test@example.com",
       date: new Date().toISOString(),
     }),
 
-    createMockWorkspace: (name: string, status: string = "idle") => ({
+    createMockWorkspace: (name: string, status = "idle") => ({
       name,
       path: `/tmp/${name}`,
       description: `Test ${name} workspace`,

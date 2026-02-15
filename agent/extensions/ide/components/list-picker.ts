@@ -81,7 +81,7 @@ export function createListPicker<T extends ListPickerItem>(
       loading = false;
 
       if (filteredItems.length > 0) {
-        void loadPreview(filteredItems[0]!);
+        void loadPreview(filteredItems[0]);
       }
 
       invalidate();
@@ -105,6 +105,14 @@ export function createListPicker<T extends ListPickerItem>(
       selectedIndex,
       Math.max(0, filteredItems.length - 1),
     );
+  }
+
+  function getSelectedItem(): T | null {
+    if (filteredItems.length === 0) {
+      return null;
+    }
+
+    return filteredItems[selectedIndex];
   }
 
   async function loadPreview(item: T): Promise<void> {
@@ -162,7 +170,7 @@ export function createListPicker<T extends ListPickerItem>(
 
     for (let i = 0; i < height && startIdx + i < filteredItems.length; i++) {
       const idx = startIdx + i;
-      const item = filteredItems[idx]!;
+      const item = filteredItems[idx];
       const isSelected = idx === selectedIndex;
       const formatted = config.formatItem(item, width, theme);
       const text = " " + truncateAnsi(formatted, width - 2);
@@ -191,10 +199,10 @@ export function createListPicker<T extends ListPickerItem>(
     const searchDisplay = searchQuery
       ? ` Search: ${truncateAnsi(searchQuery, dims.leftW - 10)}`
       : ` ${config.title}`;
-    const itemCount = `(${filteredItems.length}/${items.length})`;
+    const itemCount = `(${String(filteredItems.length)}/${String(items.length)})`;
     const leftTitle = truncateAnsi(`${searchDisplay} ${itemCount}`, dims.leftW);
 
-    const selectedItem = filteredItems[selectedIndex];
+    const selectedItem = getSelectedItem();
     const rightTitle = selectedItem?.path
       ? ` ${truncateAnsi(selectedItem.path, dims.rightW - 2)}`
       : " Source Preview";
@@ -206,7 +214,7 @@ export function createListPicker<T extends ListPickerItem>(
       dims.contentH,
       sourceScroll,
       theme,
-      selectedItem?.startLine && selectedItem?.endLine
+      selectedItem?.startLine && selectedItem.endLine
         ? { start: selectedItem.startLine, end: selectedItem.endLine }
         : undefined,
     );
@@ -247,14 +255,13 @@ export function createListPicker<T extends ListPickerItem>(
     }
 
     if (matchesKey(data, "enter")) {
-      const item = filteredItems[selectedIndex];
-      done(item || null);
+      done(getSelectedItem());
       return;
     }
 
     if (matchesKey(data, "ctrl+e")) {
-      const item = filteredItems[selectedIndex];
-      if (item && config.onEdit) {
+      const item = getSelectedItem();
+      if (item !== null && config.onEdit) {
         void Promise.resolve(config.onEdit(item));
       }
       return;
@@ -263,8 +270,10 @@ export function createListPicker<T extends ListPickerItem>(
     if (matchesKey(data, "up")) {
       if (selectedIndex > 0) {
         selectedIndex--;
-        const item = filteredItems[selectedIndex];
-        if (item) void loadPreview(item);
+        const item = getSelectedItem();
+        if (item !== null) {
+          void loadPreview(item);
+        }
         invalidate();
         tui.requestRender();
       }
@@ -274,8 +283,10 @@ export function createListPicker<T extends ListPickerItem>(
     if (matchesKey(data, "down")) {
       if (selectedIndex < filteredItems.length - 1) {
         selectedIndex++;
-        const item = filteredItems[selectedIndex];
-        if (item) void loadPreview(item);
+        const item = getSelectedItem();
+        if (item !== null) {
+          void loadPreview(item);
+        }
         invalidate();
         tui.requestRender();
       }
@@ -290,8 +301,10 @@ export function createListPicker<T extends ListPickerItem>(
         leftFocus: true,
       });
       selectedIndex = Math.max(0, selectedIndex - dims.contentH);
-      const item = filteredItems[selectedIndex];
-      if (item) void loadPreview(item);
+      const item = getSelectedItem();
+      if (item !== null) {
+        void loadPreview(item);
+      }
       invalidate();
       tui.requestRender();
       return;
@@ -308,8 +321,10 @@ export function createListPicker<T extends ListPickerItem>(
         filteredItems.length - 1,
         selectedIndex + dims.contentH,
       );
-      const item = filteredItems[selectedIndex];
-      if (item) void loadPreview(item);
+      const item = getSelectedItem();
+      if (item !== null) {
+        void loadPreview(item);
+      }
       invalidate();
       tui.requestRender();
       return;
@@ -320,8 +335,10 @@ export function createListPicker<T extends ListPickerItem>(
       if (searchQuery.length > 0) {
         searchQuery = searchQuery.slice(0, -1);
         filterItems();
-        const item = filteredItems[selectedIndex];
-        if (item) void loadPreview(item);
+        const item = getSelectedItem();
+        if (item !== null) {
+          void loadPreview(item);
+        }
         invalidate();
         tui.requestRender();
       }
@@ -332,8 +349,8 @@ export function createListPicker<T extends ListPickerItem>(
     if (config.actions && filteredItems.length > 0) {
       const action = config.actions.find((a) => matchesKey(data, a.key));
       if (action) {
-        const item = filteredItems[selectedIndex];
-        if (item) {
+        const item = getSelectedItem();
+        if (item !== null) {
           void Promise.resolve(action.handler(item));
         }
         return;
@@ -344,8 +361,10 @@ export function createListPicker<T extends ListPickerItem>(
     if (data.length === 1 && data >= " " && data <= "~") {
       searchQuery += data;
       filterItems();
-      const item = filteredItems[selectedIndex];
-      if (item) void loadPreview(item);
+      const item = getSelectedItem();
+      if (item !== null) {
+        void loadPreview(item);
+      }
       invalidate();
       tui.requestRender();
       return;

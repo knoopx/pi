@@ -208,6 +208,8 @@ export function createBookmarkPromptComponent(
     invalidate() {
       input.invalidate();
     },
-    dispose() {},
+    dispose() {
+      return;
+    },
   };
 }

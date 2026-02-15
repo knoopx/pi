@@ -189,7 +189,7 @@ async function parseSessionFile(
       if (i % 500 === 0) {
         await new Promise<void>((resolve) => setImmediate(resolve));
       }
-      const line = lines[i]!;
+      const line = lines[i];
       if (!line.trim()) continue;
       try {
         const entry = JSON.parse(line);
@@ -610,7 +610,7 @@ class UsageComponent {
     }
 
     for (let i = 0; i < this.providerOrder.length; i++) {
-      const providerName = this.providerOrder[i]!;
+      const providerName = this.providerOrder[i];
       const providerStats = stats.providers.get(providerName)!;
       const isSelected = i === this.selectedIndex;
       const isExpanded = this.expanded.has(providerName);
@@ -932,7 +932,7 @@ class ToolUsageComponent {
     const barWidth = 30;
 
     for (let i = 0; i < sortedTools.length; i++) {
-      const [name, count] = sortedTools[i]!;
+      const [name, count] = sortedTools[i];
       const pct = ((count / this.data.totalToolCalls) * 100).toFixed(1);
       const barLen = Math.round((count / maxCount) * barWidth);
       const bar = "█".repeat(barLen);
@@ -965,7 +965,7 @@ class ToolUsageComponent {
     }
 
     for (let i = 0; i < sortedDates.length; i++) {
-      const [date, data] = sortedDates[i]!;
+      const [date, data] = sortedDates[i];
       const topTools = Object.entries(data.tools)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
@@ -997,7 +997,7 @@ class ToolUsageComponent {
     }
 
     for (let i = 0; i < sortedSessions.length; i++) {
-      const [session, data] = sortedSessions[i]!;
+      const [session, data] = sortedSessions[i];
       const shortName = truncateToWidth(
         session.replace(/--/g, "/").replace(/^\//, ""),
         40,
@@ -1117,11 +1117,11 @@ export default function (pi: ExtensionAPI) {
             done(value);
           };
 
-          loader.onAbort = () => finish(null);
+          loader.onAbort = () => { finish(null); };
 
           collectToolStats(loader.signal)
             .then(finish)
-            .catch(() => finish(null));
+            .catch(() => { finish(null); });
 
           return loader;
         },
@@ -1143,8 +1143,8 @@ export default function (pi: ExtensionAPI) {
         const toolUsage = new ToolUsageComponent(
           theme,
           data,
-          () => tui.requestRender(),
-          () => done(),
+          () => { tui.requestRender(); },
+          () => { done(); },
         );
 
         return {
@@ -1154,8 +1154,8 @@ export default function (pi: ExtensionAPI) {
             const bottomBorder = theme.fg("border", "─".repeat(w));
             return [...borderLines, ...usageLines, "", bottomBorder];
           },
-          invalidate: () => container.invalidate(),
-          handleInput: (input: string) => toolUsage.handleInput(input),
+          invalidate: () => { container.invalidate(); },
+          handleInput: (input: string) => { toolUsage.handleInput(input); },
           dispose: () => {},
         };
       });
@@ -1185,11 +1185,11 @@ export default function (pi: ExtensionAPI) {
             done(value);
           };
 
-          loader.onAbort = () => finish(null);
+          loader.onAbort = () => { finish(null); };
 
           collectUsageData(loader.signal)
             .then(finish)
-            .catch(() => finish(null));
+            .catch(() => { finish(null); });
 
           return loader;
         },
@@ -1212,8 +1212,8 @@ export default function (pi: ExtensionAPI) {
         const usage = new UsageComponent(
           theme,
           data,
-          () => tui.requestRender(),
-          () => done(),
+          () => { tui.requestRender(); },
+          () => { done(); },
         );
 
         return {
@@ -1223,8 +1223,8 @@ export default function (pi: ExtensionAPI) {
             const bottomBorder = theme.fg("border", "─".repeat(w));
             return [...borderLines, ...usageLines, "", bottomBorder];
           },
-          invalidate: () => container.invalidate(),
-          handleInput: (input: string) => usage.handleInput(input),
+          invalidate: () => { container.invalidate(); },
+          handleInput: (input: string) => { usage.handleInput(input); },
           dispose: () => {},
         };
       });

@@ -144,8 +144,8 @@ function aggregateArrayResults<T extends object>(
   return { items, errors };
 }
 
-function formatAggregatedResults<T extends object>(
-  items: (T & { _account: string })[],
+function formatAggregatedResults(
+  items: (Record<string, unknown> & { _account: string })[],
   errors: { account: string; error: string }[],
   emptyMessage: string,
 ): string {

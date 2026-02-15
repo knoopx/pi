@@ -7,7 +7,7 @@ import { Type } from "@sinclair/typebox";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
-type RenderResultDetails = {
+interface RenderResultDetails {
   rendered?: boolean;
   format?: "svg" | "png";
   outputFile?: string | null;
@@ -15,9 +15,9 @@ type RenderResultDetails = {
   error?: string;
   message?: string;
   cancelled?: boolean;
-};
+}
 
-type RenderUpdateDetails = { status: "rendering" };
+interface RenderUpdateDetails { status: "rendering" }
 
 type RenderResponseContent =
   | { type: "text"; text: string }
@@ -80,7 +80,7 @@ async function resolveDiagramSource(params: {
     return { diagramSource: source };
   }
 
-  const content = await readFile(normalizePiPath(inputFile as string), "utf8");
+  const content = await readFile(normalizePiPath(inputFile!), "utf8");
   return { diagramSource: content };
 }
 
@@ -188,7 +188,7 @@ Use this to:
       }
 
       return renderDiagram(
-        resolved.diagramSource as string,
+        resolved.diagramSource!,
         undefined,
         onUpdate,
       );

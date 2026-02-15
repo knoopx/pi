@@ -27,7 +27,7 @@ Content of section 2 with more interesting content here.
   console.log("\nTesting embeddings...");
   resetGlobalStore();
   const store = await getGlobalStore({
-    onProgress: (msg) => console.log(`Progress: ${msg}`),
+    onProgress: (msg) => { console.log(`Progress: ${msg}`); },
   });
 
   await store.addChunks(chunks);

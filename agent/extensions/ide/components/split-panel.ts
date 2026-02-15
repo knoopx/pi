@@ -158,8 +158,8 @@ export function renderSplitPanel(
     const rightTopH = dims.rightTopH;
     const rightBottomH = dims.rightBottomH;
     const leftRows = rows.left;
-    const rightTopRows = rows.rightTop || [];
-    const rightBottomRows = rows.rightBottom || [];
+    const rightTopRows = rows.rightTop ?? [];
+    const rightBottomRows = rows.rightBottom ?? [];
 
     // Right top section
     for (let i = 0; i < rightTopH; i++) {
@@ -190,7 +190,7 @@ export function renderSplitPanel(
       border(lb, "│") +
         ensureWidth(leftRows[rightTopH + 1] || "", leftW) +
         border("border", "│") +
-        theme.fg("accent", pad(config.rightBottomTitle || " Preview", rightW)) +
+        theme.fg("accent", pad(config.rightBottomTitle ?? " Preview", rightW)) +
         border("border", "│"),
     );
 
@@ -220,7 +220,7 @@ export function renderSplitPanel(
   } else {
     // Simple two-column layout
     const leftRows = rows.left;
-    const rightRows = rows.right || [];
+    const rightRows = rows.right ?? [];
 
     for (let i = 0; i < contentH; i++) {
       lines.push(
@@ -265,7 +265,7 @@ export function renderSplitPanel(
  * Generate rows for a list with selection
  */
 export function renderListRows(
-  items: Array<{ text: string; selected?: boolean; highlighted?: boolean }>,
+  items: { text: string; selected?: boolean; highlighted?: boolean }[],
   width: number,
   height: number,
   selectedIndex: number,
@@ -281,7 +281,7 @@ export function renderListRows(
 
   for (let i = 0; i < height && startIdx + i < items.length; i++) {
     const idx = startIdx + i;
-    const item = items[idx]!;
+    const item = items[idx];
     const isSelected = idx === selectedIndex;
     const text = " " + truncateAnsi(item.text, width - 2);
     const final = ensureWidth(text, width);
@@ -340,7 +340,7 @@ function expandTabs(text: string, tabWidth = 2): string {
  * Render file change rows with status colors
  */
 export function renderFileChangeRows(
-  files: Array<{ status: string; path: string }>,
+  files: { status: string; path: string }[],
   width: number,
   height: number,
   fileIndex: number,
@@ -363,7 +363,7 @@ export function renderFileChangeRows(
 
   for (let i = 0; i < visibleCount && startIdx + i < files.length; i++) {
     const idx = startIdx + i;
-    const file = files[idx]!;
+    const file = files[idx];
     const isSelected = idx === fileIndex && isFocused;
     const statusIcon = getFileStatusIcon(file.status);
     const fileIcon = getFileIcon(file.path);
@@ -441,16 +441,16 @@ export function calculateDiffScroll(
     direction,
     currentScroll,
     contentLength,
-    dims.rightBottomH || 10,
+    dims.rightBottomH ?? 10,
   );
 }
 
 export function renderChangeRows(
-  changes: Array<{
+  changes: {
     changeId: string;
     description: string;
     empty: boolean;
-  }>,
+  }[],
   width: number,
   height: number,
   selectedIndex: number,
@@ -473,7 +473,7 @@ export function renderChangeRows(
 
   for (let i = 0; i < visibleCount && startIdx + i < changes.length; i++) {
     const idx = startIdx + i;
-    const change = changes[idx]!;
+    const change = changes[idx];
     const isSelected = idx === selectedIndex && isFocused;
     const isCurrent = idx === 0;
 

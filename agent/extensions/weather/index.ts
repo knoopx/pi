@@ -26,8 +26,7 @@ export default function weatherExtension(pi: ExtensionAPI) {
   ): Promise<WeatherInfo> => {
     const key = `${latitude ?? "ip"}:${longitude ?? "ip"}:${unit}`;
     if (
-      cached &&
-      cached.key === key &&
+      cached?.key === key &&
       Date.now() - cached.timestamp < 300000
     ) {
       return cached.info;

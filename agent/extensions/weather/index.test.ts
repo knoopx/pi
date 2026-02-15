@@ -31,7 +31,7 @@ vi.mock("./emoji", () => ({
   formatHourlySummary: vi.fn(),
 }));
 
-type TextContent = { type: "text"; text: string };
+interface TextContent { type: "text"; text: string }
 
 const mockWeatherDataCelsius = {
   latitude: 0,

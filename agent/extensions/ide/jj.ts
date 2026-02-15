@@ -79,8 +79,8 @@ export async function loadChangedFiles(
     .split("\n")
     .filter(Boolean)
     .map((line) => {
-      const match = line.match(/^([AMD])\s+(.+)$/);
-      return match ? { status: match[1]!, path: match[2]! } : null;
+      const match = /^([AMD])\s+(.+)$/.exec(line);
+      return match ? { status: match[1], path: match[2] } : null;
     })
     .filter((f): f is FileChange => f !== null);
 }
@@ -166,7 +166,7 @@ export async function listBookmarks(
 export async function listBookmarksByChange(
   pi: ExtensionAPI,
   cwd: string,
-): Promise<Array<{ bookmark: string; changeId: string; description: string }>> {
+): Promise<{ bookmark: string; changeId: string; description: string }[]> {
   const result = await pi.exec(
     "jj",
     [
@@ -184,11 +184,11 @@ export async function listBookmarksByChange(
   }
 
   const seen = new Set<string>();
-  const entries: Array<{
+  const entries: {
     bookmark: string;
     changeId: string;
     description: string;
-  }> = [];
+  }[] = [];
 
   for (const line of result.stdout.split("\n")) {
     const [name, remote, changeId, description] = line.split("\t");
@@ -351,9 +351,7 @@ export async function getBlame(
     .split("\n")
     .map((line, index) => {
       // Format: "changeId author timestamp lineNum: content"
-      const match = line.match(
-        /^(\w+)\s+(\S+)\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+\d+:/,
-      );
+      const match = /^(\w+)\s+(\S+)\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+\d+:/.exec(line);
       if (!match) return null;
 
       const [, changeId, author, timestamp] = match;

@@ -127,10 +127,10 @@ async function fetchNpmPackage(
   }
 }
 
-function extractStringOrProperty<
-  T extends { [K in P]?: string },
-  P extends string,
->(value: T | string | undefined, property: P): string {
+function extractStringOrProperty(
+  value: Record<string, string> | string | undefined,
+  property: string,
+): string {
   if (typeof value === "string") return value;
   if (typeof value === "object" && value !== null) return value[property] ?? "";
   return "";
@@ -245,13 +245,11 @@ async function searchNpmPackages(
 
     const data = (await response.json()) as NpmSearchResponse;
     const packages = (data.objects ?? []).map((obj: NpmSearchObject) => ({
-      name: String(obj?.package?.name ?? ""),
-      version: String(obj?.package?.version ?? ""),
-      description: String(obj?.package?.description ?? ""),
-      keywords: Array.isArray(obj?.package?.keywords)
-        ? obj.package.keywords
-        : [],
-      author: String(obj?.package?.author?.name ?? "Unknown"),
+      name: obj.package.name,
+      version: obj.package.version,
+      description: obj.package.description ?? "",
+      keywords: Array.isArray(obj.package.keywords) ? obj.package.keywords : [],
+      author: obj.package.author?.name ?? "Unknown",
     }));
 
     const result = packages
@@ -286,12 +284,12 @@ async function getNpmPackageInfo(
   if (!fetchResult.ok) return fetchResult.result;
 
   const data = fetchResult.data;
-  const latestVersion = String(data?.["dist-tags"]?.latest ?? "");
+  const latestVersion = data?.["dist-tags"]?.latest ?? "";
   const latestInfo = data?.versions?.[latestVersion];
 
   const info = {
-    name: String(data?.name ?? pkg),
-    description: String(data?.description ?? ""),
+    name: data?.name ?? pkg,
+    description: data?.description ?? "",
     author: extractStringOrProperty(data?.author, "name") || "Unknown",
     maintainers: Array.isArray(data?.maintainers)
       ? data.maintainers
@@ -299,9 +297,9 @@ async function getNpmPackageInfo(
           .filter(Boolean)
           .join(", ")
       : "Unknown",
-    homepage: String(data?.homepage ?? ""),
+    homepage: data?.homepage ?? "",
     repository: extractStringOrProperty(data?.repository, "url"),
-    license: String(latestInfo?.license ?? "Unknown"),
+    license: latestInfo?.license ?? "Unknown",
     latestVersion,
     keywords: Array.isArray(data?.keywords) ? data.keywords.join(", ") : "None",
     dependencies: latestInfo?.dependencies
@@ -325,7 +323,7 @@ async function getNpmPackageVersions(
 
   const data = fetchResult.data;
   const versions = Object.keys(data?.versions ?? {});
-  const distTags = (data?.["dist-tags"] ?? {}) as Record<string, string>;
+  const distTags = data?.["dist-tags"] ?? {};
 
   const result = `${data?.name ?? pkg} ${versions.length} versions ${Object.entries(
     distTags,

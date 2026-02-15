@@ -94,7 +94,7 @@ async function searchDuckDuckGoPreloadUrl(
     const $ = cheerio.load(response.data);
     $('link[rel="preload"]').each((_, el) => {
       const href = $(el).attr("href");
-      if (href && href.includes("links.duckduckgo.com/d.js")) {
+      if (href?.includes("links.duckduckgo.com/d.js")) {
         basePreloadUrl = href;
         return false; // Stop loop
       }
@@ -104,7 +104,7 @@ async function searchDuckDuckGoPreloadUrl(
     if (!basePreloadUrl) {
       $("#deep_preload_script").each((_, el) => {
         const src = $(el).attr("src");
-        if (src && src.includes("links.duckduckgo.com/d.js")) {
+        if (src?.includes("links.duckduckgo.com/d.js")) {
           basePreloadUrl = src;
           return false;
         }
@@ -165,7 +165,7 @@ async function searchDuckDuckGoPreloadUrl(
         /DDG\.pageLayout\.load\('d',\s*(\[.*?\])\s*\);/s,
       );
 
-      if (jsonpMatch && jsonpMatch[1]) {
+      if (jsonpMatch?.[1]) {
         try {
           const jsonData = JSON.parse(jsonpMatch[1]);
 

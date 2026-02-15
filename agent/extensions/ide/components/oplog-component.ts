@@ -47,7 +47,7 @@ export function createOpLogComponent(
           onNotify?.(`Restored to ${item.opId}`, "info");
           await pickerRef?.reload();
         } else {
-          onNotify?.(`Failed: ${result.error}`, "error");
+          onNotify?.(`Failed: ${result.error ?? "Unknown error"}`, "error");
         }
       },
     },
@@ -60,7 +60,7 @@ export function createOpLogComponent(
           onNotify?.("Undone", "info");
           await pickerRef?.reload();
         } else {
-          onNotify?.(`Failed: ${result.error}`, "error");
+          onNotify?.(`Failed: ${result.error ?? "Unknown error"}`, "error");
         }
       },
     },

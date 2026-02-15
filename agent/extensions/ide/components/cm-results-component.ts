@@ -116,7 +116,7 @@ const SYMBOL_ACTION_DEFS: [string, CmActionType][] = [
  */
 function parseCmOutput(output: string): CmResultItem[] {
   // Extract file path from header for inspect command
-  const fileMatch = output.match(/\[FILE:([^\]]+)\]/);
+  const fileMatch = /\[FILE:([^\]]+)\]/.exec(output);
   const headerFile = fileMatch?.[1];
 
   const lines = output.split("\n").filter((line) => {
@@ -135,14 +135,14 @@ function parseCmOutput(output: string): CmResultItem[] {
     const parts = line.split("|");
     if (parts.length < 3) continue;
 
-    let name = parts[0]!.trim();
-    const type = parts[1]!.trim();
-    const locationPart = parts[2]!.trim();
+    let name = parts[0].trim();
+    const type = parts[1].trim();
+    const locationPart = parts[2].trim();
     let signature: string | undefined;
     let callLine: number | undefined;
 
     for (let i = 3; i < parts.length; i++) {
-      const part = parts[i]!.trim();
+      const part = parts[i].trim();
       if (part.startsWith("sig:")) {
         signature = part.slice(4);
       } else if (part.startsWith("call:")) {
@@ -157,17 +157,18 @@ function parseCmOutput(output: string): CmResultItem[] {
     let endLine: number;
 
     // Check if locationPart is a line-range (e.g., "71-172") vs path:line
-    const lineRangeMatch = locationPart.match(/^(\d+)-(\d+)$/);
+    const lineRangeMatch = /^(\d+)-(\d+)$/.exec(locationPart);
     if (lineRangeMatch && headerFile) {
       // Inspect format: line-range only, use header file
       path = headerFile;
-      startLine = parseInt(lineRangeMatch[1]!, 10);
-      endLine = parseInt(lineRangeMatch[2]!, 10);
+      startLine = parseInt(lineRangeMatch[1], 10);
+      endLine = parseInt(lineRangeMatch[2], 10);
     } else if (locationPart.includes(":")) {
       // Standard format: path:line
       const colonIdx = locationPart.lastIndexOf(":");
       path = locationPart.slice(0, colonIdx);
-      startLine = parseInt(locationPart.slice(colonIdx + 1), 10) || 1;
+      const parsedStartLine = parseInt(locationPart.slice(colonIdx + 1), 10);
+      startLine = Number.isNaN(parsedStartLine) ? 1 : parsedStartLine;
       endLine = startLine;
     } else {
       // Fallback: treat as path
@@ -177,12 +178,12 @@ function parseCmOutput(output: string): CmResultItem[] {
     }
 
     if (/^\d+$/.test(name)) {
-      const basename = path.split("/").pop() || path;
+      const basename = path.split("/").pop() ?? path;
       name = basename.replace(/\.[^.]+$/, "");
     }
 
     items.push({
-      id: `${path}:${startLine}`,
+      id: `${path}:${String(startLine)}`,
       label: name,
       name,
       type,
@@ -250,8 +251,11 @@ export function createCmResultsComponent(
       actions,
       onEdit: async (item) => {
         const { join } = await import("node:path");
-        const line = item.callLine || item.startLine;
-        await pi.exec("code", ["-g", `${join(config.cwd, item.path)}:${line}`]);
+        const line = item.callLine ?? item.startLine;
+        await pi.exec("code", [
+          "-g",
+          `${join(config.cwd, item.path)}:${String(line)}`,
+        ]);
       },
       loadItems: async () => {
         const result = await pi.exec("cm", [...config.args, "--format", "ai"], {
@@ -275,12 +279,17 @@ export function createCmResultsComponent(
           type: item.type,
           name: item.name,
           path: item.path,
-          line: item.callLine || item.startLine,
+          line: item.callLine ?? item.startLine,
           signature: item.signature,
         }),
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, config.cwd),
     },
   );
 
-  return { ...picker, invalidate: () => {} };
+  return {
+    ...picker,
+    invalidate: () => {
+      return;
+    },
+  };
 }

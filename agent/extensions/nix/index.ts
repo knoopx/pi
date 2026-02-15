@@ -28,31 +28,31 @@ interface NixPackage {
   package_default_output: string;
   package_programs: string[];
   package_mainProgram: string | null;
-  package_license: Array<{
+  package_license: {
     url: string;
     fullName: string;
-  }>;
+  }[];
   package_license_set: string[];
-  package_maintainers: Array<{
+  package_maintainers: {
     name: string;
     github: string;
     email: string;
-  }>;
+  }[];
   package_maintainers_set: string[];
-  package_teams: Array<{
-    members: Array<{
+  package_teams: {
+    members: {
       name: string;
       github: string;
       email: string;
-    }>;
+    }[];
     scope: string;
     shortName: string;
     githubTeams: string[];
-  }>;
+  }[];
   package_teams_set: string[];
   package_description: string | null;
   package_longDescription: string | null;
-  package_hydra: { [key: string]: unknown } | null;
+  package_hydra: Record<string, unknown> | null;
   package_system: string;
   package_homepage: string[];
   package_position: string;
@@ -75,10 +75,10 @@ interface HomeManagerOption {
   type: string;
   default: string;
   example: string;
-  declarations: Array<{
+  declarations: {
     name: string;
     url: string;
-  }>;
+  }[];
   loc: string[];
   readOnly: boolean;
 }
@@ -90,7 +90,7 @@ interface HomeManagerOptionResponse {
 
 interface NixSearchResponse<T> {
   hits: {
-    hits: Array<{ _source: T }>;
+    hits: { _source: T }[];
   };
 }
 

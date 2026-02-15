@@ -346,47 +346,47 @@ describe("UsageComponent", () => {
 
   describe("handleInput - Tab navigation", () => {
     it("then cycles to next tab with tab key", () => {
-      component["activeTab"] = "today";
+      component.activeTab = "today";
 
       component.handleInput("tab");
 
-      expect(component["activeTab"]).toBe("thisWeek");
+      expect(component.activeTab).toBe("thisWeek");
     });
 
     it("then cycles to next tab with right arrow", () => {
-      component["activeTab"] = "today";
+      component.activeTab = "today";
 
       component.handleInput("right");
 
-      expect(component["activeTab"]).toBe("thisWeek");
+      expect(component.activeTab).toBe("thisWeek");
     });
 
     it("then cycles to first tab from last tab", () => {
-      component["activeTab"] = "allTime";
+      component.activeTab = "allTime";
 
       component.handleInput("tab");
 
-      expect(component["activeTab"]).toBe("today");
+      expect(component.activeTab).toBe("today");
     });
 
     it("then cycles to previous tab with shift+tab", () => {
-      component["activeTab"] = "allTime";
+      component.activeTab = "allTime";
 
       component.handleInput("shift+tab");
 
-      expect(component["activeTab"]).toBe("thisWeek");
+      expect(component.activeTab).toBe("thisWeek");
     });
 
     it("then cycles to previous tab with left arrow", () => {
-      component["activeTab"] = "allTime";
+      component.activeTab = "allTime";
 
       component.handleInput("left");
 
-      expect(component["activeTab"]).toBe("thisWeek");
+      expect(component.activeTab).toBe("thisWeek");
     });
 
     it("then requests render on tab change", () => {
-      component["activeTab"] = "today";
+      component.activeTab = "today";
       mockRequestRender.mockClear();
 
       component.handleInput("tab");
@@ -397,73 +397,73 @@ describe("UsageComponent", () => {
 
   describe("handleInput - Provider selection", () => {
     it("then moves selection up with up arrow", () => {
-      component["selectedIndex"] = 1;
-      component["providerOrder"] = ["provider1", "provider2", "provider3"];
+      component.selectedIndex = 1;
+      component.providerOrder = ["provider1", "provider2", "provider3"];
 
       component.handleInput("up");
 
-      expect(component["selectedIndex"]).toBe(0);
+      expect(component.selectedIndex).toBe(0);
     });
 
     it("then moves selection down with down arrow", () => {
-      component["selectedIndex"] = 0;
-      component["providerOrder"] = ["provider1", "provider2", "provider3"];
+      component.selectedIndex = 0;
+      component.providerOrder = ["provider1", "provider2", "provider3"];
 
       component.handleInput("down");
 
-      expect(component["selectedIndex"]).toBe(1);
+      expect(component.selectedIndex).toBe(1);
     });
 
     it("then prevents selection from going below zero", () => {
-      component["selectedIndex"] = 0;
-      component["providerOrder"] = ["provider1", "provider2", "provider3"];
+      component.selectedIndex = 0;
+      component.providerOrder = ["provider1", "provider2", "provider3"];
 
       component.handleInput("up");
 
-      expect(component["selectedIndex"]).toBe(0);
+      expect(component.selectedIndex).toBe(0);
     });
 
     it("then prevents selection from going above last index", () => {
-      component["selectedIndex"] = 2;
-      component["providerOrder"] = ["provider1", "provider2", "provider3"];
+      component.selectedIndex = 2;
+      component.providerOrder = ["provider1", "provider2", "provider3"];
 
       component.handleInput("down");
 
-      expect(component["selectedIndex"]).toBe(2);
+      expect(component.selectedIndex).toBe(2);
     });
   });
 
   describe("handleInput - Expand/Collapse", () => {
     it("then expands provider with enter key", () => {
       const provider = "provider1";
-      component["providerOrder"] = [provider];
-      component["selectedIndex"] = 0;
+      component.providerOrder = [provider];
+      component.selectedIndex = 0;
 
       component.handleInput("enter");
 
-      expect(component["expanded"].has(provider)).toBe(true);
+      expect(component.expanded.has(provider)).toBe(true);
     });
 
     it("then collapses provider with space key", () => {
       const provider = "provider1";
-      component["providerOrder"] = [provider];
-      component["selectedIndex"] = 0;
-      component["expanded"].add(provider);
+      component.providerOrder = [provider];
+      component.selectedIndex = 0;
+      component.expanded.add(provider);
 
       component.handleInput("space");
 
-      expect(component["expanded"].has(provider)).toBe(false);
+      expect(component.expanded.has(provider)).toBe(false);
     });
 
     it("then toggles state on repeated enter", () => {
       const provider = "provider1";
-      component["providerOrder"] = [provider];
-      component["selectedIndex"] = 0;
+      component.providerOrder = [provider];
+      component.selectedIndex = 0;
 
       component.handleInput("enter"); // Expand
       component.handleInput("enter"); // Collapse
 
-      expect(component["expanded"].has(provider)).toBe(false);
+      expect(component.expanded.has(provider)).toBe(false);
     });
   });
 
@@ -497,13 +497,13 @@ describe("UsageComponent", () => {
     });
 
     it("then does not change active state with unknown keys", () => {
-      const initialTab = component["activeTab"];
-      const initialIndex = component["selectedIndex"];
+      const initialTab = component.activeTab;
+      const initialIndex = component.selectedIndex;
 
       component.handleInput("x");
 
-      expect(component["activeTab"]).toBe(initialTab);
-      expect(component["selectedIndex"]).toBe(initialIndex);
+      expect(component.activeTab).toBe(initialTab);
+      expect(component.selectedIndex).toBe(initialIndex);
     });
   });
 
@@ -579,9 +579,9 @@ describe("UsageComponent", () => {
 
   describe("render - Expanded provider", () => {
     it("then shows models when expanded", () => {
-      component["providerOrder"] = ["provider1"];
-      component["selectedIndex"] = 0;
-      component["expanded"].add("provider1");
+      component.providerOrder = ["provider1"];
+      component.selectedIndex = 0;
+      component.expanded.add("provider1");
 
       const lines = component.render(80);
 

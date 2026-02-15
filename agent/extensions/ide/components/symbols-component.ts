@@ -94,7 +94,7 @@ export function createSymbolsComponent(
         const { join } = await import("node:path");
         await pi.exec("code", [
           "-g",
-          `${join(cwd, item.path)}:${item.startLine}`,
+          `${join(cwd, item.path)}:${String(item.startLine)}`,
         ]);
       },
       loadItems: async () => {
@@ -113,20 +113,25 @@ export function createSymbolsComponent(
           .filter((line) => line.includes("|") && !line.startsWith("["));
         const parsedSymbols = lines
           .map((line) => {
-            const match = line.match(/^(.+)\|([a-z_]+)\|(\.[^|]+)\|(\d+-\d+)$/);
+            const match = /^(.+)\|([a-z_]+)\|(\.[^|]+)\|(\d+-\d+)$/.exec(line);
             if (!match) return null;
 
             const [, name, type, path, lineRange] = match;
-            const [startLine, endLine] = lineRange!.split("-").map(Number);
+            const [startLine, endLine] = lineRange.split("-").map(Number);
+
+            const normalizedStartLine = Number.isNaN(startLine) ? 1 : startLine;
+            const normalizedEndLine = Number.isNaN(endLine)
+              ? normalizedStartLine
+              : endLine;
 
             return {
-              id: `${path}:${startLine}`,
+              id: `${path}:${String(normalizedStartLine)}`,
               label: name || "",
               name: name || "",
               type: type || "f",
               path: path || "",
-              startLine: startLine || 1,
-              endLine: endLine || startLine || 1,
+              startLine: normalizedStartLine,
+              endLine: normalizedEndLine,
             };
           })
           .filter((s): s is SymbolInfo => s !== null && !!s.name && !!s.path);
@@ -148,8 +153,8 @@ export function createSymbolsComponent(
         }
 
         return parsedSymbols.sort((a, b) => {
-          const mtimeA = fileMtimes.get(a.path) || 0;
-          const mtimeB = fileMtimes.get(b.path) || 0;
+          const mtimeA = fileMtimes.get(a.path) ?? 0;
+          const mtimeB = fileMtimes.get(b.path) ?? 0;
           if (mtimeB !== mtimeA) return mtimeB - mtimeA;
           return a.startLine - b.startLine;
         });

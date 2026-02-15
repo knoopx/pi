@@ -220,7 +220,7 @@ function formatRelativeTime(dateString: string): string {
 function extractScore(content: string): number {
   // Reddit JSON doesn't include score directly, but we can try to parse it
   // from the content if it's there. Default to 0 if not found.
-  const scoreMatch = content.match(/(\d+)\s*points?/i);
+  const scoreMatch = /(\d+)\s*points?/i.exec(content);
   return scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
 }
 
@@ -528,8 +528,8 @@ class RedditPostsComponent {
    */
   private createPostLines(
     post: RedditPost,
-    boxWidth: number = 78,
-    isSelected: boolean = false,
+    boxWidth = 78,
+    isSelected = false,
   ): string[] {
     const th = this.theme;
     const lines: string[] = [];
@@ -723,11 +723,11 @@ export default function (pi: ExtensionAPI) {
               limit,
               theme,
               tui,
-              () => done(),
+              () => { done(); },
             );
             return {
               render: (w) => component.render(w),
-              invalidate: () => component.invalidate(),
+              invalidate: () => { component.invalidate(); },
               handleInput: (data) => {
                 component.handleInput(data);
                 tui.requestRender();

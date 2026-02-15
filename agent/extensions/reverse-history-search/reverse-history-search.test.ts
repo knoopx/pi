@@ -54,7 +54,7 @@ describe("Reverse History Search Extension", () => {
           notify: vi.fn(),
           custom: vi.fn(),
           setEditorText: vi.fn(),
-          theme: {} as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+          theme: {} as any,  
           select: vi.fn(),
           confirm: vi.fn(),
           input: vi.fn(),
@@ -71,8 +71,8 @@ describe("Reverse History Search Extension", () => {
           getTheme: vi.fn(),
           setTheme: vi.fn(),
         } as ExtensionUIContext,
-        sessionManager: {} as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-        modelRegistry: {} as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+        sessionManager: {} as any,  
+        modelRegistry: {} as any,  
         model: undefined,
         isIdle: vi.fn(),
         abort: vi.fn(),

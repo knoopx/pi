@@ -133,7 +133,10 @@ describe("Station Resolution", () => {
         { id: 2, name: "Estación Manresa" },
       ];
       const params = { stationName: "Estacione Cenral" };
-      const bestMatch = stations.reduce(
+      const bestMatch = stations.reduce<{
+          station: { id: number; name: string };
+          distance: number;
+        } | null>(
         (best, current) => {
           const currentLower = current.name.toLowerCase();
           const nameDistance = levenshteinDistance(
@@ -144,10 +147,7 @@ describe("Station Resolution", () => {
             ? { station: current, distance: nameDistance }
             : best;
         },
-        null as {
-          station: { id: number; name: string };
-          distance: number;
-        } | null,
+        null,
       );
       expect(bestMatch).toBeDefined();
       expect(bestMatch?.distance).toBeLessThanOrEqual(3);
@@ -157,7 +157,10 @@ describe("Station Resolution", () => {
     it("then it should return null for no match", async () => {
       const stations = [{ id: 1, name: "Estación Central" }];
       const params = { stationName: "Nonexistent" };
-      const bestMatch = stations.reduce(
+      const bestMatch = stations.reduce<{
+          station: { id: number; name: string };
+          distance: number;
+        } | null>(
         (best, current) => {
           const currentLower = current.name.toLowerCase();
           const nameDistance = levenshteinDistance(
@@ -168,10 +171,7 @@ describe("Station Resolution", () => {
             ? { station: current, distance: nameDistance }
             : best;
         },
-        null as {
-          station: { id: number; name: string };
-          distance: number;
-        } | null,
+        null,
       );
       // Distance of 12 > 3 means no match
       expect(bestMatch?.distance).toBeGreaterThan(3);

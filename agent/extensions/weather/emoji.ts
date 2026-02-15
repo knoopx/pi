@@ -1,10 +1,11 @@
-import {
-  EMoonPhase,
+import type {
   MoonPhaseResult,
   WeatherUnit,
   WeatherInfo,
   AgentToolResult,
-  HourlyForecastEntry,
+  HourlyForecastEntry} from "./types";
+import {
+  EMoonPhase
 } from "./types";
 import { MOON_PHASE_NAMES, moonIcons } from "./types";
 
@@ -50,7 +51,7 @@ function moonPhase(year: number, month: number, day: number): MoonPhaseResult {
 }
 
 export function openWeatherWMOToEmoji(
-  weatherCode: number = -1,
+  weatherCode = -1,
   daylight = true,
 ): { value: string; originalNumericCode: number; description: string } {
   switch (weatherCode) {

@@ -436,7 +436,7 @@ async function runNavigationStack<T>(
   ];
 
   while (stack.length > 0) {
-    const current = stack[stack.length - 1]!;
+    const current = stack[stack.length - 1];
     const { result, action, target } = await current.factory(pi, ctx);
 
     if (result === null) {
@@ -562,7 +562,7 @@ async function openBookmarksBrowser(
       keybindings,
       done,
       ctx.cwd,
-      (text) => ctx.ui.setEditorText(text),
+      (text) => { ctx.ui.setEditorText(text); },
     );
   }, FULL_OVERLAY_OPTIONS);
 }
@@ -579,7 +579,7 @@ async function openOpLogBrowser(
       keybindings,
       done,
       ctx.cwd,
-      (message, type = "info") => ctx.ui.notify(message, type),
+      (message, type = "info") => { ctx.ui.notify(message, type); },
     );
   }, FULL_OVERLAY_OPTIONS);
 }
@@ -600,9 +600,9 @@ async function openChangesBrowser(
       return createChangesComponent(
         { pi, tui, theme, keybindings, cwd: ctx.cwd },
         done,
-        (text) => ctx.ui.setEditorText(text),
+        (text) => { ctx.ui.setEditorText(text); },
         (changeId) => promptAndSetBookmark(ctx, changeId),
-        (message, type = "info") => ctx.ui.notify(message, type),
+        (message, type = "info") => { ctx.ui.notify(message, type); },
         async (filePath, action) => {
           pendingCmAction = { filePath, action };
           done();

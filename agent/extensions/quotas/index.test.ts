@@ -9,7 +9,7 @@ import {
 } from "vitest";
 
 // Use doMock instead of mock to avoid hoisting pollution
-let quotasExtension: typeof import("./index").default;
+let quotasExtension: any;
 
 beforeAll(async () => {
   // Import after mocking
@@ -34,8 +34,8 @@ describe("Quotas Extension", () => {
           registerCommand: vi.fn(),
         };
 
-        await quotasExtension(
-          mockPI as unknown as Parameters<typeof quotasExtension>[0],
+        quotasExtension(
+          mockPI as unknown,
         );
 
         expect(mockPI.registerCommand).toHaveBeenCalledWith(
@@ -60,8 +60,8 @@ describe("Quotas Extension", () => {
           registerCommand: vi.fn(),
         };
 
-        await quotasExtension(
-          mockPI as unknown as Parameters<typeof quotasExtension>[0],
+        quotasExtension(
+          mockPI as unknown,
         );
 
         const sessionStartHandler = mockPI.on.mock.calls.find(
@@ -88,8 +88,8 @@ describe("Quotas Extension", () => {
           registerCommand: vi.fn(),
         };
 
-        await quotasExtension(
-          mockPI as unknown as Parameters<typeof quotasExtension>[0],
+        quotasExtension(
+          mockPI as unknown,
         );
 
         const modelSelectHandler = mockPI.on.mock.calls.find(
@@ -118,8 +118,8 @@ describe("Quotas Extension", () => {
           registerCommand: vi.fn(),
         };
 
-        await quotasExtension(
-          mockPI as unknown as Parameters<typeof quotasExtension>[0],
+        quotasExtension(
+          mockPI as unknown,
         );
 
         const commandHandler = mockPI.registerCommand.mock.calls.find(

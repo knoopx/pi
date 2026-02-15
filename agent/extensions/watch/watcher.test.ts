@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/ban-ts-comment */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as core from "./core";
@@ -584,14 +584,14 @@ describe("cleanup operations", () => {
 
     it("then should handle multiple close calls", () => {
       watcher.close();
-      expect(() => watcher.close()).not.toThrow();
+      expect(() => { watcher.close(); }).not.toThrow();
     });
   });
 
   describe("given watcher already closed", () => {
     it("then should handle close gracefully", () => {
       watcher.close();
-      expect(() => watcher.close()).not.toThrow();
+      expect(() => { watcher.close(); }).not.toThrow();
     });
   });
 });

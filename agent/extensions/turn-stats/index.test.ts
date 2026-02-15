@@ -470,7 +470,7 @@ describe("Turn Stats Extension Integration", () => {
     describe("when checking the individual components", () => {
       it("then output tokens should be formatted as '1.9K'", () => {
         const tokensPart = (result: string) => {
-          const match = result.match(/↓([^|]+)/);
+          const match = /↓([^|]+)/.exec(result);
           return match ? match[1].trim() : null;
         };
         expect(tokensPart("↓1.9K | 36s | 63.3 tok/s | $0.01")).toBe("1.9K");
@@ -478,7 +478,7 @@ describe("Turn Stats Extension Integration", () => {
 
       it("then duration should be formatted as '36s'", () => {
         const durationPart = (result: string) => {
-          const match = result.match(/36s/);
+          const match = /36s/.exec(result);
           return match ? match[0] : null;
         };
         expect(durationPart("↓1.9K | 36s | 63.3 tok/s | $0.01")).toBe("36s");
@@ -487,7 +487,7 @@ describe("Turn Stats Extension Integration", () => {
       it("then tok/s should be based on generation time, not duration", () => {
         // 1900 tokens / 30s = 63.3 tok/s (NOT 1900/36 = 52.8 tok/s)
         const tokPerSecPart = (result: string) => {
-          const match = result.match(/(\d+\.\d+) tok\/s/);
+          const match = /(\d+\.\d+) tok\/s/.exec(result);
           return match ? match[1] : null;
         };
         expect(tokPerSecPart("↓1.9K | 36s | 63.3 tok/s | $0.01")).toBe("63.3");
@@ -495,7 +495,7 @@ describe("Turn Stats Extension Integration", () => {
 
       it("then cost should be formatted as '$0.01'", () => {
         const costPart = (result: string) => {
-          const match = result.match(/\$[0-9.]+$/);
+          const match = /\$[0-9.]+$/.exec(result);
           return match ? match[0] : null;
         };
         expect(costPart("↓1.9K | 36s | 63.3 tok/s | $0.01")).toBe("$0.01");

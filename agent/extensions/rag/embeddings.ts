@@ -1,6 +1,7 @@
+import type * as Transformers from "@huggingface/transformers";
+
 // Lazy import transformers to avoid loading at startup
-let transformersModule: typeof import("@huggingface/transformers") | null =
-  null;
+let transformersModule: typeof Transformers | null = null;
 
 async function getTransformers() {
   if (!transformersModule) {
@@ -146,7 +147,7 @@ export function findTopK(
   queryEmbedding: number[],
   embeddings: number[][],
   k: number,
-): Array<{ index: number; similarity: number }> {
+): { index: number; similarity: number }[] {
   const similarities = embeddings.map((emb, index) => ({
     index,
     similarity: cosineSimilarity(queryEmbedding, emb),

@@ -10,8 +10,8 @@ import {
 } from "vitest";
 
 // Use doMock instead of mock to avoid hoisting pollution
-let guardrailsExtension: typeof import("./index").default;
-let isGroupActive: typeof import("./index").isGroupActive;
+let guardrailsExtension: any;
+let isGroupActive: any;
 let configLoader: {
   load: Mock;
   getConfig: Mock;
@@ -31,8 +31,10 @@ beforeAll(async () => {
     },
   }));
 
+  const globMock = vi.fn();
+  glob = globMock as unknown as Mock;
   vi.doMock("tinyglobby", () => ({
-    glob: vi.fn(),
+    glob: globMock,
   }));
 
   // Import after mocking
@@ -42,9 +44,6 @@ beforeAll(async () => {
 
   const configModule = await import("./config");
   configLoader = configModule.configLoader as unknown as typeof configLoader;
-
-  const globModule = await import("tinyglobby");
-  glob = globModule.glob as unknown as Mock;
 });
 
 afterAll(() => {
@@ -76,7 +75,7 @@ describe("Guardrails Extension", () => {
         const result = await isGroupActive("*.json", "/test");
 
         expect(result).toBe(true);
-        expect(glob).toHaveBeenCalledWith(["*.json"], {
+        expect(glob).toHaveBeenCalledWith("*.json", {
           cwd: "/test",
           absolute: false,
           dot: true,
@@ -137,7 +136,7 @@ describe("Guardrails Extension", () => {
         };
 
         await guardrailsExtension(
-          mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+          mockPI as unknown,
         );
 
         expect(configLoader.load).toHaveBeenCalled();
@@ -182,7 +181,7 @@ describe("Guardrails Extension", () => {
           };
 
           await guardrailsExtension(
-            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+            mockPI as unknown,
           );
 
           // Get the tool_call handler
@@ -227,7 +226,7 @@ describe("Guardrails Extension", () => {
           };
 
           await guardrailsExtension(
-            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+            mockPI as unknown,
           );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
@@ -285,7 +284,7 @@ describe("Guardrails Extension", () => {
           };
 
           await guardrailsExtension(
-            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+            mockPI as unknown,
           );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
@@ -343,7 +342,7 @@ describe("Guardrails Extension", () => {
           };
 
           await guardrailsExtension(
-            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+            mockPI as unknown,
           );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
@@ -385,7 +384,7 @@ describe("Guardrails Extension", () => {
           };
 
           await guardrailsExtension(
-            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+            mockPI as unknown,
           );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
@@ -442,7 +441,7 @@ describe("Guardrails Extension", () => {
           };
 
           await guardrailsExtension(
-            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+            mockPI as unknown,
           );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
@@ -504,7 +503,7 @@ describe("Guardrails Extension", () => {
           };
 
           await guardrailsExtension(
-            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+            mockPI as unknown,
           );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
@@ -540,7 +539,7 @@ describe("Guardrails Extension", () => {
           };
 
           await guardrailsExtension(
-            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+            mockPI as unknown,
           );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
@@ -578,7 +577,7 @@ describe("Guardrails Extension", () => {
           };
 
           await guardrailsExtension(
-            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+            mockPI as unknown,
           );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
@@ -640,7 +639,7 @@ describe("Guardrails Extension", () => {
           };
 
           await guardrailsExtension(
-            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+            mockPI as unknown,
           );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
@@ -678,7 +677,7 @@ describe("Guardrails Extension", () => {
           };
 
           await guardrailsExtension(
-            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+            mockPI as unknown,
           );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
@@ -736,7 +735,7 @@ describe("Guardrails Extension", () => {
           };
 
           await guardrailsExtension(
-            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+            mockPI as unknown,
           );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
@@ -771,7 +770,7 @@ describe("Guardrails Extension", () => {
           };
 
           await guardrailsExtension(
-            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+            mockPI as unknown,
           );
 
           const toolCallHandler = mockPI.on.mock.calls.find(
@@ -831,7 +830,7 @@ describe("Guardrails Extension", () => {
           };
 
           await guardrailsExtension(
-            mockPI as unknown as Parameters<typeof guardrailsExtension>[0],
+            mockPI as unknown,
           );
 
           const toolCallHandler = mockPI.on.mock.calls.find(

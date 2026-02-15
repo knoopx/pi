@@ -53,7 +53,7 @@ export function createWorkspacesComponent(
   tui: { terminal: { rows: number }; requestRender: () => void },
   theme: Theme,
   _keybindings: KeybindingsManager,
-  done: (result: void) => void,
+  done: () => void,
 ) {
   let workspaces: AgentWorkspace[] = [];
   let selectedIndex = 0;
@@ -89,7 +89,7 @@ export function createWorkspacesComponent(
       loading = false;
 
       if (workspaces.length > 0) {
-        selectedWorkspace = workspaces[0]!;
+        selectedWorkspace = workspaces[0];
         await loadFilesAndDiff(selectedWorkspace);
       }
 
@@ -116,7 +116,7 @@ export function createWorkspacesComponent(
           changes = cache.changes;
           files = [];
           fileIndex = 0;
-          const diffKey = changes[0]?.changeId || "";
+          const diffKey = changes[0]?.changeId ?? "";
           const cachedDiff = cache.diffs.get(diffKey);
           if (cachedDiff) {
             diffContent = cachedDiff;
@@ -142,7 +142,7 @@ export function createWorkspacesComponent(
           files = cache.files;
           changes = [];
           fileIndex = 0;
-          const diffKey = files[0]?.path || "";
+          const diffKey = files[0]?.path ?? "";
           const cachedDiff = cache.diffs.get(diffKey);
           if (cachedDiff) {
             diffContent = cachedDiff;
@@ -202,7 +202,7 @@ export function createWorkspacesComponent(
     ws: AgentWorkspace,
     filePath?: string,
   ): Promise<void> {
-    const diffKey = filePath || "";
+    const diffKey = filePath ?? "";
     const cache = workspaceCache.get(ws.name);
     const cachedDiff = cache?.diffs.get(diffKey);
     if (cachedDiff) {
@@ -321,7 +321,7 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
     }
 
     for (let i = 0; i < workspaces.length && i < height; i++) {
-      const ws = workspaces[i]!;
+      const ws = workspaces[i];
       const isSelected = i === selectedIndex && focus === "workspaces";
       const stats = formatFileStats(ws);
       const status =
@@ -386,16 +386,16 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
     const rightTopTitle = isDefault ? " Changes" : " Files";
     const rightBottomTitle = selectedWorkspace
       ? isDefault
-        ? ` Diff: ${changes[fileIndex]?.changeId?.slice(0, 8) || "none"}`
-        : ` Diff: ${files[fileIndex]?.path || "all"}`
+        ? ` Diff: ${changes[fileIndex]?.changeId?.slice(0, 8) ?? "none"}`
+        : ` Diff: ${files[fileIndex]?.path ?? "all"}`
       : " Diff";
 
     const leftRows = getLeftRows(dims.leftW, dims.contentH);
-    const fileRows = getFileRows(dims.rightW, dims.rightTopH || 5);
+    const fileRows = getFileRows(dims.rightW, dims.rightTopH ?? 5);
     const diffRows = renderDiffRows(
       diffContent,
       dims.rightW,
-      dims.rightBottomH || 10,
+      dims.rightBottomH ?? 10,
       diffScroll,
       theme,
     );
@@ -534,37 +534,38 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
       if (matchesKey(data, "up")) {
         if (selectedIndex > 0) {
           selectedIndex--;
-          selectedWorkspace = workspaces[selectedIndex] || null;
-          if (selectedWorkspace) {
-            void loadFilesAndDiff(selectedWorkspace);
-          }
+          selectedWorkspace = workspaces[selectedIndex];
+          void loadFilesAndDiff(selectedWorkspace);
           invalidate();
           tui.requestRender();
         }
       } else if (matchesKey(data, "down")) {
         if (selectedIndex < workspaces.length - 1) {
           selectedIndex++;
-          selectedWorkspace = workspaces[selectedIndex] || null;
-          if (selectedWorkspace) {
-            void loadFilesAndDiff(selectedWorkspace);
-          }
+          selectedWorkspace = workspaces[selectedIndex];
+          void loadFilesAndDiff(selectedWorkspace);
           invalidate();
           tui.requestRender();
         }
       }
-    } else if (focus === "files") {
-      const isDefault = selectedWorkspace?.name === "default";
+    } else {
+      const ws = selectedWorkspace;
+      if (ws === null) {
+        return;
+      }
+
+      const isDefault = ws.name === "default";
       const maxIndex = isDefault ? changes.length - 1 : files.length - 1;
 
       // Discard file changes
       if (data === "d" && !isDefault && files[fileIndex]) {
-        const file = files[fileIndex]!;
+        const file = files[fileIndex];
         void (async () => {
           await pi.exec("jj", ["restore", file.path], {
-            cwd: selectedWorkspace!.path,
+            cwd: ws.path,
           });
-          workspaceCache.delete(selectedWorkspace!.name);
-          await loadFilesAndDiff(selectedWorkspace!);
+          workspaceCache.delete(ws.name);
+          await loadFilesAndDiff(ws);
         })();
         return;
       }
@@ -576,15 +577,10 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
             : Math.min(maxIndex, fileIndex + 1);
         if (newIndex !== fileIndex) {
           fileIndex = newIndex;
-          if (selectedWorkspace) {
-            if (isDefault) {
-              void loadChangeDiff(
-                selectedWorkspace,
-                changes[fileIndex]?.changeId,
-              );
-            } else {
-              void loadDiff(selectedWorkspace, files[fileIndex]?.path);
-            }
+          if (isDefault) {
+            void loadChangeDiff(ws, changes[fileIndex]?.changeId);
+          } else {
+            void loadDiff(ws, files[fileIndex]?.path);
           }
           invalidate();
           tui.requestRender();
@@ -613,7 +609,7 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
   }
 
   function dispose(): void {
-    // Cleanup if needed
+    return;
   }
 
   void loadWorkspaces();

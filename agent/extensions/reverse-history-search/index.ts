@@ -2,8 +2,8 @@
 export function fuzzyMatch(text: string, query: string): boolean {
   if (!query) return true;
   let queryIndex = 0;
-  for (let i = 0; i < text.length; i++) {
-    if (text[i].toLowerCase() === query[queryIndex].toLowerCase()) {
+  for (const char of text) {
+    if (char.toLowerCase() === query[queryIndex].toLowerCase()) {
       queryIndex++;
       if (queryIndex === query.length) return true;
     }
@@ -35,11 +35,11 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
-type HistoryEntry = {
+interface HistoryEntry {
   content: string;
   timestamp: number;
   type: "command" | "message";
-};
+}
 
 // Simple fuzzy matching - returns true if all chars in query appear in text in order
 
@@ -200,7 +200,7 @@ class HistorySearchComponent {
 
     if (matchesKey(data, "enter")) {
       if (this.filteredHistory.length > 0) {
-        this.onSelect?.(this.filteredHistory[this.selectedIndex]!);
+        this.onSelect?.(this.filteredHistory[this.selectedIndex]);
       }
       return;
     }
@@ -290,7 +290,7 @@ class HistorySearchComponent {
     const end = Math.min(start + maxVisible, this.filteredHistory.length);
 
     for (let i = start; i < end; i++) {
-      const entry = this.filteredHistory[i]!;
+      const entry = this.filteredHistory[i];
       const isSelected = i === this.selectedIndex;
 
       // Type indicator
@@ -368,12 +368,18 @@ export default function (pi: ExtensionAPI) {
         ) => {
           const component = new HistorySearchComponent(theme, history);
 
-          component.onSelect = (entry) => done(entry);
-          component.onCancel = () => done(null);
+          component.onSelect = (entry) => {
+            done(entry);
+          };
+          component.onCancel = () => {
+            done(null);
+          };
 
           return {
             render: (w) => component.render(w),
-            invalidate: () => component.invalidate(),
+            invalidate: () => {
+              component.invalidate();
+            },
             handleInput: (data: string) => {
               component.handleInput(data);
               tui.requestRender();

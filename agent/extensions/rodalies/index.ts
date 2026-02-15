@@ -123,7 +123,7 @@ export async function getStations(): Promise<Station[]> {
     cachedStations = uniqueStations.sort((a: Station, b: Station) =>
       a.name.localeCompare(b.name),
     );
-    return uniqueStations as Station[];
+    return uniqueStations;
   } catch (err) {
     console.error("Error fetching stations:", err);
     return [];
@@ -233,7 +233,7 @@ export default function (pi: ExtensionAPI) {
         } else {
           // Try fuzzy matching - find best match
           const nameLower = stationName.toLowerCase();
-          const bestMatch = stations.reduce(
+          const bestMatch = stations.reduce<{ station: Station; distance: number } | null>(
             (best, current) => {
               const currentLower = current.name.toLowerCase();
               const nameDistance = levenshteinDistance(nameLower, currentLower);
@@ -241,7 +241,7 @@ export default function (pi: ExtensionAPI) {
                 ? { station: current, distance: nameDistance }
                 : best;
             },
-            null as { station: Station; distance: number } | null,
+            null,
           );
 
           if (bestMatch && bestMatch.distance <= 3) {
@@ -325,8 +325,8 @@ export default function (pi: ExtensionAPI) {
 
       // Use UI selection
       const selectedId = await new Promise<string | null>((resolve) => {
-        selectList.onSelect = (item: { value: string }) => resolve(item.value);
-        selectList.onCancel = () => resolve(null);
+        selectList.onSelect = (item: { value: string }) => { resolve(item.value); };
+        selectList.onCancel = () => { resolve(null); };
         (ctx as any).ui.custom(selectList, {
           overlay: true,
           overlayOptions: { width: 60 },

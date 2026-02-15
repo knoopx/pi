@@ -47,7 +47,7 @@ export function formatSymbolListEntry(
   const signatureText = opts.signature
     ? theme.fg("dim", ` ${opts.signature}`)
     : "";
-  const location = theme.fg("dim", `${pathShort}:${opts.line}`);
+  const location = theme.fg("dim", `${pathShort}:${String(opts.line)}`);
   return `${icon} ${opts.name}${signatureText} ${location}`;
 }
 
@@ -169,7 +169,7 @@ export function getFileIcon(filePath: string): string {
 
   // Check special filenames first
   if (FILENAME_ICONS[filename]) {
-    return FILENAME_ICONS[filename]!;
+    return FILENAME_ICONS[filename];
   }
 
   // Check extension
@@ -177,7 +177,7 @@ export function getFileIcon(filePath: string): string {
   if (dotIndex > 0) {
     const ext = filename.slice(dotIndex).toLowerCase();
     if (FILE_ICONS[ext]) {
-      return FILE_ICONS[ext]!;
+      return FILE_ICONS[ext];
     }
   }
 

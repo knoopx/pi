@@ -82,7 +82,7 @@ export function parseWorkspaceList(output: string): WorkspaceListEntry[] {
 
   for (const line of lines) {
     // Format: "name: changeId description"
-    const match = line.match(/^(\S+):\s+(\w+)\s*(.*)?$/);
+    const match = /^(\S+):\s+(\w+)\s*(.*)?$/.exec(line);
     if (match) {
       entries.push({
         name: match[1],
@@ -173,7 +173,7 @@ export function parseDiffStats(output: string): DiffStats {
   const lines = output.trim().split("\n");
   for (const line of lines) {
     // Match file lines like: "src/file.ts | 10 +++++-----"
-    const fileMatch = line.match(/^\s*(.+?)\s*\|\s*(\d+)\s*([+-]*)\s*$/);
+    const fileMatch = /^\s*(.+?)\s*\|\s*(\d+)\s*([+-]*)\s*$/.exec(line);
     if (fileMatch) {
       const path = fileMatch[1].trim();
       const insertions = (fileMatch[3].match(/\+/g) || []).length;

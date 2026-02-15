@@ -46,12 +46,12 @@ export interface WorkspaceListEntry {
  * Result of running jj diff --stat
  */
 export interface DiffStats {
-  files: Array<{
+  files: {
     path: string;
     status: "added" | "modified" | "deleted";
     insertions: number;
     deletions: number;
-  }>;
+  }[];
   totalInsertions: number;
   totalDeletions: number;
 }

@@ -8,10 +8,7 @@ import type {
   SessionStartEvent,
   SessionShutdownEvent,
 } from "@mariozechner/pi-coding-agent";
-import type {
-  AssistantMessage,
-  AssistantMessageEvent,
-} from "@mariozechner/pi-ai";
+import type { AssistantMessageEvent } from "@mariozechner/pi-ai";
 
 /** Local type for message_update event (not exported from pi-coding-agent) */
 interface MessageUpdateEvent {
@@ -46,16 +43,16 @@ export function formatDuration(ms: number): string {
   const seconds = totalSeconds % 60;
 
   if (hours > 0) {
-    return `${hours}h ${minutes}m ${Math.floor(seconds)}s`;
+    return `${String(hours)}h ${String(minutes)}m ${String(Math.floor(seconds))}s`;
   }
   if (minutes > 0) {
-    return `${minutes}m ${Math.floor(seconds)}s`;
+    return `${String(minutes)}m ${String(Math.floor(seconds))}s`;
   }
   // If seconds is less than 1, show decimal places
   if (seconds < 1) {
     return `${seconds.toFixed(2)}s`;
   }
-  return `${Math.floor(seconds)}s`;
+  return `${String(Math.floor(seconds))}s`;
 }
 
 export function formatTokens(tokens: number | undefined | null): string {
@@ -111,12 +108,11 @@ export function formatCost(
 
   // Calculate total from cost.total or sum of components
   const total =
-    cost.total !== undefined
-      ? cost.total
-      : (cost.input || 0) +
-        (cost.output || 0) +
-        (cost.cacheRead || 0) +
-        (cost.cacheWrite || 0);
+    cost.total ??
+    (cost.input ?? 0) +
+      (cost.output ?? 0) +
+      (cost.cacheRead ?? 0) +
+      (cost.cacheWrite ?? 0);
 
   // Don't show cost if it rounds to $0.00
   if (total < 0.005) {
@@ -135,12 +131,7 @@ export function formatTokensPerSecond(
   tokens: number | undefined,
   generationMs: number | undefined,
 ): string {
-  if (
-    tokens === undefined ||
-    tokens === null ||
-    generationMs === undefined ||
-    generationMs <= 0
-  ) {
+  if (tokens === undefined || generationMs === undefined || generationMs <= 0) {
     return "";
   }
   const tokensPerSecond = tokens / (generationMs / 1000);
@@ -182,18 +173,28 @@ export function formatSimpleOutput(
   return result;
 }
 
+function getTurnKey(turnIndex: unknown): string {
+  if (typeof turnIndex === "number" || typeof turnIndex === "bigint") {
+    return String(turnIndex);
+  }
+  if (typeof turnIndex === "string") {
+    return turnIndex;
+  }
+  return "unknown";
+}
+
 /**
  * Main extension function
  */
 export default function (pi: ExtensionAPI) {
   // Track turn start time for per-turn duration
-  const turnStartTimes = new Map<number, number>();
+  const turnStartTimes = new Map<string, number>();
   // Track first text delta time per turn (for accurate tok/s calculation)
-  const turnFirstDeltaTimes = new Map<number, number>();
+  const turnFirstDeltaTimes = new Map<string, number>();
   // Track last text delta time per turn
-  const turnLastDeltaTimes = new Map<number, number>();
-  // Current turn index (set by turn_start, used by message_update)
-  let currentTurnIndex: number | null = null;
+  const turnLastDeltaTimes = new Map<string, number>();
+  // Current turn key (set by turn_start, used by message_update)
+  let currentTurnKey: string | null = null;
   // Track agent start time for total agent duration
   let agentStartTime: number | null = null;
   // Track last turn end timestamp for total agent duration
@@ -214,9 +215,10 @@ export default function (pi: ExtensionAPI) {
    * Hook into turn start event
    * Records the start time for each turn
    */
-  pi.on("turn_start", async (event: TurnStartEvent, _ctx: ExtensionContext) => {
-    turnStartTimes.set(event.turnIndex, Date.now());
-    currentTurnIndex = event.turnIndex;
+  pi.on("turn_start", (event: TurnStartEvent, _ctx: ExtensionContext) => {
+    const turnKey = getTurnKey(event.turnIndex);
+    turnStartTimes.set(turnKey, Date.now());
+    currentTurnKey = turnKey;
   });
 
   /**
@@ -235,19 +237,19 @@ export default function (pi: ExtensionAPI) {
     }
   ).on(
     "message_update",
-    async (event: MessageUpdateEvent, _ctx: ExtensionContext) => {
-      if (currentTurnIndex === null) return;
+    (event: MessageUpdateEvent, _ctx: ExtensionContext) => {
+      if (currentTurnKey === null) return;
 
       const assistantEvent = event.assistantMessageEvent;
       // Track timing on text_delta events (actual token streaming)
       if (assistantEvent.type === "text_delta") {
         const now = Date.now();
         // Record first delta time if not set
-        if (!turnFirstDeltaTimes.has(currentTurnIndex)) {
-          turnFirstDeltaTimes.set(currentTurnIndex, now);
+        if (!turnFirstDeltaTimes.has(currentTurnKey)) {
+          turnFirstDeltaTimes.set(currentTurnKey, now);
         }
         // Always update last delta time
-        turnLastDeltaTimes.set(currentTurnIndex, now);
+        turnLastDeltaTimes.set(currentTurnKey, now);
       }
     },
   );
@@ -256,52 +258,58 @@ export default function (pi: ExtensionAPI) {
    * Hook into turn end event
    * Reports the per-turn duration and token usage
    */
-  pi.on("turn_end", async (event: TurnEndEvent, ctx: ExtensionContext) => {
-    const startTime = turnStartTimes.get(event.turnIndex);
-    const firstDeltaTime = turnFirstDeltaTimes.get(event.turnIndex);
-    const lastDeltaTime = turnLastDeltaTimes.get(event.turnIndex);
+  pi.on("turn_end", (event: TurnEndEvent, ctx: ExtensionContext) => {
+    const eventTurnKey = getTurnKey(event.turnIndex);
+    const turnKey = turnStartTimes.has(eventTurnKey)
+      ? eventTurnKey
+      : (currentTurnKey ?? eventTurnKey);
+
+    const startTime = turnStartTimes.get(turnKey);
+    const firstDeltaTime = turnFirstDeltaTimes.get(turnKey);
+    const lastDeltaTime = turnLastDeltaTimes.get(turnKey);
 
     // Clean up turn tracking
-    turnStartTimes.delete(event.turnIndex);
-    turnFirstDeltaTimes.delete(event.turnIndex);
-    turnLastDeltaTimes.delete(event.turnIndex);
-    currentTurnIndex = null;
+    turnStartTimes.delete(turnKey);
+    turnFirstDeltaTimes.delete(turnKey);
+    turnLastDeltaTimes.delete(turnKey);
+    currentTurnKey = null;
 
-    // Only track assistant messages with usage data
+    // Only track assistant messages
     const message = event.message;
-    if (!message || message.role !== "assistant") {
+    if (message.role !== "assistant") {
       return;
     }
 
-    const assistantMessage = message as AssistantMessage;
-    const usage = assistantMessage.usage;
-    if (!usage) {
-      return;
-    }
+    const usage = message.usage;
 
     const turnEndTimestamp = Date.now();
-    const durationMs = startTime ? turnEndTimestamp - startTime : 0;
+    const durationMs =
+      startTime !== undefined ? Math.max(0, turnEndTimestamp - startTime) : 0;
     lastTurnEndTimestamp = turnEndTimestamp;
 
-    // Calculate actual generation time (first delta to last delta)
-    const generationMs =
-      firstDeltaTime && lastDeltaTime
-        ? lastDeltaTime - firstDeltaTime
+    // Calculate generation time (prefer text streaming window, fallback to full turn duration)
+    const generationMsFromStream =
+      firstDeltaTime !== undefined && lastDeltaTime !== undefined
+        ? Math.max(0, lastDeltaTime - firstDeltaTime)
         : undefined;
+    const generationMs =
+      generationMsFromStream !== undefined && generationMsFromStream > 0
+        ? generationMsFromStream
+        : durationMs > 0
+          ? durationMs
+          : undefined;
 
     // Get token information from the message
     const outputTokens = usage.output;
     const cost = usage.cost;
-    const costInput = cost?.input;
-    const costOutput = cost?.output;
-    const costCacheRead = cost?.cacheRead;
-    const costCacheWrite = cost?.cacheWrite;
-    const costTotal = cost?.total;
+    const costInput = cost.input;
+    const costOutput = cost.output;
+    const costCacheRead = cost.cacheRead;
+    const costCacheWrite = cost.cacheWrite;
+    const costTotal = cost.total;
 
     // Accumulate all token stats
-    if (outputTokens !== undefined) {
-      totalOutputTokens += outputTokens;
-    }
+    totalOutputTokens += outputTokens;
 
     // Accumulate generation time for agent-level tok/s
     if (generationMs !== undefined) {
@@ -309,21 +317,11 @@ export default function (pi: ExtensionAPI) {
     }
 
     // Accumulate cost breakdown
-    if (costInput !== undefined) {
-      totalCostInput += costInput;
-    }
-    if (costOutput !== undefined) {
-      totalCostOutput += costOutput;
-    }
-    if (costCacheRead !== undefined) {
-      totalCostCacheRead += costCacheRead;
-    }
-    if (costCacheWrite !== undefined) {
-      totalCostCacheWrite += costCacheWrite;
-    }
-    if (costTotal !== undefined) {
-      totalCost += costTotal;
-    }
+    totalCostInput += costInput;
+    totalCostOutput += costOutput;
+    totalCostCacheRead += costCacheRead;
+    totalCostCacheWrite += costCacheWrite;
+    totalCost += costTotal;
 
     // Format simple output: ↓<output_tokens> | <duration> | <tok/s> | <cost>
     const notificationStr = formatSimpleOutput(
@@ -341,21 +339,16 @@ export default function (pi: ExtensionAPI) {
    * Hook into agent start event
    * Records the start time for the agent
    */
-  pi.on(
-    "agent_start",
-    async (_event: AgentStartEvent, _ctx: ExtensionContext) => {
-      if (!agentStartTime) {
-        agentStartTime = Date.now();
-      }
-    },
-  );
+  pi.on("agent_start", (_event: AgentStartEvent, _ctx: ExtensionContext) => {
+    agentStartTime ??= Date.now();
+  });
 
   /**
    * Hook into agent end event
    * Reports the agent end duration and token stats
    */
-  pi.on("agent_end", async (_event: AgentEndEvent, ctx: ExtensionContext) => {
-    if (agentStartTime) {
+  pi.on("agent_end", (_event: AgentEndEvent, ctx: ExtensionContext) => {
+    if (agentStartTime !== null) {
       const endTimestamp = lastTurnEndTimestamp ?? Date.now();
       const totalDurationMs = endTimestamp - agentStartTime;
 
@@ -396,7 +389,7 @@ export default function (pi: ExtensionAPI) {
     turnStartTimes.clear();
     turnFirstDeltaTimes.clear();
     turnLastDeltaTimes.clear();
-    currentTurnIndex = null;
+    currentTurnKey = null;
     agentStartTime = null;
     lastTurnEndTimestamp = null;
     totalOutputTokens = 0;
@@ -412,14 +405,14 @@ export default function (pi: ExtensionAPI) {
    * Hook into session start event
    * Resets timer tracking when a new session begins
    */
-  pi.on("session_start", async (_event: SessionStartEvent) => {
+  pi.on("session_start", (_event: SessionStartEvent) => {
     resetCounters();
   });
 
   /**
    * Hook into session shutdown event
    */
-  pi.on("session_shutdown", async (_event: SessionShutdownEvent) => {
+  pi.on("session_shutdown", (_event: SessionShutdownEvent) => {
     resetCounters();
   });
 }

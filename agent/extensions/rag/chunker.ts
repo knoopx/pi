@@ -3,7 +3,7 @@ import { toString } from "mdast-util-to-string";
 import { gfmFromMarkdown } from "mdast-util-gfm";
 import { gfm } from "micromark-extension-gfm";
 import { visit } from "unist-util-visit";
-import type { Root, Content, Heading, Code } from "mdast";
+import type { Root, RootContent, Heading } from "mdast";
 
 export interface MarkdownChunk {
   id: string;
@@ -58,14 +58,14 @@ export function parseMarkdown(content: string): Root {
 /**
  * Extract text content from an AST node
  */
-export function nodeToText(node: Content | Root): string {
+export function nodeToText(node: RootContent | Root): string {
   return toString(node);
 }
 
 /**
  * Get the type classification for a chunk
  */
-function getChunkType(node: Content): ChunkType {
+function getChunkType(node: RootContent): ChunkType {
   switch (node.type) {
     case "heading":
       return "heading";
@@ -141,14 +141,14 @@ export function chunkMarkdown(
   if (opts.groupByHeading) {
     const sections: {
       heading?: Heading;
-      content: Content[];
+      content: RootContent[];
       startLine?: number;
       endLine?: number;
     }[] = [];
 
     let currentSection: {
       heading?: Heading;
-      content: Content[];
+      content: RootContent[];
       startLine?: number;
       endLine?: number;
     } = {
@@ -162,7 +162,7 @@ export function chunkMarkdown(
           sections.push(currentSection);
         }
         currentSection = {
-          heading: node as Heading,
+          heading: node,
           content: [],
           startLine: node.position?.start.line,
         };
@@ -200,7 +200,7 @@ export function chunkMarkdown(
       for (const node of section.content) {
         const text = nodeToText(node);
         if (node.type === "code") {
-          const codeNode = node as Code;
+          const codeNode = node;
           sectionText +=
             "```" + (codeNode.lang || "") + "\n" + text + "\n```\n\n";
         } else {
@@ -255,7 +255,7 @@ export function chunkMarkdown(
     visit(ast, (node) => {
       if (node.type === "root") return;
 
-      const content = node as Content;
+      const content = node as RootContent;
       const text = nodeToText(content);
 
       if (text.length < opts.minChunkSize) {
@@ -266,7 +266,7 @@ export function chunkMarkdown(
 
       // Update heading context
       if (content.type === "heading") {
-        const heading = content as Heading;
+        const heading = content;
         updateHeadingStack(text, heading.depth);
       }
 
@@ -283,9 +283,9 @@ export function chunkMarkdown(
 
       // Add type-specific metadata
       if (content.type === "heading") {
-        chunk.headingLevel = (content as Heading).depth;
+        chunk.headingLevel = content.depth;
       } else if (content.type === "code") {
-        chunk.codeLanguage = (content as Code).lang || undefined;
+        chunk.codeLanguage = content.lang || undefined;
       }
 
       // Handle oversized chunks
@@ -368,7 +368,7 @@ function splitLargeContent(content: string, maxSize: number): string[] {
  * Chunk multiple markdown files
  */
 export async function chunkMarkdownFiles(
-  files: Array<{ path: string; content: string }>,
+  files: { path: string; content: string }[],
   options: ChunkingOptions = {},
 ): Promise<MarkdownChunk[]> {
   const allChunks: MarkdownChunk[] = [];
