@@ -31,23 +31,16 @@ import { createWorkspacesComponent } from "./components/workspaces-component";
 import {
   createSymbolsComponent,
   type SymbolResult,
-  type CmActionType,
 } from "./components/symbols-component";
 import {
-  openCmCallers,
-  openCmCallees,
-  openCmTests,
-  openCmTypes,
-  openCmSchema,
-  openCmImpact,
-  openCmInspect,
-  openCmDeps,
-  openCmUsedBy,
+  createCmResultsComponent,
+  CM_COMMANDS,
+  type CmResult,
+  type CmActionType,
 } from "./components/cm-results-component";
 import {
   createFilesComponent,
   type FileResult,
-  type FileCmActionType,
 } from "./components/files-component";
 
 import { createChangesComponent } from "./components/changes-component";
@@ -404,22 +397,76 @@ export default function ideExtension(pi: ExtensionAPI) {
   });
 }
 
-/** Map symbol action types to cm result openers */
-const CM_SYMBOL_ACTION_OPENERS: Record<CmActionType, typeof openCmCallers> = {
-  callers: openCmCallers,
-  callees: openCmCallees,
-  tests: openCmTests,
-  types: openCmTypes,
-  schema: openCmSchema,
-  impact: openCmImpact,
-};
+/**
+ * Navigation stack for overlay history.
+ * Escape pops to previous screen instead of closing all.
+ */
+type ScreenFactory<T> = (
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+) => Promise<{ result: T | null; action?: CmActionType; target?: string }>;
 
-/** Map file action types to cm result openers */
-const CM_FILE_ACTION_OPENERS: Record<FileCmActionType, typeof openCmInspect> = {
-  inspect: openCmInspect,
-  deps: openCmDeps,
-  "used-by": openCmUsedBy,
-};
+interface NavScreen {
+  factory: ScreenFactory<unknown>;
+}
+
+/**
+ * Run a navigation stack loop. Screens can push new screens via actions,
+ * and escape pops back to the previous screen.
+ */
+async function runNavigationStack<T>(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+  initialScreen: ScreenFactory<T>,
+): Promise<T | null> {
+  const stack: NavScreen[] = [
+    { factory: initialScreen as ScreenFactory<unknown> },
+  ];
+
+  while (stack.length > 0) {
+    const current = stack[stack.length - 1]!;
+    const { result, action, target } = await current.factory(pi, ctx);
+
+    if (result === null) {
+      // Escape pressed - pop current screen
+      stack.pop();
+      continue;
+    }
+
+    if (action && target) {
+      // Action triggered - push cm results screen
+      const cmDef = CM_COMMANDS[action];
+      if (cmDef) {
+        stack.push({
+          factory: async (pi, ctx) => {
+            const cmResult = await ctx.ui.custom<CmResult | null>(
+              (tui, theme, keybindings, done) =>
+                createCmResultsComponent(pi, tui, theme, keybindings, done, {
+                  title: cmDef.titleFn(target),
+                  command: cmDef.command,
+                  args: cmDef.argsFn(target),
+                  cwd: ctx.cwd,
+                }),
+              FULL_OVERLAY_OPTIONS,
+            );
+            if (!cmResult) return { result: null };
+            return {
+              result: cmResult.item,
+              action: cmResult.action,
+              target: cmResult.item.name,
+            };
+          },
+        });
+      }
+      continue;
+    }
+
+    // Final selection - return result and clear stack
+    return result as T;
+  }
+
+  return null;
+}
 
 /**
  * Handler factories to reduce duplication between commands and shortcuts
@@ -430,44 +477,33 @@ async function openFilesPicker(
   ctx: ExtensionContext,
   initialQuery: string,
 ): Promise<void> {
-  const result = await ctx.ui.custom<FileResult | null>(
-    (tui, theme, keybindings, done) => {
-      return createFilesComponent(
-        pi,
-        tui,
-        theme,
-        keybindings,
-        done,
-        initialQuery,
-        ctx.cwd,
-      );
-    },
-    FULL_OVERLAY_OPTIONS,
-  );
+  const result = await runNavigationStack(pi, ctx, async (pi, ctx) => {
+    const fileResult = await ctx.ui.custom<FileResult | null>(
+      (tui, theme, keybindings, done) =>
+        createFilesComponent(
+          pi,
+          tui,
+          theme,
+          keybindings,
+          done,
+          initialQuery,
+          ctx.cwd,
+        ),
+      FULL_OVERLAY_OPTIONS,
+    );
+    if (!fileResult) return { result: null };
+    return {
+      result: fileResult.file,
+      action: fileResult.action,
+      target: fileResult.file.path,
+    };
+  });
 
-  if (!result) return;
-
-  // If an action was triggered, open the cm results picker
-  if (result.action) {
-    const opener = CM_FILE_ACTION_OPENERS[result.action];
-    await ctx.ui.custom((tui, theme, keybindings, done) => {
-      return opener(
-        pi,
-        tui,
-        theme,
-        keybindings,
-        done,
-        result.file.path,
-        ctx.cwd,
-      );
-    }, FULL_OVERLAY_OPTIONS);
-    return;
+  if (result) {
+    const ref = ` ${result.path}`;
+    const currentText = ctx.ui.getEditorText();
+    ctx.ui.setEditorText(currentText + ref);
   }
-
-  // Otherwise, insert the file reference
-  const ref = ` ${result.file.path}`;
-  const currentText = ctx.ui.getEditorText();
-  ctx.ui.setEditorText(currentText + ref);
 }
 
 async function openSymbolsPicker(
@@ -475,44 +511,33 @@ async function openSymbolsPicker(
   ctx: ExtensionContext,
   initialQuery: string,
 ): Promise<void> {
-  const result = await ctx.ui.custom<SymbolResult | null>(
-    (tui, theme, keybindings, done) => {
-      return createSymbolsComponent(
-        pi,
-        tui,
-        theme,
-        keybindings,
-        done,
-        initialQuery,
-        ctx.cwd,
-      );
-    },
-    FULL_OVERLAY_OPTIONS,
-  );
+  const result = await runNavigationStack(pi, ctx, async (pi, ctx) => {
+    const symbolResult = await ctx.ui.custom<SymbolResult | null>(
+      (tui, theme, keybindings, done) =>
+        createSymbolsComponent(
+          pi,
+          tui,
+          theme,
+          keybindings,
+          done,
+          initialQuery,
+          ctx.cwd,
+        ),
+      FULL_OVERLAY_OPTIONS,
+    );
+    if (!symbolResult) return { result: null };
+    return {
+      result: symbolResult.symbol,
+      action: symbolResult.action,
+      target: symbolResult.symbol.name,
+    };
+  });
 
-  if (!result) return;
-
-  // If an action was triggered, open the cm results picker
-  if (result.action) {
-    const opener = CM_SYMBOL_ACTION_OPENERS[result.action];
-    await ctx.ui.custom((tui, theme, keybindings, done) => {
-      return opener(
-        pi,
-        tui,
-        theme,
-        keybindings,
-        done,
-        result.symbol.name,
-        ctx.cwd,
-      );
-    }, FULL_OVERLAY_OPTIONS);
-    return;
+  if (result) {
+    const ref = ` ${result.path}:${result.startLine}`;
+    const currentText = ctx.ui.getEditorText();
+    ctx.ui.setEditorText(currentText + ref);
   }
-
-  // Otherwise, insert the symbol reference
-  const ref = ` ${result.symbol.path}:${result.symbol.startLine}`;
-  const currentText = ctx.ui.getEditorText();
-  ctx.ui.setEditorText(currentText + ref);
 }
 
 async function openBookmarksBrowser(

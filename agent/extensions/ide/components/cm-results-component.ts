@@ -7,10 +7,11 @@ import {
   createListPicker,
   type ListPickerItem,
   type ListPickerComponent,
+  type ListPickerAction,
 } from "./list-picker";
 import { loadFilePreviewWithBat, SYMBOL_TYPE_ICONS } from "./utils";
 
-interface CmResultItem extends ListPickerItem {
+export interface CmResultItem extends ListPickerItem {
   name: string;
   type: string;
   path: string;
@@ -18,6 +19,22 @@ interface CmResultItem extends ListPickerItem {
   endLine: number;
   signature?: string;
   callLine?: number;
+}
+
+export type CmActionType =
+  | "callers"
+  | "callees"
+  | "tests"
+  | "types"
+  | "schema"
+  | "impact"
+  | "inspect"
+  | "deps"
+  | "used-by";
+
+export interface CmResult {
+  item: CmResultItem;
+  action?: CmActionType;
 }
 
 interface CmResultsConfig {
@@ -34,8 +51,8 @@ interface CmCommandDef {
   argsFn: (target: string) => string[];
 }
 
-/** Symbol-based cm commands (callers, callees, tests, types, schema, impact) */
-const SYMBOL_COMMANDS: Record<string, CmCommandDef> = {
+/** All cm commands */
+export const CM_COMMANDS: Record<CmActionType, CmCommandDef> = {
   callers: {
     titleFn: (s) => `Callers of ${s}`,
     command: "callers",
@@ -66,10 +83,6 @@ const SYMBOL_COMMANDS: Record<string, CmCommandDef> = {
     command: "impact",
     argsFn: (s) => ["impact", s, "--all"],
   },
-};
-
-/** File-based cm commands (inspect, deps, used-by) */
-const FILE_COMMANDS: Record<string, CmCommandDef> = {
   inspect: {
     titleFn: (f) => `Symbols in ${f}`,
     command: "inspect",
@@ -87,14 +100,18 @@ const FILE_COMMANDS: Record<string, CmCommandDef> = {
   },
 };
 
+// Symbol-based actions available in cm results
+const SYMBOL_ACTION_DEFS: [string, CmActionType][] = [
+  ["ctrl+c", "callers"],
+  ["ctrl+l", "callees"],
+  ["ctrl+t", "tests"],
+  ["ctrl+y", "types"],
+  ["ctrl+s", "schema"],
+  ["ctrl+i", "impact"],
+];
+
 /**
  * Parse cm output lines into structured items
- * Handles formats:
- * - name|type|path|line-range (query format)
- * - name|type|path:line (callers/callees format)
- * - name|type|path:line|sig:signature (callees with signature)
- * - name|type|path:line|call:callLine (tests format)
- * - number|type|path:line (impact matches)
  */
 function parseCmOutput(output: string): CmResultItem[] {
   const lines = output.split("\n").filter((line) => {
@@ -166,24 +183,57 @@ function parseCmOutput(output: string): CmResultItem[] {
   return items;
 }
 
-function createCmResultsComponent(
+export function createCmResultsComponent(
   pi: ExtensionAPI,
   tui: { terminal: { rows: number }; requestRender: () => void },
   theme: Theme,
   keybindings: KeybindingsManager,
-  done: (result: CmResultItem | null) => void,
+  done: (result: CmResult | null) => void,
   config: CmResultsConfig,
 ): ListPickerComponent & { invalidate: () => void } {
+  let pendingAction: CmActionType | undefined;
+
+  function doneWithAction(item: CmResultItem | null): void {
+    if (item && pendingAction) {
+      done({ item, action: pendingAction });
+    } else if (item) {
+      done({ item });
+    } else {
+      done(null);
+    }
+    pendingAction = undefined;
+  }
+
+  const actions: ListPickerAction<CmResultItem>[] = SYMBOL_ACTION_DEFS.map(
+    ([key, action]) => ({
+      key,
+      label: action,
+      handler: (item: CmResultItem) => {
+        pendingAction = action;
+        doneWithAction(item);
+      },
+    }),
+  );
+
+  const internalDone = (item: CmResultItem | null) => {
+    if (item) {
+      done({ item });
+    } else {
+      done(null);
+    }
+  };
+
   const picker = createListPicker<CmResultItem>(
     pi,
     tui,
     theme,
     keybindings,
-    done,
+    internalDone,
     "",
     {
       title: config.title,
       helpParts: ["↑↓ nav", "type to filter"],
+      actions,
       onEdit: async (item) => {
         const { join } = await import("node:path");
         const line = item.callLine || item.startLine;
@@ -219,40 +269,3 @@ function createCmResultsComponent(
 
   return { ...picker, invalidate: () => {} };
 }
-
-/** Common parameters for cm opener functions */
-type CmOpenerParams = [
-  pi: ExtensionAPI,
-  tui: { terminal: { rows: number }; requestRender: () => void },
-  theme: Theme,
-  keybindings: KeybindingsManager,
-  done: (result: CmResultItem | null) => void,
-  target: string,
-  cwd: string,
-];
-
-/** Factory to create cm opener functions from command definitions */
-function createCmOpener(def: CmCommandDef) {
-  return (
-    ...[pi, tui, theme, keybindings, done, target, cwd]: CmOpenerParams
-  ) =>
-    createCmResultsComponent(pi, tui, theme, keybindings, done, {
-      title: def.titleFn(target),
-      command: def.command,
-      args: def.argsFn(target),
-      cwd,
-    });
-}
-
-// Symbol-based openers
-export const openCmCallers = createCmOpener(SYMBOL_COMMANDS.callers!);
-export const openCmCallees = createCmOpener(SYMBOL_COMMANDS.callees!);
-export const openCmTests = createCmOpener(SYMBOL_COMMANDS.tests!);
-export const openCmTypes = createCmOpener(SYMBOL_COMMANDS.types!);
-export const openCmSchema = createCmOpener(SYMBOL_COMMANDS.schema!);
-export const openCmImpact = createCmOpener(SYMBOL_COMMANDS.impact!);
-
-// File-based openers
-export const openCmInspect = createCmOpener(FILE_COMMANDS.inspect!);
-export const openCmDeps = createCmOpener(FILE_COMMANDS.deps!);
-export const openCmUsedBy = createCmOpener(FILE_COMMANDS["used-by"]!);

@@ -10,16 +10,15 @@ import {
   type ListPickerAction,
 } from "./list-picker";
 import { loadFilePreviewWithBat } from "./utils";
+import type { CmActionType } from "./cm-results-component";
 
-interface FileInfo extends ListPickerItem {
+export interface FileInfo extends ListPickerItem {
   path: string;
 }
 
-export type FileCmActionType = "inspect" | "deps" | "used-by";
-
 export interface FileResult {
   file: FileInfo;
-  action?: FileCmActionType;
+  action?: CmActionType;
 }
 
 export function createFilesComponent(
@@ -32,7 +31,7 @@ export function createFilesComponent(
   cwd: string,
 ): ListPickerComponent & { invalidate: () => void } {
   // Track pending action for when an action key is pressed
-  let pendingAction: FileCmActionType | undefined;
+  let pendingAction: CmActionType | undefined;
 
   // Wrapper to close picker with action metadata
   function doneWithAction(item: FileInfo | null): void {
@@ -47,7 +46,7 @@ export function createFilesComponent(
   }
 
   // Action definitions: [key, label/action]
-  const ACTION_DEFS: [string, FileCmActionType][] = [
+  const ACTION_DEFS: [string, CmActionType][] = [
     ["ctrl+i", "inspect"],
     ["ctrl+d", "deps"],
     ["ctrl+u", "used-by"],

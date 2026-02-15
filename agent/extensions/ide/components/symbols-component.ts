@@ -10,22 +10,15 @@ import {
   type ListPickerAction,
 } from "./list-picker";
 import { loadFilePreviewWithBat, SYMBOL_TYPE_ICONS } from "./utils";
+import type { CmActionType } from "./cm-results-component";
 
-interface SymbolInfo extends ListPickerItem {
+export interface SymbolInfo extends ListPickerItem {
   name: string;
   type: string;
   path: string;
   startLine: number;
   endLine: number;
 }
-
-export type CmActionType =
-  | "callers"
-  | "callees"
-  | "tests"
-  | "types"
-  | "schema"
-  | "impact";
 
 export interface SymbolResult {
   symbol: SymbolInfo;
