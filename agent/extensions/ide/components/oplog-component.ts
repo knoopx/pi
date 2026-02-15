@@ -9,10 +9,15 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
+import {
+  loadOpLog,
+  getOpShow,
+  restoreOp,
+  undoOp,
+  type OpLogEntry,
+} from "../jj";
 
-interface OpLogEntry extends ListPickerItem {
-  opId: string;
-  description: string;
+interface OpLogItem extends ListPickerItem, OpLogEntry {
   isCurrent: boolean;
 }
 
@@ -21,13 +26,13 @@ export function createOpLogComponent(
   tui: { terminal: { rows: number }; requestRender: () => void },
   theme: Theme,
   keybindings: KeybindingsManager,
-  done: (result: OpLogEntry | null) => void,
+  done: (result: OpLogItem | null) => void,
   cwd: string,
   onNotify?: (message: string, type?: "info" | "error") => void,
 ): ListPickerComponent {
   let pickerRef: ListPickerComponent | null = null;
 
-  const actions: ListPickerAction<OpLogEntry>[] = [
+  const actions: ListPickerAction<OpLogItem>[] = [
     {
       key: "r",
       label: "restore",
@@ -36,14 +41,12 @@ export function createOpLogComponent(
           onNotify?.("Already at this operation", "info");
           return;
         }
-        const result = await pi.exec("jj", ["op", "restore", item.opId], {
-          cwd,
-        });
-        if (result.code === 0) {
-          onNotify?.(`Restored to operation ${item.opId}`, "info");
+        const result = await restoreOp(pi, cwd, item.opId);
+        if (result.success) {
+          onNotify?.(`Restored to ${item.opId}`, "info");
           await pickerRef?.reload();
         } else {
-          onNotify?.(`Failed to restore: ${result.stderr}`, "error");
+          onNotify?.(`Failed: ${result.error}`, "error");
         }
       },
     },
@@ -51,18 +54,18 @@ export function createOpLogComponent(
       key: "u",
       label: "undo",
       handler: async () => {
-        const result = await pi.exec("jj", ["undo"], { cwd });
-        if (result.code === 0) {
-          onNotify?.("Undone last operation", "info");
+        const result = await undoOp(pi, cwd);
+        if (result.success) {
+          onNotify?.("Undone", "info");
           await pickerRef?.reload();
         } else {
-          onNotify?.(`Failed to undo: ${result.stderr}`, "error");
+          onNotify?.(`Failed: ${result.error}`, "error");
         }
       },
     },
   ];
 
-  const picker = createListPicker<OpLogEntry>(
+  const picker = createListPicker<OpLogItem>(
     pi,
     tui,
     theme,
@@ -74,36 +77,13 @@ export function createOpLogComponent(
       helpParts: ["↑↓ nav", "type to filter"],
       actions,
       loadItems: async () => {
-        const result = await pi.exec(
-          "jj",
-          [
-            "op",
-            "log",
-            "--limit",
-            "100",
-            "-T",
-            'self.id().short() ++ "|" ++ self.description() ++ "\\n"',
-            "--no-graph",
-          ],
-          { cwd },
-        );
-
-        if (result.code !== 0) {
-          throw new Error(`Failed to load op log: ${result.stderr}`);
-        }
-
-        const lines = result.stdout.split("\n").filter((l) => l.trim());
-        return lines.map((line, index) => {
-          const [opId, ...descParts] = line.split("|");
-          const description = descParts.join("|") || "(no description)";
-          return {
-            id: opId!,
-            label: description,
-            opId: opId!,
-            description,
-            isCurrent: index === 0,
-          };
-        });
+        const entries = await loadOpLog(pi, cwd);
+        return entries.map((entry, index) => ({
+          ...entry,
+          id: entry.opId,
+          label: entry.description,
+          isCurrent: index === 0,
+        }));
       },
       filterItems: (items, query) =>
         items.filter(
@@ -115,17 +95,7 @@ export function createOpLogComponent(
         const marker = item.isCurrent ? "@ " : "○ ";
         return `${marker}${item.opId} ${item.description}`;
       },
-      loadPreview: async (item) => {
-        const result = await pi.exec(
-          "jj",
-          ["op", "show", "--color=always", item.opId],
-          { cwd },
-        );
-        if (result.code === 0) {
-          return result.stdout.split("\n");
-        }
-        return [`Error: ${result.stderr}`];
-      },
+      loadPreview: (item) => getOpShow(pi, cwd, item.opId),
     },
   );
 

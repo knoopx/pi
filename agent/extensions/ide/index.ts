@@ -46,6 +46,7 @@ import {
 import { createChangesComponent } from "./components/changes-component";
 import { createBookmarkPromptComponent } from "./components/bookmark-prompt-component";
 import { createBookmarksComponent } from "./components/bookmarks-component";
+import { createOpLogComponent } from "./components/oplog-component";
 import { setBookmarkToChange } from "./jj";
 
 // Common overlay options for full-screen components

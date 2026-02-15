@@ -231,3 +231,92 @@ export async function forgetBookmark(
     { cwd },
   );
 }
+
+/** Operation log entry */
+export interface OpLogEntry {
+  opId: string;
+  description: string;
+}
+
+/**
+ * Load operation log entries
+ */
+export async function loadOpLog(
+  pi: ExtensionAPI,
+  cwd: string,
+  limit = 100,
+): Promise<OpLogEntry[]> {
+  const result = await pi.exec(
+    "jj",
+    [
+      "op",
+      "log",
+      "--limit",
+      String(limit),
+      "-T",
+      'self.id().short() ++ "|" ++ self.description() ++ "\\n"',
+      "--no-graph",
+    ],
+    { cwd },
+  );
+
+  if (result.code !== 0) return [];
+
+  return result.stdout
+    .split("\n")
+    .filter((l) => l.trim())
+    .map((line) => {
+      const [opId, ...descParts] = line.split("|");
+      return {
+        opId: opId || "",
+        description: descParts.join("|") || "(no description)",
+      };
+    })
+    .filter((e) => e.opId);
+}
+
+/**
+ * Get operation details
+ */
+export async function getOpShow(
+  pi: ExtensionAPI,
+  cwd: string,
+  opId: string,
+): Promise<string[]> {
+  const result = await pi.exec("jj", ["op", "show", "--color=always", opId], {
+    cwd,
+  });
+  if (result.code === 0) {
+    return result.stdout.split("\n");
+  }
+  return [`Error: ${result.stderr}`];
+}
+
+/**
+ * Restore to an operation
+ */
+export async function restoreOp(
+  pi: ExtensionAPI,
+  cwd: string,
+  opId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const result = await pi.exec("jj", ["op", "restore", opId], { cwd });
+  if (result.code === 0) {
+    return { success: true };
+  }
+  return { success: false, error: result.stderr };
+}
+
+/**
+ * Undo last operation
+ */
+export async function undoOp(
+  pi: ExtensionAPI,
+  cwd: string,
+): Promise<{ success: boolean; error?: string }> {
+  const result = await pi.exec("jj", ["undo"], { cwd });
+  if (result.code === 0) {
+    return { success: true };
+  }
+  return { success: false, error: result.stderr };
+}
