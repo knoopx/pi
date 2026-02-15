@@ -9,7 +9,7 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { loadFilePreviewWithBat, SYMBOL_TYPE_ICONS } from "./utils";
+import { loadFilePreviewWithBat, getSymbolIcon } from "./utils";
 import type { CmActionType } from "./cm-results-component";
 
 export interface SymbolInfo extends ListPickerItem {

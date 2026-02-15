@@ -3,7 +3,7 @@ import sliceAnsi from "slice-ansi";
 import stringWidth from "string-width";
 
 /** Symbol type icons for codemapper output */
-export const SYMBOL_TYPE_ICONS: Record<string, string> = {
+const SYMBOL_TYPE_ICONS: Record<string, string> = {
   f: "ƒ", // function
   m: "○", // method
   c: "⬢", // class
@@ -20,6 +20,11 @@ export const SYMBOL_TYPE_ICONS: Record<string, string> = {
   type: "τ",
   enum: "≡",
 };
+
+/** Get icon for a symbol type, with fallback */
+export function getSymbolIcon(type: string): string {
+  return SYMBOL_TYPE_ICONS[type] || "•";
+}
 
 /**
  * Strip OSC (Operating System Command) sequences from text.
