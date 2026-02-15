@@ -160,10 +160,10 @@ export function createSymbolsComponent(
             s.name.toLowerCase().includes(query) ||
             s.path.toLowerCase().includes(query),
         ),
-      formatItem: (item) => {
+      formatItem: (item, _width, theme) => {
         const icon = getSymbolIcon(item.type);
         const pathShort = item.path.replace(/^\.\//, "");
-        return `${icon} ${item.name} ${pathShort}:${item.startLine}`;
+        return `${icon} ${item.name} ${theme.fg("dim", `${pathShort}:${item.startLine}`)}`;
       },
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
     },

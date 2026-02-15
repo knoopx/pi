@@ -97,9 +97,9 @@ export function createBookmarksComponent(
             item.bookmark.toLowerCase().includes(query) ||
             item.description.toLowerCase().includes(query),
         ),
-      formatItem: (item) => {
+      formatItem: (item, _width, theme) => {
         const shortId = item.changeId.slice(-8);
-        return `${item.bookmark} ${item.description} ${shortId}`;
+        return `${theme.fg("accent", item.bookmark)} ${item.description} ${theme.fg("dim", shortId)}`;
       },
       loadPreview: async (item) => {
         // Show diff for the bookmark's change

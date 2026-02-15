@@ -30,7 +30,7 @@ export interface ListPickerConfig<T extends ListPickerItem> {
   title: string;
   loadItems: () => Promise<T[]>;
   filterItems: (items: T[], query: string) => T[];
-  formatItem: (item: T, width: number) => string;
+  formatItem: (item: T, width: number, theme: Theme) => string;
   loadPreview: (item: T) => Promise<string[]>;
   onEdit?: (item: T) => Promise<void> | void;
   helpParts?: string[];
@@ -162,7 +162,7 @@ export function createListPicker<T extends ListPickerItem>(
       const idx = startIdx + i;
       const item = filteredItems[idx]!;
       const isSelected = idx === selectedIndex;
-      const formatted = config.formatItem(item, width);
+      const formatted = config.formatItem(item, width, theme);
       const text = " " + truncateAnsi(formatted, width - 2);
       const padded = ensureWidth(text, width);
       rows.push(isSelected ? theme.fg("accent", theme.bold(padded)) : padded);

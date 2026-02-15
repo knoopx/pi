@@ -270,12 +270,12 @@ export function createCmResultsComponent(
             item.name.toLowerCase().includes(query) ||
             item.path.toLowerCase().includes(query),
         ),
-      formatItem: (item) => {
+      formatItem: (item, _width, theme) => {
         const icon = getSymbolIcon(item.type);
         const pathShort = item.path.replace(/^\.\//, "");
         const line = item.callLine || item.startLine;
-        const sig = item.signature ? ` ${item.signature}` : "";
-        return `${icon} ${item.name}${sig} ${pathShort}:${line}`;
+        const sig = item.signature ? theme.fg("dim", ` ${item.signature}`) : "";
+        return `${icon} ${item.name}${sig} ${theme.fg("dim", `${pathShort}:${line}`)}`;
       },
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, config.cwd),
     },

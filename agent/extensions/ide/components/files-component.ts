@@ -127,7 +127,7 @@ export function createFilesComponent(
       },
       filterItems: (items, query) =>
         items.filter((item) => item.path.toLowerCase().includes(query)),
-      formatItem: (item) => item.path,
+      formatItem: (item, _width, _theme) => item.path,
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
     },
   );

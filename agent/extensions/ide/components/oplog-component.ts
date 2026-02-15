@@ -92,9 +92,9 @@ export function createOpLogComponent(
             item.opId.toLowerCase().includes(query) ||
             item.description.toLowerCase().includes(query),
         ),
-      formatItem: (item) => {
+      formatItem: (item, _width, theme) => {
         const icon = getChangeIcon(item.isCurrent, false);
-        return `${icon} ${item.opId} ${item.description}`;
+        return `${icon} ${theme.fg("dim", item.opId)} ${item.description}`;
       },
       loadPreview: (item) => getOpShow(pi, cwd, item.opId),
     },
