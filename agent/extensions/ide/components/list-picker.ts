@@ -47,6 +47,8 @@ export interface ListPickerComponent {
   handleInput: (data: string) => void;
   dispose: () => void;
   setPreview: (lines: string[]) => void;
+  invalidate: () => void;
+  reload: () => Promise<void>;
 }
 
 export function createListPicker<T extends ListPickerItem>(
@@ -357,5 +359,13 @@ export function createListPicker<T extends ListPickerItem>(
 
   void loadItems();
 
-  return { render, handleInput, dispose, setPreview };
+  async function reload(): Promise<void> {
+    loading = true;
+    error = null;
+    invalidate();
+    tui.requestRender();
+    await loadItems();
+  }
+
+  return { render, handleInput, dispose, setPreview, invalidate, reload };
 }

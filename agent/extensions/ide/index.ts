@@ -59,17 +59,6 @@ const FULL_OVERLAY_OPTIONS = {
   },
 };
 
-// Smaller overlay for prompts and bookmarks
-const COMPACT_OVERLAY_OPTIONS = {
-  overlay: true,
-  overlayOptions: {
-    width: "70%" as const,
-    maxHeight: "90%" as const,
-    minWidth: 60,
-    anchor: "center" as const,
-  },
-};
-
 async function spawnWorkspaceAgent(
   pi: ExtensionAPI,
   ctx: ExtensionContext,
@@ -542,13 +531,17 @@ async function openBookmarksBrowser(
   pi: ExtensionAPI,
   ctx: ExtensionContext,
 ): Promise<void> {
-  await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
+  await ctx.ui.custom((tui, theme, keybindings, done) => {
     return createBookmarksComponent(
-      { pi, tui, theme, keybindings, cwd: ctx.cwd },
+      pi,
+      tui,
+      theme,
+      keybindings,
       done,
+      ctx.cwd,
       (text) => ctx.ui.setEditorText(text),
     );
-  }, COMPACT_OVERLAY_OPTIONS);
+  }, FULL_OVERLAY_OPTIONS);
 }
 
 async function openChangesBrowser(
