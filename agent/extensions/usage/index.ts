@@ -401,7 +401,9 @@ function formatTokens(count: number): string {
   }
   if (count < 1000000) return `${Math.round(count / 1000)}k`;
   if (count < 10000000) return `${(count / 1000000).toFixed(1)}M`;
-  return `${Math.round(count / 1000000)}M`;
+  if (count < 1000000000) return `${Math.round(count / 1000000)}M`;
+  if (count < 10000000000) return `${(count / 1000000000).toFixed(1)}B`;
+  return `${Math.round(count / 1000000000)}B`;
 }
 
 function formatNumber(n: number): string {
