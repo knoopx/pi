@@ -559,15 +559,47 @@ async function openChangesBrowser(
     changeId: string,
   ) => Promise<string | null>,
 ): Promise<void> {
-  await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
-    return createChangesComponent(
-      { pi, tui, theme, keybindings, cwd: ctx.cwd },
-      done,
-      (text) => ctx.ui.setEditorText(text),
-      (changeId) => promptAndSetBookmark(ctx, changeId),
-      (message, type = "info") => ctx.ui.notify(message, type),
-    );
-  }, FULL_OVERLAY_OPTIONS);
+  // Track if we need to reopen after cm action
+  let pendingCmAction: { filePath: string; action: CmActionType } | null = null;
+
+  const showChanges = async (): Promise<void> => {
+    await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
+      return createChangesComponent(
+        { pi, tui, theme, keybindings, cwd: ctx.cwd },
+        done,
+        (text) => ctx.ui.setEditorText(text),
+        (changeId) => promptAndSetBookmark(ctx, changeId),
+        (message, type = "info") => ctx.ui.notify(message, type),
+        async (filePath, action) => {
+          pendingCmAction = { filePath, action };
+          done();
+        },
+      );
+    }, FULL_OVERLAY_OPTIONS);
+  };
+
+  // Loop to handle cm actions and return to changes
+  while (true) {
+    pendingCmAction = null;
+    await showChanges();
+
+    if (!pendingCmAction) break;
+
+    // Show cm results, then loop back to changes
+    const cmDef = CM_COMMANDS[pendingCmAction.action];
+    if (cmDef) {
+      await ctx.ui.custom<CmResult | null>(
+        (tui, theme, keybindings, done) =>
+          createCmResultsComponent(pi, tui, theme, keybindings, done, {
+            title: cmDef.titleFn(pendingCmAction!.filePath),
+            command: cmDef.command,
+            args: cmDef.argsFn(pendingCmAction!.filePath),
+            cwd: ctx.cwd,
+          }),
+        FULL_OVERLAY_OPTIONS,
+      );
+    }
+  }
 }
 
 /**

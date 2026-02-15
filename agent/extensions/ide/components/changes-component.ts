@@ -28,8 +28,15 @@ import {
   restoreFile,
   listBookmarksByChange,
 } from "../jj";
+import type { CmActionType } from "./cm-results-component";
 
 type ChangeCache = ComponentCache<FileChange>;
+
+/** File cm action callback */
+export type OnFileCmAction = (
+  filePath: string,
+  action: CmActionType,
+) => Promise<void>;
 
 export function createChangesComponent(
   { pi, tui, theme, cwd }: BaseComponentParams,
@@ -37,6 +44,7 @@ export function createChangesComponent(
   onInsert?: (text: string) => void,
   onBookmark?: (changeId: string) => Promise<string | null>,
   onNotify?: (message: string, type?: "info" | "error") => void,
+  onFileCmAction?: OnFileCmAction,
 ) {
   let changes: MutableChange[] = [];
   let selectedChange: MutableChange | null = null;
@@ -441,7 +449,10 @@ ${workflowLines}
       [
         files.length > 0 && "e edit",
         files.length > 0 && "d discard",
-        files.length > 0 && "pgup/pgdn scroll",
+        files.length > 0 && onFileCmAction && "ctrl+i inspect",
+        files.length > 0 && onFileCmAction && "ctrl+d deps",
+        files.length > 0 && onFileCmAction && "ctrl+u used-by",
+        "pgup/pgdn scroll",
       ].filter(Boolean) as string[],
     );
 
@@ -574,6 +585,23 @@ ${workflowLines}
           await loadFilesAndDiff(selectedChange!);
         })();
         return;
+      }
+
+      // cm actions on files
+      if (onFileCmAction && files[selectionState.fileIndex]) {
+        const file = files[selectionState.fileIndex]!;
+        if (matchesKey(data, "ctrl+i")) {
+          void onFileCmAction(file.path, "inspect");
+          return;
+        }
+        if (matchesKey(data, "ctrl+d")) {
+          void onFileCmAction(file.path, "deps");
+          return;
+        }
+        if (matchesKey(data, "ctrl+u")) {
+          void onFileCmAction(file.path, "used-by");
+          return;
+        }
       }
 
       if (matchesKey(data, "up")) {
