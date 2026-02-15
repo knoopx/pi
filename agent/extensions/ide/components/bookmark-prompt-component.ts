@@ -5,6 +5,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { Input, matchesKey } from "@mariozechner/pi-tui";
 import { renderListRows } from "./split-panel";
+import { renderFramedRows } from "./shared-utils";
 import { buildHelpText, pad } from "./utils";
 
 function fuzzyScore(candidate: string, query: string): number {
@@ -45,27 +46,6 @@ function filterBookmarks(bookmarks: string[], query: string): string[] {
     .filter((item) => item.score >= 0)
     .sort((a, b) => b.score - a.score)
     .map((item) => item.bookmark);
-}
-
-function frameRows(theme: Theme, rows: string[], width: number): string[] {
-  const innerWidth = Math.max(1, width - 2);
-  const top =
-    theme.fg("borderAccent", "┌") +
-    theme.fg("borderAccent", "─".repeat(innerWidth)) +
-    theme.fg("borderAccent", "┐");
-  const bottom =
-    theme.fg("borderAccent", "└") +
-    theme.fg("borderAccent", "─".repeat(innerWidth)) +
-    theme.fg("borderAccent", "┘");
-
-  const content = rows.map(
-    (row) =>
-      theme.fg("borderAccent", "│") +
-      pad(row, innerWidth) +
-      theme.fg("borderAccent", "│"),
-  );
-
-  return [top, ...content, bottom];
 }
 
 export function createBookmarkPromptComponent(
@@ -154,27 +134,28 @@ export function createBookmarkPromptComponent(
 
   function render(width: number): string[] {
     const rows: string[] = [];
-    const inputRows = input.render(width);
+    const contentWidth = Math.max(1, width - 2);
+    const inputRows = input.render(contentWidth);
     const query = input.getValue().trim();
 
-    rows.push(theme.fg("accent", pad(" 󰃀 Bookmark", width)));
+    rows.push(theme.fg("accent", pad(" 󰃀 Bookmark", contentWidth)));
     rows.push(...inputRows);
 
     if (loading) {
-      rows.push(theme.fg("dim", pad(" Loading bookmarks...", width)));
+      rows.push(theme.fg("dim", pad(" Loading bookmarks...", contentWidth)));
       rows.push(
         theme.fg(
           "dim",
-          pad(buildHelpText("enter set", "↑↓ nav", "esc cancel"), width),
+          pad(buildHelpText("enter set", "↑↓ nav", "esc cancel"), contentWidth),
         ),
       );
-      return rows;
+      return renderFramedRows(theme, rows, width);
     }
 
     if (error) {
-      rows.push(theme.fg("error", pad(` Error: ${error}`, width)));
-      rows.push(theme.fg("dim", pad(" Press esc to cancel", width)));
-      return rows;
+      rows.push(theme.fg("error", pad(` Error: ${error}`, contentWidth)));
+      rows.push(theme.fg("dim", pad(" Press esc to cancel", contentWidth)));
+      return renderFramedRows(theme, rows, width);
     }
 
     const candidates = getCandidates();
@@ -182,15 +163,21 @@ export function createBookmarkPromptComponent(
 
     if (candidates.length === 0) {
       rows.push(
-        theme.fg("dim", pad(" No bookmarks yet. Type to create one.", width)),
+        theme.fg(
+          "dim",
+          pad(" No bookmarks yet. Type to create one.", contentWidth),
+        ),
       );
       rows.push(
         theme.fg(
           "dim",
-          pad(buildHelpText("type bookmark", "enter set", "esc cancel"), width),
+          pad(
+            buildHelpText("type bookmark", "enter set", "esc cancel"),
+            contentWidth,
+          ),
         ),
       );
-      return rows;
+      return renderFramedRows(theme, rows, width);
     }
 
     const listRows = renderListRows(
@@ -219,7 +206,7 @@ export function createBookmarkPromptComponent(
             : `󰃀 ${name}`,
         };
       }),
-      width,
+      contentWidth,
       5,
       selectedIndex,
       theme,
@@ -231,12 +218,12 @@ export function createBookmarkPromptComponent(
         "dim",
         pad(
           buildHelpText("↑↓ nav", "enter select/create", "esc cancel"),
-          width,
+          contentWidth,
         ),
       ),
     );
 
-    return rows;
+    return renderFramedRows(theme, rows, width);
   }
 
   function handleInput(data: string): void {

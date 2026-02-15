@@ -223,6 +223,37 @@ export function renderEmptyState(
 }
 
 /**
+ * Wrap rows in a single-panel border frame.
+ */
+export function renderFramedRows(
+  theme: Theme,
+  rows: string[],
+  width: number,
+  borderColor: "border" | "borderAccent" = "borderAccent",
+): string[] {
+  const innerWidth = Math.max(1, width - 2);
+
+  const top =
+    theme.fg(borderColor, "┌") +
+    theme.fg(borderColor, "─".repeat(innerWidth)) +
+    theme.fg(borderColor, "┐");
+
+  const bottom =
+    theme.fg(borderColor, "└") +
+    theme.fg(borderColor, "─".repeat(innerWidth)) +
+    theme.fg(borderColor, "┘");
+
+  const content = rows.map(
+    (row) =>
+      theme.fg(borderColor, "│") +
+      pad(row, innerWidth) +
+      theme.fg(borderColor, "│"),
+  );
+
+  return [top, ...content, bottom];
+}
+
+/**
  * Generic row renderer with selection styling
  */
 export function renderSelectableRow(
