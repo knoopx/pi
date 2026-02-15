@@ -3,14 +3,13 @@ title: Zuplo AI Gateway Getting Started
 sidebar_label: Getting Started
 ---
 
-This guide will walk you through setting up your first AI Gateway project, from
-initial configuration to making your first LLM request through Zuplo.
+This guide will walk you through setting up your first AI Gateway project, from initial configuration to making your first LLM request through Zuplo.
 
 ## Prerequisites
 
 - A Zuplo account (sign up free at [zuplo.com](https://zuplo.com))
 - API keys for at least one LLM provider (OpenAI, Anthropic, Google Gemini,
-  etc.)
+etc.)
 - An application that needs to call LLM APIs
 
 ## Step 1: Create an AI Gateway Project
@@ -21,14 +20,11 @@ initial configuration to making your first LLM request through Zuplo.
 4. Give your project a name (for example, "MyCompany AI Gateway")
 5. Click **Create Project**
 
-Your AI Gateway project will be created in seconds. You'll notice the interface
-includes Apps, Teams, and a setup guide to help you get started.
+Your AI Gateway project will be created in seconds. You'll notice the interface includes Apps, Teams, and a setup guide to help you get started.
 
 ## Step 2: Configure Providers
 
-Providers are the LLM services (like OpenAI or Google Gemini) that your
-applications will use. You'll configure these once as an administrator, and your
-team members can use them without needing direct access to provider API keys.
+Providers are the LLM services (like OpenAI or Google Gemini) that your applications will use.
 
 ### Adding Your First Provider
 
@@ -41,8 +37,7 @@ team members can use them without needing direct access to provider API keys.
 
 ### Adding Additional Providers
 
-Repeat the process above to add more providers. This allows your teams to switch
-between providers (OpenAI, Gemini, etc.) without changing application code.
+Repeat the process above to add more providers. This allows your teams to switch between providers (OpenAI, Gemini, etc.) without changing application code.
 
 **Example providers you might add:**
 
@@ -52,8 +47,7 @@ between providers (OpenAI, Gemini, etc.) without changing application code.
 
 ## Step 3: Create a Team
 
-Teams allow you to organize users and set hierarchical budget controls. Even if
-you're starting solo, you'll need at least one team.
+Teams allow you to organize users and set hierarchical budget controls.
 
 ### Creating Your Root Team
 
@@ -79,19 +73,18 @@ For larger organizations, create sub-teams with their own budgets:
 
 ## Step 4: Create Applications
 
-Applications represent individual projects or services that will use the AI
-Gateway. Each app gets its own unique URL and API key.
+Applications represent individual projects or services that will use the AI Gateway.
 
 ### Creating Your First App
 
 1. Click **Apps** followed by **Create App**
 2. Configure your app:
    - **App Name**: Descriptive name (for example, "Tennis Chat", "Customer
-     Support Bot")
+Support Bot")
    - **Team**: Select which team owns this app
    - **Provider**: Choose your LLM provider (for example, OpenAI)
    - **Model**: Select the specific model (for example, GPT-4o) for completions
-     and/or embeddings
+and/or embeddings
 3. Set application-level budgets:
    - **Daily Limit**: (for example, $1/day for a hackathon project)
    - **Monthly Limit**: (for example, $10/month)
@@ -105,16 +98,13 @@ Gateway. Each app gets its own unique URL and API key.
 After creating your application, you'll see:
 
 - **API Key**: Your Zuplo-managed key. You'll need them to integrate with your
-  application.
+application.
 
 ## Step 5: Integrate with Your Application
 
-Now you'll update your application to use the Zuplo AI Gateway instead of
-calling LLM providers directly.
+Now you'll update your application to use the Zuplo AI Gateway instead of calling LLM providers directly.
 
-In the examples below, we assume that you are using the official
-[Node.js OpenAI SDK](https://platform.openai.com/docs/libraries/node-js-library)
-and that you have executed `npm install openai`.
+In the examples below, we assume that you are using the official [Node.js OpenAI SDK](https://platform.openai.com/docs/libraries/node-js-library) and that you have executed `npm install openai`.
 
 ### Before: Direct Provider Integration (sample.mjs)
 
@@ -160,7 +150,7 @@ Run the example with `node sample.mjs`.
 1. **URL**: Replace your provider's URL with your Zuplo Gateway URL
 2. **API Key**: Use your Zuplo API key instead of the provider's key
 3. **Everything else stays the same**: The request format remains compatible
-   with OpenAI's API
+with OpenAI's API
 
 ## Verify Your Setup
 
@@ -188,8 +178,7 @@ curl https://your-ai-gateway-url.zuplo.app/v1/chat/completions \
    - Time to first byte
    - Current spending
 
-You should see your test request appear with token usage and performance
-metrics.
+You should see your test request appear with token usage and performance metrics.
 
 ## Next Steps
 
@@ -213,9 +202,9 @@ Your application will now use the new provider without any code changes.
 **Issue**: Budget limit reached immediately
 
 - **Solution**: Check that sub-team limits don't exceed available budget from
-  parent team
+parent team
 
 **Issue**: Semantic caching not working
 
 - **Solution**: Ensure caching is enabled in your application settings and
-  prompts are similar enough to match
+prompts are similar enough to match

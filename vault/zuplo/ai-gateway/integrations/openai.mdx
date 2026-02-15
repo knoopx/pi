@@ -3,25 +3,21 @@ title: OpenAI SDK
 sidebar_label: OpenAI SDK
 ---
 
-The
-[OpenAI Node.js SDK](https://platform.openai.com/docs/libraries/node-js-library)
-is the official SDK for working with LLMs provided by OpenAI as well as other
-OpenAI compatible models from other provider in Node.js.
+The [OpenAI Node.js SDK](https://platform.openai.com/docs/libraries/node-js-library) is the official SDK for working with LLMs provided by OpenAI as well as other OpenAI compatible models from other provider in Node.js.
 
 ## Prerequisites
 
-In order to use the AI Gateway with any OpenAI SDK powered application you will
-need to complete these steps first:
+use the AI Gateway with any OpenAI SDK powered application you will need to complete these steps first:
 
 <Stepper>
 
 1. Create a [new provider](/ai-gateway/managing-providers) in the AI Gateway for
-   OpenAI
+OpenAI
 
 2. [Set up a new team](/ai-gateway/managing-teams)
 
 3. Create a [new app](/ai-gateway/managing-apps) to use specifically with the
-   OpenAI SDK and assign it to the team you created
+OpenAI SDK and assign it to the team you created
 
 4. Copy the API Key for the app you created, as well as the Gateway URL
 
@@ -29,15 +25,11 @@ need to complete these steps first:
 
 ## Configure the OpenAI SDK
 
-To route all OpenAI SDK requests through Zuplo instead of directly to the OpenAI
-API, you must set the API `baseUrl` in the SDK configuration.
+To route all OpenAI SDK requests through Zuplo instead of directly to the OpenAI API, you must set the API `baseUrl` in the SDK configuration.
 
-For example, if your Zuplo application is hosted at
-https://my-ai-gateway.zuplo.app, you can change the base URL in your API client
-to https://my-ai-gateway.zuplo.app/v1.
+For example, if your Zuplo application is hosted at https://my-ai-gateway.zuplo.app, you can change the base URL in your API client to https://my-ai-gateway.zuplo.app/v1.
 
-Additionally, change the value of `apiKey` to the API key of the app you have
-configured in Zuplo
+Additionally, change the value of `apiKey` to the API key of the app you have configured in Zuplo
 
 ```typescript
 import OpenAI from "openai";
@@ -60,24 +52,21 @@ const response = await client.chat.completions.create({
 console.log(response.choices[0].message.content);
 ```
 
-When configured in this way, the SDK will switch from using the default OpenAI
-APIs to using Zuplo's AI Gateway for all requests.
+When configured in this way, the SDK will switch from using the default OpenAI APIs to using Zuplo's AI Gateway for all requests.
 
 ## Supported Endpoints
 
-The AI Gateway supports all major OpenAI API endpoints through the universal
-API:
+The AI Gateway supports all major OpenAI API endpoints through the universal API:
 
 - **Chat Completions** (`/v1/chat/completions`) - For conversational AI
-  interactions
+interactions
 - **Embeddings** (`/v1/embeddings`) - For generating vector embeddings
 - **Responses** (`/v1/responses`) - For OpenAI models that support the responses
-  endpoint (such as GPT-5 and other compatible models)
+endpoint (such as GPT-5 and other compatible models)
 
 ## Using the Responses Endpoint
 
-For models that support the `/v1/responses` endpoint, you can use the OpenAI
-SDK's `responses` API:
+For models that support the `/v1/responses` endpoint, you can use the OpenAI SDK's `responses` API:
 
 ```typescript
 import OpenAI from "openai";
@@ -95,5 +84,4 @@ const response = await client.responses.create({
 console.log(response.output_text);
 ```
 
-The responses endpoint is automatically routed through the AI Gateway, providing
-the same monitoring, cost controls, and security features as other endpoints.
+The responses endpoint is automatically routed through the AI Gateway, providing the same monitoring, cost controls, and security features as other endpoints.

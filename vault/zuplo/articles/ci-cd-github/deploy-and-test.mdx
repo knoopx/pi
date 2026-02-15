@@ -3,8 +3,7 @@ title: "GitHub Actions: Deploy and Test"
 sidebar_label: Deploy and Test
 ---
 
-Run your test suite against the deployed environment to validate changes before
-considering them complete.
+Run your test suite against the deployed environment to validate changes before considering them complete.
 
 ```yaml title=".github/workflows/deploy-and-test.yaml"
 name: Deploy and Test
@@ -78,5 +77,5 @@ The `ZUPLO_TEST_URL` variable is automatically set to the `--endpoint` value.
 ## Next Steps
 
 - Add [PR preview environments](./pr-preview-environments.mdx) with automatic
-  cleanup
+cleanup
 - Run [local tests](./local-testing.mdx) before deploying

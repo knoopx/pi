@@ -2,9 +2,7 @@
 title: Logger
 ---
 
-The `Logger` interface provides structured logging capabilities throughout your
-Zuplo API gateway. The logger is accessible via the `context.log` property and
-supports multiple log levels.
+The `Logger` interface provides structured logging capabilities throughout your Zuplo API gateway.
 
 ## Interface
 
@@ -200,8 +198,7 @@ context.log.info(`Payment of $99.99 USD processed in 1234ms`);
 
 ## Integration with Log Management
 
-Logs are automatically forwarded to your configured log management solution
-(Datadog, Loki, etc.). The structured format makes it easy to:
+Logs are automatically forwarded to your configured log management solution (Datadog, Loki, etc.).
 
 - Search and filter logs
 - Create alerts based on log patterns
@@ -218,6 +215,6 @@ Logs are automatically forwarded to your configured log management solution
 ## See Also
 
 - [ZuploContext](./zuplo-context.mdx) - The context object that provides the
-  logger
+logger
 - [Logging](../articles/logging.mdx) - General logging documentation
 - [Log Export](../articles/logging.mdx) - Exporting logs to external services

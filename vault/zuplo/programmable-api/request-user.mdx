@@ -2,9 +2,7 @@
 title: RequestUser
 ---
 
-The `RequestUser` interface represents authenticated user information attached
-to a [ZuploRequest](./zuplo-request.mdx). This interface is used when
-authentication policies validate and identify users.
+The `RequestUser` interface represents authenticated user information attached to a [ZuploRequest](./zuplo-request.mdx).
 
 ## Interface
 
@@ -35,8 +33,7 @@ data: TUserData;
 
 ## Usage
 
-The `user` property is available on `ZuploRequest` after successful
-authentication:
+The `user` property is available on `ZuploRequest` after successful authentication:
 
 ```ts
 import { ZuploContext, ZuploRequest } from "@zuplo/runtime";
@@ -103,8 +100,7 @@ export default async function handler(
 
 ### JWT Authentication
 
-When using JWT authentication policies, the user data typically includes claims
-from the token:
+When using JWT authentication policies, the user data typically includes claims from the token:
 
 ```ts
 // After JWT validation
@@ -282,8 +278,8 @@ request.user = {
 ## See Also
 
 - [ZuploRequest](./zuplo-request.mdx) - The request object that contains user
-  information
+information
 - [API Key Authentication](../policies/api-key-inbound.mdx) - Built-in API key
-  authentication
+authentication
 - [JWT Authentication](../policies/open-id-jwt-auth-inbound.mdx) - JWT/OpenID
-  authentication
+authentication

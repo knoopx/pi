@@ -9,63 +9,58 @@ This plugin pushes request/response logs to Hydrolix AKA Akamai Traffic Peak.
 
 ## Setup
 
-You can define the fields created in the JSON object by creating a custom type
-in TypeScript and a function to extract the field data from the `Response`,
-`ZuploRequest`, and `ZuploContext`.
+You can define the fields created in the JSON object by creating a custom type in TypeScript and a function to extract the field data from the `Response`, `ZuploRequest`, and `ZuploContext`.
 
-The plugin is configured in the
-[Runtime Extensions](../programmable-api/runtime-extensions.mdx) file
-`zuplo.runtime.ts`:
+The plugin is configured in the [Runtime Extensions](../programmable-api/runtime-extensions.mdx) file `zuplo.runtime.ts`:
 
 This logger includes a default type and function that logs the following fields:
 
 - **deploymentName** <CodeType>string</CodeType> - The name of the deployment.
 - **timestamp** <CodeType>string</CodeType> - The time the log was created.
 - **requestId** <CodeType>string</CodeType> - The UUID of the request (the value
-  of the `zp-rid` header).
+of the `zp-rid` header).
 - **routePath** <CodeType>string</CodeType> - The path of the route.
 - **operationId** <CodeType>string | undefined</CodeType> - The operation ID.
 - **url** <CodeType>string | undefined</CodeType> - The URL of the request.
 - **statusCode** <CodeType>number | undefined</CodeType> - The status code of
-  the response.
+the response.
 - **durationMs** <CodeType>number | undefined</CodeType> - The duration of the
-  request in milliseconds.
+request in milliseconds.
 - **method** <CodeType>string</CodeType> - The HTTP method of the request.
 - **userSub** <CodeType>string | undefined</CodeType> - The user sub.
 - **instanceId** <CodeType>string | undefined</CodeType> - The instance ID.
 - **colo** <CodeType>string | undefined</CodeType> - The data center of the
-  request.
+request.
 - **city** <CodeType>string | undefined</CodeType> - The city the request
-  origin.
+origin.
 - **country** <CodeType>string | undefined</CodeType> - The country the request
-  origin.
+origin.
 - **continent** <CodeType>string | undefined</CodeType> - The continent the
-  request origin.
+request origin.
 - **latitude** <CodeType>string | undefined</CodeType> - The latitude of the
-  request origin.
+request origin.
 - **longitude** <CodeType>string | undefined</CodeType> - The longitude of the
-  request origin.
+request origin.
 - **postalCode** <CodeType>string | undefined</CodeType> - The postal code of
-  the request origin.
+the request origin.
 - **metroCode** <CodeType>string | undefined</CodeType> - The metro code of the
-  request origin.
+request origin.
 - **region** <CodeType>string | undefined</CodeType> - The region of the request
-  origin.
+origin.
 - **regionCode** <CodeType>string | undefined</CodeType> - The region code of
-  the request origin.
+the request origin.
 - **timezone** <CodeType>string | undefined</CodeType> - The timezone of the
-  request origin.
+request origin.
 - **asn** <CodeType>string | undefined</CodeType> - The ASN of the request
-  origin.
+origin.
 - **asOrganization** <CodeType>string | undefined</CodeType> - The AS
-  organization of the request origin.
+organization of the request origin.
 - **clientIP** <CodeType>string | undefined</CodeType> - The client IP of the
-  requester.
+requester.
 - **zuploUserAgent** <CodeType>string | undefined</CodeType> - The Zuplo user
-  agent.
+agent.
 
-To use this default setup add the following code to your `zuplo.runtime.ts`
-file:
+To use this default setup add the following code to your `zuplo.runtime.ts` file:
 
 ```ts title="modules/zuplo.runtime.ts"
 import {
@@ -91,11 +86,9 @@ export function runtimeInit(runtime: RuntimeExtensions) {
 }
 ```
 
-Note, the `token` (HYDROLIX_TOKEN above) is a
-[Streaming Auth Token](https://docs.hydrolix.io/docs/stream-authentication).
+Note, the `token` (HYDROLIX_TOKEN above) is a [Streaming Auth Token](https://docs.hydrolix.io/docs/stream-authentication).
 
-If you want to customize the data written to Hydrolix, you can define the fields
-and entry generation function yourself as follows:
+If you want to customize the data written to Hydrolix, you can define the fields and entry generation function yourself as follows:
 
 ```ts title="modules/zuplo.runtime.ts"
 import {
@@ -141,7 +134,4 @@ export function runtimeInit(runtime: RuntimeExtensions) {
 }
 ```
 
-Entries will be batched and sent as an array, they will be sent every
-`batchPeriodSeconds`. If not specified the will be dispatched very frequently
-(~every 10ms) to avoid data loss. Note that `batchPeriodSeconds` can be
-specified as a fraction, for example `0.1` for every 100ms.
+Entries will be batched and sent as an array, they will be sent every `batchPeriodSeconds`.

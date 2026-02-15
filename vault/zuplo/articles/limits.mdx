@@ -8,15 +8,12 @@ This document describes the limits that apply to your Zuplo account.
 :::tip{title="Managed Dedicated Environments"}
 
 The limits in this document are primarily for Zuplo's managed edge environment .
-For managed dedicated environments and enterprise agreements, most limits are
-fully customizable to meet your specific requirements.
 
 :::
 
 ## General
 
-Below are general limits that apply to deployments on Zuplo's managed edge
-environments.
+Below are general limits that apply to deployments on Zuplo's managed edge environments.
 
 | Feature                       | Description                                                     | Limit                                                                                                                                                                |
 | ----------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -33,10 +30,7 @@ environments.
 
 ## HTTP connections
 
-In Zuplo's managed edge environment, HTTP connections have timeouts to ensure
-efficient use of resources. These timeouts apply to both incoming connections
-from clients to Zuplo and outgoing connections from Zuplo to your origin
-servers.
+In Zuplo's managed edge environment, HTTP connections have timeouts to ensure efficient use of resources.
 
 ## Between client and Zuplo
 
@@ -62,10 +56,7 @@ servers.
 
 ### Consumers & keys
 
-Zuplo doesn't impose a hard cap on the number of consumers or keys you can
-create. However, usage of the service is subject to "fair use" policies meaning
-if your usage is deemed excessive we may limit usage. If you require specific
-limits please contact sales to discuss pricing plans.
+Zuplo doesn't impose a hard cap on the number of consumers or keys you can create.
 
 Our general guidelines for what constitutes fair use are as follows:
 
@@ -80,19 +71,15 @@ Our general guidelines for what constitutes fair use are as follows:
 
 ### API key management operations
 
-Requests to API key management operations on the Zuplo Developer API
-(dev.zuplo.com) are limited to 100 requests per second.
+Requests to API key management operations on the Zuplo Developer API (dev.zuplo.com) are limited to 100 requests per second.
 
 ### API key authorizations
 
-One API key authorization can be made per request. Enterprise plans can request
-custom limits to allow multiple API key authorizations per request.
+One API key authorization can be made per request. Enterprise plans can request custom limits to allow multiple API key authorizations per request.
 
 ### Cache
 
-The [cache API](../programmable-api/cache.mdx) and abstractions on top of it
-such as [ZoneCache](../programmable-api/zone-cache.mdx) have the following
-limits:
+The [cache API](../programmable-api/cache.mdx) and abstractions on top of it such as [ZoneCache](../programmable-api/zone-cache.mdx) have the following limits:
 
 - Maximum size per cached item: 512 MB
 - Maximum cache calls per request: 1000

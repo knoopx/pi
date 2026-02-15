@@ -2,14 +2,11 @@
 title: Runtime Errors
 ---
 
-Zuplo provides specialized error classes for handling runtime and configuration
-errors in your API gateway.
+Zuplo provides specialized error classes for handling runtime and configuration errors in your API gateway.
 
 ## RuntimeError
 
-The `RuntimeError` class extends the standard JavaScript `Error` class and
-provides additional functionality for including extension members in error
-responses.
+The `RuntimeError` class extends the standard JavaScript `Error` class and provides additional functionality for including extension members in error responses.
 
 ### Constructor
 
@@ -72,8 +69,7 @@ export default async function handler(
 
 ## ConfigurationError
 
-The `ConfigurationError` class extends `RuntimeError` and is specifically
-designed for configuration-related errors.
+The `ConfigurationError` class extends `RuntimeError` and is specifically designed for configuration-related errors.
 
 ### Constructor
 
@@ -202,8 +198,7 @@ export default async function customPolicy(
 
 ## Integration with Problem Details
 
-When using [HttpProblems](./http-problems.mdx), errors can be automatically
-converted to RFC 7807 Problem Details responses:
+When using [HttpProblems](./http-problems.mdx), errors can be automatically converted to RFC 7807 Problem Details responses:
 
 ```ts
 import {

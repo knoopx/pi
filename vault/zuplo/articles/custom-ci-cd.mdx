@@ -4,15 +4,10 @@ sidebar_label: Custom CI/CD
 ---
 
 Custom CI/CD pipelines give you complete control over your deployment workflow.
-Use them when you need approval gates, multi-stage deployments, or tests that
-must pass before any deployment.
 
 :::tip{title="GitHub Users"}
 
-If you use GitHub, you likely don't need custom CI/CD. The
-[built-in integration](./source-control-setup-github.mdx) deploys automatically,
-and you can add [deployment testing](./github-deployment-testing.mdx) to run
-tests after each deploy.
+If you use GitHub, you likely don't need custom CI/CD.
 
 :::
 
@@ -26,40 +21,34 @@ Custom pipelines unlock:
 ## Choose Your CI/CD Provider
 
 - **[GitHub Actions](./custom-ci-cd-github.mdx)** — Workflows with approval
-  gates and multi-stage deployments
+gates and multi-stage deployments
 - **[Azure Pipelines](./custom-ci-cd-azure.mdx)** — Enterprise pipelines with
-  environment approvals
+environment approvals
 - **[GitLab CI/CD](./custom-ci-cd-gitlab.mdx)** — Integrated pipelines with
-  protected environments
+protected environments
 - **[Bitbucket Pipelines](./custom-ci-cd-bitbucket.mdx)** — Repository-native
-  deployments with manual triggers
+deployments with manual triggers
 - **[CircleCI](./custom-ci-cd-circleci.mdx)** — Flexible workflows with approval
-  jobs
+jobs
 
 ## How It Works
 
 Every Zuplo project can be deployed via the [Zuplo CLI](../cli/overview.mdx).
-The CLI commands integrate into any CI/CD system:
 
 - `zuplo deploy` — Deploy your API to Zuplo
 - `zuplo test` — Run your test suite against any endpoint
 - `zuplo delete` — Remove an environment when no longer needed
 - `zuplo dev` — Start a local server for testing in CI
 
-Branch names become environment names automatically. Push to `feature-auth` and
-you get a `feature-auth` environment. This
-[branch-based model](./branch-based-deployments.mdx) makes preview environments
-trivial to implement.
+Branch names become environment names automatically. Push to `feature-auth` and you get a `feature-auth` environment.
 
 :::warning{title="GitHub Users: Disconnect Automatic Deployments"}
 
-If you're using GitHub with custom CI/CD, disconnect the built-in integration to
-prevent double deployments:
+If you're using GitHub with custom CI/CD, disconnect the built-in integration to prevent double deployments:
 
 **Settings** > **Source Control** > **Disconnect**
 
-GitLab, Bitbucket, and Azure DevOps don't have automatic deployments, so no
-disconnection is needed.
+GitLab, Bitbucket, and Azure DevOps don't have automatic deployments, so no disconnection is needed.
 
 :::
 
@@ -71,12 +60,11 @@ The CLI authenticates with an API key:
 2. Select your account
 3. Navigate to **Settings** > **API Keys**
 
-Store this as a secret in your CI/CD provider (typically `ZUPLO_API_KEY`). Never
-commit API keys to your repository.
+Store this as a secret in your CI/CD provider (typically `ZUPLO_API_KEY`).
 
 ## Related Resources
 
 - [Branch-Based Deployments](./branch-based-deployments.mdx) — How branches map
-  to environments
+to environments
 - [Zuplo CLI Reference](../cli/overview.mdx) — Complete CLI documentation
 - [Testing](./testing.mdx) — Writing tests for your API

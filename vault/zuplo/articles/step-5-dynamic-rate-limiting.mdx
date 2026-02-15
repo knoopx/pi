@@ -2,21 +2,13 @@
 title: Step 5 - Dynamic Rate Limiting
 ---
 
-Fortune favors the bold. In this bonus getting started guide - we'll show you
-how to add dynamic rate limiting to your API.
+Fortune favors the bold. In this bonus getting started guide - we'll show you how to add dynamic rate limiting to your API.
 
-To follow this tutorial you'll need to have completed
-[Step 1](./step-1-setup-basic-gateway.mdx) for a Zuplo project,
-[Step 2](./step-2-add-rate-limiting.mdx) to add rate limiting to that route, and
-[Step 3](./step-3-add-api-key-auth.mdx) to add API key authentication to that
-same route.
+To follow this tutorial you'll need to have completed [Step 1](./step-1-setup-basic-gateway.mdx) for a Zuplo project, [Step 2](./step-2-add-rate-limiting.mdx) to add rate limiting to that route, and [Step 3](./step-3-add-api-key-auth.mdx) to add API key authentication to that same route.
 
 :::info{title="What's Dynamic Rate Limiting?"}
 
-Traditionally, rate limits are static and the same for everyone. This approach
-doesn't let you tailor your rate limiting to your API user - you might want to
-offer higher rate limits for customers that pay more. Dynamic rate limiting
-allows you to determine an appropriate rate limit at request time.
+Traditionally, rate limits are static and the same for everyone. This approach doesn't let you tailor your rate limiting to your API user - you might want to offer higher rate limits for customers that pay more.
 
 :::
 
@@ -26,10 +18,7 @@ Let's get started.
 
 1. Add Consumer Metadata
 
-   Let's make our rate-limiting policy more dynamic, based on properties of the
-   customer. [Create a new consumer](./step-3-add-api-key-auth.mdx) (Services ->
-   API Key Service -> Configure -> Create Consumer), and in the Metadata field,
-   set the following:
+Let's make our rate-limiting policy more dynamic, based on properties of the customer.
 
    ```json
    {
@@ -37,8 +26,7 @@ Let's get started.
    }
    ```
 
-   Update the metadata of your other API Key consumer (3-dot menu -> Edit) from
-   Step 3 to
+Update the metadata of your other API Key consumer (3-dot menu -> Edit) from Step 3 to
 
    ```json
    {
@@ -46,29 +34,23 @@ Let's get started.
    }
    ```
 
-   ![Customer Metadata](../../public/media/step-3-add-rate-limiting/image-2.png)
+![Customer Metadata](../../public/media/step-3-add-rate-limiting/image-2.png)
 
-   Now that we've users with different `customerType`, we can utilize this
-   information to rate limit them differently.
+Now that we've users with different `customerType`, we can utilize this information to rate limit them differently.
 
 1. Add a Custom Code Module
 
-   Navigate back to the Code tab. Now add a new module to the files section by
-   clicking the `+` next to the **modules** folder and choose new empty module.
-   Name the module `rate-limit.ts`.
+Navigate back to the Code tab. Now add a new module to the files section by clicking the `+` next to the **modules** folder and choose new empty module.
 
-   ![New module](../../public/media/step-3-add-rate-limiting/image-3.png)
+![New module](../../public/media/step-3-add-rate-limiting/image-3.png)
 
-   :::info{title="What's a Module?"}
+:::info{title="What's a Module?"}
 
-   Modules are Typescript functions that you can execute within Zuplo. They're
-   typically used to add custom code within the request/response pipeline (ex.
-   custom policies or request handlers). You can even perform network requests
-   and use libraries within these modules.
+Modules are Typescript functions that you can execute within Zuplo. They're typically used to add custom code within the request/response pipeline (ex. custom policies or request handlers).
 
-   :::
+:::
 
-   Add the following code to your module.
+Add the following code to your module.
 
    ```ts
    import { ZuploContext, ZuploRequest } from "@zuplo/runtime";
@@ -105,12 +87,11 @@ Let's get started.
 
 1. Update your Policy
 
-   Now we'll reconfigure the rate-limiting policy to wire up our custom
-   function. Find the policy in the **Route Designer** and click **Edit**.
+Now we'll reconfigure the rate-limiting policy to wire up our custom function.
 
-   ![Edit Policy](../../public/media/step-3-add-rate-limiting/image-4.png)
+![Edit Policy](../../public/media/step-3-add-rate-limiting/image-4.png)
 
-   Update the configuration to
+Update the configuration to
 
    ```json
    {
@@ -128,39 +109,30 @@ Let's get started.
    }
    ```
 
-   By changing the `rateLimitBy` to `function` you are indicating the rate limit
-   will be determined by a module at runtime. The `identifier` property is used
-   to indicate the module and function to run. Make sure to save once you've
-   made your changes.
+By changing the `rateLimitBy` to `function` you are indicating the rate limit will be determined by a module at runtime.
 
    ## 4/ Test your Policy
 
-   Using the Test modal, you can try your dynamic rate limiting. You can grab
-   the key for each consumer back in the Services tab where you created them.
-   Like [Step 3](./step-3-add-api-key-auth.mdx), you can fill in the keys into
-   the `Authorization` header and start making calls until you hit your rate
-   limit. Try out the other key and observe the difference in rate limits.
+Using the Test modal, you can try your dynamic rate limiting. You can grab the key for each consumer back in the Services tab where you created them.
 
 </Stepper>
 
 ## Wrapping up
 
-Congratulations - you've just successfully built an API that's:
+Congratulations - you've successfully built an API that's:
 
 - Protected by API key Authentication
 - Dynamically Rate Limited
 - Deployed to the Edge for superior performance
 - and fully documented via your Developer Portal
 
-This is an API experience most companies dream of, and you've just built it in
-less than an hour.
+This is an API experience most companies dream of, and you've built it in less than an hour.
 
 ### Next Steps
 
 - Continue exploring our docs to learn about customizing your
-  [Developer Portal](../dev-portal/introduction.mdx), or explore our various
-  [Integrations](https://zuplo.com/integrations)
+[Developer Portal](../dev-portal/introduction.mdx), or explore our various [Integrations](https://zuplo.com/integrations)
 - [Grab time](https://zuplo.com/meeting) with the Zuplo team to have your
-  questions answered
+questions answered
 - Start generating revenue from your new API with our
   [Monetization tutorial](./monetization.mdx)

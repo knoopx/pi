@@ -12,20 +12,11 @@ table th, table td {
 }
 `}</style>
 
-The Web Crypto API provides a set of low-level functions for common
-cryptographic tasks. The Workers Runtime implements the full surface of this
-API, but with some differences in the
-[supported algorithms](#supported-algorithms) compared to those implemented in
-most browsers.
+The Web Crypto API provides a set of low-level functions for common cryptographic tasks.
 
-Performing cryptographic operations using the Web Crypto API is significantly
-faster than performing them purely in JavaScript. If you want to perform
-CPU-intensive cryptographic operations, you should consider using the Web Crypto
-API.
+Performing cryptographic operations using the Web Crypto API is significantly faster than performing them purely in JavaScript.
 
-The Web Crypto API is implemented through the `SubtleCrypto` interface,
-accessible via the global `crypto.subtle` binding. A simple example of
-calculating a digest (also known as a hash) is:
+The Web Crypto API is implemented through the `SubtleCrypto` interface, accessible via the global `crypto.subtle` binding.
 
 ```js
 const myText = new TextEncoder().encode("Hello world!");
@@ -42,9 +33,7 @@ console.log(new Uint8Array(myDigest));
 
 :::caution
 
-The Web Crypto API differs significantly from Node’s Crypto API. If you want to
-port JavaScript code that relies on Node’s Crypto API, you will need to adapt it
-to use Web Crypto primitives.
+The Web Crypto API differs significantly from Node’s Crypto API. If you want to port JavaScript code that relies on Node’s Crypto API, you will need to adapt it to use Web Crypto primitives.
 
 :::
 
@@ -52,8 +41,7 @@ to use Web Crypto primitives.
 
 ### `Crypto.getRandomValues()`
 
-The `Crypto.getRandomValues()` method lets you get cryptographically strong
-random values.
+The `Crypto.getRandomValues()` method lets you get cryptographically strong random values.
 
 [Refer to the MDN documentation for more information](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues)
 
@@ -161,15 +149,11 @@ async function verify(signature: string, value: string, secret: string) {
 
 ## Supported algorithms
 
-The runtime implements all operations of the
-[WebCrypto standard](https://www.w3.org/TR/WebCryptoAPI/), as shown in the
-following table.
+The runtime implements all operations of the [WebCrypto standard](https://www.w3.org/TR/WebCryptoAPI/), as shown in the following table.
 
-A checkmark (✓) indicates that this feature is believed to be fully supported
-according to the spec.
+A checkmark (✓) indicates that this feature is believed to be fully supported according to the spec.
 
-An x (✘) indicates that this feature is part of the specification but not
-implemented.
+An x (✘) indicates that this feature is part of the specification but not implemented.
 
 If a feature only implements the operation partially, details are listed.
 
@@ -196,24 +180,13 @@ If a feature only implements the operation partially, details are listed.
 | HKDF              |                     |                         |          | ✓                            |               |                           |             | ✓           |
 | PBKDF2            |                     |                         |          | ✓                            |               |                           |             | ✓           |
 
-[^1]:
-    Algorithms as specified in the
-    [Secure Curves API](https://wicg.github.io/webcrypto-secure-curves).
+[^1]: Algorithms as specified in the [Secure Curves API](https://wicg.github.io/webcrypto-secure-curves).
 
-[^2]:
-    Legacy non-standard EdDSA is supported for the Ed25519 curve in addition to
-    the Secure Curves version. Since this algorithm is non-standard, note the
-    following while using it:
+[^2]: Legacy non-standard EdDSA is supported for the Ed25519 curve in addition to the Secure Curves version.
 
     - Use `NODE-ED25519` as the algorithm and `namedCurve` parameters.
     - Unlike NodeJS, Cloudflare won't support raw import of private keys.
     - The algorithm implementation may change over time. While Cloudflare can't
-      guarantee it at this time, Cloudflare will strive to maintain backward
-      compatibility and compatibility with NodeJS's behavior. Any notable
-      compatibility notes will be communicated in release notes and via this
-      developer documentation.
+guarantee it at this time, Cloudflare will strive to maintain backward compatibility and compatibility with NodeJS's behavior.
 
-[^3]:
-    MD5 isn't part of the WebCrypto standard but is supported in Cloudflare
-    Workers for interacting with legacy systems that require MD5. MD5 is
-    considered a weak algorithm. Don't rely upon MD5 for security.
+[^3]: MD5 isn't part of the WebCrypto standard but is supported in Cloudflare Workers for interacting with legacy systems that require MD5.

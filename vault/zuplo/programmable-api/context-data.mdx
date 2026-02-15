@@ -3,18 +3,11 @@ title: ContextData - Sharing Request Data
 sidebar_label: ContextData
 ---
 
-It's often useful to store data throughout the life of a single request. This
-data could be used on multiple policies, handlers, or for logging. However,
-because the Zuplo runtime is asynchronous, you can't simply create global
-variables and reference them in other modules if the value is unique across
-requests. Additionally, using a traditional data structure like a `Map` is also
-not recommended as it can build up memory over time.
+It's often useful to store data throughout the life of a single request.
 
 ## ContextData
 
 The `ContextData` utility store data that's tied to a specific request.
-Additionally, this utility ensures that data stored is garbage collected
-(removed from memory) when the request is complete.
 
 **`ContextData.set`**
 
@@ -66,16 +59,11 @@ Below are a few examples of how **NOT** to share data in your API.
 
 :::danger
 
-Don't write code like this in your API. It won't work reliably. These are
-examples of what NOT to do. See the next section for best practices.
+Don't write code like this in your API. It won't work reliably.
 
 :::
 
-The first example uses a simple shared global variable called `currentRequestId`
-to store the current `requestId`. On the surface this looks straightforward.
-However, because the gateway is being shared among many requests who are all
-running at the same time, the value of `currentRequestId` is completely
-unpredictable when your API is under load.
+The first example uses a simple shared global variable called `currentRequestId` to store the current `requestId`.
 
 ```ts title="/modules/policies.ts"
 let currentRequestId: string | undefined;
@@ -93,8 +81,7 @@ export function mySecondPolicy(request: ZuploRequest, context: ZuploContext) {
 
 ## Using ContextData
 
-Below you will find examples of how to use `ContextData` to safely share data
-throughout the lifecycle of a request.
+Below you will find examples of how to use `ContextData` to safely share data throughout the lifecycle of a request.
 
 ### Using static methods
 
@@ -111,8 +98,7 @@ export function myFirstPolicy(request: ZuploRequest, context: ZuploContext) {
 
 ### Using Shared Variable
 
-Reusable class shared across modules The shared module allows other modules to
-access the same storage without passing the string name or type around.
+Reusable class shared across modules The shared module allows other modules to access the same storage without passing the string name or type around.
 
 ```ts
 export const myData = new ContextData<{ prop1: string }>("my-data");

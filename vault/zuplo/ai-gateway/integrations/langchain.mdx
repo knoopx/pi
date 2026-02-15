@@ -3,25 +3,21 @@ title: LangChain
 sidebar_label: LangChain SDK
 ---
 
-LangChain is a framework for developing applications that are powered by Large
-Language Models (LLMs). It implements a standard interface for large language
-models and related technologies, such as embedding models and vector stores, and
-integrates with hundreds of providers.
+LangChain is a framework for developing applications that are powered by Large Language Models (LLMs).
 
 ## Prerequisites
 
-In order to use the AI Gateway with any LangChain powered application you will
-need to complete these steps first:
+use the AI Gateway with any LangChain powered application you will need to complete these steps first:
 
 <Stepper>
 
 1. Create a [new provider](/ai-gateway/managing-providers) in the AI Gateway for
-   the provider you want to use with LangChain
+the provider you want to use with LangChain
 
 2. [Set up a new team](/ai-gateway/managing-teams)
 
 3. Create a [new app](/ai-gateway/managing-apps) to use specifically with
-   LangChain and assign it to the team you created
+LangChain and assign it to the team you created
 
 4. Copy the API Key for the app you created, as well as the Gateway URL
 
@@ -29,11 +25,9 @@ need to complete these steps first:
 
 ## Configure LangChain
 
-In this example we will configure LangChain to work with OpenAI (or OpenAI
-compatible models).
+In this example we will configure LangChain to work with OpenAI (or OpenAI compatible models).
 
-To work with OpenAI in LangChain it's recommended to use their
-[ChatOpenAI integration](https://python.langchain.com/docs/integrations/chat/openai/).
+To work with OpenAI in LangChain it's recommended to use their [ChatOpenAI integration](https://python.langchain.com/docs/integrations/chat/openai/).
 
 ```python
 from langchain_openai import ChatOpenAI
@@ -57,9 +51,7 @@ def init_chat_model():
 In the code above, checks are performed for two environment variables:
 
 - `ZUPLO_AI_GATEWAY_API_KEY` - This is the API key of the app you have
-  configured to use with LangChain in Zuplo
+configured to use with LangChain in Zuplo
 - `BASE_URL` - This is the Gateway URL of your AI Gateway project in Zuplo
 
-Both of these values are passed to `ChatOpenAI` when it's instantiated,
-switching the configuration from using default OpenAI APIs to using Zuplo's AI
-Gateway for all `gpt-4o` requests that the LangChain SDK will make.
+Both of these values are passed to `ChatOpenAI` when it's instantiated, switching the configuration from using default OpenAI APIs to using Zuplo's AI Gateway for all `gpt-4o` requests that the LangChain SDK will make.

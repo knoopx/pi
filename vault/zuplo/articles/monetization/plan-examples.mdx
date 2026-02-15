@@ -5,14 +5,11 @@ sidebar_label: Examples
 
 :::warning
 
-The Monetization APIs are in preview and subject to change. Features and
-endpoints documented here may be modified as we refine the service based on
-customer feedback.
+The Monetization APIs are in preview and subject to change. Features and endpoints documented here may be modified as we refine the service based on customer feedback.
 
 :::
 
-This guide walks through progressively building a plan, starting simple and
-adding complexity. All examples assume you have already created:
+This guide walks through progressively building a plan, starting simple and adding complexity.
 
 - A meter called `api_requests` that tracks API calls
 - A feature called `api_requests` linked to that meter
@@ -146,8 +143,7 @@ EOF
 
 ## 3. Add Overage Charges
 
-Now allow customers to exceed their quota and charge $0.01 per additional
-request after the first 1,000.
+Now allow customers to exceed their quota and charge $0.01 per additional request after the first 1,000.
 
 ```shell
 curl \
@@ -229,7 +225,7 @@ EOF
 - Changed the rate card from `flat_fee` to `usage_based`
 - Changed `isSoftLimit` to `true` - requests continue after 1,000
 - Combined base fee and overage into tiered pricing: first 1,000 cost $9.99
-  flat, then $0.01 per additional request
+flat, then $0.01 per additional request
 
 **Example billing:**
 
@@ -242,13 +238,11 @@ EOF
 
 ## 4. Add Static Entitlements
 
-Finally, add a static entitlement for "large payloads" that grants premium
-features without metering.
+Finally, add a static entitlement for "large payloads" that grants premium features without metering.
 
 :::note
 
-Before adding the `large_payloads` rate card, you must first create a feature
-with `key: "large_payloads"`.
+Before adding the `large_payloads` rate card, you must first create a feature with `key: "large_payloads"`.
 
 :::
 

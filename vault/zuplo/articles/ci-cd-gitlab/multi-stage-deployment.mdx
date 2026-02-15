@@ -53,11 +53,9 @@ deploy-production:
 
 ## Setting Up Approval
 
-The `when: manual` setting requires someone to click "Play" in the GitLab UI to
-trigger production deployment.
+The `when: manual` setting requires someone to click "Play" in the GitLab UI to trigger production deployment.
 
-For more control, use
-[Protected Environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html):
+For more control, use [Protected Environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html):
 
 1. Go to **Settings** > **CI/CD** > **Protected environments**
 2. Add `production` as a protected environment

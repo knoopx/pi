@@ -3,26 +3,15 @@ title: Zuplo OpenTelemetry
 sidebar_label: OpenTelemetry
 ---
 
-Zuplo ships with an OpenTelemetry plugin that allows you to collect and export
-telemetry data from your Zuplo API. The OpenTelemetry plugin supports tracing
-and logging. Metrics support is planned for future releases.
+Zuplo ships with an OpenTelemetry plugin that allows you to collect and export telemetry data from your Zuplo API.
 
 <EnterpriseFeature name="OpenTelemetry" />
 
 ## Tracing
 
-Tracing enables you to monitor performance, identify bottlenecks, and
-troubleshoot issues in your Zuplo API. The OpenTelemetry plugin automatically
-instruments your API to collect trace data. You can send trace data any
-OpenTelemetry service such as [Honeycomb](https://honeycomb.io),
-[Middleware](https://middleware.io/), [Dynatrace](https://dynatrace.com),
-[Jaeger](https://www.jaegertracing.io/), and
-[many more](https://opentelemetry.io/ecosystem/).
+Tracing enables you to monitor performance, identify bottlenecks, and troubleshoot issues in your Zuplo API.
 
-With tracing enabled on your Zuplo API you will see timings for each request as
-well as spans for plugins, handlers, and policies. The OpenTelemetry plugin
-supports trace propagation (W3C headers by default) so you can trace requests
-all the way from the client to your backend.
+With tracing enabled on your Zuplo API you will see timings for each request as well as spans for plugins, handlers, and policies.
 
 ![Trace visualization](../../public/media/opentelemetry/image-1.png)
 
@@ -31,27 +20,22 @@ all the way from the client to your backend.
 By default, when the OpenTelemetry plugin is enabled, the following is traced:
 
 - Request: The entire request lifecycle is traced, including the time taken to
-  process the request and send the response.
+process the request and send the response.
 - Inbound Policies: The time taken to execute all inbound policies as well as
-  each policy is traced.
+each policy is traced.
 - Handler: The request handler is traced
 - Outbound Policies: The time taken to execute all outbound policies as well as
-  each policy is traced.
+each policy is traced.
 - Subrequests: Any use of `fetch` within your custom policies or handlers will
-  be traced.
+be traced.
 
 ### Limitations
 
-One important limitation to keep in mind is that the clock will only increment
-when performing I/O operations (for example when calling `fetch`, using the
-Cache APIs, etc.). This is a limitation imposed as a security measure due
-Zuplo's serverless, multi-tenant architecture. In practice this shouldn't impact
-your ability to trace as virtually any code that isn't I/O bound is fast.
+One important limitation to keep in mind is that the clock will only increment when performing I/O operations (for example when calling `fetch`, using the Cache APIs, etc.).
 
 ### Custom Tracing
 
-You can add custom tracing to your Zuplo API by using the OpenTelemetry API. The
-example below shows how to implement tracing in a custom policy.
+You can add custom tracing to your Zuplo API by using the OpenTelemetry API.
 
 ```ts
 import { ZuploContext, ZuploRequest } from "@zuplo/runtime";
@@ -94,14 +78,9 @@ This will result in a span that has the following spans:
 
 ## Logging
 
-Logging can be enabled by configuring the `logUrl` property in the OpenTelemetry
-plugin configuration, as shown in
-[Tracing and Logging Configuration](#tracing-and-logging-configuration). When
-enabled, logs will be exported to the specified endpoint in OpenTelemetry
-format.
+Logging can be enabled by configuring the `logUrl` property in the OpenTelemetry plugin configuration, as shown in [Tracing and Logging Configuration](#tracing-and-logging-configuration).
 
-To add OpenTelemetry logs in your Zuplo handlers and policies, you can use the
-`context.log` object as shown below:
+To add OpenTelemetry logs in your Zuplo handlers and policies, you can use the `context.log` object as shown below:
 
 ```ts
 import { ZuploContext, ZuploRequest } from "@zuplo/runtime";
@@ -115,8 +94,7 @@ export default async function policy(
 }
 ```
 
-You can also set additional custom log properties using
-`context.log.setLogProperties!`:
+You can also set additional custom log properties using `context.log.setLogProperties!`:
 
 ```ts
 import { ZuploContext, ZuploRequest } from "@zuplo/runtime";
@@ -131,32 +109,23 @@ export default async function policy(
 }
 ```
 
-After setting a custom property, all subsequent log messages will include that
-property.
+After setting a custom property, all subsequent log messages will include that property.
 
-These logs will be exported to the configured log endpoint in OpenTelemetry
-format. The log message will be in the `message` field and the custom properties
-will be in the `attributes` field.
+These logs will be exported to the configured log endpoint in OpenTelemetry format.
 
 ## Setup
 
-Adding OpenTelemetry to your Zuplo API is done by adding the
-`OpenTelemetryPlugin` in the `zuplo.runtime.ts` file as shown below.
+Adding OpenTelemetry to your Zuplo API is done by adding the `OpenTelemetryPlugin` in the `zuplo.runtime.ts` file as shown below.
 
 :::warning{title="OpenTelemetry Protocol"}
 
-The Zuplo OpenTelemetry plugin only supports sending data in JSON format. Not
-all OpenTelemetry services support the JSON format. If you are using a service
-that doesn't support JSON, you will need to use a tool like the
-[OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) that can
-convert the JSON format to the format required by your service.
+The Zuplo OpenTelemetry plugin only supports sending data in JSON format.
 
 :::
 
 ### Basic Tracing Configuration
 
-For most providers you will set values for `exporter.url` and
-`exporter.headers`. It's common for providers to use a header for authorization.
+For most providers you will set values for `exporter.url` and `exporter.headers`.
 
 ```ts title="zuplo.runtime.ts"
 import { OpenTelemetryPlugin } from "@zuplo/otel";
@@ -182,8 +151,7 @@ export function runtimeInit(runtime: RuntimeExtensions) {
 
 ### Advanced Tracing Configuration
 
-The OpenTelemetry plugin supports additional configuration options for advanced
-use cases, including sampling and post-processing of spans.
+The OpenTelemetry plugin supports additional configuration options for advanced use cases, including sampling and post-processing of spans.
 
 ```ts title="zuplo.runtime.ts"
 import { OpenTelemetryPlugin } from "@zuplo/otel";
@@ -221,9 +189,7 @@ export function runtimeInit(runtime: RuntimeExtensions) {
 
 ### Tracing and Logging Configuration
 
-Logging is only enabled when specifically configured with its own endpoint using
-the `logUrl` property. When using both tracing and logging, you can configure
-them with separate endpoints.
+Logging is only enabled when specifically configured with its own endpoint using the `logUrl` property.
 
 ```ts title="zuplo.runtime.ts"
 import { OpenTelemetryPlugin } from "@zuplo/otel";

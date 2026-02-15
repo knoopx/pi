@@ -5,20 +5,15 @@ sidebar_label: Overview
 
 :::warning
 
-The Monetization APIs are in preview and subject to change. Features and
-endpoints documented here may be modified as we refine the service based on
-customer feedback.
+The Monetization APIs are in preview and subject to change. Features and endpoints documented here may be modified as we refine the service based on customer feedback.
 
 :::
 
-Plans are subscription tiers that package features together. They represent the
-rows on your pricing page - Free, Pro, Enterprise - each with different feature
-access and usage limits. Plans define what customers get when they subscribe.
+Plans are subscription tiers that package features together. They represent the rows on your pricing page - Free, Pro, Enterprise - each with different feature access and usage limits.
 
 ## Plan Structure
 
-Plans follow a hierarchical structure where each level defines a specific aspect
-of your pricing:
+Plans follow a hierarchical structure where each level defines a specific aspect of your pricing:
 
 <Mermaid
   chart={`flowchart TD
@@ -30,12 +25,7 @@ of your pricing:
     Feature[Feature]
     Meter[Meter]
 
-    Plan --> Phases
-    Phases --> RateCards
-    RateCards --> Price
-    RateCards --> Entitlement
-    Entitlement --> Feature
-    Feature --> Meter`}
+Plan --> Phases Phases --> RateCards RateCards --> Price RateCards --> Entitlement Entitlement --> Feature Feature --> Meter`}
 
 />
 
@@ -49,15 +39,11 @@ of your pricing:
 | **Feature**     | A capability that can be metered or toggled           |
 | **Meter**       | Tracks usage data for metered features                |
 
-Plans contain **phases**, and each phase contains **rate cards** that define
-pricing and entitlements. See [Rate Cards](./rate-cards.mdx) for details on
-configuring pricing within plans.
+Plans contain **phases**, and each phase contains **rate cards** that define pricing and entitlements.
 
 :::note
 
-Before creating a plan, you must first define the [Features](./features.mdx)
-that will be included. Plans reference features by their `key`, so features must
-exist before they can be added to rate cards.
+Before creating a plan, you must first define the [Features](./features.mdx) that will be included.
 
 :::
 
@@ -68,7 +54,7 @@ Plans move through a defined lifecycle:
 1. **Draft** - Initial state when created. Can be modified freely.
 2. **Active** - Published and available for subscriptions. Cannot be modified.
 3. **Archived** - No longer available for new subscriptions but existing
-   subscriptions continue.
+subscriptions continue.
 
 ## Example: Pro Plan with Trial
 
@@ -79,8 +65,7 @@ This example creates a Pro plan with:
 - Overage pricing at $0.01 per additional call
 - Static features for premium access
 
-For step-by-step examples building plans from simple to complex, see
-[Plan Examples](./plan-examples.mdx).
+For step-by-step examples building plans from simple to complex, see [Plan Examples](./plan-examples.mdx).
 
 ```shell
 curl \
@@ -188,9 +173,7 @@ EOF
 | Trial   | 1 week   | 1,000 (hard limit) | Free      |
 | Default | Ongoing  | 10,000 included    | $99/month |
 
-After the trial ends, customers automatically move to the default phase. In the
-default phase, the first 10,000 API requests are included in the $99 monthly
-fee. Additional requests are billed at $0.01 each (soft limit allows overage).
+After the trial ends, customers automatically move to the default phase.
 
 ## Plan Properties
 
@@ -217,9 +200,7 @@ fee. Additional requests are billed at $0.01 each (soft limit allows overage).
 
 :::caution
 
-Plans must be published before customers can subscribe to them. A newly created
-plan starts in `draft` status and is not available for subscriptions until
-published.
+Plans must be published before customers can subscribe to them. A newly created plan starts in `draft` status and is not available for subscriptions until published.
 
 :::
 
@@ -232,8 +213,7 @@ curl \
   --header "Authorization: Bearer $ZAPI_KEY"
 ```
 
-Once published, a plan cannot be modified. To make changes, you must create a
-new version of the plan.
+Once published, a plan cannot be modified. To make changes, you must create a new version of the plan.
 
 ## Common Billing Cadences
 
@@ -246,5 +226,4 @@ new version of the plan.
 
 ## API Reference
 
-For complete API operations (list, get, update, delete, archive), see the
-[Plans API Reference](../../api/metering-plans).
+For complete API operations (list, get, update, delete, archive), see the [Plans API Reference](../../api/metering-plans).

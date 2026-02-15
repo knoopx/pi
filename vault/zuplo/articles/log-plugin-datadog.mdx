@@ -9,8 +9,7 @@ The Datadog Log plugin enables pushing logs to Datadog.
 
 ## Setup
 
-To add the Datadog logging plugin to your Zuplo project, add the following code
-to your `zuplo.runtime.ts` file.
+To add the Datadog logging plugin to your Zuplo project, add the following code to your `zuplo.runtime.ts` file.
 
 ```ts title="modules/zuplo.runtime.ts"
 import {
@@ -40,45 +39,40 @@ export function runtimeInit(runtime: RuntimeExtensions) {
 
 ## Configuration Options
 
-The `DataDogLoggingPlugin` constructor accepts an options object with the
-following properties:
+The `DataDogLoggingPlugin` constructor accepts an options object with the following properties:
 
 - `apiKey` - (required) Your Datadog API key for authentication
 - `url` - (optional) The Datadog logs intake URL. Defaults to the Datadog logs
-  API endpoint
+API endpoint
 - `source` - (optional) The source of the logs, typically the name of the
-  application or service. Defaults to "Zuplo"
+application or service. Defaults to "Zuplo"
 - `fields` - (optional) Custom fields to include in each log entry. Can contain
-  string, number, or boolean values
+string, number, or boolean values
 - `tags` - (optional) Custom
-  [tags](https://docs.datadoghq.com/getting_started/tagging/) to include in each
-  log entry as key-value pairs
+[tags](https://docs.datadoghq.com/getting_started/tagging/) to include in each log entry as key-value pairs
 
 ### Custom Fields
 
-Any custom fields you want to include in the log entry can be added to the
-`fields` property. These values will be appended to every log entry.
+Any custom fields you want to include in the log entry can be added to the `fields` property.
 
 ### Tags
 
-Any custom tags you want to include in the log entry can be added to the `tags`
-property. These values will be appended to every log entry.
+Any custom tags you want to include in the log entry can be added to the `tags` property.
 
 ## Default Fields
 
-Every log entry will include the following fields (in snake_case format for
-Datadog):
+Every log entry will include the following fields (in snake_case format for Datadog):
 
 - `timestamp` - The time the log was created (ISO 8601 format)
 - `severity` - The log level (for example, `ERROR`, `INFO`, `DEBUG`, `WARN`)
 - `message` - The complete log message and data
 - `msg` - The first string message extracted from the log entry
 - `environment_type` - Where the Zuplo API is running. Values are `edge`,
-  `working-copy`, or `local`
+`working-copy`, or `local`
 - `environment_stage` - The deployment stage: `working-copy`, `preview`, or
-  `production`
+`production`
 - `request_id` - The UUID of the request (the value of the `zp-rid` header)
 - `atomic_counter` - An atomic counter used to order logs with identical
-  timestamps
+timestamps
 - `ray_id` - The network provider identifier (for example, Cloudflare Ray ID) of
-  the request
+the request

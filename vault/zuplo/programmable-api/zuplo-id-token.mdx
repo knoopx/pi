@@ -4,14 +4,9 @@ title: Zuplo Identity Token
 
 <EnterpriseFeature name="Zuplo Identity Token" />
 
-Each deployment of Zuplo is issued a unique OAuth client identity. This identity
-can be used to create ID Tokens that can be used to securely identify requests
-from your Zuplo API that are made to outside services. This is token can also be
-used for purposes such as Identity Federation to securely call APIs in other
-Cloud Services like GCP or AWS.
+Each deployment of Zuplo is issued a unique OAuth client identity. This identity can be used to create ID Tokens that can be used to securely identify requests from your Zuplo API that are made to outside services.
 
-To create a Zuplo Identity Token simply run the following code from withing a
-policy, handler, or module in your Zuplo API.
+To create a Zuplo Identity Token run the following code from withing a policy, handler, or module in your Zuplo API.
 
 ```ts
 import { ZuploServices, ZuploContext, ZuploRequest } from "@zuplo/runtime";
@@ -26,8 +21,7 @@ export default async function handler(
 }
 ```
 
-The `audience` argument is optional, but typically this is set to a value
-identifying the service you are calling.
+The `audience` argument is optional, but typically this is set to a value identifying the service you are calling.
 
 The issued JWT token contains the following claims.
 
@@ -46,23 +40,13 @@ The issued JWT token contains the following claims.
 
 ## Securing Your Backend
 
-The Zuplo ID Token can be used as a means of securing your backend API so that
-only Zuplo can call the API. This can be done by restricting the incoming
-requests using a standard OAuth middleware on your API. For example, if you were
-using Fastify on your backend, you could use the
-[Fastify JWT Middleware](https://github.com/fastify/fastify-jwt) using the
-[JWKS verification method](https://github.com/fastify/fastify-jwt?tab=readme-ov-file#verifying-with-jwks)
-and checking the `account`, `project`, or other claims.
+The Zuplo ID Token can be used as a means of securing your backend API so that only Zuplo can call the API.
 
 ## Verifying the Token Using a Library
 
-To verify the JWT token on your own service, you can use any standard JWT
-library. The verification method will use the JWKS hosted at
-`https://dev.zuplo.com/v1/client-auth/auth_o8PUdhKxSTOiB794GWPwLQCD/.well-known/jwks.json`.
-You can also use OAuth tools that handle automatic discovery.
+To verify the JWT token on your own service, you can use any standard JWT library.
 
-Below is an example of how to verify the token using the
-[`jose`](https://www.npmjs.com/package/jose) JavaScript library.
+Below is an example of how to verify the token using the [`jose`](https://www.npmjs.com/package/jose) JavaScript library.
 
 ```ts
 import jose from "jose";

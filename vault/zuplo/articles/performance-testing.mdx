@@ -5,34 +5,23 @@ sidebar_label: Performance Testing
 
 <!-- vale Vale.Spelling["Blazemeter","JMeter","wrk"] = NO -->
 
-Performance testing is critical for understanding the real-world performance of
-your API when using an API gateway like Zuplo. This guide helps you create fair
-and accurate performance tests that properly measure latency and throughput.
+Performance testing is critical for understanding the real-world performance of your API when using an API gateway like Zuplo.
 
 ## Creating Fair Comparison Tests
 
-When evaluating API gateway performance, it's essential to ensure your tests
-accurately reflect real-world conditions and provide a fair comparison between
-direct backend calls and calls through your gateway.
+When evaluating API gateway performance, it's essential to ensure your tests accurately reflect real-world conditions and provide a fair comparison between direct backend calls and calls through your gateway.
 
 ### Test Location Matters
 
-One of the most common mistakes in performance testing is running tests from
-within the same cloud provider network as your backend. This creates
-artificially low latency results that don't reflect real-world usage.
+One of the most common mistakes in performance testing is running tests from within the same cloud provider network as your backend.
 
 :::warning
 
-Never run performance tests from the same cloud provider as your backend. If
-your backend runs on AWS, don't test from AWS. The same applies to GCP, Azure,
-or any other provider. If you are using a third-party tool such as K8 or
-Blazemeter, be sure to check where their test nodes are located.
+Never run performance tests from the same cloud provider as your backend.
 
 :::
 
-**Why this matters:** When traffic stays within a cloud provider's network,
-latency is dramatically reduced and more consistent, especially within the same
-geographical region. Intra-cloud network latency benefits from:
+**Why this matters:** When traffic stays within a cloud provider's network, latency is dramatically reduced and more consistent, especially within the same geographical region.
 
 - Dedicated high-speed interconnects between data centers
 - Optimized routing within the provider's backbone
@@ -42,37 +31,28 @@ geographical region. Intra-cloud network latency benefits from:
 You can see real-world latency differences using tools like:
 
 - [AWS CloudPing](https://www.cloudping.co/) - Shows inter-region latency for
-  AWS
+AWS
 - [Google Cloud Network Intelligence Center](https://cloud.google.com/network-intelligence-center/docs/performance-dashboard/how-to/view-google-cloud-latency) -
-  Provides detailed GCP network performance metrics
+Provides detailed GCP network performance metrics
 
-The difference is stark: intra-cloud latency within the same region (for
-example, within North America) can be 50-70% lower than traffic traversing the
-public internet or between different cloud providers. Additionally, internet
-traffic experiences significantly higher jitter (variance), making response
-times less predictable.
+The difference is stark: intra-cloud latency within the same region (for example, within North America) can be 50-70% lower than traffic traversing the public internet or between different cloud providers.
 
-This artificial performance boost from testing within the same cloud provider
-can make it appear that an API gateway adds substantially more latency than it
-actually does in real-world scenarios where traffic crosses network boundaries.
+This artificial performance boost from testing within the same cloud provider can make it appear that an API gateway adds substantially more latency than it actually does in real-world scenarios where traffic crosses network boundaries.
 
 ### Ensure Test Equality
 
-Fair comparisons require testing under identical conditions. Here are the key
-factors to consider:
+Fair comparisons require testing under identical conditions. Here are the key factors to consider:
 
 #### Authentication Methods
 
-Different authentication methods have different performance characteristics. If
-you're testing:
+Different authentication methods have different performance characteristics.
 
 - **Backend with IAM/JWT:** Processing time varies but is typically minimal for
-  JWT validation
+JWT validation
 - **Zuplo with API Key authentication:** Adds approximately 5-10ms for key
-  validation
+validation
 
-To ensure fair testing, use the same authentication method for both tests, or
-account for the difference in your analysis.
+To ensure fair testing, use the same authentication method for both tests, or account for the difference in your analysis.
 
 #### Request Parameters and Payloads
 
@@ -101,8 +81,7 @@ Your architecture may include additional layers that affect performance:
 - **DDoS Protection:** Usually minimal impact (1-5ms) unless under attack
 - **Load Balancers:** Adds 1-5ms
 
-Include these layers in both test scenarios or explicitly account for their
-impact in your analysis.
+Include these layers in both test scenarios or explicitly account for their impact in your analysis.
 
 ## Understanding Gateway Latency
 
@@ -111,7 +90,7 @@ API gateways necessarily add some latency to process requests. For Zuplo:
 - **Base latency:** Approximately 20-30ms with no policies
 - **Per policy:** Most policies add 1-5ms each
 - **Complex policies:** Authentication, rate limiting, or custom code can add
-  5-15ms
+5-15ms
 
 This latency is the trade-off for the benefits an API gateway provides:
 
@@ -146,9 +125,7 @@ Different policies have varying performance impacts:
 
 :::tip
 
-For optimal performance, order your policies from least to most expensive, and
-use early-exit conditions where possible. For example, validate API keys before
-performing complex transformations.
+For optimal performance, order your policies from least to most expensive, and use early-exit conditions where possible.
 
 :::
 
@@ -202,26 +179,21 @@ Design tests that reflect actual usage:
 When analyzing your performance test results:
 
 1. **Compare percentiles, not averages:** p95 and p99 latencies better represent
-   user experience
+user experience
 2. **Account for geographic distribution:** Users farther from your
-   infrastructure will see higher latency
+infrastructure will see higher latency
 3. **Look for anomalies:** Sudden spikes might indicate rate limiting or
-   capacity issues
+capacity issues
 
 :::note
 
-Remember that Zuplo's edge deployment means your API is served from locations
-globally, which can actually reduce latency for geographically distributed users
-compared to a single-region backend.
+Remember that Zuplo's edge deployment means your API is served from locations globally, which can actually reduce latency for geographically distributed users compared to a single-region backend.
 
 :::
 
 ## Optimizing for Intra-Cloud Traffic
 
-If your primary use case involves API traffic that stays within a particular
-cloud provider's network, consider Zuplo's
-[Managed Dedicated deployment](/docs/dedicated/overview.mdx) options. With
-Managed Dedicated, Zuplo can be deployed directly to:
+If your primary use case involves API traffic that stays within a particular cloud provider's network, consider Zuplo's [Managed Dedicated deployment](/docs/dedicated/overview.mdx) options.
 
 - Your chosen cloud provider (AWS, GCP, Azure, etc.)
 - Your specific regions
@@ -230,9 +202,9 @@ Managed Dedicated, Zuplo can be deployed directly to:
 This deployment model provides:
 
 - **Minimal latency:** Your API gateway runs in the same cloud network as your
-  backend
+backend
 - **Predictable performance:** Consistent sub-10ms latency for intra-region
-  traffic
+traffic
 - **Network isolation:** Traffic never leaves your cloud provider's backbone
 - **Compliance benefits:** Data remains within your controlled infrastructure
 
@@ -245,12 +217,7 @@ Managed Dedicated is ideal for organizations with:
 
 :::tip
 
-For most use cases, where API traffic comes from multiple providers, networks,
-and geographic locations (mobile apps, web applications, third-party
-integrations), Zuplo's edge-deployed instances typically provide better overall
-performance. Edge deployment ensures your API is served from locations closest
-to your users globally, reducing latency for the majority of real-world traffic
-patterns.
+For most use cases, where API traffic comes from multiple providers, networks, and geographic locations (mobile apps, web applications, third-party integrations), Zuplo's edge-deployed instances typically provide better overall performance.
 
 :::
 
@@ -258,14 +225,11 @@ patterns.
 
 :::note
 
-This section applies only to Zuplo's managed edge (serverless) deployment. If
-you're running Zuplo in a dedicated environment, cold starts don't apply.
+This section applies only to Zuplo's managed edge (serverless) deployment.
 
 :::
 
-Zuplo's serverless platform automatically scales to handle any load, from zero
-to billions of requests. However, the first requests after a period of
-inactivity may experience "cold starts."
+Zuplo's serverless platform automatically scales to handle any load, from zero to billions of requests.
 
 ### Understanding Cold Starts
 
@@ -281,24 +245,16 @@ To accurately test performance:
 2. **Measure steady-state:** After warm-up, measure consistent performance
 3. **Test scaling:** Gradually increase load to observe scaling behavior
 4. **Account for real-world patterns:** Most production APIs stay warm during
-   business hours
+business hours
 
 :::tip
 
-For APIs with predictable traffic patterns, consider implementing a simple
-keep-warm strategy using scheduled synthetic requests during low-traffic
-periods.
+For APIs with predictable traffic patterns, consider implementing a simple keep-warm strategy using scheduled synthetic requests during low-traffic periods.
 
 :::
 
 ## Summary
 
-Creating fair performance tests requires careful attention to test conditions,
-understanding of network topology, and realistic expectations about API gateway
-overhead. By following these guidelines, you'll get accurate measurements that
-help you make informed decisions about your API architecture.
+Creating fair performance tests requires careful attention to test conditions, understanding of network topology, and realistic expectations about API gateway overhead.
 
-Remember: Zuplo typically adds only 20-30ms of latency for basic request
-processing, with additional small increments for some policies. This overhead is
-often offset by the operational benefits and can even result in better global
-performance due to edge deployment.
+Remember: Zuplo typically adds only 20-30ms of latency for basic request processing, with additional small increments for some policies.

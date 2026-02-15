@@ -3,8 +3,7 @@ title: "GitHub Actions: Multi-Stage Deployment"
 sidebar_label: Multi-Stage Deployment
 ---
 
-Deploy to staging first, run tests, then promote to production with manual
-approval. This pattern ensures changes are validated before reaching production.
+Deploy to staging first, run tests, then promote to production with manual approval.
 
 ```yaml title=".github/workflows/multi-stage.yaml"
 name: Multi-Stage Deployment
@@ -99,8 +98,7 @@ Create a GitHub environment with required reviewers:
 3. Check **Required reviewers** and add approvers
 4. Save the environment
 
-When the workflow reaches the production job, it pauses until an approver clicks
-**Review deployments** in the Actions UI.
+When the workflow reaches the production job, it pauses until an approver clicks **Review deployments** in the Actions UI.
 
 ## Adding More Stages
 
@@ -132,5 +130,5 @@ jobs:
 ## Next Steps
 
 - Combine with [tag-based releases](./tag-based-releases.mdx) for version
-  control
+control
 - Add [local testing](./local-testing.mdx) before any deployment

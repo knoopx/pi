@@ -3,8 +3,7 @@ title: "GitHub Actions: Automatic Cleanup"
 sidebar_label: Automatic Cleanup
 ---
 
-Delete Zuplo environments automatically when branches are deleted. This keeps
-your environment list clean and avoids accumulating unused preview environments.
+Delete Zuplo environments automatically when branches are deleted. This keeps your environment list clean and avoids accumulating unused preview environments.
 
 ```yaml title=".github/workflows/cleanup-on-branch-delete.yaml"
 name: Cleanup on Branch Delete
@@ -55,9 +54,7 @@ This workflow:
 
 ## Combining with PR Cleanup
 
-Use this as a backup for
-[PR preview environments](./pr-preview-environments.mdx). The PR workflow
-handles cleanup when PRs close, but this catches cases where:
+Use this as a backup for [PR preview environments](./pr-preview-environments.mdx).
 
 - Someone deletes a branch without closing the PR first
 - A branch was pushed but never had a PR opened
@@ -118,6 +115,6 @@ jobs:
 ## Next Steps
 
 - Set up [PR preview environments](./pr-preview-environments.mdx) with built-in
-  cleanup
+cleanup
 - Implement [multi-stage deployment](./multi-stage-deployment.mdx) for
-  production
+production

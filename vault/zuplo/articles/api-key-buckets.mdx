@@ -2,9 +2,7 @@
 title: Buckets and Environments
 ---
 
-API keys are stored in "buckets," which organize and isolate authentication
-credentials across different environments. Learn more in the
-[API Key API documentation](https://dev.zuplo.com/docs).
+API keys are stored in "buckets," which organize and isolate authentication credentials across different environments.
 
 ## Default bucket configuration
 
@@ -12,11 +10,10 @@ Zuplo automatically creates three buckets for each project:
 
 - **Working copy**: Stores API keys for the working-copy environment
 - **Production**: Stores API keys for the production environment (your default
-  Git branch)
+Git branch)
 - **Shared**: Stores API keys shared across all other environments
 
-For more information on how environments relate to Git branches, see
-[Branch-Based Deployments](./branch-based-deployments.mdx).
+For more information on how environments relate to Git branches, see [Branch-Based Deployments](./branch-based-deployments.mdx).
 
 ## Custom bucket configuration
 
@@ -33,15 +30,11 @@ To use a custom bucket, specify the `bucketName` in your API Key policy options:
 }
 ```
 
-When no `bucketName` appears in the configuration, the policy uses the default
-bucket for the current environment.
+When no `bucketName` appears in the configuration, the policy uses the default bucket for the current environment.
 
 ## Creating custom buckets
 
-Create custom buckets using the
-[API Key management API](https://dev.zuplo.com/docs). See the
-[create buckets endpoint](https://dev.zuplo.com/docs/routes#apikeybucketsservice_create)
-for details.
+Create custom buckets using the [API Key management API](https://dev.zuplo.com/docs).
 
 The following example creates a bucket for a QA environment:
 
@@ -55,7 +48,6 @@ curl --request POST \
 
 :::note
 
-Replace `YOUR_ACCOUNT_NAME` with your account name and `YOUR_ZAPI_KEY` with your
-Zuplo API key.
+Replace `YOUR_ACCOUNT_NAME` with your account name and `YOUR_ZAPI_KEY` with your Zuplo API key.
 
 :::

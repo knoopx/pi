@@ -5,29 +5,22 @@ sidebar_label: DDoS Protection
 
 <!-- vale Vale.Spelling["slowloris","Unmetered"] = NO -->
 
-Zuplo provides automatic DDoS (Distributed Denial of Service) protection for all
-APIs deployed on the platform. This service detects and mitigates attacks in
-real-time, ensuring your APIs remain available even under attack.
+Zuplo provides automatic DDoS (Distributed Denial of Service) protection for all APIs deployed on the platform.
 
 :::note
 
-Zuplo Managed DDoS is only available for customers using Zuplo's managed edge
-deployment model. Customers using managed dedicated deployments should refer to
-the
-[Managed Dedicated WAF Options](./zuplo-waf.mdx#managed-dedicated-waf-options)
-document.
+Zuplo Managed DDoS is only available for customers using Zuplo's managed edge deployment model.
 
 :::
 
 ## What's DDoS?
 
-DDoS attacks attempt to overwhelm your API by flooding it with malicious traffic
-from multiple sources. Zuplo's protection covers both:
+DDoS attacks attempt to overwhelm your API by flooding it with malicious traffic from multiple sources.
 
 - **Network Layer Attacks (Layer 3/4)**: UDP floods, SYN floods, and other
-  network-level attacks
+network-level attacks
 - **Application Layer Attacks (Layer 7)**: HTTP floods, slowloris, and other
-  application-level attacks
+application-level attacks
 
 ## Key Benefits
 
@@ -36,34 +29,29 @@ from multiple sources. Zuplo's protection covers both:
 - **Unmetered Protection**: No bandwidth limits during attacks
 - **Adaptive**: Continuously updated to handle new attack patterns
 - **Minimal False Positives**: Smart detection reduces blocking of legitimate
-  traffic
+traffic
 - **Avoid Unexpected Costs**: Zuplo never charges for requests that are blocked
-  by DDoS protection protecting you from unexpected overage fees.
+by DDoS protection protecting you from unexpected overage fees.
 
 ## Protection Levels
 
-Zuplo offers different sensitivity levels for DDoS protection, allowing you to
-balance security with accessibility based on your specific needs.
+Zuplo offers different sensitivity levels for DDoS protection, allowing you to balance security with accessibility based on your specific needs.
 
 ### Working Copy Environments
 
-All Working Copy environments (`.zuplo.dev` domains) are automatically protected
-with **Medium** sensitivity. This provides robust protection while minimizing
-the risk of blocking legitimate traffic during development and testing.
+All Working Copy environments (`.zuplo.dev` domains) are automatically protected with **Medium** sensitivity.
 
 ### Preview and Production Environments
 
-Preview and production deployments benefit from advanced DDoS protection
-capabilities:
+Preview and production deployments benefit from advanced DDoS protection capabilities:
 
 - **Default Setting**: Medium sensitivity (balanced protection)
 - **Enterprise Customization**: Optional enterprise add-on allowing
-  configuration of protection levels
+configuration of protection levels
 
 ### Sensitivity Levels Explained
 
-Enterprise customers with the DDoS customization add-on can choose from four
-sensitivity levels:
+Enterprise customers with the DDoS customization add-on can choose from four sensitivity levels:
 
 #### High Sensitivity
 
@@ -87,15 +75,14 @@ sensitivity levels:
 
 - Minimal protection with the highest threshold
 - Protection still activates for extremely large attacks to maintain network
-  stability
+stability
 - Recommended only when you have alternative DDoS protection mechanisms.
 
 ## How Protection Works
 
 ### Detection
 
-Zuplo's DDoS protection uses sophisticated algorithms to analyze traffic
-patterns in real-time. The system examines multiple factors including:
+Zuplo's DDoS protection uses sophisticated algorithms to analyze traffic patterns in real-time.
 
 - Request rates and patterns
 - Source IP reputation
@@ -105,14 +92,13 @@ patterns in real-time. The system examines multiple factors including:
 
 ### Mitigation
 
-When an attack is detected, the system automatically applies appropriate
-mitigation techniques:
+When an attack is detected, the system automatically applies appropriate mitigation techniques:
 
 1. **Traffic Filtering**: Malicious traffic is filtered at the edge before
-   reaching your API
+reaching your API
 2. **Rate Limiting**: Excessive requests from suspicious sources are throttled
 3. **Connection Management**: Advanced TCP protection handles sophisticated
-   connection-based attacks
+connection-based attacks
 
 ### Continuous Improvement
 
@@ -132,7 +118,6 @@ Enterprise customers can enhance their DDoS protection with:
 
 :::tip
 
-Contact your Zuplo account team to learn more about Enterprise DDoS
-customization options.
+Contact your Zuplo account team to learn more about Enterprise DDoS customization options.
 
 :::

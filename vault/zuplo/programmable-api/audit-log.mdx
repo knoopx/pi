@@ -3,35 +3,26 @@ title: Audit Log Feature
 sidebar_label: Audit Log
 ---
 
-Zuplo has a built-in auditing feature that can write output to a selection of
-data sinks.
+Zuplo has a built-in auditing feature that can write output to a selection of data sinks.
 
 If enabled, the Audit Log feature will log full details of
 
 - The request including URL, headers (optional), and full body (optional)
 - The response including status, headers (optional) and full body (optional)
 
-These can then be written to a configured Audit Log Output Provider of your
-choosing, like AstraDB by DataStax. Contact
-[support@zuplo.com](mailto:support@zuplo.com) to request a new provider.
+These can then be written to a configured Audit Log Output Provider of your choosing, like AstraDB by DataStax.
 
 :::note
 
-While you can use it on any tier in working-copy, the Audit Log capability is an
-**enterprise** feature. Contact us to have Audit Logging enabled for your
-enterprise deployment. [Pricing](https://zuplo.com/pricing)
+While you can use it on any tier in working-copy, the Audit Log capability is an **enterprise** feature.
 
 :::
 
 ## Configuring Audit Log
 
-Audit Logging is enabled via a plugin that's registered in the
-`zuplo.runtime.ts` runtime extensions module;
-[learn more about runtime extensions](./runtime-extensions.mdx). Here we show an
-example configuring Audit Log to write to a DataStax Astra DB collection.
+Audit Logging is enabled via a plugin that's registered in the `zuplo.runtime.ts` runtime extensions module; [learn more about runtime extensions](./runtime-extensions.mdx).
 
-Note you must provide the full URL to the collection, for example
-`https://<id-and-region>.apps.astra.datastax.com/api/rest/v2/namespaces/<namespace>/collections/<collection>`
+Note you must provide the full URL to the collection, for example `https://<id-and-region>.apps.astra.datastax.com/api/rest/v2/namespaces/<namespace>/collections/<collection>`
 
 ```ts
 
@@ -65,5 +56,4 @@ export function runtimeInit(runtime: RuntimeExtensions) {
 
 ```
 
-Note the use of options to disable capture of the full request body and full
-response headers.
+Note the use of options to disable capture of the full request body and full response headers.

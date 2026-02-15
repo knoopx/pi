@@ -4,35 +4,30 @@ sidebar_label: Hooks
 ---
 
 Hooks allow you to run code at specific points in the request/response pipeline.
-They're accessible through the [ZuploContext](./zuplo-context.mdx) object and
-are commonly used for cross-cutting concerns like logging, tracing, and
-monitoring.
 
 :::tip
 
-All hooks can be either synchronous or asynchronous. To make your hook
-asynchronous, simply add the `async` keyword to the function.
+All hooks can be either synchronous or asynchronous. To make your hook asynchronous, add the `async` keyword to the function.
 
 :::
 
 ## Available Hooks
 
-Zuplo provides several hooks for different stages of the request/response
-pipeline:
+Zuplo provides several hooks for different stages of the request/response pipeline:
 
 ### Request Pipeline Hooks
 
 - **`addPreRoutingHook`** - Executes before route matching, can modify the
-  request URL or headers
+request URL or headers
 - **`addRequestHook`** - Executes after route matching but before handlers, can
-  return early responses
+return early responses
 
 ### Response Pipeline Hooks
 
 - **`addResponseSendingHook`** - Executes before the response is sent and can
-  modify it
+modify it
 - **`addResponseSendingFinalHook`** - Executes after all processing but can't
-  modify the response
+modify the response
 
 ### Hook Types
 
@@ -70,9 +65,7 @@ interface OnResponseSendingFinalHook {
 
 ## Hook: OnResponseSending
 
-The `addResponseSendingHook` method adds a hook that fires just before the
-response is sent to the client. This hook can modify the response by returning a
-new `Response` object. Multiple hooks execute in the order they were added.
+The `addResponseSendingHook` method adds a hook that fires before the response is sent to the client.
 
 ### Method Signature
 
@@ -113,8 +106,7 @@ export default async function handler(
 
 ### Example: Tracing Policy
 
-This example shows a tracing policy that ensures trace headers are consistent
-between requests and responses:
+This example shows a tracing policy that ensures trace headers are consistent between requests and responses:
 
 ```ts
 import { ZuploContext, ZuploRequest } from "@zuplo/runtime";
@@ -153,10 +145,7 @@ export async function tracingPlugin(
 
 ## Hook: OnResponseSendingFinal
 
-The `addResponseSendingFinalHook` method adds a hook that fires immediately
-before the response is sent to the client. Unlike `OnResponseSending`, this hook
-can't modify the response - it's immutable at this point. This hook is ideal for
-logging, analytics, and monitoring tasks.
+The `addResponseSendingFinalHook` method adds a hook that fires immediately before the response is sent to the client.
 
 ### Method Signature
 
@@ -191,9 +180,7 @@ export default async function handler(
 
 ### Example: Asynchronous Analytics
 
-This hook can block the response. To run asynchronous tasks without blocking,
-use `context.waitUntil()` to ensure your async work completes after the response
-is sent:
+This hook can block the response. To run asynchronous tasks without blocking, use `context.waitUntil()` to ensure your async work completes after the response is sent:
 
 ```ts
 export default async function handler(
@@ -302,15 +289,14 @@ context.addResponseSendingHook(async (response) => {
 Hooks can be registered in two ways:
 
 1. **In Handlers or Policies** - Add hooks directly in your code using
-   `context.addResponseSendingHook()` or `context.addResponseSendingFinalHook()`
+`context.addResponseSendingHook()` or `context.addResponseSendingFinalHook()`
 
 2. **Globally via Runtime Extensions** - Register hooks that apply to all
-   requests using [Runtime Extensions](./runtime-extensions.mdx)
+requests using [Runtime Extensions](./runtime-extensions.mdx)
 
 ## Complete Hook Pipeline Example
 
-This example demonstrates how all hooks work together in a request/response
-lifecycle:
+This example demonstrates how all hooks work together in a request/response lifecycle:
 
 ```ts
 // In zuplo.runtime.ts - Global hooks
@@ -420,12 +406,12 @@ export default async function handler(
 
 1. **Pre-routing hooks** (global only) - before route matching
 2. **Request hooks** (global first, then handler-specific) - after route
-   matching
+matching
 3. Handler execution
 4. **Response sending hooks** (global first, then handler-specific) - can modify
-   response
+response
 5. **Response sending final hooks** (global first, then handler-specific) -
-   read-only
+read-only
 
 ## Creating Custom Plugins with Hooks
 
@@ -555,7 +541,7 @@ This plugin demonstrates:
 
 - **Reusable functionality** encapsulated in a plugin class
 - **Multiple hook types** working together (request, response sending, response
-  final)
+final)
 - **Configurable behavior** through constructor options
 - **Error handling** and **non-blocking operations** with `waitUntil`
 - **Context data sharing** between hooks
@@ -563,7 +549,7 @@ This plugin demonstrates:
 ## See Also
 
 - [ZuploContext](./zuplo-context.mdx) - The context object that provides hook
-  methods
+methods
 - [Runtime Extensions](./runtime-extensions.mdx) - Global hook registration
 - [waitUntil](./zuplo-context.mdx#waituntil) - Extending request lifetime for
-  asynchronous operations
+asynchronous operations

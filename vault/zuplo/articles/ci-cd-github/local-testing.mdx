@@ -4,7 +4,6 @@ sidebar_label: Local Testing in CI
 ---
 
 Run tests against a local Zuplo development server before deploying anywhere.
-Catch issues earlier and avoid deploying broken changes.
 
 ```yaml title=".github/workflows/local-test-then-deploy.yaml"
 name: Local Test Then Deploy
@@ -79,7 +78,7 @@ This workflow:
 - **Faster feedback** — Local tests run without waiting for deployment
 - **Catch syntax errors** — The local server validates your configuration
 - **Test policies** — Verify authentication, rate limiting, and other policies
-  work correctly
+work correctly
 - **No wasted deployments** — Don't deploy changes that will fail tests
 
 ## Combining with Remote Tests

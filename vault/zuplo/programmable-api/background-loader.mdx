@@ -3,9 +3,7 @@ title: BackgroundLoader
 sidebar_label: BackgroundLoader
 ---
 
-The BackgroundLoader class provides asynchronous loading of configuration data
-while minimizing gateway latency. It's ideal for critical configuration that
-powers your gateway for smart routing or similar use cases.
+The BackgroundLoader class provides asynchronous loading of configuration data while minimizing gateway latency.
 
 The BackgroundLoader optimizes performance by:
 
@@ -43,8 +41,7 @@ interface BackgroundLoaderOptions {
 
 **`get`**
 
-Retrieves data for the specified key. Returns immediately if cached, otherwise
-blocks while loading.
+Retrieves data for the specified key. Returns immediately if cached, otherwise blocks while loading.
 
 ```ts
 get(key: string): Promise<T>
@@ -79,11 +76,9 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
 }
 ```
 
-The BackgroundLoader will ensure that only one request per 'key' is active at
-any one time to avoid overloading your destination services.
+The BackgroundLoader will ensure that only one request per 'key' is active at any one time to avoid overloading your destination services.
 
-The BackgroundLoader has the following options. In the above example, we set
-`ttlSeconds`:
+The BackgroundLoader has the following options. In the above example, we set `ttlSeconds`:
 
 ```ts
 interface BackgroundLoaderOptions {
@@ -96,9 +91,6 @@ interface BackgroundLoaderOptions {
 
 :::warning
 
-You can't return a `Response` created by the BackgroundLoader as a response from
-a policy or handler. Responses can't be re-used in this way - they're associated
-with the originating request and results from the BackgroundLoader can be shared
-across requests.
+You can't return a `Response` created by the BackgroundLoader as a response from a policy or handler.
 
 :::

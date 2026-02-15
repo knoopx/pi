@@ -3,14 +3,11 @@ title: StreamingZoneCache
 sidebar_label: StreamingZoneCache
 ---
 
-The `StreamingZoneCache` class provides a distributed caching solution optimized
-for streaming data. It allows you to cache `ReadableStream` objects across
-Zuplo's edge network.
+The `StreamingZoneCache` class provides a distributed caching solution optimized for streaming data.
 
 :::note{title="Beta Feature"}
 
-This API is in Beta - please use with care and provide feedback to the team if
-you encounter any issues.
+This API is in Beta - please use with care and provide feedback to the team if you encounter any issues.
 
 :::
 
@@ -140,7 +137,7 @@ export default async function handler(
 ## Best Practices
 
 - Use `tee()` to split streams when you need to both cache and return the same
-  stream
+stream
 - Use `context.waitUntil()` for non-blocking cache writes
 - Set appropriate TTL values based on your content update frequency
 - Consider the size of streams being cached to avoid memory issues
@@ -150,6 +147,6 @@ export default async function handler(
 
 - [ZoneCache](./zone-cache.mdx) - For caching JSON and other structured data
 - [MemoryZoneReadThroughCache](./memory-zone-read-through-cache.mdx) - For
-  in-memory caching
+in-memory caching
 - [Web Streams API](https://developer.mozilla.org/en-US/docs/Web/API/Streams_API) -
-  MDN documentation on streams
+MDN documentation on streams

@@ -5,25 +5,18 @@ sidebar_label: "GitOps vs Terraform"
 
 <!-- vale Vale.Spelling["declaratively"] = NO -->
 
-Unlike legacy API management solutions that rely on imperative APIs and require
-tools like Terraform for infrastructure as code, Zuplo takes a fundamentally
-different approach. Zuplo was built from day one with GitOps at its core, making
-Terraform unnecessary and redundant.
+Unlike legacy API management solutions that rely on imperative APIs and require tools like Terraform for infrastructure as code, Zuplo takes a fundamentally different approach.
 
 ## Configuration as Code by Design
 
-Traditional API management products like Kong, Azure API Management, and others
-were designed with imperative APIs as their primary interface. These systems
-require you to:
+Traditional API management products like Kong, Azure API Management, and others were designed with imperative APIs as their primary interface.
 
 - Make API calls to create resources
 - Maintain state files to track what exists
 - Use tools like Terraform to bridge the gap between code and infrastructure
 - Handle complex state reconciliation and drift detection
 
-Zuplo eliminates this complexity entirely. Every aspect of your API gateway
-configuration is stored as human-readable code and configuration files in your
-repository:
+Zuplo eliminates this complexity entirely. Every aspect of your API gateway configuration is stored as human-readable code and configuration files in your repository:
 
 - **Routes** are defined in `config/routes.oas.json`
 - **Policies** are configured declaratively
@@ -31,20 +24,18 @@ repository:
 
 ## True Atomic Deployments
 
-When you deploy with Zuplo—whether through `zuplo deploy` or our source control
-integrations—you get true atomic deployments:
+When you deploy with Zuplo—whether through `zuplo deploy` or our source control integrations—you get true atomic deployments:
 
 :::tip
 
-Every deployment either succeeds completely or fails entirely. There are no
-partial states, no drift, and no manual cleanup required.
+Every deployment either succeeds completely or fails entirely. There are no partial states, no drift, and no manual cleanup required.
 
 :::
 
 This atomic deployment model means:
 
 - **No half-deployed states**: Your API gateway is always in a known, consistent
-  state
+state
 - **Simple rollbacks**: Just revert your Git commit and redeploy
 - **No state management**: Git is your single source of truth
 - **No reconciliation**: What's in your repository is what's deployed
@@ -61,8 +52,7 @@ Since all configuration is code, you automatically get:
 
 ## Why Terraform Would Add Complexity
 
-If Zuplo offered a Terraform provider, it would simply be a wrapper around our
-existing GitOps functionality. This would:
+If Zuplo offered a Terraform provider, it would be a wrapper around our existing GitOps functionality.
 
 - Add an unnecessary abstraction layer
 - Introduce state management complexity
@@ -102,13 +92,8 @@ git commit -m "Add rate limiting policy"
 git push origin main
 ```
 
-Your changes deploy automatically through our GitHub integration, or you can use
-`zuplo deploy` for manual deployments.
+Your changes deploy automatically through our GitHub integration, or you can use `zuplo deploy` for manual deployments.
 
 ## Conclusion
 
-Zuplo's native GitOps approach represents a fundamental advancement over legacy
-API management solutions. By eliminating the need for imperative APIs and
-external infrastructure-as-code tools, Zuplo provides a simpler, more reliable,
-and more developer-friendly experience. Terraform isn't missing from Zuplo—it's
-simply not needed.
+Zuplo's native GitOps approach represents a fundamental advancement over legacy API management solutions.

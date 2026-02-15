@@ -9,17 +9,11 @@ tags:
   - backends
 ---
 
-Zuplo's managed edge deployment has a 500MB request body size limit. For
-applications that need to handle larger files, you can generate pre-signed S3
-URLs that allow clients to upload directly to Amazon S3, bypassing the gateway
-entirely.
+Zuplo's managed edge deployment has a 500MB request body size limit.
 
 :::tip{title="Managed Dedicated"}
 
-If you require larger request sizes you can consider Zuplo's
-[Managed Dedicated](../dedicated/overview.mdx) offering which allows custom
-request size limits. Contact your Zuplo offering which allows custom request
-size limits. Contact your Zuplo representative for more information.
+If you require larger request sizes you can consider Zuplo's [Managed Dedicated](../dedicated/overview.mdx) offering which allows custom request size limits.
 
 :::
 
@@ -37,7 +31,7 @@ Before you begin, you need:
 - An AWS account with S3 access
 - An S3 bucket configured for your uploads
 - AWS credentials (Access Key ID and Secret Access Key) with S3 write
-  permissions
+permissions
 - The AWS region where your bucket is located
 
 Store your AWS credentials securely in Zuplo environment variables:
@@ -49,10 +43,7 @@ Store your AWS credentials securely in Zuplo environment variables:
 
 ## Installing Dependencies
 
-If you are developing locally and want code completion, etc in your project,
-install the AWS SDK for S3 to your project. These
-dependencies](../programmable-api/node-modules.mdx) are already available in the
-Zuplo runtime.
+If you are developing locally and want code completion, etc in your project, install the AWS SDK for S3 to your project.
 
 ```bash
 npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
@@ -60,9 +51,7 @@ npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
 
 ## Creating the Handler
 
-Create a new module in your Zuplo project that generates pre-signed URLs. This
-handler accepts file metadata and returns a signed URL that clients can use to
-upload directly to S3.
+Create a new module in your Zuplo project that generates pre-signed URLs.
 
 ```ts title="modules/s3-signed-url.ts"
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
@@ -206,8 +195,7 @@ Add a route in your `routes.oas.json` file to expose this handler:
 
 :::note
 
-Consider adding authentication policies to your route to ensure only authorized
-users can request upload URLs.
+Consider adding authentication policies to your route to ensure only authorized users can request upload URLs.
 
 :::
 
@@ -373,8 +361,7 @@ function FileUploader() {
 
 ### Time-Limited URLs
 
-Pre-signed URLs expire after the specified duration (default: 1 hour in the
-example). Adjust the `expiresIn` parameter based on your needs:
+Pre-signed URLs expire after the specified duration (default: 1 hour in the example).
 
 ```ts
 // Shorter expiration for sensitive uploads
@@ -423,16 +410,13 @@ if (!allowedTypes.includes(body.contentType)) {
 
 ### File Size Limits
 
-While S3 can handle files up to 5TB, you may want to enforce size limits. Add
-validation on the client side and consider implementing S3 bucket policies to
-enforce maximum object sizes.
+While S3 can handle files up to 5TB, you may want to enforce size limits.
 
 ## Advanced Features
 
 ### Multipart Upload for Very Large Files
 
-For files larger than 5GB, use multipart uploads. This requires generating
-signed URLs for each part:
+For files larger than 5GB, use multipart uploads. This requires generating signed URLs for each part:
 
 ```ts
 import {
@@ -465,8 +449,7 @@ Set up S3 event notifications to trigger actions when uploads complete:
 
 ### Pre-signed POST URLs
 
-For browser uploads with additional security, use pre-signed POST URLs instead
-of PUT:
+For browser uploads with additional security, use pre-signed POST URLs instead of PUT:
 
 ```ts
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
@@ -488,8 +471,7 @@ const { url, fields } = await createPresignedPost(s3Client, {
 
 ### CORS Issues
 
-If clients receive CORS errors when uploading to S3, configure CORS on your S3
-bucket:
+If clients receive CORS errors when uploading to S3, configure CORS on your S3 bucket:
 
 ```json
 [
@@ -505,13 +487,11 @@ bucket:
 
 ### Invalid Signature Errors
 
-Ensure your AWS credentials are correct and have the necessary permissions. The
-IAM user or role needs `s3:PutObject` permission for the bucket.
+Ensure your AWS credentials are correct and have the necessary permissions.
 
 ### Clock Skew
 
-Pre-signed URLs are sensitive to time differences. Ensure your systems have
-accurate time synchronization via NTP.
+Pre-signed URLs are sensitive to time differences. Ensure your systems have accurate time synchronization via NTP.
 
 ## Related Resources
 

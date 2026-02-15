@@ -41,10 +41,9 @@ steps:
     condition: eq(variables['Build.Reason'], 'PullRequest')
 ```
 
-The cleanup step only runs for pull requests, deleting the preview environment
-after tests pass.
+The cleanup step only runs for pull requests, deleting the preview environment after tests pass.
 
 ## Next Steps
 
 - Implement [multi-stage deployment](./multi-stage-deployment.mdx) for
-  production
+production

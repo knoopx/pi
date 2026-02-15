@@ -3,21 +3,17 @@ title: Galileo Tracing
 sidebar_label: Galileo Tracing
 ---
 
-The Galileo Tracing policy integrates [Galileo AI](https://www.galileo.ai/) with
-the Zuplo AI Gateway, providing comprehensive observability, monitoring, and
-evaluation of your LLM applications. This policy automatically captures detailed
-traces of all AI Gateway requests and responses, enabling you to monitor
-performance, debug issues, and optimize your AI operations.
+The Galileo Tracing policy integrates [Galileo AI](https://www.galileo.ai/) with the Zuplo AI Gateway, providing comprehensive observability, monitoring, and evaluation of your LLM applications.
 
 ## Key Features
 
 - **Automatic Trace Capture**: Seamlessly logs all LLM requests and responses
-  without code changes
+without code changes
 - **Streaming Support**: Handles both streaming and non-streaming responses
 - **Performance Monitoring**: Tracks token usage, latency, and resource
-  consumption
+consumption
 - **Hierarchical Tracing**: Organizes traces with workflow and LLM spans for
-  detailed analysis
+detailed analysis
 
 ## How It Works
 
@@ -60,38 +56,34 @@ For each request, the policy automatically captures:
 
 1.  ### Obtain Galileo Credentials
     1. Sign up for a
-       [Galileo](https://galileo.ai?utm_source=zuplo&utm_medium=web) account
+[Galileo](https://galileo.ai?utm_source=zuplo&utm_medium=web) account
     2. Create a new project in your Galileo dashboard
     3. Generate an API key specifically for use with Zuplo
 
 2.  ### Add the policy to your app
 
-    You can add the policy to any AI Gateway app by clicking on **Policies**,
-    then on **Add Policy** and select **Galileo Tracing**.
+You can add the policy to any AI Gateway app by clicking on **Policies**, then on **Add Policy** and select **Galileo Tracing**.
 
-    ![The AI Gateway policy picker](/media/galileo-tracing/galileo-tracing-1.png)
+![The AI Gateway policy picker](/media/galileo-tracing/galileo-tracing-1.png)
 
 3.  ### Configure the policy
 
-    You will need to enter the following information from your Galileo account
-    to configure the policy:
+You will need to enter the following information from your Galileo account to configure the policy:
     - **`apiKey`**: Your Galileo API key for authentication
     - **`projectId`**: The Galileo project ID to send traces to
     - **`logStreamId`**: The specific log stream within your project
     - **`baseUrl`** (optional): Custom Galileo API endpoint (defaults to
-      `https://api.galileo.ai`)
+`https://api.galileo.ai`)
 
-    :::note
+:::note
 
-    The `projectId` and `logStreamId` are both found in the URL of the Galileo
-    log stream you want to use. For example:
-    `https://app.galileo.ai/your-app/project/3e71c65e-48b6-4f5d-842d-0851c4704f95/log-streams/f8c71402-1f6b-4f5b-b073-1de999e6a8ea`.
+The `projectId` and `logStreamId` are both found in the URL of the Galileo log stream you want to use.
 
     <br />
     In this case, the `projectId` is `3e71c65e-48b6-4f5d-842d-0851c4704f95` and
     the `logStreamId` is `f8c71402-1f6b-4f5b-b073-1de999e6a8ea`.
 
-    :::
+:::
 
 </Stepper>
 
@@ -139,9 +131,9 @@ Each trace includes:
 Common issues and solutions:
 
 - **Authentication Errors**: Check that your Galileo API key is valid and has
-  proper permissions
+proper permissions
 - **Configuration Issues**: Ensure the user context includes all required
-  Galileo settings
+Galileo settings
 
 ## Additional Resources
 

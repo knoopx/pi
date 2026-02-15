@@ -3,22 +3,18 @@ title: Branch-Based Deployments
 sidebar_label: Branch-Based Deployments
 ---
 
-Zuplo uses a branch-based deployment model that automatically maps Git branches
-to environments. This GitOps approach allows teams to manage API deployments
-using familiar version control workflows.
+Zuplo uses a branch-based deployment model that automatically maps Git branches to environments.
 
 ## How Branch-Based Deployments Work
 
-When you connect your Zuplo project to a Git repository (GitHub, GitLab,
-Bitbucket, or Azure DevOps), Zuplo automatically deploys your API whenever
-changes are pushed to a branch. The deployment model follows these rules:
+When you connect your Zuplo project to a Git repository (GitHub, GitLab, Bitbucket, or Azure DevOps), Zuplo automatically deploys your API whenever changes are pushed to a branch.
 
 1. **One branch = One environment**: Each Git branch creates a corresponding
-   Zuplo environment
+Zuplo environment
 2. **Default branch = Production**: The repository's default branch (typically
-   `main` or `master`) deploys to the **Production** environment
+`main` or `master`) deploys to the **Production** environment
 3. **All other branches = Preview**: Any branch that's not the default branch
-   deploys to a **Preview** environment
+deploys to a **Preview** environment
 
 ```
 Git Repository                    Zuplo Environments
@@ -31,8 +27,7 @@ bugfix/123    ─────────────────►  Preview (b
 
 ## Environment Names and URLs
 
-When Zuplo deploys an environment from a branch, the environment name matches
-the branch name. For example:
+When Zuplo deploys an environment from a branch, the environment name matches the branch name.
 
 | Branch Name    | Environment Name | Example URL                                         |
 | -------------- | ---------------- | --------------------------------------------------- |
@@ -42,9 +37,7 @@ the branch name. For example:
 
 :::note
 
-The environment URL includes a unique identifier to ensure each deployment has a
-distinct address. Configure [custom domains](./custom-domains.mdx) for your
-environments.
+The environment URL includes a unique identifier to ensure each deployment has a distinct address.
 
 :::
 
@@ -52,22 +45,18 @@ environments.
 
 ### What Determines the Production Environment
 
-The **Production** environment is determined by your repository's **default
-branch** setting. This is configured in your Git provider (GitHub, GitLab,
-etc.), not in Zuplo. When you change your repository's default branch, Zuplo
-automatically treats the new default branch as Production.
+The **Production** environment is determined by your repository's **default branch** setting.
 
 To change which branch is your Production environment:
 
 1. Go to your Git repository settings (for example, GitHub > Settings >
-   General > Default branch)
+General > Default branch)
 2. Change the default branch to your desired branch
 3. Zuplo will now treat deployments from this branch as Production
 
 ### Technical Differences
 
-There is **no technical difference** between Production and Preview
-environments. Both:
+There is **no technical difference** between Production and Preview environments.
 
 - Have identical performance characteristics
 - Support all Zuplo features
@@ -76,25 +65,20 @@ environments. Both:
 The distinction is primarily for:
 
 - **Environment variable management**: You can set different values for
-  Production vs Preview environments
+Production vs Preview environments
 - **API key buckets**: Production and Preview environments use separate API key
-  buckets by default
+buckets by default
 - **Organization**: Helps teams distinguish between live and test deployments
 
 ### Using Preview Environments as Production
 
-Some customers choose to use Preview environments as additional "production"
-deployments. For example, you might have:
+Some customers choose to use Preview environments as additional "production" deployments.
 
 - `main` → Production (US customers)
 - `eu-production` → Preview, but serving EU customers
 - `staging` → Preview for testing
 
-This works because Preview environments have identical capabilities to
-Production. You can override
-[environment variables](./environment-variables.mdx) and
-[API key buckets](./api-key-buckets.mdx) for specific Preview environments to
-support this pattern.
+This works because Preview environments have identical capabilities to Production.
 
 ## Creating New Environments
 
@@ -106,13 +90,11 @@ git checkout -b my-new-feature
 git push -u origin my-new-feature
 ```
 
-Within seconds, Zuplo deploys a new environment named `my-new-feature`. You can
-see the new environment in the Zuplo portal's environment selector.
+Within seconds, Zuplo deploys a new environment named `my-new-feature`.
 
 ## Deleting Environments
 
-When you delete a branch in your Git repository, the corresponding Zuplo
-environment is **not automatically deleted**. To delete an environment:
+When you delete a branch in your Git repository, the corresponding Zuplo environment is **not automatically deleted**.
 
 1. Go to the Zuplo portal
 2. Navigate to **Settings** > **Environments**
@@ -126,8 +108,7 @@ npx zuplo delete --url https://your-environment-url.zuplo.app --api-key $ZUPLO_A
 
 ## Automatic Deployments on Push
 
-With the Git integration enabled, every push to a branch triggers an automatic
-deployment:
+With the Git integration enabled, every push to a branch triggers an automatic deployment:
 
 1. **Push to default branch**: Updates the Production environment
 2. **Push to other branches**: Updates the corresponding Preview environment
@@ -139,7 +120,7 @@ This enables powerful GitOps workflows:
 - **Feature branches**: Each feature gets its own testable environment
 - **Pull request previews**: Review changes in a live environment before merging
 - **Protected branches**: Use branch protection rules to gate Production
-  deployments
+deployments
 
 ## Environment Variables Per Branch
 
@@ -152,8 +133,7 @@ Environment variables can be scoped to specific environments:
 | Specific Preview | Applies to a specific Preview environment (by branch name) |
 | Working Copy     | Only applies to development environments                   |
 
-See [Environment Variables](./environment-variables.mdx) for configuration
-details.
+See [Environment Variables](./environment-variables.mdx) for configuration details.
 
 ## Switching the Production Branch
 
@@ -166,13 +146,11 @@ If you need to change which branch serves as Production:
    - Azure DevOps: Project settings > Repositories > Default branch
 
 2. **Verify the change in Zuplo**: The environment deployed from your new
-   default branch will now be labeled as Production
+default branch will now be labeled as Production
 
 :::caution
 
-Changing the default branch affects which environment receives Production
-environment variables and uses the Production API key bucket. Plan this change
-carefully to avoid service disruption.
+Changing the default branch affects which environment receives Production environment variables and uses the Production API key bucket.
 
 :::
 
@@ -181,4 +159,4 @@ carefully to avoid service disruption.
 - [Environments Overview](./environments.mdx) - Learn about environment types
 - [Source Control Integration](./source-control.mdx) - Set up Git integration
 - [Custom CI/CD Pipelines](./custom-ci-cd.mdx) - Build custom deployment
-  workflows
+workflows

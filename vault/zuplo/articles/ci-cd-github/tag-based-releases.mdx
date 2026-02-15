@@ -3,8 +3,7 @@ title: "GitHub Actions: Tag-Based Releases"
 sidebar_label: Tag-Based Releases
 ---
 
-Deploy only when you explicitly tag a release. This gives you complete control
-over what reaches production—no accidental deployments from work in progress.
+Deploy only when you explicitly tag a release. This gives you complete control over what reaches production—no accidental deployments from work in progress.
 
 ```yaml title=".github/workflows/tag-deploy.yaml"
 name: Tag-Based Deploy
@@ -58,8 +57,7 @@ git push origin v1.0.0
 
 ## Deploying to Production
 
-If you want tags to update your production environment instead of creating new
-environments:
+If you want tags to update your production environment instead of creating new environments:
 
 ```yaml
 - name: Deploy to production
@@ -94,6 +92,6 @@ jobs:
 ## Next Steps
 
 - Add [multi-stage deployment](./multi-stage-deployment.mdx) with staging
-  validation
+validation
 - Set up [automatic cleanup](./cleanup-on-branch-delete.mdx) for old
-  environments
+environments

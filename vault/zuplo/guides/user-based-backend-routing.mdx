@@ -11,46 +11,35 @@ tags:
   - authentication
 ---
 
-This guide explains how to create a Zuplo policy that routes requests to
-different backend URLs based on user identity information, such as API key
-metadata or JWT custom claims.
+This guide explains how to create a Zuplo policy that routes requests to different backend URLs based on user identity information, such as API key metadata or JWT custom claims.
 
 ## Overview
 
-Many API providers need to route different users to different backend
-environments. Common scenarios include:
+Many API providers need to route different users to different backend environments.
 
 - **Environment separation** - Route users to sandbox or production backends
-  based on their API key, similar to how Stripe uses test and live API keys
+based on their API key, similar to how Stripe uses test and live API keys
 - **Customer isolation** - Route each customer to their own isolated backend
-  environment for data privacy or compliance requirements
+environment for data privacy or compliance requirements
 - **Hybrid multi-tenant** - Route some customers to dedicated backends while
-  others use a shared multi-tenant environment
+others use a shared multi-tenant environment
 
-Zuplo's programmable gateway makes these routing patterns simple to implement
-with custom policies that read user data from API keys or JWT tokens.
+Zuplo's programmable gateway makes these routing patterns simple to implement with custom policies that read user data from API keys or JWT tokens.
 
 ## How It Works
 
-When a request is authenticated using Zuplo's
-[API Key Authentication](../policies/api-key-inbound.mdx) or any
-[JWT Authentication](../policies/open-id-jwt-auth-inbound.mdx) policy, user
-information becomes available on `request.user`:
+When a request is authenticated using Zuplo's [API Key Authentication](../policies/api-key-inbound.mdx) or any [JWT Authentication](../policies/open-id-jwt-auth-inbound.mdx) policy, user information becomes available on `request.user`:
 
 - `request.user.sub` - The unique identifier for the user
 - `request.user.data` - Additional metadata (API key metadata or JWT claims)
 
-Your custom policy reads this data and determines the appropriate backend URL
-for the request.
+Your custom policy reads this data and determines the appropriate backend URL for the request.
 
 ## Use Case 1: Environment-Based Routing (Stripe-Style Keys)
 
-Companies like Stripe use separate API keys for sandbox and production
-environments. Users get a test key (`sk_test_...`) for development and a live
-key (`sk_live_...`) for production, both hitting the same API endpoint.
+Companies like Stripe use separate API keys for sandbox and production environments.
 
-You can implement this pattern by storing an `environment` property in your API
-key metadata:
+You can implement this pattern by storing an `environment` property in your API key metadata:
 
 ```typescript
 // modules/environment-routing.ts
@@ -77,8 +66,7 @@ export default async function policy(
 }
 ```
 
-When creating API keys in the Zuplo portal, set the metadata to include the
-environment:
+When creating API keys in the Zuplo portal, set the metadata to include the environment:
 
 ```json
 {
@@ -96,9 +84,7 @@ Or for production keys:
 
 ## Use Case 2: Customer-Specific Backend Routing
 
-For B2B APIs where each customer needs their own isolated backend (for
-compliance, data residency, or white-label deployments), you can route based on
-customer-specific configuration.
+For B2B APIs where each customer needs their own isolated backend (for compliance, data residency, or white-label deployments), you can route based on customer-specific configuration.
 
 ### Using a Configuration File
 
@@ -125,8 +111,7 @@ For smaller deployments, store routing configuration in a JSON file:
 ]
 ```
 
-Create a policy that reads the customer ID from user data and looks up the
-backend:
+Create a policy that reads the customer ID from user data and looks up the backend:
 
 ```typescript
 // modules/customer-routing.ts
@@ -180,9 +165,7 @@ export default async function policy(
 
 ### Using BackgroundLoader for Dynamic Configuration
 
-For production deployments with frequently changing customer configurations, use
-the [BackgroundLoader](../programmable-api/background-loader.mdx) to fetch
-routing data from an external service while minimizing latency:
+For production deployments with frequently changing customer configurations, use the [BackgroundLoader](../programmable-api/background-loader.mdx) to fetch routing data from an external service while minimizing latency:
 
 ```typescript
 // modules/customer-routing-dynamic.ts
@@ -258,8 +241,7 @@ The `BackgroundLoader` provides significant advantages for production use:
 
 ## Use Case 3: Hybrid Multi-Tenant Routing
 
-Some architectures use a mix of dedicated and shared backends. Premium customers
-get isolated environments while others use a shared multi-tenant backend:
+Some architectures use a mix of dedicated and shared backends. Premium customers get isolated environments while others use a shared multi-tenant backend:
 
 ```typescript
 // modules/hybrid-routing.ts
@@ -307,7 +289,6 @@ export default async function policy(
 ## Using JWT Claims for Routing
 
 If you're using JWT authentication instead of API keys, the same patterns apply.
-JWT custom claims are available on `request.user.data`:
 
 ```typescript
 // modules/jwt-based-routing.ts
@@ -381,26 +362,21 @@ Add the policy to your routes, placing it after authentication:
 }
 ```
 
-The policy sets `context.custom.downstreamUrl`, and the URL Rewrite handler uses
-that value to forward the request to the correct backend.
+The policy sets `context.custom.downstreamUrl`, and the URL Rewrite handler uses that value to forward the request to the correct backend.
 
 ## Benefits of This Approach
 
 ### Single Entry Point
 
-Customers access your API through one consistent URL regardless of their backend
-environment. This simplifies documentation, SDKs, and client implementations.
+Customers access your API through one consistent URL regardless of their backend environment.
 
 ### Centralized Policy Enforcement
 
-Authentication, rate limiting, and other policies are enforced uniformly at the
-gateway before requests reach any backend. This ensures consistent security and
-compliance across all environments.
+Authentication, rate limiting, and other policies are enforced uniformly at the gateway before requests reach any backend.
 
 ### Flexible Routing Logic
 
-Zuplo's custom code capability means you can implement any routing logic you
-need:
+Zuplo's custom code capability means you can implement any routing logic you need:
 
 - Route based on geographic regions
 - Implement A/B testing with traffic splitting
@@ -409,29 +385,28 @@ need:
 
 ### Operational Simplicity
 
-Manage routing configuration centrally rather than maintaining separate gateway
-deployments for each environment or customer.
+Manage routing configuration centrally rather than maintaining separate gateway deployments for each environment or customer.
 
 ## Best Practices
 
 1. **Always validate user data** - Check that required fields exist before using
-   them for routing decisions
+them for routing decisions
 2. **Provide sensible defaults** - Have a fallback for cases where routing
-   configuration is missing
+configuration is missing
 3. **Log routing decisions** - Include customer ID and selected backend in logs
-   for debugging
+for debugging
 4. **Use environment variables** - Store backend URLs in environment variables
-   rather than hardcoding them
+rather than hardcoding them
 5. **Consider caching** - For dynamic configurations, use `BackgroundLoader` or
-   `MemoryZoneReadThroughCache` to minimize latency
+`MemoryZoneReadThroughCache` to minimize latency
 
 ## Next Steps
 
 - Learn about [custom policies](../policies/custom-code-inbound.mdx)
 - Explore the [BackgroundLoader](../programmable-api/background-loader.mdx) for
-  dynamic configuration
+dynamic configuration
 - Set up [API Key Authentication](../policies/api-key-inbound.mdx) with metadata
 - Configure [JWT Authentication](../policies/open-id-jwt-auth-inbound.mdx) with
-  custom claims
+custom claims
 - Review [environment variables](../articles/environment-variables.mdx) for
-  managing backend URLs
+managing backend URLs

@@ -8,24 +8,19 @@ tags:
   - testing
 ---
 
-MCP client OAuth support is evolving rapidly and many clients don't yet support
-the full flow for dynamic client registration, PKCE, initial tokens during DCR,
-etc.
+MCP client OAuth support is evolving rapidly and many clients don't yet support the full flow for dynamic client registration, PKCE, initial tokens during DCR, etc.
 
-This guide shows you how you can use common tools like `curl` and `openssl` to
-manually test a configured authorization server and MCP server.
+This guide shows you how you can use common tools like `curl` and `openssl` to manually test a configured authorization server and MCP server.
 
 ## Existing auth server client ID and secret
 
-The following guide walks you through manually testing an OAuth provider with a
-client ID and secret configuration. This is also useful for debugging OAuth
-issues during authorization flows for MCP.
+The following guide walks you through manually testing an OAuth provider with a client ID and secret configuration.
 
 ### Prerequisites
 
 - `curl`, `jq`, and `openssl` installed on your system
 - An OAuth client ID and client Secret. For the purposes of demonstration, this
-  guide uses an Okta Application client ID and secret.
+guide uses an Okta Application client ID and secret.
 
 ### Testing Script
 
@@ -135,9 +130,9 @@ echo -e "${GREEN}=== OAuth flow test complete ===${NC}"
    - `MCP_ENDPOINT`: Your Zuplo gateway MCP endpoint
    - `CLIENT_ID`: The ID of the client or application for the auth server
    - `CLIENT_SECRET`: The secret for the client or application for the auth
-     server
+server
    - `REDIRECT_URI`: Typically, must match exactly what's configured in your
-     auth server's redirect
+auth server's redirect
 
 2. **Make the script executable**: `chmod +x test-oauth.sh`
 
@@ -147,7 +142,7 @@ echo -e "${GREEN}=== OAuth flow test complete ===${NC}"
    - Open the authorization URL in your browser from the terminal output
    - Complete the login flow
    - Copy the authorization code from the callback URL. It will look something
-     like:
+like:
 
    ```
    http://localhost:8080/authorization-code/callback?code=ABC123&state=XYZ987
@@ -155,13 +150,11 @@ echo -e "${GREEN}=== OAuth flow test complete ===${NC}"
 
    - Paste just the code part into the script
 
-   :::warning
+:::warning
 
-   This script does **not** include a web server and does **not** support
-   dynamically extracting the authorization callback code. You must manually
-   grab the code from the query parameter and enter it into the terminal prompt.
+This script does **not** include a web server and does **not** support dynamically extracting the authorization callback code.
 
-   :::
+:::
 
 ### Common Issues and Troubleshooting
 
@@ -172,15 +165,11 @@ echo -e "${GREEN}=== OAuth flow test complete ===${NC}"
 - Authorization code grant enabled
 - Proper access policies and rules
 
-**"Invalid client" errors**: Verify your Client ID and Client Secret are
-correct.
+**"Invalid client" errors**: Verify your Client ID and Client Secret are correct.
 
-**"Invalid redirect URI"**: The redirect URI configured in the script may need
-to exactly match what's configured in your authorization server and client.
+**"Invalid redirect URI"**: The redirect URI configured in the script may need to exactly match what's configured in your authorization server and client.
 
-**Browser redirects immediately without login**: You may already be logged into
-your auth provider or an existing session exists. To log in from a clean state,
-try the following:
+**Browser redirects immediately without login**: You may already be logged into your auth provider or an existing session exists.
 
 - Log out from your authorization provider
 - Clear browser cookies, sessions, and caches

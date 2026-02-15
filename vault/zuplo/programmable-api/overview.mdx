@@ -6,8 +6,7 @@ description:
   the Zuplo runtime. The APIs are organized by category for easy reference."
 ---
 
-This section provides a comprehensive index of all public APIs available in the
-Zuplo runtime. The APIs are organized by category for easy reference.
+This section provides a comprehensive index of all public APIs available in the Zuplo runtime.
 
 ## Core Request/Response APIs
 
@@ -15,9 +14,9 @@ Zuplo runtime. The APIs are organized by category for easy reference.
 
 - **Status**: Documented ([ZuploRequest](./zuplo-request.mdx))
 - **Description**: Extended Request class with additional properties for
-  parameters, query, and user data
+parameters, query, and user data
 - **Key Features**: Type-safe parameters and query access, user authentication
-  data
+data
 
 ### ZuploContext
 
@@ -29,9 +28,9 @@ Zuplo runtime. The APIs are organized by category for easy reference.
 
 - **Status**: Documented ([HttpProblems](./http-problems.mdx))
 - **Description**: Utility class for generating RFC 7807 compliant problem
-  responses
+responses
 - **Methods**: Static methods for all HTTP status codes (for example,
-  `badRequest`, `unauthorized`, `notFound`)
+`badRequest`, `unauthorized`, `notFound`)
 
 ### HttpStatusCode
 
@@ -41,15 +40,14 @@ Zuplo runtime. The APIs are organized by category for easy reference.
 ### ProblemResponseFormatter
 
 - **Status**: Documented
-  ([ProblemResponseFormatter](./problem-response-formatter.mdx))
+([ProblemResponseFormatter](./problem-response-formatter.mdx))
 - **Description**: Utility class for formatting RFC 7807 compliant problem
-  responses
+responses
 - **Methods**: `format` - Formats problem details into standard responses
 
 ## Handlers
 
-See the [Handlers documentation](/docs/handlers) for information about built-in
-request handlers.
+See the [Handlers documentation](/docs/handlers) for information about built-in request handlers.
 
 ### Available Handlers
 
@@ -73,7 +71,7 @@ request handlers.
 ### MemoryZoneReadThroughCache
 
 - **Status**: Documented
-  ([Memory Zone Read Through Cache](./memory-zone-read-through-cache.mdx))
+([Memory Zone Read Through Cache](./memory-zone-read-through-cache.mdx))
 - **Description**: In-memory cache with automatic loading
 - **Key Methods**: `get`, `put`
 
@@ -110,7 +108,7 @@ request handlers.
 - **Status**: Documented ([Runtime Extensions](./runtime-extensions.mdx))
 - **Description**: API for extending runtime behavior
 - **Key Features**: Plugin support, request/response hooks, custom error
-  handling
+handling
 
 ### RuntimeError
 
@@ -129,12 +127,11 @@ request handlers.
 - **Status**: Documented ([Audit Log](./audit-log.mdx))
 - **Description**: Comprehensive request/response logging
 - **Key Features**: Configurable request/response capture, custom output
-  providers
+providers
 
 ### Logging Plugins
 
-See [Logging documentation](/docs/articles/logging.mdx) for details on logging
-plugins:
+See [Logging documentation](/docs/articles/logging.mdx) for details on logging plugins:
 
 - `AWSLoggingPlugin` - AWS CloudWatch logging
 - `DataDogLoggingPlugin` - Datadog logging
@@ -148,8 +145,7 @@ plugins:
 
 ### Metrics Plugins
 
-See [Metrics documentation](/docs/articles/metrics-plugins.mdx) for details on
-metrics plugins:
+See [Metrics documentation](/docs/articles/metrics-plugins.mdx) for details on metrics plugins:
 
 - `DataDogMetricsPlugin` - Datadog metrics
 - `DynatraceMetricsPlugin` - Dynatrace metrics
@@ -209,5 +205,4 @@ metrics plugins:
 
 ---
 
-This index provides an overview of the runtime APIs available in Zuplo. For
-detailed information about each API, follow the documentation links provided.
+This index provides an overview of the runtime APIs available in Zuplo.

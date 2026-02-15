@@ -3,21 +3,11 @@ title: MCP Server Custom Tools
 sidebar_label: Custom Tools
 ---
 
-The MCP Server Handler supports custom tools that allow you to create
-sophisticated MCP
-([Model Context Protocol](https://modelcontextprotocol.io/introduction)) tools
-using OpenAPI specifications and custom handler functions. This provides the
-flexibility to build complex workflows that can invoke multiple API routes,
-implement custom business logic, and provide rich responses to AI systems
-without having to sacrifice the governance and power of an OpenAPI
-configuration.
+The MCP Server Handler supports custom tools that allow you to create sophisticated MCP ([Model Context Protocol](https://modelcontextprotocol.io/introduction)) tools using OpenAPI specifications and custom handler functions.
 
 :::tip
 
-Custom tools give you full programmatic control over tool behavior within an
-[MCP Server Handler](../handlers/mcp-server.mdx). Define tools using standard
-OpenAPI patterns with custom TypeScript handlers for complex multi-step
-workflows and custom logic.
+Custom tools give you full programmatic control over tool behavior within an [MCP Server Handler](../handlers/mcp-server.mdx).
 
 :::
 
@@ -26,11 +16,11 @@ workflows and custom logic.
 - **OpenAPI Standard**: Define tools using standard OpenAPI specifications
 - **Custom Handlers**: Implement complex logic using TypeScript functions
 - **Complex Workflows**: Chain multiple API calls, implement business logic, and
-  handle complex data transformations
+handle complex data transformations
 - **Type Safety**: Built-in JSON Schema validation for LLM tool arguments and
-  inputs
+inputs
 - **Runtime Integration**: Access to `context.invokeRoute()`, logging, and other
-  Zuplo runtime features
+Zuplo runtime features
 
 ## Quick Start
 
@@ -264,22 +254,15 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
 }
 ```
 
-This utilizes `context.invokeRoute` to invoke various routes on a gateway. This
-powerful workflow lets you create composite routes and tools that call many
-different routes on your gateway.
+This utilizes `context.invokeRoute` to invoke various routes on a gateway.
 
 :::note
 
-`context.invokeRoute` _will_ utilize the full inbound and outbound policy
-pipeline but does not go back out to HTTP: requests stay within the gateway.
-This means that policies you set on your MCP server route will be invoked
-alongside policies that are associated with any calls made through
-`context.invokeRoute`.
+`context.invokeRoute` _will_ utilize the full inbound and outbound policy pipeline but does not go back out to HTTP: requests stay within the gateway.
 
 :::
 
-A corresponding OpenAPI definition makes this custom route available on your
-gateway.
+A corresponding OpenAPI definition makes this custom route available on your gateway.
 
 ```json
 {
@@ -361,8 +344,7 @@ gateway.
 }
 ```
 
-Then, simply add this operation as to an MCP server to make it available as a
-tool:
+Then, add this operation as to an MCP server to make it available as a tool:
 
 ```json
 {
@@ -391,9 +373,7 @@ tool:
 
 ### Error Handling
 
-Handle errors gracefully by throwing standard JavaScript errors. These then get
-caught by the MCP Server and are served back to the LLM client so it can take
-action:
+Handle errors gracefully by throwing standard JavaScript errors. These then get caught by the MCP Server and are served back to the LLM client so it can take action:
 
 ```typescript
 // modules/validate-user.ts
@@ -413,9 +393,6 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
 ### Accessing Request Headers
 
 Access the original request headers through the standard `ZuploRequest` object.
-These headers are piped through the MCP server on your gateway into your route.
-This means you can handle headers from MCP clients like you would on any other
-route:
 
 ```typescript
 // modules/check-headers.ts
@@ -438,7 +415,7 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
 ### Tool Design
 
 1. **Clear Operation IDs**: Use descriptive, action-oriented operation IDs
-   (`addNumbers`, `processOrder`)
+(`addNumbers`, `processOrder`)
 2. **Detailed Descriptions**: Help AI systems understand what your tool does
 3. **Error Handling**: Throw meaningful JavaScript errors
 4. **Unique Names**: Ensure operation IDs are unique across your API
@@ -457,7 +434,7 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
 **Handler execution failures:**
 
 - Use `context.log.error()`, `context.log.warn()`, `context.log.info()` for
-  logging
+logging
 - Verify API routes being invoked through `invokeRoute` exist and are accessible
 - Test individual API calls outside the MCP context
 - Check that your handler function is properly exported as default
@@ -473,16 +450,16 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
 1. **Enable Debug Logging**: Use `context.log.debug()` liberally and turn on
    [debug mode in your MCP server](../handlers/mcp-server)
 2. **Test Components Separately**: Test API routes and business logic
-   independently
+independently
 3. **Use MCP Inspector**: Interactive testing is invaluable for development
 4. **Validate OpenAPI**: Use tools like Swagger Editor to validate your OpenAPI
-   specification
+specification
 
 ## Learn More
 
 - [MCP Server Handler](../handlers/mcp-server) - For simple route-to-tool
-  mapping
+mapping
 - [Model Context Protocol Overview](../mcp-server/introduction) - Understanding
-  MCP concepts
+MCP concepts
 - [MCP Specification](https://modelcontextprotocol.io/specification/) - Official
-  protocol documentation
+protocol documentation

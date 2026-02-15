@@ -1,65 +1,36 @@
-[![logo-dark](/vicinae-dark.svg)![Logo](/vicinae.svg)](/)
-
-Find something...`K`
-
-[![logo-dark](/vicinae-dark.svg)![Logo](/vicinae.svg)](/)
-
-- [Latest version](https://github.com/vicinaehq/vicinae/releases/latest)
-
-- ## Installation
-- ## Quickstart
-- [FAQ](/faq)
-- [NixOS](/nixos)
-- ## Manual
-- ## Theming
-- ## Script Commands
-- ## Extensions
-  - [Introduction](/extensions/introduction)
-  - [Create Your First Extension](/extensions/create)
-  - [File Structure](/extensions/file-structure)
-  - [Manifest](/extensions/manifest)
-  - [Debug Raycast Extensions](/extensions/debug-raycast)
-  - [API Reference](https://api-reference.vicinae.com)
-  - [Create a view command](/extensions/view-command)
-  - [Create a no-view command](/extensions/no-view-command)
-
-- Sign in
-
 # Introduction
 
 Vicinae is typically extended using its React/TypeScript API, which allows you to focus on your extension while offloading all the complex UI rendering to the C++ core.
 
-This page explains this design choice and gives a sneak peek at what extension code looks like. For a step-by-step guide on creating an extension, see the [create extension](/extensions/create) page.
+This page explains this design choice and gives a sneak peek at what extension code looks like.
 
-![](/extensions/code.webp)
+## Why TypeScript?
 
-## [Why TypeScript?](#why-type-script)
+TypeScript is a well-established scripting language with clean syntax and, most importantly, a thriving ecosystem around it.
 
-TypeScript is a well-established scripting language with clean syntax and, most importantly, a thriving ecosystem around it. It's very easy to interface with almost any external API by installing a TypeScript SDK they provide.
-
-Since we use [NodeJS](https://nodejs.org/en), we also support all the regular node APIs you might want to use. JavaScript is actually much faster than most people think (unlike certain other popular scripting languages) and can be very efficient when used for the right things.
+Since we use [NodeJS](https://nodejs.org/en), we also support all the regular node APIs you might want to use.
 
 The asynchronous model also makes it well-suited for fetching and transforming external data, presenting it, and so on—which is typically what most extensions will do.
 
-## [Why React?](#why-react)
+## Why React?
 
-Since we're dealing with UI most of the time, we'd need a state management library anyway. React is a pure JavaScript library that allows developers to write declarative UI code, which is dramatically easier than having to update elements imperatively.
+Since we're dealing with UI most of the time, we'd need a state management library anyway.
 
-When a piece of state changes, the component rerenders, and it's up to the renderer (in this case, the Vicinae process) to ensure everything is handled gracefully and efficiently. As an extension developer, you don't have to deal with any of that. You simply use and update the provided UI components as needed, and the rest is handled for you.
+When a piece of state changes, the component rerenders, and it's up to the renderer (in this case, the Vicinae process) to ensure everything is handled gracefully and efficiently.
 
-React is also, like TypeScript, very well-established and widely known among developers.
+React is also, like TypeScript, well-established and widely known among developers.
 
-Although React is typically associated with web development (since that's its most common use case), the React library is platform-agnostic. A renderer can be written for any platform—even for the [terminal](https://github.com/vadimdemedes/ink)!
+Although React is typically associated with web development (since that's its most common use case), the React library is platform-agnostic.
 
-## [Where's the browser at?](#wheres-the-browser-at)
+## Where's the browser at?
 
 There is **no browser** backing the Vicinae extension ecosystem. No browser, no Electron, no HTML, no CSS...
 
-It's simply pure JavaScript producing a serialized representation of the UI tree, which is then sent to the C++ Vicinae process and rendered as native UI from there. Conceptually, this is very similar to what [React Native](https://reactnative.dev/) does.
+It's pure JavaScript producing a serialized representation of the UI tree, which is then sent to the C++ Vicinae process and rendered as native UI from there.
 
 All you need is a JavaScript runtime to execute JavaScript on the server-side (we use `node`), and everything works smoothly and efficiently.
 
-## [Code example](#code-example)
+## Code example
 
 If you write this:
 
@@ -93,38 +64,14 @@ export default function FruitList() {
 }
 ```
 
-CopyCopied!
-
 You get this:
-
-![](/extensions/intro-example.webp)
 
 Search automatically works, markdown is automatically formatted, life's great :)
 
-## [Raycast compatibility](#raycast-compatibility)
+## Raycast compatibility
 
 Most of the extension stuff is inspired by the way [Raycast](https://developers.raycast.com/) does it, and our long-term goal is to be compatible with most existing Raycast extensions.
 
-For this reason, our API follows the Raycast API very closely but also offers exclusive APIs. Our goal is to be our own thing, not copy everything Raycast is doing.
+For this reason, our API follows the Raycast API closely but also offers exclusive APIs.
 
 Since Vicinae is open source and community-driven, we tend to prioritize API features that most users want to see implemented first.
-
-Was this page helpful?
-
-YesNo
-
-[Previous](/scripts/raycast-compatibility)[Raycast Compatibility](/scripts/raycast-compatibility)
-
-[Next](/extensions/create)[Create Your First Extension](/extensions/create)
-
-© Copyright 2026. All rights reserved.
-
-[Follow us on GitHub](https://github.com/vicinaehq)
-
-## On this page
-
-- [Why TypeScript?](#why-type-script)
-- [Why React?](#why-react)
-- [Where's the browser at?](#wheres-the-browser-at)
-- [Code example](#code-example)
-- [Raycast compatibility](#raycast-compatibility)

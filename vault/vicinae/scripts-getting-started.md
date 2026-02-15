@@ -1,50 +1,18 @@
-[![logo-dark](/vicinae-dark.svg)![Logo](/vicinae.svg)](/)
-
-Find something...`K`
-
-[![logo-dark](/vicinae-dark.svg)![Logo](/vicinae.svg)](/)
-
-- [Latest version](https://github.com/vicinaehq/vicinae/releases/latest)
-
-- ## Installation
-- ## Quickstart
-- [FAQ](/faq)
-- [NixOS](/nixos)
-- ## Manual
-- ## Theming
-- ## Script Commands
-  - [Getting Started](/scripts/getting-started)
-  - [Directives](/scripts/directives)
-  - [Arguments](/scripts/arguments)
-  - [Output Modes](/scripts/modes)
-  - [Raycast Compatibility](/scripts/raycast-compatibility)
-
-- ## Extensions
-- Sign in
-
-Script commands are one of the easiest ways to extend Vicinae. They allow you to index regular scripts written in any programming language and execute them directly from the Vicinae root search.
-
-Script commands are meant to make executing one-shot tasks easier and provide nice feedback. If you want to build complex extensions that render lists, grids, forms and integrate more deeply with Vicinae, you should look into making your own [extension](/extensions/introduction).
-
-Vicinae script commands are very similar to [Raycast script commands](https://github.com/raycast/script-commands), and are mostly compatible with them. Learn more about the [main differences](/scripts/raycast-compatibility).
-
-![](/scripts/full-output-demo.gif)
-
 # Getting started with script commands
 
-Script commands are just scripts with a few additional directives on top, used to instruct Vicinae how to index and execute them.
+Script commands are scripts with a few additional directives on top, used to instruct Vicinae how to index and execute them.
 
-## [Where to put scripts](#where-to-put-scripts)
+## Where to put scripts
 
 By default, scripts are sourced from system directories. A common directory to put scripts in is `~/.local/share/vicinae/scripts`.
 
 Script directories can contain as many scripts as desired, and support subdirectories (max depth is limited to 5).
 
-It is possible to add additional directories from which to source scripts in the settings.
+add additional directories from which to source scripts in the settings.
 
-## [Example script](#example-script)
+## Example script
 
-The only requirement for a script file is to be a plain text file with three directives on top. Here is a typical Python script:
+The only requirement for a script file is to be a plain text file with three directives on top.
 
 ```
 #!/usr/bin/env python3
@@ -55,45 +23,24 @@ The only requirement for a script file is to be a plain text file with three dir
 print("Hello world!")
 ```
 
-CopyCopied!
-
-## [Understanding directives](#understanding-directives)
+## Understanding directives
 
 The `@vicinae.schemaVersion` directive should always be set to 1 and may be used to introduce changes to the specification in the future.
 
 The `@vicinae.title` directive tells Vicinae what name the script goes by, so that you can search it using this name.
 
-The `@vicinae.mode` directive dictates how the output of the script should be presented. `fullOutput` will push a new view and print the output there.
+The `@vicinae.mode` directive dictates how the output of the script should be presented.
 
-These three directives are required in order for Vicinae to index the script, but other directives are available to further customize the script. See the [directives page](/scripts/directives) for an exhaustive list.
+These three directives are required in order for Vicinae to index the script, but other directives are available to further customize the script.
 
 Script files should be given executable permission. The shebang line on top `#!/usr/bin/env python3` indicates to the executable loader what interpreter should be used to execute the script.
 
-Note that it is possible to specify a fully custom command line by using the `@vicinae.exec` directive, removing the need to make the script executable or use a shebang.
+it is possible to specify a fully custom command line by using the `@vicinae.exec` directive, removing the need to make the script executable or use a shebang.
 
 You can generate a script template similar to this one with the `vicinae script template --title "My Script" --lang=python` command.
 
-## [Reloading scripts](#reloading-scripts)
+## Reloading scripts
 
 Script directories are scanned at startup and every once in a while, but can also be reloaded manually using the Vicinae "Reload Script Directories" command, directly available from the root search.
 
 Only top-level script directories are watched for changes, not subdirectories.
-
-Was this page helpful?
-
-YesNo
-
-[Previous](/theming/matugen)[Matugen integration](/theming/matugen)
-
-[Next](/scripts/directives)[Directives](/scripts/directives)
-
-© Copyright 2026. All rights reserved.
-
-[Follow us on GitHub](https://github.com/vicinaehq)
-
-## On this page
-
-- [Where to put scripts](#where-to-put-scripts)
-- [Example script](#example-script)
-- [Understanding directives](#understanding-directives)
-- [Reloading scripts](#reloading-scripts)

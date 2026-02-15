@@ -3,26 +3,17 @@ title: Bitbucket Setup
 sidebar_label: Setup
 ---
 
-Bitbucket integration is available on
-[enterprise plans](https://zuplo.com/pricing). Bitbucket provides source control
-integration (push/pull between portal and repository) but does not include
-automatic deployments. Use [Bitbucket Pipelines](./custom-ci-cd-bitbucket.mdx)
-to deploy your API.
+Bitbucket integration is available on [enterprise plans](https://zuplo.com/pricing).
 
 ## Bitbucket.org
 
-If you are using the SaaS Bitbucket hosted at bitbucket.org, contact
-[support@zuplo.com](mailto:support@zuplo.com) to enable Bitbucket on your
-account.
+If you are using the SaaS Bitbucket hosted at bitbucket.org, contact [support@zuplo.com](mailto:support@zuplo.com) to enable Bitbucket on your account.
 
-Provide support with your Bitbucket Workspace ID, found on your Workspace
-Settings page.
+Provide support with your Bitbucket Workspace ID, found on your Workspace Settings page.
 
 ## Self-Hosted Bitbucket
 
-For self-hosted Bitbucket, you need to
-[set up a custom Bitbucket OAuth App](https://support.atlassian.com/bitbucket-cloud/docs/integrate-another-application-through-oauth/)
-and provide Zuplo support with the following values:
+For self-hosted Bitbucket, you need to [set up a custom Bitbucket OAuth App](https://support.atlassian.com/bitbucket-cloud/docs/integrate-another-application-through-oauth/) and provide Zuplo support with the following values:
 
 - **Bitbucket Server URL** — Something like `https://bitbucket.example.com`
 - **Client ID** — The client ID of the Bitbucket app you created
@@ -36,8 +27,7 @@ When configuring your app you will need to set the following values:
 ## Limiting Access
 
 Bitbucket doesn't support scoping OAuth app access to specific repositories.
-This is a Bitbucket limitation. To limit Zuplo's access:
 
 1. Create a new workspace and install the Zuplo app only in that workspace
 2. Create a service account user with limited repository access and use that
-   user to connect Bitbucket to Zuplo
+user to connect Bitbucket to Zuplo

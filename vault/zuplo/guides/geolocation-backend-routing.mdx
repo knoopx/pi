@@ -10,21 +10,15 @@ tags:
   - deployment
 ---
 
-This guide explains how to create a Zuplo policy that routes requests to
-different backend URLs based on the user's country.
+This guide explains how to create a Zuplo policy that routes requests to different backend URLs based on the user's country.
 
 ## Overview
 
-When running a global API, you may want to route requests to region-specific
-backends for better performance, compliance, or data residency requirements.
-Zuplo makes this easy with built-in geolocation capabilities.
+When running a global API, you may want to route requests to region-specific backends for better performance, compliance, or data residency requirements.
 
 ## How It Works
 
-Zuplo provides geolocation information for every request through the
-`context.incomingRequestProperties` object. This includes the country code,
-city, region, and other geographic details automatically determined from the
-request's IP address.
+Zuplo provides geolocation information for every request through the `context.incomingRequestProperties` object.
 
 ## Creating a Geolocation Routing Policy
 
@@ -151,8 +145,7 @@ export default async function policy(
 
 ## Using Additional Location Data
 
-Zuplo provides more than just country information. You can use other properties
-for more granular routing:
+Zuplo provides more than country information. You can use other properties for more granular routing:
 
 ```typescript
 // policies/advanced-geolocation-routing.ts
@@ -198,8 +191,7 @@ export default async function policy(
 
 ## Using the Backend URL in a Handler
 
-After the policy sets the backend URL in `context.custom.backendUrl`, you need a
-handler that uses this value.
+After the policy sets the backend URL in `context.custom.backendUrl`, you need a handler that uses this value.
 
 ### Option 1: Custom Handler
 
@@ -237,8 +229,7 @@ export default async function handler(
 
 ### Option 2: Using URL Forward Handler
 
-You can use Zuplo's built-in `urlForwardHandler` with a dynamic `baseUrl` that
-reads from `context.custom`:
+You can use Zuplo's built-in `urlForwardHandler` with a dynamic `baseUrl` that reads from `context.custom`:
 
 ```json
 {
@@ -264,8 +255,7 @@ reads from `context.custom`:
 }
 ```
 
-This approach is the simplest - the `urlForwardHandler` will automatically
-forward requests to the backend URL set by your geolocation policy.
+This approach is the simplest - the `urlForwardHandler` will automatically forward requests to the backend URL set by your geolocation policy.
 
 ## Adding the Policy to Your Route
 
@@ -300,8 +290,7 @@ For Option 2 (URL Rewrite Handler), see the configuration shown above.
 
 ### 1. Using a VPN
 
-Test from different countries using a VPN service to verify the routing works
-correctly.
+Test from different countries using a VPN service to verify the routing works correctly.
 
 ### 2. Adding Logging
 
@@ -335,8 +324,7 @@ export default async function policy(
 
 ### 3. Using Test Mode
 
-In your development environment, you can create a test policy that simulates
-different locations:
+In your development environment, you can create a test policy that simulates different locations:
 
 ```typescript
 // policies/test-geolocation-routing.ts
@@ -364,13 +352,11 @@ export default async function policy(
 
 ### Performance
 
-The geolocation data is determined at the edge, so there's no additional latency
-for IP lookup. All location properties are immediately available in the context.
+The geolocation data is determined at the edge, so there's no additional latency for IP lookup.
 
 ### Accuracy
 
-Geolocation based on IP addresses is generally accurate but may occasionally
-misidentify locations, especially for:
+Geolocation based on IP addresses is generally accurate but may occasionally misidentify locations, especially for:
 
 - VPN users
 - Corporate networks with centralized egress
@@ -399,6 +385,6 @@ Always implement a default fallback to ensure requests are handled even when:
 - Learn about [custom policies](../policies/custom-code-inbound.mdx)
 - Explore [environment variables](../articles/environment-variables.mdx)
 - Set up [monitoring and analytics](../articles/logging.mdx) for your
-  geolocation routing
+geolocation routing
 - Review the [ZuploContext documentation](../programmable-api/zuplo-context.mdx)
-  for all available request properties
+for all available request properties

@@ -3,16 +3,11 @@ title: Testing GitHub Deployments
 sidebar_label: Testing Deployments
 ---
 
-Run your test suite automatically after every Zuplo deployment without replacing
-the built-in GitHub integration. This approach uses GitHub's `deployment_status`
-event to trigger tests after Zuplo finishes deploying.
+Run your test suite automatically after every Zuplo deployment without replacing the built-in GitHub integration.
 
 ## Why This Approach?
 
-Zuplo's GitHub integration already handles deployments perfectly — every push
-deploys automatically with status checks in GitHub. Rather than replacing this
-with custom CI/CD, you can extend it by running tests after each deployment
-completes.
+Zuplo's GitHub integration already handles deployments perfectly — every push deploys automatically with status checks in GitHub.
 
 This gives you:
 
@@ -63,8 +58,7 @@ jobs:
 5. Your tests run against the deployed environment URL
 6. Test results appear as a check on the commit/PR
 
-The `environment_url` from the deployment status contains your Zuplo environment
-URL, so tests always run against the correct environment.
+The `environment_url` from the deployment status contains your Zuplo environment URL, so tests always run against the correct environment.
 
 ## Filtering by Environment
 
@@ -81,9 +75,7 @@ jobs:
 
 ## Adding to PR Checks
 
-GitHub automatically shows deployment status checks on pull requests. Your test
-workflow results appear alongside them, giving reviewers confidence that both
-deployment and tests succeeded.
+GitHub automatically shows deployment status checks on pull requests. Your test workflow results appear alongside them, giving reviewers confidence that both deployment and tests succeeded.
 
 ## When to Use Custom CI/CD Instead
 

@@ -3,15 +3,13 @@ title: VMware Log Insight Log Plugin
 sidebar_label: VMware Log Insight
 ---
 
-The VMware Log Insight plugin enables pushing logs to your VMware Log Insights
-via the REST API.
+The VMware Log Insight plugin enables pushing logs to your VMware Log Insights via the REST API.
 
 <EnterpriseFeature name="Custom logging" />
 
 ## Setup
 
-To add the VMware Log Insight logging plugin to your Zuplo project, add the
-following code to your `zuplo.runtime.ts` file.
+To add the VMware Log Insight logging plugin to your Zuplo project, add the following code to your `zuplo.runtime.ts` file.
 
 ```ts title="modules/zuplo.runtime.ts"
 import {
@@ -35,48 +33,44 @@ export function runtimeInit(runtime: RuntimeExtensions) {
 
 ## Configuration Options
 
-The `VMwareLogInsightLoggingPlugin` constructor accepts an options object with
-the following properties:
+The `VMwareLogInsightLoggingPlugin` constructor accepts an options object with the following properties:
 
 - `url` - (required) The URL of your VMware Log Insight host (for example,
-  `https://loginsight.example.com`)
+`https://loginsight.example.com`)
 - `agentId` - (optional) The unique agent identifier of the logger
 - `fields` - (optional) Custom fields to include in each log entry. Can contain
-  string, number, or boolean values
+string, number, or boolean values
 - `textReplacements` - (optional) An array of string tuples to replace within
-  the text field of a log entry
+the text field of a log entry
 - `onMessageSending` - (optional) A callback function to modify log entries
-  before sending
+before sending
 
 ### Custom Fields
 
-Any custom fields you want to include in the log entry can be added to the
-`fields` property. These values will be appended to every log entry.
+Any custom fields you want to include in the log entry can be added to the `fields` property.
 
 ### Text Replacements
 
-The `textReplacements` option allows you to specify character replacements in
-the log text. For example: `[["'", ""], ['"', ""], ["\\n", ""], [":", "="]]`
+The `textReplacements` option allows you to specify character replacements in the log text.
 
 ## Default Fields
 
-Every log entry will have a `timestamp` and a `text` field. The text field
-contains the log message, which may be JSON encoded for complex data.
+Every log entry will have a `timestamp` and a `text` field. The text field contains the log message, which may be JSON encoded for complex data.
 
 Default fields are (in snake_case format):
 
 - `severity` - The log level (for example, `ERROR`, `INFO`, `DEBUG`, `WARN`)
 - `request_id` - The UUID of the request (the value of the `zp-rid` header)
 - `environment_type` - Where the Zuplo API is running. Values are `edge`,
-  `working-copy`, or `local`
+`working-copy`, or `local`
 - `environment_stage` - The deployment stage: `working-copy`, `preview`, or
-  `production`
+`production`
 - `log_source` - The source of the log. Either `user` or `system`
 - `atomic_counter` - An atomic counter used to order logs with identical
-  timestamps
+timestamps
 - `environment` - The environment name of the Zuplo API
 - `request_ray_id` - The network provider identifier (for example, Cloudflare
-  Ray ID) of the request
+Ray ID) of the request
 
 :::note
 
@@ -107,8 +101,7 @@ The shape of the logs sent from Zuplo will be in the following format:
 
 ## Example Logs
 
-When objects are logged, they will be converted to a key value string format as
-shown below.
+When objects are logged, they will be converted to a key value string format as shown below.
 
 ```json
 {
@@ -127,8 +120,7 @@ shown below.
 }
 ```
 
-Errors will be included as fields in the log. The fields are `error_name`,
-`error_message`, and `error_stack`.
+Errors will be included as fields in the log. The fields are `error_name`, `error_message`, and `error_stack`.
 
 ```json
 {

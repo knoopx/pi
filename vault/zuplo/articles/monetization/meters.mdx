@@ -5,14 +5,11 @@ sidebar_label: Meters
 
 :::warning
 
-The Monetization APIs are in preview and subject to change. Features and
-endpoints documented here may be modified as we refine the service based on
-customer feedback.
+The Monetization APIs are in preview and subject to change. Features and endpoints documented here may be modified as we refine the service based on customer feedback.
 
 :::
 
-Meters aggregate usage data from your API. They watch for specific event types,
-extract numeric values, and sum them over configurable time windows.
+Meters aggregate usage data from your API. They watch for specific event types, extract numeric values, and sum them over configurable time windows.
 
 ## How Meters Work
 
@@ -22,8 +19,7 @@ A meter is configured with:
 - **Value property** - JSONPath to extract the numeric value from event data
 - **Aggregation** - How to combine values (typically `SUM`)
 
-When events are ingested, the meter matches events by type, extracts the
-specified value, and aggregates it per customer over time.
+When events are ingested, the meter matches events by type, extracts the specified value, and aggregates it per customer over time.
 
 ## Common Examples
 
@@ -41,8 +37,7 @@ Track the total number of API requests per customer:
 }
 ```
 
-Each `api_request` event should include a `count` field (typically `1`), as
-shown below:
+Each `api_request` event should include a `count` field (typically `1`), as shown below:
 
 ```json
 {
@@ -118,5 +113,4 @@ EOF
 
 ## API Reference
 
-For complete API operations (list, get, update, delete), see the
-[Meters API Reference](../../api/metering-meters).
+For complete API operations (list, get, update, delete), see the [Meters API Reference](../../api/metering-meters).

@@ -5,20 +5,15 @@ sidebar_label: Pricing Models
 
 :::warning
 
-The Monetization APIs are in preview and subject to change. Features and
-endpoints documented here may be modified as we refine the service based on
-customer feedback.
+The Monetization APIs are in preview and subject to change. Features and endpoints documented here may be modified as we refine the service based on customer feedback.
 
 :::
 
-Pricing models define how charges are calculated within a
-[rate card](./rate-cards.mdx). Each model suits different business scenarios,
-from simple flat fees to complex usage-based pricing.
+Pricing models define how charges are calculated within a [rate card](./rate-cards.mdx).
 
 ## Flat Fee Pricing
 
-Flat fee pricing charges a fixed amount regardless of usage. Use `flat_fee` rate
-cards for subscriptions, setup fees, or access charges.
+Flat fee pricing charges a fixed amount regardless of usage. Use `flat_fee` rate cards for subscriptions, setup fees, or access charges.
 
 ### Recurring Subscription
 
@@ -55,8 +50,7 @@ A setup fee charged once when the subscription starts (no `billingCadence`):
 
 ## Per-Unit Pricing
 
-Per-unit pricing charges a fixed amount for each unit of metered usage. Use
-`usage_based` rate cards linked to a feature.
+Per-unit pricing charges a fixed amount for each unit of metered usage.
 
 ```json
 {
@@ -150,8 +144,7 @@ All units are charged at the tier 3 rate because usage exceeded 10,000.
 
 ### Included Usage with Overage
 
-Combine a flat fee for included usage with per-unit overage charges. This is a
-common pattern for "X calls included, then $Y per additional call":
+Combine a flat fee for included usage with per-unit overage charges. This is a common pattern for "X calls included, then $Y per additional call":
 
 ```json
 {
@@ -174,8 +167,7 @@ common pattern for "X calls included, then $Y per additional call":
 }
 ```
 
-This grants 10,000 API calls included (via `issueAfterReset`), then charges
-$0.01 per additional call.
+This grants 10,000 API calls included (via `issueAfterReset`), then charges $0.01 per additional call.
 
 ## Package Pricing
 
@@ -220,5 +212,4 @@ Usage is rounded up to the next package.
 
 ## Complete Example
 
-See [Plan Examples](./plan-examples.mdx) for step-by-step examples showing how
-to build plans with different pricing models.
+See [Plan Examples](./plan-examples.mdx) for step-by-step examples showing how to build plans with different pricing models.

@@ -3,17 +3,11 @@ title: API Key Authentication & Authorization
 sidebar_label: Authentication
 ---
 
-With the [API Key Authentication Policy](../policies/api-key-inbound.mdx)
-configured on your API routes you can build additional policies that run after
-the API Key Authentication policy to perform additional checks or authorization
-on the consumer.
+With the [API Key Authentication Policy](../policies/api-key-inbound.mdx) configured on your API routes you can build additional policies that run after the API Key Authentication policy to perform additional checks or authorization on the consumer.
 
 ## Request User Object
 
-After each successful authentication the policy will set the `request.user`
-object. The name of the API Key consumer is set to the `request.user.sub`
-property. Any `metadata` attached to the consumer is set to the
-`request.user.data` property. The interface of `request.user` is shown below.
+After each successful authentication the policy will set the `request.user` object.
 
 ```ts
 /**
@@ -59,24 +53,17 @@ context.log.debug(request.user);
 
 :::note
 
-One question you might have is why is the `request.user` object not the same
-shape as the API Key Consumer object. for example why doesn't it has
-`request.user.name` and `request.user.metadata` properties.
+One question you might have is why is the `request.user` object not the same shape as the API Key Consumer object. for example why doesn't it has `request.user.name` and `request.user.metadata` properties.
 
-The reason is because the `request.user` object is reused by many different
-kinds of authentication policies and they all conform to the same interface with
-`sub` and `data`.
+The reason is because the `request.user` object is reused by many different kinds of authentication policies and they all conform to the same interface with `sub` and `data`.
 
 :::
 
 ## Using Consumer Data in Code
 
-It's possible to write additional policies that run after the API Key
-Authentication policy that perform further gating or authorization of the
-request based on the data set in the consumer.
+It's possible to write additional policies that run after the API Key Authentication policy that perform further gating or authorization of the request based on the data set in the consumer.
 
-For example, you could gate access to a feature by checking for the `plan` value
-stored in metadata (exposed via `request.user.data.plan`).
+For example, you could gate access to a feature by checking for the `plan` value stored in metadata (exposed via `request.user.data.plan`).
 
 ```ts
 async function (request: ZuploRequest, context: ZuploContext) {
@@ -89,8 +76,7 @@ async function (request: ZuploRequest, context: ZuploContext) {
 }
 ```
 
-The `metadata` could also be used to route requests to dedicated customer
-services.
+The `metadata` could also be used to route requests to dedicated customer services.
 
 ```ts
 async function (request: ZuploRequest, context: ZuploContext) {
@@ -99,13 +85,9 @@ async function (request: ZuploRequest, context: ZuploContext) {
 }
 ```
 
-The `request.user` object can be used in both
-[handlers](../handlers/custom-handler.mdx) and
-[policies](../policies/custom-code-inbound.mdx)
+The `request.user` object can be used in both [handlers](../handlers/custom-handler.mdx) and [policies](../policies/custom-code-inbound.mdx)
 
-If you had a simple [function handler](../handlers/custom-handler.mdx) as
-follows, it would return a `request.user` object to your route if the API Key is
-successfully authenticated:
+If you had a simple [function handler](../handlers/custom-handler.mdx) as follows, it would return a `request.user` object to your route if the API Key is successfully authenticated:
 
 ```ts
 async function (request: ZuploRequest, context: ZuploContext) {

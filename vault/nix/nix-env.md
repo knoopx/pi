@@ -1,31 +1,18 @@
 # Nix 2.28.6 Reference Manual
 
-# [Name](#name)
+# Name
 
 `nix-env` - manipulate or query Nix user environments
 
-# [Synopsis](#synopsis)
+# Synopsis
 
-`nix-env` _operation_ [*options*] [*arguments…*]
-[`--option` *name* *value*]
-[`--arg` *name* *value*]
-[`--argstr` *name* *value*]
-[{`--file` | `-f`} *path*]
-[{`--profile` | `-p`} *path*]
-[`--system-filter` *system*]
-[`--dry-run`]
+`nix-env` *operation* [*options*] [*arguments…*] [`--option` *name* *value*] [`--arg` *name* *value*] [`--argstr` *name* *value*] [{`--file` | `-f`} *path*] [{`--profile` | `-p`} *path*] [`--system-filter` *system*] [`--dry-run`]
 
-# [Description](#description)
+# Description
 
-The command `nix-env` is used to manipulate Nix user environments. User
-environments are sets of software packages available to a user at some
-point in time. In other words, they are a synthesised view of the
-programs available in the Nix store. There may be many user
-environments: different users can have different environments, and
-individual users can switch between different environments.
+The command `nix-env` is used to manipulate Nix user environments. User environments are sets of software packages available to a user at some point in time.
 
-`nix-env` takes exactly one _operation_ flag which indicates the
-subcommand to be performed. The following operations are available:
+`nix-env` takes exactly one *operation* flag which indicates the subcommand to be performed.
 
 - [`--install`](/manual/nix/2.28/command-ref/nix-env/install)
 - [`--upgrade`](/manual/nix/2.28/command-ref/nix-env/upgrade)
@@ -43,13 +30,13 @@ These pages can be viewed offline:
 
 - `man nix-env-<operation>`.
 
-  Example: `man nix-env-install`
+Example: `man nix-env-install`
 
 - `nix-env --help --<operation>`
 
-  Example: `nix-env --help --install`
+Example: `nix-env --help --install`
 
-# [Package sources](#package-sources)
+# Package sources
 
 `nix-env` can obtain packages from multiple sources:
 
@@ -60,13 +47,13 @@ These pages can be viewed offline:
   - A Nix expression that is a function which takes default expression as argument, specified via `--from-expression`
 - A [store path](/manual/nix/2.28/store/store-path)
 
-# [Selectors](#selectors)
+# Selectors
 
-Several operations, such as [`nix-env --query`](/manual/nix/2.28/command-ref/nix-env/query) and [`nix-env --install`](/manual/nix/2.28/command-ref/nix-env/install), take a list of _arguments_ that specify the packages on which to operate.
+Several operations, such as [`nix-env --query`](/manual/nix/2.28/command-ref/nix-env/query) and [`nix-env --install`](/manual/nix/2.28/command-ref/nix-env/install), take a list of *arguments* that specify the packages on which to operate.
 
 Packages are identified based on a `name` part and a `version` part of a [symbolic derivation name](/manual/nix/2.28/language/derivations#attr-name):
 
-- `name`: Everything up to but not including the first dash (`-`) that is _not_ followed by a letter.
+- `name`: Everything up to but not including the first dash (`-`) that is *not* followed by a letter.
 - `version`: The rest, excluding the separating dash.
 
 > **Example**
@@ -91,10 +78,7 @@ Packages are identified based on a `name` part and a `version` part of a [symbol
 > }
 > ```
 
-The `name` parts of the _arguments_ to `nix-env` are treated as extended regular expressions and matched against the `name` parts of derivation names in the package source.
-The match is case-sensitive.
-The regular expression can optionally be followed by a dash (`-`) and a version number; if omitted, any version of the package will match.
-For details on regular expressions, see [**regex**(7)](https://linux.die.net/man/7/regex).
+The `name` parts of the *arguments* to `nix-env` are treated as extended regular expressions and matched against the `name` parts of derivation names in the package source.
 
 > **Example**
 >
@@ -110,28 +94,25 @@ For details on regular expressions, see [**regex**(7)](https://linux.die.net/man
 >
 > - `gtk\\+`
 >
->   Matches the package name `gtk+`.
->   The `+` character must be escaped using a backslash (`\`) to prevent it from being interpreted as a quantifier, and the backslash must be escaped in turn with another backslash to ensure that the shell passes it on.
+>   Matches the package name `gtk+`. The `+` character must be escaped using a backslash (`\`) to prevent it from being interpreted as a quantifier, and the backslash must be escaped in turn with another backslash to ensure that the shell passes it on.
 >
 > - `.\*`
 >
->   Matches any package name.
->   This is the default for most commands.
+>   Matches any package name. This is the default for most commands.
 >
 > - `'.*zip.*'`
 >
->   Matches any package name containing the string `zip`.
->   Note the dots: `'*zip*'` does not work, because in a regular expression, the character `*` is interpreted as a quantifier.
+>   Matches any package name containing the string `zip`. Note the dots: `'*zip*'` does not work, because in a regular expression, the character `*` is interpreted as a quantifier.
 >
 > - `'.*(firefox|chromium).*'`
 >
 >   Matches any package name containing the strings `firefox` or `chromium`.
 
-# [Files](#files)
+# Files
 
 `nix-env` operates on the following files.
 
-## [Default Nix expression](#default-nix-expression)
+## Default Nix expression
 
 The source for the [Nix expressions](/manual/nix/2.28/glossary#gloss-nix-expression) used by [`nix-env`](/manual/nix/2.28/command-ref/nix-env) by default:
 
@@ -142,9 +123,7 @@ It is loaded as follows:
 
 - If the default expression is a file, it is loaded as a Nix expression.
 - If the default expression is a directory containing a `default.nix` file, that `default.nix` file is loaded as a Nix expression.
-- If the default expression is a directory without a `default.nix` file, then its contents (both files and subdirectories) are loaded as Nix expressions.
-  The expressions are combined into a single attribute set, each expression under an attribute with the same name as the original file or subdirectory.
-  Subdirectories without a `default.nix` file are traversed recursively in search of more Nix expressions, but the names of these intermediate directories are not added to the attribute paths of the default Nix expression.
+- If the default expression is a directory without a `default.nix` file, then its contents (both files and subdirectories) are loaded as Nix expressions. The expressions are combined into a single attribute set, each expression under an attribute with the same name as the original file or subdirectory. Subdirectories without a `default.nix` file are traversed recursively in search of more Nix expressions, but the names of these intermediate directories are not added to the attribute paths of the default Nix expression.
 
 Then, the resulting expression is interpreted like this:
 
@@ -165,9 +144,8 @@ Then, the resulting expression is interpreted like this:
 The file [`manifest.nix`](/manual/nix/2.28/command-ref/files/manifest.nix) is always ignored.
 
 The command [`nix-channel`](/manual/nix/2.28/command-ref/nix-channel) places a symlink to the current user's [channels](/manual/nix/2.28/command-ref/files/channels) in this directory, the [user channel link](#user-channel-link).
-This makes all subscribed channels available as attributes in the default expression.
 
-## [User channel link](#user-channel-link)
+## User channel link
 
 A symlink that ensures that [`nix-env`](/manual/nix/2.28/command-ref/nix-env) can find the current user's [channels](/manual/nix/2.28/command-ref/files/channels):
 
@@ -181,7 +159,7 @@ This symlink points to:
 
 In a multi-user installation, you may also have `~/.nix-defexpr/channels_root`, which links to the channels of the root user.
 
-## [Profiles](#profiles)
+## Profiles
 
 A directory that contains links to profiles managed by [`nix-env`](/manual/nix/2.28/command-ref/nix-env) and [`nix profile`](/manual/nix/2.28/command-ref/new-cli/nix3-profile):
 
@@ -190,11 +168,9 @@ A directory that contains links to profiles managed by [`nix-env`](/manual/nix/2
 
 A profile is a directory of symlinks to files in the Nix store.
 
-### [Filesystem layout](#filesystem-layout)
+### Filesystem layout
 
-Profiles are versioned as follows. When using a profile named _path_, _path_ is a symlink to _path_`-`_N_`-link`, where _N_ is the version of the profile.
-In turn, _path_`-`_N_`-link` is a symlink to a path in the Nix store.
-For example:
+Profiles are versioned as follows. When using a profile named *path*, *path* is a symlink to *path*`-`*N*`-link`, where *N* is the version of the profile.
 
 ```
 $ ls -l ~alice/.local/state/nix/profiles/profile*
@@ -206,9 +182,7 @@ lrwxrwxrwx 1 alice users 51 Nov 25 14:35 /home/alice/.local/state/nix/profiles/p
 
 Each of these symlinks is a root for the Nix garbage collector.
 
-The contents of the store path corresponding to each version of the
-profile is a tree of symlinks to the files of the installed packages,
-e.g.
+The contents of the store path corresponding to each version of the profile is a tree of symlinks to the files of the installed packages, e.g.
 
 ```
 $ ll -R ~eelco/.local/state/nix/profiles/profile-7-link/
@@ -238,7 +212,7 @@ Each profile version contains a manifest file:
 - [`manifest.nix`](/manual/nix/2.28/command-ref/files/manifest.nix) used by [`nix-env`](/manual/nix/2.28/command-ref/nix-env).
 - [`manifest.json`](/manual/nix/2.28/command-ref/files/manifest.json) used by [`nix profile`](/manual/nix/2.28/command-ref/new-cli/nix3-profile) (experimental).
 
-## [User profile link](#user-profile-link)
+## User profile link
 
 A symbolic link to the user's current profile:
 
@@ -250,5 +224,4 @@ By default, this symlink points to:
 - `$XDG_STATE_HOME/nix/profiles/profile` for regular users
 - `$NIX_STATE_DIR/profiles/per-user/root/profile` for `root`
 
-The `PATH` environment variable should include `/bin` subdirectory of the profile link (e.g. `~/.nix-profile/bin`) for the user environment to be visible to the user.
-The [installer](/manual/nix/2.28/installation/installing-binary) sets this up by default, unless you enable [`use-xdg-base-directories`](/manual/nix/2.28/command-ref/conf-file#conf-use-xdg-base-directories).
+The `PATH` environment variable should include `/bin` subdirectory of the profile link (e.g.

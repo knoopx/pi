@@ -3,14 +3,11 @@ title: Environment Variables API
 sidebar_label: Environment Variables
 ---
 
-The `environment` object provides access to environment variables in your Zuplo
-API gateway. It returns a record of environment variable names to their values.
+The `environment` object provides access to environment variables in your Zuplo API gateway.
 
 :::info{title="Configuration Guide"}
 
-For information on how to set and manage environment variables in the Zuplo
-Portal, see
-[Configuring Environment Variables](../articles/environment-variables.mdx).
+For information on how to set and manage environment variables in the Zuplo Portal, see [Configuring Environment Variables](../articles/environment-variables.mdx).
 
 :::
 
@@ -51,8 +48,7 @@ export default async function handler(
 
 ## Type Safety
 
-Since environment variables might not be defined, they return
-`string | undefined`:
+Since environment variables might not be defined, they return `string | undefined`:
 
 ```ts
 import { environment } from "@zuplo/runtime";
@@ -244,10 +240,7 @@ validateSecrets();
 
 ## Environment Detection
 
-Zuplo doesn't provide a built-in `NODE_ENV` variable since it runs on a custom
-V8 runtime, not Node.js. To implement environment-specific logic, define your
-own environment variables (for example, `ENVIRONMENT`, `STAGE`, or `ENV_TYPE`)
-and set them appropriately for each environment in your project settings.
+Zuplo doesn't provide a built-in `NODE_ENV` variable since it runs on a custom V8 runtime, not Node.js.
 
 ## Best Practices
 
@@ -323,6 +316,6 @@ Environment variables are set in the Zuplo Portal:
 ## See Also
 
 - [Environment Variables](../articles/environment-variables.mdx) - Setting up
-  environment variables
+environment variables
 - [ConfigurationError](./runtime-errors.md#configurationerror) - Error handling
-  for configuration issues
+for configuration issues

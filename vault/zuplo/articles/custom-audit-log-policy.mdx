@@ -3,27 +3,15 @@ title: Custom Audit Logging Policy
 sidebar_label: Audit Logging
 ---
 
-This guide explains how to add custom audit logging beyond the scope of the
-`AuditLogsInboundPolicy`.
+This guide explains how to add custom audit logging beyond the scope of the `AuditLogsInboundPolicy`.
 
-Audit logging is an important part of API security that plays a critical role in
-detecting and correcting issues such as unauthorized access or permission
-elevations within your system. Audit logging is also a requirement for many
-compliance certifications as well as part of the buying criteria for larger
-enterprises.
+Audit logging is an important part of API security that plays a critical role in detecting and correcting issues such as unauthorized access or permission elevations within your system.
 
-Adding Audit Logging to your APIs that are secured with Zuplo is as easy as
-adding a custom policy. Typically you want to add audit logs to any API that
-modifies data, however depending on the API you may want it on read operations
-as well (for example retrieve a secret key, etc.)
+Adding Audit Logging to your APIs that are secured with Zuplo is as easy as adding a custom policy.
 
 ## Example Policy: WorkOS Audit Logs
 
-[WorkOS](https://workos.com/) provides various services that help enable
-enterprise features on your service such as SSO and Audit Logs. With Zuplo it's
-easy to create a [custom policy](../policies/custom-code-inbound.mdx) that uses
-[runtime hooks](../programmable-api/runtime-extensions.mdx) to log API calls
-using their API.
+[WorkOS](https://workos.com/) provides various services that help enable enterprise features on your service such as SSO and Audit Logs.
 
 ```ts
 import { ZuploContext, ZuploRequest, environment } from "@zuplo/runtime";

@@ -2,15 +2,11 @@
 title: Route Custom Data
 ---
 
-Each route in your OpenAPI file allows for specifying custom properties on your
-route that can be referenced in code. Because the OpenAPI document allows
-extensibility by adding `x-` properties, you can add custom data as needed to
-your operations and then read that data in code.
+Each route in your OpenAPI file allows for specifying custom properties on your route that can be referenced in code.
 
 ## Custom Data in OpenAPI File
 
-The example below shows how to add custom data and operation with a property
-`x-custom`.
+The example below shows how to add custom data and operation with a property `x-custom`.
 
 ```json title="/config/routes.oas.json"
 {
@@ -39,11 +35,7 @@ The example below shows how to add custom data and operation with a property
 
 ## Custom Data in Code
 
-Custom data can be accessed through the `context.route.raw()` function. This
-gives you full access to the underlying data of the OpenAPI operation. By
-default this function returns `unknown`, but you can pass it a custom object or
-for the full OpenAPI operation, use `OpenAPIV3_1.OperationObject` exported from
-`openapi-types`
+Custom data can be accessed through the `context.route.raw()` function.
 
 ```ts
 import { ZuploContext, ZuploRequest } from "@zuplo/runtime";

@@ -10,15 +10,11 @@ tags:
   - testing
 ---
 
-This guide explains how to create a Zuplo policy that routes employee requests
-to canary or staging backends for testing and dogfooding purposes.
+This guide explains how to create a Zuplo policy that routes employee requests to canary or staging backends for testing and dogfooding purposes.
 
 ## Overview
 
-When releasing new API versions, it's common to route internal employees or beta
-testers to a canary or staging environment before rolling out to all users. This
-allows teams to test new features and catch issues early without affecting
-production traffic.
+When releasing new API versions, it's common to route internal employees or beta testers to a canary or staging environment before rolling out to all users.
 
 ## How It Works
 
@@ -88,8 +84,7 @@ export const canaryRoutingPolicy: InboundPolicyHandler = async (
 
 ## Advanced: Multiple Backend Support
 
-For applications with multiple backend services, extend the policy to route each
-service appropriately:
+For applications with multiple backend services, extend the policy to route each service appropriately:
 
 ```typescript
 // policies/multi-service-canary-routing.ts
@@ -372,7 +367,7 @@ if (context.response.status >= 500 && context.custom.isCanary) {
 
 - **Authentication**: Always verify user identity before canary routing
 - **Query Parameter**: Consider restricting stage parameter to authenticated
-  users only
+users only
 - **Access Control**: Limit canary access to verified employees only
 - **Audit Logging**: Log all staging decisions for security audits
 - **Stage Validation**: Only accept valid stage values ("release" or "canary")
@@ -382,4 +377,4 @@ if (context.response.status >= 500 && context.custom.isCanary) {
 - Learn about [custom policies](../policies/custom-code-inbound.mdx)
 - Explore [environment variables](../articles/environment-variables.mdx)
 - Set up [monitoring and analytics](../articles/logging.mdx) for canary
-  deployments
+deployments

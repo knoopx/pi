@@ -11,10 +11,7 @@ tags:
   - custom-code
 ---
 
-There are many scenarios where you need to modify all paths in your OpenAPI
-specification - adding version prefixes, environment-specific paths, API gateway
-base paths, or regional endpoints. Rather than manually editing every route, you
-can write a simple script to transform all paths programmatically.
+There are many scenarios where you need to modify all paths in your OpenAPI specification - adding version prefixes, environment-specific paths, API gateway base paths, or regional endpoints.
 
 ## Common Use Cases
 
@@ -344,28 +341,27 @@ npx tsx environment-paths.ts production
 ## Best Practices
 
 1. **Keep Base OpenAPI Clean**: Maintain a version-agnostic base OpenAPI file
-   and use overlays to generate versioned variants
+and use overlays to generate versioned variants
 
 2. **Automate Version Generation**: Use scripts and CI/CD to generate all
-   version variants automatically
+version variants automatically
 
 3. **Test Generated Files**: Validate generated OpenAPI files with tools like
-   [Spectral](https://stoplight.io/open-source/spectral) or
-   [Vacuum](https://quobix.com/vacuum/api/getting-started/)
+[Spectral](https://stoplight.io/open-source/spectral) or [Vacuum](https://quobix.com/vacuum/api/getting-started/)
 
 4. **Version Your Overlays**: Store overlay generation scripts in version
-   control alongside your OpenAPI files
+control alongside your OpenAPI files
 
 5. **Document Version Differences**: Use overlay descriptions to document what
-   changes between versions
+changes between versions
 
 6. **Use Consistent Patterns**: Stick to one versioning scheme (`/v1`, `/v2` or
-   `/2024-01`, etc.) across your organization
+`/2024-01`, etc.) across your organization
 
 ## Next Steps
 
 - Learn about [API versioning strategies](../articles/versioning-on-zuplo.mdx)
-  in Zuplo
+in Zuplo
 - Explore more [OpenAPI Overlay techniques](../guides/openapi-overlays.mdx)
 - Check out the [OpenAPI Overlay CLI reference](../cli/openapi-overlay.mdx)
 - Read about [OpenAPI best practices](../articles/openapi-server-urls.mdx)

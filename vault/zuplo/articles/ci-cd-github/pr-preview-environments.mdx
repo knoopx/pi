@@ -3,8 +3,7 @@ title: "GitHub Actions: PR Preview Environments"
 sidebar_label: PR Preview Environments
 ---
 
-Give every pull request its own Zuplo environment. Reviewers can test changes
-against a live API, and environments clean up automatically when PRs close.
+Give every pull request its own Zuplo environment. Reviewers can test changes against a live API, and environments clean up automatically when PRs close.
 
 ```yaml title=".github/workflows/pr-workflow.yaml"
 name: PR Workflow
@@ -87,13 +86,13 @@ jobs:
 This workflow:
 
 1. **On PR open/update**: Deploys to an environment named after the branch, runs
-   tests, and comments the URL on the PR
+tests, and comments the URL on the PR
 2. **On PR close**: Deletes the preview environment
 
 ## How It Works
 
 - The environment name comes from the branch name (`feature/auth` becomes
-  `feature-auth`)
+`feature-auth`)
 - Each push to the PR updates the same environment
 - Closing the PR (merge or abandon) triggers cleanup
 - The PR comment lets reviewers quickly access the preview
@@ -101,6 +100,6 @@ This workflow:
 ## Next Steps
 
 - Add [automatic cleanup on branch delete](./cleanup-on-branch-delete.mdx) as a
-  backup
+backup
 - Implement [multi-stage deployment](./multi-stage-deployment.mdx) for
-  production releases
+production releases

@@ -43,10 +43,9 @@ cleanup:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 ```
 
-The cleanup job only runs for merge request pipelines, deleting the preview
-environment after tests pass.
+The cleanup job only runs for merge request pipelines, deleting the preview environment after tests pass.
 
 ## Next Steps
 
 - Implement [multi-stage deployment](./multi-stage-deployment.mdx) for
-  production
+production

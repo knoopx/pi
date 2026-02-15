@@ -3,24 +3,19 @@ title: MCP Server GraphQL Endpoints
 sidebar_label: GraphQL
 ---
 
-The MCP Server Handler supports GraphQL endpoints through the `x-zuplo-route`
-OpenAPI extension. This allows you to expose GraphQL APIs as MCP tools with
-automatic schema introspection and query execution capabilities.
+The MCP Server Handler supports GraphQL endpoints through the `x-zuplo-route` OpenAPI extension.
 
-When you configure a route with the GraphQL extension, the MCP server
-automatically generates two tools:
+When you configure a route with the GraphQL extension, the MCP server automatically generates two tools:
 
 1. **Introspection tool** - Fetches the GraphQL schema so AI systems can
-   understand available queries, mutations, and types
+understand available queries, mutations, and types
 2. **Execute tool** - Executes GraphQL queries against the endpoint
 
-This enables AI systems to dynamically discover and interact with GraphQL APIs
-without requiring manual tool definitions for each query.
+This enables AI systems to dynamically discover and interact with GraphQL APIs without requiring manual tool definitions for each query.
 
 :::caution
 
-GraphQL endpoint support for MCP Server is currently in beta. The API may change
-in future releases.
+GraphQL endpoint support for MCP Server is currently in beta. The API may change in future releases.
 
 :::
 
@@ -28,8 +23,7 @@ in future releases.
 
 ### 1. Configure a GraphQL Endpoint
 
-Add a route that forwards to your GraphQL endpoint and include the
-`x-zuplo-route.mcp` configuration:
+Add a route that forwards to your GraphQL endpoint and include the `x-zuplo-route.mcp` configuration:
 
 ```json
 {
@@ -63,8 +57,7 @@ Add a route that forwards to your GraphQL endpoint and include the
 
 ### 2. Add to Your MCP Server
 
-Include the GraphQL route in your MCP Server configuration using the
-`operations` array:
+Include the GraphQL route in your MCP Server configuration using the `operations` array:
 
 ```json
 {
@@ -103,8 +96,7 @@ This configuration automatically creates:
 
 ## Configuration Options
 
-The `x-zuplo-route.mcp` configuration for GraphQL supports the following
-options:
+The `x-zuplo-route.mcp` configuration for GraphQL supports the following options:
 
 - `type`: Must be set to `"graphql"`
 - `enabled`: Whether the GraphQL MCP capabilities are enabled (default: `true`).
@@ -151,13 +143,9 @@ For example:
 
 ## Custom GraphQL Tools
 
-For more complex scenarios like bounded mutations or queries with complex logic,
-you can create custom GraphQL tools as endpoints using the Zuplo
-[custom MCP tool patterns](./mcp-server-custom-tools.mdx) and the `graphql`
-library.
+For more complex scenarios like bounded mutations or queries with complex logic, you can create custom GraphQL tools as endpoints using the Zuplo [custom MCP tool patterns](./mcp-server-custom-tools.mdx) and the `graphql` library.
 
-Here's a simple example of a custom bounded GraphQL query that expects an `id`
-input from the MCP client:
+Here's a simple example of a custom bounded GraphQL query that expects an `id` input from the MCP client:
 
 ```json
 {
@@ -231,13 +219,12 @@ export default async function handler(
 }
 ```
 
-For more complex custom tools with validation, error handling, and multi-step
-workflows, see the [Custom Tools documentation](./mcp-server-custom-tools.mdx).
+For more complex custom tools with validation, error handling, and multi-step workflows, see the [Custom Tools documentation](./mcp-server-custom-tools.mdx).
 
 ## See Also
 
 - [MCP Server Handler](./mcp-server.mdx) - Main MCP Server documentation
 - [Custom Tools](./mcp-server-custom-tools.mdx) - Build custom MCP tools with
-  complex logic
+complex logic
 - [GraphQL Best Practices](https://graphql.org/learn/best-practices/) -
-  GraphQL.org recommendations
+GraphQL.org recommendations

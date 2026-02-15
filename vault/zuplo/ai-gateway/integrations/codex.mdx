@@ -3,25 +3,21 @@ title: Codex
 sidebar_label: Codex
 ---
 
-[Codex](https://developers.openai.com/codex) is a coding agent developed by
-OpenAI that you can run locally from your terminal and that can read, modify,
-and run code on your machine, in the chosen directory. It’s open-source, and
-built in Rust for speed and efficiency.
+[Codex](https://developers.openai.com/codex) is a coding agent developed by OpenAI that you can run locally from your terminal and that can read, modify, and run code on your machine, in the chosen directory.
 
 ## Prerequisites
 
-In order to use the AI Gateway with Codex you will need to complete these steps
-first:
+use the AI Gateway with Codex you will need to complete these steps first:
 
 <Stepper>
 
 1. Create a [new provider](/ai-gateway/managing-providers) in the AI Gateway for
-   the provider you want to use with Codex
+the provider you want to use with Codex
 
 2. [Set up a new team](/ai-gateway/managing-teams)
 
 3. Create a [new app](/ai-gateway/managing-apps) to use specifically with Codex
-   and assign it to the team you created
+and assign it to the team you created
 
 4. Copy the API Key for the app you created, as well as the Gateway URL
 
@@ -32,21 +28,16 @@ first:
 There are two approaches you can take to using Codex with Zuplo's AI Gateway.
 
 1. **Route OpenAI through AI Gateway** - This would configure your OpenAI
-   provider in Codex to route requests through the AI Gateway rather than
-   directly to OpenAI
+provider in Codex to route requests through the AI Gateway rather than directly to OpenAI
 
 2. **Create a Zuplo specific provider** - Use Zuplo as a provider that be
-   selected in the Codex configuration and work with any OpenAI compatible
-   models
+selected in the Codex configuration and work with any OpenAI compatible models
 
 Configuration steps for both options are below:
 
 ### Route OpenAI through AI Gateway
 
-Open the [Codex configuration](https://developers.openai.com/codex/local-config)
-`~/.codex/config.toml` and modify the `model_providers.openai-chat-completions`
-entry so that the `base_url` points to your AI Gateway URL, and your `env_key`
-is set to the API Key of the app you created to use with Codex.
+Open the [Codex configuration](https://developers.openai.com/codex/local-config) `~/.codex/config.toml` and modify the `model_providers.openai-chat-completions` entry so that the `base_url` points to your AI Gateway URL, and your `env_key` is set to the API Key of the app you created to use with Codex.
 
 ```toml
 [model_providers.openai-chat-completions]
@@ -55,13 +46,11 @@ base_url = "https://<your-ai-gateway-url>/v1"
 env_key = "ZUPLO_AI_GATEWAY_API_KEY"
 ```
 
-Save the file and reload Codex. Your OpenAI requests will now be routed through
-the Zuplo AI Gateway.
+Save the file and reload Codex. Your OpenAI requests will now be routed through the Zuplo AI Gateway.
 
 ### Zuplo AI Gateway provider
 
-To add a specific provider for the AI Gateway you can add an additional entry to
-the Codex `config.toml` file.
+To add a specific provider for the AI Gateway you can add an additional entry to the Codex `config.toml` file.
 
 ```toml
 [model_providers.zuplo]
@@ -70,8 +59,7 @@ base_url = "https://<your-ai-gateway-url>/v1"
 env_key = "ZUPLO_AI_GATEWAY_API_KEY"
 ```
 
-Save the file and reload Codex. Your Zuplo AI Gateway provider will now be
-available and you can switch Codex over to use it at any time by running:
+Save the file and reload Codex. Your Zuplo AI Gateway provider will now be available and you can switch Codex over to use it at any time by running:
 
 ```bash
 codex --config model_provider="zuplo"

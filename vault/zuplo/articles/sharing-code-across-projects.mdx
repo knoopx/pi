@@ -9,27 +9,21 @@ tags:
   - deployment
 ---
 
-When you have multiple Zuplo projects that share common functionality like
-custom policies, handlers, or utility functions, you can create a shared npm
-package to avoid duplicating code. This guide shows how to create a reusable
-TypeScript module package and automatically copy the source files into your
-Zuplo projects.
+When you have multiple Zuplo projects that share common functionality like custom policies, handlers, or utility functions, you can create a shared npm package to avoid duplicating code.
 
 ## Overview
 
 The approach is straightforward:
 
 1. Create an npm package containing your shared TypeScript code and a
-   `postinstall` script that copies files to the consumer's `modules` folder
+`postinstall` script that copies files to the consumer's `modules` folder
 2. Publish it to npm or a private registry (or reference it directly via Git)
 3. Install the package in your Zuplo projects - the `postinstall` script
-   automatically copies the `.ts` files into `./modules`
+automatically copies the `.ts` files into `./modules`
 
 :::note
 
-Since Zuplo compiles TypeScript at deployment time, you ship raw TypeScript
-source files rather than pre-compiled JavaScript. This ensures your shared code
-integrates seamlessly with Zuplo's build process.
+Since Zuplo compiles TypeScript at deployment time, you ship raw TypeScript source files rather than pre-compiled JavaScript.
 
 :::
 
@@ -56,8 +50,7 @@ my-shared-zuplo-modules/
 
 ### Package Configuration
 
-Configure your `package.json` to include the TypeScript source files and a
-`postinstall` script that copies them to the consumer's `modules` folder:
+Configure your `package.json` to include the TypeScript source files and a `postinstall` script that copies them to the consumer's `modules` folder:
 
 ```json title="my-shared-zuplo-modules/package.json"
 {
@@ -87,9 +80,7 @@ Key points:
 
 ### Copy Script
 
-Create a script in your shared package that copies files to the consumer's
-`modules` folder. The script adds a header comment to each file indicating it
-was auto-generated and should not be edited directly:
+Create a script in your shared package that copies files to the consumer's `modules` folder.
 
 ```js title="my-shared-zuplo-modules/scripts/copy-to-modules.mjs"
 import {
@@ -166,9 +157,7 @@ if (existsSync(sourceDir)) {
 }
 ```
 
-This script runs automatically when someone installs your package, copying your
-TypeScript source files directly into their Zuplo project's `modules/shared`
-folder with a header comment indicating the source.
+This script runs automatically when someone installs your package, copying your TypeScript source files directly into their Zuplo project's `modules/shared` folder with a header comment indicating the source.
 
 ### Example Shared Code
 
@@ -235,8 +224,7 @@ npm publish --registry https://your-registry.example.com
 npm link
 ```
 
-Alternatively, you can reference the package directly from a Git repository
-without publishing:
+Alternatively, you can reference the package directly from a Git repository without publishing:
 
 ```json title="package.json"
 {
@@ -256,9 +244,7 @@ In your Zuplo project, install the shared package:
 npm install @your-org/shared-zuplo-modules
 ```
 
-The package's `postinstall` script automatically copies the TypeScript files to
-your `modules/shared` folder. After installation, your project structure looks
-like this:
+The package's `postinstall` script automatically copies the TypeScript files to your `modules/shared` folder.
 
 ```
 your-zuplo-project/
@@ -333,16 +319,13 @@ To ensure consistency, pin your shared package versions:
 }
 ```
 
-Use a lockfile (`package-lock.json` or `pnpm-lock.yaml`) and commit it to ensure
-all team members and CI/CD pipelines use the same version.
+Use a lockfile (`package-lock.json` or `pnpm-lock.yaml`) and commit it to ensure all team members and CI/CD pipelines use the same version.
 
 ## Source Control
 
 ### Commit the Copied Files
 
-The copied shared modules must be committed to your Git repository. Zuplo
-deployments require all source files to be present in the repository - they are
-not generated during the build process.
+The copied shared modules must be committed to your Git repository. Zuplo deployments require all source files to be present in the repository - they are not generated during the build process.
 
 After installing or updating the shared package, commit the changes:
 
@@ -352,14 +335,11 @@ git add modules/shared/
 git commit -m "Update shared modules to v1.2.3"
 ```
 
-The header comments added by the copy script help identify these files as
-generated code that should not be edited directly. If you need to make changes,
-update the source in the shared package and republish.
+The header comments added by the copy script help identify these files as generated code that should not be edited directly.
 
 ### Updating Shared Modules
 
-When you update the shared package version, the `postinstall` script overwrites
-the existing files with the new version. Review the changes before committing:
+When you update the shared package version, the `postinstall` script overwrites the existing files with the new version.
 
 ```bash
 npm update @your-org/shared-zuplo-modules
@@ -375,20 +355,20 @@ git commit -m "Update shared modules to v1.3.0"
 If files aren't being copied after installing the shared package:
 
 1. Verify the shared package is installed:
-   `ls node_modules/@your-org/shared-zuplo-modules`
+`ls node_modules/@your-org/shared-zuplo-modules`
 2. Check the package's `postinstall` script ran by looking for the success
-   message in the install output
+message in the install output
 3. Verify the `scripts/copy-to-modules.mjs` file is included in the package's
-   `files` array
+`files` array
 4. Check the path calculations in the copy script are correct for your package
-   structure
+structure
 
 ### TypeScript Errors
 
 If you see TypeScript errors after copying:
 
 1. Ensure `@zuplo/runtime` versions match between the shared package and your
-   project
+project
 2. Check that all required dependencies are available
 3. Run `npm run typecheck` to identify specific issues
 

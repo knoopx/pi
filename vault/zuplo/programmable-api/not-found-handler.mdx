@@ -2,14 +2,9 @@
 title: Custom Not Found Handler
 ---
 
-By default, Zuplo will return a 404 (using [problem details](./http-problems))
-if no matching `path/method` combination is found. You can override this
-behavior by adding code to the `zuplo.runtime.ts` file (see
-[runtime extensions](./runtime-extensions)).
+By default, Zuplo will return a 404 (using [problem details](./http-problems)) if no matching `path/method` combination is found.
 
-For example - a custom not found handler can be used to return a
-`405 - Method Not Allowed` if a matching path is found, but no matching METHOD,
-here is an example function that would implement this behavior:
+For example - a custom not found handler can be used to return a `405 - Method Not Allowed` if a matching path is found, but no matching METHOD, here is an example function that would implement this behavior:
 
 ```ts
 export function runtimeInit(runtime: RuntimeExtensions) {
@@ -38,8 +33,6 @@ export function runtimeInit(runtime: RuntimeExtensions) {
 
 :::warning
 
-An error in your `zuplo.runtime.ts` can break your gateway for all requests. Be
-sure to carefully review any custom code in this file and add generous error
-handling where appropriate.
+An error in your `zuplo.runtime.ts` can break your gateway for all requests.
 
 :::

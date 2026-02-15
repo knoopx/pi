@@ -4,8 +4,7 @@ title: "Troubleshooting"
 
 ## Changing the port numbers
 
-By default the Zuplo local server runs on port 9000 and route designer runs on
-port 9100. To change the port number, you can call
+By default the Zuplo local server runs on port 9000 and route designer runs on port 9100.
 
 ```sh
 npx zuplo dev --port <port number> --editor-port <editor port number>
@@ -13,11 +12,7 @@ npx zuplo dev --port <port number> --editor-port <editor port number>
 
 ## Certificates Errors
 
-When running Zuplo locally you may want to call a service with a self-signed
-certificate. By default this isn't supported - we recommend using signed/trusted
-certicates in deployed environments. However, for local development you can
-ignore certificate errors by adding the `--unsafely-ignore-certificate-errors`
-flag on the `zuplo dev` command.
+When running Zuplo locally you may want to call a service with a self-signed certificate.
 
 Run your development server with the following command:
 
@@ -25,8 +20,7 @@ Run your development server with the following command:
 npx zuplo dev --unsafely-ignore-certificate-errors
 ```
 
-If you want to update your `package.json` to always allow self-signed
-certificates, you can add the following script:
+If you want to update your `package.json` to always allow self-signed certificates, you can add the following script:
 
 ```json
 {
@@ -44,13 +38,10 @@ To update the CLI, run the following command in your project directory.
 npm install zuplo@latest
 ```
 
-You must include the @latest to ensure you are getting the latest. Otherwise,
-you could have an older version cached locally on your machine.
+You must include the @latest to ensure you are getting the latest. Otherwise, you could have an older version cached locally on your machine.
 
-You can compare if you have the latest version by looking at the version number
-on [NPM](https://www.npmjs.com/package/zuplo?activeTab=versions)
+You can compare if you have the latest version by looking at the version number on [NPM](https://www.npmjs.com/package/zuplo?activeTab=versions)
 
 ## Getting help
 
-Please reach out to support@zuplo.com or join our
-[Discord server](https://discord.gg/8QbEjr2MgZ).
+Please reach out to support@zuplo.com or join our [Discord server](https://discord.gg/8QbEjr2MgZ).

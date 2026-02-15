@@ -3,16 +3,11 @@ title: ProblemResponseFormatter
 sidebar_label: ProblemResponseFormatter
 ---
 
-The `ProblemResponseFormatter` class provides a way to customize the format of
-problem responses in your API. This allows you to maintain consistent error
-response formats across your API while adhering to the
-[RFC 7807 Problem Details](https://httpproblems.com/) specification.
+The `ProblemResponseFormatter` class provides a way to customize the format of problem responses in your API.
 
 ## Overview
 
-The `ProblemResponseFormatter` class works in conjunction with the
-`HttpProblems` helper to format error responses. It can be used to customize how
-problem details are serialized and presented to API consumers.
+The `ProblemResponseFormatter` class works in conjunction with the `HttpProblems` helper to format error responses.
 
 ## Static Methods
 
@@ -116,9 +111,7 @@ interface ProblemResponseDetails {
 
 ## Integration with HttpProblems
 
-The `ProblemResponseFormatter` is used internally by the `HttpProblems` helper
-class. When you use `HttpProblems` methods, they utilize
-`ProblemResponseFormatter` to ensure consistent formatting:
+The `ProblemResponseFormatter` is used internally by the `HttpProblems` helper class.
 
 ```typescript
 // This internally uses ProblemResponseFormatter
@@ -180,4 +173,4 @@ The formatter produces responses in the standard Problem Details format:
 - [HttpProblems](./http-problems.mdx)
 - [Runtime Extensions](./runtime-extensions.mdx)
 - [Runtime Errors](./runtime-errors.mdx) - Error handling with RuntimeError and
-  ConfigurationError
+ConfigurationError

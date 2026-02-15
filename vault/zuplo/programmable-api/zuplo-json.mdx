@@ -3,12 +3,9 @@ title: Zuplo Project Configuration (zuplo.jsonc)
 sidebar_label: Project Configuration
 ---
 
-Certain project-level settings can be configured using the `zuplo.jsonc` file at
-the root of a project. The `zuplo.jsonc` file is created by default for new
-projects and contains the default configuration.
+Certain project-level settings can be configured using the `zuplo.jsonc` file at the root of a project.
 
-The default `zuplo.jsonc` file is shown below. The only current valid `version`
-of the file is `1`.
+The default `zuplo.jsonc` file is shown below. The only current valid `version` of the file is `1`.
 
 ```jsonc
 {
@@ -21,21 +18,14 @@ of the file is `1`.
 :::warning
 
 The `zuplo.jsonc` file isn't currently shown or editable in the Zuplo portal.
-Connect your project to source control and edit inside your source control
-provider or by pushing a local change with git. If your project doesn't have a
-`zuplo.jsonc` it can be added using source control
 
 :::
 
 ## `compatibilityDate`
 
-The `compatibilityDate` field in the `zuplo.jsonc` file allows you to lock in
-the behavior of the runtime environment for your project. This is useful if you
-want to ensure that your project continues to build, deploy and operate as you
-expect it to.
+The `compatibilityDate` field in the `zuplo.jsonc` file allows you to lock in the behavior of the runtime environment for your project.
 
-Refer to the [documentation](./compatibility-dates.mdx) for compatibility dates
-and their changes.
+Refer to the [documentation](./compatibility-dates.mdx) for compatibility dates and their changes.
 
 ```jsonc
 {
@@ -46,15 +36,12 @@ and their changes.
 
 ## `projectType`
 
-The `projectType` field in the `zuplo.jsonc` file allows you to specify the type
-of your project. This value should be set to match the
-[hosting environment](../articles/hosting-options.mdx) the project will be
-deployed. This configuration defaults to `managed-edge`.
+The `projectType` field in the `zuplo.jsonc` file allows you to specify the type of your project.
 
 - `managed-edge`: (default) Projects that are deployed to Zuplo's managed edge
-  environment.
+environment.
 - `managed-dedicated`: Projects that are deployed to your managed dedicated
-  environment.
+environment.
 - `self-hosted`: Projects that are deployed to your own infrastructure.
 
 ```jsonc
@@ -66,9 +53,7 @@ deployed. This configuration defaults to `managed-edge`.
 
 ## `allowDuplicateRoutes`
 
-Allow duplicate routes (same method and path) to be defined. This isn't
-recommended as it can lead to unexpected behavior. This configuration defaults
-to `false`.
+Allow duplicate routes (same method and path) to be defined. This isn't recommended as it can lead to unexpected behavior.
 
 ```jsonc
 {
@@ -79,9 +64,7 @@ to `false`.
 
 ## `allowHostHeaderOverride`
 
-Allow the Host header to be overridden by the client. This configuration
-defaults to `false`. This is only supported in managed dedicated environments.
-Only enable this setting if you understand the implications.
+Allow the Host header to be overridden by the client. This configuration defaults to `false`.
 
 ```jsonc
 {

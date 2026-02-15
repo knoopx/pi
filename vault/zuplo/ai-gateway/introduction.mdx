@@ -3,64 +3,39 @@ title: Zuplo AI Gateway
 sidebar_label: Introduction
 ---
 
-Zuplo's AI Gateway acts as an intelligent proxy layer that sits between your
-engineering team's applications and LLM providers like OpenAI, Google Gemini,
-and others. Instead of your applications communicating directly with these
-providers, all requests flow through the Zuplo AI Gateway, which streams
-responses while applying policies, controls, and monitoring.
+Zuplo's AI Gateway acts as an intelligent proxy layer that sits between your engineering team's applications and LLM providers like OpenAI, Google Gemini, and others.
 
 ## Key Benefits
 
-**Provider Independence**: Switch between LLM providers (OpenAI, Google Gemini,
-etc.) dynamically without modifying application code. Configure your provider
-choice through the gateway rather than hard coding it into your applications.
+**Provider Independence**: Switch between LLM providers (OpenAI, Google Gemini, etc.) dynamically without modifying application code.
 
-**Cost Control**: Set spending limits at organization, team, and application
-levels with hierarchical budgets that cascade down through your structure.
-Configure daily and monthly thresholds with enforcement or warning
-notifications.
+**Cost Control**: Set spending limits at organization, team, and application levels with hierarchical budgets that cascade down through your structure.
 
-**Security & Compliance**: Apply guardrails to detect and block prompt injection
-attempts and prevent PII leakage in both requests and responses through
-integrated AI firewall policies.
+**Security & Compliance**: Apply guardrails to detect and block prompt injection attempts and prevent PII leakage in both requests and responses through integrated AI firewall policies.
 
-**Self-Service Access**: Developers can create applications and access LLMs
-without needing direct access to provider API keys. Administrators configure
-providers once, and teams consume them securely.
+**Self-Service Access**: Developers can create applications and access LLMs without needing direct access to provider API keys.
 
-**Performance Optimization**: Enable semantic caching to identify and return
-cached responses for similar prompts, reducing costs and improving response
-times.
+**Performance Optimization**: Enable semantic caching to identify and return cached responses for similar prompts, reducing costs and improving response times.
 
-**Full Observability**: Real-time dashboards show request counts, token usage,
-time-to-first-byte metrics, and spending patterns across your organization.
+**Full Observability**: Real-time dashboards show request counts, token usage, time-to-first-byte metrics, and spending patterns across your organization.
 
 ## How It Works
 
-Your applications send requests to the Zuplo AI Gateway URL using your Zuplo API
-key. The gateway authenticates the request, applies configured policies (cost
-controls, security guardrails), routes to the selected LLM provider, and streams
-the response back to your application. Throughout this process, the gateway
-captures metrics and enforces limits without exposing underlying provider
-credentials.
+Your applications send requests to the Zuplo AI Gateway URL using your Zuplo API key.
 
 ## Core Features
 
 ### Multi-Provider Support
 
-Configure multiple LLM providers within a single gateway project. Supported
-providers include OpenAI (GPT-4, GPT-4.5, and other models) and Google Gemini
-(all model variants). Select which models are available to your teams when
-configuring each provider.
+Configure multiple LLM providers within a single gateway project. Supported providers include OpenAI (GPT-4, GPT-4.5, and other models) and Google Gemini (all model variants).
 
 ### Team Hierarchy & Budgets
 
-Organize users into teams with hierarchical structures. Set budget limits at
-each level that cascade down:
+Organize users into teams with hierarchical structures. Set budget limits at each level that cascade down:
 
 - **Root Team**: Organization-wide limits (for example, $1,000/day)
 - **Sub-Teams**: Team-specific limits that can't exceed parent limits (for
-  example, $500/day for the Credit Team)
+example, $500/day for the Credit Team)
 - **Applications**: Per-app limits for granular control
 
 ### Application Configuration
@@ -77,9 +52,9 @@ Each application gets its own:
 
 - **Multi-tenant AI Applications**: Enforce spending limits per customer or team
 - **Agent Development**: Build AI agents that can switch providers without code
-  changes
+changes
 - **Cost Management**: Control and monitor LLM spending across your organization
 - **Security Compliance**: Ensure PII and prompt injection protection across all
-  LLM interactions
+LLM interactions
 - **Performance**: Reduce costs and latency with semantic caching for common
-  queries
+queries

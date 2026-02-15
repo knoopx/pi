@@ -3,16 +3,11 @@ title: Log Custom Request and Response Data
 sidebar_label: Log Request/Response Data
 ---
 
-Logging request and response data is useful for debugging API issues, monitoring
-traffic patterns, and auditing API usage. This guide shows how to create custom
-policies that log various parts of requests and responses while redacting
-sensitive information.
+Logging request and response data is useful for debugging API issues, monitoring traffic patterns, and auditing API usage.
 
 ## Logging Request Headers
 
-Create an inbound policy to log headers from incoming requests. This policy
-redacts sensitive headers like `Authorization` and `Cookie` to prevent exposing
-credentials in logs.
+Create an inbound policy to log headers from incoming requests. This policy redacts sensitive headers like `Authorization` and `Cookie` to prevent exposing credentials in logs.
 
 ```ts title="modules/log-request-headers.ts"
 import type { ZuploContext, ZuploRequest } from "@zuplo/runtime";
@@ -67,8 +62,7 @@ export default async function policy(
 
 ## Logging Request Body
 
-Log the request body for POST, PUT, or PATCH requests. Clone the request first
-to avoid consuming the body stream.
+Log the request body for POST, PUT, or PATCH requests. Clone the request first to avoid consuming the body stream.
 
 ```ts title="modules/log-request-body.ts"
 import type { ZuploContext, ZuploRequest } from "@zuplo/runtime";
@@ -98,8 +92,7 @@ export default async function policy(
 
 :::warning
 
-Logging request bodies can expose sensitive data like passwords, tokens, or
-personal information. Always sanitize or redact sensitive fields before logging.
+Logging request bodies can expose sensitive data like passwords, tokens, or personal information.
 
 :::
 
@@ -132,8 +125,7 @@ export default async function outboundPolicy(
 
 ## Logging Response Body
 
-Log the response body from your backend. Clone the response first to avoid
-consuming the body stream.
+Log the response body from your backend. Clone the response first to avoid consuming the body stream.
 
 ```ts title="modules/log-response-body.ts"
 import type { ZuploContext, ZuploRequest, ZuploResponse } from "@zuplo/runtime";
@@ -357,30 +349,27 @@ Configure with options:
 
 :::warning
 
-Always redact sensitive data before logging. Credentials, tokens, passwords, and
-personal information should never appear in logs.
+Always redact sensitive data before logging. Credentials, tokens, passwords, and personal information should never appear in logs.
 
 :::
 
 1. **Redact sensitive data** - Always redact `Authorization`, `Cookie`,
-   `Set-Cookie`, API keys, passwords, and any fields containing secrets or
-   personal data.
+`Set-Cookie`, API keys, passwords, and any fields containing secrets or personal data.
 
 2. **Use structured logging** - Pass objects to `context.log` instead of string
-   concatenation. This enables better log searching and filtering.
+concatenation. This enables better log searching and filtering.
 
 3. **Clone before reading** - Always clone requests and responses before reading
-   their body to avoid consuming the stream.
+their body to avoid consuming the stream.
 
 4. **Consider log volume** - Logging bodies can generate significant log volume
-   and storage costs. Consider enabling body logging only for specific routes or
-   in development environments.
+and storage costs. Consider enabling body logging only for specific routes or in development environments.
 
 5. **Use appropriate log levels** - Use `debug` for verbose development logging
-   and `info` for production audit trails.
+and `info` for production audit trails.
 
 6. **Limit body size** - Consider truncating large bodies to avoid excessive log
-   storage:
+storage:
 
    ```ts
    const body = await clone.text();
@@ -391,8 +380,8 @@ personal information should never appear in logs.
 
 - [Logger](../programmable-api/logger.mdx) - Logger interface documentation
 - [Custom Code Inbound Policy](../policies/custom-code-inbound.mdx) - Writing
-  custom inbound policies
+custom inbound policies
 - [Custom Code Outbound Policy](../policies/custom-code-outbound.mdx) - Writing
-  custom outbound policies
+custom outbound policies
 - [Custom Logging Policy](./custom-logging-example.mdx) - Full request/response
-  logging to external services
+logging to external services

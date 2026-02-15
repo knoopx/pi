@@ -3,73 +3,47 @@ title: Using the API Key API
 sidebar_label: Using the API
 ---
 
-Zuplo runs a globally distributed API Key management service that scales to
-handle billions of daily key validation requests while maintaining low latency
-from any region around the world.
+Zuplo runs a globally distributed API Key management service that scales to handle billions of daily key validation requests while maintaining low latency from any region around the world.
 
-Management of API Keys and consumers
-[can be performed in the Zuplo Portal](./api-key-management.mdx) and for
-end-users in the Zuplo Developer Portal. However, all management operations
-regarding API Keys can also be performed using the
-[Zuplo Developer API](https://zuplo.com/docs/api/api-keys-keys).
+Management of API Keys and consumers [can be performed in the Zuplo Portal](./api-key-management.mdx) and for end-users in the Zuplo Developer Portal.
 
 :::info
 
-In order to obtain an API Key for the Developer API, go to your account settings
-in the Zuplo Portal. [More information](./accounts/zuplo-api-keys)
+obtain an API Key for the Developer API, go to your account settings in the Zuplo Portal.
 
 :::
 
 ## Models
 
-The service contains three primary object: **Buckets**, **Consumers**, and **API
-Keys**. For an conceptual overview of these objects see
-[Key Concepts](./api-key-management#key-concepts). Below is an ER diagram
-showing the relationships of the three primary objects and their most important
-fields.
+The service contains three primary object: **Buckets**, **Consumers**, and **API Keys**.
 
 The Consumer is the most important object. Each consumer is in a bucket.
-Consumers can contain one or more API Keys.
 
 ### Buckets
 
-Buckets are the top level group for this service. A bucket could be used with a
-single Zuplo environment or shared among multiple environments or projects. By
-default a Zuplo API Gateway project will be created with several buckets that
-map to production, preview, and development (working copy) environments.
+Buckets are the top level group for this service. A bucket could be used with a single Zuplo environment or shared among multiple environments or projects.
 
-Enterprise plan customers run complex configurations where buckets are shared
-across gateway projects or even accounts. This can allow your end-users to
-authenticate to all your APIs with a single API key with unified permissions.
+Enterprise plan customers run complex configurations where buckets are shared across gateway projects or even accounts.
 
 ### Consumers
 
-Consumers are the core of the API Key service. The consumer is the "identity" of
-any API Keys that are created. Consumers have a `name` which must be unique in
-the bucket. This `name` is used as the default `user.sub` property in the API
-Key Authentication policy.
+Consumers are the core of the API Key service. The consumer is the "identity" of any API Keys that are created.
 
 ### API Keys
 
-A Consumer can have any number of API keys associated with it. Each API Key
-shares the same identity (for example Consumer) when authenticating with this
-service. Expired keys won't be permitted to authenticate after their expiration.
+A Consumer can have any number of API keys associated with it. Each API Key shares the same identity (for example Consumer) when authenticating with this service.
 
 :::tip
 
-In most cases, you wont manage API Keys directly. When using the API, it the
-typical configuration is to create a consumer with an API key and each consumer
-has only a single API key except when performing operations like rolling keys.
+In most cases, you wont manage API Keys directly.
 
 :::
 
 ## Usage
 
-This section explains common scenarios for managing API keys using the API. For
-other uses, see the full [Developer API reference](https://dev.zuplo.com).
+This section explains common scenarios for managing API keys using the API.
 
-All examples assume two environment variables are set (in your terminal, not
-inside Zuplo)
+All examples assume two environment variables are set (in your terminal, not inside Zuplo)
 
 ```bash
 # Your Zuplo Account Name
@@ -82,12 +56,9 @@ export ZAPI_KEY=zpka_YOUR_API_KEY
 
 ### Creating a Consumer with a Key
 
-When creating a new Consumer, it's a good idea to include some useful metadata
-like the `organizationId` or a particular `plan` that's associated with that
-user.
+When creating a new Consumer, it's a good idea to include some useful metadata like the `organizationId` or a particular `plan` that's associated with that user.
 
-Tags are used for querying the consumers later. It's often useful to store some
-external identifier that links this consumer to your internal data as a tag.
+Tags are used for querying the consumers later. It's often useful to store some external identifier that links this consumer to your internal data as a tag.
 
 ```shell
 curl \
@@ -138,8 +109,7 @@ The response will look like this:
 }
 ```
 
-You can use this API Key to call your Zuplo API Gateway that's protected by the
-[API Key Authentication](/docs/policies/api-key-inbound) policy.
+You can use this API Key to call your Zuplo API Gateway that's protected by the [API Key Authentication](/docs/policies/api-key-inbound) policy.
 
 ### Query Consumers with API Keys By Tags
 
@@ -186,23 +156,15 @@ The response will look like this:
 
 ### Roll a Consumer's Keys
 
-Sometimes you will want to create a new key and expire the current keys. Instead
-of calling the API for each key and manually creating a new key, you can simply
-call the roll key endpoint.
+Sometimes you will want to create a new key and expire the current keys.
 
 :::tip{title="Tags for Request Authorization"}
 
-One useful feature of the API Key service is that most requests can have `tags`
-added to the query parameter even if they aren't get requests. This is useful
-when you want to call the API and ensure some basic condition is met without
-having to first do a GET to retrieve data on the object. For example, in the
-roll key request below the `orgId` tag is set on the request - this ensures that
-the consumer being updated is tagged with that org.
+One useful feature of the API Key service is that most requests can have `tags` added to the query parameter even if they aren't get requests.
 
 :::
 
-The following call with set all existing keys to have the expiration date set in
-the request body and will create a new key without an expiration.
+The following call with set all existing keys to have the expiration date set in the request body and will create a new key without an expiration.
 
 ```shell
 export ORG_ID=1234
@@ -216,5 +178,4 @@ curl \
 
 ## Reference
 
-The full API Reference for the API Service is hosted using a Zuplo developer
-portal at [https://dev.zuplo.com/docs/](https://dev.zuplo.com/docs/).
+The full API Reference for the API Service is hosted using a Zuplo developer portal at [https://dev.zuplo.com/docs/](https://dev.zuplo.com/docs/).

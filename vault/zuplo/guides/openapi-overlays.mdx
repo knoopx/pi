@@ -10,24 +10,19 @@ tags:
   - deployment
 ---
 
-OpenAPI Overlays provide a powerful way to modify OpenAPI specifications without
-directly editing the source files. This is especially useful when you need to:
+OpenAPI Overlays provide a powerful way to modify OpenAPI specifications without directly editing the source files.
 
 - Apply consistent changes across multiple API versions
 - Add Zuplo-specific extensions to third-party OpenAPI specs
 - Maintain separation between base API definitions and environment-specific
-  configurations
+configurations
 - Automate modifications as part of your build or deployment process
 
 ## What are OpenAPI Overlays
 
-OpenAPI Overlays are JSON or YAML documents that describe modifications to be
-applied to an OpenAPI specification. They use a simple, declarative syntax to
-target specific parts of your API definition and apply changes.
+OpenAPI Overlays are JSON or YAML documents that describe modifications to be applied to an OpenAPI specification.
 
-The Zuplo CLI provides the
-[`openapi overlay` command](../cli/openapi-overlay.mdx) to apply these overlays
-to your OpenAPI files.
+The Zuplo CLI provides the [`openapi overlay` command](../cli/openapi-overlay.mdx) to apply these overlays to your OpenAPI files.
 
 ## Basic Usage
 
@@ -40,8 +35,7 @@ npx zuplo openapi overlay \
   --output result.json
 ```
 
-You can also use the `--watch` flag to automatically reapply overlays when files
-change during development:
+You can also use the `--watch` flag to automatically reapply overlays when files change during development:
 
 ```bash
 npx zuplo openapi overlay \
@@ -53,9 +47,7 @@ npx zuplo openapi overlay \
 
 ## Example 1: Modifying Route Summaries and Descriptions
 
-One common use case is updating the summary and description fields of your API
-routes to improve documentation or add context-specific information. Overlays
-can both **modify existing** properties and **add missing** properties.
+One common use case is updating the summary and description fields of your API routes to improve documentation or add context-specific information.
 
 ```json title="openapi.json"
 {
@@ -81,8 +73,7 @@ can both **modify existing** properties and **add missing** properties.
 }
 ```
 
-Notice that `/users/{userId}` already has a summary and description (which we'll
-enhance), while `/products` has neither (which we'll add).
+Notice that `/users/{userId}` already has a summary and description (which we'll enhance), while `/products` has neither (which we'll add).
 
 ```json title="overlay.json"
 {
@@ -121,8 +112,7 @@ npx zuplo openapi overlay \
 
 ## Example 2: Adding Parameter Schemas
 
-Overlays are excellent for adding parameter definitions to your OpenAPI spec,
-especially when working with APIs that have incomplete documentation.
+Overlays are excellent for adding parameter definitions to your OpenAPI spec, especially when working with APIs that have incomplete documentation.
 
 ### Adding Path Parameters
 
@@ -275,10 +265,7 @@ npx zuplo openapi overlay \
 
 ## Example 3: Adding Zuplo Route Extensions
 
-One of the more common uses of overlays is to add the Zuplo-specific extensions
-like `x-zuplo-route` to your OpenAPI files. This allows you to configure
-policies, handlers, and CORS settings without modifying your base OpenAPI
-specification.
+One of the more common uses of overlays is to add the Zuplo-specific extensions like `x-zuplo-route` to your OpenAPI files.
 
 ```json title="zuplo-routes.json"
 {
@@ -387,7 +374,7 @@ This overlay adds:
 - **CORS policies** to control cross-origin requests
 - **Request handlers** that specify how Zuplo should process the request
 - **Inbound policies** like API key authentication, JWT validation, and rate
-  limiting
+limiting
 - **Outbound policies** for logging and response transformation
 
 ## Combining Multiple Overlays
@@ -423,8 +410,7 @@ rm step1.json step2.json
 
 ## Using Overlays in Your Build Process
 
-Integrate overlay application into your CI/CD pipeline by adding it to your
-build scripts:
+Integrate overlay application into your CI/CD pipeline by adding it to your build scripts:
 
 ```json title="package.json"
 {
@@ -439,7 +425,6 @@ build scripts:
 ## JSONPath Target Syntax
 
 Overlays use JSONPath syntax to target specific parts of your OpenAPI document.
-Here are common patterns:
 
 ```json title="JSONPath examples"
 {
@@ -467,22 +452,22 @@ Here are common patterns:
 ## Best Practices
 
 1. **Version Control Overlays**: Store overlay files in version control
-   alongside your OpenAPI specs
+alongside your OpenAPI specs
 
 2. **Use Descriptive Names**: Name overlay files clearly to indicate their
-   purpose (for example, `add-auth-policies.json`, `staging-config.json`)
+purpose (for example, `add-auth-policies.json`, `staging-config.json`)
 
 3. **Keep Overlays Focused**: Create separate overlay files for different
-   concerns rather than one large overlay
+concerns rather than one large overlay
 
 4. **Test Overlay Output**: Always validate the resulting OpenAPI file after
-   applying overlays
+applying overlays
 
 5. **Document Your Overlays**: Add comments in the `info.title` and
-   `info.description` fields to explain what each overlay does
+`info.description` fields to explain what each overlay does
 
 6. **Use Watch Mode for Development**: The `--watch` flag makes iterative
-   development faster
+development faster
 
 ## Next Steps
 

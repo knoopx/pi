@@ -3,10 +3,7 @@ title: BackgroundDispatcher
 sidebar_label: BackgroundDispatcher
 ---
 
-The BackgroundDispatcher class batches outbound transmissions for efficient
-processing. It's ideal for logging and analytics calls to external services
-where you don't need 1:1 transmission with incoming requests. The dispatcher
-groups entries and invokes your callback with batches at regular intervals.
+The BackgroundDispatcher class batches outbound transmissions for efficient processing.
 
 ## Constructor
 
@@ -45,7 +42,6 @@ interface ExampleEntry {
   message: string;
 }
 
-
 // The dispatch function that will be invoked by the
 // BatchDispatcher at most every 'n' milliseconds
 const dispatchFunction<TestEntry> = async (entries) => {
@@ -70,7 +66,6 @@ const backgroundDispatcher = new BackgroundDispatcher<TestEntry>(
   { msDelay: 100 }
 );
 
-
 // This is an example Request Handler that used the component, a simple
 // "Hello World" handler.
 export default async function (request: ZuploRequest, context: ZuploContext) {
@@ -85,14 +80,11 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
 
 ```
 
-The dispatcher invokes the dispatch function with batched records at most every
-'n' milliseconds (as configured) when items are enqueued. If no items are
-enqueued, the function won't be invoked.
+The dispatcher invokes the dispatch function with batched records at most every 'n' milliseconds (as configured) when items are enqueued.
 
 :::tip
 
-There are no automatic retries for failed dispatch functions. Implement retry
-logic in your dispatch function if needed.
+There are no automatic retries for failed dispatch functions. Implement retry logic in your dispatch function if needed.
 
 :::
 
@@ -100,8 +92,7 @@ logic in your dispatch function if needed.
 
 ### Module-Level Initialization
 
-Initialize the dispatcher at the module level so it can be shared across
-multiple requests:
+Initialize the dispatcher at the module level so it can be shared across multiple requests:
 
 ```ts
 // Create at module level
@@ -115,10 +106,6 @@ const dispatchers = new Map<string, BackgroundDispatcher<any>>();
 
 ### Choosing the Right Delay
 
-The longer the delay, the larger your batches will get and the less frequently
-you'll send batched information. However, on a busy server this could build up a
-lot of memory and potentially cause an OOM (out-of-memory) situation.
+The longer the delay, the larger your batches will get and the less frequently you'll send batched information.
 
-The shorter the delay, the more frequently you'll send smaller batches. We
-typically recommend 10ms for very high traffic gateways and 100ms for lower
-traffic gateways.
+The shorter the delay, the more frequently you'll send smaller batches.
