@@ -1,7 +1,25 @@
 import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
-import type { ListPickerComponent } from "./list-picker";
 import sliceAnsi from "slice-ansi";
 import stringWidth from "string-width";
+
+/** Symbol type icons for codemapper output */
+export const SYMBOL_TYPE_ICONS: Record<string, string> = {
+  f: "ƒ", // function
+  m: "○", // method
+  c: "⬢", // class
+  if: "◎", // interface
+  ty: "τ", // type
+  h: "#", // heading
+  cb: "⟨⟩", // code block
+  e: "≡", // enum
+  v: "α", // variable
+  function: "ƒ",
+  method: "○",
+  class: "⬢",
+  interface: "◎",
+  type: "τ",
+  enum: "≡",
+};
 
 /**
  * Strip OSC (Operating System Command) sequences from text.
@@ -80,23 +98,6 @@ export function formatBookmarkReference(
   bookmark: string,
 ): string {
   return theme.fg("accent", `<${bookmark}>`);
-}
-
-/**
- * Run a codemapper command and display output in picker preview
- */
-export async function runCmCommand(
-  pi: ExtensionAPI,
-  picker: ListPickerComponent,
-  cwd: string,
-  command: string,
-  args: string[],
-): Promise<void> {
-  const result = await pi.exec("cm", [command, ...args, "--format", "ai"], {
-    cwd,
-  });
-  const output = result.code === 0 ? result.stdout : `Error: ${result.stderr}`;
-  picker.setPreview(output.split("\n"));
 }
 
 /**

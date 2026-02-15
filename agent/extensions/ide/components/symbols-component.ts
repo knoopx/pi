@@ -9,20 +9,7 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { loadFilePreviewWithBat, runCmCommand } from "./utils";
-
-/** Symbol type icons */
-const SYMBOL_TYPE_ICONS: Record<string, string> = {
-  f: "ƒ", // function
-  m: "○", // method
-  c: "⬢", // class
-  if: "◎", // interface
-  ty: "τ", // type
-  h: "#", // heading
-  cb: "⟨⟩", // code block
-  e: "≡", // enum
-  v: "α", // variable
-};
+import { loadFilePreviewWithBat, SYMBOL_TYPE_ICONS } from "./utils";
 
 interface SymbolInfo extends ListPickerItem {
   name: string;
@@ -32,81 +19,84 @@ interface SymbolInfo extends ListPickerItem {
   endLine: number;
 }
 
+export type CmActionType =
+  | "callers"
+  | "callees"
+  | "tests"
+  | "types"
+  | "schema"
+  | "impact";
+
+export interface SymbolResult {
+  symbol: SymbolInfo;
+  action?: CmActionType;
+}
+
 export function createSymbolsComponent(
   pi: ExtensionAPI,
   tui: { terminal: { rows: number }; requestRender: () => void },
   theme: Theme,
   keybindings: KeybindingsManager,
-  done: (result: SymbolInfo | null) => void,
+  done: (result: SymbolResult | null) => void,
   initialQuery: string,
   cwd: string,
 ): ListPickerComponent & { invalidate: () => void } {
-  // Create actions that will be bound to the picker
-  function createActions(
-    picker: ListPickerComponent,
-  ): ListPickerAction<SymbolInfo>[] {
-    return [
-      {
-        key: "ctrl+c",
-        label: "callers",
-        handler: async (item) => {
-          await runCmCommand(pi, picker, cwd, "callers", [item.name]);
-        },
-      },
-      {
-        key: "ctrl+l",
-        label: "callees",
-        handler: async (item) => {
-          await runCmCommand(pi, picker, cwd, "callees", [item.name]);
-        },
-      },
-      {
-        key: "ctrl+t",
-        label: "tests",
-        handler: async (item) => {
-          await runCmCommand(pi, picker, cwd, "tests", [item.name]);
-        },
-      },
-      {
-        key: "ctrl+y",
-        label: "types",
-        handler: async (item) => {
-          await runCmCommand(pi, picker, cwd, "types", [item.name]);
-        },
-      },
-      {
-        key: "ctrl+s",
-        label: "schema",
-        handler: async (item) => {
-          await runCmCommand(pi, picker, cwd, "schema", [item.name]);
-        },
-      },
-      {
-        key: "ctrl+i",
-        label: "impact",
-        handler: async (item) => {
-          await runCmCommand(pi, picker, cwd, "impact", [item.name]);
-        },
-      },
-    ];
+  // Track pending action for when an action key is pressed
+  let pendingAction: CmActionType | undefined;
+
+  // Wrapper to close picker with action metadata
+  function doneWithAction(item: SymbolInfo | null): void {
+    if (item && pendingAction) {
+      done({ symbol: item, action: pendingAction });
+    } else if (item) {
+      done({ symbol: item });
+    } else {
+      done(null);
+    }
+    pendingAction = undefined;
   }
 
-  // Create picker with placeholder actions, then update with real ones
-  let pickerRef: ListPickerComponent | null = null;
+  // Action definitions: [key, label/action]
+  const ACTION_DEFS: [string, CmActionType][] = [
+    ["ctrl+c", "callers"],
+    ["ctrl+l", "callees"],
+    ["ctrl+t", "tests"],
+    ["ctrl+y", "types"],
+    ["ctrl+s", "schema"],
+    ["ctrl+i", "impact"],
+  ];
+
+  const actions: ListPickerAction<SymbolInfo>[] = ACTION_DEFS.map(
+    ([key, action]) => ({
+      key,
+      label: action,
+      handler: (item: SymbolInfo) => {
+        pendingAction = action;
+        doneWithAction(item);
+      },
+    }),
+  );
+
+  // Internal done handler that wraps results
+  const internalDone = (item: SymbolInfo | null) => {
+    if (item) {
+      done({ symbol: item });
+    } else {
+      done(null);
+    }
+  };
 
   const picker = createListPicker<SymbolInfo>(
     pi,
     tui,
     theme,
     keybindings,
-    done,
+    internalDone,
     initialQuery,
     {
       title: "Symbols",
       helpParts: ["↑↓ nav", "type to search"],
-      get actions() {
-        return pickerRef ? createActions(pickerRef) : [];
-      },
+      actions,
       onEdit: async (item) => {
         const { join } = await import("node:path");
         await pi.exec("code", [
@@ -185,8 +175,6 @@ export function createSymbolsComponent(
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
     },
   );
-
-  pickerRef = picker;
 
   return {
     ...picker,

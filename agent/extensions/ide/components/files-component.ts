@@ -9,10 +9,17 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { loadFilePreviewWithBat, runCmCommand } from "./utils";
+import { loadFilePreviewWithBat } from "./utils";
 
 interface FileInfo extends ListPickerItem {
   path: string;
+}
+
+export type FileCmActionType = "inspect" | "deps" | "used-by";
+
+export interface FileResult {
+  file: FileInfo;
+  action?: FileCmActionType;
 }
 
 export function createFilesComponent(
@@ -20,58 +27,63 @@ export function createFilesComponent(
   tui: { terminal: { rows: number }; requestRender: () => void },
   theme: Theme,
   keybindings: KeybindingsManager,
-  done: (result: FileInfo | null) => void,
+  done: (result: FileResult | null) => void,
   initialQuery: string,
   cwd: string,
 ): ListPickerComponent & { invalidate: () => void } {
-  // Create actions that will be bound to the picker
-  function createActions(
-    picker: ListPickerComponent,
-  ): ListPickerAction<FileInfo>[] {
-    return [
-      {
-        key: "ctrl+i",
-        label: "inspect",
-        handler: async (item) => {
-          await runCmCommand(pi, picker, cwd, "inspect", [item.path]);
-        },
-      },
-      {
-        key: "ctrl+d",
-        label: "deps",
-        handler: async (item) => {
-          await runCmCommand(pi, picker, cwd, "deps", [item.path]);
-        },
-      },
-      {
-        key: "ctrl+u",
-        label: "used-by",
-        handler: async (item) => {
-          await runCmCommand(pi, picker, cwd, "deps", [
-            item.path,
-            "--direction",
-            "used-by",
-          ]);
-        },
-      },
-    ];
+  // Track pending action for when an action key is pressed
+  let pendingAction: FileCmActionType | undefined;
+
+  // Wrapper to close picker with action metadata
+  function doneWithAction(item: FileInfo | null): void {
+    if (item && pendingAction) {
+      done({ file: item, action: pendingAction });
+    } else if (item) {
+      done({ file: item });
+    } else {
+      done(null);
+    }
+    pendingAction = undefined;
   }
 
-  let pickerRef: ListPickerComponent | null = null;
+  // Action definitions: [key, label/action]
+  const ACTION_DEFS: [string, FileCmActionType][] = [
+    ["ctrl+i", "inspect"],
+    ["ctrl+d", "deps"],
+    ["ctrl+u", "used-by"],
+  ];
+
+  const actions: ListPickerAction<FileInfo>[] = ACTION_DEFS.map(
+    ([key, action]) => ({
+      key,
+      label: action,
+      handler: (item: FileInfo) => {
+        pendingAction = action;
+        doneWithAction(item);
+      },
+    }),
+  );
+
+  // Internal done handler that wraps results
+  const internalDone = (item: FileInfo | null) => {
+    if (item) {
+      done({ file: item });
+    } else {
+      done(null);
+    }
+  };
 
   const picker = createListPicker<FileInfo>(
     pi,
     tui,
     theme,
     keybindings,
-    done,
+    internalDone,
     initialQuery,
     {
       title: "Files",
       helpParts: ["↑↓ nav", "type to search"],
-      get actions() {
-        return pickerRef ? createActions(pickerRef) : [];
-      },
+      actions,
       onEdit: async (item) => {
         await pi.exec("code", [item.path], { cwd });
       },
@@ -120,8 +132,6 @@ export function createFilesComponent(
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
     },
   );
-
-  pickerRef = picker;
 
   return {
     ...picker,

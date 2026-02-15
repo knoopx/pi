@@ -28,8 +28,28 @@ import {
   cleanupWorkspaceDir,
 } from "./workspace";
 import { createWorkspacesComponent } from "./components/workspaces-component";
-import { createSymbolsComponent } from "./components/symbols-component";
-import { createFilesComponent } from "./components/files-component";
+import {
+  createSymbolsComponent,
+  type SymbolResult,
+  type CmActionType,
+} from "./components/symbols-component";
+import {
+  openCmCallers,
+  openCmCallees,
+  openCmTests,
+  openCmTypes,
+  openCmSchema,
+  openCmImpact,
+  openCmInspect,
+  openCmDeps,
+  openCmUsedBy,
+} from "./components/cm-results-component";
+import {
+  createFilesComponent,
+  type FileResult,
+  type FileCmActionType,
+} from "./components/files-component";
+
 import { createChangesComponent } from "./components/changes-component";
 import { createBookmarkPromptComponent } from "./components/bookmark-prompt-component";
 import { createBookmarksComponent } from "./components/bookmarks-component";
@@ -384,17 +404,22 @@ export default function ideExtension(pi: ExtensionAPI) {
   });
 }
 
-interface SymbolInfo {
-  name: string;
-  type: string;
-  path: string;
-  startLine: number;
-  endLine: number;
-}
+/** Map symbol action types to cm result openers */
+const CM_SYMBOL_ACTION_OPENERS: Record<CmActionType, typeof openCmCallers> = {
+  callers: openCmCallers,
+  callees: openCmCallees,
+  tests: openCmTests,
+  types: openCmTypes,
+  schema: openCmSchema,
+  impact: openCmImpact,
+};
 
-interface FileInfo {
-  path: string;
-}
+/** Map file action types to cm result openers */
+const CM_FILE_ACTION_OPENERS: Record<FileCmActionType, typeof openCmInspect> = {
+  inspect: openCmInspect,
+  deps: openCmDeps,
+  "used-by": openCmUsedBy,
+};
 
 /**
  * Handler factories to reduce duplication between commands and shortcuts
@@ -405,7 +430,7 @@ async function openFilesPicker(
   ctx: ExtensionContext,
   initialQuery: string,
 ): Promise<void> {
-  const result = await ctx.ui.custom<FileInfo | null>(
+  const result = await ctx.ui.custom<FileResult | null>(
     (tui, theme, keybindings, done) => {
       return createFilesComponent(
         pi,
@@ -420,11 +445,29 @@ async function openFilesPicker(
     FULL_OVERLAY_OPTIONS,
   );
 
-  if (result) {
-    const ref = ` ${result.path}`;
-    const currentText = ctx.ui.getEditorText();
-    ctx.ui.setEditorText(currentText + ref);
+  if (!result) return;
+
+  // If an action was triggered, open the cm results picker
+  if (result.action) {
+    const opener = CM_FILE_ACTION_OPENERS[result.action];
+    await ctx.ui.custom((tui, theme, keybindings, done) => {
+      return opener(
+        pi,
+        tui,
+        theme,
+        keybindings,
+        done,
+        result.file.path,
+        ctx.cwd,
+      );
+    }, FULL_OVERLAY_OPTIONS);
+    return;
   }
+
+  // Otherwise, insert the file reference
+  const ref = ` ${result.file.path}`;
+  const currentText = ctx.ui.getEditorText();
+  ctx.ui.setEditorText(currentText + ref);
 }
 
 async function openSymbolsPicker(
@@ -432,7 +475,7 @@ async function openSymbolsPicker(
   ctx: ExtensionContext,
   initialQuery: string,
 ): Promise<void> {
-  const result = await ctx.ui.custom<SymbolInfo | null>(
+  const result = await ctx.ui.custom<SymbolResult | null>(
     (tui, theme, keybindings, done) => {
       return createSymbolsComponent(
         pi,
@@ -447,11 +490,29 @@ async function openSymbolsPicker(
     FULL_OVERLAY_OPTIONS,
   );
 
-  if (result) {
-    const ref = ` ${result.path}:${result.startLine}`;
-    const currentText = ctx.ui.getEditorText();
-    ctx.ui.setEditorText(currentText + ref);
+  if (!result) return;
+
+  // If an action was triggered, open the cm results picker
+  if (result.action) {
+    const opener = CM_SYMBOL_ACTION_OPENERS[result.action];
+    await ctx.ui.custom((tui, theme, keybindings, done) => {
+      return opener(
+        pi,
+        tui,
+        theme,
+        keybindings,
+        done,
+        result.symbol.name,
+        ctx.cwd,
+      );
+    }, FULL_OVERLAY_OPTIONS);
+    return;
   }
+
+  // Otherwise, insert the symbol reference
+  const ref = ` ${result.symbol.path}:${result.symbol.startLine}`;
+  const currentText = ctx.ui.getEditorText();
+  ctx.ui.setEditorText(currentText + ref);
 }
 
 async function openBookmarksBrowser(
