@@ -9,6 +9,7 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
+import { getChangeIcon } from "./utils";
 import {
   loadOpLog,
   getOpShow,
@@ -92,8 +93,8 @@ export function createOpLogComponent(
             item.description.toLowerCase().includes(query),
         ),
       formatItem: (item) => {
-        const marker = item.isCurrent ? "@ " : "○ ";
-        return `${marker}${item.opId} ${item.description}`;
+        const icon = getChangeIcon(item.isCurrent, false);
+        return `${icon} ${item.opId} ${item.description}`;
       },
       loadPreview: (item) => getOpShow(pi, cwd, item.opId),
     },

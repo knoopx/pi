@@ -329,6 +329,17 @@ export default function ideExtension(pi: ExtensionAPI) {
   });
 
   /**
+   * /oplog - Browse jujutsu operation log
+   */
+  pi.registerCommand("oplog", {
+    description: "Browse jujutsu operation log with restore capability",
+    handler: async (_args, ctx) => {
+      if (!ctx.hasUI) return;
+      await openOpLogBrowser(pi, ctx);
+    },
+  });
+
+  /**
    * Ctrl+T shortcut to launch symbol picker
    */
   pi.registerShortcut(Key.ctrl("t"), {
@@ -383,6 +394,17 @@ export default function ideExtension(pi: ExtensionAPI) {
     handler: async (ctx) => {
       if (!ctx.hasUI) return;
       await openChangesBrowser(pi, ctx, promptAndSetBookmark);
+    },
+  });
+
+  /**
+   * Ctrl+O shortcut to open op log browser
+   */
+  pi.registerShortcut(Key.ctrl("o"), {
+    description: "Open operation log browser",
+    handler: async (ctx) => {
+      if (!ctx.hasUI) return;
+      await openOpLogBrowser(pi, ctx);
     },
   });
 }
