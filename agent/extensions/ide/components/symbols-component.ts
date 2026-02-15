@@ -7,6 +7,7 @@ import {
   createListPicker,
   type ListPickerItem,
   type ListPickerComponent,
+  type ListPickerAction,
 } from "./list-picker";
 import { loadFilePreviewWithBat } from "./utils";
 

@@ -20,6 +20,12 @@ export interface ListPickerItem {
   endLine?: number;
 }
 
+export interface ListPickerAction<T extends ListPickerItem> {
+  key: string;
+  label: string;
+  handler: (item: T) => Promise<void> | void;
+}
+
 export interface ListPickerConfig<T extends ListPickerItem> {
   title: string;
   loadItems: () => Promise<T[]>;
@@ -28,6 +34,7 @@ export interface ListPickerConfig<T extends ListPickerItem> {
   loadPreview: (item: T) => Promise<string[]>;
   onEdit?: (item: T) => Promise<void> | void;
   helpParts?: string[];
+  actions?: ListPickerAction<T>[];
 }
 
 export interface ListPickerTui {
@@ -39,6 +46,7 @@ export interface ListPickerComponent {
   render: (width: number) => string[];
   handleInput: (data: string) => void;
   dispose: () => void;
+  setPreview: (lines: string[]) => void;
 }
 
 export function createListPicker<T extends ListPickerItem>(
@@ -196,10 +204,12 @@ export function createListPicker<T extends ListPickerItem>(
     );
 
     const baseParts = config.helpParts ?? ["↑↓ nav", "type to search"];
+    const actionHelp = (config.actions ?? []).map((a) => `${a.key} ${a.label}`);
     const helpText = buildHelpText(
       ...baseParts,
       filteredItems.length > 0 && "enter select",
       filteredItems.length > 0 && config.onEdit && "ctrl+e edit",
+      ...(filteredItems.length > 0 ? actionHelp : []),
       "esc",
     );
 
@@ -310,6 +320,18 @@ export function createListPicker<T extends ListPickerItem>(
       return;
     }
 
+    // Check custom actions first (before printable characters)
+    if (config.actions && filteredItems.length > 0) {
+      const action = config.actions.find((a) => a.key === data);
+      if (action) {
+        const item = filteredItems[selectedIndex];
+        if (item) {
+          void Promise.resolve(action.handler(item));
+        }
+        return;
+      }
+    }
+
     // Printable characters - add to search query
     if (data.length === 1 && data >= " " && data <= "~") {
       searchQuery += data;
@@ -326,7 +348,14 @@ export function createListPicker<T extends ListPickerItem>(
     previewCache.clear();
   }
 
+  function setPreview(lines: string[]): void {
+    sourceLines = lines;
+    sourceScroll = 0;
+    invalidate();
+    tui.requestRender();
+  }
+
   void loadItems();
 
-  return { render, handleInput, dispose };
+  return { render, handleInput, dispose, setPreview };
 }
