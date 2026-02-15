@@ -6,7 +6,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { SelectList, type SelectItem } from "@mariozechner/pi-tui";
-import { SELECT_LIST_STYLES } from "../common/select-list-styles";
+import { SELECT_LIST_STYLES } from "../../shared/select-list-styles";
 
 // Cached stations to avoid repeated API calls
 let cachedStations: Station[] | null = null;

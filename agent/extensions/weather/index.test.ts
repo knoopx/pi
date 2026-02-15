@@ -16,7 +16,7 @@ import {
   createMockExtensionAPI,
   type MockExtensionAPI,
   type MockTool,
-} from "../../test-utils";
+} from "../../shared/test-utils";
 import { fetchWeather } from "./api";
 import { createWeatherErrorResult, formatWeatherSummary } from "./emoji";
 

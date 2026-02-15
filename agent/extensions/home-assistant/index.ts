@@ -28,7 +28,7 @@ import { Text, SelectList, type SelectItem } from "@mariozechner/pi-tui";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
-import { SELECT_LIST_STYLES } from "../common/select-list-styles";
+import { SELECT_LIST_STYLES } from "../../shared/select-list-styles";
 
 // Types for Home Assistant API responses
 interface HAState {

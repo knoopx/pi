@@ -8,7 +8,7 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type, type Static } from "@sinclair/typebox";
-import { textResult, errorResult } from "../common/tool-utils";
+import { textResult, errorResult } from "../../shared/tool-utils";
 
 import { chunkMarkdown, type ChunkingOptions } from "./chunker";
 import { getGlobalStore, resetGlobalStore, type SearchResult } from "./store";

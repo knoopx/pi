@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import type { MockExtensionAPI } from "../../test-utils";
-import { createMockExtensionAPI } from "../../test-utils";
+import type { MockExtensionAPI } from "../../shared/test-utils";
+import { createMockExtensionAPI } from "../../shared/test-utils";
 import createGreetingExtension from "./index";
 
 describe("Greet Extension", () => {

@@ -5,8 +5,8 @@ import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import setupNpmExtension from "./index";
-import type { MockTool, MockExtensionAPI } from "../../test-utils";
-import { createMockExtensionAPI } from "../../test-utils";
+import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
+import { createMockExtensionAPI } from "../../shared/test-utils";
 
 // ============================================
 // Extension Registration

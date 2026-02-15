@@ -12,7 +12,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, type Static } from "@sinclair/typebox";
-import { textResult } from "../common/tool-utils";
+import { textResult } from "../../shared/tool-utils";
 
 // Parameter schemas
 const SearchPyPIPackagesParams = Type.Object({

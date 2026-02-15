@@ -10,7 +10,7 @@ import {
   createMockExtensionAPI,
   type MockExtensionAPI,
   type MockTool,
-} from "../../test-utils";
+} from "../../shared/test-utils";
 import duckduckgoExtension from "./index";
 
 // Mock axios

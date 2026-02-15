@@ -13,6 +13,6 @@
     "noEmit": true,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["agent/extensions/**/*.ts", "scripts/**/*.ts", "*.config.ts"],
+  "include": ["agent/extensions/**/*.ts", "scripts/**/*.ts", "*.config.ts", "agent/shared/render-utils.ts", "agent/shared/select-list-styles.ts", "agent/shared/tool-utils.ts"],
   "exclude": ["node_modules"]
 }

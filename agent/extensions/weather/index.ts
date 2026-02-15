@@ -6,7 +6,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
-import { renderTextToolResult } from "../common/render-utils";
+import { renderTextToolResult } from "../../shared/render-utils";
 import { fetchWeather } from "./api";
 import {
   createWeatherErrorResult,

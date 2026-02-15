@@ -7,7 +7,7 @@ import { Type, type Static } from "@sinclair/typebox";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
-import { textResult } from "../common/tool-utils";
+import { textResult } from "../../shared/tool-utils";
 
 // Define types
 interface SearchResult {

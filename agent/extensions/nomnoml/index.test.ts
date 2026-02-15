@@ -3,8 +3,8 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { ImageContent } from "@mariozechner/pi-ai";
 
 import setupNomnomlExtension from "./index";
-import type { MockExtensionAPI, MockTool } from "../../test-utils";
-import { createMockExtensionAPI } from "../../test-utils";
+import type { MockExtensionAPI, MockTool } from "../../shared/test-utils";
+import { createMockExtensionAPI } from "../../shared/test-utils";
 
 describe("Nomnoml Extension", () => {
   let mockPi: MockExtensionAPI;

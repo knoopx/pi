@@ -7,7 +7,7 @@ import type {
 import { StringEnum } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
-import { renderTextToolResult } from "../common/render-utils";
+import { renderTextToolResult } from "../../shared/render-utils";
 
 // Type definitions for stock market data
 export interface StockData {
