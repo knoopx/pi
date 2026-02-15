@@ -436,11 +436,11 @@ const TAB_LABELS: Record<TabName, string> = {
 const TAB_ORDER: TabName[] = ["today", "thisWeek", "allTime"];
 
 class UsageComponent {
-  private activeTab: TabName = "today";
+  activeTab: TabName = "today";
   private data: UsageData;
-  private selectedIndex = 0;
-  private expanded = new Set<string>();
-  private providerOrder: string[] = [];
+  selectedIndex = 0;
+  expanded = new Set<string>();
+  providerOrder: string[] = [];
   private theme: Theme;
   private requestRender: () => void;
   private done: () => void;
@@ -1117,11 +1117,15 @@ export default function (pi: ExtensionAPI) {
             done(value);
           };
 
-          loader.onAbort = () => { finish(null); };
+          loader.onAbort = () => {
+            finish(null);
+          };
 
           collectToolStats(loader.signal)
             .then(finish)
-            .catch(() => { finish(null); });
+            .catch(() => {
+              finish(null);
+            });
 
           return loader;
         },
@@ -1143,8 +1147,12 @@ export default function (pi: ExtensionAPI) {
         const toolUsage = new ToolUsageComponent(
           theme,
           data,
-          () => { tui.requestRender(); },
-          () => { done(); },
+          () => {
+            tui.requestRender();
+          },
+          () => {
+            done();
+          },
         );
 
         return {
@@ -1154,8 +1162,12 @@ export default function (pi: ExtensionAPI) {
             const bottomBorder = theme.fg("border", "─".repeat(w));
             return [...borderLines, ...usageLines, "", bottomBorder];
           },
-          invalidate: () => { container.invalidate(); },
-          handleInput: (input: string) => { toolUsage.handleInput(input); },
+          invalidate: () => {
+            container.invalidate();
+          },
+          handleInput: (input: string) => {
+            toolUsage.handleInput(input);
+          },
           dispose: () => {},
         };
       });
@@ -1185,11 +1197,15 @@ export default function (pi: ExtensionAPI) {
             done(value);
           };
 
-          loader.onAbort = () => { finish(null); };
+          loader.onAbort = () => {
+            finish(null);
+          };
 
           collectUsageData(loader.signal)
             .then(finish)
-            .catch(() => { finish(null); });
+            .catch(() => {
+              finish(null);
+            });
 
           return loader;
         },
@@ -1212,8 +1228,12 @@ export default function (pi: ExtensionAPI) {
         const usage = new UsageComponent(
           theme,
           data,
-          () => { tui.requestRender(); },
-          () => { done(); },
+          () => {
+            tui.requestRender();
+          },
+          () => {
+            done();
+          },
         );
 
         return {
@@ -1223,8 +1243,12 @@ export default function (pi: ExtensionAPI) {
             const bottomBorder = theme.fg("border", "─".repeat(w));
             return [...borderLines, ...usageLines, "", bottomBorder];
           },
-          invalidate: () => { container.invalidate(); },
-          handleInput: (input: string) => { usage.handleInput(input); },
+          invalidate: () => {
+            container.invalidate();
+          },
+          handleInput: (input: string) => {
+            usage.handleInput(input);
+          },
           dispose: () => {},
         };
       });

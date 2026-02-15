@@ -596,10 +596,13 @@ async function openChangesBrowser(
     changeId: string,
   ) => Promise<string | null>,
 ): Promise<void> {
-  // Track if we need to reopen after cm action
-  let pendingCmAction: { filePath: string; action: CmActionType } | null = null;
+  const showChanges = async (): Promise<{
+    filePath: string;
+    action: CmActionType;
+  } | null> => {
+    let pendingCmAction: { filePath: string; action: CmActionType } | null =
+      null;
 
-  const showChanges = async (): Promise<void> => {
     await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
       return createChangesComponent(
         { pi, tui, theme, keybindings, cwd: ctx.cwd },
@@ -617,24 +620,25 @@ async function openChangesBrowser(
         },
       );
     }, FULL_OVERLAY_OPTIONS);
+
+    return pendingCmAction;
   };
 
   // Loop to handle cm actions and return to changes
   while (true) {
-    pendingCmAction = null;
-    await showChanges();
+    const cmAction = await showChanges();
 
-    if (!pendingCmAction) break;
+    if (!cmAction) break;
 
     // Show cm results, then loop back to changes
-    const cmDef = CM_COMMANDS[pendingCmAction.action];
+    const cmDef = CM_COMMANDS[cmAction.action];
     if (cmDef) {
       await ctx.ui.custom<CmResult | null>(
         (tui, theme, keybindings, done) =>
           createCmResultsComponent(pi, tui, theme, keybindings, done, {
-            title: cmDef.titleFn(pendingCmAction!.filePath),
+            title: cmDef.titleFn(cmAction.filePath),
             command: cmDef.command,
-            args: cmDef.argsFn(pendingCmAction!.filePath),
+            args: cmDef.argsFn(cmAction.filePath),
             cwd: ctx.cwd,
           }),
         FULL_OVERLAY_OPTIONS,

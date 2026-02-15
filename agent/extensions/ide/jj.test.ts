@@ -8,11 +8,11 @@ import {
   restoreFile,
 } from "./jj";
 
-type ExecResult = {
+interface ExecResult {
   code: number;
   stdout: string;
   stderr: string;
-};
+}
 
 describe("jj module", () => {
   describe("given description text", () => {

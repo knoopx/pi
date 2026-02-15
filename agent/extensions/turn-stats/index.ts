@@ -237,7 +237,7 @@ export default function (pi: ExtensionAPI) {
     }
   ).on(
     "message_update",
-    (event: MessageUpdateEvent, _ctx: ExtensionContext) => {
+    async (event: MessageUpdateEvent, _ctx: ExtensionContext) => {
       if (currentTurnKey === null) return;
 
       const assistantEvent = event.assistantMessageEvent;

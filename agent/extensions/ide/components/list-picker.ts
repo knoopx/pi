@@ -347,7 +347,9 @@ export function createListPicker<T extends ListPickerItem>(
 
     // Check custom actions first (before printable characters)
     if (config.actions && filteredItems.length > 0) {
-      const action = config.actions.find((a) => matchesKey(data, a.key));
+      const action = config.actions.find((a) =>
+        matchesKey(data, a.key as Parameters<typeof matchesKey>[1]),
+      );
       if (action) {
         const item = getSelectedItem();
         if (item !== null) {

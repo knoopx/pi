@@ -321,7 +321,6 @@ describe("UsageComponent", () => {
       // @ts-expect-error - accessing private method for testing
       component.updateProviderOrder();
 
-      // @ts-expect-error - accessing private property for testing
       expect(component.providerOrder).not.toContain("zero-usage-provider");
     });
 
@@ -337,9 +336,7 @@ describe("UsageComponent", () => {
       // @ts-expect-error - accessing private method for testing
       component.updateProviderOrder();
 
-      // @ts-expect-error - accessing private property for testing
       expect(component.providerOrder[0]).toBe("provider2");
-      // @ts-expect-error - accessing private property for testing
       expect(component.providerOrder[1]).toBe("provider1");
     });
   });

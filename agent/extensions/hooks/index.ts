@@ -588,9 +588,16 @@ function registerEventHandlers(
     await processHooks(pi, await getConfig(ctx.cwd), "agent_start", ctx);
   });
 
-  pi.on("agent_end", async (event: AgentEndEvent, ctx) => {
+  (
+    pi as ExtensionAPI & {
+      on(
+        event: "agent_end",
+        handler: (event: AgentEndEvent, ctx: ExtensionContext) => Promise<void>,
+      ): void;
+    }
+  ).on("agent_end", async (event: AgentEndEvent, ctx: ExtensionContext) => {
     if (abortedInCurrentTurn || isAbortedAgentEnd(event)) return;
-    return processHooks(pi, await getConfig(ctx.cwd), "agent_end", ctx);
+    await processHooks(pi, await getConfig(ctx.cwd), "agent_end", ctx);
   });
 
   pi.on("turn_start", async (_event, ctx) => {

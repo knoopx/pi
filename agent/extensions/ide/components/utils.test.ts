@@ -255,6 +255,7 @@ describe("utils", () => {
             code: 0,
             stdout: "line1\nline2\nline3",
             stderr: "",
+            killed: false,
           });
 
           const result = await loadFilePreviewWithBat(
@@ -278,6 +279,7 @@ describe("utils", () => {
             code: 0,
             stdout: "",
             stderr: "",
+            killed: false,
           });
 
           const result = await loadFilePreviewWithBat(
@@ -298,6 +300,7 @@ describe("utils", () => {
             code: 1,
             stdout: "",
             stderr: "bat: 'missing.ts': No such file or directory",
+            killed: false,
           });
 
           const result = await loadFilePreviewWithBat(
@@ -427,7 +430,7 @@ describe("utils", () => {
       ];
 
       crashPatterns.forEach(
-        ({ desc, input, shouldNotContain, shouldContain, expected }) => {
+        ({ desc, input, shouldNotContain, shouldContain }) => {
           describe(`when processing ${desc}`, () => {
             it("then handles width calculation correctly", () => {
               const result = ensureWidth(input, 100);
@@ -438,9 +441,6 @@ describe("utils", () => {
               }
               if (shouldContain) {
                 expect(result).toContain(shouldContain);
-              }
-              if (expected) {
-                expect(result.trim()).toBe(expected.padEnd(100).trim());
               }
             });
           });

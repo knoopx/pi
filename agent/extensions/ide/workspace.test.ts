@@ -10,11 +10,11 @@ import {
   loadAgentWorkspaces,
 } from "./workspace";
 
-type ExecResult = {
+interface ExecResult {
   code: number;
   stdout: string;
   stderr: string;
-};
+}
 
 describe("workspace module", () => {
   describe("given workspace name generation", () => {
