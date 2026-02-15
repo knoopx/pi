@@ -5,7 +5,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { Input, matchesKey } from "@mariozechner/pi-tui";
 import { renderListRows } from "./split-panel";
-import { formatBookmarkReference } from "./utils";
+import { buildHelpText, pad } from "./utils";
 
 function fuzzyScore(candidate: string, query: string): number {
   const text = candidate.toLowerCase();
@@ -132,34 +132,90 @@ export function createBookmarkPromptComponent(
   }
 
   function render(width: number): string[] {
+    const rows: string[] = [];
     const inputRows = input.render(width);
+    const query = input.getValue().trim();
+
+    rows.push(theme.fg("accent", pad(" 󰃀 Bookmark", width)));
+    rows.push(...inputRows);
 
     if (loading) {
-      return [...inputRows, theme.fg("dim", " Loading bookmarks...")];
+      rows.push(theme.fg("dim", pad(" Loading bookmarks...", width)));
+      rows.push(
+        theme.fg(
+          "dim",
+          pad(buildHelpText("enter set", "↑↓ nav", "esc cancel"), width),
+        ),
+      );
+      return rows;
     }
 
     if (error) {
-      return [...inputRows, theme.fg("error", ` Error: ${error}`)];
+      rows.push(theme.fg("error", pad(` Error: ${error}`, width)));
+      rows.push(theme.fg("dim", pad(" Press esc to cancel", width)));
+      return rows;
     }
 
     const candidates = getCandidates();
     selectedIndex = Math.min(selectedIndex, Math.max(0, candidates.length - 1));
 
     if (candidates.length === 0) {
-      return inputRows;
+      rows.push(
+        theme.fg("dim", pad(" No bookmarks yet. Type to create one.", width)),
+      );
+      rows.push(
+        theme.fg(
+          "dim",
+          pad(buildHelpText("type bookmark", "enter set", "esc cancel"), width),
+        ),
+      );
+      return rows;
     }
 
     const listRows = renderListRows(
-      candidates.map((candidate) => ({
-        text: formatBookmarkReference(theme, candidate),
-      })),
+      candidates.map((candidate) => {
+        const isCreateOption =
+          query.length > 0 &&
+          candidate === query &&
+          !bookmarks.includes(candidate);
+
+        if (isCreateOption) {
+          return {
+            text: `${theme.fg("warning", "󰐕 new")} ${candidate}`,
+          };
+        }
+
+        const atIndex = candidate.lastIndexOf("@");
+        const name = atIndex >= 0 ? candidate.slice(0, atIndex) : candidate;
+        const remote =
+          atIndex >= 0 && atIndex < candidate.length - 1
+            ? candidate.slice(atIndex + 1)
+            : "";
+
+        return {
+          text: remote
+            ? `󰃀 ${name}${theme.fg("dim", ` @${remote}`)}`
+            : `󰃀 ${name}`,
+        };
+      }),
       width,
-      8,
+      5,
       selectedIndex,
       theme,
     );
 
-    return [...inputRows, ...listRows];
+    rows.push(...listRows);
+    rows.push(
+      theme.fg(
+        "dim",
+        pad(
+          buildHelpText("↑↓ nav", "enter select/create", "esc cancel"),
+          width,
+        ),
+      ),
+    );
+
+    return rows;
   }
 
   function handleInput(data: string): void {
@@ -176,6 +232,10 @@ export function createBookmarkPromptComponent(
 
     if (matchesKey(data, "down")) {
       const candidates = getCandidates();
+      if (candidates.length === 0) {
+        tui.requestRender();
+        return;
+      }
       selectedIndex = Math.min(candidates.length - 1, selectedIndex + 1);
       tui.requestRender();
       return;

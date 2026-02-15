@@ -112,9 +112,9 @@ export default function ideExtension(pi: ExtensionAPI) {
       {
         overlay: true,
         overlayOptions: {
-          width: "50%",
-          minWidth: 40,
-          maxHeight: 8,
+          width: "56%",
+          minWidth: 48,
+          maxHeight: 10,
           anchor: "center",
         },
       },
@@ -562,7 +562,9 @@ async function openBookmarksBrowser(
       keybindings,
       done,
       ctx.cwd,
-      (text) => { ctx.ui.setEditorText(text); },
+      (text) => {
+        ctx.ui.setEditorText(text);
+      },
     );
   }, FULL_OVERLAY_OPTIONS);
 }
@@ -579,7 +581,9 @@ async function openOpLogBrowser(
       keybindings,
       done,
       ctx.cwd,
-      (message, type = "info") => { ctx.ui.notify(message, type); },
+      (message, type = "info") => {
+        ctx.ui.notify(message, type);
+      },
     );
   }, FULL_OVERLAY_OPTIONS);
 }
@@ -600,9 +604,13 @@ async function openChangesBrowser(
       return createChangesComponent(
         { pi, tui, theme, keybindings, cwd: ctx.cwd },
         done,
-        (text) => { ctx.ui.setEditorText(text); },
+        (text) => {
+          ctx.ui.setEditorText(text);
+        },
         (changeId) => promptAndSetBookmark(ctx, changeId),
-        (message, type = "info") => { ctx.ui.notify(message, type); },
+        (message, type = "info") => {
+          ctx.ui.notify(message, type);
+        },
         async (filePath, action) => {
           pendingCmAction = { filePath, action };
           done();
