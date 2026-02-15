@@ -8,7 +8,16 @@ import type {
   SessionStartEvent,
   SessionShutdownEvent,
 } from "@mariozechner/pi-coding-agent";
-import type { AssistantMessage } from "@mariozechner/pi-ai";
+import type {
+  AssistantMessage,
+  AssistantMessageEvent,
+} from "@mariozechner/pi-ai";
+
+/** Local type for message_update event (not exported from pi-coding-agent) */
+interface MessageUpdateEvent {
+  type: "message_update";
+  assistantMessageEvent: AssistantMessageEvent;
+}
 
 /**
  * Turn Stats Extension for Pi coding agent.
@@ -100,23 +109,17 @@ export function formatCost(
     return "";
   }
 
-  // If cost.total exists, use that
-  if (cost.total !== undefined) {
-    // Only return cost if it's non-zero
-    if (cost.total === 0) {
-      return "";
-    }
-    return `$${cost.total.toFixed(2)}`;
-  }
-
-  // Otherwise, sum up the individual costs
+  // Calculate total from cost.total or sum of components
   const total =
-    (cost.input || 0) +
-    (cost.output || 0) +
-    (cost.cacheRead || 0) +
-    (cost.cacheWrite || 0);
-  // Only return cost if it's non-zero
-  if (total === 0) {
+    cost.total !== undefined
+      ? cost.total
+      : (cost.input || 0) +
+        (cost.output || 0) +
+        (cost.cacheRead || 0) +
+        (cost.cacheWrite || 0);
+
+  // Don't show cost if it rounds to $0.00
+  if (total < 0.005) {
     return "";
   }
   return `$${total.toFixed(2)}`;
@@ -125,17 +128,22 @@ export function formatCost(
 /**
  * Format tokens per second
  * @param tokens Output tokens
- * @param durationMs Duration in milliseconds
- * @returns Formatted tokens/s string (e.g., "52.3 tok/s")
+ * @param generationMs Generation time in milliseconds (from first to last token)
+ * @returns Formatted tokens/s string (e.g., "52.3 tok/s") or empty if unavailable
  */
-function formatTokensPerSecond(
+export function formatTokensPerSecond(
   tokens: number | undefined,
-  durationMs: number,
+  generationMs: number | undefined,
 ): string {
-  if (tokens === undefined || tokens === null || durationMs <= 0) {
+  if (
+    tokens === undefined ||
+    tokens === null ||
+    generationMs === undefined ||
+    generationMs <= 0
+  ) {
     return "";
   }
-  const tokensPerSecond = tokens / (durationMs / 1000);
+  const tokensPerSecond = tokens / (generationMs / 1000);
   return `${tokensPerSecond.toFixed(1)} tok/s`;
 }
 
@@ -156,10 +164,11 @@ export function formatSimpleOutput(
         total?: number;
       }
     | undefined,
+  generationMs?: number,
 ): string {
   const outputStr = formatTokens(output);
   const durationStr = formatDuration(durationMs);
-  const tokPerSecStr = formatTokensPerSecond(output, durationMs);
+  const tokPerSecStr = formatTokensPerSecond(output, generationMs);
   const costStr = formatCost(cost);
 
   // Build the output string with separators between metrics
@@ -179,12 +188,20 @@ export function formatSimpleOutput(
 export default function (pi: ExtensionAPI) {
   // Track turn start time for per-turn duration
   const turnStartTimes = new Map<number, number>();
+  // Track first text delta time per turn (for accurate tok/s calculation)
+  const turnFirstDeltaTimes = new Map<number, number>();
+  // Track last text delta time per turn
+  const turnLastDeltaTimes = new Map<number, number>();
+  // Current turn index (set by turn_start, used by message_update)
+  let currentTurnIndex: number | null = null;
   // Track agent start time for total agent duration
   let agentStartTime: number | null = null;
   // Track last turn end timestamp for total agent duration
   let lastTurnEndTimestamp: number | null = null;
   // Accumulate all token usage stats for the agent
   let totalOutputTokens = 0;
+  // Accumulate total generation time for accurate agent-level tok/s
+  let totalGenerationMs = 0;
 
   // Accumulate cost breakdown for the agent
   let totalCostInput = 0;
@@ -199,7 +216,41 @@ export default function (pi: ExtensionAPI) {
    */
   pi.on("turn_start", async (event: TurnStartEvent, _ctx: ExtensionContext) => {
     turnStartTimes.set(event.turnIndex, Date.now());
+    currentTurnIndex = event.turnIndex;
   });
+
+  /**
+   * Hook into message update event
+   * Tracks first and last text delta times for accurate tok/s calculation
+   */
+  (
+    pi as ExtensionAPI & {
+      on(
+        event: "message_update",
+        handler: (
+          event: MessageUpdateEvent,
+          ctx: ExtensionContext,
+        ) => Promise<void>,
+      ): void;
+    }
+  ).on(
+    "message_update",
+    async (event: MessageUpdateEvent, _ctx: ExtensionContext) => {
+      if (currentTurnIndex === null) return;
+
+      const assistantEvent = event.assistantMessageEvent;
+      // Track timing on text_delta events (actual token streaming)
+      if (assistantEvent.type === "text_delta") {
+        const now = Date.now();
+        // Record first delta time if not set
+        if (!turnFirstDeltaTimes.has(currentTurnIndex)) {
+          turnFirstDeltaTimes.set(currentTurnIndex, now);
+        }
+        // Always update last delta time
+        turnLastDeltaTimes.set(currentTurnIndex, now);
+      }
+    },
+  );
 
   /**
    * Hook into turn end event
@@ -207,7 +258,14 @@ export default function (pi: ExtensionAPI) {
    */
   pi.on("turn_end", async (event: TurnEndEvent, ctx: ExtensionContext) => {
     const startTime = turnStartTimes.get(event.turnIndex);
+    const firstDeltaTime = turnFirstDeltaTimes.get(event.turnIndex);
+    const lastDeltaTime = turnLastDeltaTimes.get(event.turnIndex);
+
+    // Clean up turn tracking
     turnStartTimes.delete(event.turnIndex);
+    turnFirstDeltaTimes.delete(event.turnIndex);
+    turnLastDeltaTimes.delete(event.turnIndex);
+    currentTurnIndex = null;
 
     // Only track assistant messages with usage data
     const message = event.message;
@@ -225,6 +283,12 @@ export default function (pi: ExtensionAPI) {
     const durationMs = startTime ? turnEndTimestamp - startTime : 0;
     lastTurnEndTimestamp = turnEndTimestamp;
 
+    // Calculate actual generation time (first delta to last delta)
+    const generationMs =
+      firstDeltaTime && lastDeltaTime
+        ? lastDeltaTime - firstDeltaTime
+        : undefined;
+
     // Get token information from the message
     const outputTokens = usage.output;
     const cost = usage.cost;
@@ -237,6 +301,11 @@ export default function (pi: ExtensionAPI) {
     // Accumulate all token stats
     if (outputTokens !== undefined) {
       totalOutputTokens += outputTokens;
+    }
+
+    // Accumulate generation time for agent-level tok/s
+    if (generationMs !== undefined) {
+      totalGenerationMs += generationMs;
     }
 
     // Accumulate cost breakdown
@@ -256,8 +325,13 @@ export default function (pi: ExtensionAPI) {
       totalCost += costTotal;
     }
 
-    // Format simple output: ↓<output_tokens> <duration> <cost>
-    const notificationStr = formatSimpleOutput(outputTokens, durationMs, cost);
+    // Format simple output: ↓<output_tokens> | <duration> | <tok/s> | <cost>
+    const notificationStr = formatSimpleOutput(
+      outputTokens,
+      durationMs,
+      cost,
+      generationMs,
+    );
 
     // Notify user if UI is available
     ctx.ui.notify(notificationStr, "info");
@@ -285,7 +359,7 @@ export default function (pi: ExtensionAPI) {
       const endTimestamp = lastTurnEndTimestamp ?? Date.now();
       const totalDurationMs = endTimestamp - agentStartTime;
 
-      // Format simple output: ↓<output_tokens> <duration> <cost>
+      // Format simple output: ↓<output_tokens> | <duration> | <tok/s> | <cost>
       const notificationStr = formatSimpleOutput(
         totalOutputTokens,
         totalDurationMs,
@@ -296,6 +370,7 @@ export default function (pi: ExtensionAPI) {
           cacheWrite: totalCostCacheWrite,
           total: totalCost,
         },
+        totalGenerationMs > 0 ? totalGenerationMs : undefined,
       );
 
       // Notify user if UI is available
@@ -305,6 +380,7 @@ export default function (pi: ExtensionAPI) {
 
       // Reset for next agent run
       totalOutputTokens = 0;
+      totalGenerationMs = 0;
       totalCostInput = 0;
       totalCostOutput = 0;
       totalCostCacheRead = 0;
@@ -318,9 +394,13 @@ export default function (pi: ExtensionAPI) {
    */
   function resetCounters(): void {
     turnStartTimes.clear();
+    turnFirstDeltaTimes.clear();
+    turnLastDeltaTimes.clear();
+    currentTurnIndex = null;
     agentStartTime = null;
     lastTurnEndTimestamp = null;
     totalOutputTokens = 0;
+    totalGenerationMs = 0;
     totalCostInput = 0;
     totalCostOutput = 0;
     totalCostCacheRead = 0;

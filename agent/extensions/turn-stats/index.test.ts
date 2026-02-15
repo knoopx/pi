@@ -10,6 +10,7 @@ import {
   formatInputOutputTokens,
   formatCost,
   formatSimpleOutput,
+  formatTokensPerSecond,
 } from "./index";
 
 describe("formatDuration", () => {
@@ -287,73 +288,148 @@ describe("formatCost", () => {
   });
 });
 
+describe("formatTokensPerSecond", () => {
+  describe("given valid tokens and generation time", () => {
+    describe("when formatting 1000 tokens in 10000ms (10s)", () => {
+      it("then it should return '100.0 tok/s'", () => {
+        expect(formatTokensPerSecond(1000, 10000)).toBe("100.0 tok/s");
+      });
+    });
+
+    describe("when formatting 500 tokens in 2000ms (2s)", () => {
+      it("then it should return '250.0 tok/s'", () => {
+        expect(formatTokensPerSecond(500, 2000)).toBe("250.0 tok/s");
+      });
+    });
+
+    describe("when formatting 1900 tokens in 36000ms (36s)", () => {
+      it("then it should return '52.8 tok/s'", () => {
+        expect(formatTokensPerSecond(1900, 36000)).toBe("52.8 tok/s");
+      });
+    });
+  });
+
+  describe("given undefined or invalid values", () => {
+    describe("when tokens is undefined", () => {
+      it("then it should return empty string", () => {
+        expect(formatTokensPerSecond(undefined, 10000)).toBe("");
+      });
+    });
+
+    describe("when generation time is undefined", () => {
+      it("then it should return empty string", () => {
+        expect(formatTokensPerSecond(1000, undefined)).toBe("");
+      });
+    });
+
+    describe("when generation time is 0", () => {
+      it("then it should return empty string", () => {
+        expect(formatTokensPerSecond(1000, 0)).toBe("");
+      });
+    });
+
+    describe("when generation time is negative", () => {
+      it("then it should return empty string", () => {
+        expect(formatTokensPerSecond(1000, -100)).toBe("");
+      });
+    });
+  });
+});
+
 describe("formatSimpleOutput", () => {
-  describe("given only output tokens and duration", () => {
+  describe("given only output tokens and duration (no generation time)", () => {
     describe("when formatting output: 1900, duration: 36000ms (36s)", () => {
-      it("then it should return '↓1.9K | 36s | 52.8 tok/s'", () => {
-        expect(formatSimpleOutput(1900, 36000, undefined)).toBe(
-          "↓1.9K | 36s | 52.8 tok/s",
-        );
+      it("then it should return '↓1.9K | 36s' (no tok/s without generation time)", () => {
+        expect(formatSimpleOutput(1900, 36000, undefined)).toBe("↓1.9K | 36s");
       });
     });
 
     describe("when formatting output: 500, duration: 92000ms (1m 32s)", () => {
-      it("then it should return '↓500 | 1m 32s | 5.4 tok/s'", () => {
-        expect(formatSimpleOutput(500, 92000, undefined)).toBe(
-          "↓500 | 1m 32s | 5.4 tok/s",
+      it("then it should return '↓500 | 1m 32s' (no tok/s without generation time)", () => {
+        expect(formatSimpleOutput(500, 92000, undefined)).toBe("↓500 | 1m 32s");
+      });
+    });
+  });
+
+  describe("given output tokens, duration, and generation time", () => {
+    describe("when formatting output: 1900, duration: 36000ms, generation: 30000ms", () => {
+      it("then it should return '↓1.9K | 36s | 63.3 tok/s'", () => {
+        expect(formatSimpleOutput(1900, 36000, undefined, 30000)).toBe(
+          "↓1.9K | 36s | 63.3 tok/s",
+        );
+      });
+    });
+
+    describe("when formatting output: 500, duration: 92000ms, generation: 80000ms", () => {
+      it("then it should return '↓500 | 1m 32s | 6.3 tok/s'", () => {
+        expect(formatSimpleOutput(500, 92000, undefined, 80000)).toBe(
+          "↓500 | 1m 32s | 6.3 tok/s",
         );
       });
     });
   });
 
-  describe("given output tokens, duration, and cost", () => {
-    describe("when formatting output: 1900, duration: 36000ms, total cost: $0.01", () => {
-      it("then it should return '↓1.9K | 36s | 52.8 tok/s | $0.01'", () => {
-        expect(formatSimpleOutput(1900, 36000, { total: 0.01 })).toBe(
-          "↓1.9K | 36s | 52.8 tok/s | $0.01",
+  describe("given output tokens, duration, generation time, and cost", () => {
+    describe("when formatting output: 1900, duration: 36000ms, generation: 30000ms, total cost: $0.01", () => {
+      it("then it should return '↓1.9K | 36s | 63.3 tok/s | $0.01'", () => {
+        expect(formatSimpleOutput(1900, 36000, { total: 0.01 }, 30000)).toBe(
+          "↓1.9K | 36s | 63.3 tok/s | $0.01",
         );
       });
     });
 
-    describe("when formatting output: 500, duration: 92000ms, individual costs: input $0.005, output $0.005", () => {
-      it("then it should return '↓500 | 1m 32s | 5.4 tok/s | $0.01'", () => {
+    describe("when formatting output: 500, duration: 92000ms, generation: 80000ms, individual costs", () => {
+      it("then it should return '↓500 | 1m 32s | 6.3 tok/s | $0.01'", () => {
         expect(
-          formatSimpleOutput(500, 92000, { input: 0.005, output: 0.005 }),
-        ).toBe("↓500 | 1m 32s | 5.4 tok/s | $0.01");
+          formatSimpleOutput(
+            500,
+            92000,
+            { input: 0.005, output: 0.005 },
+            80000,
+          ),
+        ).toBe("↓500 | 1m 32s | 6.3 tok/s | $0.01");
       });
     });
 
-    describe("when formatting output: 1234, duration: 5000ms, total cost: $0", () => {
-      it("then it should return '↓1.2K | 5s | 246.8 tok/s' (cost not included when 0)", () => {
-        expect(formatSimpleOutput(1234, 5000, { total: 0 })).toBe(
-          "↓1.2K | 5s | 246.8 tok/s",
+    describe("when formatting output: 1234, duration: 5000ms, generation: 4000ms, total cost: $0", () => {
+      it("then it should return '↓1.2K | 5s | 308.5 tok/s' (cost not included when 0)", () => {
+        expect(formatSimpleOutput(1234, 5000, { total: 0 }, 4000)).toBe(
+          "↓1.2K | 5s | 308.5 tok/s",
         );
-      });
-    });
-
-    describe("when formatting output: 1234, duration: 5000ms, individual costs with total $0", () => {
-      it("then it should return '↓1.2K | 5s | 246.8 tok/s' (cost not included when 0)", () => {
-        expect(
-          formatSimpleOutput(1234, 5000, {
-            input: 0,
-            output: 0,
-            cacheRead: 0,
-            cacheWrite: 0,
-          }),
-        ).toBe("↓1.2K | 5s | 246.8 tok/s");
       });
     });
   });
 
-  describe("given output tokens and duration with only cache costs", () => {
-    describe("when formatting output: 500, duration: 10000ms, cacheRead cost: $0.001, cacheWrite cost: $0.002", () => {
-      it("then it should return '↓500 | 10s | 50.0 tok/s | $0.00' (cost is $0.003 > 0, formatted as $0.00)", () => {
+  describe("given output tokens, duration, generation time with only cache costs", () => {
+    describe("when cost rounds to $0.00", () => {
+      it("then it should exclude cost from output", () => {
         expect(
-          formatSimpleOutput(500, 10000, {
-            cacheRead: 0.001,
-            cacheWrite: 0.002,
-          }),
-        ).toBe("↓500 | 10s | 50.0 tok/s | $0.00");
+          formatSimpleOutput(
+            500,
+            10000,
+            {
+              cacheRead: 0.001,
+              cacheWrite: 0.002,
+            },
+            8000,
+          ),
+        ).toBe("↓500 | 10s | 62.5 tok/s");
+      });
+    });
+
+    describe("when cost rounds to $0.01", () => {
+      it("then it should include cost", () => {
+        expect(
+          formatSimpleOutput(
+            500,
+            10000,
+            {
+              cacheRead: 0.003,
+              cacheWrite: 0.003,
+            },
+            8000,
+          ),
+        ).toBe("↓500 | 10s | 62.5 tok/s | $0.01");
       });
     });
   });
@@ -371,17 +447,23 @@ describe("formatSimpleOutput", () => {
 
 describe("Turn Stats Extension Integration", () => {
   /**
-   * Integration test scenario: A complete turn with duration, tokens, and cost
+   * Integration test scenario: A complete turn with duration, tokens, generation time, and cost
    */
   describe("given a complete turn with all metrics", () => {
     const outputTokens = 1900;
     const durationMs = 36000;
+    const generationMs = 30000; // Actual generation time (excludes TTFT)
     const cost = { input: 0.005, output: 0.005 };
 
     describe("when formatting the complete turn output", () => {
-      it("then it should show tokens, duration, and cost", () => {
-        const result = formatSimpleOutput(outputTokens, durationMs, cost);
-        expect(result).toBe("↓1.9K | 36s | 52.8 tok/s | $0.01");
+      it("then it should show tokens, duration, tok/s, and cost", () => {
+        const result = formatSimpleOutput(
+          outputTokens,
+          durationMs,
+          cost,
+          generationMs,
+        );
+        expect(result).toBe("↓1.9K | 36s | 63.3 tok/s | $0.01");
       });
     });
 
@@ -391,7 +473,7 @@ describe("Turn Stats Extension Integration", () => {
           const match = result.match(/↓([^|]+)/);
           return match ? match[1].trim() : null;
         };
-        expect(tokensPart("↓1.9K | 36s | 52.8 tok/s | $0.01")).toBe("1.9K");
+        expect(tokensPart("↓1.9K | 36s | 63.3 tok/s | $0.01")).toBe("1.9K");
       });
 
       it("then duration should be formatted as '36s'", () => {
@@ -399,7 +481,16 @@ describe("Turn Stats Extension Integration", () => {
           const match = result.match(/36s/);
           return match ? match[0] : null;
         };
-        expect(durationPart("↓1.9K | 36s | 52.8 tok/s | $0.01")).toBe("36s");
+        expect(durationPart("↓1.9K | 36s | 63.3 tok/s | $0.01")).toBe("36s");
+      });
+
+      it("then tok/s should be based on generation time, not duration", () => {
+        // 1900 tokens / 30s = 63.3 tok/s (NOT 1900/36 = 52.8 tok/s)
+        const tokPerSecPart = (result: string) => {
+          const match = result.match(/(\d+\.\d+) tok\/s/);
+          return match ? match[1] : null;
+        };
+        expect(tokPerSecPart("↓1.9K | 36s | 63.3 tok/s | $0.01")).toBe("63.3");
       });
 
       it("then cost should be formatted as '$0.01'", () => {
@@ -407,18 +498,33 @@ describe("Turn Stats Extension Integration", () => {
           const match = result.match(/\$[0-9.]+$/);
           return match ? match[0] : null;
         };
-        expect(costPart("↓1.9K | 36s | 52.8 tok/s | $0.01")).toBe("$0.01");
+        expect(costPart("↓1.9K | 36s | 63.3 tok/s | $0.01")).toBe("$0.01");
       });
     });
   });
 
   /**
-   * Integration test scenario: Multiple turns
+   * Integration test scenario: Multiple turns with generation time tracking
    */
   describe("given multiple turns in a session", () => {
-    const turn1 = { output: 500, duration: 10000, cost: { total: 0.001 } };
-    const turn2 = { output: 1000, duration: 15000, cost: { total: 0.002 } };
-    const turn3 = { output: 1500, duration: 20000, cost: { total: 0.003 } };
+    const turn1 = {
+      output: 500,
+      duration: 10000,
+      generation: 8000,
+      cost: { total: 0.001 },
+    };
+    const turn2 = {
+      output: 1000,
+      duration: 15000,
+      generation: 12000,
+      cost: { total: 0.002 },
+    };
+    const turn3 = {
+      output: 1500,
+      duration: 20000,
+      generation: 16000,
+      cost: { total: 0.003 },
+    };
 
     describe("when calculating accumulated metrics", () => {
       it("then total output tokens should sum to 3000", () => {
@@ -429,6 +535,21 @@ describe("Turn Stats Extension Integration", () => {
       it("then total duration should be 45000ms", () => {
         const totalDuration = turn1.duration + turn2.duration + turn3.duration;
         expect(totalDuration).toBe(45000);
+      });
+
+      it("then total generation time should be 36000ms", () => {
+        const totalGeneration =
+          turn1.generation + turn2.generation + turn3.generation;
+        expect(totalGeneration).toBe(36000);
+      });
+
+      it("then aggregate tok/s should use generation time, not duration", () => {
+        const totalOutput = turn1.output + turn2.output + turn3.output;
+        const totalGeneration =
+          turn1.generation + turn2.generation + turn3.generation;
+        // 3000 tokens / 36s = 83.3 tok/s
+        const expectedTokPerSec = totalOutput / (totalGeneration / 1000);
+        expect(expectedTokPerSec.toFixed(1)).toBe("83.3");
       });
 
       it("then total cost should be $0.006", () => {
@@ -447,15 +568,20 @@ describe("Turn Stats Extension Integration", () => {
     const outputTokens = 10;
     const cost = { total: 0.000001 };
 
-    describe("when formatting the output", () => {
+    describe("when formatting the output without generation time", () => {
       it("then duration should show 2 decimal places", () => {
         const result = formatSimpleOutput(outputTokens, durationMs, cost);
         expect(result).toContain("0.12s");
       });
 
-      it("then cost should be included even if very small", () => {
+      it("then tok/s should not be shown (no generation time)", () => {
         const result = formatSimpleOutput(outputTokens, durationMs, cost);
-        expect(result).toContain("$0.00");
+        expect(result).not.toContain("tok/s");
+      });
+
+      it("then cost should be excluded when it rounds to $0.00", () => {
+        const result = formatSimpleOutput(outputTokens, durationMs, cost);
+        expect(result).not.toContain("$");
       });
     });
   });
@@ -466,21 +592,48 @@ describe("Turn Stats Extension Integration", () => {
   describe("given large token counts (millions)", () => {
     const outputTokens = 1500000; // 1.5M
     const durationMs = 3600000; // 1 hour
+    const generationMs = 3000000; // 50 minutes generation time
     const cost = { total: 0.15 };
 
     describe("when formatting the output", () => {
       it("then output tokens should be formatted as '1.5M'", () => {
-        const result = formatSimpleOutput(outputTokens, durationMs, cost);
+        const result = formatSimpleOutput(
+          outputTokens,
+          durationMs,
+          cost,
+          generationMs,
+        );
         expect(result).toContain("↓1.5M");
       });
 
       it("then duration should be formatted as '1h 0m 0s'", () => {
-        const result = formatSimpleOutput(outputTokens, durationMs, cost);
+        const result = formatSimpleOutput(
+          outputTokens,
+          durationMs,
+          cost,
+          generationMs,
+        );
         expect(result).toContain("1h 0m 0s");
       });
 
+      it("then tok/s should be based on generation time", () => {
+        // 1.5M tokens / 3000s = 500 tok/s
+        const result = formatSimpleOutput(
+          outputTokens,
+          durationMs,
+          cost,
+          generationMs,
+        );
+        expect(result).toContain("500.0 tok/s");
+      });
+
       it("then cost should be formatted as '$0.15'", () => {
-        const result = formatSimpleOutput(outputTokens, durationMs, cost);
+        const result = formatSimpleOutput(
+          outputTokens,
+          durationMs,
+          cost,
+          generationMs,
+        );
         expect(result).toContain("$0.15");
       });
     });
