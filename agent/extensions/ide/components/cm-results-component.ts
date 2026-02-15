@@ -111,9 +111,14 @@ const SYMBOL_ACTION_DEFS: [string, CmActionType][] = [
 ];
 
 /**
- * Parse cm output lines into structured items
+ * Parse cm output lines into structured items.
+ * Extracts file path from [FILE:...] header if not in line format.
  */
 function parseCmOutput(output: string): CmResultItem[] {
+  // Extract file path from header for inspect command
+  const fileMatch = output.match(/\[FILE:([^\]]+)\]/);
+  const headerFile = fileMatch?.[1];
+
   const lines = output.split("\n").filter((line) => {
     if (!line.trim()) return false;
     if (line.startsWith("[")) return false;
@@ -151,12 +156,21 @@ function parseCmOutput(output: string): CmResultItem[] {
     let startLine: number;
     let endLine: number;
 
-    if (locationPart.includes(":")) {
+    // Check if locationPart is a line-range (e.g., "71-172") vs path:line
+    const lineRangeMatch = locationPart.match(/^(\d+)-(\d+)$/);
+    if (lineRangeMatch && headerFile) {
+      // Inspect format: line-range only, use header file
+      path = headerFile;
+      startLine = parseInt(lineRangeMatch[1]!, 10);
+      endLine = parseInt(lineRangeMatch[2]!, 10);
+    } else if (locationPart.includes(":")) {
+      // Standard format: path:line
       const colonIdx = locationPart.lastIndexOf(":");
       path = locationPart.slice(0, colonIdx);
       startLine = parseInt(locationPart.slice(colonIdx + 1), 10) || 1;
       endLine = startLine;
     } else {
+      // Fallback: treat as path
       path = locationPart;
       startLine = 1;
       endLine = 1;
