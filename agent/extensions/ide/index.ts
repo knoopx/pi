@@ -113,15 +113,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     return bookmarkName;
   }
 
-  /**
-   * Always expand tool output
-   */
-  pi.on("turn_start", async (_event, ctx) => {
-    if (ctx.hasUI) {
-      ctx.ui.setToolsExpanded(true);
-    }
-  });
-
   let pendingChangeDescription: string | null = null;
 
   /**
