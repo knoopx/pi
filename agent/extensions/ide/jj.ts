@@ -7,6 +7,12 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { FileChange, MutableChange } from "./types";
 
+export function sanitizeDescription(rawDescription: string): string {
+  const asciiOnly = rawDescription.replace(/[^\x00-\x7F]/g, "");
+  const normalizedWhitespace = asciiOnly.replace(/\s+/g, " ").trim();
+  return normalizedWhitespace || "(no description)";
+}
+
 /**
  * Update stale working copy if needed.
  * Jj working copies can become stale when the repo state changes.
@@ -51,7 +57,7 @@ export async function loadMutableChanges(
       return {
         changeId: changeId || "",
         commitId: commitId || "",
-        description: descParts.join("\t") || "(no description)",
+        description: sanitizeDescription(descParts.join("\t")),
         author: author || "",
         timestamp: timestamp || "",
         empty: emptyStr === "empty",
@@ -122,7 +128,16 @@ export async function restoreFile(
   changeId: string,
   filePath: string,
 ): Promise<void> {
-  await pi.exec("jj", ["restore", "-r", changeId, filePath], { cwd });
+  const result = await pi.exec(
+    "jj",
+    ["restore", "--changes-in", changeId, filePath],
+    { cwd },
+  );
+
+  if (result.code !== 0) {
+    const error = result.stderr.trim() || "Failed to discard file changes";
+    throw new Error(error);
+  }
 }
 
 /**
@@ -205,7 +220,7 @@ export async function listBookmarksByChange(
     entries.push({
       bookmark,
       changeId,
-      description: description || "(no description)",
+      description: sanitizeDescription(description || ""),
     });
   }
 
@@ -269,7 +284,7 @@ export async function loadOpLog(
       const [opId, ...descParts] = line.split("|");
       return {
         opId: opId || "",
-        description: descParts.join("|") || "(no description)",
+        description: sanitizeDescription(descParts.join("|")),
       };
     })
     .filter((e) => e.opId);
@@ -351,7 +366,10 @@ export async function getBlame(
     .split("\n")
     .map((line, index) => {
       // Format: "changeId author timestamp lineNum: content"
-      const match = /^(\w+)\s+(\S+)\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+\d+:/.exec(line);
+      const match =
+        /^(\w+)\s+(\S+)\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+\d+:/.exec(
+          line,
+        );
       if (!match) return null;
 
       const [, changeId, author, timestamp] = match;

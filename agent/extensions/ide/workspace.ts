@@ -9,7 +9,11 @@ import type {
   DiffStats,
   FileChange,
 } from "./types";
-import { updateStaleWorkspace, loadChangedFiles } from "./jj";
+import {
+  updateStaleWorkspace,
+  loadChangedFiles,
+  sanitizeDescription,
+} from "./jj";
 
 const WORKSPACE_PREFIX = "ide-";
 
@@ -87,7 +91,7 @@ export function parseWorkspaceList(output: string): WorkspaceListEntry[] {
       entries.push({
         name: match[1],
         changeId: match[2],
-        description: match[3]?.trim() || "(no description)",
+        description: sanitizeDescription(match[3]?.trim() || ""),
       });
     }
   }

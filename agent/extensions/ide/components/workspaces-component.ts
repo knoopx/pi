@@ -257,10 +257,9 @@ export function createWorkspacesComponent(
 2. Review specific files if needed: \`jj diff -r ${ws.name}@ <file>\`
 3. Rebase onto current: \`jj rebase -s ${ws.name}@ -d @\`
 4. Squash into parent: \`jj squash -r ${ws.name}@\`
-5. Set description: \`jj desc -m "type(scope): <icon> description"\`
+5. Set description: \`jj desc -m "type(scope): description"\`
 
-Types: feat, fix, docs, style, refactor, perf, test, chore
-Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf | 🧪 test | 🔧 chore`;
+Types: feat, fix, docs, style, refactor, perf, test, chore`;
           pi.sendUserMessage(task);
           return;
         }

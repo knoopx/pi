@@ -375,10 +375,10 @@ describe("utils", () => {
     describe("given a bookmark name", () => {
       it("then formats with icon and inverse accent background", () => {
         const result = formatBookmarkReference(mockTheme, "main");
-        expect(result).toBe("[inverse][accent]󰃀 main[/accent][/inverse]");
-        expect(mockTheme.fg).toHaveBeenCalledWith("accent", "󰃀 main");
+        expect(result).toBe("[inverse][accent] 󰃀 main [/accent][/inverse]");
+        expect(mockTheme.fg).toHaveBeenCalledWith("accent", " 󰃀 main ");
         expect(mockTheme.inverse).toHaveBeenCalledWith(
-          "[accent]󰃀 main[/accent]",
+          "[accent] 󰃀 main [/accent]",
         );
       });
     });
@@ -386,7 +386,7 @@ describe("utils", () => {
     describe("given empty bookmark", () => {
       it("then returns icon with empty name", () => {
         const result = formatBookmarkReference(mockTheme, "");
-        expect(result).toBe("[inverse][accent]󰃀 [/accent][/inverse]");
+        expect(result).toBe("[inverse][accent] 󰃀  [/accent][/inverse]");
       });
     });
 
@@ -394,7 +394,7 @@ describe("utils", () => {
       it("then preserves special characters", () => {
         const result = formatBookmarkReference(mockTheme, "feature/test-123");
         expect(result).toBe(
-          "[inverse][accent]󰃀 feature/test-123[/accent][/inverse]",
+          "[inverse][accent] 󰃀 feature/test-123 [/accent][/inverse]",
         );
       });
     });

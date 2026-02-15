@@ -140,7 +140,7 @@ export function createChangesComponent(
           const workflowLines = ids
             .map(
               (id, index) =>
-                `${String(index + 1)}. Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "type(scope): icon description"\``,
+                `${String(index + 1)}. Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "type(scope): <icon> short description"\``,
             )
             .join("\n");
 
@@ -152,7 +152,6 @@ Use the **conventional-commits** skill for type/scope rules.
 \`type(scope): <icon> short description\`
 
 Types: feat, fix, docs, style, refactor, perf, test, chore
-Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf | 🧪 test | 🔧 chore
 </format>
 
 <workflow>
@@ -598,9 +597,16 @@ ${workflowLines}
       if (data === "d" && selectedChange && files[selectionState.fileIndex]) {
         const file = files[selectionState.fileIndex];
         void (async () => {
-          await restoreFile(pi, cwd, selectedChange.changeId, file.path);
-          changeCache.delete(selectedChange.changeId);
-          await loadFilesAndDiff(selectedChange);
+          try {
+            await restoreFile(pi, cwd, selectedChange.changeId, file.path);
+            changeCache.delete(selectedChange.changeId);
+            await loadFilesAndDiff(selectedChange);
+          } catch (error) {
+            onNotify?.(
+              `Failed to discard file: ${formatErrorMessage(error)}`,
+              "error",
+            );
+          }
         })();
         return;
       }
