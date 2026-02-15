@@ -346,16 +346,28 @@ ${workflowLines}
       const isCursor = idx === selectionState.selectedIndex;
       const isFocusedCursor = isCursor && selectionState.focus === "left";
       const isMarked = selectedChangeIds.has(change.changeId);
+      const isWorkingCopy = idx === 0; // First change is @ (working copy)
+
+      // Icon based on working copy and empty status (jj style)
+      const icon = isWorkingCopy
+        ? change.empty
+          ? "◎"
+          : "◉"
+        : change.empty
+          ? "○"
+          : "●";
+
+      // Selection marker for multi-select
+      const selectionMarker = isMarked ? "▸" : " ";
 
       const bookmarks = bookmarksByChange.get(change.changeId) || [];
-      const bookmarkLabel =
-        bookmarks.length > 0
-          ? `${formatBookmarkReference(theme, bookmarks.join(","))} `
-          : "";
+      const bookmarkLabels = bookmarks
+        .map((b) => formatBookmarkReference(theme, b))
+        .join(" ");
+      const bookmarkLabel = bookmarkLabels ? `${bookmarkLabels} ` : "";
       const idLabel = change.changeId.slice(0, 8);
 
-      const marker = isMarked ? "●" : "○";
-      const leftText = ` ${marker} ${bookmarkLabel}${change.description}`;
+      const leftText = ` ${selectionMarker}${icon} ${bookmarkLabel}${change.description}`;
       const rightText = theme.fg("dim", ` ${idLabel}`);
 
       const availableLeftWidth = Math.max(1, width - idLabel.length - 1);

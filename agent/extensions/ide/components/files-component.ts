@@ -7,6 +7,7 @@ import {
   createListPicker,
   type ListPickerItem,
   type ListPickerComponent,
+  type ListPickerAction,
 } from "./list-picker";
 import { loadFilePreviewWithBat } from "./utils";
 
@@ -23,6 +24,55 @@ export function createFilesComponent(
   initialQuery: string,
   cwd: string,
 ): ListPickerComponent & { invalidate: () => void } {
+  // Helper to run cm commands and display output
+  async function runCmCommand(
+    picker: ListPickerComponent,
+    command: string,
+    args: string[],
+  ): Promise<void> {
+    const result = await pi.exec("cm", [command, ...args, "--format", "ai"], {
+      cwd,
+    });
+    const output =
+      result.code === 0 ? result.stdout : `Error: ${result.stderr}`;
+    picker.setPreview(output.split("\n"));
+  }
+
+  // Create actions that will be bound to the picker
+  function createActions(
+    picker: ListPickerComponent,
+  ): ListPickerAction<FileInfo>[] {
+    return [
+      {
+        key: "i",
+        label: "inspect",
+        handler: async (item) => {
+          await runCmCommand(picker, "inspect", [item.path]);
+        },
+      },
+      {
+        key: "d",
+        label: "deps",
+        handler: async (item) => {
+          await runCmCommand(picker, "deps", [item.path]);
+        },
+      },
+      {
+        key: "u",
+        label: "used-by",
+        handler: async (item) => {
+          await runCmCommand(picker, "deps", [
+            item.path,
+            "--direction",
+            "used-by",
+          ]);
+        },
+      },
+    ];
+  }
+
+  let pickerRef: ListPickerComponent | null = null;
+
   const picker = createListPicker<FileInfo>(
     pi,
     tui,
@@ -33,6 +83,9 @@ export function createFilesComponent(
     {
       title: "Files",
       helpParts: ["↑↓ nav", "type to search"],
+      get actions() {
+        return pickerRef ? createActions(pickerRef) : [];
+      },
       onEdit: async (item) => {
         await pi.exec("code", [item.path], { cwd });
       },
@@ -82,10 +135,12 @@ export function createFilesComponent(
     },
   );
 
+  pickerRef = picker;
+
   return {
     ...picker,
     invalidate: () => {
-      // Trigger re-render by calling render with 0 width
+      // Trigger re-render
     },
   };
 }
