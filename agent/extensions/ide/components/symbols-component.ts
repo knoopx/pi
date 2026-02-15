@@ -47,42 +47,42 @@ export function createSymbolsComponent(
   ): ListPickerAction<SymbolInfo>[] {
     return [
       {
-        key: "c",
+        key: "ctrl+c",
         label: "callers",
         handler: async (item) => {
           await runCmCommand(pi, picker, cwd, "callers", [item.name]);
         },
       },
       {
-        key: "C",
+        key: "ctrl+l",
         label: "callees",
         handler: async (item) => {
           await runCmCommand(pi, picker, cwd, "callees", [item.name]);
         },
       },
       {
-        key: "t",
+        key: "ctrl+t",
         label: "tests",
         handler: async (item) => {
           await runCmCommand(pi, picker, cwd, "tests", [item.name]);
         },
       },
       {
-        key: "T",
+        key: "ctrl+y",
         label: "types",
         handler: async (item) => {
           await runCmCommand(pi, picker, cwd, "types", [item.name]);
         },
       },
       {
-        key: "s",
+        key: "ctrl+s",
         label: "schema",
         handler: async (item) => {
           await runCmCommand(pi, picker, cwd, "schema", [item.name]);
         },
       },
       {
-        key: "i",
+        key: "ctrl+i",
         label: "impact",
         handler: async (item) => {
           await runCmCommand(pi, picker, cwd, "impact", [item.name]);

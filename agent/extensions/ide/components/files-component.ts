@@ -30,21 +30,21 @@ export function createFilesComponent(
   ): ListPickerAction<FileInfo>[] {
     return [
       {
-        key: "i",
+        key: "ctrl+i",
         label: "inspect",
         handler: async (item) => {
           await runCmCommand(pi, picker, cwd, "inspect", [item.path]);
         },
       },
       {
-        key: "d",
+        key: "ctrl+d",
         label: "deps",
         handler: async (item) => {
           await runCmCommand(pi, picker, cwd, "deps", [item.path]);
         },
       },
       {
-        key: "u",
+        key: "ctrl+u",
         label: "used-by",
         handler: async (item) => {
           await runCmCommand(pi, picker, cwd, "deps", [

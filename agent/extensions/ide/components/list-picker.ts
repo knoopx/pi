@@ -322,7 +322,7 @@ export function createListPicker<T extends ListPickerItem>(
 
     // Check custom actions first (before printable characters)
     if (config.actions && filteredItems.length > 0) {
-      const action = config.actions.find((a) => a.key === data);
+      const action = config.actions.find((a) => matchesKey(data, a.key));
       if (action) {
         const item = filteredItems[selectedIndex];
         if (item) {
