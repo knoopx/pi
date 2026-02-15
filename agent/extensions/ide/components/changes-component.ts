@@ -213,25 +213,26 @@ ${workflowLines}
     }
   }
 
+  async function reloadBookmarks(): Promise<void> {
+    const bookmarkEntries = await listBookmarksByChange(pi, cwd);
+    const nextBookmarksByChange = new Map<string, string[]>();
+    for (const change of changes) {
+      const bookmarks = bookmarkEntries
+        .filter(
+          (entry) =>
+            change.changeId.startsWith(entry.changeId) ||
+            entry.changeId.startsWith(change.changeId),
+        )
+        .map((entry) => entry.bookmark);
+      nextBookmarksByChange.set(change.changeId, bookmarks);
+    }
+    bookmarksByChange = nextBookmarksByChange;
+  }
+
   async function loadChanges(): Promise<void> {
     try {
       changes = await loadMutableChanges(pi, cwd);
-
-      const bookmarkEntries = await listBookmarksByChange(pi, cwd);
-      const nextBookmarksByChange = new Map<string, string[]>();
-
-      for (const change of changes) {
-        const bookmarks = bookmarkEntries
-          .filter(
-            (entry) =>
-              change.changeId.startsWith(entry.changeId) ||
-              entry.changeId.startsWith(change.changeId),
-          )
-          .map((entry) => entry.bookmark);
-        nextBookmarksByChange.set(change.changeId, bookmarks);
-      }
-
-      bookmarksByChange = nextBookmarksByChange;
+      await reloadBookmarks();
 
       const existingIds = new Set(changes.map((change) => change.changeId));
       for (const changeId of selectedChangeIds) {
@@ -555,6 +556,9 @@ ${workflowLines}
             if (!bookmarkName) {
               return;
             }
+            await reloadBookmarks();
+            invalidateCache(loadingState);
+            tui.requestRender();
             onNotify?.(
               `Updated bookmark '${bookmarkName}' to ${selectedChange.changeId}`,
               "info",
