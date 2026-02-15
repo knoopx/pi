@@ -41,6 +41,73 @@ export function createSymbolsComponent(
   initialQuery: string,
   cwd: string,
 ): ListPickerComponent & { invalidate: () => void } {
+  // Helper to run cm commands and display output
+  async function runCmCommand(
+    picker: ListPickerComponent,
+    command: string,
+    args: string[],
+  ): Promise<void> {
+    const result = await pi.exec("cm", [command, ...args, "--format", "ai"], {
+      cwd,
+    });
+    const output =
+      result.code === 0 ? result.stdout : `Error: ${result.stderr}`;
+    picker.setPreview(output.split("\n"));
+  }
+
+  // Create actions that will be bound to the picker
+  function createActions(
+    picker: ListPickerComponent,
+  ): ListPickerAction<SymbolInfo>[] {
+    return [
+      {
+        key: "c",
+        label: "callers",
+        handler: async (item) => {
+          await runCmCommand(picker, "callers", [item.name]);
+        },
+      },
+      {
+        key: "C",
+        label: "callees",
+        handler: async (item) => {
+          await runCmCommand(picker, "callees", [item.name]);
+        },
+      },
+      {
+        key: "t",
+        label: "tests",
+        handler: async (item) => {
+          await runCmCommand(picker, "tests", [item.name]);
+        },
+      },
+      {
+        key: "T",
+        label: "types",
+        handler: async (item) => {
+          await runCmCommand(picker, "types", [item.name]);
+        },
+      },
+      {
+        key: "s",
+        label: "schema",
+        handler: async (item) => {
+          await runCmCommand(picker, "schema", [item.name]);
+        },
+      },
+      {
+        key: "i",
+        label: "impact",
+        handler: async (item) => {
+          await runCmCommand(picker, "impact", [item.name]);
+        },
+      },
+    ];
+  }
+
+  // Create picker with placeholder actions, then update with real ones
+  let pickerRef: ListPickerComponent | null = null;
+
   const picker = createListPicker<SymbolInfo>(
     pi,
     tui,
@@ -51,6 +118,16 @@ export function createSymbolsComponent(
     {
       title: "Symbols",
       helpParts: ["↑↓ nav", "type to search"],
+      get actions() {
+        return pickerRef ? createActions(pickerRef) : [];
+      },
+      onEdit: async (item) => {
+        const { join } = await import("node:path");
+        await pi.exec("code", [
+          "-g",
+          `${join(cwd, item.path)}:${item.startLine}`,
+        ]);
+      },
       loadItems: async () => {
         const result = await pi.exec(
           "cm",
@@ -122,6 +199,8 @@ export function createSymbolsComponent(
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
     },
   );
+
+  pickerRef = picker;
 
   return {
     ...picker,
