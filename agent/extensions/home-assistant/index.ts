@@ -28,6 +28,7 @@ import { Text, SelectList, type SelectItem } from "@mariozechner/pi-tui";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
+import { SELECT_LIST_STYLES } from "../common/select-list-styles";
 
 // Types for Home Assistant API responses
 interface HAState {
@@ -181,14 +182,29 @@ function formatStateDetails(state: HAState): string {
   ].join("\n");
 }
 
-// Common SelectList styling options
-const SELECT_LIST_STYLES = {
-  selectedPrefix: (text: string) => `\x1b[32m>\x1b[0m ${text}`,
-  selectedText: (text: string) => `\x1b[1m${text}\x1b[0m`,
-  description: (text: string) => `\x1b[90m${text}\x1b[0m`,
-  scrollInfo: (text: string) => `\x1b[90m${text}\x1b[0m`,
-  noMatch: (text: string) => `\x1b[31m${text}\x1b[0m`,
-};
+// Helper to show a SelectList and return the selected value
+async function showSelectList(
+  ctx: {
+    ui: {
+      custom: (factory: () => SelectList, opts?: object) => Promise<unknown>;
+    };
+  },
+  options: SelectItem[],
+  visibleCount: number,
+  width: number,
+): Promise<string | null> {
+  const selectList = new SelectList(options, visibleCount, SELECT_LIST_STYLES);
+  return new Promise<string | null>((resolve) => {
+    selectList.onSelect = (item: SelectItem) => resolve(item.value);
+    selectList.onCancel = () => resolve(null);
+    ctx.ui
+      .custom(() => selectList, {
+        overlay: true,
+        overlayOptions: { width, anchor: "center" },
+      })
+      .then((result) => resolve(result as string | null));
+  });
+}
 
 export default function homeAssistantExtension(pi: ExtensionAPI) {
   // Command: Configure Home Assistant
@@ -222,18 +238,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
           },
         ];
 
-        const selectList = new SelectList(options, 6, SELECT_LIST_STYLES);
-
-        const choice = await new Promise<string | null>((resolve) => {
-          selectList.onSelect = (item: SelectItem) => resolve(item.value);
-          selectList.onCancel = () => resolve(null);
-          ctx.ui
-            .custom(() => selectList, {
-              overlay: true,
-              overlayOptions: { width: 60, anchor: "center" },
-            })
-            .then((result) => resolve(result as string | null));
-        });
+        const choice = await showSelectList(ctx, options, 6, 60);
 
         if (!choice || choice === "cancel") return;
 
@@ -764,18 +769,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
           };
         });
 
-        const selectList = new SelectList(options, 12, SELECT_LIST_STYLES);
-
-        const selectedEntityId = await new Promise<string | null>((resolve) => {
-          selectList.onSelect = (item: SelectItem) => resolve(item.value);
-          selectList.onCancel = () => resolve(null);
-          ctx.ui
-            .custom(() => selectList, {
-              overlay: true,
-              overlayOptions: { width: 80, anchor: "center" },
-            })
-            .then((result) => resolve(result as string | null));
-        });
+        const selectedEntityId = await showSelectList(ctx, options, 12, 80);
 
         if (!selectedEntityId) {
           ctx.ui.notify("Cancelled", "info");
@@ -813,22 +807,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
           { value: "cancel", label: "Cancel", description: "Cancel action" },
         ];
 
-        const actionSelectList = new SelectList(
-          actionOptions,
-          6,
-          SELECT_LIST_STYLES,
-        );
-
-        const action = await new Promise<string | null>((resolve) => {
-          actionSelectList.onSelect = (item: SelectItem) => resolve(item.value);
-          actionSelectList.onCancel = () => resolve(null);
-          ctx.ui
-            .custom(() => actionSelectList, {
-              overlay: true,
-              overlayOptions: { width: 60, anchor: "center" },
-            })
-            .then((result) => resolve(result as string | null));
-        });
+        const action = await showSelectList(ctx, actionOptions, 6, 60);
 
         if (!action || action === "cancel") return;
 

@@ -8,6 +8,7 @@ import {
   type ListPickerItem,
   type ListPickerComponent,
 } from "./list-picker";
+import { loadFilePreviewWithBat } from "./utils";
 
 /** Symbol type icons */
 const SYMBOL_TYPE_ICONS: Record<string, string> = {
@@ -117,17 +118,7 @@ export function createSymbolsComponent(
         const pathShort = item.path.replace(/^\.\//, "");
         return `${icon} ${item.name} ${pathShort}:${item.startLine}`;
       },
-      loadPreview: async (item) => {
-        const result = await pi.exec(
-          "bat",
-          ["--plain", "--color=always", item.path],
-          { cwd },
-        );
-        if (result.code === 0) {
-          return result.stdout.split("\n");
-        }
-        return [`Error reading file: ${result.stderr}`];
-      },
+      loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
     },
   );
 

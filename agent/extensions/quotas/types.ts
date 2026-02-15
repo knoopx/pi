@@ -1,3 +1,12 @@
+export interface WindowConfig {
+  path: string;
+  label: string | ((data: unknown, windowData: unknown) => string);
+  usedPercentPath?: string;
+  usedPercentTransform?: (val: number) => number;
+  resetPath?: string;
+  fixedLabel?: string;
+}
+
 export interface ProviderConfig {
   provider: string;
   displayName: string;
@@ -6,14 +15,7 @@ export interface ProviderConfig {
   method?: string;
   body?: string;
   headers: (token: string) => Record<string, string>;
-  windows?: Array<{
-    path: string;
-    label: string | ((data: unknown, windowData: unknown) => string);
-    usedPercentPath?: string;
-    usedPercentTransform?: (val: number) => number;
-    resetPath?: string;
-    fixedLabel?: string;
-  }>;
+  windows?: WindowConfig[];
   customProcessor?: (data: unknown) => RateWindow[];
 }
 

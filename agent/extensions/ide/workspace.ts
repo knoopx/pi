@@ -7,22 +7,11 @@ import type {
   WorkspaceStatus,
   WorkspaceListEntry,
   DiffStats,
+  FileChange,
 } from "./types";
+import { updateStaleWorkspace, loadChangedFiles } from "./jj";
 
 const WORKSPACE_PREFIX = "ide-";
-
-/**
- * Update stale working copy if needed.
- * Jj working copies can become stale when the repo state changes.
- */
-async function updateStaleWorkspace(
-  pi: ExtensionAPI,
-  cwd?: string,
-): Promise<void> {
-  // Running `jj status` will auto-update a stale working copy
-  // or we can explicitly run workspace update-stale
-  await pi.exec("jj", ["workspace", "update-stale"], cwd ? { cwd } : undefined);
-}
 
 /**
  * Generate a unique workspace name
@@ -323,38 +312,15 @@ export async function spawnAgent(
 }
 
 /**
- * File change info
- */
-export interface FileChange {
-  status: string;
-  path: string;
-}
-
-/**
- * Load changed files for a workspace
+ * Load changed files for a workspace.
+ * Re-exports loadChangedFiles from jj.ts for backward compatibility.
  */
 export async function loadFiles(
   pi: ExtensionAPI,
   workspacePath: string,
   changeId: string,
 ): Promise<FileChange[]> {
-  const result = await pi.exec("jj", ["diff", "-r", changeId, "--summary"], {
-    cwd: workspacePath,
-  });
-
-  if (result.code !== 0) {
-    return [];
-  }
-
-  return result.stdout
-    .trim()
-    .split("\n")
-    .filter(Boolean)
-    .map((line) => {
-      const match = line.match(/^([AMD])\s+(.+)$/);
-      return match ? { status: match[1]!, path: match[2]! } : null;
-    })
-    .filter((f): f is FileChange => f !== null);
+  return loadChangedFiles(pi, workspacePath, changeId);
 }
 
 /**

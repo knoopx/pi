@@ -11,8 +11,8 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import type { TextContent } from "@mariozechner/pi-ai";
 import { Type, type Static } from "@sinclair/typebox";
+import { textResult } from "../common/tool-utils";
 
 // Parameter schemas
 const SearchPyPIPackagesParams = Type.Object({
@@ -57,14 +57,6 @@ interface PyPIPackageInfo {
 
 interface PyPIPackageResponse {
   info: PyPIPackageInfo;
-}
-
-function textResult(
-  text: string,
-  details: Record<string, unknown> = {},
-): AgentToolResult<Record<string, unknown>> {
-  const content: TextContent[] = [{ type: "text", text }];
-  return { content, details };
 }
 
 /**

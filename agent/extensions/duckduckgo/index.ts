@@ -3,12 +3,11 @@ import type {
   AgentToolUpdateCallback,
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import type { TextContent } from "@mariozechner/pi-ai";
 import { Type, type Static } from "@sinclair/typebox";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
+import { textResult } from "../common/tool-utils";
 
 // Define types
 interface SearchResult {
@@ -28,14 +27,6 @@ const SearchDuckDuckGoParams = Type.Object({
 });
 
 type SearchDuckDuckGoParamsType = Static<typeof SearchDuckDuckGoParams>;
-
-function textResult(
-  text: string,
-  details: Record<string, unknown> = {},
-): AgentToolResult<Record<string, unknown>> {
-  const content: TextContent[] = [{ type: "text", text }];
-  return { content, details };
-}
 
 /**
  * Search DuckDuckGo and return results

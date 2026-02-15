@@ -138,25 +138,62 @@ function buildSearchResult<T>(
 }
 
 /**
+ * Helper to build aggregation terms (reused at top-level and inside 'all')
+ */
+function buildAggregationTerms(): Record<string, unknown> {
+  return {
+    package_attr_set: { terms: { field: "package_attr_set", size: 20 } },
+    package_license_set: { terms: { field: "package_license_set", size: 20 } },
+    package_maintainers_set: {
+      terms: { field: "package_maintainers_set", size: 20 },
+    },
+    package_teams_set: { terms: { field: "package_teams_set", size: 20 } },
+    package_platforms: { terms: { field: "package_platforms", size: 20 } },
+  };
+}
+
+/**
  * Helper function to build common aggregations structure
  */
 function buildCommonAggregations(): Record<string, unknown> {
   return {
     global: {},
-    aggregations: {
-      package_attr_set: { terms: { field: "package_attr_set", size: 20 } },
-      package_license_set: {
-        terms: { field: "package_license_set", size: 20 },
-      },
-      package_maintainers_set: {
-        terms: { field: "package_maintainers_set", size: 20 },
-      },
-      package_teams_set: {
-        terms: { field: "package_teams_set", size: 20 },
-      },
-      package_platforms: {
-        terms: { field: "package_platforms", size: 20 },
-      },
+    aggregations: buildAggregationTerms(),
+  };
+}
+
+/**
+ * Helper to build dis_max query with multi_match and wildcard
+ */
+function buildDisMaxQuery(
+  query: string,
+  fields: string[],
+  wildcardField: string,
+): Record<string, unknown> {
+  return {
+    dis_max: {
+      tie_breaker: 0.7,
+      queries: [
+        {
+          multi_match: {
+            type: "cross_fields",
+            query: query,
+            analyzer: "whitespace",
+            auto_generate_synonyms_phrase_query: false,
+            operator: "and",
+            _name: `multi_match_${query}`,
+            fields,
+          },
+        },
+        {
+          wildcard: {
+            [wildcardField]: {
+              value: `*${query}*`,
+              case_insensitive: true,
+            },
+          },
+        },
+      ],
     },
   };
 }
@@ -193,6 +230,23 @@ const COMMON_HEADERS = {
   Authorization: `Basic ${AUTH_TOKEN}`,
 };
 
+async function postNixSearch<T>(
+  queryPayload: Record<string, unknown>,
+): Promise<T[]> {
+  const response = await fetch(SEARCH_URL, {
+    method: "POST",
+    headers: COMMON_HEADERS,
+    body: JSON.stringify(queryPayload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Search request failed: ${response.status}`);
+  }
+
+  const data = (await response.json()) as NixSearchResponse<T>;
+  return data.hits.hits.map((hit) => hit._source);
+}
+
 function createPackageQueryPayload(query: string, sourceFields: string[]) {
   return {
     from: 0,
@@ -201,33 +255,8 @@ function createPackageQueryPayload(query: string, sourceFields: string[]) {
       { _score: "desc", package_attr_name: "desc", package_pversion: "desc" },
     ],
     aggs: {
-      package_attr_set: { terms: { field: "package_attr_set", size: 20 } },
-      package_license_set: {
-        terms: { field: "package_license_set", size: 20 },
-      },
-      package_maintainers_set: {
-        terms: { field: "package_maintainers_set", size: 20 },
-      },
-      package_teams_set: { terms: { field: "package_teams_set", size: 20 } },
-      package_platforms: { terms: { field: "package_platforms", size: 20 } },
-      all: {
-        global: {},
-        aggregations: {
-          package_attr_set: { terms: { field: "package_attr_set", size: 20 } },
-          package_license_set: {
-            terms: { field: "package_license_set", size: 20 },
-          },
-          package_maintainers_set: {
-            terms: { field: "package_maintainers_set", size: 20 },
-          },
-          package_teams_set: {
-            terms: { field: "package_teams_set", size: 20 },
-          },
-          package_platforms: {
-            terms: { field: "package_platforms", size: 20 },
-          },
-        },
-      },
+      ...buildAggregationTerms(),
+      all: buildCommonAggregations(),
     },
     query: {
       bool: {
@@ -247,45 +276,24 @@ function createPackageQueryPayload(query: string, sourceFields: string[]) {
         ],
         must_not: [],
         must: [
-          {
-            dis_max: {
-              tie_breaker: 0.7,
-              queries: [
-                {
-                  multi_match: {
-                    type: "cross_fields",
-                    query: query,
-                    analyzer: "whitespace",
-                    auto_generate_synonyms_phrase_query: false,
-                    operator: "and",
-                    _name: `multi_match_${query}`,
-                    fields: [
-                      "package_attr_name^9",
-                      "package_attr_name.*^5.3999999999999995",
-                      "package_programs^9",
-                      "package_programs.*^5.3999999999999995",
-                      "package_pname^6",
-                      "package_pname.*^3.5999999999999996",
-                      "package_description^1.3",
-                      "package_description.*^0.78",
-                      "package_longDescription^1",
-                      "package_longDescription.*^0.6",
-                      "flake_name^0.5",
-                      "flake_name.*^0.3",
-                    ],
-                  },
-                },
-                {
-                  wildcard: {
-                    package_attr_name: {
-                      value: `*${query}*`,
-                      case_insensitive: true,
-                    },
-                  },
-                },
-              ],
-            },
-          },
+          buildDisMaxQuery(
+            query,
+            [
+              "package_attr_name^9",
+              "package_attr_name.*^5.3999999999999995",
+              "package_programs^9",
+              "package_programs.*^5.3999999999999995",
+              "package_pname^6",
+              "package_pname.*^3.5999999999999996",
+              "package_description^1.3",
+              "package_description.*^0.78",
+              "package_longDescription^1",
+              "package_longDescription.*^0.6",
+              "flake_name^0.5",
+              "flake_name.*^0.3",
+            ],
+            "package_attr_name",
+          ),
         ],
       },
     },
@@ -320,18 +328,7 @@ async function searchNixPackages(query: string): Promise<NixPackage[]> {
     "package_position",
   ]);
 
-  const response = await fetch(SEARCH_URL, {
-    method: "POST",
-    headers: COMMON_HEADERS,
-    body: JSON.stringify(queryPayload),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Search request failed: ${response.status}`);
-  }
-
-  const data = (await response.json()) as NixSearchResponse<NixPackage>;
-  return data.hits.hits.map((hit) => hit._source);
+  return postNixSearch<NixPackage>(queryPayload);
 }
 
 function buildPackageAggregations(): Record<string, unknown> {
@@ -354,39 +351,18 @@ async function searchNixOptions(query: string): Promise<NixOption[]> {
         ],
         must_not: [],
         must: [
-          {
-            dis_max: {
-              tie_breaker: 0.7,
-              queries: [
-                {
-                  multi_match: {
-                    type: "cross_fields",
-                    query: query,
-                    analyzer: "whitespace",
-                    auto_generate_synonyms_phrase_query: false,
-                    operator: "and",
-                    _name: `multi_match_${query}`,
-                    fields: [
-                      "option_name^6",
-                      "option_name.*^3.5999999999999996",
-                      "option_description^1",
-                      "option_description.*^0.6",
-                      "flake_name^0.5",
-                      "flake_name.*^0.3",
-                    ],
-                  },
-                },
-                {
-                  wildcard: {
-                    option_name: {
-                      value: `*${query}*`,
-                      case_insensitive: true,
-                    },
-                  },
-                },
-              ],
-            },
-          },
+          buildDisMaxQuery(
+            query,
+            [
+              "option_name^6",
+              "option_name.*^3.5999999999999996",
+              "option_description^1",
+              "option_description.*^0.6",
+              "flake_name^0.5",
+              "flake_name.*^0.3",
+            ],
+            "option_name",
+          ),
         ],
       },
     },
@@ -401,18 +377,7 @@ async function searchNixOptions(query: string): Promise<NixOption[]> {
     ],
   };
 
-  const response = await fetch(SEARCH_URL, {
-    method: "POST",
-    headers: COMMON_HEADERS,
-    body: JSON.stringify(queryPayload),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Search request failed: ${response.status}`);
-  }
-
-  const data = (await response.json()) as NixSearchResponse<NixOption>;
-  return data.hits.hits.map((hit) => hit._source);
+  return postNixSearch<NixOption>(queryPayload);
 }
 
 async function searchHomeManagerOptions(

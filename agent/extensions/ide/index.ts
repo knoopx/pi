@@ -16,7 +16,7 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Key } from "@mariozechner/pi-tui";
-import type { AgentWorkspace } from "./types";
+import { formatFileStats } from "./types";
 import {
   generateWorkspaceName,
   createWorkspace,
@@ -35,15 +35,27 @@ import { createBookmarkPromptComponent } from "./components/bookmark-prompt-comp
 import { createBookmarksComponent } from "./components/bookmarks-component";
 import { setBookmarkToChange } from "./jj";
 
-function formatFileStats(ws: AgentWorkspace): string {
-  if (!ws.fileStats) return "";
-  const { added, modified, deleted } = ws.fileStats;
-  const parts: string[] = [];
-  if (added > 0) parts.push(`+${added}`);
-  if (modified > 0) parts.push(`~${modified}`);
-  if (deleted > 0) parts.push(`-${deleted}`);
-  return parts.length > 0 ? `[${parts.join(" ")}]` : "";
-}
+// Common overlay options for full-screen components
+const FULL_OVERLAY_OPTIONS = {
+  overlay: true,
+  overlayOptions: {
+    width: "90%" as const,
+    maxHeight: "90%" as const,
+    minWidth: 80,
+    anchor: "center" as const,
+  },
+};
+
+// Smaller overlay for prompts and bookmarks
+const COMPACT_OVERLAY_OPTIONS = {
+  overlay: true,
+  overlayOptions: {
+    width: "70%" as const,
+    maxHeight: "90%" as const,
+    minWidth: 60,
+    anchor: "center" as const,
+  },
+};
 
 async function spawnWorkspaceAgent(
   pi: ExtensionAPI,
@@ -262,20 +274,9 @@ export default function ideExtension(pi: ExtensionAPI) {
         return;
       }
 
-      await ctx.ui.custom<void>(
-        (tui, theme, keybindings, done) => {
-          return createWorkspacesComponent(pi, tui, theme, keybindings, done);
-        },
-        {
-          overlay: true,
-          overlayOptions: {
-            width: "90%",
-            maxHeight: "90%",
-            minWidth: 80,
-            anchor: "center",
-          },
-        },
-      );
+      await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
+        return createWorkspacesComponent(pi, tui, theme, keybindings, done);
+      }, FULL_OVERLAY_OPTIONS);
     },
   });
 
@@ -286,39 +287,8 @@ export default function ideExtension(pi: ExtensionAPI) {
     description:
       "Browse and pick symbols from the codebase with source preview",
     handler: async (args, ctx) => {
-      if (!ctx.hasUI) {
-        return;
-      }
-
-      const result = await ctx.ui.custom<SymbolInfo | null>(
-        (tui, theme, keybindings, done) => {
-          return createSymbolsComponent(
-            pi,
-            tui,
-            theme,
-            keybindings,
-            done,
-            args.trim(),
-            ctx.cwd,
-          );
-        },
-        {
-          overlay: true,
-          overlayOptions: {
-            width: "90%",
-            maxHeight: "90%",
-            minWidth: 80,
-            anchor: "center",
-          },
-        },
-      );
-
-      if (result) {
-        // Append the selected file path:line to the current editor text
-        const ref = ` ${result.path}:${result.startLine}`;
-        const currentText = ctx.ui.getEditorText();
-        ctx.ui.setEditorText(currentText + ref);
-      }
+      if (!ctx.hasUI) return;
+      await openSymbolsPicker(pi, ctx, args.trim());
     },
   });
 
@@ -328,38 +298,8 @@ export default function ideExtension(pi: ExtensionAPI) {
   pi.registerCommand("files", {
     description: "Browse and pick files from the codebase with source preview",
     handler: async (args, ctx) => {
-      if (!ctx.hasUI) {
-        return;
-      }
-
-      const result = await ctx.ui.custom<FileInfo | null>(
-        (tui, theme, keybindings, done) => {
-          return createFilesComponent(
-            pi,
-            tui,
-            theme,
-            keybindings,
-            done,
-            args.trim(),
-            ctx.cwd,
-          );
-        },
-        {
-          overlay: true,
-          overlayOptions: {
-            width: "90%",
-            maxHeight: "90%",
-            minWidth: 80,
-            anchor: "center",
-          },
-        },
-      );
-
-      if (result) {
-        const ref = ` ${result.path}`;
-        const currentText = ctx.ui.getEditorText();
-        ctx.ui.setEditorText(currentText + ref);
-      }
+      if (!ctx.hasUI) return;
+      await openFilesPicker(pi, ctx, args.trim());
     },
   });
 
@@ -369,32 +309,8 @@ export default function ideExtension(pi: ExtensionAPI) {
   pi.registerCommand("bookmarks", {
     description: "Browse bookmarks (name@remote), insert, refresh, and forget",
     handler: async (_args, ctx) => {
-      if (!ctx.hasUI) {
-        return;
-      }
-
-      await ctx.ui.custom<void>(
-        (tui, theme, keybindings, done) => {
-          return createBookmarksComponent(
-            pi,
-            tui,
-            theme,
-            keybindings,
-            done,
-            ctx.cwd,
-            (text) => ctx.ui.setEditorText(text),
-          );
-        },
-        {
-          overlay: true,
-          overlayOptions: {
-            width: "70%",
-            maxHeight: "90%",
-            minWidth: 60,
-            anchor: "center",
-          },
-        },
-      );
+      if (!ctx.hasUI) return;
+      await openBookmarksBrowser(pi, ctx);
     },
   });
 
@@ -404,34 +320,8 @@ export default function ideExtension(pi: ExtensionAPI) {
   pi.registerCommand("changes", {
     description: "Browse jujutsu changes on current branch with diff preview",
     handler: async (_args, ctx) => {
-      if (!ctx.hasUI) {
-        return;
-      }
-
-      await ctx.ui.custom<void>(
-        (tui, theme, keybindings, done) => {
-          return createChangesComponent(
-            pi,
-            tui,
-            theme,
-            keybindings,
-            done,
-            ctx.cwd,
-            (text) => ctx.ui.setEditorText(text),
-            (changeId) => promptAndSetBookmark(ctx, changeId),
-            (message, type = "info") => ctx.ui.notify(message, type),
-          );
-        },
-        {
-          overlay: true,
-          overlayOptions: {
-            width: "90%",
-            maxHeight: "90%",
-            minWidth: 80,
-            anchor: "center",
-          },
-        },
-      );
+      if (!ctx.hasUI) return;
+      await openChangesBrowser(pi, ctx, promptAndSetBookmark);
     },
   });
 
@@ -442,35 +332,7 @@ export default function ideExtension(pi: ExtensionAPI) {
     description: "Open symbol picker",
     handler: async (ctx) => {
       if (!ctx.hasUI) return;
-
-      const result = await ctx.ui.custom<SymbolInfo | null>(
-        (tui, theme, keybindings, done) => {
-          return createSymbolsComponent(
-            pi,
-            tui,
-            theme,
-            keybindings,
-            done,
-            "",
-            ctx.cwd,
-          );
-        },
-        {
-          overlay: true,
-          overlayOptions: {
-            width: "90%",
-            maxHeight: "90%",
-            minWidth: 80,
-            anchor: "center",
-          },
-        },
-      );
-
-      if (result) {
-        const ref = ` ${result.path}:${result.startLine}`;
-        const currentText = ctx.ui.getEditorText();
-        ctx.ui.setEditorText(currentText + ref);
-      }
+      await openSymbolsPicker(pi, ctx, "");
     },
   });
 
@@ -481,35 +343,7 @@ export default function ideExtension(pi: ExtensionAPI) {
     description: "Open file picker",
     handler: async (ctx) => {
       if (!ctx.hasUI) return;
-
-      const result = await ctx.ui.custom<FileInfo | null>(
-        (tui, theme, keybindings, done) => {
-          return createFilesComponent(
-            pi,
-            tui,
-            theme,
-            keybindings,
-            done,
-            "",
-            ctx.cwd,
-          );
-        },
-        {
-          overlay: true,
-          overlayOptions: {
-            width: "90%",
-            maxHeight: "90%",
-            minWidth: 80,
-            anchor: "center",
-          },
-        },
-      );
-
-      if (result) {
-        const ref = ` ${result.path}`;
-        const currentText = ctx.ui.getEditorText();
-        ctx.ui.setEditorText(currentText + ref);
-      }
+      await openFilesPicker(pi, ctx, "");
     },
   });
 
@@ -520,29 +354,7 @@ export default function ideExtension(pi: ExtensionAPI) {
     description: "Open bookmarks browser",
     handler: async (ctx) => {
       if (!ctx.hasUI) return;
-
-      await ctx.ui.custom<void>(
-        (tui, theme, keybindings, done) => {
-          return createBookmarksComponent(
-            pi,
-            tui,
-            theme,
-            keybindings,
-            done,
-            ctx.cwd,
-            (text) => ctx.ui.setEditorText(text),
-          );
-        },
-        {
-          overlay: true,
-          overlayOptions: {
-            width: "70%",
-            maxHeight: "90%",
-            minWidth: 60,
-            anchor: "center",
-          },
-        },
-      );
+      await openBookmarksBrowser(pi, ctx);
     },
   });
 
@@ -554,20 +366,9 @@ export default function ideExtension(pi: ExtensionAPI) {
     handler: async (ctx) => {
       if (!ctx.hasUI) return;
 
-      await ctx.ui.custom<void>(
-        (tui, theme, keybindings, done) => {
-          return createWorkspacesComponent(pi, tui, theme, keybindings, done);
-        },
-        {
-          overlay: true,
-          overlayOptions: {
-            width: "90%",
-            maxHeight: "90%",
-            minWidth: 80,
-            anchor: "center",
-          },
-        },
-      );
+      await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
+        return createWorkspacesComponent(pi, tui, theme, keybindings, done);
+      }, FULL_OVERLAY_OPTIONS);
     },
   });
 
@@ -578,31 +379,7 @@ export default function ideExtension(pi: ExtensionAPI) {
     description: "Open changes browser",
     handler: async (ctx) => {
       if (!ctx.hasUI) return;
-
-      await ctx.ui.custom<void>(
-        (tui, theme, keybindings, done) => {
-          return createChangesComponent(
-            pi,
-            tui,
-            theme,
-            keybindings,
-            done,
-            ctx.cwd,
-            (text) => ctx.ui.setEditorText(text),
-            (changeId) => promptAndSetBookmark(ctx, changeId),
-            (message, type = "info") => ctx.ui.notify(message, type),
-          );
-        },
-        {
-          overlay: true,
-          overlayOptions: {
-            width: "90%",
-            maxHeight: "90%",
-            minWidth: 80,
-            anchor: "center",
-          },
-        },
-      );
+      await openChangesBrowser(pi, ctx, promptAndSetBookmark);
     },
   });
 }
@@ -617,6 +394,96 @@ interface SymbolInfo {
 
 interface FileInfo {
   path: string;
+}
+
+/**
+ * Handler factories to reduce duplication between commands and shortcuts
+ */
+
+async function openFilesPicker(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+  initialQuery: string,
+): Promise<void> {
+  const result = await ctx.ui.custom<FileInfo | null>(
+    (tui, theme, keybindings, done) => {
+      return createFilesComponent(
+        pi,
+        tui,
+        theme,
+        keybindings,
+        done,
+        initialQuery,
+        ctx.cwd,
+      );
+    },
+    FULL_OVERLAY_OPTIONS,
+  );
+
+  if (result) {
+    const ref = ` ${result.path}`;
+    const currentText = ctx.ui.getEditorText();
+    ctx.ui.setEditorText(currentText + ref);
+  }
+}
+
+async function openSymbolsPicker(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+  initialQuery: string,
+): Promise<void> {
+  const result = await ctx.ui.custom<SymbolInfo | null>(
+    (tui, theme, keybindings, done) => {
+      return createSymbolsComponent(
+        pi,
+        tui,
+        theme,
+        keybindings,
+        done,
+        initialQuery,
+        ctx.cwd,
+      );
+    },
+    FULL_OVERLAY_OPTIONS,
+  );
+
+  if (result) {
+    const ref = ` ${result.path}:${result.startLine}`;
+    const currentText = ctx.ui.getEditorText();
+    ctx.ui.setEditorText(currentText + ref);
+  }
+}
+
+async function openBookmarksBrowser(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+): Promise<void> {
+  await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
+    return createBookmarksComponent(
+      { pi, tui, theme, keybindings, cwd: ctx.cwd },
+      done,
+      (text) => ctx.ui.setEditorText(text),
+    );
+  }, COMPACT_OVERLAY_OPTIONS);
+}
+
+async function openChangesBrowser(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+  promptAndSetBookmark: (
+    ctx: ExtensionContext,
+    changeId: string,
+  ) => Promise<string | null>,
+): Promise<void> {
+  await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
+    return createChangesComponent(
+      { pi, tui, theme, keybindings, cwd: ctx.cwd },
+      done,
+      (text) => ctx.ui.setEditorText(text),
+      (changeId) => promptAndSetBookmark(ctx, changeId),
+      (message, type = "info") => ctx.ui.notify(message, type),
+    );
+  }, FULL_OVERLAY_OPTIONS);
 }
 
 /**

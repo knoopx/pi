@@ -10,6 +10,7 @@ import {
   renderSplitPanel,
   renderSourceRows,
 } from "./split-panel";
+import { isRenderCacheValid, createBaseDimensionsConfig } from "./shared-utils";
 
 export interface ListPickerItem {
   id: string;
@@ -161,16 +162,15 @@ export function createListPicker<T extends ListPickerItem>(
   }
 
   function render(width: number): string[] {
-    if (cachedWidth === width && cachedLines.length > 0) {
+    if (isRenderCacheValid(width, cachedWidth, cachedLines)) {
       return cachedLines;
     }
 
-    const dims = calculateDimensions(tui.terminal.rows, width, {
-      leftTitle: "",
-      rightTitle: "",
-      helpText: "",
-      leftFocus: true,
-    });
+    const dims = calculateDimensions(
+      tui.terminal.rows,
+      width,
+      createBaseDimensionsConfig(true),
+    );
 
     const searchDisplay = searchQuery
       ? ` Search: ${truncateAnsi(searchQuery, dims.leftW - 10)}`

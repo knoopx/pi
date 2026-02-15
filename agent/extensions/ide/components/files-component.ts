@@ -8,6 +8,7 @@ import {
   type ListPickerItem,
   type ListPickerComponent,
 } from "./list-picker";
+import { loadFilePreviewWithBat } from "./utils";
 
 interface FileInfo extends ListPickerItem {
   path: string;
@@ -77,17 +78,7 @@ export function createFilesComponent(
       filterItems: (items, query) =>
         items.filter((item) => item.path.toLowerCase().includes(query)),
       formatItem: (item) => item.path,
-      loadPreview: async (item) => {
-        const result = await pi.exec(
-          "bat",
-          ["--plain", "--color=always", item.path],
-          { cwd },
-        );
-        if (result.code === 0) {
-          return result.stdout.split("\n");
-        }
-        return [`Error reading file: ${result.stderr}`];
-      },
+      loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
     },
   );
 

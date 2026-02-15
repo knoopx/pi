@@ -6,6 +6,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
+import { renderTextToolResult } from "../common/render-utils";
 import { fetchWeather } from "./api";
 import {
   createWeatherErrorResult,
@@ -100,15 +101,7 @@ export default function weatherExtension(pi: ExtensionAPI) {
     },
 
     renderResult(result, _options, theme) {
-      const details = result.details as
-        | { weather?: WeatherInfo; error?: string }
-        | undefined;
-      if (details?.error) {
-        return new Text(theme.fg("error", `Error: ${details.error}`), 0, 0);
-      }
-      const text =
-        result.content[0]?.type === "text" ? result.content[0].text : "";
-      return new Text(text, 0, 0);
+      return renderTextToolResult(result, theme);
     },
   });
 

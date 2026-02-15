@@ -27,7 +27,6 @@ export default [
       },
     },
     rules: {
-      ...tseslint.configs.recommended.rules,
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
@@ -45,5 +44,5 @@ export default [
       "*.config.js",
       "agent/extensions/**/*.config.js",
     ],
-  }
+  },
 ];

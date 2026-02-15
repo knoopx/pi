@@ -51,6 +51,13 @@ function buildInputError(
   };
 }
 
+function cancelledResult(): AgentToolResult<RenderResultDetails> {
+  return {
+    content: [{ type: "text", text: "Cancelled." }],
+    details: { cancelled: true },
+  };
+}
+
 async function resolveDiagramSource(params: {
   source?: string;
   inputFile?: string;
@@ -166,58 +173,25 @@ Use this to:
 
     async execute(_toolCallId, params, signal, onUpdate, _ctx) {
       if (signal?.aborted) {
-        return {
-          content: [{ type: "text", text: "Cancelled." }],
-          details: { cancelled: true },
-        } as AgentToolResult<RenderResultDetails>;
+        return cancelledResult();
       }
 
-      try {
-        onUpdate?.({
-          content: [{ type: "text", text: "Rendering nomnoml diagram..." }],
-          details: { status: "rendering" },
-        });
+      const resolved = await resolveDiagramSource(
+        params as {
+          source?: string;
+          inputFile?: string;
+        },
+      );
 
-        const resolved = await resolveDiagramSource(
-          params as {
-            source?: string;
-            inputFile?: string;
-          },
-        );
-
-        if (resolved.error) {
-          return resolved.error;
-        }
-
-        const svg = await renderNomnomlToSvg(resolved.diagramSource as string);
-        const pngBuffer = await renderPng(svg);
-
-        return {
-          content: [
-            {
-              type: "image",
-              mimeType: "image/png",
-              data: pngBuffer.toString("base64"),
-            },
-          ],
-          details: {
-            rendered: true,
-            format: "png",
-            outputFile: null,
-            attached: true,
-          },
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error rendering diagram: ${String(error)}`,
-            },
-          ],
-          details: { error: String(error) },
-        };
+      if (resolved.error) {
+        return resolved.error;
       }
+
+      return renderDiagram(
+        resolved.diagramSource as string,
+        undefined,
+        onUpdate,
+      );
     },
   });
 
@@ -248,10 +222,7 @@ Use this to:
       };
 
       if (signal?.aborted) {
-        return {
-          content: [{ type: "text", text: "Cancelled." }],
-          details: { cancelled: true },
-        } as AgentToolResult<RenderResultDetails>;
+        return cancelledResult();
       }
 
       return renderDiagram(source, outputFile, onUpdate);
@@ -285,10 +256,7 @@ Use this to:
       };
 
       if (signal?.aborted) {
-        return {
-          content: [{ type: "text", text: "Cancelled." }],
-          details: { cancelled: true },
-        } as AgentToolResult<RenderResultDetails>;
+        return cancelledResult();
       }
 
       const diagramSource = await readFile(normalizePiPath(inputFile), "utf8");

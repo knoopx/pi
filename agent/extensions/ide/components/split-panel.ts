@@ -1,6 +1,27 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { pad, ensureWidth, truncateAnsi } from "./utils";
 
+/**
+ * Render a row in a split panel layout
+ */
+function renderPanelRow(
+  leftContent: string,
+  rightContent: string,
+  leftW: number,
+  rightW: number,
+  lb: "border" | "borderAccent",
+  rb: "border" | "borderAccent",
+  border: (color: "border" | "borderAccent", s: string) => string,
+): string {
+  return (
+    border(lb, "│") +
+    ensureWidth(leftContent, leftW) +
+    border("border", "│") +
+    ensureWidth(rightContent, rightW) +
+    border(rb, "│")
+  );
+}
+
 export interface SplitPanelConfig {
   leftTitle: string;
   rightTitle: string;
@@ -135,14 +156,16 @@ export function renderSplitPanel(
 
     // Right top section
     for (let i = 0; i < rightTopH; i++) {
-      const left = leftRows[i] || pad("", leftW);
-      const right = rightTopRows[i] || pad("", rightW);
       lines.push(
-        border(lb, "│") +
-          ensureWidth(left, leftW) +
-          border("border", "│") +
-          ensureWidth(right, rightW) +
-          border(rb, "│"),
+        renderPanelRow(
+          leftRows[i] || pad("", leftW),
+          rightTopRows[i] || pad("", rightW),
+          leftW,
+          rightW,
+          lb,
+          rb,
+          border,
+        ),
       );
     }
 
@@ -175,14 +198,16 @@ export function renderSplitPanel(
     // Right bottom section
     for (let i = 0; i < rightBottomH; i++) {
       const leftIdx = rightTopH + 3 + i;
-      const left = leftRows[leftIdx] || pad("", leftW);
-      const right = rightBottomRows[i] || pad("", rightW);
       lines.push(
-        border(lb, "│") +
-          ensureWidth(left, leftW) +
-          border("border", "│") +
-          ensureWidth(right, rightW) +
-          border("border", "│"),
+        renderPanelRow(
+          leftRows[leftIdx] || pad("", leftW),
+          rightBottomRows[i] || pad("", rightW),
+          leftW,
+          rightW,
+          lb,
+          "border",
+          border,
+        ),
       );
     }
   } else {
@@ -191,14 +216,16 @@ export function renderSplitPanel(
     const rightRows = rows.right || [];
 
     for (let i = 0; i < contentH; i++) {
-      const left = leftRows[i] || pad("", leftW);
-      const right = rightRows[i] || pad("", rightW);
       lines.push(
-        border(lb, "│") +
-          ensureWidth(left, leftW) +
-          border("border", "│") +
-          ensureWidth(right, rightW) +
-          border(rb, "│"),
+        renderPanelRow(
+          leftRows[i] || pad("", leftW),
+          rightRows[i] || pad("", rightW),
+          leftW,
+          rightW,
+          lb,
+          rb,
+          border,
+        ),
       );
     }
   }

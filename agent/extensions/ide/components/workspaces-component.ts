@@ -14,6 +14,7 @@ import {
   calculateDiffScroll,
   formatErrorMessage,
 } from "./split-panel";
+import { isRenderCacheValid } from "./shared-utils";
 import type {
   AgentWorkspace,
   WorkspaceStatus,
@@ -177,39 +178,23 @@ export function createWorkspacesComponent(
     changeId?: string,
   ): Promise<void> {
     if (!changeId) {
-      diffContent = ["No changes"];
-      invalidate();
-      tui.requestRender();
+      setDiffContent(["No changes"]);
       return;
     }
 
     const cache = workspaceCache.get(ws.name);
-    if (cache) {
-      const cachedDiff = cache.diffs.get(changeId);
-      if (cachedDiff) {
-        diffContent = cachedDiff;
-        diffScroll = 0;
-        invalidate();
-        tui.requestRender();
-        return;
-      }
+    const cachedDiff = cache?.diffs.get(changeId);
+    if (cachedDiff) {
+      setDiffContent(cachedDiff);
+      return;
     }
 
     try {
-      diffContent = await getDiff(pi, ws.path, changeId);
-      diffScroll = 0;
-
-      if (cache) {
-        cache.diffs.set(changeId, diffContent);
-      }
-
-      invalidate();
-      tui.requestRender();
+      const content = await getDiff(pi, ws.path, changeId);
+      cache?.diffs.set(changeId, content);
+      setDiffContent(content);
     } catch (error) {
-      const msg = formatErrorMessage(error);
-      diffContent = [`Error: ${msg}`];
-      invalidate();
-      tui.requestRender();
+      setDiffContent([`Error: ${formatErrorMessage(error)}`]);
     }
   }
 
@@ -218,35 +203,20 @@ export function createWorkspacesComponent(
     filePath?: string,
   ): Promise<void> {
     const diffKey = filePath || "";
-
     const cache = workspaceCache.get(ws.name);
-    if (cache) {
-      const cachedDiff = cache.diffs.get(diffKey);
-      if (cachedDiff) {
-        diffContent = cachedDiff;
-        diffScroll = 0;
-        invalidate();
-        tui.requestRender();
-        return;
-      }
+    const cachedDiff = cache?.diffs.get(diffKey);
+    if (cachedDiff) {
+      setDiffContent(cachedDiff);
+      return;
     }
 
     try {
       const diff = await getWorkspaceDiff(pi, ws.path, filePath);
-      diffContent = diff.split("\n");
-      diffScroll = 0;
-
-      if (cache) {
-        cache.diffs.set(diffKey, diffContent);
-      }
-
-      invalidate();
-      tui.requestRender();
+      const content = diff.split("\n");
+      cache?.diffs.set(diffKey, content);
+      setDiffContent(content);
     } catch (error) {
-      const msg = formatErrorMessage(error);
-      diffContent = [`Error: ${msg}`];
-      invalidate();
-      tui.requestRender();
+      setDiffContent([`Error: ${formatErrorMessage(error)}`]);
     }
   }
 
@@ -329,6 +299,13 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
     cachedWidth = 0;
   }
 
+  function setDiffContent(content: string[], resetScroll = true): void {
+    diffContent = content;
+    if (resetScroll) diffScroll = 0;
+    invalidate();
+    tui.requestRender();
+  }
+
   function getLeftRows(width: number, height: number): string[] {
     const rows: string[] = [];
 
@@ -389,7 +366,7 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
   }
 
   function render(width: number): string[] {
-    if (cachedWidth === width && cachedLines.length > 0) {
+    if (isRenderCacheValid(width, cachedWidth, cachedLines)) {
       return cachedLines;
     }
 
@@ -592,38 +569,32 @@ Icons: ✨ feat | 🐛 fix | 📚 docs | 💄 style | ♻️ refactor | ⚡ perf
         return;
       }
 
+      const navigateFile = (direction: "up" | "down") => {
+        const newIndex =
+          direction === "up"
+            ? Math.max(0, fileIndex - 1)
+            : Math.min(maxIndex, fileIndex + 1);
+        if (newIndex !== fileIndex) {
+          fileIndex = newIndex;
+          if (selectedWorkspace) {
+            if (isDefault) {
+              void loadChangeDiff(
+                selectedWorkspace,
+                changes[fileIndex]?.changeId,
+              );
+            } else {
+              void loadDiff(selectedWorkspace, files[fileIndex]?.path);
+            }
+          }
+          invalidate();
+          tui.requestRender();
+        }
+      };
+
       if (matchesKey(data, "up")) {
-        if (fileIndex > 0) {
-          fileIndex--;
-          if (selectedWorkspace) {
-            if (isDefault) {
-              void loadChangeDiff(
-                selectedWorkspace,
-                changes[fileIndex]?.changeId,
-              );
-            } else {
-              void loadDiff(selectedWorkspace, files[fileIndex]?.path);
-            }
-          }
-          invalidate();
-          tui.requestRender();
-        }
+        navigateFile("up");
       } else if (matchesKey(data, "down")) {
-        if (fileIndex < maxIndex) {
-          fileIndex++;
-          if (selectedWorkspace) {
-            if (isDefault) {
-              void loadChangeDiff(
-                selectedWorkspace,
-                changes[fileIndex]?.changeId,
-              );
-            } else {
-              void loadDiff(selectedWorkspace, files[fileIndex]?.path);
-            }
-          }
-          invalidate();
-          tui.requestRender();
-        }
+        navigateFile("down");
       }
     }
 

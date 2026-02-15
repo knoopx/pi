@@ -1,25 +1,25 @@
 import path from "node:path";
-import type {
-  ExtensionAPI,
-  KeybindingsManager,
-} from "@mariozechner/pi-coding-agent";
-import type { Theme } from "@mariozechner/pi-coding-agent";
 import { matchesKey } from "@mariozechner/pi-tui";
-import {
-  pad,
-  buildHelpText,
-  ensureWidth,
-  formatBookmarkReference,
-  truncateAnsi,
-} from "./utils";
+import { ensureWidth, formatBookmarkReference, truncateAnsi } from "./utils";
 import {
   calculateDimensions,
+  calculateDiffScroll,
   renderSplitPanel,
   renderDiffRows,
   renderFileChangeRows,
-  calculateDiffScroll,
   formatErrorMessage,
 } from "./split-panel";
+import {
+  createComponentCache,
+  createSelectionState,
+  createLoadingState,
+  invalidateCache,
+  renderLoadingRow,
+  renderEmptyState,
+  buildNavigationHelp,
+  type ComponentCache,
+  type BaseComponentParams,
+} from "./shared-utils";
 import type { FileChange, MutableChange } from "../types";
 import {
   loadMutableChanges,
@@ -29,36 +29,81 @@ import {
   listBookmarksByChange,
 } from "../jj";
 
-interface ChangeCache {
-  files: FileChange[];
-  diffs: Map<string, string[]>;
-}
+type ChangeCache = ComponentCache<FileChange>;
 
 export function createChangesComponent(
-  pi: ExtensionAPI,
-  tui: { terminal: { rows: number }; requestRender: () => void },
-  theme: Theme,
-  _keybindings: KeybindingsManager,
+  { pi, tui, theme, cwd }: BaseComponentParams,
   done: (result: void) => void,
-  cwd: string,
   onInsert?: (text: string) => void,
   onBookmark?: (changeId: string) => Promise<string | null>,
   onNotify?: (message: string, type?: "info" | "error") => void,
 ) {
   let changes: MutableChange[] = [];
-  let selectedIndex = 0;
   let selectedChange: MutableChange | null = null;
   let files: FileChange[] = [];
-  let fileIndex = 0;
   let diffContent: string[] = [];
-  let diffScroll = 0;
-  let focus: "changes" | "files" = "changes";
-  let loading = true;
-  let cachedLines: string[] = [];
-  let cachedWidth = 0;
   let bookmarksByChange = new Map<string, string[]>();
   const selectedChangeIds = new Set<string>();
   const changeCache = new Map<string, ChangeCache>();
+
+  // Use shared state objects
+  const selectionState = createSelectionState();
+  const loadingState = createLoadingState();
+
+  // Navigation handlers - defined inline to access current array values
+  function navigateChanges(direction: "up" | "down"): void {
+    const maxIndex = changes.length - 1;
+    const newIndex =
+      direction === "up"
+        ? Math.max(0, selectionState.selectedIndex - 1)
+        : Math.min(maxIndex, selectionState.selectedIndex + 1);
+
+    if (newIndex !== selectionState.selectedIndex) {
+      selectionState.selectedIndex = newIndex;
+      selectedChange = changes[newIndex] || null;
+      if (selectedChange) {
+        void loadFilesAndDiff(selectedChange);
+      }
+      invalidateCache(loadingState);
+      tui.requestRender();
+    }
+  }
+
+  function navigateFiles(direction: "up" | "down"): void {
+    const maxIndex = files.length - 1;
+    const newIndex =
+      direction === "up"
+        ? Math.max(0, selectionState.fileIndex - 1)
+        : Math.min(maxIndex, selectionState.fileIndex + 1);
+
+    if (newIndex !== selectionState.fileIndex) {
+      selectionState.fileIndex = newIndex;
+      const file = files[newIndex] || null;
+      if (selectedChange && file) {
+        void loadDiff(selectedChange, file.path);
+      }
+      invalidateCache(loadingState);
+      tui.requestRender();
+    }
+  }
+
+  function scrollDiff(direction: "up" | "down"): void {
+    selectionState.diffScroll = calculateDiffScroll(
+      direction,
+      selectionState.diffScroll,
+      diffContent.length,
+      tui.terminal.rows,
+      loadingState.cachedWidth,
+    );
+    invalidateCache(loadingState);
+    tui.requestRender();
+  }
+
+  function switchFocus(): void {
+    selectionState.focus = selectionState.focus === "left" ? "right" : "left";
+    invalidateCache(loadingState);
+    tui.requestRender();
+  }
 
   function getDescribeTargets(): MutableChange[] {
     if (selectedChangeIds.size > 0) {
@@ -114,14 +159,17 @@ ${workflowLines}
 
         case "squash": {
           if (!change) return;
-          const prevIndex = selectedIndex;
+          const prevIndex = selectionState.selectedIndex;
           await pi.exec("jj", ["squash", "-u", "-r", change.changeId], { cwd });
           changeCache.clear();
-          fileIndex = 0;
-          diffScroll = 0;
+          selectionState.fileIndex = 0;
+          selectionState.diffScroll = 0;
           await loadChanges();
-          selectedIndex = Math.min(prevIndex, changes.length - 1);
-          selectedChange = changes[selectedIndex] || null;
+          selectionState.selectedIndex = Math.min(
+            prevIndex,
+            changes.length - 1,
+          );
+          selectedChange = changes[selectionState.selectedIndex] || null;
           if (selectedChange) {
             await loadFilesAndDiff(selectedChange);
           }
@@ -130,15 +178,18 @@ ${workflowLines}
 
         case "drop": {
           if (!change) return;
-          const prevIndex = selectedIndex;
+          const prevIndex = selectionState.selectedIndex;
           await pi.exec("jj", ["abandon", change.changeId], { cwd });
           selectedChangeIds.delete(change.changeId);
           changeCache.clear();
-          fileIndex = 0;
-          diffScroll = 0;
+          selectionState.fileIndex = 0;
+          selectionState.diffScroll = 0;
           await loadChanges();
-          selectedIndex = Math.min(prevIndex, Math.max(0, changes.length - 1));
-          selectedChange = changes[selectedIndex] || null;
+          selectionState.selectedIndex = Math.min(
+            prevIndex,
+            Math.max(0, changes.length - 1),
+          );
+          selectedChange = changes[selectionState.selectedIndex] || null;
           if (selectedChange) {
             await loadFilesAndDiff(selectedChange);
           }
@@ -149,7 +200,7 @@ ${workflowLines}
     } catch (error) {
       const msg = formatErrorMessage(error);
       diffContent = [`Error: ${msg}`];
-      invalidate();
+      invalidateCache(loadingState);
       tui.requestRender();
     }
   }
@@ -181,20 +232,20 @@ ${workflowLines}
         }
       }
 
-      loading = false;
+      loadingState.loading = false;
 
       if (changes.length > 0) {
         selectedChange = changes[0]!;
         await loadFilesAndDiff(selectedChange);
       }
 
-      invalidate();
+      invalidateCache(loadingState);
       tui.requestRender();
     } catch (error) {
-      loading = false;
+      loadingState.loading = false;
       const msg = formatErrorMessage(error);
       diffContent = [`Error: ${msg}`];
-      invalidate();
+      invalidateCache(loadingState);
       tui.requestRender();
     }
   }
@@ -204,13 +255,13 @@ ${workflowLines}
       let cache = changeCache.get(change.changeId);
       if (cache) {
         files = cache.files;
-        fileIndex = 0;
+        selectionState.fileIndex = 0;
         const diffKey = files[0]?.path || "";
         const cachedDiff = cache.diffs.get(diffKey);
         if (cachedDiff) {
           diffContent = cachedDiff;
-          diffScroll = 0;
-          invalidate();
+          selectionState.diffScroll = 0;
+          invalidateCache(loadingState);
           tui.requestRender();
           return;
         }
@@ -218,17 +269,17 @@ ${workflowLines}
 
       if (!cache) {
         files = await loadChangedFiles(pi, cwd, change.changeId);
-        cache = { files, diffs: new Map() };
+        cache = createComponentCache(files);
         changeCache.set(change.changeId, cache);
       }
 
-      fileIndex = 0;
+      selectionState.fileIndex = 0;
       await loadDiff(change, files[0]?.path);
     } catch (error) {
       const msg = formatErrorMessage(error);
       files = [];
       diffContent = [`Error loading files: ${msg}`];
-      invalidate();
+      invalidateCache(loadingState);
       tui.requestRender();
     }
   }
@@ -244,8 +295,8 @@ ${workflowLines}
       const cachedDiff = cache.diffs.get(diffKey);
       if (cachedDiff) {
         diffContent = cachedDiff;
-        diffScroll = 0;
-        invalidate();
+        selectionState.diffScroll = 0;
+        invalidateCache(loadingState);
         tui.requestRender();
         return;
       }
@@ -253,51 +304,47 @@ ${workflowLines}
 
     try {
       diffContent = await getDiff(pi, cwd, change.changeId, filePath);
-      diffScroll = 0;
+      selectionState.diffScroll = 0;
 
       if (cache) {
         cache.diffs.set(diffKey, diffContent);
       }
 
-      invalidate();
+      invalidateCache(loadingState);
       tui.requestRender();
     } catch (error) {
       const msg = formatErrorMessage(error);
       diffContent = [`Error: ${msg}`];
-      invalidate();
+      invalidateCache(loadingState);
       tui.requestRender();
     }
   }
 
-  function invalidate(): void {
-    cachedLines = [];
-    cachedWidth = 0;
-  }
-
   function getChangeRows(width: number, height: number): string[] {
-    if (loading) {
-      return [pad(" Loading...", width)];
+    if (loadingState.loading) {
+      return [renderLoadingRow(width)];
     }
 
     if (changes.length === 0) {
-      return [
-        pad(" No changes on branch", width),
-        theme.fg("dim", pad(" All changes are immutable", width)),
-      ];
+      return renderEmptyState(
+        width,
+        "No changes on branch",
+        "All changes are immutable",
+      );
     }
 
     const rows: string[] = [];
     const visibleCount = height;
     let startIdx = 0;
-    if (selectedIndex >= visibleCount) {
-      startIdx = selectedIndex - visibleCount + 1;
+    if (selectionState.selectedIndex >= visibleCount) {
+      startIdx = selectionState.selectedIndex - visibleCount + 1;
     }
 
     for (let i = 0; i < visibleCount && startIdx + i < changes.length; i++) {
       const idx = startIdx + i;
       const change = changes[idx]!;
-      const isCursor = idx === selectedIndex;
-      const isFocusedCursor = isCursor && focus === "changes";
+      const isCursor = idx === selectionState.selectedIndex;
+      const isFocusedCursor = isCursor && selectionState.focus === "left";
       const isMarked = selectedChangeIds.has(change.changeId);
 
       const bookmarks = bookmarksByChange.get(change.changeId) || [];
@@ -333,23 +380,26 @@ ${workflowLines}
       files,
       width,
       height,
-      fileIndex,
-      focus === "files",
+      selectionState.fileIndex,
+      selectionState.focus === "right",
       theme,
     );
   }
 
   function render(width: number): string[] {
-    if (cachedWidth === width && cachedLines.length > 0) {
-      return cachedLines;
+    if (
+      loadingState.cachedWidth === width &&
+      loadingState.cachedLines.length > 0
+    ) {
+      return loadingState.cachedLines;
     }
 
     const dims = calculateDimensions(tui.terminal.rows, width, {
       leftTitle: "",
       rightTitle: "",
       helpText: "",
-      leftFocus: focus === "changes",
-      rightFocus: focus === "files",
+      leftFocus: selectionState.focus === "left",
+      rightFocus: selectionState.focus === "right",
       leftRatio: 0.28,
       rightSplit: true,
       rightTopRatio: 0.3,
@@ -358,7 +408,7 @@ ${workflowLines}
     const leftTitle = ` Changes (${changes.length})`;
     const rightTopTitle = " Files";
     const rightBottomTitle = selectedChange
-      ? ` Diff: ${files[fileIndex]?.path || "all"} (${selectedChange.changeId.slice(0, 8)})`
+      ? ` Diff: ${files[selectionState.fileIndex]?.path || "all"} (${selectedChange.changeId.slice(0, 8)})`
       : " Diff";
 
     const changeRows = getChangeRows(dims.leftW, dims.contentH);
@@ -367,35 +417,34 @@ ${workflowLines}
       diffContent,
       dims.rightW,
       dims.rightBottomH || 10,
-      diffScroll,
+      selectionState.diffScroll,
       theme,
     );
 
     const describeTargetCount =
       selectedChangeIds.size || (selectedChange ? 1 : 0);
-    const helpText =
-      focus === "changes"
-        ? buildHelpText(
-            "tab ↑↓ nav",
-            "space select",
-            selectedChange && "e edit",
-            describeTargetCount > 0 && `d describe(${describeTargetCount})`,
-            selectedChange &&
-              changes.length > 1 &&
-              selectedIndex < changes.length - 1 &&
-              "f fixup",
-            selectedChange && onInsert && "i insert",
-            selectedChange && onBookmark && "b bookmark",
-            selectedChange && "ctrl+d drop",
-          )
-        : buildHelpText(
-            "tab ↑↓ nav",
-            files.length > 0 && "e edit",
-            files.length > 0 && "d discard",
-            files.length > 0 && "pgup/pgdn scroll",
-          );
+    const helpText = buildNavigationHelp(
+      selectionState.focus,
+      [
+        "space select",
+        selectedChange && "e edit",
+        describeTargetCount > 0 && `d describe(${describeTargetCount})`,
+        selectedChange &&
+          changes.length > 1 &&
+          selectionState.selectedIndex < changes.length - 1 &&
+          "f fixup",
+        selectedChange && onInsert && "i insert",
+        selectedChange && onBookmark && "b bookmark",
+        selectedChange && "ctrl+d drop",
+      ].filter(Boolean) as string[],
+      [
+        files.length > 0 && "e edit",
+        files.length > 0 && "d discard",
+        files.length > 0 && "pgup/pgdn scroll",
+      ].filter(Boolean) as string[],
+    );
 
-    cachedLines = renderSplitPanel(
+    loadingState.cachedLines = renderSplitPanel(
       theme,
       {
         leftTitle,
@@ -403,8 +452,8 @@ ${workflowLines}
         rightTopTitle,
         rightBottomTitle,
         helpText,
-        leftFocus: focus === "changes",
-        rightFocus: focus === "files",
+        leftFocus: selectionState.focus === "left",
+        rightFocus: selectionState.focus === "right",
         rightSplit: true,
       },
       dims,
@@ -415,8 +464,8 @@ ${workflowLines}
       },
     );
 
-    cachedWidth = width;
-    return cachedLines;
+    loadingState.cachedWidth = width;
+    return loadingState.cachedLines;
   }
 
   function handleInput(data: string): void {
@@ -426,37 +475,35 @@ ${workflowLines}
     }
 
     if (matchesKey(data, "tab")) {
-      focus = focus === "changes" ? "files" : "changes";
-      invalidate();
-      tui.requestRender();
+      switchFocus();
       return;
     }
 
     if (data === "e") {
-      if (focus === "files" && files[fileIndex]) {
-        const file = files[fileIndex]!;
+      if (selectionState.focus === "right" && files[selectionState.fileIndex]) {
+        const file = files[selectionState.fileIndex]!;
         void pi.exec("code", [path.join(cwd, file.path)]);
-      } else if (focus === "changes" && selectedChange) {
+      } else if (selectionState.focus === "left" && selectedChange) {
         void executeAction("edit");
       }
       return;
     }
 
-    if (data === "d" && focus === "changes") {
+    if (data === "d" && selectionState.focus === "left") {
       if (selectedChange || selectedChangeIds.size > 0) {
         void executeAction("describe");
       }
       return;
     }
 
-    if (data === " " && focus === "changes") {
+    if (data === " " && selectionState.focus === "left") {
       if (selectedChange) {
         if (selectedChangeIds.has(selectedChange.changeId)) {
           selectedChangeIds.delete(selectedChange.changeId);
         } else {
           selectedChangeIds.add(selectedChange.changeId);
         }
-        invalidate();
+        invalidateCache(loadingState);
         tui.requestRender();
       }
       return;
@@ -466,14 +513,14 @@ ${workflowLines}
       if (
         selectedChange &&
         changes.length > 1 &&
-        selectedIndex < changes.length - 1
+        selectionState.selectedIndex < changes.length - 1
       ) {
         void executeAction("squash");
       }
       return;
     }
 
-    if (focus === "changes" && matchesKey(data, "ctrl+d")) {
+    if (selectionState.focus === "left" && matchesKey(data, "ctrl+d")) {
       if (selectedChange) {
         void executeAction("drop");
       }
@@ -488,7 +535,7 @@ ${workflowLines}
       return;
     }
 
-    if (data === "b" && focus === "changes") {
+    if (data === "b" && selectionState.focus === "left") {
       if (selectedChange && onBookmark) {
         void (async () => {
           try {
@@ -511,31 +558,15 @@ ${workflowLines}
       return;
     }
 
-    if (focus === "changes") {
+    if (selectionState.focus === "left") {
       if (matchesKey(data, "up")) {
-        if (selectedIndex > 0) {
-          selectedIndex--;
-          selectedChange = changes[selectedIndex] || null;
-          if (selectedChange) {
-            void loadFilesAndDiff(selectedChange);
-          }
-          invalidate();
-          tui.requestRender();
-        }
+        navigateChanges("up");
       } else if (matchesKey(data, "down")) {
-        if (selectedIndex < changes.length - 1) {
-          selectedIndex++;
-          selectedChange = changes[selectedIndex] || null;
-          if (selectedChange) {
-            void loadFilesAndDiff(selectedChange);
-          }
-          invalidate();
-          tui.requestRender();
-        }
+        navigateChanges("down");
       }
-    } else if (focus === "files") {
-      if (data === "d" && selectedChange && files[fileIndex]) {
-        const file = files[fileIndex]!;
+    } else if (selectionState.focus === "right") {
+      if (data === "d" && selectedChange && files[selectionState.fileIndex]) {
+        const file = files[selectionState.fileIndex]!;
         void (async () => {
           await restoreFile(pi, cwd, selectedChange!.changeId, file.path);
           changeCache.delete(selectedChange!.changeId);
@@ -545,37 +576,15 @@ ${workflowLines}
       }
 
       if (matchesKey(data, "up")) {
-        if (fileIndex > 0) {
-          fileIndex--;
-          if (selectedChange) {
-            void loadDiff(selectedChange, files[fileIndex]?.path);
-          }
-          invalidate();
-          tui.requestRender();
-        }
+        navigateFiles("up");
       } else if (matchesKey(data, "down")) {
-        if (fileIndex < files.length - 1) {
-          fileIndex++;
-          if (selectedChange) {
-            void loadDiff(selectedChange, files[fileIndex]?.path);
-          }
-          invalidate();
-          tui.requestRender();
-        }
+        navigateFiles("down");
       }
     }
 
     if (matchesKey(data, "pageDown") || matchesKey(data, "pageUp")) {
       const direction = matchesKey(data, "pageDown") ? "down" : "up";
-      diffScroll = calculateDiffScroll(
-        direction,
-        diffScroll,
-        diffContent.length,
-        tui.terminal.rows,
-        cachedWidth,
-      );
-      invalidate();
-      tui.requestRender();
+      scrollDiff(direction);
     }
   }
 
@@ -588,7 +597,7 @@ ${workflowLines}
   return {
     render,
     handleInput,
-    invalidate,
+    invalidate: () => invalidateCache(loadingState),
     dispose,
   };
 }

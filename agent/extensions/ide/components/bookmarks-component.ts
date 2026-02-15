@@ -1,8 +1,3 @@
-import type {
-  ExtensionAPI,
-  KeybindingsManager,
-} from "@mariozechner/pi-coding-agent";
-import type { Theme } from "@mariozechner/pi-coding-agent";
 import { matchesKey } from "@mariozechner/pi-tui";
 import {
   buildHelpText,
@@ -12,6 +7,7 @@ import {
   truncateAnsi,
 } from "./utils";
 import { forgetBookmark, listBookmarksByChange } from "../jj";
+import type { BaseComponentParams } from "./shared-utils";
 
 interface BookmarkEntry {
   bookmark: string;
@@ -20,12 +16,8 @@ interface BookmarkEntry {
 }
 
 export function createBookmarksComponent(
-  pi: ExtensionAPI,
-  tui: { terminal: { rows: number }; requestRender: () => void },
-  theme: Theme,
-  _keybindings: KeybindingsManager,
+  { pi, tui, theme, cwd }: BaseComponentParams,
   done: (result: void) => void,
-  cwd: string,
   onInsert?: (text: string) => void,
 ) {
   let bookmarks: BookmarkEntry[] = [];

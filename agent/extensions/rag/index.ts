@@ -7,9 +7,8 @@ import type {
   AgentToolUpdateCallback,
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import type { TextContent } from "@mariozechner/pi-ai";
 import { Type, type Static } from "@sinclair/typebox";
+import { textResult, errorResult } from "../common/tool-utils";
 
 import { chunkMarkdown, type ChunkingOptions } from "./chunker";
 import { getGlobalStore, resetGlobalStore, type SearchResult } from "./store";
@@ -69,25 +68,6 @@ const SearchMarkdownParams = Type.Object({
 });
 
 type SearchMarkdownParamsType = Static<typeof SearchMarkdownParams>;
-
-function textResult(
-  text: string,
-  details: Record<string, unknown> = {},
-): AgentToolResult<Record<string, unknown>> {
-  const content: TextContent[] = [{ type: "text", text }];
-  return { content, details };
-}
-
-function errorResult(
-  error: unknown,
-  details: Record<string, unknown> = {},
-): AgentToolResult<Record<string, unknown>> {
-  const message = error instanceof Error ? error.message : String(error);
-  return {
-    content: [{ type: "text", text: `Error: ${message}` }],
-    details: { ...details, error: message },
-  };
-}
 
 function formatSearchResults(results: SearchResult[]): string {
   if (results.length === 0) {

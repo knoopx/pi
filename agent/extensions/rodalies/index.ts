@@ -6,6 +6,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { SelectList, type SelectItem } from "@mariozechner/pi-tui";
+import { SELECT_LIST_STYLES } from "../common/select-list-styles";
 
 // Cached stations to avoid repeated API calls
 let cachedStations: Station[] | null = null;
@@ -316,13 +317,11 @@ export default function (pi: ExtensionAPI) {
       }));
 
       /* eslint-disable @typescript-eslint/no-explicit-any */
-      const selectList = new SelectList(stationOptions as any, 12, {
-        selectedPrefix: (text: string) => `\x1b[32m>\x1b[0m ${text}`,
-        selectedText: (text: string) => `\x1b[1m${text}\x1b[0m`,
-        description: (text: string) => `\x1b[90m${text}\x1b[0m`,
-        scrollInfo: (text: string) => `\x1b[90m${text}\x1b[0m`,
-        noMatch: (text: string) => `\x1b[31m${text}\x1b[0m`,
-      } as any) as any;
+      const selectList = new SelectList(
+        stationOptions as any,
+        12,
+        SELECT_LIST_STYLES as any,
+      ) as any;
 
       // Use UI selection
       const selectedId = await new Promise<string | null>((resolve) => {

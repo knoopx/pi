@@ -75,6 +75,81 @@ function appendPath(args: string[], path?: string) {
   }
 }
 
+// Common parameter schemas to avoid duplication
+const SymbolFuzzyLimitParams = Type.Object({
+  ...CommonFlagProps,
+  symbol: Type.String({ description: "Target symbol name" }),
+  fuzzy: Type.Optional(
+    Type.Boolean({ description: "Enable fuzzy matching for symbol lookup" }),
+  ),
+  limit: Type.Optional(
+    Type.Integer({ description: "Maximum number of results to return" }),
+  ),
+});
+
+const SymbolFuzzyParams = Type.Object({
+  ...CommonFlagProps,
+  symbol: Type.String({ description: "Target symbol name" }),
+  fuzzy: Type.Optional(Type.Boolean({ description: "Enable fuzzy matching" })),
+});
+
+const SymbolFilePathParams = Type.Object({
+  ...CommonFlagProps,
+  symbol: Type.String({ description: "Target symbol name" }),
+  filePath: Type.String({
+    description: "Path to the file containing the symbol",
+  }),
+});
+
+// Factory for symbol-based execute with optional fuzzy and limit options
+type SymbolExecuteParams = CommonFlags & {
+  symbol: string;
+  fuzzy?: boolean;
+  limit?: number;
+};
+
+function createSymbolExecute(
+  pi: ExtensionAPI,
+  command: string,
+  options: { withLimit?: boolean } = {},
+): (
+  _toolCallId: string,
+  params: SymbolExecuteParams,
+  signal: AbortSignal | undefined,
+) => Promise<AgentToolResult<Record<string, unknown>>> {
+  return async (_toolCallId, params, signal) => {
+    const args = [command, params.symbol];
+    appendPath(args, params.path);
+    if (params.fuzzy) args.push("--fuzzy");
+    if (options.withLimit && params.limit !== undefined) {
+      args.push("--limit", String(params.limit));
+    }
+    appendCommonFlags(args, params);
+    return runCm(pi, args, signal);
+  };
+}
+
+// Factory for symbol+filePath execute (blame, history)
+type SymbolFileParams = CommonFlags & {
+  symbol: string;
+  filePath: string;
+};
+
+function createSymbolFileExecute(
+  pi: ExtensionAPI,
+  command: string,
+): (
+  _toolCallId: string,
+  params: SymbolFileParams,
+  signal: AbortSignal | undefined,
+) => Promise<AgentToolResult<Record<string, unknown>>> {
+  return async (_toolCallId, params, signal) => {
+    const args = [command, params.symbol, params.filePath];
+    appendCommonFlags(args, params);
+    return runCm(pi, args, signal);
+  };
+}
+
 function truncateOutput(text: string): { text: string; truncated: boolean } {
   const lines = text.split("\n");
   let out = text;
@@ -344,27 +419,8 @@ export default function cmExtension(pi: ExtensionAPI) {
     label: "CM Callers",
     description:
       "Find all callers of a function/method symbol. Use qualified names (e.g. Foo::new) to reduce noise.",
-    parameters: Type.Object({
-      ...CommonFlagProps,
-      symbol: Type.String({ description: "Target symbol name" }),
-      fuzzy: Type.Optional(
-        Type.Boolean({
-          description: "Enable fuzzy matching for symbol lookup",
-        }),
-      ),
-      limit: Type.Optional(
-        Type.Integer({ description: "Maximum number of results to return" }),
-      ),
-    }),
-    async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = ["callers", params.symbol];
-      appendPath(args, params.path);
-      if (params.fuzzy) args.push("--fuzzy");
-      if (params.limit !== undefined)
-        args.push("--limit", String(params.limit));
-      appendCommonFlags(args, params);
-      return runCm(pi, args, signal);
-    },
+    parameters: SymbolFuzzyLimitParams,
+    execute: createSymbolExecute(pi, "callers", { withLimit: true }),
   });
 
   // cm-callees: Find all functions/methods called by a symbol
@@ -372,27 +428,8 @@ export default function cmExtension(pi: ExtensionAPI) {
     name: "cm-callees",
     label: "CM Callees",
     description: "Find all functions/methods called by a symbol.",
-    parameters: Type.Object({
-      ...CommonFlagProps,
-      symbol: Type.String({ description: "Target symbol name" }),
-      fuzzy: Type.Optional(
-        Type.Boolean({
-          description: "Enable fuzzy matching for symbol lookup",
-        }),
-      ),
-      limit: Type.Optional(
-        Type.Integer({ description: "Maximum number of results to return" }),
-      ),
-    }),
-    async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = ["callees", params.symbol];
-      appendPath(args, params.path);
-      if (params.fuzzy) args.push("--fuzzy");
-      if (params.limit !== undefined)
-        args.push("--limit", String(params.limit));
-      appendCommonFlags(args, params);
-      return runCm(pi, args, signal);
-    },
+    parameters: SymbolFuzzyLimitParams,
+    execute: createSymbolExecute(pi, "callees", { withLimit: true }),
   });
 
   // cm-tests: Find test functions that call a given symbol
@@ -400,20 +437,8 @@ export default function cmExtension(pi: ExtensionAPI) {
     name: "cm-tests",
     label: "CM Tests",
     description: "Find test functions that call a given symbol.",
-    parameters: Type.Object({
-      ...CommonFlagProps,
-      symbol: Type.String({ description: "Target symbol name" }),
-      fuzzy: Type.Optional(
-        Type.Boolean({ description: "Enable fuzzy matching" }),
-      ),
-    }),
-    async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = ["tests", params.symbol];
-      appendPath(args, params.path);
-      if (params.fuzzy) args.push("--fuzzy");
-      appendCommonFlags(args, params);
-      return runCm(pi, args, signal);
-    },
+    parameters: SymbolFuzzyParams,
+    execute: createSymbolExecute(pi, "tests"),
   });
 
   // cm-untested: Find functions and methods not called by any tests
@@ -556,18 +581,8 @@ export default function cmExtension(pi: ExtensionAPI) {
     name: "cm-blame",
     label: "CM Blame",
     description: "Show who last modified a symbol and when.",
-    parameters: Type.Object({
-      ...CommonFlagProps,
-      symbol: Type.String({ description: "Target symbol name" }),
-      filePath: Type.String({
-        description: "Path to the file containing the symbol",
-      }),
-    }),
-    async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = ["blame", params.symbol, params.filePath];
-      appendCommonFlags(args, params);
-      return runCm(pi, args, signal);
-    },
+    parameters: SymbolFilePathParams,
+    execute: createSymbolFileExecute(pi, "blame"),
   });
 
   // cm-history: Show git evolution history for a symbol
@@ -575,18 +590,8 @@ export default function cmExtension(pi: ExtensionAPI) {
     name: "cm-history",
     label: "CM History",
     description: "Show the evolution of a symbol across git history.",
-    parameters: Type.Object({
-      ...CommonFlagProps,
-      symbol: Type.String({ description: "Target symbol name" }),
-      filePath: Type.String({
-        description: "Path to the file containing the symbol",
-      }),
-    }),
-    async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = ["history", params.symbol, params.filePath];
-      appendCommonFlags(args, params);
-      return runCm(pi, args, signal);
-    },
+    parameters: SymbolFilePathParams,
+    execute: createSymbolFileExecute(pi, "history"),
   });
 
   // cm-implements: Find all classes/structs implementing an interface or trait
@@ -623,20 +628,8 @@ export default function cmExtension(pi: ExtensionAPI) {
     label: "CM Types",
     description:
       "Analyze parameter and return types for a symbol and locate their definitions.",
-    parameters: Type.Object({
-      ...CommonFlagProps,
-      symbol: Type.String({ description: "Target symbol name" }),
-      fuzzy: Type.Optional(
-        Type.Boolean({ description: "Enable fuzzy matching" }),
-      ),
-    }),
-    async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = ["types", params.symbol];
-      appendPath(args, params.path);
-      if (params.fuzzy) args.push("--fuzzy");
-      appendCommonFlags(args, params);
-      return runCm(pi, args, signal);
-    },
+    parameters: SymbolFuzzyParams,
+    execute: createSymbolExecute(pi, "types"),
   });
 
   // cm-schema: Display the field schema for a data structure symbol
@@ -645,22 +638,8 @@ export default function cmExtension(pi: ExtensionAPI) {
     label: "CM Schema",
     description:
       "Display field schema for data structures (structs, classes, dataclasses, interfaces).",
-    parameters: Type.Object({
-      ...CommonFlagProps,
-      symbol: Type.String({
-        description: "Type/class/struct/interface name",
-      }),
-      fuzzy: Type.Optional(
-        Type.Boolean({ description: "Enable fuzzy matching" }),
-      ),
-    }),
-    async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-      const args = ["schema", params.symbol];
-      appendPath(args, params.path);
-      if (params.fuzzy) args.push("--fuzzy");
-      appendCommonFlags(args, params);
-      return runCm(pi, args, signal);
-    },
+    parameters: SymbolFuzzyParams,
+    execute: createSymbolExecute(pi, "schema"),
   });
 
   // cm-snapshot: Save a named codebase snapshot for future comparison

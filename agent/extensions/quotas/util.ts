@@ -3,6 +3,7 @@ import {
   BaseDependencies,
   UsageSnapshot,
   RateWindow,
+  WindowConfig,
   createAuthErrorSnapshot,
   createNetworkErrorSnapshot,
   createHttpErrorSnapshot,
@@ -39,14 +40,7 @@ export function formatRemainingDuration(
 
 // Generic processData helper for rate limit windows
 export function createRateLimitProcessor(
-  windows: Array<{
-    path: string;
-    label: string | ((data: unknown, windowData: unknown) => string);
-    usedPercentPath?: string;
-    usedPercentTransform?: (val: number) => number;
-    resetPath?: string;
-    fixedLabel?: string;
-  }>,
+  windows: WindowConfig[],
 ): (data: unknown) => RateWindow[] {
   type AnyRecord = Record<string, unknown>;
   const getPath = (obj: unknown, path: string): unknown =>
