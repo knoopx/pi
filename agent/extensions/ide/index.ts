@@ -425,6 +425,17 @@ export default function ideExtension(pi: ExtensionAPI) {
   });
 
   /**
+   * Ctrl+Shift+P shortcut to open command palette
+   */
+  pi.registerShortcut(Key.ctrlShift("p"), {
+    description: "Open command palette",
+    handler: async (ctx) => {
+      if (!ctx.hasUI) return;
+      await openCommandPalette(pi, ctx, registeredShortcuts);
+    },
+  });
+
+  /**
    * Ctrl+T shortcut to launch symbol picker
    */
   pi.registerShortcut(Key.ctrl("t"), {
@@ -561,6 +572,11 @@ export default function ideExtension(pi: ExtensionAPI) {
       description: "Open pull requests browser",
       execute: () => {},
     },
+    {
+      shortcut: Key.ctrlShift("p"),
+      description: "Open command palette",
+      execute: () => {},
+    },
   ];
 
   /**
@@ -569,17 +585,6 @@ export default function ideExtension(pi: ExtensionAPI) {
   pi.registerCommand("commands", {
     description: "Open command palette to search and execute commands",
     handler: async (_args, ctx) => {
-      if (!ctx.hasUI) return;
-      await openCommandPalette(pi, ctx, registeredShortcuts);
-    },
-  });
-
-  /**
-   * Ctrl+Shift+P shortcut to open command palette
-   */
-  pi.registerShortcut(Key.ctrlShift("p"), {
-    description: "Open command palette",
-    handler: async (ctx) => {
       if (!ctx.hasUI) return;
       await openCommandPalette(pi, ctx, registeredShortcuts);
     },
