@@ -1,16 +1,18 @@
 # IDE Extension
 
-A development environment extension for pi that provides code browsing, jujutsu integration, and workspace management with split-panel TUI interfaces.
+A development environment extension for pi that provides code browsing, Codemapper analysis, jujutsu workflows, and workspace management with split-panel TUI overlays.
 
 ## Features
 
 - **Code browsing** - Browse files and symbols with syntax-highlighted previews
 - **Codemapper integration** - Inspect symbols, callers, callees, tests, types, schema, and impact
-- **Jujutsu integration** - Track changes per prompt, browse change history, and manage bookmarks
-- **Operation log** - Browse and restore jujutsu operation history
-- **Bookmark workflows** - Fuzzy bookmark picker, create bookmark from input, and bookmark browser (`name@remote`)
-- **Multi-select changes** - Select multiple changes and describe all selected IDs in one action
-- **Workspace management** - Spawn subagents in isolated jj workspaces
+- **Jujutsu integration** - Browse mutable changes, diff files, split/fixup/drop/new changes, and manage bookmarks
+- **Operation log** - Browse and restore/undo jujutsu operations
+- **Bookmark workflows** - Fuzzy bookmark picker, create bookmark from input, browse and push bookmarks (`name@remote`)
+- **Move mode for changes** - Reorder mutable changes in the stack (`Ctrl+M`, then `↑/↓`, `Enter`)
+- **Workspace management** - Create isolated jj workspaces and spawn subagents
+- **Skill browser** - Browse local/remote skills and install or insert `/skill:<name>`
+- **Command palette** - Fuzzy-search slash commands and shortcuts from one overlay
 - **Rich diffs** - Colorized diffs via diff-so-fancy
 - **Quick navigation** - Keyboard shortcuts for fast access
 
@@ -58,51 +60,57 @@ Browse bookmarks in `name@remote` format (`name@` for local bookmarks).
 ![Bookmarks](screenshots/bookmarks.png)
 
 **Bookmarks pane:**
-| Key | Action |
-| ------- | ------------------------ |
-| `↑/↓` | Navigate |
-| `f` | Forget selected bookmark |
-| `g` | Git fetch |
-| `p` | Git push bookmark |
-| `i` | Insert bookmark name |
-| `Esc` | Exit |
+
+| Key   | Action                   |
+| ----- | ------------------------ |
+| `↑/↓` | Navigate                 |
+| `f`   | Forget selected bookmark |
+| `g`   | Git fetch                |
+| `p`   | Git push bookmark        |
+| `i`   | Insert bookmark name     |
+| `Esc` | Exit                     |
 
 ### `/changes`
 
-Browse mutable jujutsu changes on current branch with diff preview.
+Browse all mutable jujutsu changes with file/diff preview.
 
 ![Changes](screenshots/changes.png)
 
 **Changes pane:**
-| Key | Action |
-| -------- | ------------------------------------------------- |
-| `Tab` | Switch focus |
-| `↑/↓` | Navigate |
-| `Space` | Toggle selected change |
-| `e` | Edit change |
-| `d` | Describe selected changes (or focused change) |
-| `s` | Split change into multiple commits |
-| `f` | Fixup (squash into parent) |
-| `Ctrl+D` | Drop change |
-| `i` | Insert change ID |
-| `b` | Set bookmark on change (fuzzy picker + create) |
+
+| Key      | Action                                         |
+| -------- | ---------------------------------------------- |
+| `Tab`    | Switch focus                                   |
+| `↑/↓`    | Navigate                                       |
+| `Space`  | Toggle selected change                         |
+| `e`      | Edit change                                    |
+| `d`      | Describe selected changes (or focused change)  |
+| `s`      | Split change                                   |
+| `n`      | Create new change after selected change        |
+| `f`      | Fixup (squash into parent)                     |
+| `Ctrl+M` | Enter move mode (`↑/↓` move, `Enter` apply)    |
+| `Ctrl+D` | Drop change                                    |
+| `i`      | Insert change ID                               |
+| `b`      | Set bookmark on change (picker + create)       |
+| `Ctrl+P` | Push all bookmarks pointing to selected change |
 
 **Files pane:**
-| Key | Action |
-| ----------- | -------------------- |
-| `Tab` | Switch focus |
-| `↑/↓` | Navigate |
-| `e` | Open file in VS Code |
-| `d` | Discard file changes |
-| `Ctrl+I` | Inspect file symbols |
-| `Ctrl+D` | Show file dependencies |
-| `Ctrl+U` | Show file used-by |
-| `PgUp/PgDn` | Scroll diff |
-| `Esc` | Exit |
+
+| Key         | Action                 |
+| ----------- | ---------------------- |
+| `Tab`       | Switch focus           |
+| `↑/↓`       | Navigate               |
+| `e`         | Open file in VS Code   |
+| `d`         | Discard file changes   |
+| `Ctrl+I`    | Inspect file symbols   |
+| `Ctrl+D`    | Show file dependencies |
+| `Ctrl+U`    | Show file used-by      |
+| `PgUp/PgDn` | Scroll diff            |
+| `Esc`       | Exit                   |
 
 ### `/oplog`
 
-Browse jujutsu operation log with restore capability.
+Browse jujutsu operation log with restore and undo capability.
 
 ![Op Log](screenshots/oplog.png)
 
@@ -120,56 +128,86 @@ Review all workspaces and their changes.
 ![Workspaces](screenshots/workspaces.png)
 
 **Workspaces pane:**
-| Key | Action |
-| ------- | ---------------------- |
-| `Tab` | Switch focus |
-| `↑/↓` | Navigate |
-| `n` | New workspace + pi |
-| `a` | Attach to tmux session |
-| `r` | Rebase & describe |
-| `e` | Open in VS Code |
-| `t` | Open terminal |
-| `x` | Delete workspace |
 
-**Files pane:**
-| Key | Action |
-| ----------- | ------------------ |
-| `Tab` | Switch focus |
-| `↑/↓` | Navigate |
-| `d` | Discard file |
-| `PgUp/PgDn` | Scroll diff |
-| `Esc` | Exit |
+| Key   | Action                 |
+| ----- | ---------------------- |
+| `Tab` | Switch focus           |
+| `↑/↓` | Navigate               |
+| `n`   | New workspace + pi     |
+| `a`   | Attach to tmux session |
+| `r`   | Rebase & describe      |
+| `e`   | Open in VS Code        |
+| `t`   | Open terminal          |
+| `x`   | Delete workspace       |
+
+**Files/Changes pane:**
+
+| Key         | Action       |
+| ----------- | ------------ |
+| `Tab`       | Switch focus |
+| `↑/↓`       | Navigate     |
+| `d`         | Discard file |
+| `PgUp/PgDn` | Scroll diff  |
+| `Esc`       | Exit         |
+
+### `/skills [query]`
+
+Browse local and remote skills, preview files, install remote skills, or insert local skill invocation.
+
+![Skills](screenshots/skills.png)
+
+| Key         | Action                                           |
+| ----------- | ------------------------------------------------ |
+| `↑/↓`       | Navigate (focused pane)                          |
+| `Tab`       | Switch skills/files pane                         |
+| `Enter`     | Install (remote) or insert `/skill:name` (local) |
+| `x`         | Delete local skill                               |
+| `Ctrl+L`    | Switch to local skills                           |
+| `Ctrl+R`    | Switch to remote skills                          |
+| `PgUp/PgDn` | Scroll preview                                   |
+| `Type`      | Filter skills                                    |
+| `Esc`       | Exit                                             |
+
+### `/commands`
+
+Open the command palette to fuzzy-search slash commands and shortcuts.
+
+![Commands](screenshots/commands.png)
+
+| Key         | Action         |
+| ----------- | -------------- |
+| `↑/↓`       | Navigate       |
+| `Enter`     | Execute/select |
+| `Type`      | Filter         |
+| `Backspace` | Delete filter  |
+| `Ctrl+U`    | Clear filter   |
+| `Esc`       | Exit           |
+
+### `/workspace <task description>`
+
+Create a new jj workspace from the current change and spawn a pi subagent in that workspace.
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action                 |
-| -------- | ---------------------- |
-| `Ctrl+P` | Open file picker       |
-| `Ctrl+T` | Open symbol picker     |
-| `Ctrl+B` | Open bookmarks browser |
-| `Ctrl+J` | Open workspaces        |
-| `Ctrl+K` | Open changes           |
-| `Ctrl+O` | Open operation log     |
+| Shortcut       | Action                 |
+| -------------- | ---------------------- |
+| `Ctrl+P`       | Open file picker       |
+| `Ctrl+T`       | Open symbol picker     |
+| `Ctrl+B`       | Open bookmarks browser |
+| `Ctrl+J`       | Open workspaces        |
+| `Ctrl+K`       | Open changes           |
+| `Ctrl+O`       | Open operation log     |
+| `Ctrl+S`       | Open skill browser     |
+| `Ctrl+Shift+P` | Open command palette   |
 
 ## Automatic Change Tracking
 
-Each user prompt automatically creates a new jj change:
+Each interactive prompt is tracked in jj only when the first write tool is executed:
 
-1. If current change has modifications, runs `jj new`
-2. Sets the change description to the first line of the prompt
+1. If current change is empty, update its description with the prompt first line.
+2. Otherwise create a new change with that description (`jj new -m`).
 
-Change creation is deferred until the first write operation. Readonly tools (Read, Bash commands like `ls`, `cat`, `grep`, etc.) do not trigger change creation.
-
-This ensures each interaction is tracked as a separate change in jj history.
-
-## Workspace Status Icons
-
-| Icon | Status    |
-| ---- | --------- |
-| ⏳   | Running   |
-| ✅   | Completed |
-| ❌   | Failed    |
-| 💤   | Idle      |
+Readonly operations (for example `read`, and readonly shell commands like `ls`, `rg`, `find`, `jj log`, `git status`) do not create a new change.
 
 ## Dependencies
 
@@ -179,3 +217,4 @@ This ensures each interaction is tracked as a separate change in jj history.
 - `cm` - Codemapper for symbol indexing
 - `diff-so-fancy` - Beautiful diff formatting
 - `tmux` - Session management for subagents
+- `code` - VS Code CLI for opening files from overlays
