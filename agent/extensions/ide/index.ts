@@ -25,7 +25,6 @@ import {
   getCurrentChangeId,
   isCurrentChangeEmpty,
   loadAgentWorkspaces,
-  cleanupWorkspaceDir,
 } from "./workspace";
 import { createWorkspacesComponent } from "./components/workspaces-component";
 import {
@@ -898,9 +897,6 @@ async function monitorWorkspace(
           `Agent ${statusText}`,
           `${ws.description}\n${stats}`,
         ]);
-
-        // Cleanup workspace directory
-        await cleanupWorkspaceDir(pi, workspaceName);
 
         return;
       }

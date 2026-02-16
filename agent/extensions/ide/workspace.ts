@@ -262,13 +262,19 @@ export function forkSessionToWorkspace(
     return undefined;
   }
 
-  // Fork the session to the workspace directory
-  // The forked session will have parentSession pointing to the original
-  const forkedSession = SessionManager.forkFrom(
-    sourceSessionPath,
-    workspacePath,
-  );
-  return forkedSession.getSessionFile();
+  try {
+    // Fork the session to the workspace directory
+    // The forked session will have parentSession pointing to the original
+    const forkedSession = SessionManager.forkFrom(
+      sourceSessionPath,
+      workspacePath,
+    );
+    return forkedSession.getSessionFile();
+  } catch {
+    // Source session is empty or invalid - create a fresh session instead
+    const newSession = SessionManager.create(workspacePath);
+    return newSession.getSessionFile();
+  }
 }
 
 /**
