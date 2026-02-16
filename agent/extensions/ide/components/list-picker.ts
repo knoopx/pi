@@ -30,7 +30,12 @@ export interface ListPickerConfig<T extends ListPickerItem> {
   title: string;
   loadItems: () => Promise<T[]>;
   filterItems: (items: T[], query: string) => T[];
-  formatItem: (item: T, width: number, theme: Theme) => string;
+  formatItem: (
+    item: T,
+    width: number,
+    theme: Theme,
+    isFocused: boolean,
+  ) => string;
   loadPreview: (item: T) => Promise<string[]>;
   onEdit?: (item: T) => Promise<void> | void;
   helpParts?: string[];
@@ -59,12 +64,10 @@ export function createListPicker<T extends ListPickerItem>(
   done: (result: T | null) => void,
   initialQuery: string,
   config: ListPickerConfig<T>,
-  options?: { selectable?: boolean },
 ): ListPickerComponent {
-  const applySelectionStyle = options?.selectable ?? true;
   let items: T[] = [];
   let filteredItems: T[] = [];
-  let selectedIndex = 0;
+  let focusedIndex = 0;
   let searchQuery = initialQuery;
   let sourceLines: string[] = [];
   let sourceScroll = 0;
@@ -101,18 +104,18 @@ export function createListPicker<T extends ListPickerItem>(
       const lower = searchQuery.toLowerCase();
       filteredItems = config.filterItems(items, lower);
     }
-    selectedIndex = Math.min(
-      selectedIndex,
+    focusedIndex = Math.min(
+      focusedIndex,
       Math.max(0, filteredItems.length - 1),
     );
   }
 
-  function getSelectedItem(): T | null {
+  function getFocusedItem(): T | null {
     if (filteredItems.length === 0) {
       return null;
     }
 
-    return filteredItems[selectedIndex];
+    return filteredItems[focusedIndex];
   }
 
   async function loadPreview(item: T): Promise<void> {
@@ -164,22 +167,18 @@ export function createListPicker<T extends ListPickerItem>(
     }
 
     let startIdx = 0;
-    if (selectedIndex >= height) {
-      startIdx = selectedIndex - height + 1;
+    if (focusedIndex >= height) {
+      startIdx = focusedIndex - height + 1;
     }
 
     for (let i = 0; i < height && startIdx + i < filteredItems.length; i++) {
       const idx = startIdx + i;
       const item = filteredItems[idx];
-      const isSelected = idx === selectedIndex;
-      const formatted = config.formatItem(item, width, theme);
+      const isFocused = idx === focusedIndex;
+      const formatted = config.formatItem(item, width - 2, theme, isFocused);
       const text = " " + truncateAnsi(formatted, width - 2);
       const padded = ensureWidth(text, width);
-      rows.push(
-        applySelectionStyle && isSelected
-          ? theme.fg("accent", theme.bold(padded))
-          : padded,
-      );
+      rows.push(padded);
     }
 
     return rows;
@@ -202,9 +201,9 @@ export function createListPicker<T extends ListPickerItem>(
     const itemCount = `(${String(filteredItems.length)}/${String(items.length)})`;
     const leftTitle = truncateAnsi(`${searchDisplay} ${itemCount}`, dims.leftW);
 
-    const selectedItem = getSelectedItem();
-    const rightTitle = selectedItem?.path
-      ? ` ${truncateAnsi(selectedItem.path, dims.rightW - 2)}`
+    const focusedItem = getFocusedItem();
+    const rightTitle = focusedItem?.path
+      ? ` ${truncateAnsi(focusedItem.path, dims.rightW - 2)}`
       : " Source Preview";
 
     const itemRows = getItemRows(dims.leftW, dims.contentH);
@@ -214,8 +213,8 @@ export function createListPicker<T extends ListPickerItem>(
       dims.contentH,
       sourceScroll,
       theme,
-      selectedItem?.startLine && selectedItem.endLine
-        ? { start: selectedItem.startLine, end: selectedItem.endLine }
+      focusedItem?.startLine && focusedItem.endLine
+        ? { start: focusedItem.startLine, end: focusedItem.endLine }
         : undefined,
     );
 
@@ -255,12 +254,12 @@ export function createListPicker<T extends ListPickerItem>(
     }
 
     if (matchesKey(data, "enter")) {
-      done(getSelectedItem());
+      done(getFocusedItem());
       return;
     }
 
     if (matchesKey(data, "ctrl+e")) {
-      const item = getSelectedItem();
+      const item = getFocusedItem();
       if (item !== null && config.onEdit) {
         void Promise.resolve(config.onEdit(item));
       }
@@ -268,9 +267,9 @@ export function createListPicker<T extends ListPickerItem>(
     }
 
     if (matchesKey(data, "up")) {
-      if (selectedIndex > 0) {
-        selectedIndex--;
-        const item = getSelectedItem();
+      if (focusedIndex > 0) {
+        focusedIndex--;
+        const item = getFocusedItem();
         if (item !== null) {
           void loadPreview(item);
         }
@@ -281,9 +280,9 @@ export function createListPicker<T extends ListPickerItem>(
     }
 
     if (matchesKey(data, "down")) {
-      if (selectedIndex < filteredItems.length - 1) {
-        selectedIndex++;
-        const item = getSelectedItem();
+      if (focusedIndex < filteredItems.length - 1) {
+        focusedIndex++;
+        const item = getFocusedItem();
         if (item !== null) {
           void loadPreview(item);
         }
@@ -300,8 +299,8 @@ export function createListPicker<T extends ListPickerItem>(
         helpText: "",
         leftFocus: true,
       });
-      selectedIndex = Math.max(0, selectedIndex - dims.contentH);
-      const item = getSelectedItem();
+      focusedIndex = Math.max(0, focusedIndex - dims.contentH);
+      const item = getFocusedItem();
       if (item !== null) {
         void loadPreview(item);
       }
@@ -317,11 +316,11 @@ export function createListPicker<T extends ListPickerItem>(
         helpText: "",
         leftFocus: true,
       });
-      selectedIndex = Math.min(
+      focusedIndex = Math.min(
         filteredItems.length - 1,
-        selectedIndex + dims.contentH,
+        focusedIndex + dims.contentH,
       );
-      const item = getSelectedItem();
+      const item = getFocusedItem();
       if (item !== null) {
         void loadPreview(item);
       }
@@ -335,7 +334,7 @@ export function createListPicker<T extends ListPickerItem>(
       if (searchQuery.length > 0) {
         searchQuery = searchQuery.slice(0, -1);
         filterItems();
-        const item = getSelectedItem();
+        const item = getFocusedItem();
         if (item !== null) {
           void loadPreview(item);
         }
@@ -351,7 +350,7 @@ export function createListPicker<T extends ListPickerItem>(
         matchesKey(data, a.key as Parameters<typeof matchesKey>[1]),
       );
       if (action) {
-        const item = getSelectedItem();
+        const item = getFocusedItem();
         if (item !== null) {
           void Promise.resolve(action.handler(item));
         }
@@ -363,7 +362,7 @@ export function createListPicker<T extends ListPickerItem>(
     if (data.length === 1 && data >= " " && data <= "~") {
       searchQuery += data;
       filterItems();
-      const item = getSelectedItem();
+      const item = getFocusedItem();
       if (item !== null) {
         void loadPreview(item);
       }
@@ -395,25 +394,4 @@ export function createListPicker<T extends ListPickerItem>(
   }
 
   return { render, handleInput, dispose, setPreview, invalidate, reload };
-}
-
-export function createNonSelectableListPicker<T extends ListPickerItem>(
-  pi: ExtensionAPI,
-  tui: ListPickerTui,
-  theme: Theme,
-  keybindings: KeybindingsManager,
-  done: (result: T | null) => void,
-  initialQuery: string,
-  config: ListPickerConfig<T>,
-): ListPickerComponent {
-  return createListPicker(
-    pi,
-    tui,
-    theme,
-    keybindings,
-    done,
-    initialQuery,
-    config,
-    { selectable: false },
-  );
 }

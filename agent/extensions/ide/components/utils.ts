@@ -2,6 +2,15 @@ import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
 import sliceAnsi from "slice-ansi";
 import stringWidth from "string-width";
 
+/** Apply focused styling to text */
+export function applyFocusedStyle(
+  theme: Theme,
+  text: string,
+  isFocused: boolean,
+): string {
+  return isFocused ? theme.fg("accent", theme.bold(text)) : text;
+}
+
 /** Symbol type icons for codemapper output (Nerd Font) */
 const SYMBOL_TYPE_ICONS: Record<string, string> = {
   f: "󰊕", // function
@@ -260,8 +269,10 @@ export function buildHelpText(
 export function formatBookmarkReference(
   theme: Theme,
   bookmark: string,
+  isFocused = false,
 ): string {
-  return theme.inverse(theme.fg("accent", ` 󰃀 ${bookmark} `));
+  const label = ` 󰃀 ${bookmark} `;
+  return isFocused ? label : theme.inverse(theme.fg("accent", label));
 }
 
 /**
