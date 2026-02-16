@@ -16,6 +16,7 @@ interface BookmarkEntry extends ListPickerItem {
   bookmarks: string[];
   changeId: string;
   description: string;
+  author: string;
   /** Deduplicated bookmark base names for display */
   displayNames: string[];
 }
@@ -33,11 +34,16 @@ function parseBookmark(bookmark: string): { name: string; remote: string } {
 }
 
 function groupBookmarksByChange(
-  entries: { bookmark: string; changeId: string; description: string }[],
+  entries: {
+    bookmark: string;
+    changeId: string;
+    description: string;
+    author: string;
+  }[],
 ): BookmarkEntry[] {
   const byChange = new Map<
     string,
-    { bookmarks: string[]; description: string }
+    { bookmarks: string[]; description: string; author: string }
   >();
 
   for (const entry of entries) {
@@ -48,12 +54,13 @@ function groupBookmarksByChange(
       byChange.set(entry.changeId, {
         bookmarks: [entry.bookmark],
         description: entry.description,
+        author: entry.author,
       });
     }
   }
 
   return Array.from(byChange.entries()).map(
-    ([changeId, { bookmarks, description }]) => {
+    ([changeId, { bookmarks, description, author }]) => {
       // Deduplicate by base name (prefer showing each name once)
       const seenNames = new Set<string>();
       const displayNames: string[] = [];
@@ -70,6 +77,7 @@ function groupBookmarksByChange(
         bookmarks,
         changeId,
         description: description || "(no description)",
+        author,
         displayNames,
       };
     },
@@ -158,23 +166,36 @@ export function createBookmarksComponent(
         items.filter(
           (item) =>
             item.bookmarks.some((b) => b.toLowerCase().includes(query)) ||
-            item.description.toLowerCase().includes(query),
+            item.description.toLowerCase().includes(query) ||
+            item.author.toLowerCase().includes(query),
         ),
-      formatItem: (item, _width, theme, isFocused) => {
-        const shortId = item.changeId.slice(-8);
+      formatItem: (item, width, theme, isFocused) => {
         const bookmarkLabels = item.displayNames
           .map((name) => formatBookmarkReference(theme, name))
           .join(" ");
-        const separator = isFocused ? " · " : theme.fg("dim", " · ");
-        const description = isFocused
-          ? item.description
-          : theme.fg("dim", item.description);
-        const idLabel = isFocused ? shortId : theme.fg("dim", shortId);
-        return applyFocusedStyle(
-          theme,
-          `${bookmarkLabels}${separator}${description}${separator}${idLabel}`,
-          isFocused,
+        const sep = " · ";
+        const author = item.author || "";
+
+        // Calculate available space for description
+        const bookmarkLen = item.displayNames.reduce(
+          (sum, n) => sum + n.length + 5,
+          0,
         );
+        const fixedLen = bookmarkLen + sep.length + author.length + sep.length;
+        const maxDescLen = Math.max(10, width - fixedLen);
+        const desc =
+          item.description.length > maxDescLen
+            ? item.description.slice(0, maxDescLen - 1) + "…"
+            : item.description;
+
+        const styledSep = isFocused ? sep : theme.fg("dim", sep);
+        const styledDesc = isFocused ? desc : theme.fg("dim", desc);
+        const styledAuthor = author ? theme.fg("dim", author) : "";
+
+        const parts = [bookmarkLabels, styledDesc, styledAuthor].filter(
+          Boolean,
+        );
+        return applyFocusedStyle(theme, parts.join(styledSep), isFocused);
       },
       loadPreview: async (item) => {
         return getDiff(pi, cwd, item.changeId);

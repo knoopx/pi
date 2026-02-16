@@ -96,7 +96,7 @@ describe("jj module", () => {
         execMock.mockResolvedValue({
           code: 0,
           stdout:
-            "main\tabc123\tfeat: ✨ one\nmain\tabc123\tfeat: ✨ one\nfeature\tdef456\tfeat: ✨ two\n",
+            "main\tabc123\tfeat: ✨ one\tAlice\nmain\tabc123\tfeat: ✨ one\tAlice\nfeature\tdef456\tfeat: ✨ two\tBob\n",
           stderr: "",
         });
 
@@ -107,11 +107,13 @@ describe("jj module", () => {
             bookmark: "main",
             changeId: "abc123",
             description: "feat: one",
+            author: "Alice",
           },
           {
             bookmark: "feature",
             changeId: "def456",
             description: "feat: two",
+            author: "Bob",
           },
         ]);
       });

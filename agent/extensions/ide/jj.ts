@@ -181,14 +181,16 @@ export async function listBookmarks(
 export async function listBookmarksByChange(
   pi: ExtensionAPI,
   cwd: string,
-): Promise<{ bookmark: string; changeId: string; description: string }[]> {
+): Promise<
+  { bookmark: string; changeId: string; description: string; author: string }[]
+> {
   const result = await pi.exec(
     "jj",
     [
       "bookmark",
       "list",
       "-T",
-      'self.name() ++ "\t" ++ coalesce(self.normal_target().change_id().short(), "") ++ "\t" ++ coalesce(self.normal_target().description().first_line(), "") ++ "\n"',
+      'self.name() ++ "\t" ++ coalesce(self.normal_target().change_id().short(), "") ++ "\t" ++ coalesce(self.normal_target().description().first_line(), "") ++ "\t" ++ coalesce(self.normal_target().author().name(), "") ++ "\n"',
     ],
     { cwd },
   );
@@ -202,10 +204,11 @@ export async function listBookmarksByChange(
     bookmark: string;
     changeId: string;
     description: string;
+    author: string;
   }[] = [];
 
   for (const line of result.stdout.split("\n")) {
-    const [name, changeId, description] = line.split("\t");
+    const [name, changeId, description, author] = line.split("\t");
     if (!name || !changeId || seen.has(name)) {
       continue;
     }
@@ -215,6 +218,7 @@ export async function listBookmarksByChange(
       bookmark: name,
       changeId,
       description: sanitizeDescription(description || ""),
+      author: author || "",
     });
   }
 
