@@ -9,7 +9,11 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { formatSymbolListEntry, loadFilePreviewWithBat } from "./utils";
+import {
+  formatSymbolListEntry,
+  loadFilePreviewWithBat,
+  applyFocusedStyle,
+} from "./utils";
 
 export interface CmResultItem extends ListPickerItem {
   name: string;
@@ -274,14 +278,18 @@ export function createCmResultsComponent(
             item.name.toLowerCase().includes(query) ||
             item.path.toLowerCase().includes(query),
         ),
-      formatItem: (item, _width, theme) =>
-        formatSymbolListEntry(theme, {
-          type: item.type,
-          name: item.name,
-          path: item.path,
-          line: item.callLine ?? item.startLine,
-          signature: item.signature,
-        }),
+      formatItem: (item, _width, theme, isFocused) =>
+        applyFocusedStyle(
+          theme,
+          formatSymbolListEntry(theme, {
+            type: item.type,
+            name: item.name,
+            path: item.path,
+            line: item.callLine ?? item.startLine,
+            signature: item.signature,
+          }),
+          isFocused,
+        ),
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, config.cwd),
     },
   );

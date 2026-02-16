@@ -9,7 +9,11 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { formatSymbolListEntry, loadFilePreviewWithBat } from "./utils";
+import {
+  formatSymbolListEntry,
+  loadFilePreviewWithBat,
+  applyFocusedStyle,
+} from "./utils";
 import type { CmActionType } from "./cm-results-component";
 
 export interface SymbolInfo extends ListPickerItem {
@@ -165,8 +169,12 @@ export function createSymbolsComponent(
             s.name.toLowerCase().includes(query) ||
             s.path.toLowerCase().includes(query),
         ),
-      formatItem: (item, _width, theme) =>
-        formatSymbolListEntry(theme, { ...item, line: item.startLine }),
+      formatItem: (item, _width, theme, isFocused) =>
+        applyFocusedStyle(
+          theme,
+          formatSymbolListEntry(theme, { ...item, line: item.startLine }),
+          isFocused,
+        ),
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
     },
   );

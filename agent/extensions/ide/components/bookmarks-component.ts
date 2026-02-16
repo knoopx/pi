@@ -4,12 +4,12 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import {
-  createNonSelectableListPicker,
+  createListPicker,
   type ListPickerItem,
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { formatBookmarkReference } from "./utils";
+import { formatBookmarkReference, applyFocusedStyle } from "./utils";
 import { forgetBookmark, getDiff, listBookmarksByChange } from "../jj";
 
 interface BookmarkEntry extends ListPickerItem {
@@ -32,7 +32,7 @@ export function createBookmarksComponent(
 
   const actions: ListPickerAction<BookmarkEntry>[] = [
     {
-      key: "f",
+      key: "ctrl+f",
       label: "forget",
       handler: async (item) => {
         await forgetBookmark(pi, cwd, item.bookmark);
@@ -40,7 +40,7 @@ export function createBookmarksComponent(
       },
     },
     {
-      key: "g",
+      key: "ctrl+g",
       label: "fetch",
       handler: async () => {
         await pi.exec("jj", ["git", "fetch"], { cwd });
@@ -48,7 +48,7 @@ export function createBookmarksComponent(
       },
     },
     {
-      key: "p",
+      key: "ctrl+p",
       label: "push",
       handler: async (item) => {
         const bookmarkName = item.bookmark.split("@")[0]?.trim();
@@ -60,7 +60,7 @@ export function createBookmarksComponent(
       },
     },
     {
-      key: "i",
+      key: "ctrl+i",
       label: "insert",
       handler: (item) => {
         if (onInsert) {
@@ -71,7 +71,7 @@ export function createBookmarksComponent(
     },
   ];
 
-  const picker = createNonSelectableListPicker<BookmarkEntry>(
+  const picker = createListPicker<BookmarkEntry>(
     pi,
     tui,
     theme,
@@ -98,12 +98,20 @@ export function createBookmarksComponent(
             item.bookmark.toLowerCase().includes(query) ||
             item.description.toLowerCase().includes(query),
         ),
-      formatItem: (item, _width, theme) => {
+      formatItem: (item, _width, theme, isFocused) => {
         const shortId = item.changeId.slice(-8);
-        const bookmarkLabel = formatBookmarkReference(theme, item.bookmark);
-        const separator = theme.fg("dim", " · ");
-        const idLabel = theme.fg("dim", shortId);
-        return `${bookmarkLabel}${separator}${item.description}${separator}${idLabel}`;
+        const bookmarkLabel = formatBookmarkReference(
+          theme,
+          item.bookmark,
+          isFocused,
+        );
+        const separator = isFocused ? " · " : theme.fg("dim", " · ");
+        const idLabel = isFocused ? shortId : theme.fg("dim", shortId);
+        return applyFocusedStyle(
+          theme,
+          `${bookmarkLabel}${separator}${item.description}${separator}${idLabel}`,
+          isFocused,
+        );
       },
       loadPreview: async (item) => {
         return getDiff(pi, cwd, item.changeId);

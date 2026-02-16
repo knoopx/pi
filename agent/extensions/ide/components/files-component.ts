@@ -9,7 +9,11 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { loadFilePreviewWithBat, getFileIcon } from "./utils";
+import {
+  loadFilePreviewWithBat,
+  getFileIcon,
+  applyFocusedStyle,
+} from "./utils";
 import type { CmActionType } from "./cm-results-component";
 
 export interface FileInfo extends ListPickerItem {
@@ -127,8 +131,12 @@ export function createFilesComponent(
       },
       filterItems: (items, query) =>
         items.filter((item) => item.path.toLowerCase().includes(query)),
-      formatItem: (item, _width, _theme) =>
-        `${getFileIcon(item.path)} ${item.path}`,
+      formatItem: (item, _width, theme, isFocused) =>
+        applyFocusedStyle(
+          theme,
+          `${getFileIcon(item.path)} ${item.path}`,
+          isFocused,
+        ),
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
     },
   );

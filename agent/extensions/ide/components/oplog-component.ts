@@ -9,7 +9,7 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { getChangeIcon } from "./utils";
+import { getChangeIcon, applyFocusedStyle } from "./utils";
 import {
   loadOpLog,
   getOpShow,
@@ -92,10 +92,12 @@ export function createOpLogComponent(
             item.opId.toLowerCase().includes(query) ||
             item.description.toLowerCase().includes(query),
         ),
-      formatItem: (item, _width, theme) => {
-        const icon = getChangeIcon(item.isCurrent, false);
-        return `${icon} ${theme.fg("dim", item.opId)} ${item.description}`;
-      },
+      formatItem: (item, _width, theme, isFocused) =>
+        applyFocusedStyle(
+          theme,
+          `${getChangeIcon(item.isCurrent, false)} ${theme.fg("dim", item.opId)} ${item.description}`,
+          isFocused,
+        ),
       loadPreview: (item) => getOpShow(pi, cwd, item.opId),
     },
   );
