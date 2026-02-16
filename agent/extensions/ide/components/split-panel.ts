@@ -368,6 +368,14 @@ export function renderFileChangeRows(
     startIdx = fileIndex - visibleCount + 1;
   }
 
+  const getStatusColor = (
+    status: string,
+  ): "toolDiffAdded" | "toolDiffRemoved" | "warning" => {
+    if (status === "A") return "toolDiffAdded";
+    if (status === "D") return "toolDiffRemoved";
+    return "warning";
+  };
+
   for (let i = 0; i < visibleCount && startIdx + i < files.length; i++) {
     const idx = startIdx + i;
     const file = files[idx];
@@ -375,29 +383,25 @@ export function renderFileChangeRows(
     const statusIcon = getFileStatusIcon(file.status);
     const fileIcon = getFileIcon(file.path);
     const fileIconColor = getFileIconColor(file.path);
+    const statusColor = getStatusColor(file.status);
+
+    const styledStatus = theme.fg(statusColor, statusIcon);
+    const styledFileIcon = fileIconColor
+      ? hexColor(fileIconColor, fileIcon)
+      : theme.fg(statusColor, fileIcon);
+    const styledPath = theme.fg(statusColor, file.path);
+
+    const line = ` ${styledStatus} ${styledFileIcon} ${styledPath}`;
+    const truncated = truncateAnsi(line, width);
+    const padded = ensureWidth(truncated, width);
 
     if (isSelected) {
       const plainText = ` ${statusIcon} ${fileIcon} ${file.path}`;
-      const truncated = truncateAnsi(plainText, width);
-      const padded = pad(truncated, width);
-      rows.push(theme.fg("accent", theme.bold(padded)));
+      const truncatedPlain = truncateAnsi(plainText, width);
+      const paddedPlain = pad(truncatedPlain, width);
+      rows.push(theme.fg("accent", theme.bold(paddedPlain)));
     } else {
-      const statusColor =
-        file.status === "A"
-          ? "toolDiffAdded"
-          : file.status === "D"
-            ? "toolDiffRemoved"
-            : "warning";
-      const styledStatus = theme.fg(statusColor, statusIcon);
-      const styledFileIcon = fileIconColor
-        ? hexColor(fileIconColor, fileIcon)
-        : fileIcon;
-      const pathText = ` ${file.path}`;
-      const availableWidth = width - 4; // " " + status(1) + " " + icon(1)
-      const truncatedPath = truncateAnsi(pathText, availableWidth);
-      const fullText =
-        " " + styledStatus + " " + styledFileIcon + truncatedPath;
-      rows.push(pad(fullText, width));
+      rows.push(padded);
     }
   }
 
