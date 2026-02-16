@@ -47,6 +47,7 @@ import { createChangesComponent } from "./components/changes-component";
 import { createBookmarkPromptComponent } from "./components/bookmark-prompt-component";
 import { createBookmarksComponent } from "./components/bookmarks-component";
 import { createOpLogComponent } from "./components/oplog-component";
+import { createSkillBrowserComponent } from "./components/skill-browser-component";
 import { setBookmarkToChange } from "./jj";
 
 // Common overlay options for full-screen components
@@ -399,6 +400,17 @@ export default function ideExtension(pi: ExtensionAPI) {
   });
 
   /**
+   * /skills - Browse and install skills
+   */
+  pi.registerCommand("skills", {
+    description: "Browse local skills and install from skills.sh",
+    handler: async (args, ctx) => {
+      if (!ctx.hasUI) return;
+      await openSkillBrowser(pi, ctx, args.trim());
+    },
+  });
+
+  /**
    * Ctrl+T shortcut to launch symbol picker
    */
   pi.registerShortcut(Key.ctrl("t"), {
@@ -464,6 +476,17 @@ export default function ideExtension(pi: ExtensionAPI) {
     handler: async (ctx) => {
       if (!ctx.hasUI) return;
       await openOpLogBrowser(pi, ctx);
+    },
+  });
+
+  /**
+   * Ctrl+S shortcut to open skill browser
+   */
+  pi.registerShortcut(Key.ctrl("s"), {
+    description: "Open skill browser",
+    handler: async (ctx) => {
+      if (!ctx.hasUI) return;
+      await openSkillBrowser(pi, ctx, "");
     },
   });
 }
@@ -635,6 +658,31 @@ async function openOpLogBrowser(
   await ctx.ui.custom((tui, theme, keybindings, done) => {
     return createOpLogComponent(pi, tui, theme, keybindings, done, ctx.cwd);
   }, FULL_OVERLAY_OPTIONS);
+}
+
+async function openSkillBrowser(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+  initialQuery: string,
+): Promise<void> {
+  const result = await ctx.ui.custom<string | undefined>(
+    (tui, theme, keybindings, done) => {
+      return createSkillBrowserComponent(
+        pi,
+        tui,
+        theme,
+        keybindings,
+        done,
+        initialQuery,
+        ctx,
+      );
+    },
+    FULL_OVERLAY_OPTIONS,
+  );
+
+  if (result) {
+    ctx.ui.setEditorText(result);
+  }
 }
 
 async function openChangesBrowser(
