@@ -6,6 +6,7 @@
   "toggleSessionPath": [],
   "renameSession": [],
   "toggleInputInfo": [],
+  "toggleSessionSort": [],
 
   "cursorLeft": "left",
   "cursorRight": "right",
