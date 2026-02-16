@@ -315,6 +315,7 @@ export function formatChangeRow(
     isFocused?: boolean;
     bookmarks: string[];
     description: string;
+    author?: string;
   },
 ): { leftText: string; rightText: string } {
   const rawIcon = getChangeIcon(opts.isWorkingCopy, opts.isEmpty);
@@ -326,5 +327,7 @@ export function formatChangeRow(
     : opts.description;
   const leftText = ` ${icon} ${bookmarkLabel}${description}`;
 
-  return { leftText, rightText: "" };
+  const rightText = opts.author ? theme.fg("dim", ` ${opts.author}`) : "";
+
+  return { leftText, rightText };
 }

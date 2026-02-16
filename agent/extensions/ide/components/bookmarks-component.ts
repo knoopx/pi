@@ -103,11 +103,11 @@ export function createBookmarksComponent(
     },
     {
       key: "ctrl+g",
-      label: "fetch",
+      label: "fetch all",
       handler: async () => {
         const result = await pi.exec("jj", ["git", "fetch"], { cwd });
         if (result.code === 0) {
-          notify("Fetched from remote", "info");
+          notify("Fetched all from remote", "info");
         } else {
           notify(result.stderr || "Fetch failed", "error");
         }
@@ -116,17 +116,11 @@ export function createBookmarksComponent(
     },
     {
       key: "ctrl+p",
-      label: "push",
-      handler: async (item) => {
-        const bookmarkName = item.bookmarks[0]?.split("@")[0]?.trim();
-        if (!bookmarkName) return;
-        const result = await pi.exec(
-          "jj",
-          ["git", "push", "--bookmark", bookmarkName],
-          { cwd },
-        );
+      label: "push all",
+      handler: async () => {
+        const result = await pi.exec("jj", ["git", "push", "--all"], { cwd });
         if (result.code === 0) {
-          notify(`Pushed ${bookmarkName}`, "info");
+          notify("Pushed all bookmarks", "info");
         } else {
           notify(result.stderr || "Push failed", "error");
         }
@@ -169,7 +163,7 @@ export function createBookmarksComponent(
       formatItem: (item, _width, theme, isFocused) => {
         const shortId = item.changeId.slice(-8);
         const bookmarkLabels = item.displayNames
-          .map((name) => formatBookmarkReference(theme, name, isFocused))
+          .map((name) => formatBookmarkReference(theme, name))
           .join(" ");
         const separator = isFocused ? " · " : theme.fg("dim", " · ");
         const description = isFocused

@@ -396,17 +396,21 @@ Use the **conventional-commits** skill for commit message format.`;
       const isWorkingCopy = idx === 0; // First change is @ (working copy)
 
       const bookmarks = bookmarksByChange.get(change.changeId) ?? [];
-      const { leftText } = formatChangeRow(theme, {
+      const { leftText, rightText } = formatChangeRow(theme, {
         isWorkingCopy,
         isEmpty: change.empty,
         isSelected: isMarked,
         isFocused: isCursor,
         bookmarks,
         description: change.description,
+        author: change.author,
       });
 
-      const leftTruncated = truncateAnsi(leftText, width);
-      const line = ensureWidth(leftTruncated, width);
+      const rightLen = rightText.replace(/\x1b\[[0-9;]*m/g, "").length;
+      const availableLeftWidth = Math.max(1, width - rightLen);
+      const leftTruncated = truncateAnsi(leftText, availableLeftWidth);
+      const leftPadded = ensureWidth(leftTruncated, availableLeftWidth);
+      const line = leftPadded + rightText;
       rows.push(line);
     }
 
