@@ -61,6 +61,11 @@ export function createChangesComponent(
   const loadingState = createLoadingState();
   const statusState: StatusMessageState = { message: null, timeout: null };
 
+  // Move mode state
+  let mode: "normal" | "move" = "normal";
+  let moveOriginalIndex = -1;
+  let moveOriginalChanges: MutableChange[] = [];
+
   const notify = createStatusNotifier(statusState, () => {
     invalidateCache(loadingState);
     tui.requestRender();
@@ -117,6 +122,115 @@ export function createChangesComponent(
     );
     invalidateCache(loadingState);
     tui.requestRender();
+  }
+
+  function enterMoveMode(): void {
+    if (!selectedChange || changes.length < 2) return;
+    mode = "move";
+    moveOriginalIndex = selectionState.selectedIndex;
+    moveOriginalChanges = [...changes];
+    invalidateCache(loadingState);
+    tui.requestRender();
+  }
+
+  function cancelMoveMode(): void {
+    changes = moveOriginalChanges;
+    selectionState.selectedIndex = moveOriginalIndex;
+    selectedChange = changes[moveOriginalIndex];
+    mode = "normal";
+    moveOriginalIndex = -1;
+    moveOriginalChanges = [];
+    invalidateCache(loadingState);
+    tui.requestRender();
+  }
+
+  function moveChange(direction: "up" | "down"): void {
+    const currentIndex = selectionState.selectedIndex;
+    const targetIndex =
+      direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+    // Can't move beyond bounds (and can't move to position 0 - working copy)
+    if (targetIndex < 1 || targetIndex >= changes.length) return;
+    // Can't move from position 0 (working copy)
+    if (currentIndex === 0) return;
+
+    // Swap in array
+    [changes[currentIndex], changes[targetIndex]] = [
+      changes[targetIndex],
+      changes[currentIndex],
+    ];
+    selectionState.selectedIndex = targetIndex;
+    invalidateCache(loadingState);
+    tui.requestRender();
+  }
+
+  async function applyMoveMode(): Promise<void> {
+    if (!selectedChange) {
+      mode = "normal";
+      return;
+    }
+
+    const currentIndex = selectionState.selectedIndex;
+    if (currentIndex === moveOriginalIndex) {
+      // No change, just exit move mode
+      mode = "normal";
+      moveOriginalIndex = -1;
+      moveOriginalChanges = [];
+      invalidateCache(loadingState);
+      tui.requestRender();
+      return;
+    }
+
+    try {
+      // Determine target for rebase
+      // List shows newest-first (children before parents)
+      // Moving UP in list = becoming a child = use --after the change below
+      // Moving DOWN in list = becoming a parent = use --before the change above
+      const changeToMove = selectedChange;
+
+      if (currentIndex < moveOriginalIndex) {
+        // Moved up - become a child of what's now below us
+        const targetChange = changes[currentIndex + 1];
+        await pi.exec(
+          "jj",
+          [
+            "rebase",
+            "-r",
+            changeToMove.changeId,
+            "--after",
+            targetChange.changeId,
+          ],
+          { cwd },
+        );
+      } else {
+        // Moved down - become a parent of what's now above us
+        const targetChange = changes[currentIndex - 1];
+        await pi.exec(
+          "jj",
+          [
+            "rebase",
+            "-r",
+            changeToMove.changeId,
+            "--before",
+            targetChange.changeId,
+          ],
+          { cwd },
+        );
+      }
+
+      mode = "normal";
+      moveOriginalIndex = -1;
+      moveOriginalChanges = [];
+
+      // Reload to get actual state
+      changeCache.clear();
+      await loadChanges();
+      notify(`Moved change ${changeToMove.changeId.slice(0, 8)}`, "info");
+    } catch (error) {
+      notify(`Failed to move: ${formatErrorMessage(error)}`, "error");
+      // Restore original order on failure
+      cancelMoveMode();
+    }
   }
 
   function switchFocus(): void {
@@ -391,16 +505,18 @@ Use the **conventional-commits** skill for commit message format.`;
       const idx = startIdx + i;
       const change = changes[idx];
       const isCursor = idx === selectionState.selectedIndex;
-      const isFocusedCursor = isCursor && selectionState.focus === "left";
       const isMarked = selectedChangeIds.has(change.changeId);
       const isWorkingCopy = idx === 0; // First change is @ (working copy)
+      const isFocused = isCursor && selectionState.focus === "left";
 
       const bookmarks = bookmarksByChange.get(change.changeId) ?? [];
+      const isMoving = mode === "move" && isCursor;
       const { leftText, rightText } = formatChangeRow(theme, {
         isWorkingCopy,
         isEmpty: change.empty,
         isSelected: isMarked,
-        isFocused: isCursor,
+        isFocused,
+        isMoving,
         bookmarks,
         description: change.description,
         author: change.author,
@@ -465,28 +581,39 @@ Use the **conventional-commits** skill for commit message format.`;
 
     const describeTargetCount =
       selectedChangeIds.size || (selectedChange ? 1 : 0);
+
+    const leftHelp =
+      mode === "move"
+        ? ["↑↓ move", "enter apply", "esc cancel"]
+        : ([
+            "space select",
+            selectedChange && "e edit",
+            describeTargetCount > 0 &&
+              `d describe(${String(describeTargetCount)})`,
+            selectedChange && "s split",
+            selectedChange &&
+              changes.length > 1 &&
+              selectionState.selectedIndex < changes.length - 1 &&
+              "f fixup",
+            selectedChange &&
+              changes.length > 1 &&
+              selectionState.selectedIndex > 0 &&
+              "ctrl+m move",
+            selectedChange && onInsert && "i insert",
+            selectedChange && onBookmark && "b bookmark",
+            selectedChange &&
+              (bookmarksByChange.get(selectedChange.changeId)?.length ?? 0) >
+                0 &&
+              "ctrl+p push",
+            selectedChange && "ctrl+d drop",
+          ].filter(Boolean) as string[]);
+
     const helpText = formatHelpWithStatus(
       theme,
       statusState.message,
       buildNavigationHelp(
         selectionState.focus,
-        [
-          "space select",
-          selectedChange && "e edit",
-          describeTargetCount > 0 &&
-            `d describe(${String(describeTargetCount)})`,
-          selectedChange && "s split",
-          selectedChange &&
-            changes.length > 1 &&
-            selectionState.selectedIndex < changes.length - 1 &&
-            "f fixup",
-          selectedChange && onInsert && "i insert",
-          selectedChange && onBookmark && "b bookmark",
-          selectedChange &&
-            (bookmarksByChange.get(selectedChange.changeId)?.length ?? 0) > 0 &&
-            "ctrl+p push",
-          selectedChange && "ctrl+d drop",
-        ].filter(Boolean) as string[],
+        leftHelp,
         [
           files.length > 0 && "e edit",
           files.length > 0 && "d discard",
@@ -523,6 +650,27 @@ Use the **conventional-commits** skill for commit message format.`;
   }
 
   function handleInput(data: string): void {
+    // Move mode handling
+    if (mode === "move") {
+      if (matchesKey(data, "escape")) {
+        cancelMoveMode();
+        return;
+      }
+      if (matchesKey(data, "enter")) {
+        void applyMoveMode();
+        return;
+      }
+      if (matchesKey(data, "up")) {
+        moveChange("up");
+        return;
+      }
+      if (matchesKey(data, "down")) {
+        moveChange("down");
+        return;
+      }
+      return; // Ignore other keys in move mode
+    }
+
     if (matchesKey(data, "escape") || data === "q") {
       done();
       return;
@@ -644,6 +792,11 @@ Use the **conventional-commits** skill for commit message format.`;
           })();
         }
       }
+      return;
+    }
+
+    if (matchesKey(data, "ctrl+m") && selectionState.focus === "left") {
+      enterMoveMode();
       return;
     }
 

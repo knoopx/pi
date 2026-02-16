@@ -313,6 +313,7 @@ export function formatChangeRow(
     isEmpty: boolean;
     isSelected: boolean;
     isFocused?: boolean;
+    isMoving?: boolean;
     bookmarks: string[];
     description: string;
     author?: string;
@@ -322,10 +323,13 @@ export function formatChangeRow(
   const icon = opts.isSelected ? theme.fg("accent", rawIcon) : rawIcon;
   const bookmarkLabel = formatBookmarkLabels(theme, opts.bookmarks);
 
-  const description = opts.isFocused
-    ? theme.fg("accent", theme.bold(opts.description))
-    : opts.description;
-  const leftText = ` ${icon} ${bookmarkLabel}${description}`;
+  const moveIndicator = opts.isMoving ? theme.fg("warning", "↕ ") : "";
+  const description = opts.isMoving
+    ? theme.fg("warning", theme.bold(opts.description))
+    : opts.isFocused
+      ? theme.fg("accent", theme.bold(opts.description))
+      : opts.description;
+  const leftText = ` ${moveIndicator}${icon} ${bookmarkLabel}${description}`;
 
   const rightText = opts.author ? theme.fg("dim", ` ${opts.author}`) : "";
 
