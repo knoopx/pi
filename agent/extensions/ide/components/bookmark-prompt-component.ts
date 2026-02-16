@@ -73,13 +73,7 @@ export function createBookmarkPromptComponent(
 
       const result = await pi.exec(
         "jj",
-        [
-          "bookmark",
-          "list",
-          "--all-remotes",
-          "-T",
-          'self.name() ++ "\\t" ++ coalesce(self.remote(), "") ++ "\\n"',
-        ],
+        ["bookmark", "list", "-T", 'self.name() ++ "\\n"'],
         { cwd },
       );
 
@@ -93,18 +87,12 @@ export function createBookmarkPromptComponent(
       const loaded: string[] = [];
 
       for (const line of result.stdout.split("\n")) {
-        const [name, remote] = line.split("\t");
-        if (!name) {
+        const name = line.trim();
+        if (!name || seen.has(name)) {
           continue;
         }
-
-        const bookmark = remote ? `${name}@${remote}` : `${name}@`;
-        if (seen.has(bookmark)) {
-          continue;
-        }
-
-        seen.add(bookmark);
-        loaded.push(bookmark);
+        seen.add(name);
+        loaded.push(name);
       }
 
       bookmarks = loaded;
@@ -193,18 +181,7 @@ export function createBookmarkPromptComponent(
           };
         }
 
-        const atIndex = candidate.lastIndexOf("@");
-        const name = atIndex >= 0 ? candidate.slice(0, atIndex) : candidate;
-        const remote =
-          atIndex >= 0 && atIndex < candidate.length - 1
-            ? candidate.slice(atIndex + 1)
-            : "";
-
-        return {
-          text: remote
-            ? `󰃀 ${name}${theme.fg("dim", ` @${remote}`)}`
-            : `󰃀 ${name}`,
-        };
+        return { text: `󰃀 ${candidate}` };
       }),
       contentWidth,
       5,

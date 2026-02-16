@@ -187,9 +187,8 @@ export async function listBookmarksByChange(
     [
       "bookmark",
       "list",
-      "--all-remotes",
       "-T",
-      'self.name() ++ "\t" ++ coalesce(self.remote(), "") ++ "\t" ++ coalesce(self.normal_target().change_id().short(), "") ++ "\t" ++ coalesce(self.normal_target().description().first_line(), "") ++ "\n"',
+      'self.name() ++ "\t" ++ coalesce(self.normal_target().change_id().short(), "") ++ "\t" ++ coalesce(self.normal_target().description().first_line(), "") ++ "\n"',
     ],
     { cwd },
   );
@@ -206,19 +205,14 @@ export async function listBookmarksByChange(
   }[] = [];
 
   for (const line of result.stdout.split("\n")) {
-    const [name, remote, changeId, description] = line.split("\t");
-    if (!name || !changeId) {
+    const [name, changeId, description] = line.split("\t");
+    if (!name || !changeId || seen.has(name)) {
       continue;
     }
 
-    const bookmark = remote ? `${name}@${remote}` : `${name}@`;
-    if (seen.has(bookmark)) {
-      continue;
-    }
-
-    seen.add(bookmark);
+    seen.add(name);
     entries.push({
-      bookmark,
+      bookmark: name,
       changeId,
       description: sanitizeDescription(description || ""),
     });

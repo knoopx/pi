@@ -91,12 +91,12 @@ describe("jj module", () => {
       pi = { exec: execMock } as unknown as ExtensionAPI;
     });
 
-    describe("when output contains duplicate bookmark refs", () => {
-      it("then deduplicates refs and sanitizes descriptions", async () => {
+    describe("when output contains duplicate bookmarks", () => {
+      it("then deduplicates and sanitizes descriptions", async () => {
         execMock.mockResolvedValue({
           code: 0,
           stdout:
-            "main\t\tabc123\tfeat: ✨ one\nmain\t\tabc123\tfeat: ✨ one\nmain\tgit\tabc123\tfeat: ✨ two\n",
+            "main\tabc123\tfeat: ✨ one\nmain\tabc123\tfeat: ✨ one\nfeature\tdef456\tfeat: ✨ two\n",
           stderr: "",
         });
 
@@ -104,13 +104,13 @@ describe("jj module", () => {
 
         expect(result).toEqual([
           {
-            bookmark: "main@",
+            bookmark: "main",
             changeId: "abc123",
             description: "feat: one",
           },
           {
-            bookmark: "main@git",
-            changeId: "abc123",
+            bookmark: "feature",
+            changeId: "def456",
             description: "feat: two",
           },
         ]);

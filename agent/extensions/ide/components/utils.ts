@@ -269,10 +269,8 @@ export function buildHelpText(
 export function formatBookmarkReference(
   theme: Theme,
   bookmark: string,
-  isFocused = false,
 ): string {
-  const icon = isFocused ? "󰃀" : theme.fg("accent", "󰃀");
-  return `${icon} ${bookmark}`;
+  return `${theme.fg("accent", "󰃀")} ${theme.fg("warning", bookmark)}`;
 }
 
 /**
@@ -314,18 +312,19 @@ export function formatChangeRow(
     isWorkingCopy: boolean;
     isEmpty: boolean;
     isSelected: boolean;
+    isFocused?: boolean;
     bookmarks: string[];
     description: string;
-    changeId: string;
   },
 ): { leftText: string; rightText: string } {
-  const icon = getChangeIcon(opts.isWorkingCopy, opts.isEmpty);
-  const selectionMarker = opts.isSelected ? "󰄵" : "󰄱";
+  const rawIcon = getChangeIcon(opts.isWorkingCopy, opts.isEmpty);
+  const icon = opts.isSelected ? theme.fg("accent", rawIcon) : rawIcon;
   const bookmarkLabel = formatBookmarkLabels(theme, opts.bookmarks);
-  const idLabel = opts.changeId.slice(0, 8);
 
-  const leftText = ` ${selectionMarker} ${icon} ${opts.description} ${bookmarkLabel}`;
-  const rightText = theme.fg("dim", ` ${idLabel}`);
+  const description = opts.isFocused
+    ? theme.fg("accent", theme.bold(opts.description))
+    : opts.description;
+  const leftText = ` ${icon} ${bookmarkLabel}${description}`;
 
-  return { leftText, rightText };
+  return { leftText, rightText: "" };
 }
