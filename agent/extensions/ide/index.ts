@@ -48,6 +48,7 @@ import { createBookmarksComponent } from "./components/bookmarks-component";
 import { createOpLogComponent } from "./components/oplog-component";
 import { createSkillBrowserComponent } from "./components/skill-browser-component";
 import { createCommandPaletteComponent } from "./components/command-palette-component";
+import { createPullRequestsComponent } from "./components/pull-requests-component";
 import { setBookmarkToChange } from "./jj";
 import type { AppAction } from "@mariozechner/pi-coding-agent";
 import type { KeyId } from "@mariozechner/pi-tui";
@@ -413,6 +414,17 @@ export default function ideExtension(pi: ExtensionAPI) {
   });
 
   /**
+   * /pull-requests - Browse GitHub pull requests
+   */
+  pi.registerCommand("pull-requests", {
+    description: "Browse GitHub pull requests with diff preview",
+    handler: async (_args, ctx) => {
+      if (!ctx.hasUI) return;
+      await openPullRequestsBrowser(pi, ctx);
+    },
+  });
+
+  /**
    * Ctrl+T shortcut to launch symbol picker
    */
   pi.registerShortcut(Key.ctrl("t"), {
@@ -492,6 +504,17 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
+  /**
+   * Ctrl+G shortcut to open pull requests browser
+   */
+  pi.registerShortcut(Key.ctrl("g"), {
+    description: "Open pull requests browser",
+    handler: async (ctx) => {
+      if (!ctx.hasUI) return;
+      await openPullRequestsBrowser(pi, ctx);
+    },
+  });
+
   // Track registered shortcuts for command palette
   const registeredShortcuts: {
     shortcut: KeyId;
@@ -531,6 +554,11 @@ export default function ideExtension(pi: ExtensionAPI) {
     {
       shortcut: Key.ctrl("s"),
       description: "Open skill browser",
+      execute: () => {},
+    },
+    {
+      shortcut: Key.ctrl("g"),
+      description: "Open pull requests browser",
       execute: () => {},
     },
   ];
@@ -750,6 +778,25 @@ async function openSkillBrowser(
   if (result) {
     ctx.ui.setEditorText(result);
   }
+}
+
+async function openPullRequestsBrowser(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+): Promise<void> {
+  await ctx.ui.custom((tui, theme, keybindings, done) => {
+    return createPullRequestsComponent(
+      pi,
+      tui,
+      theme,
+      keybindings,
+      done,
+      ctx.cwd,
+      (text) => {
+        ctx.ui.setEditorText(ctx.ui.getEditorText() + text);
+      },
+    );
+  }, FULL_OVERLAY_OPTIONS);
 }
 
 async function openCommandPalette(

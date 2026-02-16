@@ -7,6 +7,7 @@
   "renameSession": [],
   "toggleInputInfo": [],
   "toggleSessionSort": [],
+  "externalEditor": [],
 
   "cursorLeft": "left",
   "cursorRight": "right",
