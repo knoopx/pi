@@ -99,12 +99,11 @@ export function createSymbolsComponent(
 
   // Action definitions: [key, label/action]
   const ACTION_DEFS: [string, CmActionType][] = [
-    ["ctrl+c", "callers"],
+    ["ctrl+i", "callers"],
     ["ctrl+l", "callees"],
     ["ctrl+t", "tests"],
     ["ctrl+y", "types"],
     ["ctrl+s", "schema"],
-    ["ctrl+i", "impact"],
   ];
 
   const actions: ListPickerAction<SymbolInfo>[] = ACTION_DEFS.map(

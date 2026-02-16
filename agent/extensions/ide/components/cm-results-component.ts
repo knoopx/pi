@@ -31,7 +31,6 @@ export type CmActionType =
   | "tests"
   | "types"
   | "schema"
-  | "impact"
   | "inspect"
   | "deps"
   | "used-by";
@@ -82,11 +81,6 @@ export const CM_COMMANDS: Record<CmActionType, CmCommandDef> = {
     command: "schema",
     argsFn: (s) => ["schema", s],
   },
-  impact: {
-    titleFn: (s) => `Impact of ${s}`,
-    command: "impact",
-    argsFn: (s) => ["impact", s, "--all"],
-  },
   inspect: {
     titleFn: (f) => `Symbols in ${f}`,
     command: "inspect",
@@ -106,12 +100,11 @@ export const CM_COMMANDS: Record<CmActionType, CmCommandDef> = {
 
 // Symbol-based actions available in cm results
 const SYMBOL_ACTION_DEFS: [string, CmActionType][] = [
-  ["ctrl+c", "callers"],
+  ["ctrl+i", "callers"],
   ["ctrl+l", "callees"],
   ["ctrl+t", "tests"],
   ["ctrl+y", "types"],
   ["ctrl+s", "schema"],
-  ["ctrl+i", "impact"],
 ];
 
 /**
