@@ -51,6 +51,7 @@ You are a coding assistant. Your goal is to help users understand, modify, and i
 - Use descriptive names over abbreviations
 - Extract logic into well-named functions
 - Acceptable comments: TODO, FIXME, doc links, warnings
+- Use `is` prefix for boolean identifiers (e.g., `isFocused`, `isLoading`, `isValid`)
 
 **Function design:**
 

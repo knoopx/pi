@@ -81,6 +81,7 @@ Browse mutable jujutsu changes on current branch with diff preview.
 | `Space` | Toggle selected change |
 | `e` | Edit change |
 | `d` | Describe selected changes (or focused change) |
+| `s` | Split change into multiple commits |
 | `f` | Fixup (squash into parent) |
 | `Ctrl+D` | Drop change |
 | `i` | Insert change ID |
@@ -156,6 +157,8 @@ Each user prompt automatically creates a new jj change:
 
 1. If current change has modifications, runs `jj new`
 2. Sets the change description to the first line of the prompt
+
+Change creation is deferred until the first write operation. Readonly tools (Read, Bash commands like `ls`, `cat`, `grep`, etc.) do not trigger change creation.
 
 This ensures each interaction is tracked as a separate change in jj history.
 
