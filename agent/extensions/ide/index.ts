@@ -660,9 +660,6 @@ async function openChangesBrowser(
           ctx.ui.setEditorText(text);
         },
         (changeId) => promptAndSetBookmark(ctx, changeId),
-        (message, type = "info") => {
-          ctx.ui.notify(message, type);
-        },
         async (filePath, action) => {
           pendingCmAction = { filePath, action };
           done();

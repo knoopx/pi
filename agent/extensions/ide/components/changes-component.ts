@@ -17,8 +17,11 @@ import {
   renderLoadingRow,
   renderEmptyState,
   buildNavigationHelp,
+  createStatusNotifier,
+  formatHelpWithStatus,
   type ComponentCache,
   type BaseComponentParams,
+  type StatusMessageState,
 } from "./shared-utils";
 import type { FileChange, MutableChange } from "../types";
 import {
@@ -56,22 +59,12 @@ export function createChangesComponent(
   // Use shared state objects
   const selectionState = createSelectionState();
   const loadingState = createLoadingState();
+  const statusState: StatusMessageState = { message: null, timeout: null };
 
-  // Status message support
-  let statusMessage: { text: string; type: "info" | "error" } | null = null;
-  let statusTimeout: ReturnType<typeof setTimeout> | null = null;
-
-  function notify(message: string, type: "info" | "error" = "info"): void {
-    if (statusTimeout) clearTimeout(statusTimeout);
-    statusMessage = { text: message, type };
+  const notify = createStatusNotifier(statusState, () => {
     invalidateCache(loadingState);
     tui.requestRender();
-    statusTimeout = setTimeout(() => {
-      statusMessage = null;
-      invalidateCache(loadingState);
-      tui.requestRender();
-    }, 3000);
-  }
+  });
 
   // Navigation handlers - defined inline to access current array values
   function navigateChanges(direction: "up" | "down"): void {
@@ -246,7 +239,7 @@ Use the **conventional-commits** skill for commit message format.`;
             files = [];
             diffContent = [];
           }
-          onNotify?.(`Dropped change ${change.changeId}`, "info");
+          notify(`Dropped change ${change.changeId}`, "info");
           return;
         }
       }
@@ -476,29 +469,34 @@ Use the **conventional-commits** skill for commit message format.`;
 
     const describeTargetCount =
       selectedChangeIds.size || (selectedChange ? 1 : 0);
-    const helpText = buildNavigationHelp(
-      selectionState.focus,
-      [
-        "space select",
-        selectedChange && "e edit",
-        describeTargetCount > 0 && `d describe(${String(describeTargetCount)})`,
-        selectedChange && "s split",
-        selectedChange &&
-          changes.length > 1 &&
-          selectionState.selectedIndex < changes.length - 1 &&
-          "f fixup",
-        selectedChange && onInsert && "i insert",
-        selectedChange && onBookmark && "b bookmark",
-        selectedChange && "ctrl+d drop",
-      ].filter(Boolean) as string[],
-      [
-        files.length > 0 && "e edit",
-        files.length > 0 && "d discard",
-        files.length > 0 && onFileCmAction && "ctrl+i inspect",
-        files.length > 0 && onFileCmAction && "ctrl+d deps",
-        files.length > 0 && onFileCmAction && "ctrl+u used-by",
-        "pgup/pgdn scroll",
-      ].filter(Boolean) as string[],
+    const helpText = formatHelpWithStatus(
+      theme,
+      statusState.message,
+      buildNavigationHelp(
+        selectionState.focus,
+        [
+          "space select",
+          selectedChange && "e edit",
+          describeTargetCount > 0 &&
+            `d describe(${String(describeTargetCount)})`,
+          selectedChange && "s split",
+          selectedChange &&
+            changes.length > 1 &&
+            selectionState.selectedIndex < changes.length - 1 &&
+            "f fixup",
+          selectedChange && onInsert && "i insert",
+          selectedChange && onBookmark && "b bookmark",
+          selectedChange && "ctrl+d drop",
+        ].filter(Boolean) as string[],
+        [
+          files.length > 0 && "e edit",
+          files.length > 0 && "d discard",
+          files.length > 0 && onFileCmAction && "ctrl+i inspect",
+          files.length > 0 && onFileCmAction && "ctrl+d deps",
+          files.length > 0 && onFileCmAction && "ctrl+u used-by",
+          "pgup/pgdn scroll",
+        ].filter(Boolean) as string[],
+      ),
     );
 
     loadingState.cachedLines = renderSplitPanel(
@@ -610,12 +608,12 @@ Use the **conventional-commits** skill for commit message format.`;
             await reloadBookmarks();
             invalidateCache(loadingState);
             tui.requestRender();
-            onNotify?.(
+            notify(
               `Updated bookmark '${bookmarkName}' to ${selectedChange.changeId}`,
               "info",
             );
           } catch (error) {
-            onNotify?.(
+            notify(
               `Failed to update bookmark: ${formatErrorMessage(error)}`,
               "error",
             );
@@ -640,7 +638,7 @@ Use the **conventional-commits** skill for commit message format.`;
             changeCache.delete(selectedChange.changeId);
             await loadFilesAndDiff(selectedChange);
           } catch (error) {
-            onNotify?.(
+            notify(
               `Failed to discard file: ${formatErrorMessage(error)}`,
               "error",
             );

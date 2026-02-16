@@ -10,7 +10,13 @@ import {
   renderSplitPanel,
   renderSourceRows,
 } from "./split-panel";
-import { isRenderCacheValid, createBaseDimensionsConfig } from "./shared-utils";
+import {
+  isRenderCacheValid,
+  createBaseDimensionsConfig,
+  createStatusNotifier,
+  formatHelpWithStatus,
+  type StatusMessageState,
+} from "./shared-utils";
 
 export interface ListPickerItem {
   id: string;
@@ -77,20 +83,12 @@ export function createListPicker<T extends ListPickerItem>(
   let cachedLines: string[] = [];
   let cachedWidth = 0;
   const previewCache = new Map<string, string[]>();
-  let statusMessage: { text: string; type: "info" | "error" } | null = null;
-  let statusTimeout: ReturnType<typeof setTimeout> | null = null;
+  const statusState: StatusMessageState = { message: null, timeout: null };
 
-  function showStatus(message: string, type: "info" | "error" = "info"): void {
-    if (statusTimeout) clearTimeout(statusTimeout);
-    statusMessage = { text: message, type };
+  const showStatus = createStatusNotifier(statusState, () => {
     invalidate();
     tui.requestRender();
-    statusTimeout = setTimeout(() => {
-      statusMessage = null;
-      invalidate();
-      tui.requestRender();
-    }, 3000);
-  }
+  });
 
   async function loadItems(): Promise<void> {
     try {
@@ -235,18 +233,17 @@ export function createListPicker<T extends ListPickerItem>(
 
     const baseParts = config.helpParts ?? ["↑↓ nav", "type to search"];
     const actionHelp = (config.actions ?? []).map((a) => `${a.key} ${a.label}`);
-    const helpText = statusMessage
-      ? theme.fg(
-          statusMessage.type === "error" ? "error" : "accent",
-          statusMessage.text,
-        )
-      : buildHelpText(
-          ...baseParts,
-          filteredItems.length > 0 && "enter select",
-          filteredItems.length > 0 && config.onEdit && "ctrl+e edit",
-          ...(filteredItems.length > 0 ? actionHelp : []),
-          "esc",
-        );
+    const helpText = formatHelpWithStatus(
+      theme,
+      statusState.message,
+      buildHelpText(
+        ...baseParts,
+        filteredItems.length > 0 && "enter select",
+        filteredItems.length > 0 && config.onEdit && "ctrl+e edit",
+        ...(filteredItems.length > 0 ? actionHelp : []),
+        "esc",
+      ),
+    );
 
     cachedLines = renderSplitPanel(
       theme,
