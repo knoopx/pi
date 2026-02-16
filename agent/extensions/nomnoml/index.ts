@@ -17,7 +17,9 @@ interface RenderResultDetails {
   cancelled?: boolean;
 }
 
-interface RenderUpdateDetails { status: "rendering" }
+interface RenderUpdateDetails {
+  status: "rendering";
+}
 
 type RenderResponseContent =
   | { type: "text"; text: string }
@@ -187,11 +189,7 @@ Use this to:
         return resolved.error;
       }
 
-      return renderDiagram(
-        resolved.diagramSource!,
-        undefined,
-        onUpdate,
-      );
+      return renderDiagram(resolved.diagramSource!, undefined, onUpdate);
     },
   });
 
