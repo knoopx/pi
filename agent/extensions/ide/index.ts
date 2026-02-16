@@ -141,11 +141,70 @@ export default function ideExtension(pi: ExtensionAPI) {
     pendingChangeDescription = event.text.split("\n")[0]?.trim() || null;
   });
 
+  const READONLY_BASH_COMMANDS = new Set([
+    "ls",
+    "cat",
+    "head",
+    "tail",
+    "grep",
+    "rg",
+    "find",
+    "fd",
+    "tree",
+    "file",
+    "stat",
+    "wc",
+    "diff",
+    "which",
+    "type",
+    "echo",
+    "pwd",
+    "env",
+    "printenv",
+    "date",
+    "whoami",
+    "hostname",
+    "uname",
+    "df",
+    "du",
+    "free",
+    "ps",
+    "top",
+    "htop",
+    "jj",
+    "git",
+    "bat",
+    "less",
+    "more",
+  ]);
+
+  function isReadonlyToolCall(event: {
+    toolName: string;
+    input?: unknown;
+  }): boolean {
+    if (event.toolName === "read") {
+      return true;
+    }
+
+    if (event.toolName === "bash") {
+      const input = event.input as { command?: string } | undefined;
+      const command = input?.command?.trim() ?? "";
+      const firstWord = command.split(/\s+/)[0] ?? "";
+      return READONLY_BASH_COMMANDS.has(firstWord);
+    }
+
+    return false;
+  }
+
   /**
-   * Create a jj change only when the agent actually starts executing a tool.
+   * Create a jj change only when the agent actually starts executing a write tool.
    */
-  pi.on("tool_call", async (_event, ctx) => {
+  pi.on("tool_call", async (event, ctx) => {
     if (!pendingChangeDescription) {
+      return;
+    }
+
+    if (isReadonlyToolCall(event)) {
       return;
     }
 
