@@ -478,6 +478,9 @@ Use the **conventional-commits** skill for commit message format.`;
             "f fixup",
           selectedChange && onInsert && "i insert",
           selectedChange && onBookmark && "b bookmark",
+          selectedChange &&
+            (bookmarksByChange.get(selectedChange.changeId)?.length ?? 0) > 0 &&
+            "ctrl+p push",
           selectedChange && "ctrl+d drop",
         ].filter(Boolean) as string[],
         [
@@ -611,6 +614,31 @@ Use the **conventional-commits** skill for commit message format.`;
             );
           }
         })();
+      }
+      return;
+    }
+
+    if (matchesKey(data, "ctrl+p") && selectionState.focus === "left") {
+      if (selectedChange) {
+        const bookmarks = bookmarksByChange.get(selectedChange.changeId) ?? [];
+        if (bookmarks.length > 0) {
+          void (async () => {
+            try {
+              for (const bookmark of bookmarks) {
+                await pi.exec("jj", ["git", "push", "-b", bookmark], { cwd });
+              }
+              await loadChanges();
+              invalidateCache(loadingState);
+              tui.requestRender();
+              notify(
+                `Pushed bookmark${bookmarks.length > 1 ? "s" : ""}: ${bookmarks.join(", ")}`,
+                "info",
+              );
+            } catch (error) {
+              notify(`Failed to push: ${formatErrorMessage(error)}`, "error");
+            }
+          })();
+        }
       }
       return;
     }
