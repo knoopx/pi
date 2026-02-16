@@ -163,12 +163,18 @@ export function createSymbolsComponent(
           return a.startLine - b.startLine;
         });
       },
-      filterItems: (items, query) =>
-        items.filter(
+      filterItems: (items, query) => {
+        const filtered = items.filter(
           (s) =>
             s.name.toLowerCase().includes(query) ||
             s.path.toLowerCase().includes(query),
-        ),
+        );
+        // When filtering, sort alphabetically by name instead of by recency
+        if (query) {
+          filtered.sort((a, b) => a.name.localeCompare(b.name));
+        }
+        return filtered;
+      },
       formatItem: (item, _width, theme, isFocused) =>
         applyFocusedStyle(
           theme,

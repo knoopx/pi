@@ -13,9 +13,40 @@ import { formatBookmarkReference, applyFocusedStyle } from "./utils";
 import { forgetBookmark, getDiff, listBookmarksByChange } from "../jj";
 
 interface BookmarkEntry extends ListPickerItem {
-  bookmark: string;
+  bookmarks: string[];
   changeId: string;
   description: string;
+}
+
+function groupBookmarksByChange(
+  entries: { bookmark: string; changeId: string; description: string }[],
+): BookmarkEntry[] {
+  const byChange = new Map<
+    string,
+    { bookmarks: string[]; description: string }
+  >();
+
+  for (const entry of entries) {
+    const existing = byChange.get(entry.changeId);
+    if (existing) {
+      existing.bookmarks.push(entry.bookmark);
+    } else {
+      byChange.set(entry.changeId, {
+        bookmarks: [entry.bookmark],
+        description: entry.description,
+      });
+    }
+  }
+
+  return Array.from(byChange.entries()).map(
+    ([changeId, { bookmarks, description }]) => ({
+      id: changeId,
+      label: bookmarks.join(" "),
+      bookmarks,
+      changeId,
+      description: description || "(no description)",
+    }),
+  );
 }
 
 export function createBookmarksComponent(
@@ -35,7 +66,9 @@ export function createBookmarksComponent(
       key: "ctrl+f",
       label: "forget",
       handler: async (item) => {
-        await forgetBookmark(pi, cwd, item.bookmark);
+        for (const bookmark of item.bookmarks) {
+          await forgetBookmark(pi, cwd, bookmark);
+        }
         await pickerRef?.reload();
       },
     },
@@ -51,7 +84,7 @@ export function createBookmarksComponent(
       key: "ctrl+p",
       label: "push",
       handler: async (item) => {
-        const bookmarkName = item.bookmark.split("@")[0]?.trim();
+        const bookmarkName = item.bookmarks[0]?.split("@")[0]?.trim();
         if (!bookmarkName) return;
         await pi.exec("jj", ["git", "push", "--bookmark", bookmarkName], {
           cwd,
@@ -64,7 +97,7 @@ export function createBookmarksComponent(
       label: "insert",
       handler: (item) => {
         if (onInsert) {
-          onInsert(item.bookmark);
+          onInsert(item.bookmarks[0] || item.changeId);
           done(null);
         }
       },
@@ -84,32 +117,27 @@ export function createBookmarksComponent(
       actions,
       loadItems: async () => {
         const entries = await listBookmarksByChange(pi, cwd);
-        return entries.map((entry) => ({
-          id: entry.bookmark,
-          label: entry.bookmark,
-          bookmark: entry.bookmark,
-          changeId: entry.changeId,
-          description: entry.description || "(no description)",
-        }));
+        return groupBookmarksByChange(entries);
       },
       filterItems: (items, query) =>
         items.filter(
           (item) =>
-            item.bookmark.toLowerCase().includes(query) ||
+            item.bookmarks.some((b) => b.toLowerCase().includes(query)) ||
             item.description.toLowerCase().includes(query),
         ),
       formatItem: (item, _width, theme, isFocused) => {
         const shortId = item.changeId.slice(-8);
-        const bookmarkLabel = formatBookmarkReference(
-          theme,
-          item.bookmark,
-          isFocused,
-        );
+        const bookmarkLabels = item.bookmarks
+          .map((b) => formatBookmarkReference(theme, b, isFocused))
+          .join(" ");
         const separator = isFocused ? " · " : theme.fg("dim", " · ");
+        const description = isFocused
+          ? item.description
+          : theme.fg("dim", item.description);
         const idLabel = isFocused ? shortId : theme.fg("dim", shortId);
         return applyFocusedStyle(
           theme,
-          `${bookmarkLabel}${separator}${item.description}${separator}${idLabel}`,
+          `${bookmarkLabels}${separator}${description}${separator}${idLabel}`,
           isFocused,
         );
       },

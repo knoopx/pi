@@ -271,8 +271,8 @@ export function formatBookmarkReference(
   bookmark: string,
   isFocused = false,
 ): string {
-  const label = ` 󰃀 ${bookmark} `;
-  return isFocused ? label : theme.inverse(theme.fg("accent", label));
+  const icon = isFocused ? "󰃀" : theme.fg("accent", "󰃀");
+  return `${icon} ${bookmark}`;
 }
 
 /**
@@ -306,7 +306,7 @@ export function getChangeIcon(
 }
 
 /**
- * Format a change row with icon, selection marker, bookmarks, and description
+ * Format a change row with icon, selection marker, description, and bookmarks
  */
 export function formatChangeRow(
   theme: Theme,
@@ -324,7 +324,7 @@ export function formatChangeRow(
   const bookmarkLabel = formatBookmarkLabels(theme, opts.bookmarks);
   const idLabel = opts.changeId.slice(0, 8);
 
-  const leftText = ` ${selectionMarker} ${icon} ${bookmarkLabel}${opts.description}`;
+  const leftText = ` ${selectionMarker} ${icon} ${opts.description} ${bookmarkLabel}`;
   const rightText = theme.fg("dim", ` ${idLabel}`);
 
   return { leftText, rightText };
