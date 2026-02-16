@@ -2,6 +2,19 @@ import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
 import sliceAnsi from "slice-ansi";
 import stringWidth from "string-width";
 
+/**
+ * Apply hex color to text using ANSI true color (24-bit RGB).
+ * Falls back to uncolored text if hex is invalid.
+ */
+export function hexColor(hex: string, text: string): string {
+  const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!match) return text;
+  const r = parseInt(match[1], 16);
+  const g = parseInt(match[2], 16);
+  const b = parseInt(match[3], 16);
+  return `\x1b[38;2;${r};${g};${b}m${text}\x1b[39m`;
+}
+
 /** Apply focused styling to text */
 export function applyFocusedStyle(
   theme: Theme,
@@ -165,6 +178,126 @@ const FILE_STATUS_ICONS: Record<string, string> = {
 /** Get icon for file status (A/M/D/R/C) */
 export function getFileStatusIcon(status: string): string {
   return FILE_STATUS_ICONS[status] || status;
+}
+
+/** File extension to theme color mapping (IDE-style coloring) */
+const FILE_ICON_COLORS: Record<string, string> = {
+  // TypeScript/JavaScript - blue
+  ".ts": "#3178c6",
+  ".tsx": "#3178c6",
+  ".mts": "#3178c6",
+  ".cts": "#3178c6",
+  ".js": "#f0db4f",
+  ".jsx": "#61dafb",
+  ".mjs": "#f0db4f",
+  ".cjs": "#f0db4f",
+  // Web - orange/pink
+  ".html": "#e34c26",
+  ".css": "#563d7c",
+  ".scss": "#c6538c",
+  ".less": "#1d365d",
+  ".vue": "#41b883",
+  ".svelte": "#ff3e00",
+  // Data/Config - dim/gray
+  ".json": "#cbcb41",
+  ".yaml": "#cb171e",
+  ".yml": "#cb171e",
+  ".toml": "#9c4221",
+  ".xml": "#e37933",
+  ".env": "#ecd53f",
+  // Documentation - green
+  ".md": "#519aba",
+  ".mdx": "#519aba",
+  ".txt": "#89e051",
+  ".rst": "#89e051",
+  // Languages
+  ".py": "#3572a5",
+  ".rs": "#dea584",
+  ".go": "#00add8",
+  ".rb": "#cc342d",
+  ".php": "#4f5d95",
+  ".java": "#b07219",
+  ".kt": "#a97bff",
+  ".c": "#555555",
+  ".cpp": "#f34b7d",
+  ".h": "#555555",
+  ".hpp": "#f34b7d",
+  ".cs": "#178600",
+  ".swift": "#f05138",
+  ".lua": "#000080",
+  ".sh": "#89e051",
+  ".bash": "#89e051",
+  ".zsh": "#89e051",
+  ".fish": "#89e051",
+  // Nix - blue
+  ".nix": "#7ebae4",
+  // Images - magenta
+  ".png": "#a074c4",
+  ".jpg": "#a074c4",
+  ".jpeg": "#a074c4",
+  ".gif": "#a074c4",
+  ".svg": "#ffb13b",
+  ".ico": "#a074c4",
+  ".webp": "#a074c4",
+  // Git - orange
+  ".gitignore": "#f14e32",
+  ".gitmodules": "#f14e32",
+  ".gitattributes": "#f14e32",
+  // Lock files - dim
+  ".lock": "#6b7280",
+};
+
+/** Special filenames to color mapping */
+const FILENAME_COLORS: Record<string, string> = {
+  "package.json": "#cb3837",
+  "tsconfig.json": "#3178c6",
+  Dockerfile: "#384d54",
+  "docker-compose.yml": "#384d54",
+  "docker-compose.yaml": "#384d54",
+  ".dockerignore": "#384d54",
+  Makefile: "#6d8086",
+  "CMakeLists.txt": "#6d8086",
+  "flake.nix": "#7ebae4",
+  "flake.lock": "#7ebae4",
+  "Cargo.toml": "#dea584",
+  "Cargo.lock": "#dea584",
+  "go.mod": "#00add8",
+  "go.sum": "#00add8",
+  "requirements.txt": "#3572a5",
+  "pyproject.toml": "#3572a5",
+  Gemfile: "#cc342d",
+  "Gemfile.lock": "#cc342d",
+  LICENSE: "#d4af37",
+  "README.md": "#519aba",
+  "CHANGELOG.md": "#519aba",
+  "AGENTS.md": "#519aba",
+};
+
+/** Get hex color for a file icon */
+export function getFileIconColor(filePath: string): string | null {
+  // Check for directory
+  if (filePath.endsWith("/")) return "#90a4ae";
+
+  // Extract filename
+  const parts = filePath.split("/");
+  const filename = parts[parts.length - 1] || "";
+
+  // Check special filenames first
+  if (FILENAME_COLORS[filename]) {
+    return FILENAME_COLORS[filename];
+  }
+
+  // Check extension
+  const dotIndex = filename.lastIndexOf(".");
+  if (dotIndex > 0) {
+    const ext = filename.slice(dotIndex).toLowerCase();
+    if (FILE_ICON_COLORS[ext]) {
+      return FILE_ICON_COLORS[ext];
+    }
+  }
+
+  // Default - no specific color
+  return null;
 }
 
 /** Get Nerd Font icon for a file path */

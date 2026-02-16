@@ -6,6 +6,8 @@ import {
   getChangeIcon,
   getFileStatusIcon,
   getFileIcon,
+  getFileIconColor,
+  hexColor,
 } from "./utils";
 
 /**
@@ -367,11 +369,12 @@ export function renderFileChangeRows(
     const isSelected = idx === fileIndex && isFocused;
     const statusIcon = getFileStatusIcon(file.status);
     const fileIcon = getFileIcon(file.path);
-    const plainText = ` ${statusIcon} ${fileIcon} ${file.path}`;
-    const truncated = truncateAnsi(plainText, width);
-    const padded = pad(truncated, width);
+    const fileIconColor = getFileIconColor(file.path);
 
     if (isSelected) {
+      const plainText = ` ${statusIcon} ${fileIcon} ${file.path}`;
+      const truncated = truncateAnsi(plainText, width);
+      const padded = pad(truncated, width);
       rows.push(theme.fg("accent", theme.bold(padded)));
     } else {
       const statusColor =
@@ -380,11 +383,16 @@ export function renderFileChangeRows(
           : file.status === "D"
             ? "toolDiffRemoved"
             : "warning";
-      // Find where status icon ends and apply color only to it
       const styledStatus = theme.fg(statusColor, statusIcon);
-      // Skip the leading space and status icon width
-      const afterStatus = padded.slice(3); // " " + statusIcon (2 chars width)
-      rows.push(" " + styledStatus + afterStatus);
+      const styledFileIcon = fileIconColor
+        ? hexColor(fileIconColor, fileIcon)
+        : fileIcon;
+      const pathText = ` ${file.path}`;
+      const availableWidth = width - 4; // " " + status(1) + " " + icon(1)
+      const truncatedPath = truncateAnsi(pathText, availableWidth);
+      const fullText =
+        " " + styledStatus + " " + styledFileIcon + truncatedPath;
+      rows.push(pad(fullText, width));
     }
   }
 
