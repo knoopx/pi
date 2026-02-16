@@ -367,6 +367,20 @@ Use the **conventional-commits** skill for commit message format.`;
           notify(`Dropped change ${change.changeId}`, "info");
           return;
         }
+
+        case "new": {
+          if (!change) return;
+          await pi.exec("jj", ["new", change.changeId], { cwd });
+          changeCache.clear();
+          selectionState.fileIndex = 0;
+          selectionState.diffScroll = 0;
+          await loadChanges();
+          notify(
+            `Created new change after ${change.changeId.slice(0, 8)}`,
+            "info",
+          );
+          return;
+        }
       }
     } catch (error) {
       const msg = formatErrorMessage(error);
@@ -546,6 +560,7 @@ Use the **conventional-commits** skill for commit message format.`;
         author: change.author,
       });
 
+      // eslint-disable-next-line no-control-regex
       const rightLen = rightText.replace(/\x1b\[[0-9;]*m/g, "").length;
       const availableLeftWidth = Math.max(1, width - rightLen);
       const leftTruncated = truncateAnsi(leftText, availableLeftWidth);
@@ -611,10 +626,12 @@ Use the **conventional-commits** skill for commit message format.`;
         ? ["↑↓ move", "enter apply", "esc cancel"]
         : ([
             "space select",
+            selectedChange && "n new",
             selectedChange && "e edit",
             describeTargetCount > 0 &&
               `d describe(${String(describeTargetCount)})`,
             selectedChange && "s split",
+            selectedChange && "n new",
             selectedChange &&
               changes.length > 1 &&
               selectionState.selectedIndex < changes.length - 1 &&
@@ -725,6 +742,13 @@ Use the **conventional-commits** skill for commit message format.`;
     if (data === "s" && selectionState.focus === "left") {
       if (selectedChange) {
         void executeAction("split");
+      }
+      return;
+    }
+
+    if (data === "n" && selectionState.focus === "left") {
+      if (selectedChange) {
+        void executeAction("new");
       }
       return;
     }
