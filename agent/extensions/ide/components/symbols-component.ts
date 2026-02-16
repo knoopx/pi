@@ -97,25 +97,87 @@ export function createSymbolsComponent(
     pendingAction = undefined;
   }
 
-  // Action definitions: [key, label/action]
-  const ACTION_DEFS: [string, CmActionType][] = [
-    ["ctrl+i", "callers"],
+  // Get context-sensitive action for ctrl+i based on symbol type
+  function getInspectAction(type: string): CmActionType {
+    // Functions and methods → show callers
+    if (
+      type === "f" ||
+      type === "m" ||
+      type === "function" ||
+      type === "method"
+    ) {
+      return "callers";
+    }
+    // Classes, interfaces, types, enums → show usages
+    return "used-by";
+  }
+
+  // Navigate directly to first result from cm command
+  async function goToFirstResult(
+    command: string,
+    args: string[],
+  ): Promise<void> {
+    const result = await pi.exec("cm", [command, ...args, "--format", "ai"], {
+      cwd,
+    });
+    if (result.code !== 0 || !result.stdout.trim()) return;
+
+    // Parse first result line: name|type|path|line-range
+    const firstLine = result.stdout
+      .split("\n")
+      .find((l) => l.includes("|") && !l.startsWith("["));
+    if (!firstLine) return;
+
+    const match = /\|([^|]+)\|(\d+)-/.exec(firstLine);
+    if (!match) return;
+
+    const [, filePath, line] = match;
+    const { join } = await import("node:path");
+    await pi.exec("code", ["-g", `${join(cwd, filePath)}:${line}`]);
+  }
+
+  // Actions that show results in picker
+  const PICKER_ACTIONS: [string, CmActionType][] = [
     ["ctrl+l", "callees"],
-    ["ctrl+t", "tests"],
-    ["ctrl+y", "types"],
     ["ctrl+s", "schema"],
   ];
 
-  const actions: ListPickerAction<SymbolInfo>[] = ACTION_DEFS.map(
-    ([key, action]) => ({
+  const actions: ListPickerAction<SymbolInfo>[] = [
+    // Dynamic ctrl+i action based on symbol type
+    {
+      key: "ctrl+i",
+      label: "inspect",
+      handler: (item: SymbolInfo) => {
+        pendingAction = getInspectAction(item.type);
+        doneWithAction(item);
+      },
+    },
+    // Go to tests directly
+    {
+      key: "ctrl+t",
+      label: "tests",
+      handler: (item: SymbolInfo) => {
+        void goToFirstResult("tests", [item.name]);
+      },
+    },
+    // Go to types directly
+    {
+      key: "ctrl+y",
+      label: "types",
+      handler: (item: SymbolInfo) => {
+        void goToFirstResult("types", [item.name]);
+      },
+    },
+    // Actions that show picker
+    ...PICKER_ACTIONS.map(([key, action]) => ({
       key,
       label: action,
       handler: (item: SymbolInfo) => {
         pendingAction = action;
         doneWithAction(item);
       },
-    }),
-  );
+    })),
+  ];
 
   // Internal done handler that wraps results
   const internalDone = (item: SymbolInfo | null) => {
