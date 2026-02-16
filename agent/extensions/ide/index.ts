@@ -48,7 +48,10 @@ import { createBookmarkPromptComponent } from "./components/bookmark-prompt-comp
 import { createBookmarksComponent } from "./components/bookmarks-component";
 import { createOpLogComponent } from "./components/oplog-component";
 import { createSkillBrowserComponent } from "./components/skill-browser-component";
+import { createCommandPaletteComponent } from "./components/command-palette-component";
 import { setBookmarkToChange } from "./jj";
+import type { AppAction } from "@mariozechner/pi-coding-agent";
+import type { KeyId } from "@mariozechner/pi-tui";
 
 // Common overlay options for full-screen components
 const FULL_OVERLAY_OPTIONS = {
@@ -489,6 +492,71 @@ export default function ideExtension(pi: ExtensionAPI) {
       await openSkillBrowser(pi, ctx, "");
     },
   });
+
+  // Track registered shortcuts for command palette
+  const registeredShortcuts: {
+    shortcut: KeyId;
+    description?: string;
+    execute: () => void;
+  }[] = [
+    {
+      shortcut: Key.ctrl("t"),
+      description: "Open symbol picker",
+      execute: () => {},
+    },
+    {
+      shortcut: Key.ctrl("p"),
+      description: "Open file picker",
+      execute: () => {},
+    },
+    {
+      shortcut: Key.ctrl("b"),
+      description: "Open bookmarks browser",
+      execute: () => {},
+    },
+    {
+      shortcut: Key.ctrl("j"),
+      description: "Open workspaces review",
+      execute: () => {},
+    },
+    {
+      shortcut: Key.ctrl("k"),
+      description: "Open changes browser",
+      execute: () => {},
+    },
+    {
+      shortcut: Key.ctrl("o"),
+      description: "Open operation log browser",
+      execute: () => {},
+    },
+    {
+      shortcut: Key.ctrl("s"),
+      description: "Open skill browser",
+      execute: () => {},
+    },
+  ];
+
+  /**
+   * /commands - Open the command palette
+   */
+  pi.registerCommand("commands", {
+    description: "Open command palette to search and execute commands",
+    handler: async (_args, ctx) => {
+      if (!ctx.hasUI) return;
+      await openCommandPalette(pi, ctx, registeredShortcuts);
+    },
+  });
+
+  /**
+   * Ctrl+Shift+P shortcut to open command palette
+   */
+  pi.registerShortcut(Key.ctrlShift("p"), {
+    description: "Open command palette",
+    handler: async (ctx) => {
+      if (!ctx.hasUI) return;
+      await openCommandPalette(pi, ctx, registeredShortcuts);
+    },
+  });
 }
 
 /**
@@ -683,6 +751,50 @@ async function openSkillBrowser(
   if (result) {
     ctx.ui.setEditorText(result);
   }
+}
+
+async function openCommandPalette(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+  registeredShortcuts: {
+    shortcut: KeyId;
+    description?: string;
+    execute: () => void;
+  }[],
+): Promise<void> {
+  await ctx.ui.custom<void>(
+    (tui, theme, keybindings, done) => {
+      return createCommandPaletteComponent(
+        pi,
+        tui,
+        theme,
+        keybindings,
+        done,
+        (command) => {
+          // Execute a slash command by setting it in the editor
+          ctx.ui.setEditorText(command);
+        },
+        (_action: AppAction) => {
+          // App actions need to be triggered via the keybinding system
+          // For now, we just close the palette - the action name is informational
+          ctx.ui.notify(
+            `Action "${_action}" - use keybinding to trigger`,
+            "info",
+          );
+        },
+        registeredShortcuts,
+      );
+    },
+    {
+      overlay: true,
+      overlayOptions: {
+        width: "70%",
+        maxHeight: "60%",
+        minWidth: 60,
+        anchor: "center",
+      },
+    },
+  );
 }
 
 async function openChangesBrowser(
