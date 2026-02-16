@@ -30,6 +30,7 @@ import {
   getDiff,
   restoreFile,
   listBookmarksByChange,
+  getCurrentChangeIdShort,
 } from "../jj";
 import type { CmActionType } from "./cm-results-component";
 
@@ -50,6 +51,7 @@ export function createChangesComponent(
 ) {
   let changes: MutableChange[] = [];
   let selectedChange: MutableChange | null = null;
+  let currentChangeId: string | null = null;
   let files: FileChange[] = [];
   let diffContent: string[] = [];
   let bookmarksByChange = new Map<string, string[]>();
@@ -149,12 +151,17 @@ export function createChangesComponent(
     const targetIndex =
       direction === "up" ? currentIndex - 1 : currentIndex + 1;
 
-    // Can't move beyond bounds (and can't move to position 0 - working copy)
-    if (targetIndex < 1 || targetIndex >= changes.length) return;
-    // Can't move from position 0 (working copy)
-    if (currentIndex === 0) return;
+    if (targetIndex < 0 || targetIndex >= changes.length) {
+      return;
+    }
 
-    // Swap in array
+    const changeToMove = changes[currentIndex];
+    const isWorkingCopy =
+      currentChangeId !== null && changeToMove?.changeId === currentChangeId;
+    if (isWorkingCopy) {
+      return;
+    }
+
     [changes[currentIndex], changes[targetIndex]] = [
       changes[targetIndex],
       changes[currentIndex],
@@ -285,8 +292,12 @@ ${workflowLines}
 
         case "edit": {
           if (!change) return;
-          done();
           await pi.exec("jj", ["edit", change.changeId], { cwd });
+          changeCache.clear();
+          selectionState.fileIndex = 0;
+          selectionState.diffScroll = 0;
+          await loadChanges();
+          notify(`Editing change ${change.changeId.slice(0, 8)}`, "info");
           return;
         }
 
@@ -383,7 +394,9 @@ Use the **conventional-commits** skill for commit message format.`;
 
   async function loadChanges(): Promise<void> {
     try {
-      changes = await loadMutableChanges(pi, cwd);
+      const previousSelectedChangeId = selectedChange?.changeId ?? null;
+      changes = await loadMutableChanges(pi, cwd, "mutable()");
+      currentChangeId = await getCurrentChangeIdShort(pi, cwd);
       await reloadBookmarks();
 
       const existingIds = new Set(changes.map((change) => change.changeId));
@@ -396,8 +409,18 @@ Use the **conventional-commits** skill for commit message format.`;
       loadingState.loading = false;
 
       if (changes.length > 0) {
-        selectedChange = changes[0];
+        const preferredChangeId = currentChangeId ?? previousSelectedChangeId;
+        const matchedIndex = preferredChangeId
+          ? changes.findIndex((change) => change.changeId === preferredChangeId)
+          : -1;
+        selectionState.selectedIndex = matchedIndex >= 0 ? matchedIndex : 0;
+        selectedChange = changes[selectionState.selectedIndex];
         await loadFilesAndDiff(selectedChange);
+      } else {
+        selectionState.selectedIndex = 0;
+        selectedChange = null;
+        files = [];
+        diffContent = [];
       }
 
       invalidateCache(loadingState);
@@ -506,7 +529,8 @@ Use the **conventional-commits** skill for commit message format.`;
       const change = changes[idx];
       const isCursor = idx === selectionState.selectedIndex;
       const isMarked = selectedChangeIds.has(change.changeId);
-      const isWorkingCopy = idx === 0; // First change is @ (working copy)
+      const isWorkingCopy =
+        currentChangeId !== null && change.changeId === currentChangeId;
       const isFocused = isCursor && selectionState.focus === "left";
 
       const bookmarks = bookmarksByChange.get(change.changeId) ?? [];
@@ -597,7 +621,7 @@ Use the **conventional-commits** skill for commit message format.`;
               "f fixup",
             selectedChange &&
               changes.length > 1 &&
-              selectionState.selectedIndex > 0 &&
+              currentChangeId !== selectedChange.changeId &&
               "ctrl+m move",
             selectedChange && onInsert && "i insert",
             selectedChange && onBookmark && "b bookmark",

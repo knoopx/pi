@@ -67,6 +67,27 @@ export async function loadMutableChanges(
 }
 
 /**
+ * Get current workspace change id as a short id
+ */
+export async function getCurrentChangeIdShort(
+  pi: ExtensionAPI,
+  cwd: string,
+): Promise<string | null> {
+  const result = await pi.exec(
+    "jj",
+    ["log", "-r", "@", "--no-graph", "-T", 'change_id.short() ++ "\\n"'],
+    { cwd },
+  );
+
+  if (result.code !== 0) {
+    return null;
+  }
+
+  const changeId = result.stdout.trim();
+  return changeId || null;
+}
+
+/**
  * Load changed files for a specific change
  */
 export async function loadChangedFiles(

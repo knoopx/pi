@@ -4,9 +4,13 @@ import type {
   Theme,
 } from "@mariozechner/pi-coding-agent";
 import { Input, matchesKey } from "@mariozechner/pi-tui";
-import { renderListRows } from "./split-panel";
-import { renderFramedRows } from "./shared-utils";
-import { buildHelpText, pad } from "./utils";
+import { buildHelpText, ensureWidth } from "./utils";
+import {
+  borderedLine,
+  topBorderWithTitle,
+  horizontalSeparator,
+  bottomBorder,
+} from "./shared-utils";
 
 function fuzzyScore(candidate: string, query: string): number {
   const text = candidate.toLowerCase();
@@ -120,87 +124,143 @@ export function createBookmarkPromptComponent(
     return [];
   }
 
+  function renderFooter(innerWidth: number, helpParts: string[]): string[] {
+    const helpText = buildHelpText(...helpParts);
+    return [
+      horizontalSeparator(theme, innerWidth),
+      borderedLine(theme, ` ${theme.fg("dim", helpText)}`, innerWidth),
+      bottomBorder(theme, innerWidth),
+    ];
+  }
+
   function render(width: number): string[] {
-    const rows: string[] = [];
-    const contentWidth = Math.max(1, width - 2);
-    const inputRows = input.render(contentWidth);
+    const lines: string[] = [];
+    const innerWidth = width - 2;
     const query = input.getValue().trim();
 
-    rows.push(theme.fg("accent", pad(" 󰃀 Bookmark", contentWidth)));
-    rows.push(...inputRows);
+    // Top border with title
+    lines.push(topBorderWithTitle(theme, " Set Bookmark ", innerWidth));
+
+    // Input row with icon
+    const inputIcon = "󰃀";
+    const inputValue = input.getValue();
+    const cursor = theme.fg("accent", "▏");
+    const inputContent = ` ${inputIcon}  ${inputValue}${cursor}`;
+    lines.push(borderedLine(theme, inputContent, innerWidth));
+
+    // Separator
+    lines.push(horizontalSeparator(theme, innerWidth));
 
     if (loading) {
-      rows.push(theme.fg("dim", pad(" Loading bookmarks...", contentWidth)));
-      rows.push(
-        theme.fg(
-          "dim",
-          pad(buildHelpText("enter set", "↑↓ nav", "esc cancel"), contentWidth),
+      lines.push(
+        borderedLine(
+          theme,
+          theme.fg("dim", " Loading bookmarks..."),
+          innerWidth,
         ),
       );
-      return renderFramedRows(theme, rows, width);
+      lines.push(borderedLine(theme, "", innerWidth));
+      lines.push(
+        ...renderFooter(innerWidth, ["enter set", "↑↓ nav", "esc cancel"]),
+      );
+      return lines;
     }
 
     if (error) {
-      rows.push(theme.fg("error", pad(` Error: ${error}`, contentWidth)));
-      rows.push(theme.fg("dim", pad(" Press esc to cancel", contentWidth)));
-      return renderFramedRows(theme, rows, width);
+      lines.push(
+        borderedLine(theme, theme.fg("error", ` Error: ${error}`), innerWidth),
+      );
+      lines.push(borderedLine(theme, "", innerWidth));
+      lines.push(...renderFooter(innerWidth, ["esc cancel"]));
+      return lines;
     }
 
     const candidates = getCandidates();
     selectedIndex = Math.min(selectedIndex, Math.max(0, candidates.length - 1));
 
     if (candidates.length === 0) {
-      rows.push(
-        theme.fg(
-          "dim",
-          pad(" No bookmarks yet. Type to create one.", contentWidth),
+      lines.push(
+        borderedLine(
+          theme,
+          theme.fg("dim", " No bookmarks yet. Type to create one."),
+          innerWidth,
         ),
       );
-      rows.push(
-        theme.fg(
-          "dim",
-          pad(
-            buildHelpText("type bookmark", "enter set", "esc cancel"),
-            contentWidth,
-          ),
-        ),
+      lines.push(borderedLine(theme, "", innerWidth));
+      lines.push(
+        ...renderFooter(innerWidth, [
+          "type bookmark",
+          "enter set",
+          "esc cancel",
+        ]),
       );
-      return renderFramedRows(theme, rows, width);
+      return lines;
     }
 
-    const listRows = renderListRows(
-      candidates.map((candidate) => {
-        const isCreateOption =
-          query.length > 0 &&
-          candidate === query &&
-          !bookmarks.includes(candidate);
+    // Render candidates list (max 5 visible)
+    const maxVisible = 5;
+    let startIdx = 0;
+    if (selectedIndex >= maxVisible) {
+      startIdx = selectedIndex - maxVisible + 1;
+    }
 
-        if (isCreateOption) {
-          return {
-            text: `${theme.fg("warning", "󰐕 new")} ${candidate}`,
-          };
-        }
+    const visibleCount = Math.min(maxVisible, candidates.length - startIdx);
 
-        return { text: `󰃀 ${candidate}` };
-      }),
-      contentWidth,
-      5,
-      selectedIndex,
-      theme,
-    );
+    for (let i = 0; i < visibleCount; i++) {
+      const idx = startIdx + i;
+      const candidate = candidates[idx];
+      const isFocused = idx === selectedIndex;
 
-    rows.push(...listRows);
-    rows.push(
-      theme.fg(
+      const isCreateOption =
+        query.length > 0 &&
+        candidate === query &&
+        !bookmarks.includes(candidate);
+
+      let rowContent: string;
+      if (isCreateOption) {
+        const icon = theme.fg("warning", "󰐕");
+        const label = theme.fg("warning", "new");
+        rowContent = ` ${icon} ${label} ${candidate}`;
+      } else {
+        rowContent = ` 󰃀 ${candidate}`;
+      }
+
+      if (isFocused) {
+        const focusedContent = theme.fg("accent", theme.bold(rowContent));
+        lines.push(
+          borderedLine(
+            theme,
+            theme.bg("selectedBg", ensureWidth(focusedContent, innerWidth)),
+            innerWidth,
+          ),
+        );
+      } else {
+        lines.push(borderedLine(theme, rowContent, innerWidth));
+      }
+    }
+
+    // Fill remaining slots if less than maxVisible
+    for (let i = visibleCount; i < maxVisible; i++) {
+      lines.push(borderedLine(theme, "", innerWidth));
+    }
+
+    // Scroll indicator
+    if (candidates.length > maxVisible) {
+      const countText = theme.fg(
         "dim",
-        pad(
-          buildHelpText("↑↓ nav", "enter select/create", "esc cancel"),
-          contentWidth,
-        ),
-      ),
-    );
+        ` ${selectedIndex + 1}/${candidates.length}`,
+      );
+      lines.push(borderedLine(theme, countText, innerWidth));
+    }
 
-    return renderFramedRows(theme, rows, width);
+    lines.push(
+      ...renderFooter(innerWidth, [
+        "↑↓ nav",
+        "enter select/create",
+        "esc cancel",
+      ]),
+    );
+    return lines;
   }
 
   function handleInput(data: string): void {

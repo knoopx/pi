@@ -17,6 +17,12 @@ import type { Theme } from "@mariozechner/pi-coding-agent";
 import type { KeyId } from "@mariozechner/pi-tui";
 import { matchesKey } from "@mariozechner/pi-tui";
 import { truncateAnsi, ensureWidth, buildHelpText } from "./utils";
+import {
+  borderedLine,
+  topBorderWithTitle,
+  horizontalSeparator,
+  bottomBorder,
+} from "./shared-utils";
 
 /** Unified command type for display */
 interface PaletteCommand {
@@ -39,18 +45,6 @@ interface CommandPaletteComponent {
   invalidate: () => void;
   dispose: () => void;
 }
-
-/** Box drawing characters */
-const BOX = {
-  topLeft: "╭",
-  topRight: "╮",
-  bottomLeft: "╰",
-  bottomRight: "╯",
-  horizontal: "─",
-  vertical: "│",
-  teeLeft: "├",
-  teeRight: "┤",
-};
 
 /** App actions with descriptions */
 const APP_ACTION_DESCRIPTIONS: Partial<Record<AppAction, string>> = {
@@ -266,17 +260,6 @@ export function createCommandPaletteComponent(
     return ensureWidth(truncated, innerWidth);
   }
 
-  /** Create a bordered line */
-  function borderedLine(
-    content: string,
-    innerWidth: number,
-    leftChar: string = BOX.vertical,
-    rightChar: string = BOX.vertical,
-  ): string {
-    const inner = ensureWidth(content, innerWidth);
-    return `${theme.fg("dim", leftChar)}${inner}${theme.fg("dim", rightChar)}`;
-  }
-
   /** Main render function */
   function render(width: number): string[] {
     if (cachedWidth === width && cachedLines.length > 0) {
@@ -289,15 +272,7 @@ export function createCommandPaletteComponent(
     const contentHeight = maxHeight - 6; // title + search + separator + help + borders
 
     // Top border with title
-    const title = " Command Palette ";
-    const titleLen = title.length;
-    const leftPad = Math.floor((innerWidth - titleLen) / 2);
-    const rightPad = innerWidth - titleLen - leftPad;
-    const topBorder =
-      theme.fg("dim", BOX.topLeft + BOX.horizontal.repeat(leftPad)) +
-      theme.fg("accent", theme.bold(title)) +
-      theme.fg("dim", BOX.horizontal.repeat(rightPad) + BOX.topRight);
-    lines.push(topBorder);
+    lines.push(topBorderWithTitle(theme, " Command Palette ", innerWidth));
 
     // Search input row
     const searchIcon = "󰍉";
@@ -305,21 +280,17 @@ export function createCommandPaletteComponent(
     const searchDisplay = searchQuery || searchPlaceholder;
     const cursor = searchQuery ? theme.fg("accent", "▏") : "";
     const searchContent = ` ${searchIcon}  ${searchDisplay}${cursor}`;
-    lines.push(borderedLine(searchContent, innerWidth));
+    lines.push(borderedLine(theme, searchContent, innerWidth));
 
     // Separator
-    const separator =
-      theme.fg("dim", BOX.teeLeft) +
-      theme.fg("dim", BOX.horizontal.repeat(innerWidth)) +
-      theme.fg("dim", BOX.teeRight);
-    lines.push(separator);
+    lines.push(horizontalSeparator(theme, innerWidth));
 
     // Commands list with scroll
     if (filteredCommands.length === 0) {
       const emptyMsg = theme.fg("dim", " No matching commands");
-      lines.push(borderedLine(emptyMsg, innerWidth));
+      lines.push(borderedLine(theme, emptyMsg, innerWidth));
       for (let i = 1; i < contentHeight; i++) {
-        lines.push(borderedLine("", innerWidth));
+        lines.push(borderedLine(theme, "", innerWidth));
       }
     } else {
       // Calculate visible range
@@ -338,14 +309,12 @@ export function createCommandPaletteComponent(
         const cmd = filteredCommands[idx];
         const isFocused = idx === selectedIndex;
         const rowContent = renderCommandRow(cmd, isFocused, innerWidth);
-        lines.push(
-          borderedLine(rowContent, innerWidth, BOX.vertical, BOX.vertical),
-        );
+        lines.push(borderedLine(theme, rowContent, innerWidth));
       }
 
       // Fill remaining space
       for (let i = visibleCount; i < contentHeight; i++) {
-        lines.push(borderedLine("", innerWidth));
+        lines.push(borderedLine(theme, "", innerWidth));
       }
     }
 
@@ -356,26 +325,15 @@ export function createCommandPaletteComponent(
         ? theme.fg("dim", ` ${selectedIndex + 1}/${totalCount}`)
         : "";
     const scrollContent = ensureWidth(countText, innerWidth);
-    lines.push(borderedLine(scrollContent, innerWidth));
+    lines.push(borderedLine(theme, scrollContent, innerWidth));
 
     // Help line with bottom border
     const helpText = buildHelpText("↑↓ navigate", "enter select", "esc close");
     const helpContent = ` ${theme.fg("dim", helpText)}`;
 
-    // Bottom border
-    const bottomSeparator =
-      theme.fg("dim", BOX.teeLeft) +
-      theme.fg("dim", BOX.horizontal.repeat(innerWidth)) +
-      theme.fg("dim", BOX.teeRight);
-    lines.push(bottomSeparator);
-
-    lines.push(borderedLine(helpContent, innerWidth));
-
-    const bottomBorder =
-      theme.fg("dim", BOX.bottomLeft) +
-      theme.fg("dim", BOX.horizontal.repeat(innerWidth)) +
-      theme.fg("dim", BOX.bottomRight);
-    lines.push(bottomBorder);
+    lines.push(horizontalSeparator(theme, innerWidth));
+    lines.push(borderedLine(theme, helpContent, innerWidth));
+    lines.push(bottomBorder(theme, innerWidth));
 
     cachedLines = lines;
     cachedWidth = width;
