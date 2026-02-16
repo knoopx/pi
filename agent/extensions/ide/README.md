@@ -53,6 +53,12 @@ Browse code symbols (functions, classes, methods) with source preview. Enter ins
 | `Ctrl+I` | Show impact      |
 | `Esc`    | Exit             |
 
+#### Symbol Callers
+
+Press `Ctrl+C` on a symbol to view all callers with source preview.
+
+![Symbol Callers](screenshots/symbol-callers.png)
+
 ### `/bookmarks`
 
 Browse bookmarks in `name@remote` format (`name@` for local bookmarks).
@@ -93,6 +99,12 @@ Browse all mutable jujutsu changes with file/diff preview.
 | `i`      | Insert change ID                               |
 | `b`      | Set bookmark on change (picker + create)       |
 | `Ctrl+P` | Push all bookmarks pointing to selected change |
+
+#### Describe Workflow
+
+Select changes with `Space`, then press `d` to generate conventional commit descriptions via the agent.
+
+![Describe](screenshots/describe.png)
 
 **Files pane:**
 
