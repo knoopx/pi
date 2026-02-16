@@ -584,14 +584,18 @@ describe("cleanup operations", () => {
 
     it("then should handle multiple close calls", () => {
       watcher.close();
-      expect(() => { watcher.close(); }).not.toThrow();
+      expect(() => {
+        watcher.close();
+      }).not.toThrow();
     });
   });
 
   describe("given watcher already closed", () => {
     it("then should handle close gracefully", () => {
       watcher.close();
-      expect(() => { watcher.close(); }).not.toThrow();
+      expect(() => {
+        watcher.close();
+      }).not.toThrow();
     });
   });
 });

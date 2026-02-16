@@ -135,9 +135,7 @@ describe("Guardrails Extension", () => {
           registerCommand: vi.fn(),
         };
 
-        await guardrailsExtension(
-          mockPI as unknown,
-        );
+        await guardrailsExtension(mockPI as unknown);
 
         expect(configLoader.load).toHaveBeenCalled();
         expect(configLoader.getConfig).toHaveBeenCalled();
@@ -180,9 +178,7 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(
-            mockPI as unknown,
-          );
+          await guardrailsExtension(mockPI as unknown);
 
           // Get the tool_call handler
           const toolCallHandler = mockPI.on.mock.calls.find(
@@ -225,9 +221,7 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(
-            mockPI as unknown,
-          );
+          await guardrailsExtension(mockPI as unknown);
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -283,9 +277,7 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(
-            mockPI as unknown,
-          );
+          await guardrailsExtension(mockPI as unknown);
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -341,9 +333,7 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(
-            mockPI as unknown,
-          );
+          await guardrailsExtension(mockPI as unknown);
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -383,9 +373,7 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(
-            mockPI as unknown,
-          );
+          await guardrailsExtension(mockPI as unknown);
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -440,9 +428,7 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(
-            mockPI as unknown,
-          );
+          await guardrailsExtension(mockPI as unknown);
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -502,9 +488,7 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(
-            mockPI as unknown,
-          );
+          await guardrailsExtension(mockPI as unknown);
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -538,9 +522,7 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(
-            mockPI as unknown,
-          );
+          await guardrailsExtension(mockPI as unknown);
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -576,9 +558,7 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(
-            mockPI as unknown,
-          );
+          await guardrailsExtension(mockPI as unknown);
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -638,9 +618,7 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(
-            mockPI as unknown,
-          );
+          await guardrailsExtension(mockPI as unknown);
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -676,9 +654,7 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(
-            mockPI as unknown,
-          );
+          await guardrailsExtension(mockPI as unknown);
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -734,9 +710,7 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(
-            mockPI as unknown,
-          );
+          await guardrailsExtension(mockPI as unknown);
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -769,9 +743,7 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(
-            mockPI as unknown,
-          );
+          await guardrailsExtension(mockPI as unknown);
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",
@@ -829,9 +801,7 @@ describe("Guardrails Extension", () => {
             registerCommand: vi.fn(),
           };
 
-          await guardrailsExtension(
-            mockPI as unknown,
-          );
+          await guardrailsExtension(mockPI as unknown);
 
           const toolCallHandler = mockPI.on.mock.calls.find(
             (call) => call[0] === "tool_call",

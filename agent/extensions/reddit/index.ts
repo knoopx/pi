@@ -723,11 +723,15 @@ export default function (pi: ExtensionAPI) {
               limit,
               theme,
               tui,
-              () => { done(); },
+              () => {
+                done();
+              },
             );
             return {
               render: (w) => component.render(w),
-              invalidate: () => { component.invalidate(); },
+              invalidate: () => {
+                component.invalidate();
+              },
               handleInput: (data) => {
                 component.handleInput(data);
                 tui.requestRender();

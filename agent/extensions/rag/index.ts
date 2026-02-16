@@ -164,7 +164,9 @@ export default function markdownRagExtension(pi: ExtensionAPI) {
 
         // Get store and index chunks
         const store = await getGlobalStore({
-          onProgress: (msg) => { ctx.ui.notify(msg, "info"); },
+          onProgress: (msg) => {
+            ctx.ui.notify(msg, "info");
+          },
         });
 
         // Remove existing chunks for these files to allow re-indexing

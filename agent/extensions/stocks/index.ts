@@ -208,10 +208,7 @@ export default function (pi: ExtensionAPI) {
       | "max" = "1d",
   ): Promise<StockData> => {
     const key = `${symbol}:${range}`;
-    if (
-      cached?.key === key &&
-      Date.now() - cached.timestamp < 300000
-    ) {
+    if (cached?.key === key && Date.now() - cached.timestamp < 300000) {
       return cached.data;
     }
     const data = await fetchStockData(symbol, range);

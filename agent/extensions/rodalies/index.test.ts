@@ -134,21 +134,18 @@ describe("Station Resolution", () => {
       ];
       const params = { stationName: "Estacione Cenral" };
       const bestMatch = stations.reduce<{
-          station: { id: number; name: string };
-          distance: number;
-        } | null>(
-        (best, current) => {
-          const currentLower = current.name.toLowerCase();
-          const nameDistance = levenshteinDistance(
-            params.stationName.toLowerCase(),
-            currentLower,
-          );
-          return nameDistance < (best?.distance || Infinity)
-            ? { station: current, distance: nameDistance }
-            : best;
-        },
-        null,
-      );
+        station: { id: number; name: string };
+        distance: number;
+      } | null>((best, current) => {
+        const currentLower = current.name.toLowerCase();
+        const nameDistance = levenshteinDistance(
+          params.stationName.toLowerCase(),
+          currentLower,
+        );
+        return nameDistance < (best?.distance || Infinity)
+          ? { station: current, distance: nameDistance }
+          : best;
+      }, null);
       expect(bestMatch).toBeDefined();
       expect(bestMatch?.distance).toBeLessThanOrEqual(3);
       expect(bestMatch?.station.id).toBe(1);
@@ -158,21 +155,18 @@ describe("Station Resolution", () => {
       const stations = [{ id: 1, name: "Estación Central" }];
       const params = { stationName: "Nonexistent" };
       const bestMatch = stations.reduce<{
-          station: { id: number; name: string };
-          distance: number;
-        } | null>(
-        (best, current) => {
-          const currentLower = current.name.toLowerCase();
-          const nameDistance = levenshteinDistance(
-            params.stationName.toLowerCase(),
-            currentLower,
-          );
-          return nameDistance < (best?.distance || Infinity)
-            ? { station: current, distance: nameDistance }
-            : best;
-        },
-        null,
-      );
+        station: { id: number; name: string };
+        distance: number;
+      } | null>((best, current) => {
+        const currentLower = current.name.toLowerCase();
+        const nameDistance = levenshteinDistance(
+          params.stationName.toLowerCase(),
+          currentLower,
+        );
+        return nameDistance < (best?.distance || Infinity)
+          ? { station: current, distance: nameDistance }
+          : best;
+      }, null);
       // Distance of 12 > 3 means no match
       expect(bestMatch?.distance).toBeGreaterThan(3);
     });

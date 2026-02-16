@@ -233,16 +233,16 @@ export default function (pi: ExtensionAPI) {
         } else {
           // Try fuzzy matching - find best match
           const nameLower = stationName.toLowerCase();
-          const bestMatch = stations.reduce<{ station: Station; distance: number } | null>(
-            (best, current) => {
-              const currentLower = current.name.toLowerCase();
-              const nameDistance = levenshteinDistance(nameLower, currentLower);
-              return nameDistance < (best?.distance || Infinity)
-                ? { station: current, distance: nameDistance }
-                : best;
-            },
-            null,
-          );
+          const bestMatch = stations.reduce<{
+            station: Station;
+            distance: number;
+          } | null>((best, current) => {
+            const currentLower = current.name.toLowerCase();
+            const nameDistance = levenshteinDistance(nameLower, currentLower);
+            return nameDistance < (best?.distance || Infinity)
+              ? { station: current, distance: nameDistance }
+              : best;
+          }, null);
 
           if (bestMatch && bestMatch.distance <= 3) {
             stationId = bestMatch.station.id;
@@ -325,8 +325,12 @@ export default function (pi: ExtensionAPI) {
 
       // Use UI selection
       const selectedId = await new Promise<string | null>((resolve) => {
-        selectList.onSelect = (item: { value: string }) => { resolve(item.value); };
-        selectList.onCancel = () => { resolve(null); };
+        selectList.onSelect = (item: { value: string }) => {
+          resolve(item.value);
+        };
+        selectList.onCancel = () => {
+          resolve(null);
+        };
         (ctx as any).ui.custom(selectList, {
           overlay: true,
           overlayOptions: { width: 60 },

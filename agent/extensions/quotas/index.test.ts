@@ -34,9 +34,7 @@ describe("Quotas Extension", () => {
           registerCommand: vi.fn(),
         };
 
-        quotasExtension(
-          mockPI as unknown,
-        );
+        quotasExtension(mockPI as unknown);
 
         expect(mockPI.registerCommand).toHaveBeenCalledWith(
           "quotas:refresh",
@@ -60,9 +58,7 @@ describe("Quotas Extension", () => {
           registerCommand: vi.fn(),
         };
 
-        quotasExtension(
-          mockPI as unknown,
-        );
+        quotasExtension(mockPI as unknown);
 
         const sessionStartHandler = mockPI.on.mock.calls.find(
           (call) => call[0] === "session_start",
@@ -88,9 +84,7 @@ describe("Quotas Extension", () => {
           registerCommand: vi.fn(),
         };
 
-        quotasExtension(
-          mockPI as unknown,
-        );
+        quotasExtension(mockPI as unknown);
 
         const modelSelectHandler = mockPI.on.mock.calls.find(
           (call) => call[0] === "model_select",
@@ -118,9 +112,7 @@ describe("Quotas Extension", () => {
           registerCommand: vi.fn(),
         };
 
-        quotasExtension(
-          mockPI as unknown,
-        );
+        quotasExtension(mockPI as unknown);
 
         const commandHandler = mockPI.registerCommand.mock.calls.find(
           (call) => call[0] === "quotas:refresh",

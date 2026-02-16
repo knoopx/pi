@@ -4,11 +4,12 @@ import type {
   UsageSnapshot,
   RateWindow,
   WindowConfig,
-  ProviderConfig} from "./types";
+  ProviderConfig,
+} from "./types";
 import {
   createAuthErrorSnapshot,
   createNetworkErrorSnapshot,
-  createHttpErrorSnapshot
+  createHttpErrorSnapshot,
 } from "./types";
 
 // Shared utility function to format remaining duration
