@@ -3,6 +3,7 @@ import type {
   KeybindingsManager,
   Theme,
 } from "@mariozechner/pi-coding-agent";
+import { Markdown, type MarkdownTheme } from "@mariozechner/pi-tui";
 import {
   createListPicker,
   type ListPickerItem,
@@ -10,6 +11,26 @@ import {
   type ListPickerAction,
 } from "./list-picker";
 import { applyFocusedStyle, truncateAnsi } from "./utils";
+
+/** Create a markdown theme from the pi theme */
+function createMarkdownTheme(theme: Theme): MarkdownTheme {
+  return {
+    heading: (text) => theme.fg("mdHeading", theme.bold(text)),
+    link: (text) => theme.fg("mdLink", text),
+    linkUrl: (text) => theme.fg("mdLinkUrl", text),
+    code: (text) => theme.fg("mdCode", text),
+    codeBlock: (text) => theme.fg("mdCodeBlock", text),
+    codeBlockBorder: (text) => theme.fg("mdCodeBlockBorder", text),
+    quote: (text) => theme.fg("mdQuote", text),
+    quoteBorder: (text) => theme.fg("mdQuoteBorder", text),
+    hr: (text) => theme.fg("mdHr", text),
+    listBullet: (text) => theme.fg("mdListBullet", text),
+    bold: (text) => theme.bold(text),
+    italic: (text) => theme.italic(text),
+    strikethrough: (text) => theme.strikethrough(text),
+    underline: (text) => theme.underline(text),
+  };
+}
 
 /** Pull request data from GitHub CLI */
 export interface PullRequest extends ListPickerItem {
@@ -325,17 +346,14 @@ export function createPullRequestsComponent(
         return applyFocusedStyle(theme, truncateAnsi(text, width), isFocused);
       },
       loadPreview: async (item) => {
-        // Show PR body and diff
-        const bodyLines = item.body
-          ? [
-              theme.bold("Description:"),
-              "",
-              ...item.body.split("\n"),
-              "",
-              theme.fg("dim", "─".repeat(40)),
-              "",
-            ]
-          : [];
+        // Render PR body as markdown
+        const bodyLines: string[] = [];
+        if (item.body) {
+          const mdTheme = createMarkdownTheme(theme);
+          const md = new Markdown(item.body, 0, 0, mdTheme);
+          const renderedBody = md.render(80);
+          bodyLines.push(...renderedBody, "", "─".repeat(40), "");
+        }
 
         const diffLines = await fetchPrDiff(pi, cwd, item.number);
         return [...bodyLines, ...diffLines];
