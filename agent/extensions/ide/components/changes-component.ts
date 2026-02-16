@@ -168,6 +168,23 @@ ${workflowLines}
           return;
         }
 
+        case "split": {
+          if (!change) return;
+          done();
+          const task = `Split jujutsu change ${change.changeId} into semantically logical commits.
+
+<workflow>
+1. Analyze: \`jj diff -r ${change.changeId} --name-only\`
+2. Identify logical groupings by domain/purpose
+3. Split iteratively: \`jj split -r ${change.changeId} "<file-pattern>" -m "type(scope): description"\`
+4. Update remaining change description: \`jj desc -r ${change.changeId} -m "type(scope): description"\`
+</workflow>
+
+Use the **conventional-commits** skill for commit message format.`;
+          pi.sendUserMessage(task);
+          return;
+        }
+
         case "squash": {
           if (!change) return;
           const prevIndex = selectionState.selectedIndex;
@@ -386,10 +403,8 @@ ${workflowLines}
       const leftPadded = ensureWidth(leftTruncated, availableLeftWidth);
 
       const line = ensureWidth(leftPadded + rightText, width);
-      if (isFocusedCursor) {
+      if (isCursor) {
         rows.push(theme.fg("accent", theme.bold(line)));
-      } else if (isCursor) {
-        rows.push(theme.bold(line));
       } else {
         rows.push(line);
       }
@@ -452,6 +467,7 @@ ${workflowLines}
         "space select",
         selectedChange && "e edit",
         describeTargetCount > 0 && `d describe(${String(describeTargetCount)})`,
+        selectedChange && "s split",
         selectedChange &&
           changes.length > 1 &&
           selectionState.selectedIndex < changes.length - 1 &&
@@ -518,6 +534,13 @@ ${workflowLines}
     if (data === "d" && selectionState.focus === "left") {
       if (selectedChange || selectedChangeIds.size > 0) {
         void executeAction("describe");
+      }
+      return;
+    }
+
+    if (data === "s" && selectionState.focus === "left") {
+      if (selectedChange) {
+        void executeAction("split");
       }
       return;
     }
