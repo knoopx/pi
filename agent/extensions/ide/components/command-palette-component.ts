@@ -16,7 +16,7 @@ import type {
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import type { KeyId } from "@mariozechner/pi-tui";
 import { matchesKey } from "@mariozechner/pi-tui";
-import { truncateAnsi, ensureWidth, pad, buildHelpText } from "./utils";
+import { truncateAnsi, ensureWidth, buildHelpText } from "./utils";
 
 /** Unified command type for display */
 interface PaletteCommand {
@@ -39,6 +39,18 @@ interface CommandPaletteComponent {
   invalidate: () => void;
   dispose: () => void;
 }
+
+/** Box drawing characters */
+const BOX = {
+  topLeft: "╭",
+  topRight: "╮",
+  bottomLeft: "╰",
+  bottomRight: "╯",
+  horizontal: "─",
+  vertical: "│",
+  teeLeft: "├",
+  teeRight: "┤",
+};
 
 /** App actions with descriptions */
 const APP_ACTION_DESCRIPTIONS: Partial<Record<AppAction, string>> = {
@@ -218,24 +230,51 @@ export function createCommandPaletteComponent(
   function renderCommandRow(
     cmd: PaletteCommand,
     isFocused: boolean,
-    width: number,
+    innerWidth: number,
   ): string {
     const icon = getCategoryIcon(cmd.category);
-    const keybindingText = cmd.keybinding
-      ? theme.fg("dim", ` [${cmd.keybinding}]`)
-      : "";
+    const keybindingText = cmd.keybinding ? ` [${cmd.keybinding}]` : "";
+    const keybindingLen = cmd.keybinding ? keybindingText.length : 0;
 
-    // Calculate available space for name and description
+    // Calculate available space
+    const iconLen = 2; // icon + space
+    const nameLen = cmd.name.length;
+    const separatorLen = cmd.description ? 3 : 0; // " · "
+    const fixedLen = iconLen + nameLen + separatorLen + keybindingLen + 2; // padding
+    const descMaxLen = Math.max(0, innerWidth - fixedLen);
+
+    const desc =
+      cmd.description.length > descMaxLen
+        ? cmd.description.slice(0, descMaxLen - 1) + "…"
+        : cmd.description;
+
+    // Build the row content
     const nameText = isFocused
       ? theme.fg("accent", theme.bold(cmd.name))
       : cmd.name;
-    const descText = cmd.description
-      ? theme.fg("dim", ` - ${cmd.description}`)
+    const descText = desc ? theme.fg("dim", ` · ${desc}`) : "";
+    const keyText = cmd.keybinding
+      ? theme.fg("dim", ` [${cmd.keybinding}]`)
       : "";
 
-    const fullText = ` ${icon} ${nameText}${descText}${keybindingText}`;
-    const truncated = truncateAnsi(fullText, width - 1);
-    return ensureWidth(truncated, width);
+    const content = ` ${icon} ${nameText}${descText}${keyText}`;
+    const truncated = truncateAnsi(content, innerWidth);
+
+    if (isFocused) {
+      return theme.bg("selectedBg", ensureWidth(truncated, innerWidth));
+    }
+    return ensureWidth(truncated, innerWidth);
+  }
+
+  /** Create a bordered line */
+  function borderedLine(
+    content: string,
+    innerWidth: number,
+    leftChar: string = BOX.vertical,
+    rightChar: string = BOX.vertical,
+  ): string {
+    const inner = ensureWidth(content, innerWidth);
+    return `${theme.fg("dim", leftChar)}${inner}${theme.fg("dim", rightChar)}`;
   }
 
   /** Main render function */
@@ -245,26 +284,43 @@ export function createCommandPaletteComponent(
     }
 
     const lines: string[] = [];
-    const maxHeight = Math.min(tui.terminal.rows - 4, 20);
-    const contentHeight = maxHeight - 3; // title + search + help
+    const maxHeight = Math.min(tui.terminal.rows - 4, 24);
+    const innerWidth = width - 2; // account for borders
+    const contentHeight = maxHeight - 6; // title + search + separator + help + borders
 
-    // Title bar
-    const title = " 󰘳 Command Palette ";
-    const titleLine = theme.fg("accent", theme.bold(title));
-    lines.push(ensureWidth(titleLine, width));
+    // Top border with title
+    const title = " Command Palette ";
+    const titleLen = title.length;
+    const leftPad = Math.floor((innerWidth - titleLen) / 2);
+    const rightPad = innerWidth - titleLen - leftPad;
+    const topBorder =
+      theme.fg("dim", BOX.topLeft + BOX.horizontal.repeat(leftPad)) +
+      theme.fg("accent", theme.bold(title)) +
+      theme.fg("dim", BOX.horizontal.repeat(rightPad) + BOX.topRight);
+    lines.push(topBorder);
 
-    // Search input
-    const searchPrefix = " > ";
-    const searchText = searchQuery || theme.fg("dim", "Type to filter...");
-    const searchLine = searchPrefix + searchText;
-    lines.push(ensureWidth(searchLine, width));
+    // Search input row
+    const searchIcon = "󰍉";
+    const searchPlaceholder = theme.fg("dim", "Type to filter commands...");
+    const searchDisplay = searchQuery || searchPlaceholder;
+    const cursor = searchQuery ? theme.fg("accent", "▏") : "";
+    const searchContent = ` ${searchIcon}  ${searchDisplay}${cursor}`;
+    lines.push(borderedLine(searchContent, innerWidth));
 
     // Separator
-    lines.push(theme.fg("dim", "─".repeat(width)));
+    const separator =
+      theme.fg("dim", BOX.teeLeft) +
+      theme.fg("dim", BOX.horizontal.repeat(innerWidth)) +
+      theme.fg("dim", BOX.teeRight);
+    lines.push(separator);
 
     // Commands list with scroll
     if (filteredCommands.length === 0) {
-      lines.push(ensureWidth(theme.fg("dim", " No commands found"), width));
+      const emptyMsg = theme.fg("dim", " No matching commands");
+      lines.push(borderedLine(emptyMsg, innerWidth));
+      for (let i = 1; i < contentHeight; i++) {
+        lines.push(borderedLine("", innerWidth));
+      }
     } else {
       // Calculate visible range
       let startIdx = 0;
@@ -272,31 +328,54 @@ export function createCommandPaletteComponent(
         startIdx = selectedIndex - contentHeight + 1;
       }
 
-      for (
-        let i = 0;
-        i < contentHeight && startIdx + i < filteredCommands.length;
-        i++
-      ) {
+      const visibleCount = Math.min(
+        contentHeight,
+        filteredCommands.length - startIdx,
+      );
+
+      for (let i = 0; i < visibleCount; i++) {
         const idx = startIdx + i;
         const cmd = filteredCommands[idx];
         const isFocused = idx === selectedIndex;
-        lines.push(renderCommandRow(cmd, isFocused, width));
+        const rowContent = renderCommandRow(cmd, isFocused, innerWidth);
+        lines.push(
+          borderedLine(rowContent, innerWidth, BOX.vertical, BOX.vertical),
+        );
+      }
+
+      // Fill remaining space
+      for (let i = visibleCount; i < contentHeight; i++) {
+        lines.push(borderedLine("", innerWidth));
       }
     }
 
-    // Pad remaining space
-    while (lines.length < maxHeight - 1) {
-      lines.push(pad("", width));
-    }
+    // Scroll indicator
+    const totalCount = filteredCommands.length;
+    const countText =
+      totalCount > 0
+        ? theme.fg("dim", ` ${selectedIndex + 1}/${totalCount}`)
+        : "";
+    const scrollContent = ensureWidth(countText, innerWidth);
+    lines.push(borderedLine(scrollContent, innerWidth));
 
-    // Help text
-    const helpText = buildHelpText(
-      "↑↓ nav",
-      "enter select",
-      "type filter",
-      "esc close",
-    );
-    lines.push(ensureWidth(theme.fg("dim", ` ${helpText}`), width));
+    // Help line with bottom border
+    const helpText = buildHelpText("↑↓ navigate", "enter select", "esc close");
+    const helpContent = ` ${theme.fg("dim", helpText)}`;
+
+    // Bottom border
+    const bottomSeparator =
+      theme.fg("dim", BOX.teeLeft) +
+      theme.fg("dim", BOX.horizontal.repeat(innerWidth)) +
+      theme.fg("dim", BOX.teeRight);
+    lines.push(bottomSeparator);
+
+    lines.push(borderedLine(helpContent, innerWidth));
+
+    const bottomBorder =
+      theme.fg("dim", BOX.bottomLeft) +
+      theme.fg("dim", BOX.horizontal.repeat(innerWidth)) +
+      theme.fg("dim", BOX.bottomRight);
+    lines.push(bottomBorder);
 
     cachedLines = lines;
     cachedWidth = width;
@@ -334,6 +413,20 @@ export function createCommandPaletteComponent(
         invalidate();
         tui.requestRender();
       }
+      return;
+    }
+
+    if (matchesKey(data, "pageUp")) {
+      selectedIndex = Math.max(0, selectedIndex - 10);
+      invalidate();
+      tui.requestRender();
+      return;
+    }
+
+    if (matchesKey(data, "pageDown")) {
+      selectedIndex = Math.min(filteredCommands.length - 1, selectedIndex + 10);
+      invalidate();
+      tui.requestRender();
       return;
     }
 
