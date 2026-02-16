@@ -321,8 +321,13 @@ export function renderDiffRows(
 
   const visible = lines.slice(scroll, scroll + height);
 
+  const hunkDividerPattern = /^─+ line \d+ ─+$/;
+
   for (const line of visible) {
-    const content = " " + line;
+    const styledLine = hunkDividerPattern.test(line)
+      ? theme.fg("muted", line)
+      : line;
+    const content = " " + styledLine;
     const truncated = truncateAnsi(content, width - 1);
     const final = ensureWidth(truncated, width);
     rows.push(final);

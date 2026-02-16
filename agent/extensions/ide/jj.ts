@@ -135,7 +135,40 @@ export async function getDiff(
   );
 
   if (result.code === 0) {
-    return result.stdout.split("\n");
+    // Filter out redundant file header lines (e.g., "modified: path/to/file")
+    // when viewing a single file diff, as the file is already shown in the UI
+    const lines = result.stdout.split("\n");
+    if (filePath) {
+      const headerPattern = /^(modified|added|deleted|renamed|copied):\s/;
+      const separatorPattern = /^─+$/;
+      // Hunk header pattern: @ path/to/file:123 @ -> @ :123 @
+      const hunkHeaderPattern = /^(@\s*)[^\s:]+:(\d+)(\s*@.*)$/;
+      // eslint-disable-next-line no-control-regex
+      const ansiPattern = /\x1b\[[0-9;]*m/g;
+      return lines
+        .filter((line) => {
+          const stripped = line.replace(ansiPattern, "");
+          return (
+            !headerPattern.test(stripped) && !separatorPattern.test(stripped)
+          );
+        })
+        .map((line) => {
+          // Replace hunk headers with a divider: ───── line N ─────
+          const stripped = line.replace(ansiPattern, "");
+          const match = hunkHeaderPattern.exec(stripped);
+          if (match) {
+            const label = ` line ${match[2]} `;
+            const totalWidth = 78;
+            const sideWidth = Math.max(
+              4,
+              Math.floor((totalWidth - label.length) / 2),
+            );
+            return `${"─".repeat(sideWidth)}${label}${"─".repeat(sideWidth)}`;
+          }
+          return line;
+        });
+    }
+    return lines;
   }
   return [`Failed to get diff: ${result.stderr}`];
 }
