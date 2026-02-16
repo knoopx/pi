@@ -29,9 +29,9 @@ export function createOpLogComponent(
   keybindings: KeybindingsManager,
   done: (result: OpLogItem | null) => void,
   cwd: string,
-  onNotify?: (message: string, type?: "info" | "error") => void,
 ): ListPickerComponent {
   let pickerRef: ListPickerComponent | null = null;
+  let notify: (message: string, type?: "info" | "error") => void = () => {};
 
   const actions: ListPickerAction<OpLogItem>[] = [
     {
@@ -39,15 +39,15 @@ export function createOpLogComponent(
       label: "restore",
       handler: async (item) => {
         if (item.isCurrent) {
-          onNotify?.("Already at this operation", "info");
+          notify("Already at this operation", "info");
           return;
         }
         const result = await restoreOp(pi, cwd, item.opId);
         if (result.success) {
-          onNotify?.(`Restored to ${item.opId}`, "info");
+          notify(`Restored to ${item.opId}`, "info");
           await pickerRef?.reload();
         } else {
-          onNotify?.(`Failed: ${result.error ?? "Unknown error"}`, "error");
+          notify(`Failed: ${result.error ?? "Unknown error"}`, "error");
         }
       },
     },
@@ -57,10 +57,10 @@ export function createOpLogComponent(
       handler: async () => {
         const result = await undoOp(pi, cwd);
         if (result.success) {
-          onNotify?.("Undone", "info");
+          notify("Undone", "info");
           await pickerRef?.reload();
         } else {
-          onNotify?.(`Failed: ${result.error ?? "Unknown error"}`, "error");
+          notify(`Failed: ${result.error ?? "Unknown error"}`, "error");
         }
       },
     },
@@ -103,5 +103,6 @@ export function createOpLogComponent(
   );
 
   pickerRef = picker;
+  notify = (message, type) => picker.notify?.(message, type);
   return picker;
 }

@@ -633,17 +633,7 @@ async function openOpLogBrowser(
   ctx: ExtensionContext,
 ): Promise<void> {
   await ctx.ui.custom((tui, theme, keybindings, done) => {
-    return createOpLogComponent(
-      pi,
-      tui,
-      theme,
-      keybindings,
-      done,
-      ctx.cwd,
-      (message, type = "info") => {
-        ctx.ui.notify(message, type);
-      },
-    );
+    return createOpLogComponent(pi, tui, theme, keybindings, done, ctx.cwd);
   }, FULL_OVERLAY_OPTIONS);
 }
 

@@ -60,6 +60,7 @@ export function createBookmarksComponent(
 ): ListPickerComponent {
   // Picker reference for reload in actions
   let pickerRef: ListPickerComponent | null = null;
+  let notify: (message: string, type?: "info" | "error") => void = () => {};
 
   const actions: ListPickerAction<BookmarkEntry>[] = [
     {
@@ -69,6 +70,7 @@ export function createBookmarksComponent(
         for (const bookmark of item.bookmarks) {
           await forgetBookmark(pi, cwd, bookmark);
         }
+        notify(`Forgot ${item.bookmarks.length} bookmark(s)`, "info");
         await pickerRef?.reload();
       },
     },
@@ -76,7 +78,12 @@ export function createBookmarksComponent(
       key: "ctrl+g",
       label: "fetch",
       handler: async () => {
-        await pi.exec("jj", ["git", "fetch"], { cwd });
+        const result = await pi.exec("jj", ["git", "fetch"], { cwd });
+        if (result.code === 0) {
+          notify("Fetched from remote", "info");
+        } else {
+          notify(result.stderr || "Fetch failed", "error");
+        }
         await pickerRef?.reload();
       },
     },
@@ -86,9 +93,16 @@ export function createBookmarksComponent(
       handler: async (item) => {
         const bookmarkName = item.bookmarks[0]?.split("@")[0]?.trim();
         if (!bookmarkName) return;
-        await pi.exec("jj", ["git", "push", "--bookmark", bookmarkName], {
-          cwd,
-        });
+        const result = await pi.exec(
+          "jj",
+          ["git", "push", "--bookmark", bookmarkName],
+          { cwd },
+        );
+        if (result.code === 0) {
+          notify(`Pushed ${bookmarkName}`, "info");
+        } else {
+          notify(result.stderr || "Push failed", "error");
+        }
         await pickerRef?.reload();
       },
     },
@@ -146,6 +160,11 @@ export function createBookmarksComponent(
       },
     },
   );
+
+  // Wire up notify to use the picker's internal showStatus
+  notify = (message, type) => {
+    picker.notify?.(message, type);
+  };
 
   pickerRef = picker;
   return picker;

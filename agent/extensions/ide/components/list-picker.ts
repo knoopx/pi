@@ -54,6 +54,7 @@ export interface ListPickerComponent {
   setPreview: (lines: string[]) => void;
   invalidate: () => void;
   reload: () => Promise<void>;
+  notify?: (message: string, type?: "info" | "error") => void;
 }
 
 export function createListPicker<T extends ListPickerItem>(
@@ -76,6 +77,20 @@ export function createListPicker<T extends ListPickerItem>(
   let cachedLines: string[] = [];
   let cachedWidth = 0;
   const previewCache = new Map<string, string[]>();
+  let statusMessage: { text: string; type: "info" | "error" } | null = null;
+  let statusTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function showStatus(message: string, type: "info" | "error" = "info"): void {
+    if (statusTimeout) clearTimeout(statusTimeout);
+    statusMessage = { text: message, type };
+    invalidate();
+    tui.requestRender();
+    statusTimeout = setTimeout(() => {
+      statusMessage = null;
+      invalidate();
+      tui.requestRender();
+    }, 3000);
+  }
 
   async function loadItems(): Promise<void> {
     try {
@@ -220,13 +235,18 @@ export function createListPicker<T extends ListPickerItem>(
 
     const baseParts = config.helpParts ?? ["↑↓ nav", "type to search"];
     const actionHelp = (config.actions ?? []).map((a) => `${a.key} ${a.label}`);
-    const helpText = buildHelpText(
-      ...baseParts,
-      filteredItems.length > 0 && "enter select",
-      filteredItems.length > 0 && config.onEdit && "ctrl+e edit",
-      ...(filteredItems.length > 0 ? actionHelp : []),
-      "esc",
-    );
+    const helpText = statusMessage
+      ? theme.fg(
+          statusMessage.type === "error" ? "error" : "accent",
+          statusMessage.text,
+        )
+      : buildHelpText(
+          ...baseParts,
+          filteredItems.length > 0 && "enter select",
+          filteredItems.length > 0 && config.onEdit && "ctrl+e edit",
+          ...(filteredItems.length > 0 ? actionHelp : []),
+          "esc",
+        );
 
     cachedLines = renderSplitPanel(
       theme,
@@ -393,5 +413,13 @@ export function createListPicker<T extends ListPickerItem>(
     await loadItems();
   }
 
-  return { render, handleInput, dispose, setPreview, invalidate, reload };
+  return {
+    render,
+    handleInput,
+    dispose,
+    setPreview,
+    invalidate,
+    reload,
+    notify: showStatus,
+  };
 }

@@ -43,7 +43,6 @@ export function createChangesComponent(
   done: () => void,
   onInsert?: (text: string) => void,
   onBookmark?: (changeId: string) => Promise<string | null>,
-  onNotify?: (message: string, type?: "info" | "error") => void,
   onFileCmAction?: OnFileCmAction,
 ) {
   let changes: MutableChange[] = [];
@@ -57,6 +56,22 @@ export function createChangesComponent(
   // Use shared state objects
   const selectionState = createSelectionState();
   const loadingState = createLoadingState();
+
+  // Status message support
+  let statusMessage: { text: string; type: "info" | "error" } | null = null;
+  let statusTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function notify(message: string, type: "info" | "error" = "info"): void {
+    if (statusTimeout) clearTimeout(statusTimeout);
+    statusMessage = { text: message, type };
+    invalidateCache(loadingState);
+    tui.requestRender();
+    statusTimeout = setTimeout(() => {
+      statusMessage = null;
+      invalidateCache(loadingState);
+      tui.requestRender();
+    }, 3000);
+  }
 
   // Navigation handlers - defined inline to access current array values
   function navigateChanges(direction: "up" | "down"): void {
