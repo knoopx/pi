@@ -16,6 +16,20 @@ interface BookmarkEntry extends ListPickerItem {
   bookmarks: string[];
   changeId: string;
   description: string;
+  /** Deduplicated bookmark base names for display */
+  displayNames: string[];
+}
+
+/**
+ * Extract base bookmark name (before @) and remote suffix
+ */
+function parseBookmark(bookmark: string): { name: string; remote: string } {
+  const atIndex = bookmark.lastIndexOf("@");
+  if (atIndex === -1) return { name: bookmark, remote: "" };
+  return {
+    name: bookmark.slice(0, atIndex),
+    remote: bookmark.slice(atIndex + 1),
+  };
 }
 
 function groupBookmarksByChange(
@@ -39,13 +53,26 @@ function groupBookmarksByChange(
   }
 
   return Array.from(byChange.entries()).map(
-    ([changeId, { bookmarks, description }]) => ({
-      id: changeId,
-      label: bookmarks.join(" "),
-      bookmarks,
-      changeId,
-      description: description || "(no description)",
-    }),
+    ([changeId, { bookmarks, description }]) => {
+      // Deduplicate by base name (prefer showing each name once)
+      const seenNames = new Set<string>();
+      const displayNames: string[] = [];
+      for (const b of bookmarks) {
+        const { name } = parseBookmark(b);
+        if (!seenNames.has(name)) {
+          seenNames.add(name);
+          displayNames.push(name);
+        }
+      }
+      return {
+        id: changeId,
+        label: displayNames.join(" "),
+        bookmarks,
+        changeId,
+        description: description || "(no description)",
+        displayNames,
+      };
+    },
   );
 }
 
@@ -141,8 +168,8 @@ export function createBookmarksComponent(
         ),
       formatItem: (item, _width, theme, isFocused) => {
         const shortId = item.changeId.slice(-8);
-        const bookmarkLabels = item.bookmarks
-          .map((b) => formatBookmarkReference(theme, b, isFocused))
+        const bookmarkLabels = item.displayNames
+          .map((name) => formatBookmarkReference(theme, name, isFocused))
           .join(" ");
         const separator = isFocused ? " · " : theme.fg("dim", " · ");
         const description = isFocused

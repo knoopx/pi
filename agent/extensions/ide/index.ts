@@ -622,7 +622,7 @@ async function openBookmarksBrowser(
       done,
       ctx.cwd,
       (text) => {
-        ctx.ui.setEditorText(text);
+        ctx.ui.setEditorText(ctx.ui.getEditorText() + text);
       },
     );
   }, FULL_OVERLAY_OPTIONS);
@@ -657,7 +657,7 @@ async function openChangesBrowser(
         { pi, tui, theme, keybindings, cwd: ctx.cwd },
         done,
         (text) => {
-          ctx.ui.setEditorText(text);
+          ctx.ui.setEditorText(ctx.ui.getEditorText() + text);
         },
         (changeId) => promptAndSetBookmark(ctx, changeId),
         async (filePath, action) => {
