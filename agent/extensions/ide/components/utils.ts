@@ -270,7 +270,7 @@ export function formatBookmarkReference(
   theme: Theme,
   bookmark: string,
 ): string {
-  return `${theme.fg("accent", "󰃀")} ${theme.fg("warning", bookmark)}`;
+  return theme.inverse(theme.fg("accent", ` 󰃀 ${bookmark} `));
 }
 
 /**
