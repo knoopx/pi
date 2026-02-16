@@ -34,7 +34,9 @@ export interface ListPickerAction<T extends ListPickerItem> {
 
 export interface ListPickerConfig<T extends ListPickerItem> {
   title: string;
-  loadItems: () => Promise<T[]>;
+  /** Load items, optionally filtered by query */
+  loadItems: (query: string) => Promise<T[]>;
+  /** Local filtering (used when query changes between loads) */
   filterItems: (items: T[], query: string) => T[];
   formatItem: (
     item: T,
@@ -46,6 +48,8 @@ export interface ListPickerConfig<T extends ListPickerItem> {
   onEdit?: (item: T) => Promise<void> | void;
   helpParts?: string[];
   actions?: ListPickerAction<T>[];
+  /** Debounce delay for reloading on query change (0 = no reload, default) */
+  reloadDebounceMs?: number;
 }
 
 export interface ListPickerTui {
@@ -76,6 +80,7 @@ export function createListPicker<T extends ListPickerItem>(
   let filteredItems: T[] = [];
   let focusedIndex = 0;
   let searchQuery = initialQuery;
+  let lastLoadedQuery = "";
   let sourceLines: string[] = [];
   let sourceScroll = 0;
   let loading = true;
@@ -84,15 +89,17 @@ export function createListPicker<T extends ListPickerItem>(
   let cachedWidth = 0;
   const previewCache = new Map<string, string[]>();
   const statusState: StatusMessageState = { message: null, timeout: null };
+  let reloadTimeout: ReturnType<typeof setTimeout> | null = null;
 
   const showStatus = createStatusNotifier(statusState, () => {
     invalidate();
     tui.requestRender();
   });
 
-  async function loadItems(): Promise<void> {
+  async function loadItemsWithQuery(query: string): Promise<void> {
     try {
-      items = await config.loadItems();
+      lastLoadedQuery = query;
+      items = await config.loadItems(query);
       filterItems();
       loading = false;
 
@@ -108,6 +115,14 @@ export function createListPicker<T extends ListPickerItem>(
       invalidate();
       tui.requestRender();
     }
+  }
+
+  function scheduleReload(query: string): void {
+    if (!config.reloadDebounceMs) return;
+    if (reloadTimeout) clearTimeout(reloadTimeout);
+    reloadTimeout = setTimeout(() => {
+      void loadItemsWithQuery(query);
+    }, config.reloadDebounceMs);
   }
 
   function filterItems(): void {
@@ -351,6 +366,7 @@ export function createListPicker<T extends ListPickerItem>(
       if (searchQuery.length > 0) {
         searchQuery = searchQuery.slice(0, -1);
         filterItems();
+        scheduleReload(searchQuery);
         const item = getFocusedItem();
         if (item !== null) {
           void loadPreview(item);
@@ -379,6 +395,7 @@ export function createListPicker<T extends ListPickerItem>(
     if (data.length === 1 && data >= " " && data <= "~") {
       searchQuery += data;
       filterItems();
+      scheduleReload(searchQuery);
       const item = getFocusedItem();
       if (item !== null) {
         void loadPreview(item);
@@ -400,14 +417,14 @@ export function createListPicker<T extends ListPickerItem>(
     tui.requestRender();
   }
 
-  void loadItems();
+  void loadItemsWithQuery(initialQuery);
 
   async function reload(): Promise<void> {
     loading = true;
     error = null;
     invalidate();
     tui.requestRender();
-    await loadItems();
+    await loadItemsWithQuery(searchQuery);
   }
 
   return {

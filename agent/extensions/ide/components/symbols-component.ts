@@ -29,6 +29,50 @@ export interface SymbolResult {
   action?: CmActionType;
 }
 
+async function querySymbols(
+  pi: ExtensionAPI,
+  cwd: string,
+  query: string,
+): Promise<SymbolInfo[]> {
+  const result = await pi.exec(
+    "cm",
+    ["query", query, "--format", "ai", "--limit", "500"],
+    { cwd },
+  );
+  if (result.code !== 0) {
+    return [];
+  }
+
+  const lines = result.stdout
+    .split("\n")
+    .filter((line) => line.includes("|") && !line.startsWith("["));
+
+  return lines
+    .map((line) => {
+      const match = /^(.+)\|([a-z_]+)\|(\.[^|]+)\|(\d+-\d+)/.exec(line);
+      if (!match) return null;
+
+      const [, name, type, path, lineRange] = match;
+      const [startLine, endLine] = lineRange.split("-").map(Number);
+
+      const normalizedStartLine = Number.isNaN(startLine) ? 1 : startLine;
+      const normalizedEndLine = Number.isNaN(endLine)
+        ? normalizedStartLine
+        : endLine;
+
+      return {
+        id: `${path}:${String(normalizedStartLine)}`,
+        label: name || "",
+        name: name || "",
+        type: type || "f",
+        path: path || "",
+        startLine: normalizedStartLine,
+        endLine: normalizedEndLine,
+      };
+    })
+    .filter((s): s is SymbolInfo => s !== null && !!s.name && !!s.path);
+}
+
 export function createSymbolsComponent(
   pi: ExtensionAPI,
   tui: { terminal: { rows: number }; requestRender: () => void },
@@ -101,80 +145,10 @@ export function createSymbolsComponent(
           `${join(cwd, item.path)}:${String(item.startLine)}`,
         ]);
       },
-      loadItems: async () => {
-        const result = await pi.exec(
-          "cm",
-          ["query", "", "--format", "ai", "--limit", "2000"],
-          { cwd },
-        );
-        if (result.code !== 0) {
-          throw new Error(`Failed to load symbols: ${result.stderr}`);
-        }
-
-        // Parse cm output: name|type|path|line-range
-        const lines = result.stdout
-          .split("\n")
-          .filter((line) => line.includes("|") && !line.startsWith("["));
-        const parsedSymbols = lines
-          .map((line) => {
-            const match = /^(.+)\|([a-z_]+)\|(\.[^|]+)\|(\d+-\d+)$/.exec(line);
-            if (!match) return null;
-
-            const [, name, type, path, lineRange] = match;
-            const [startLine, endLine] = lineRange.split("-").map(Number);
-
-            const normalizedStartLine = Number.isNaN(startLine) ? 1 : startLine;
-            const normalizedEndLine = Number.isNaN(endLine)
-              ? normalizedStartLine
-              : endLine;
-
-            return {
-              id: `${path}:${String(normalizedStartLine)}`,
-              label: name || "",
-              name: name || "",
-              type: type || "f",
-              path: path || "",
-              startLine: normalizedStartLine,
-              endLine: normalizedEndLine,
-            };
-          })
-          .filter((s): s is SymbolInfo => s !== null && !!s.name && !!s.path);
-
-        // Sort by file modification time
-        const uniquePaths = [...new Set(parsedSymbols.map((s) => s.path))];
-        const fileMtimes = new Map<string, number>();
-        const { statSync } = await import("node:fs");
-        const { join } = await import("node:path");
-
-        for (const p of uniquePaths) {
-          try {
-            const fullPath = join(cwd, p);
-            const stat = statSync(fullPath);
-            fileMtimes.set(p, stat.mtimeMs);
-          } catch {
-            // File doesn't exist or can't be accessed
-          }
-        }
-
-        return parsedSymbols.sort((a, b) => {
-          const mtimeA = fileMtimes.get(a.path) ?? 0;
-          const mtimeB = fileMtimes.get(b.path) ?? 0;
-          if (mtimeB !== mtimeA) return mtimeB - mtimeA;
-          return a.startLine - b.startLine;
-        });
-      },
-      filterItems: (items, query) => {
-        const filtered = items.filter(
-          (s) =>
-            s.name.toLowerCase().includes(query) ||
-            s.path.toLowerCase().includes(query),
-        );
-        // When filtering, sort alphabetically by name instead of by recency
-        if (query) {
-          filtered.sort((a, b) => a.name.localeCompare(b.name));
-        }
-        return filtered;
-      },
+      loadItems: (query) => querySymbols(pi, cwd, query),
+      filterItems: (items, query) =>
+        items.filter((s) => s.name.toLowerCase().includes(query)),
+      reloadDebounceMs: 300,
       formatItem: (item, _width, theme, isFocused) =>
         applyFocusedStyle(
           theme,

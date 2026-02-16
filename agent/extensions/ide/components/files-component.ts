@@ -90,7 +90,7 @@ export function createFilesComponent(
       onEdit: async (item) => {
         await pi.exec("code", [item.path], { cwd });
       },
-      loadItems: async () => {
+      loadItems: async (_query) => {
         const result = await pi.exec(
           "rg",
           ["--files", "--hidden", "-g", "!node_modules", "-g", "!.git"],

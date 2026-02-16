@@ -261,7 +261,7 @@ export function createCmResultsComponent(
           `${join(config.cwd, item.path)}:${String(line)}`,
         ]);
       },
-      loadItems: async () => {
+      loadItems: async (_query) => {
         const result = await pi.exec("cm", [...config.args, "--format", "ai"], {
           cwd: config.cwd,
         });

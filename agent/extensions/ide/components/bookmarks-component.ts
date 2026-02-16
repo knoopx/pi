@@ -129,7 +129,7 @@ export function createBookmarksComponent(
       title: "Bookmarks",
       helpParts: ["↑↓ nav", "type to filter"],
       actions,
-      loadItems: async () => {
+      loadItems: async (_query) => {
         const entries = await listBookmarksByChange(pi, cwd);
         return groupBookmarksByChange(entries);
       },
