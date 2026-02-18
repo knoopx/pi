@@ -15,8 +15,9 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
-import { Key } from "@mariozechner/pi-tui";
+import { Key, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
 import { formatFileStats } from "./types";
+import { fetchUsageForModel, type UsageSnapshot } from "./footer/usage";
 import {
   generateWorkspaceName,
   createWorkspace,
@@ -49,7 +50,11 @@ import { createOpLogComponent } from "./components/oplog-component";
 import { createSkillBrowserComponent } from "./components/skill-browser-component";
 import { createCommandPaletteComponent } from "./components/command-palette-component";
 import { createPullRequestsComponent } from "./components/pull-requests-component";
-import { setBookmarkToChange, getJjLogForSystemPrompt } from "./jj";
+import {
+  setBookmarkToChange,
+  getJjLogForSystemPrompt,
+  getVcsLabel,
+} from "./jj";
 import type { AppAction } from "@mariozechner/pi-coding-agent";
 import type { KeyId } from "@mariozechner/pi-tui";
 
@@ -61,6 +66,79 @@ const FULL_OVERLAY_OPTIONS = {
     anchor: "center" as const,
   },
 };
+
+function formatTokenCount(value: number): string {
+  if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(1)}m`;
+  }
+  if (value >= 1_000) {
+    return `${Math.round(value / 1_000)}k`;
+  }
+  return String(value);
+}
+
+function shortenHomePath(cwd: string): string {
+  const home = process.env.HOME;
+  if (!home) {
+    return cwd;
+  }
+  if (cwd === home) {
+    return "~";
+  }
+  if (cwd.startsWith(`${home}/`)) {
+    return `~${cwd.slice(home.length)}`;
+  }
+  return cwd;
+}
+
+function formatCompactQuota(usage: UsageSnapshot | undefined): string {
+  if (!usage || usage.error || usage.windows.length === 0) {
+    return "";
+  }
+
+  return usage.windows
+    .map((window) => {
+      const usedPercent = Math.round(window.usedPercent);
+      const resetSuffix = window.resetDescription
+        ? ` (${window.resetDescription})`
+        : "";
+      return `${window.label}: ${usedPercent}%${resetSuffix}`;
+    })
+    .join(", ");
+}
+
+function padLine(
+  left: string,
+  center: string,
+  right: string,
+  width: number,
+): string {
+  const minGap = 2;
+  const leftWidth = visibleWidth(left);
+  const rightWidth = visibleWidth(right);
+  const centerWidth = visibleWidth(center);
+
+  const availableCenter = width - leftWidth - rightWidth - minGap * 2;
+
+  if (availableCenter <= 0) {
+    return truncateToWidth(`${left} ${right}`, width);
+  }
+
+  const centerText =
+    centerWidth > availableCenter
+      ? truncateToWidth(center, availableCenter)
+      : center;
+
+  const currentWidth = leftWidth + visibleWidth(centerText) + rightWidth;
+  const remaining = Math.max(0, width - currentWidth);
+  const leftGap = " ".repeat(minGap);
+  const rightGap = " ".repeat(Math.max(minGap, remaining - minGap));
+
+  return truncateToWidth(
+    `${left}${leftGap}${centerText}${rightGap}${right}`,
+    width,
+  );
+}
 
 async function spawnWorkspaceAgent(
   pi: ExtensionAPI,
@@ -92,10 +170,136 @@ async function spawnWorkspaceAgent(
 
 export default function ideExtension(pi: ExtensionAPI) {
   let jjLog: string | null = null;
+  let lastContext: ExtensionContext | null = null;
+  let currentVcsLabel: string | null = null;
+  let currentUsage: UsageSnapshot | undefined;
+  let isFooterRefreshInProgress = false;
+  let requestFooterRender: (() => void) | undefined;
+
+  function installGlobalFooter(ctx: ExtensionContext): void {
+    if (!ctx.hasUI) {
+      return;
+    }
+
+    ctx.ui.setFooter((tui, theme, footerData) => {
+      requestFooterRender = () => {
+        tui.requestRender();
+      };
+      const unsubscribe = footerData.onBranchChange(() => {
+        tui.requestRender();
+      });
+      const refreshTimer = setInterval(() => {
+        tui.requestRender();
+      }, 60_000);
+
+      return {
+        dispose() {
+          unsubscribe();
+          clearInterval(refreshTimer);
+          if (requestFooterRender) {
+            requestFooterRender = undefined;
+          }
+        },
+        invalidate() {},
+        render(width: number): string[] {
+          let totalCost = 0;
+
+          for (const entry of ctx.sessionManager.getEntries()) {
+            if (
+              entry.type !== "message" ||
+              entry.message.role !== "assistant"
+            ) {
+              continue;
+            }
+
+            const message = entry.message;
+            totalCost += message.usage.cost.total;
+          }
+
+          const sessionName = ctx.sessionManager.getSessionName();
+          const cwd = shortenHomePath(ctx.cwd);
+
+          const usingSubscription = ctx.model
+            ? ctx.modelRegistry.isUsingOAuth(ctx.model)
+            : false;
+          const costText = `$${totalCost.toFixed(3)}${usingSubscription ? " (sub)" : ""}`;
+
+          const contextUsage = ctx.getContextUsage();
+          const contextWindow =
+            contextUsage?.contextWindow ?? ctx.model?.contextWindow ?? 0;
+          const contextPercent = contextUsage?.percent;
+          const contextText =
+            contextPercent === null || contextPercent === undefined
+              ? `?/${formatTokenCount(contextWindow)} (auto)`
+              : `${contextPercent.toFixed(1)}%/${formatTokenCount(contextWindow)} (auto)`;
+
+          let contextColored = contextText;
+          if (contextPercent !== null && contextPercent !== undefined) {
+            if (contextPercent > 90) {
+              contextColored = theme.fg("error", contextText);
+            } else if (contextPercent > 70) {
+              contextColored = theme.fg("warning", contextText);
+            }
+          }
+
+          const thinkingLevel = pi.getThinkingLevel();
+          const quotaText = formatCompactQuota(currentUsage);
+          const modelText = ctx.model
+            ? `${ctx.model.id} • ${thinkingLevel}`
+            : "no-model";
+
+          const leftText = `${theme.fg("accent", cwd)}${currentVcsLabel ? ` ${theme.fg("dim", currentVcsLabel)}` : ""}${sessionName ? theme.fg("dim", ` • ${sessionName}`) : ""}`;
+          const centerText =
+            quotaText.length > 0
+              ? `${modelText} • ${theme.fg("dim", quotaText)}`
+              : modelText;
+          const rightText = `${theme.fg("dim", costText)} • ${contextColored}`;
+          const line = padLine(leftText, centerText, rightText, width);
+
+          return [truncateToWidth(line, width)];
+        },
+      };
+    });
+  }
+
+  async function refreshFooterData(): Promise<void> {
+    if (!lastContext || isFooterRefreshInProgress) {
+      return;
+    }
+
+    isFooterRefreshInProgress = true;
+    try {
+      const [vcsLabel, usage] = await Promise.all([
+        getVcsLabel(pi, lastContext.cwd),
+        lastContext.model ? fetchUsageForModel(lastContext.model) : undefined,
+      ]);
+      currentVcsLabel = vcsLabel;
+      currentUsage = usage;
+      requestFooterRender?.();
+    } finally {
+      isFooterRefreshInProgress = false;
+    }
+  }
 
   pi.on("session_start", async (_event, ctx) => {
+    lastContext = ctx;
+    installGlobalFooter(ctx);
     jjLog = await getJjLogForSystemPrompt(pi, ctx.cwd);
+    await refreshFooterData();
   });
+
+  pi.on("model_select", async (_event, ctx) => {
+    lastContext = ctx;
+    installGlobalFooter(ctx);
+    await refreshFooterData();
+  });
+
+  setInterval(
+    () => {
+      void refreshFooterData();
+    },
+    5 * 60 * 1000,
+  );
 
   pi.on("before_agent_start", async (event) => {
     if (!jjLog) return;
@@ -537,21 +741,27 @@ export default function ideExtension(pi: ExtensionAPI) {
       shortcut: Key.ctrl("t"),
       description: "Open symbol picker",
       execute: () => {
-        if (currentCtx) openSymbolsPicker(pi, currentCtx, "");
+        if (currentCtx) {
+          void openSymbolsPicker(pi, currentCtx, "");
+        }
       },
     },
     {
       shortcut: Key.ctrl("p"),
       description: "Open file picker",
       execute: () => {
-        if (currentCtx) openFilesPicker(pi, currentCtx, "");
+        if (currentCtx) {
+          void openFilesPicker(pi, currentCtx, "");
+        }
       },
     },
     {
       shortcut: Key.ctrl("b"),
       description: "Open bookmarks browser",
       execute: () => {
-        if (currentCtx) openBookmarksBrowser(pi, currentCtx);
+        if (currentCtx) {
+          void openBookmarksBrowser(pi, currentCtx);
+        }
       },
     },
     {
@@ -559,7 +769,7 @@ export default function ideExtension(pi: ExtensionAPI) {
       description: "Open workspaces review",
       execute: () => {
         if (currentCtx) {
-          currentCtx.ui.custom<void>((tui, theme, keybindings, done) => {
+          void currentCtx.ui.custom<void>((tui, theme, keybindings, done) => {
             return createWorkspacesComponent(pi, tui, theme, keybindings, done);
           }, FULL_OVERLAY_OPTIONS);
         }
@@ -569,29 +779,36 @@ export default function ideExtension(pi: ExtensionAPI) {
       shortcut: Key.ctrl("k"),
       description: "Open changes browser",
       execute: () => {
-        if (currentCtx)
-          openChangesBrowser(pi, currentCtx, promptAndSetBookmark);
+        if (currentCtx) {
+          void openChangesBrowser(pi, currentCtx, promptAndSetBookmark);
+        }
       },
     },
     {
       shortcut: Key.ctrl("o"),
       description: "Open operation log browser",
       execute: () => {
-        if (currentCtx) openOpLogBrowser(pi, currentCtx);
+        if (currentCtx) {
+          void openOpLogBrowser(pi, currentCtx);
+        }
       },
     },
     {
       shortcut: Key.ctrl("s"),
       description: "Open skill browser",
       execute: () => {
-        if (currentCtx) openSkillBrowser(pi, currentCtx, "");
+        if (currentCtx) {
+          void openSkillBrowser(pi, currentCtx, "");
+        }
       },
     },
     {
       shortcut: Key.ctrl("g"),
       description: "Open pull requests browser",
       execute: () => {
-        if (currentCtx) openPullRequestsBrowser(pi, currentCtx);
+        if (currentCtx) {
+          void openPullRequestsBrowser(pi, currentCtx);
+        }
       },
     },
     {
@@ -871,7 +1088,7 @@ async function openCommandPalette(
           } else {
             // Actions that can only be triggered via keybinding
             const keys = keybindings.getKeys(action);
-            const keyStr = keys.length > 0 ? String(keys[0]) : "no keybinding";
+            const keyStr = keys.length > 0 ? keys[0] : "no keybinding";
             ctx.ui.notify(`Press ${keyStr} to ${action}`, "info");
           }
         },

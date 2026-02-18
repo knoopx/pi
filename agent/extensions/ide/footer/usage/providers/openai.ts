@@ -1,7 +1,5 @@
-import { createGenericProvider } from "../util";
-import { ProviderConfig } from "../types";
-import { BaseDependencies } from "../types";
-import { loadTokenFromPiAuthJson } from "../util";
+import type { BaseDependencies, ProviderConfig } from "../types";
+import { createGenericProvider, loadTokenFromPiAuthJson } from "../util";
 
 const loadOpenAIToken = (deps: BaseDependencies) =>
   loadTokenFromPiAuthJson(deps, "openai-codex");

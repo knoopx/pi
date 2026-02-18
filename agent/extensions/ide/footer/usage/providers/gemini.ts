@@ -1,11 +1,5 @@
-import { BaseDependencies, RateWindow } from "../types";
-import { createGenericProvider } from "../util";
-import { ProviderConfig } from "../types";
-import { loadTokenFromPiAuthJson } from "../util";
-
-function _createGeminiDeps(deps: BaseDependencies) {
-  return deps;
-}
+import type { BaseDependencies, ProviderConfig, RateWindow } from "../types";
+import { createGenericProvider, loadTokenFromPiAuthJson } from "../util";
 
 const loadGeminiToken = (deps: BaseDependencies) =>
   loadTokenFromPiAuthJson(deps, "google-gemini-cli");
@@ -22,7 +16,6 @@ const geminiConfig: ProviderConfig = {
     "Content-Type": "application/json",
   }),
   customProcessor: (data) => {
-    // Aggregate quotas by model type
     const d = data as {
       buckets?: Array<{
         modelId?: string;

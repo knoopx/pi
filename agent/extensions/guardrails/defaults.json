@@ -259,7 +259,7 @@
   },
   {
     "group": "jj",
-    "pattern": ".jj",
+    "pattern": "*",
     "rules": [
       {
         "context": "command",

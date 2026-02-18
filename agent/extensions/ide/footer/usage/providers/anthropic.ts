@@ -1,7 +1,9 @@
-import { createGenericProvider, formatRemainingDuration } from "../util";
-import { ProviderConfig } from "../types";
-import { RateWindow, BaseDependencies } from "../types";
-import { loadTokenFromPiAuthJson } from "../util";
+import type { BaseDependencies, ProviderConfig, RateWindow } from "../types";
+import {
+  createGenericProvider,
+  formatRemainingDuration,
+  loadTokenFromPiAuthJson,
+} from "../util";
 
 const loadAnthropicToken = (deps: BaseDependencies) =>
   loadTokenFromPiAuthJson(deps, "anthropic");
@@ -63,7 +65,6 @@ const anthropicConfig: ProviderConfig = {
       })
       .filter(Boolean) as RateWindow[];
 
-    // Handle extra usage which doesn't fit the generic pattern
     if (data.extra_usage?.is_enabled) {
       const extra = data.extra_usage;
       const usedCredits = extra.used_credits || 0;
