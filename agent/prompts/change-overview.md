@@ -5,27 +5,31 @@ description: Generate a management-level overview of changes for team communicat
 Generate a high-level overview of changes suitable for sharing with teammates and management.
 
 <input>
-- Revision or range (default: `@` for current change)
-- Comparison base (optional, e.g., `main@origin`, `develop@origin`)
+- Branch range (e.g., `staging...develop`, `main...feature-branch`)
+- Default: current working changes
 </input>
 
 <workflow>
-1. Get the scope of changes:
+1. **Get the commit log first** — this tells you what actually changed:
    ```bash
-   jj diff --from "<base>" --to "<revision>" --stat
+   git log origin/<base>..origin/<target> --oneline
    ```
 
-2. Examine actual changes to understand the overall purpose:
+2. Get the diff stat to see scope:
 
    ```bash
-   jj diff --from "<base>" --to "<revision>"
+   git diff origin/<base>..origin/<target> --stat
    ```
 
-3. If needed, read specific files to understand context
+3. Examine key changes based on commit messages:
 
-4. Identify the single unifying purpose or goal of all changes
+   ```bash
+   git diff origin/<base>..origin/<target> -- <relevant-paths>
+   ```
 
-5. Write the overview following the rules below
+4. Read specific files only if commit messages are unclear
+
+5. Write the overview based on what commits describe, not speculation
    </workflow>
 
 <rules>

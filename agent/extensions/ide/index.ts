@@ -49,7 +49,7 @@ import { createOpLogComponent } from "./components/oplog-component";
 import { createSkillBrowserComponent } from "./components/skill-browser-component";
 import { createCommandPaletteComponent } from "./components/command-palette-component";
 import { createPullRequestsComponent } from "./components/pull-requests-component";
-import { setBookmarkToChange } from "./jj";
+import { setBookmarkToChange, getJjLogForSystemPrompt } from "./jj";
 import type { AppAction } from "@mariozechner/pi-coding-agent";
 import type { KeyId } from "@mariozechner/pi-tui";
 
@@ -93,6 +93,17 @@ async function spawnWorkspaceAgent(
 }
 
 export default function ideExtension(pi: ExtensionAPI) {
+  let jjLog: string | null = null;
+
+  pi.on("session_start", async (_event, ctx) => {
+    jjLog = await getJjLogForSystemPrompt(pi, ctx.cwd);
+  });
+
+  pi.on("before_agent_start", async (event) => {
+    if (!jjLog) return;
+    return { systemPrompt: event.systemPrompt + "\n\n" + jjLog };
+  });
+
   async function promptAndSetBookmark(
     ctx: ExtensionContext,
     changeId: string,
