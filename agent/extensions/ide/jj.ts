@@ -5,7 +5,7 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import type { FileChange, MutableChange } from "./types";
+import type { FileChange, Change } from "./types";
 
 export function sanitizeDescription(rawDescription: string): string {
   const asciiOnly = rawDescription.replace(/[^\p{ASCII}]/gu, "");
@@ -25,13 +25,13 @@ export async function updateStaleWorkspace(
 }
 
 /**
- * Load mutable changes from the current branch
+ * Load changes from the repository
  */
-export async function loadMutableChanges(
+export async function loadChanges(
   pi: ExtensionAPI,
   cwd: string,
-  revision = "ancestors(@) ~ ancestors(immutable_heads())",
-): Promise<MutableChange[]> {
+  revision = "ancestors(@, 50) ~ root()",
+): Promise<Change[]> {
   const result = await pi.exec(
     "jj",
     [
@@ -40,7 +40,7 @@ export async function loadMutableChanges(
       revision,
       "--no-graph",
       "-T",
-      'change_id.short() ++ "\\t" ++ commit_id.short() ++ "\\t" ++ if(empty, "empty", "changed") ++ "\\t" ++ author.name() ++ "\\t" ++ author.timestamp().format("%Y-%m-%d %H:%M") ++ "\\t" ++ description.first_line() ++ "\\n"',
+      'change_id.short() ++ "\\t" ++ commit_id.short() ++ "\\t" ++ if(empty, "empty", "changed") ++ "\\t" ++ if(immutable, "immutable", "mutable") ++ "\\t" ++ author.name() ++ "\\t" ++ author.timestamp().format("%Y-%m-%d %H:%M") ++ "\\t" ++ separate(",", parents.map(|p| p.change_id().short())) ++ "\\t" ++ description.first_line() ++ "\\n"',
     ],
     { cwd },
   );
@@ -52,8 +52,16 @@ export async function loadMutableChanges(
     .split("\n")
     .filter(Boolean)
     .map((line) => {
-      const [changeId, commitId, emptyStr, author, timestamp, ...descParts] =
-        line.split("\t");
+      const [
+        changeId,
+        commitId,
+        emptyStr,
+        immutableStr,
+        author,
+        timestamp,
+        parentIds,
+        ...descParts
+      ] = line.split("\t");
       return {
         changeId: changeId || "",
         commitId: commitId || "",
@@ -61,6 +69,8 @@ export async function loadMutableChanges(
         author: author || "",
         timestamp: timestamp || "",
         empty: emptyStr === "empty",
+        immutable: immutableStr === "immutable",
+        parentIds: parentIds ? parentIds.split(",").filter(Boolean) : [],
       };
     })
     .filter((c) => c.changeId);

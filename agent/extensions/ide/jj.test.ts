@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import {
   sanitizeDescription,
-  loadMutableChanges,
+  loadChanges,
   listBookmarksByChange,
   loadOpLog,
   restoreFile,
@@ -33,7 +33,7 @@ describe("jj module", () => {
     });
   });
 
-  describe("given mutable changes output", () => {
+  describe("given changes output", () => {
     let execMock: ReturnType<typeof vi.fn>;
     let pi: ExtensionAPI;
 
@@ -47,11 +47,11 @@ describe("jj module", () => {
         execMock.mockResolvedValue({
           code: 0,
           stdout:
-            "abc123\tdef456\tchanged\tAlice\t2026-02-15 14:00\tfeat(ide): ✨ add discard\n",
+            "abc123\tdef456\tchanged\tmutable\tAlice\t2026-02-15 14:00\tparent1,parent2\tfeat(ide): ✨ add discard\n",
           stderr: "",
         });
 
-        const result = await loadMutableChanges(pi, "/repo");
+        const result = await loadChanges(pi, "/repo");
 
         expect(execMock).toHaveBeenCalledWith(
           "jj",
@@ -66,6 +66,8 @@ describe("jj module", () => {
             author: "Alice",
             timestamp: "2026-02-15 14:00",
             empty: false,
+            immutable: false,
+            parentIds: ["parent1", "parent2"],
           },
         ]);
       });
@@ -75,7 +77,7 @@ describe("jj module", () => {
       it("then returns an empty list", async () => {
         execMock.mockResolvedValue({ code: 1, stdout: "", stderr: "error" });
 
-        const result = await loadMutableChanges(pi, "/repo");
+        const result = await loadChanges(pi, "/repo");
 
         expect(result).toEqual([]);
       });

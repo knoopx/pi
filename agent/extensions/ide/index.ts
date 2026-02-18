@@ -425,17 +425,6 @@ export default function ideExtension(pi: ExtensionAPI) {
   });
 
   /**
-   * Ctrl+Shift+P shortcut to open command palette
-   */
-  pi.registerShortcut(Key.ctrlShift("p"), {
-    description: "Open command palette",
-    handler: async (ctx) => {
-      if (!ctx.hasUI) return;
-      await openCommandPalette(pi, ctx, registeredShortcuts);
-    },
-  });
-
-  /**
    * Ctrl+T shortcut to launch symbol picker
    */
   pi.registerShortcut(Key.ctrl("t"), {
@@ -527,6 +516,9 @@ export default function ideExtension(pi: ExtensionAPI) {
   });
 
   // Track registered shortcuts for command palette
+  // The execute functions capture ctx from openCommandPalette
+  let currentCtx: ExtensionContext | null = null;
+
   const registeredShortcuts: {
     shortcut: KeyId;
     description?: string;
@@ -535,47 +527,70 @@ export default function ideExtension(pi: ExtensionAPI) {
     {
       shortcut: Key.ctrl("t"),
       description: "Open symbol picker",
-      execute: () => {},
+      execute: () => {
+        if (currentCtx) openSymbolsPicker(pi, currentCtx, "");
+      },
     },
     {
       shortcut: Key.ctrl("p"),
       description: "Open file picker",
-      execute: () => {},
+      execute: () => {
+        if (currentCtx) openFilesPicker(pi, currentCtx, "");
+      },
     },
     {
       shortcut: Key.ctrl("b"),
       description: "Open bookmarks browser",
-      execute: () => {},
+      execute: () => {
+        if (currentCtx) openBookmarksBrowser(pi, currentCtx);
+      },
     },
     {
       shortcut: Key.ctrl("j"),
       description: "Open workspaces review",
-      execute: () => {},
+      execute: () => {
+        if (currentCtx) {
+          currentCtx.ui.custom<void>((tui, theme, keybindings, done) => {
+            return createWorkspacesComponent(pi, tui, theme, keybindings, done);
+          }, FULL_OVERLAY_OPTIONS);
+        }
+      },
     },
     {
       shortcut: Key.ctrl("k"),
       description: "Open changes browser",
-      execute: () => {},
+      execute: () => {
+        if (currentCtx)
+          openChangesBrowser(pi, currentCtx, promptAndSetBookmark);
+      },
     },
     {
       shortcut: Key.ctrl("o"),
       description: "Open operation log browser",
-      execute: () => {},
+      execute: () => {
+        if (currentCtx) openOpLogBrowser(pi, currentCtx);
+      },
     },
     {
       shortcut: Key.ctrl("s"),
       description: "Open skill browser",
-      execute: () => {},
+      execute: () => {
+        if (currentCtx) openSkillBrowser(pi, currentCtx, "");
+      },
     },
     {
       shortcut: Key.ctrl("g"),
       description: "Open pull requests browser",
-      execute: () => {},
+      execute: () => {
+        if (currentCtx) openPullRequestsBrowser(pi, currentCtx);
+      },
     },
     {
       shortcut: Key.ctrlShift("p"),
       description: "Open command palette",
-      execute: () => {},
+      execute: () => {
+        // Don't re-open command palette from itself
+      },
     },
   ];
 
@@ -586,7 +601,22 @@ export default function ideExtension(pi: ExtensionAPI) {
     description: "Open command palette to search and execute commands",
     handler: async (_args, ctx) => {
       if (!ctx.hasUI) return;
+      currentCtx = ctx;
       await openCommandPalette(pi, ctx, registeredShortcuts);
+      currentCtx = null;
+    },
+  });
+
+  /**
+   * Ctrl+Shift+P shortcut handler also needs to set currentCtx
+   */
+  pi.registerShortcut(Key.ctrlShift("p"), {
+    description: "Open command palette",
+    handler: async (ctx) => {
+      if (!ctx.hasUI) return;
+      currentCtx = ctx;
+      await openCommandPalette(pi, ctx, registeredShortcuts);
+      currentCtx = null;
     },
   });
 }
@@ -825,13 +855,16 @@ async function openCommandPalette(
           // Execute a slash command by setting it in the editor
           ctx.ui.setEditorText(command);
         },
-        (_action: AppAction) => {
-          // App actions need to be triggered via the keybinding system
-          // For now, we just close the palette - the action name is informational
-          ctx.ui.notify(
-            `Action "${_action}" - use keybinding to trigger`,
-            "info",
-          );
+        (action: AppAction) => {
+          // Execute actions that we can handle directly
+          if (action === "interrupt") {
+            ctx.abort();
+          } else {
+            // Actions that can only be triggered via keybinding
+            const keys = keybindings.getKeys(action);
+            const keyStr = keys.length > 0 ? String(keys[0]) : "no keybinding";
+            ctx.ui.notify(`Press ${keyStr} to ${action}`, "info");
+          }
         },
         registeredShortcuts,
       );

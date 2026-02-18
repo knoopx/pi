@@ -127,29 +127,11 @@ export function createCommandPaletteComponent(
       });
     }
 
-    // Add app actions with their keybindings
-    const appActions: AppAction[] = [
-      "interrupt",
-      "clear",
-      "exit",
-      "suspend",
-      "cycleThinkingLevel",
-      "cycleModelForward",
-      "cycleModelBackward",
-      "selectModel",
-      "expandTools",
-      "toggleThinking",
-      "toggleSessionNamedFilter",
-      "externalEditor",
-      "followUp",
-      "dequeue",
-      "pasteImage",
-      "newSession",
-      "tree",
-      "fork",
-    ];
+    // Only add app actions that can be executed programmatically
+    // Other actions require keybindings and are shown for reference only
+    const executableActions: AppAction[] = ["interrupt"];
 
-    for (const action of appActions) {
+    for (const action of executableActions) {
       const keys = keybindings.getKeys(action);
       const keybinding =
         keys.length > 0 ? keys.map(formatKeybinding).join(", ") : undefined;

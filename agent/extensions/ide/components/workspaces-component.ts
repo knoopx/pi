@@ -19,7 +19,7 @@ import type {
   AgentWorkspace,
   WorkspaceStatus,
   FileChange,
-  MutableChange,
+  Change,
 } from "../types";
 import { formatFileStats } from "../types";
 import {
@@ -33,7 +33,7 @@ import {
   createWorkspace,
   generateWorkspaceName,
 } from "../workspace";
-import { loadMutableChanges, getDiff } from "../jj";
+import { loadChanges, getDiff } from "../jj";
 
 const STATUS_TEXT: Record<WorkspaceStatus, string> = {
   running: "running",
@@ -44,7 +44,7 @@ const STATUS_TEXT: Record<WorkspaceStatus, string> = {
 
 interface WorkspaceCache {
   files: FileChange[];
-  changes: MutableChange[];
+  changes: Change[];
   diffs: Map<string, string[]>;
 }
 
@@ -59,7 +59,7 @@ export function createWorkspacesComponent(
   let selectedIndex = 0;
   let selectedWorkspace: AgentWorkspace | null = null;
   let files: FileChange[] = [];
-  let changes: MutableChange[] = [];
+  let changes: Change[] = [];
   let fileIndex = 0;
   let diffContent: string[] = [];
   let diffScroll = 0;
@@ -111,7 +111,7 @@ export function createWorkspacesComponent(
       let cache = workspaceCache.get(ws.name);
 
       if (isDefault) {
-        // For default workspace, show mutable changes
+        // For default workspace, show changes
         if (cache) {
           changes = cache.changes;
           files = [];
@@ -128,7 +128,7 @@ export function createWorkspacesComponent(
         }
 
         if (!cache) {
-          changes = await loadMutableChanges(pi, ws.path);
+          changes = await loadChanges(pi, ws.path);
           files = [];
           cache = { files: [], changes, diffs: new Map() };
           workspaceCache.set(ws.name, cache);
@@ -341,7 +341,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
     const isDefault = selectedWorkspace?.name === "default";
 
     if (isDefault) {
-      // Show mutable changes for default workspace
+      // Show changes for default workspace
       return renderChangeRows(
         changes,
         width,
@@ -349,7 +349,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
         fileIndex,
         focus === "files",
         theme,
-        " No mutable changes",
+        " No changes",
       );
     } else {
       // Show files for other workspaces

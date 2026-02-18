@@ -65,15 +65,17 @@ export interface FileChange {
 }
 
 /**
- * Mutable change from jj log
+ * Change from jj log
  */
-export interface MutableChange {
+export interface Change {
   changeId: string;
   commitId: string;
   description: string;
   author?: string;
   timestamp?: string;
   empty: boolean;
+  immutable: boolean;
+  parentIds?: string[];
 }
 
 /**

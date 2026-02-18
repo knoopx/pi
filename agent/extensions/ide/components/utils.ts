@@ -437,13 +437,13 @@ export function getChangeIcon(
 }
 
 /**
- * Format a change row with icon, selection marker, description, and bookmarks
+ * Format a change row with selection marker, description, and bookmarks
+ * Note: Commit icon is rendered by the graph
  */
 export function formatChangeRow(
   theme: Theme,
   opts: {
-    isWorkingCopy: boolean;
-    isEmpty: boolean;
+    isImmutable: boolean;
     isSelected: boolean;
     isFocused?: boolean;
     isMoving?: boolean;
@@ -452,17 +452,22 @@ export function formatChangeRow(
     author?: string;
   },
 ): { leftText: string; rightText: string } {
-  const rawIcon = getChangeIcon(opts.isWorkingCopy, opts.isEmpty);
-  const icon = opts.isSelected ? theme.fg("accent", rawIcon) : rawIcon;
-  const bookmarkLabel = formatBookmarkLabels(theme, opts.bookmarks);
+  // Selection marker: ✓ when selected, nothing otherwise
+  const selectMarker = opts.isSelected ? theme.fg("accent", "✓ ") : "";
+
+  const bookmarkLabel = opts.isImmutable
+    ? ""
+    : formatBookmarkLabels(theme, opts.bookmarks);
 
   const moveIndicator = opts.isMoving ? theme.fg("warning", "↕ ") : "";
   const description = opts.isMoving
     ? theme.fg("warning", theme.bold(opts.description))
     : opts.isFocused
       ? theme.fg("accent", theme.bold(opts.description))
-      : opts.description;
-  const leftText = ` ${moveIndicator}${icon} ${bookmarkLabel}${description}`;
+      : opts.isImmutable
+        ? theme.fg("dim", opts.description)
+        : opts.description;
+  const leftText = `${selectMarker}${moveIndicator}${bookmarkLabel}${description}`;
 
   const rightText = opts.author ? theme.fg("dim", ` ${opts.author}`) : "";
 

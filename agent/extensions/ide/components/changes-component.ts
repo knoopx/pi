@@ -23,9 +23,9 @@ import {
   type BaseComponentParams,
   type StatusMessageState,
 } from "./shared-utils";
-import type { FileChange, MutableChange } from "../types";
+import type { FileChange, Change } from "../types";
 import {
-  loadMutableChanges,
+  loadChanges,
   loadChangedFiles,
   getDiff,
   restoreFile,
@@ -33,6 +33,11 @@ import {
   getCurrentChangeIdShort,
 } from "../jj";
 import type { CmActionType } from "./cm-results-component";
+import {
+  calculateGraphLayout,
+  renderGraphRow,
+  type GraphLayout,
+} from "./graph";
 
 type ChangeCache = ComponentCache<FileChange>;
 
@@ -42,6 +47,19 @@ export type OnFileCmAction = (
   action: CmActionType,
 ) => Promise<void>;
 
+/** Predefined revision filters */
+interface RevisionFilter {
+  name: string;
+  revision: string;
+}
+
+const REVISION_FILTERS: RevisionFilter[] = [
+  { name: "Stack", revision: "ancestors(@, 50) ~ root()" },
+  { name: "Mine", revision: "mine()" },
+  { name: "Tracked", revision: "bookmarks()" },
+  { name: "Recent", revision: "committer_date(after:'30 days ago')" },
+];
+
 export function createChangesComponent(
   { pi, tui, theme, cwd }: BaseComponentParams,
   done: () => void,
@@ -49,14 +67,18 @@ export function createChangesComponent(
   onBookmark?: (changeId: string) => Promise<string | null>,
   onFileCmAction?: OnFileCmAction,
 ) {
-  let changes: MutableChange[] = [];
-  let selectedChange: MutableChange | null = null;
+  let changes: Change[] = [];
+  let selectedChange: Change | null = null;
   let currentChangeId: string | null = null;
   let files: FileChange[] = [];
   let diffContent: string[] = [];
   let bookmarksByChange = new Map<string, string[]>();
   const selectedChangeIds = new Set<string>();
   const changeCache = new Map<string, ChangeCache>();
+  let graphLayout: GraphLayout | null = null;
+
+  // Filter state
+  let currentFilterIndex = 0;
 
   // Use shared state objects
   const selectionState = createSelectionState();
@@ -66,7 +88,7 @@ export function createChangesComponent(
   // Move mode state
   let mode: "normal" | "move" = "normal";
   let moveOriginalIndex = -1;
-  let moveOriginalChanges: MutableChange[] = [];
+  let moveOriginalChanges: Change[] = [];
 
   const notify = createStatusNotifier(statusState, () => {
     invalidateCache(loadingState);
@@ -231,7 +253,7 @@ export function createChangesComponent(
 
       // Reload to get actual state
       changeCache.clear();
-      await loadChanges();
+      await reloadChanges();
       notify(`Moved change ${changeToMove.changeId.slice(0, 8)}`, "info");
     } catch (error) {
       notify(`Failed to move: ${formatErrorMessage(error)}`, "error");
@@ -246,7 +268,7 @@ export function createChangesComponent(
     tui.requestRender();
   }
 
-  function getDescribeTargets(): MutableChange[] {
+  function getDescribeTargets(): Change[] {
     if (selectedChangeIds.size > 0) {
       return changes.filter((change) => selectedChangeIds.has(change.changeId));
     }
@@ -296,7 +318,7 @@ ${workflowLines}
           changeCache.clear();
           selectionState.fileIndex = 0;
           selectionState.diffScroll = 0;
-          await loadChanges();
+          await reloadChanges();
           notify(`Editing change ${change.changeId.slice(0, 8)}`, "info");
           return;
         }
@@ -325,7 +347,7 @@ Use the **conventional-commits** skill for commit message format.`;
           changeCache.clear();
           selectionState.fileIndex = 0;
           selectionState.diffScroll = 0;
-          await loadChanges();
+          await reloadChanges();
           if (changes.length > 0) {
             selectionState.selectedIndex = Math.min(
               prevIndex,
@@ -350,7 +372,7 @@ Use the **conventional-commits** skill for commit message format.`;
           changeCache.clear();
           selectionState.fileIndex = 0;
           selectionState.diffScroll = 0;
-          await loadChanges();
+          await reloadChanges();
           if (changes.length > 0) {
             selectionState.selectedIndex = Math.min(
               prevIndex,
@@ -374,7 +396,7 @@ Use the **conventional-commits** skill for commit message format.`;
           changeCache.clear();
           selectionState.fileIndex = 0;
           selectionState.diffScroll = 0;
-          await loadChanges();
+          await reloadChanges();
           notify(
             `Created new change after ${change.changeId.slice(0, 8)}`,
             "info",
@@ -406,12 +428,25 @@ Use the **conventional-commits** skill for commit message format.`;
     bookmarksByChange = nextBookmarksByChange;
   }
 
-  async function loadChanges(): Promise<void> {
+  async function reloadChanges(): Promise<void> {
     try {
       const previousSelectedChangeId = selectedChange?.changeId ?? null;
-      changes = await loadMutableChanges(pi, cwd, "mutable()");
+      const filter = REVISION_FILTERS[currentFilterIndex];
+      changes = await loadChanges(pi, cwd, filter.revision);
       currentChangeId = await getCurrentChangeIdShort(pi, cwd);
       await reloadBookmarks();
+
+      // Calculate graph layout
+      // Filter parentIds to only include changes in the current set
+      const changeIdSet = new Set(changes.map((c) => c.changeId));
+      graphLayout = calculateGraphLayout(
+        changes.map((c) => ({
+          id: c.changeId,
+          parentIds: (c.parentIds ?? []).filter((pid) => changeIdSet.has(pid)),
+          isWorkingCopy:
+            currentChangeId !== null && c.changeId === currentChangeId,
+        })),
+      );
 
       const existingIds = new Set(changes.map((change) => change.changeId));
       for (const changeId of selectedChangeIds) {
@@ -435,6 +470,7 @@ Use the **conventional-commits** skill for commit message format.`;
         selectedChange = null;
         files = [];
         diffContent = [];
+        graphLayout = null;
       }
 
       invalidateCache(loadingState);
@@ -448,7 +484,7 @@ Use the **conventional-commits** skill for commit message format.`;
     }
   }
 
-  async function loadFilesAndDiff(change: MutableChange): Promise<void> {
+  async function loadFilesAndDiff(change: Change): Promise<void> {
     try {
       let cache = changeCache.get(change.changeId);
       if (cache) {
@@ -482,10 +518,7 @@ Use the **conventional-commits** skill for commit message format.`;
     }
   }
 
-  async function loadDiff(
-    change: MutableChange,
-    filePath?: string,
-  ): Promise<void> {
+  async function loadDiff(change: Change, filePath?: string): Promise<void> {
     const diffKey = filePath ?? "";
 
     const cache = changeCache.get(change.changeId);
@@ -547,11 +580,32 @@ Use the **conventional-commits** skill for commit message format.`;
         currentChangeId !== null && change.changeId === currentChangeId;
       const isFocused = isCursor && selectionState.focus === "left";
 
+      // Render graph prefix (dynamic width per row)
+      let graphPrefix = "";
+      if (graphLayout) {
+        const pos = graphLayout.positions.get(change.changeId);
+        const edges = graphLayout.edges[idx] ?? [];
+        if (pos) {
+          graphPrefix = renderGraphRow(
+            edges,
+            pos.x,
+            isWorkingCopy,
+            change.empty,
+            graphLayout.maxX,
+          );
+        }
+      }
+
+      // Add single space separator after graph, use actual length
+      const graphWidth = graphPrefix.length > 0 ? graphPrefix.length + 1 : 0;
+      if (graphPrefix.length > 0) {
+        graphPrefix += " ";
+      }
+
       const bookmarks = bookmarksByChange.get(change.changeId) ?? [];
       const isMoving = mode === "move" && isCursor;
       const { leftText, rightText } = formatChangeRow(theme, {
-        isWorkingCopy,
-        isEmpty: change.empty,
+        isImmutable: change.immutable,
         isSelected: isMarked,
         isFocused,
         isMoving,
@@ -562,10 +616,15 @@ Use the **conventional-commits** skill for commit message format.`;
 
       // eslint-disable-next-line no-control-regex
       const rightLen = rightText.replace(/\x1b\[[0-9;]*m/g, "").length;
-      const availableLeftWidth = Math.max(1, width - rightLen);
+      const availableLeftWidth = Math.max(1, width - rightLen - graphWidth);
       const leftTruncated = truncateAnsi(leftText, availableLeftWidth);
       const leftPadded = ensureWidth(leftTruncated, availableLeftWidth);
-      const line = leftPadded + rightText;
+      const styledGraph = isFocused
+        ? theme.fg("accent", graphPrefix)
+        : change.immutable
+          ? theme.fg("dim", graphPrefix)
+          : graphPrefix;
+      const line = styledGraph + leftPadded + rightText;
       rows.push(line);
     }
 
@@ -602,7 +661,8 @@ Use the **conventional-commits** skill for commit message format.`;
       rightTopRatio: 0.3,
     });
 
-    const leftTitle = ` Changes (${String(changes.length)})`;
+    const filter = REVISION_FILTERS[currentFilterIndex];
+    const leftTitle = ` ${filter.name} (${String(changes.length)})`;
     const rightTopTitle = " Files";
     const rightBottomTitle = selectedChange
       ? ` Diff: ${files[selectionState.fileIndex]?.path ?? "all"} (${selectedChange.changeId.slice(0, 8)})`
@@ -625,13 +685,13 @@ Use the **conventional-commits** skill for commit message format.`;
       mode === "move"
         ? ["↑↓ move", "enter apply", "esc cancel"]
         : ([
+            "[/] filter",
             "space select",
             selectedChange && "n new",
             selectedChange && "e edit",
             describeTargetCount > 0 &&
               `d describe(${String(describeTargetCount)})`,
             selectedChange && "s split",
-            selectedChange && "n new",
             selectedChange &&
               changes.length > 1 &&
               selectionState.selectedIndex < changes.length - 1 &&
@@ -818,6 +878,29 @@ Use the **conventional-commits** skill for commit message format.`;
       return;
     }
 
+    // Filter cycling with [ and ]
+    if (data === "[" && selectionState.focus === "left") {
+      currentFilterIndex =
+        (currentFilterIndex - 1 + REVISION_FILTERS.length) %
+        REVISION_FILTERS.length;
+      selectionState.selectedIndex = 0;
+      selectionState.fileIndex = 0;
+      selectionState.diffScroll = 0;
+      changeCache.clear();
+      void reloadChanges();
+      return;
+    }
+
+    if (data === "]" && selectionState.focus === "left") {
+      currentFilterIndex = (currentFilterIndex + 1) % REVISION_FILTERS.length;
+      selectionState.selectedIndex = 0;
+      selectionState.fileIndex = 0;
+      selectionState.diffScroll = 0;
+      changeCache.clear();
+      void reloadChanges();
+      return;
+    }
+
     if (matchesKey(data, "ctrl+p") && selectionState.focus === "left") {
       if (selectedChange) {
         const bookmarks = bookmarksByChange.get(selectedChange.changeId) ?? [];
@@ -827,7 +910,7 @@ Use the **conventional-commits** skill for commit message format.`;
               for (const bookmark of bookmarks) {
                 await pi.exec("jj", ["git", "push", "-b", bookmark], { cwd });
               }
-              await loadChanges();
+              await reloadChanges();
               invalidateCache(loadingState);
               tui.requestRender();
               notify(
@@ -906,7 +989,7 @@ Use the **conventional-commits** skill for commit message format.`;
     // Cleanup if needed
   }
 
-  void loadChanges();
+  void reloadChanges();
 
   return {
     render,
