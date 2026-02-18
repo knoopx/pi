@@ -102,7 +102,28 @@ function shortenHomePath(cwd: string): string {
   return cwd;
 }
 
-function formatCompactQuota(usage: UsageSnapshot | undefined): string {
+type FooterTheme = {
+  fg(color: string, text: string): string;
+};
+
+function colorizeUsagePercent(theme: FooterTheme, usedPercent: number): string {
+  const percentText = `${usedPercent}%`;
+
+  if (usedPercent > 90) {
+    return theme.fg("error", percentText);
+  }
+
+  if (usedPercent > 70) {
+    return theme.fg("warning", percentText);
+  }
+
+  return theme.fg("dim", percentText);
+}
+
+function formatCompactQuota(
+  usage: UsageSnapshot | undefined,
+  theme: FooterTheme,
+): string {
   if (!usage || usage.error || usage.windows.length === 0) {
     return "";
   }
@@ -110,12 +131,13 @@ function formatCompactQuota(usage: UsageSnapshot | undefined): string {
   return usage.windows
     .map((window) => {
       const usedPercent = Math.round(window.usedPercent);
+      const label = theme.fg("dim", `${window.label}: `);
       const resetSuffix = window.resetDescription
-        ? ` (${window.resetDescription})`
+        ? theme.fg("dim", ` (${window.resetDescription})`)
         : "";
-      return `${window.label}: ${usedPercent}%${resetSuffix}`;
+      return `${label}${colorizeUsagePercent(theme, usedPercent)}${resetSuffix}`;
     })
-    .join(", ");
+    .join(theme.fg("dim", ", "));
 }
 
 function padLine(
@@ -254,17 +276,15 @@ export default function ideExtension(pi: ExtensionAPI) {
           }
 
           const thinkingLevel = pi.getThinkingLevel();
-          const quotaText = formatCompactQuota(currentUsage);
+          const quotaText = formatCompactQuota(currentUsage, theme);
           const modelText = ctx.model
             ? `${ctx.model.id} • ${thinkingLevel}`
             : "no-model";
 
-          const leftText = `${theme.fg("accent", cwd)}${currentVcsLabel ? ` ${theme.fg("dim", currentVcsLabel)}` : ""}${sessionName ? theme.fg("dim", ` • ${sessionName}`) : ""}`;
+          const leftText = `${theme.fg("accent", cwd)}${currentVcsLabel ? ` ${theme.fg("dim", currentVcsLabel)}` : ""}${sessionName ? theme.fg("dim", ` ${sessionName}`) : ""}`;
           const centerText =
-            quotaText.length > 0
-              ? `${modelText} • ${theme.fg("dim", quotaText)}`
-              : modelText;
-          const rightText = `${theme.fg("dim", costText)} • ${contextColored}`;
+            quotaText.length > 0 ? `${modelText} ${quotaText}` : modelText;
+          const rightText = `${theme.fg("dim", costText)} ${contextColored}`;
           const line = padLine(leftText, centerText, rightText, width);
 
           return [truncateToWidth(line, width)];
