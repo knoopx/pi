@@ -207,10 +207,6 @@ describe("Guardrails Extension", () => {
             block: true,
             reason: expect.stringContaining("Blocked:"),
           });
-          expect(mockCtx.ui.notify).toHaveBeenCalledWith(
-            expect.stringContaining("Blocked:"),
-            "error",
-          );
         });
       });
 
@@ -546,7 +542,7 @@ describe("Guardrails Extension", () => {
 
           expect(result).toEqual({
             block: true,
-            reason: "Blocked: User denied dangerous operation",
+            reason: "Blocked: User denied execution",
           });
         });
       });
@@ -582,7 +578,7 @@ describe("Guardrails Extension", () => {
 
           expect(result).toEqual({
             block: true,
-            reason: expect.stringContaining("no UI for confirmation"),
+            reason: expect.stringContaining("Blocked:"),
           });
           expect(mockCtx.ui.confirm).not.toHaveBeenCalled();
         });

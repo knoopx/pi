@@ -30,7 +30,7 @@ describe("Stocks Extension", () => {
 
       beforeEach(() => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
 
         mockResponse = {
           ok: true,
@@ -120,7 +120,7 @@ describe("Stocks Extension", () => {
 
       it("then it should use 1d interval for default range", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue(mockResponse);
         await fetchStockData("AAPL");
         expect(mockFetch).toHaveBeenCalledWith(
@@ -131,7 +131,7 @@ describe("Stocks Extension", () => {
 
       it("then it should use 1wk interval for ytd range", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue(mockResponse);
         await fetchStockData("AAPL", "ytd");
         expect(mockFetch).toHaveBeenCalledWith(
@@ -142,7 +142,7 @@ describe("Stocks Extension", () => {
 
       it("then it should use 1wk interval for 1y range", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue(mockResponse);
         await fetchStockData("AAPL", "1y");
         expect(mockFetch).toHaveBeenCalledWith(
@@ -153,7 +153,7 @@ describe("Stocks Extension", () => {
 
       it("then it should use 1mo interval for 5y range", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue(mockResponse);
         await fetchStockData("AAPL", "5y");
         expect(mockFetch).toHaveBeenCalledWith(
@@ -164,7 +164,7 @@ describe("Stocks Extension", () => {
 
       it("then it should use 1mo interval for max range", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue(mockResponse);
         await fetchStockData("AAPL", "max");
         expect(mockFetch).toHaveBeenCalledWith(
@@ -177,7 +177,7 @@ describe("Stocks Extension", () => {
     describe("given a stock symbol in lowercase", () => {
       it("then it should be converted to uppercase", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         const mockResponse = {
           ok: true,
           json: async () => ({
@@ -209,7 +209,7 @@ describe("Stocks Extension", () => {
             },
           }),
         };
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue(mockResponse);
 
         const result = await fetchStockData("msft");
@@ -223,7 +223,7 @@ describe("Stocks Extension", () => {
 
       beforeEach(() => {
         mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
       });
 
@@ -260,7 +260,7 @@ describe("Stocks Extension", () => {
           }),
         };
         mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue(mockResponse);
       });
 
@@ -289,7 +289,7 @@ describe("Stocks Extension", () => {
     describe("given HTTP 404 response", () => {
       it("then it should return null", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: false,
           status: 404,
@@ -304,7 +304,7 @@ describe("Stocks Extension", () => {
     describe("given HTTP 500 response", () => {
       it("then it should return null", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: false,
           status: 500,
@@ -319,7 +319,7 @@ describe("Stocks Extension", () => {
     describe("given HTTP 403 response", () => {
       it("then it should return null", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: false,
           status: 403,
@@ -334,7 +334,7 @@ describe("Stocks Extension", () => {
     describe("given network error", () => {
       it("then it should return null and log error", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         const consoleErrorSpy = vi
           .spyOn(console, "error")
           .mockImplementation(() => {});
@@ -352,7 +352,7 @@ describe("Stocks Extension", () => {
     describe("given fetch throws generic error", () => {
       it("then it should return null and log error", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         const consoleErrorSpy = vi
           .spyOn(console, "error")
           .mockImplementation(() => {});
@@ -370,7 +370,7 @@ describe("Stocks Extension", () => {
     describe("given response with no chart.result", () => {
       it("then it should return null", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -388,7 +388,7 @@ describe("Stocks Extension", () => {
     describe("given response with null result", () => {
       it("then it should return null", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -406,7 +406,7 @@ describe("Stocks Extension", () => {
     describe("given response with empty quotes array", () => {
       it("then it should return null", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -447,7 +447,7 @@ describe("Stocks Extension", () => {
     describe("given response with null or NaN close prices", () => {
       it("then it should filter out null and NaN values", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -489,7 +489,7 @@ describe("Stocks Extension", () => {
     describe("given response with timestamps but no close prices", () => {
       it("then it should return null", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -530,7 +530,7 @@ describe("Stocks Extension", () => {
     describe("given response with no timestamps", () => {
       it("then it should return null", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -571,7 +571,7 @@ describe("Stocks Extension", () => {
     describe("given response with empty close prices array", () => {
       it("then it should return null", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -612,7 +612,7 @@ describe("Stocks Extension", () => {
     describe("given response with only null close prices", () => {
       it("then it should return null", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -653,7 +653,7 @@ describe("Stocks Extension", () => {
     describe("given valid response with regularMarketPrice", () => {
       it("then it should use regularMarketPrice when available", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -696,7 +696,7 @@ describe("Stocks Extension", () => {
     describe("given valid response without regularMarketPrice", () => {
       it("then it should use last valid close price", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -738,7 +738,7 @@ describe("Stocks Extension", () => {
     describe("given valid response with zero previous close", () => {
       it("then it should handle zero division gracefully", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -780,7 +780,7 @@ describe("Stocks Extension", () => {
     describe("given valid response with negative change", () => {
       it("then it should calculate negative change correctly", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -822,7 +822,7 @@ describe("Stocks Extension", () => {
     describe("given valid response with large price differences", () => {
       it("then it should handle large price differences correctly", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -864,7 +864,7 @@ describe("Stocks Extension", () => {
     describe("given valid response with fractional prices", () => {
       it("then it should handle fractional prices correctly", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -1014,7 +1014,7 @@ describe("Stocks Extension", () => {
       describe("given single data point", () => {
         it("then it should handle single data point correctly", async () => {
           const mockFetch = vi.fn();
-          globalThis.fetch = mockFetch as typeof globalThis.fetch;
+          globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
           mockFetch.mockResolvedValue({
             ok: true,
             json: async () => ({
@@ -1058,7 +1058,7 @@ describe("Stocks Extension", () => {
       describe("given multiple data points", () => {
         it("then it should use the last data point", async () => {
           const mockFetch = vi.fn();
-          globalThis.fetch = mockFetch as typeof globalThis.fetch;
+          globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
           mockFetch.mockResolvedValue({
             ok: true,
             json: async () => ({
@@ -1107,7 +1107,7 @@ describe("Stocks Extension", () => {
       describe("given response with sparse data", () => {
         it("then it should skip null values and use last valid point", async () => {
           const mockFetch = vi.fn();
-          globalThis.fetch = mockFetch as typeof globalThis.fetch;
+          globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
           mockFetch.mockResolvedValue({
             ok: true,
             json: async () => ({
@@ -1153,7 +1153,7 @@ describe("Stocks Extension", () => {
       describe("given currency symbols", () => {
         it("then it should handle different currencies", async () => {
           const mockFetch = vi.fn();
-          globalThis.fetch = mockFetch as typeof globalThis.fetch;
+          globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
           mockFetch.mockResolvedValue({
             ok: true,
             json: async () => ({
@@ -1217,7 +1217,7 @@ describe("Stocks Extension", () => {
       validRanges.forEach((range) => {
         it(`then it should accept range: ${range}`, async () => {
           const mockFetch = vi.fn();
-          globalThis.fetch = mockFetch as typeof globalThis.fetch;
+          globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
           const mockResponse = {
             ok: true,
             json: async () => ({
@@ -1249,7 +1249,7 @@ describe("Stocks Extension", () => {
               },
             }),
           };
-          globalThis.fetch = mockFetch as typeof globalThis.fetch;
+          globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
           mockFetch.mockResolvedValue(mockResponse);
 
           const result = await fetchStockData("AAPL", range as StockRange);
@@ -1273,7 +1273,7 @@ describe("Stocks Extension", () => {
       invalidRanges.forEach((range) => {
         it(`then it should handle invalid range: ${range}`, async () => {
           const mockFetch = vi.fn();
-          globalThis.fetch = mockFetch as typeof globalThis.fetch;
+          globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
           const consoleWarnSpy = vi
             .spyOn(console, "warn")
             .mockImplementation(() => {});
@@ -1308,7 +1308,7 @@ describe("Stocks Extension", () => {
               },
             }),
           };
-          globalThis.fetch = mockFetch as typeof globalThis.fetch;
+          globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
           mockFetch.mockResolvedValue(mockResponse);
 
           await fetchStockData("AAPL", range as StockRange);
@@ -1331,13 +1331,13 @@ describe("Stocks Extension", () => {
   describe("data integrity", () => {
     beforeEach(() => {
       const mockFetch = vi.fn();
-      globalThis.fetch = mockFetch as typeof globalThis.fetch;
+      globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
     });
 
     describe("given complete stock data structure", () => {
       it("then it should return all expected fields", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -1396,7 +1396,7 @@ describe("Stocks Extension", () => {
     describe("given data with all valid numeric types", () => {
       it("then it should handle all numeric types correctly", async () => {
         const mockFetch = vi.fn();
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({

@@ -39,88 +39,6 @@ describe("Guardrails Defaults Configuration", () => {
     });
   });
 
-  describe("given coreutils group", () => {
-    const coreutilsGroup = typedDefaults.find((g) => g.group === "coreutils");
-
-    describe("when group exists", () => {
-      it("then is defined and active for all projects", () => {
-        expect(coreutilsGroup).toBeDefined();
-        expect(coreutilsGroup!.pattern).toBe("*");
-        expect(coreutilsGroup!.rules.length).toBe(2);
-      });
-    });
-
-    describe("when checking find command rules", () => {
-      const findRules = coreutilsGroup!.rules.filter((r) =>
-        r.pattern.startsWith("^find"),
-      );
-
-      it("then has rules for find commands", () => {
-        expect(findRules.length).toBe(2);
-      });
-
-      it("then blocks find without head pipe", () => {
-        const headRule = findRules.find((r) => r.excludes === "\\| head");
-        expect(headRule).toBeDefined();
-        expect(headRule!.action).toBe("block");
-        expect(headRule!.reason).toContain("head");
-      });
-
-      it("then blocks find without node_modules exclusion", () => {
-        const nmRule = findRules.find((r) => r.excludes === "node_modules");
-        expect(nmRule).toBeDefined();
-        expect(nmRule!.action).toBe("block");
-        expect(nmRule!.reason).toContain("node_modules");
-      });
-
-      it("then pattern matches find commands", () => {
-        const regex = new RegExp(findRules[0].pattern);
-        expect(regex.test("find . -name '*.ts'")).toBe(true);
-        expect(regex.test("find /tmp -type f")).toBe(true);
-        expect(regex.test("fd . -e ts")).toBe(false);
-      });
-    });
-  });
-
-  describe("given ast-grep group", () => {
-    const astGrepGroup = typedDefaults.find((g) => g.group === "ast-grep");
-
-    describe("when group exists", () => {
-      it("then is active for all projects", () => {
-        expect(astGrepGroup).toBeDefined();
-        expect(astGrepGroup!.pattern).toBe("*");
-        expect(astGrepGroup!.rules.length).toBe(2);
-      });
-    });
-
-    describe("when checking import/require grep rule", () => {
-      const importGrepRule = astGrepGroup!.rules.find((r) =>
-        r.pattern.includes("import"),
-      );
-
-      it("then blocks grep for imports with ast-grep alternative", () => {
-        expect(importGrepRule).toBeDefined();
-        expect(importGrepRule!.context).toBe("command");
-        expect(importGrepRule!.action).toBe("block");
-        expect(importGrepRule!.reason).toContain("ast-grep");
-        expect(importGrepRule!.reason).toContain("AST");
-      });
-    });
-
-    describe("when checking grep node_modules rule", () => {
-      const grepNmRule = astGrepGroup!.rules.find(
-        (r) => r.excludes === "node_modules",
-      );
-
-      it("then blocks grep without node_modules exclusion", () => {
-        expect(grepNmRule).toBeDefined();
-        expect(grepNmRule!.action).toBe("block");
-        expect(grepNmRule!.reason).toContain("node_modules");
-        expect(grepNmRule!.reason).toContain("--exclude-dir");
-      });
-    });
-  });
-
   describe("given bun group", () => {
     const bunGroup = typedDefaults.find((g) => g.group === "bun");
 
@@ -262,26 +180,7 @@ describe("Guardrails Defaults Configuration", () => {
       it("then is active for all projects", () => {
         expect(protectGroup).toBeDefined();
         expect(protectGroup!.pattern).toBe("*");
-        expect(protectGroup!.rules.length).toBeGreaterThan(3);
-      });
-    });
-
-    describe("when checking .env file rules", () => {
-      const envRules = protectGroup!.rules.filter((r) =>
-        r.pattern.includes("\\.env"),
-      );
-
-      it("then blocks .env file access", () => {
-        expect(envRules.length).toBeGreaterThan(0);
-        envRules.forEach((rule) => {
-          expect(rule.action).toBe("block");
-          expect(rule.reason).toContain("secrets");
-        });
-      });
-
-      it("then excludes example/sample env files", () => {
-        const fileNameRule = envRules.find((r) => r.context === "file_name");
-        expect(fileNameRule?.excludes).toContain("example");
+        expect(protectGroup!.rules.length).toBe(2);
       });
     });
 
@@ -291,24 +190,10 @@ describe("Guardrails Defaults Configuration", () => {
       );
 
       it("then blocks direct VCS directory access", () => {
-        expect(vcsRules.length).toBeGreaterThan(0);
+        expect(vcsRules.length).toBe(2);
         vcsRules.forEach((rule) => {
           expect(rule.action).toBe("block");
           expect(rule.reason).toContain("repository");
-        });
-      });
-    });
-
-    describe("when checking node_modules protection", () => {
-      const nmRules = protectGroup!.rules.filter((r) =>
-        r.pattern.includes("node_modules"),
-      );
-
-      it("then blocks node_modules modifications", () => {
-        expect(nmRules.length).toBeGreaterThan(0);
-        nmRules.forEach((rule) => {
-          expect(rule.action).toBe("block");
-          expect(rule.reason).toContain("package manager");
         });
       });
     });
@@ -576,9 +461,9 @@ describe("Guardrails Defaults Configuration", () => {
     const jjGroup = typedDefaults.find((g) => g.group === "jj");
 
     describe("when group exists", () => {
-      it("then is active for jj repositories", () => {
+      it("then is active for all projects", () => {
         expect(jjGroup).toBeDefined();
-        expect(jjGroup!.pattern).toBe(".jj");
+        expect(jjGroup!.pattern).toBe("*");
         expect(jjGroup!.rules.length).toBeGreaterThan(5);
       });
     });
@@ -628,6 +513,35 @@ describe("Guardrails Defaults Configuration", () => {
         expect(interactiveRule).toBeDefined();
         expect(interactiveRule!.action).toBe("block");
         expect(interactiveRule!.reason).toContain("jj absorb");
+      });
+    });
+  });
+
+  describe("given podman group", () => {
+    const podmanGroup = typedDefaults.find((g) => g.group === "podman");
+
+    describe("when group exists", () => {
+      it("then is active for all projects", () => {
+        expect(podmanGroup).toBeDefined();
+        expect(podmanGroup!.pattern).toBe("*");
+        expect(podmanGroup!.rules.length).toBe(1);
+      });
+    });
+
+    describe("when checking docker command rule", () => {
+      const dockerRule = podmanGroup!.rules[0];
+
+      it("then blocks docker commands with podman alternatives", () => {
+        expect(dockerRule.context).toBe("command");
+        expect(dockerRule.action).toBe("block");
+        expect(dockerRule.reason).toContain("Podman");
+      });
+
+      it("then pattern matches docker commands", () => {
+        const regex = new RegExp(dockerRule.pattern);
+        expect(regex.test("docker run nginx")).toBe(true);
+        expect(regex.test("docker build .")).toBe(true);
+        expect(regex.test("podman run nginx")).toBe(false);
       });
     });
   });

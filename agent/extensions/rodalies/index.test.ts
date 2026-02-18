@@ -13,7 +13,7 @@ import {
 
 // Mock global fetch
 const mockFetch = vi.fn();
-globalThis.fetch = mockFetch as typeof globalThis.fetch;
+globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
 
 // ============================================================================
 // Levenshtein Distance Tests
