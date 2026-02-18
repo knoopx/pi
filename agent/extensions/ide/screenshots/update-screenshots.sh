@@ -199,7 +199,9 @@ Screenshot symbols.png'
 
 gen_tape "bookmarks" 'Type "/bookmarks"
 Enter
-Sleep 300ms
+Sleep 1200ms
+Down
+Sleep 200ms
 Screenshot bookmarks.png'
 
 gen_tape "changes" 'Type "/changes"
