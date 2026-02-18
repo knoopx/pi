@@ -57,9 +57,7 @@ import type { KeyId } from "@mariozechner/pi-tui";
 const FULL_OVERLAY_OPTIONS = {
   overlay: true,
   overlayOptions: {
-    width: "90%" as const,
-    maxHeight: "90%" as const,
-    minWidth: 80,
+    width: "95%" as const,
     anchor: "center" as const,
   },
 };

@@ -9,6 +9,7 @@ import {
   getFileIconColor,
   hexColor,
 } from "./utils";
+import { BOX } from "./shared-utils";
 
 /**
  * Render a row in a split panel layout
@@ -23,11 +24,11 @@ function renderPanelRow(
   border: (color: "border" | "borderAccent", s: string) => string,
 ): string {
   return (
-    border(lb, "│") +
+    border(lb, BOX.vertical) +
     ensureWidth(leftContent, leftW) +
-    border("border", "│") +
+    border("border", BOX.vertical) +
     ensureWidth(rightContent, rightW) +
-    border(rb, "│")
+    border(rb, BOX.vertical)
   );
 }
 
@@ -81,8 +82,8 @@ export function calculateDimensions(
   const leftW = Math.floor(width * leftRatio);
   const rightW = width - leftW - 3; // 3 for border chars │ │ │
 
-  // Calculate overlay height (90% of terminal, matching overlayOptions)
-  const overlayHeight = Math.floor(terminalRows * 0.9);
+  // Calculate overlay height (100% of terminal)
+  const overlayHeight = terminalRows;
   // Content height = overlay height - borders (top, title, separator, help, bottom = 5 lines min)
   // For split right: add 3 more lines for separator
   const borderLines = config.rightSplit ? 8 : 5;
@@ -127,32 +128,32 @@ export function renderSplitPanel(
 
   // Top border
   lines.push(
-    border(lb, "┌") +
-      border(lb, "─".repeat(leftW)) +
-      border("border", "┬") +
-      border(rb, "─".repeat(rightW)) +
-      border(rb, "┐"),
+    border(lb, BOX.topLeft) +
+      border(lb, BOX.horizontal.repeat(leftW)) +
+      border("border", BOX.teeDown) +
+      border(rb, BOX.horizontal.repeat(rightW)) +
+      border(rb, BOX.topRight),
   );
 
   // Title row
   lines.push(
-    border(lb, "│") +
+    border(lb, BOX.vertical) +
       theme.fg("accent", pad(config.leftTitle, leftW)) +
-      border("border", "│") +
+      border("border", BOX.vertical) +
       theme.fg(
         "accent",
         pad(config.rightTopTitle ?? config.rightTitle, rightW),
       ) +
-      border(rb, "│"),
+      border(rb, BOX.vertical),
   );
 
   // Separator after title
   lines.push(
-    border(lb, "├") +
-      border(lb, "─".repeat(leftW)) +
-      border("border", "┼") +
-      border(rb, "─".repeat(rightW)) +
-      border(rb, "┤"),
+    border(lb, BOX.teeLeft) +
+      border(lb, BOX.horizontal.repeat(leftW)) +
+      border("border", BOX.cross) +
+      border(rb, BOX.horizontal.repeat(rightW)) +
+      border(rb, BOX.teeRight),
   );
 
   if (config.rightSplit && dims.rightTopH && dims.rightBottomH) {
@@ -180,28 +181,28 @@ export function renderSplitPanel(
 
     // Separator between right top and bottom
     lines.push(
-      border(lb, "│") +
+      border(lb, BOX.vertical) +
         ensureWidth(leftRows[rightTopH] || "", leftW) +
-        border("border", "├") +
-        border("border", "─".repeat(rightW)) +
-        border("border", "┤"),
+        border("border", BOX.teeLeft) +
+        border("border", BOX.horizontal.repeat(rightW)) +
+        border("border", BOX.teeRight),
     );
 
     // Right bottom title
     lines.push(
-      border(lb, "│") +
+      border(lb, BOX.vertical) +
         ensureWidth(leftRows[rightTopH + 1] || "", leftW) +
-        border("border", "│") +
+        border("border", BOX.vertical) +
         theme.fg("accent", pad(config.rightBottomTitle ?? " Preview", rightW)) +
-        border("border", "│"),
+        border("border", BOX.vertical),
     );
 
     lines.push(
-      border(lb, "│") +
+      border(lb, BOX.vertical) +
         ensureWidth(leftRows[rightTopH + 2] || "", leftW) +
-        border("border", "├") +
-        border("border", "─".repeat(rightW)) +
-        border("border", "┤"),
+        border("border", BOX.teeLeft) +
+        border("border", BOX.horizontal.repeat(rightW)) +
+        border("border", BOX.teeRight),
     );
 
     // Right bottom section
@@ -241,23 +242,23 @@ export function renderSplitPanel(
 
   // Bottom border with help
   lines.push(
-    border(lb, "├") +
-      border(lb, "─".repeat(leftW)) +
-      border("border", "┴") +
-      border("border", "─".repeat(rightW)) +
-      border("border", "┤"),
+    border(lb, BOX.teeLeft) +
+      border(lb, BOX.horizontal.repeat(leftW)) +
+      border("border", BOX.teeUp) +
+      border("border", BOX.horizontal.repeat(rightW)) +
+      border("border", BOX.teeRight),
   );
 
   lines.push(
-    border("border", "│") +
+    border("border", BOX.vertical) +
       theme.fg("dim", pad(" " + config.helpText, leftW + rightW + 1)) +
-      border("border", "│"),
+      border("border", BOX.vertical),
   );
 
   lines.push(
-    border("border", "└") +
-      border("border", "─".repeat(leftW + rightW + 1)) +
-      border("border", "┘"),
+    border("border", BOX.bottomLeft) +
+      border("border", BOX.horizontal.repeat(leftW + rightW + 1)) +
+      border("border", BOX.bottomRight),
   );
 
   return lines;

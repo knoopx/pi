@@ -15,6 +15,9 @@ export const BOX = {
   vertical: "│",
   teeLeft: "├",
   teeRight: "┤",
+  teeDown: "┬",
+  teeUp: "┴",
+  cross: "┼",
 } as const;
 
 /** Create a bordered line with vertical bars on each side */
