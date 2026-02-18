@@ -195,6 +195,42 @@ Open the command palette to fuzzy-search slash commands and shortcuts.
 | `Ctrl+U`    | Clear filter   |
 | `Esc`       | Exit           |
 
+### `/linear`
+
+Browse Linear issues with markdown preview. Requires authentication via `/linear-login`.
+
+| Key      | Action                          |
+| -------- | ------------------------------- |
+| `↑/↓`    | Navigate                        |
+| `Enter`  | Select issue                    |
+| `Ctrl+N` | Create new issue (form)         |
+| `Ctrl+E` | Edit issue (form)               |
+| `Ctrl+O` | Open issue in browser           |
+| `Ctrl+S` | Cycle filter                    |
+| `Ctrl+I` | Insert issue identifier         |
+| `Type`   | Filter by title, team, or state |
+| `Esc`    | Exit                            |
+
+**Filters** (cycle with `Ctrl+S`):
+
+- My Active - assigned to me, not completed/canceled
+- My Issues - all issues assigned to me
+- Created by Me - issues I created
+- Urgent/High - priority 1-2 issues
+- Recent - updated in last 7 days
+- All - all issues
+
+**Issue Form** (create/edit):
+
+- `↑/↓` or `Tab` - Navigate fields
+- `←/→` - Change state/priority
+- `Enter` - Save issue
+- `Esc` - Cancel
+
+### `/linear-login <api-key>`
+
+Save your Linear API key. Get your key from Linear Settings > API > Personal API keys.
+
 ### `/workspace <task description>`
 
 Create a new jj workspace from the current change and spawn a pi subagent in that workspace.
@@ -210,7 +246,22 @@ Create a new jj workspace from the current change and spawn a pi subagent in tha
 | `Ctrl+K`       | Open changes           |
 | `Ctrl+O`       | Open operation log     |
 | `Ctrl+S`       | Open skill browser     |
+| `Ctrl+G`       | Open pull requests     |
+| `Ctrl+U`       | Open Linear issues     |
 | `Ctrl+Shift+P` | Open command palette   |
+
+## Linear Tools
+
+The following tools are available for the agent to interact with Linear:
+
+| Tool                  | Description                             | Confirmation |
+| --------------------- | --------------------------------------- | ------------ |
+| `linear-search`       | Search issues by query, state, assignee | No           |
+| `linear-get-issue`    | Get issue details by identifier         | No           |
+| `linear-create-issue` | Create a new issue                      | Yes          |
+| `linear-update-issue` | Update issue title, description, state  | Yes          |
+
+Write operations (create, update) require user confirmation before execution.
 
 ## Automatic Change Tracking
 

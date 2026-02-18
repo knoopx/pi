@@ -15,7 +15,9 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
-import { Key, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
+import { Type } from "@sinclair/typebox";
+import { Key, Text, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
+import { textResult, errorResult } from "../../shared/tool-utils";
 import { formatFileStats } from "./types";
 import { fetchUsageForModel, type UsageSnapshot } from "./footer/usage";
 import {
@@ -50,6 +52,15 @@ import { createOpLogComponent } from "./components/oplog-component";
 import { createSkillBrowserComponent } from "./components/skill-browser-component";
 import { createCommandPaletteComponent } from "./components/command-palette-component";
 import { createPullRequestsComponent } from "./components/pull-requests-component";
+import {
+  createLinearIssuesComponent,
+  createLinearIssueForm,
+  getLinearApiKey,
+  saveLinearApiKey,
+  linearGraphQL,
+  type LinearIssuesResult,
+  type IssueFormResult,
+} from "./components/linear-issues-component";
 import {
   setBookmarkToChange,
   getJjLogForSystemPrompt,
@@ -638,6 +649,49 @@ export default function ideExtension(pi: ExtensionAPI) {
   });
 
   /**
+   * /linear - Browse Linear issues
+   */
+  pi.registerCommand("linear", {
+    description: "Browse Linear issues with markdown preview",
+    handler: async (_args, ctx) => {
+      if (!ctx.hasUI) return;
+      await openLinearIssuesBrowser(pi, ctx);
+    },
+  });
+
+  /**
+   * /linear-login - Save Linear API key
+   */
+  pi.registerCommand("linear-login", {
+    description: "Save Linear API key for /linear command",
+    handler: async (args, ctx) => {
+      const apiKey = args.trim();
+
+      if (!apiKey) {
+        if (ctx.hasUI) {
+          ctx.ui.notify(
+            "Usage: /linear-login <api-key> (get key from Linear Settings > API)",
+            "warning",
+          );
+        }
+        return;
+      }
+
+      try {
+        saveLinearApiKey(apiKey);
+        if (ctx.hasUI) {
+          ctx.ui.notify("Linear API key saved successfully", "info");
+        }
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        if (ctx.hasUI) {
+          ctx.ui.notify(`Failed to save API key: ${msg}`, "error");
+        }
+      }
+    },
+  });
+
+  /**
    * Ctrl+T shortcut to launch symbol picker
    */
   pi.registerShortcut(Key.ctrl("t"), {
@@ -728,6 +782,17 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
+  /**
+   * Ctrl+U shortcut to open Linear issues browser
+   */
+  pi.registerShortcut(Key.ctrl("u"), {
+    description: "Open Linear issues browser",
+    handler: async (ctx) => {
+      if (!ctx.hasUI) return;
+      await openLinearIssuesBrowser(pi, ctx);
+    },
+  });
+
   // Track registered shortcuts for command palette
   // The execute functions capture ctx from openCommandPalette
   let currentCtx: ExtensionContext | null = null;
@@ -812,6 +877,15 @@ export default function ideExtension(pi: ExtensionAPI) {
       },
     },
     {
+      shortcut: Key.ctrl("u"),
+      description: "Open Linear issues browser",
+      execute: () => {
+        if (currentCtx) {
+          void openLinearIssuesBrowser(pi, currentCtx);
+        }
+      },
+    },
+    {
       shortcut: Key.ctrlShift("p"),
       description: "Open command palette",
       execute: () => {
@@ -843,6 +917,497 @@ export default function ideExtension(pi: ExtensionAPI) {
       currentCtx = ctx;
       await openCommandPalette(pi, ctx, registeredShortcuts);
       currentCtx = null;
+    },
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Linear Tools
+  // ─────────────────────────────────────────────────────────────────────────
+
+  interface LinearIssueQueryResult {
+    issues: {
+      nodes: {
+        id: string;
+        identifier: string;
+        title: string;
+        description: string | null;
+        priority: number;
+        url: string;
+        state: { name: string; type: string } | null;
+        team: { key: string; name: string } | null;
+        assignee: { name: string; displayName: string | null } | null;
+      }[];
+    };
+  }
+
+  interface LinearSingleIssueResult {
+    issue: {
+      id: string;
+      identifier: string;
+      title: string;
+      description: string | null;
+      priority: number;
+      url: string;
+      state: { name: string; type: string } | null;
+      team: { key: string; name: string } | null;
+      assignee: { name: string; displayName: string | null } | null;
+      labels: { nodes: { name: string }[] };
+      comments: { nodes: { body: string; user: { name: string } | null }[] };
+    } | null;
+  }
+
+  interface LinearCreateResult {
+    issueCreate: {
+      success: boolean;
+      issue: {
+        id: string;
+        identifier: string;
+        url: string;
+        title: string;
+      } | null;
+    };
+  }
+
+  interface LinearUpdateResult {
+    issueUpdate: {
+      success: boolean;
+      issue: { id: string; identifier: string; title: string } | null;
+    };
+  }
+
+  interface LinearTeamsResult {
+    teams: { nodes: { id: string; key: string; name: string }[] };
+  }
+
+  function formatIssueForAgent(issue: {
+    identifier: string;
+    title: string;
+    description: string | null;
+    priority: number;
+    url: string;
+    state: { name: string; type: string } | null;
+    team: { key: string; name: string } | null;
+    assignee: { name: string; displayName: string | null } | null;
+  }): string {
+    const priority =
+      ["none", "urgent", "high", "normal", "low"][issue.priority] ?? "none";
+    const state = issue.state?.name ?? "unknown";
+    const team = issue.team?.key ?? "-";
+    const assignee =
+      issue.assignee?.displayName ?? issue.assignee?.name ?? "unassigned";
+    return `${issue.identifier}: ${issue.title}\n  State: ${state} | Priority: ${priority} | Team: ${team} | Assignee: ${assignee}\n  URL: ${issue.url}`;
+  }
+
+  /**
+   * Tool: linear-search - Search Linear issues
+   */
+  pi.registerTool({
+    name: "linear-search",
+    label: "Linear Search",
+    description:
+      "Search Linear issues. Returns a list of issues matching the query.",
+    parameters: Type.Object({
+      query: Type.Optional(
+        Type.String({
+          description: "Search query (searches title and description)",
+        }),
+      ),
+      assignedToMe: Type.Optional(
+        Type.Boolean({ description: "Filter to issues assigned to me" }),
+      ),
+      state: Type.Optional(
+        Type.String({
+          description: "Filter by state name (e.g., 'In Progress', 'Done')",
+        }),
+      ),
+      limit: Type.Optional(
+        Type.Number({ description: "Maximum number of results (default: 20)" }),
+      ),
+    }),
+
+    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
+      const apiKey = getLinearApiKey();
+      if (!apiKey) {
+        return errorResult("Not logged in to Linear. Run /linear-login first.");
+      }
+
+      const limit = params.limit ?? 20;
+      const filters: string[] = [];
+
+      if (params.query) {
+        filters.push(
+          `{ or: [{ title: { containsIgnoreCase: "${params.query}" } }, { description: { containsIgnoreCase: "${params.query}" } }] }`,
+        );
+      }
+      if (params.assignedToMe) {
+        filters.push(`{ assignee: { isMe: { eq: true } } }`);
+      }
+      if (params.state) {
+        filters.push(
+          `{ state: { name: { eqIgnoreCase: "${params.state}" } } }`,
+        );
+      }
+
+      const filterClause =
+        filters.length > 0 ? `filter: { and: [${filters.join(", ")}] },` : "";
+
+      const query = `
+        query SearchIssues {
+          issues(first: ${limit}, ${filterClause} orderBy: updatedAt) {
+            nodes {
+              id identifier title description priority url
+              state { name type }
+              team { key name }
+              assignee { name displayName }
+            }
+          }
+        }
+      `;
+
+      try {
+        const data = await linearGraphQL<LinearIssueQueryResult>(apiKey, {
+          query,
+        });
+        const issues = data.issues.nodes;
+
+        if (issues.length === 0) {
+          return textResult("No issues found.");
+        }
+
+        const text = issues.map(formatIssueForAgent).join("\n\n");
+        return textResult(`Found ${issues.length} issue(s):\n\n${text}`, {
+          issues,
+        });
+      } catch (error) {
+        return errorResult(error);
+      }
+    },
+
+    renderCall(args, theme) {
+      let text = theme.fg("toolTitle", theme.bold("linear-search"));
+      if (args.query) text += theme.fg("muted", ` "${args.query}"`);
+      if (args.assignedToMe) text += theme.fg("dim", " (mine)");
+      if (args.state) text += theme.fg("dim", ` state:${args.state}`);
+      return new Text(text, 0, 0);
+    },
+  });
+
+  /**
+   * Tool: linear-get-issue - Get a specific Linear issue
+   */
+  pi.registerTool({
+    name: "linear-get-issue",
+    label: "Linear Get Issue",
+    description:
+      "Get details of a specific Linear issue by identifier (e.g., 'ENG-123').",
+    parameters: Type.Object({
+      identifier: Type.String({
+        description: "Issue identifier (e.g., 'ENG-123')",
+      }),
+    }),
+
+    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
+      const apiKey = getLinearApiKey();
+      if (!apiKey) {
+        return errorResult("Not logged in to Linear. Run /linear-login first.");
+      }
+
+      const query = `
+        query GetIssue($id: String!) {
+          issue(id: $id) {
+            id identifier title description priority url
+            state { name type }
+            team { key name }
+            assignee { name displayName }
+            labels { nodes { name } }
+            comments(first: 10) { nodes { body user { name } } }
+          }
+        }
+      `;
+
+      try {
+        const data = await linearGraphQL<LinearSingleIssueResult>(apiKey, {
+          query,
+          variables: { id: params.identifier },
+        });
+
+        if (!data.issue) {
+          return errorResult(`Issue ${params.identifier} not found.`);
+        }
+
+        const issue = data.issue;
+        const labels =
+          issue.labels.nodes.map((l) => l.name).join(", ") || "none";
+        const comments = issue.comments.nodes
+          .map(
+            (c) =>
+              `  - ${c.user?.name ?? "Unknown"}: ${c.body.slice(0, 100)}${c.body.length > 100 ? "..." : ""}`,
+          )
+          .join("\n");
+
+        let text = formatIssueForAgent(issue);
+        text += `\n  Labels: ${labels}`;
+        if (issue.description) {
+          text += `\n\nDescription:\n${issue.description}`;
+        }
+        if (comments) {
+          text += `\n\nRecent comments:\n${comments}`;
+        }
+
+        return textResult(text, { issue });
+      } catch (error) {
+        return errorResult(error);
+      }
+    },
+
+    renderCall(args, theme) {
+      return new Text(
+        theme.fg("toolTitle", theme.bold("linear-get-issue")) +
+          theme.fg("muted", ` ${args.identifier}`),
+        0,
+        0,
+      );
+    },
+  });
+
+  /**
+   * Tool: linear-create-issue - Create a new Linear issue (requires confirmation)
+   */
+  pi.registerTool({
+    name: "linear-create-issue",
+    label: "Linear Create Issue",
+    description: "Create a new Linear issue. Requires user confirmation.",
+    parameters: Type.Object({
+      title: Type.String({ description: "Issue title" }),
+      description: Type.Optional(
+        Type.String({ description: "Issue description (markdown)" }),
+      ),
+      teamKey: Type.Optional(
+        Type.String({
+          description:
+            "Team key (e.g., 'ENG'). Uses first team if not specified.",
+        }),
+      ),
+      priority: Type.Optional(
+        Type.Number({
+          description: "Priority: 0=none, 1=urgent, 2=high, 3=normal, 4=low",
+        }),
+      ),
+    }),
+
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      const apiKey = getLinearApiKey();
+      if (!apiKey) {
+        return errorResult("Not logged in to Linear. Run /linear-login first.");
+      }
+
+      // Require confirmation
+      if (ctx.hasUI) {
+        const confirmed = await ctx.ui.confirm(
+          "Create Linear Issue",
+          `Create issue: "${params.title}"?`,
+        );
+        if (!confirmed) {
+          return textResult("Issue creation cancelled by user.");
+        }
+      }
+
+      try {
+        // Get team ID
+        let teamId: string;
+        if (params.teamKey) {
+          const teamsQuery = `query { teams { nodes { id key } } }`;
+          const teamsData = await linearGraphQL<LinearTeamsResult>(apiKey, {
+            query: teamsQuery,
+          });
+          const team = teamsData.teams.nodes.find(
+            (t) => t.key.toLowerCase() === params.teamKey!.toLowerCase(),
+          );
+          if (!team) {
+            return errorResult(`Team '${params.teamKey}' not found.`);
+          }
+          teamId = team.id;
+        } else {
+          const teamsQuery = `query { teams(first: 1) { nodes { id } } }`;
+          const teamsData = await linearGraphQL<LinearTeamsResult>(apiKey, {
+            query: teamsQuery,
+          });
+          if (teamsData.teams.nodes.length === 0) {
+            return errorResult("No teams found.");
+          }
+          teamId = teamsData.teams.nodes[0].id;
+        }
+
+        const mutation = `
+          mutation CreateIssue($input: IssueCreateInput!) {
+            issueCreate(input: $input) {
+              success
+              issue { id identifier url title }
+            }
+          }
+        `;
+
+        const input: Record<string, unknown> = {
+          teamId,
+          title: params.title,
+        };
+        if (params.description) input.description = params.description;
+        if (params.priority !== undefined) input.priority = params.priority;
+
+        const data = await linearGraphQL<LinearCreateResult>(apiKey, {
+          query: mutation,
+          variables: { input },
+        });
+
+        if (!data.issueCreate.success || !data.issueCreate.issue) {
+          return errorResult("Failed to create issue.");
+        }
+
+        const issue = data.issueCreate.issue;
+        return textResult(
+          `Created ${issue.identifier}: ${issue.title}\nURL: ${issue.url}`,
+          { issue },
+        );
+      } catch (error) {
+        return errorResult(error);
+      }
+    },
+
+    renderCall(args, theme) {
+      return new Text(
+        theme.fg("toolTitle", theme.bold("linear-create-issue")) +
+          theme.fg("muted", ` "${args.title}"`),
+        0,
+        0,
+      );
+    },
+  });
+
+  /**
+   * Tool: linear-update-issue - Update a Linear issue (requires confirmation)
+   */
+  pi.registerTool({
+    name: "linear-update-issue",
+    label: "Linear Update Issue",
+    description: "Update an existing Linear issue. Requires user confirmation.",
+    parameters: Type.Object({
+      identifier: Type.String({
+        description: "Issue identifier (e.g., 'ENG-123')",
+      }),
+      title: Type.Optional(Type.String({ description: "New title" })),
+      description: Type.Optional(
+        Type.String({ description: "New description (markdown)" }),
+      ),
+      state: Type.Optional(
+        Type.String({
+          description: "New state name (e.g., 'In Progress', 'Done')",
+        }),
+      ),
+      priority: Type.Optional(
+        Type.Number({
+          description: "Priority: 0=none, 1=urgent, 2=high, 3=normal, 4=low",
+        }),
+      ),
+    }),
+
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      const apiKey = getLinearApiKey();
+      if (!apiKey) {
+        return errorResult("Not logged in to Linear. Run /linear-login first.");
+      }
+
+      const changes: string[] = [];
+      if (params.title) changes.push(`title: "${params.title}"`);
+      if (params.description) changes.push(`description: (updated)`);
+      if (params.state) changes.push(`state: ${params.state}`);
+      if (params.priority !== undefined)
+        changes.push(`priority: ${params.priority}`);
+
+      if (changes.length === 0) {
+        return errorResult("No changes specified.");
+      }
+
+      // Require confirmation
+      if (ctx.hasUI) {
+        const confirmed = await ctx.ui.confirm(
+          "Update Linear Issue",
+          `Update ${params.identifier}?\n\nChanges:\n${changes.map((c) => `  - ${c}`).join("\n")}`,
+        );
+        if (!confirmed) {
+          return textResult("Issue update cancelled by user.");
+        }
+      }
+
+      try {
+        // First get the issue ID from identifier
+        const getQuery = `query GetIssue($id: String!) { issue(id: $id) { id } }`;
+        const issueData = await linearGraphQL<{ issue: { id: string } | null }>(
+          apiKey,
+          {
+            query: getQuery,
+            variables: { id: params.identifier },
+          },
+        );
+
+        if (!issueData.issue) {
+          return errorResult(`Issue ${params.identifier} not found.`);
+        }
+
+        const input: Record<string, unknown> = {};
+        if (params.title) input.title = params.title;
+        if (params.description) input.description = params.description;
+        if (params.priority !== undefined) input.priority = params.priority;
+
+        // Handle state change
+        if (params.state) {
+          const statesQuery = `query { workflowStates { nodes { id name } } }`;
+          const statesData = await linearGraphQL<{
+            workflowStates: { nodes: { id: string; name: string }[] };
+          }>(apiKey, { query: statesQuery });
+          const state = statesData.workflowStates.nodes.find(
+            (s) => s.name.toLowerCase() === params.state!.toLowerCase(),
+          );
+          if (!state) {
+            return errorResult(`State '${params.state}' not found.`);
+          }
+          input.stateId = state.id;
+        }
+
+        const mutation = `
+          mutation UpdateIssue($id: String!, $input: IssueUpdateInput!) {
+            issueUpdate(id: $id, input: $input) {
+              success
+              issue { id identifier title }
+            }
+          }
+        `;
+
+        const data = await linearGraphQL<LinearUpdateResult>(apiKey, {
+          query: mutation,
+          variables: { id: issueData.issue.id, input },
+        });
+
+        if (!data.issueUpdate.success || !data.issueUpdate.issue) {
+          return errorResult("Failed to update issue.");
+        }
+
+        const issue = data.issueUpdate.issue;
+        return textResult(`Updated ${issue.identifier}: ${issue.title}`, {
+          issue,
+        });
+      } catch (error) {
+        return errorResult(error);
+      }
+    },
+
+    renderCall(args, theme) {
+      let text =
+        theme.fg("toolTitle", theme.bold("linear-update-issue")) +
+        theme.fg("muted", ` ${args.identifier}`);
+      if (args.title)
+        text += theme.fg("dim", ` title:"${args.title.slice(0, 30)}..."`);
+      if (args.state) text += theme.fg("dim", ` state:${args.state}`);
+      return new Text(text, 0, 0);
     },
   });
 }
@@ -1058,6 +1623,69 @@ async function openPullRequestsBrowser(
       },
     );
   }, FULL_OVERLAY_OPTIONS);
+}
+
+async function openLinearIssuesBrowser(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+): Promise<void> {
+  const apiKey = getLinearApiKey();
+
+  while (true) {
+    const result = await ctx.ui.custom<LinearIssuesResult>(
+      (tui, theme, keybindings, done) => {
+        return createLinearIssuesComponent(
+          pi,
+          tui,
+          theme,
+          keybindings,
+          done,
+          ctx.cwd,
+          (text) => {
+            ctx.ui.setEditorText(ctx.ui.getEditorText() + text);
+          },
+        );
+      },
+      FULL_OVERLAY_OPTIONS,
+    );
+
+    if (!result.action) {
+      break;
+    }
+
+    if (!apiKey) {
+      ctx.ui.notify("Not logged in to Linear", "error");
+      break;
+    }
+
+    const formResult = await ctx.ui.custom<IssueFormResult>(
+      (tui, theme, keybindings, done) => {
+        const issue =
+          result.action?.type === "edit" ? result.action.issue : null;
+        return createLinearIssueForm(
+          pi,
+          tui,
+          theme,
+          keybindings,
+          done,
+          apiKey,
+          issue,
+        );
+      },
+      {
+        overlay: true,
+        overlayOptions: {
+          width: "70%",
+          minWidth: 60,
+          anchor: "center",
+        },
+      },
+    );
+
+    if (formResult.action === "saved" && formResult.issue) {
+      ctx.ui.notify(`Created ${formResult.issue.identifier}`, "info");
+    }
+  }
 }
 
 async function openCommandPalette(

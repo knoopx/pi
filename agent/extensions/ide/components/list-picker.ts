@@ -33,7 +33,7 @@ export interface ListPickerAction<T extends ListPickerItem> {
 }
 
 export interface ListPickerConfig<T extends ListPickerItem> {
-  title: string;
+  title: string | (() => string);
   /** Load items, optionally filtered by query */
   loadItems: (query: string) => Promise<T[]>;
   /** Local filtering (used when query changes between loads) */
@@ -65,6 +65,8 @@ export interface ListPickerComponent {
   invalidate: () => void;
   reload: () => Promise<void>;
   notify?: (message: string, type?: "info" | "error") => void;
+  getSearchQuery?: () => string;
+  clearSearchQuery?: () => void;
 }
 
 export function createListPicker<T extends ListPickerItem>(
@@ -223,9 +225,11 @@ export function createListPicker<T extends ListPickerItem>(
       createBaseDimensionsConfig(true),
     );
 
+    const titleText =
+      typeof config.title === "function" ? config.title() : config.title;
     const searchDisplay = searchQuery
       ? ` Search: ${truncateAnsi(searchQuery, dims.leftW - 10)}`
-      : ` ${config.title}`;
+      : ` ${titleText}`;
     const itemCount = `(${String(filteredItems.length)}/${String(items.length)})`;
     const leftTitle = truncateAnsi(`${searchDisplay} ${itemCount}`, dims.leftW);
 
@@ -290,9 +294,9 @@ export function createListPicker<T extends ListPickerItem>(
       return;
     }
 
-    if (matchesKey(data, "ctrl+e")) {
+    if (matchesKey(data, "ctrl+e") && config.onEdit) {
       const item = getFocusedItem();
-      if (item !== null && config.onEdit) {
+      if (item !== null) {
         void Promise.resolve(config.onEdit(item));
       }
       return;
@@ -435,5 +439,12 @@ export function createListPicker<T extends ListPickerItem>(
     invalidate,
     reload,
     notify: showStatus,
+    getSearchQuery: () => searchQuery,
+    clearSearchQuery: () => {
+      searchQuery = "";
+      filterItems();
+      invalidate();
+      tui.requestRender();
+    },
   };
 }
