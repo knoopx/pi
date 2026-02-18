@@ -590,7 +590,7 @@ Use the **conventional-commits** skill for commit message format.`;
             edges,
             pos.x,
             isWorkingCopy,
-            change.empty,
+            change.immutable,
             graphLayout.maxX,
           );
         }

@@ -208,9 +208,9 @@ describe("graph", () => {
       ];
 
       describe("when rendering non-working-copy commit", () => {
-        it("then shows filled circle for non-empty commit", () => {
+        it("then shows filled diamond for non-empty commit", () => {
           const result = renderGraphRow(edges, 0, false, false, 0);
-          expect(result).toBe("●");
+          expect(result).toBe("◆");
         });
 
         it("then shows empty circle for empty commit", () => {
@@ -220,12 +220,12 @@ describe("graph", () => {
       });
 
       describe("when rendering working copy commit", () => {
-        it("then shows filled working copy circle for non-empty", () => {
+        it("then shows ◉ for non-empty working copy", () => {
           const result = renderGraphRow(edges, 0, true, false, 0);
           expect(result).toBe("◉");
         });
 
-        it("then shows empty working copy circle for empty", () => {
+        it("then shows ◎ for empty working copy", () => {
           const result = renderGraphRow(edges, 0, true, true, 0);
           expect(result).toBe("◎");
         });
@@ -246,7 +246,7 @@ describe("graph", () => {
       describe("when rendering", () => {
         it("then shows commit and vertical line", () => {
           const result = renderGraphRow(edges, 0, false, false, 1);
-          expect(result).toBe("● │");
+          expect(result).toBe("◆ │");
         });
       });
     });
@@ -265,7 +265,7 @@ describe("graph", () => {
       describe("when rendering", () => {
         it("then shows vertical then commit", () => {
           const result = renderGraphRow(edges, 1, false, false, 1);
-          expect(result).toBe("│ ●");
+          expect(result).toBe("│ ◆");
         });
       });
     });
@@ -285,7 +285,7 @@ describe("graph", () => {
       describe("when rendering", () => {
         it("then shows commit with branch going right", () => {
           const result = renderGraphRow(edges, 0, false, false, 1);
-          expect(result).toBe("●─╮");
+          expect(result).toBe("◆─╮");
         });
       });
     });
@@ -304,7 +304,7 @@ describe("graph", () => {
       describe("when rendering", () => {
         it("then shows commit with merge from right", () => {
           const result = renderGraphRow(edges, 0, false, false, 1);
-          expect(result).toBe("● ╯");
+          expect(result).toBe("◆ ╯");
         });
       });
     });
@@ -325,7 +325,7 @@ describe("graph", () => {
       describe("when rendering", () => {
         it("then shows combined character ├", () => {
           const result = renderGraphRow(edges, 0, false, false, 1);
-          expect(result).toBe("●─├");
+          expect(result).toBe("◆─├");
         });
       });
     });
@@ -346,7 +346,7 @@ describe("graph", () => {
       describe("when rendering", () => {
         it("then shows horizontal line connecting branches", () => {
           const result = renderGraphRow(edges, 0, false, false, 2);
-          expect(result).toBe("●───╮");
+          expect(result).toBe("◆───╮");
         });
       });
     });
@@ -364,7 +364,7 @@ describe("graph", () => {
 
         it("then renders minimal width", () => {
           const result = renderGraphRow(edges, 0, false, false, 5);
-          expect(result).toBe("●");
+          expect(result).toBe("◆");
           expect(result.length).toBe(1);
         });
       });
@@ -382,7 +382,7 @@ describe("graph", () => {
 
         it("then renders width to include lane 2", () => {
           const result = renderGraphRow(edges, 0, false, false, 5);
-          expect(result).toBe("●   │");
+          expect(result).toBe("◆   │");
           expect(result.length).toBe(5);
         });
       });
@@ -402,7 +402,7 @@ describe("graph", () => {
       describe("when rendering", () => {
         it("then shows left-down corner", () => {
           const result = renderGraphRow(edges, 1, false, false, 1);
-          expect(result).toBe("╭ ●");
+          expect(result).toBe("╭ ◆");
         });
       });
     });
@@ -421,7 +421,7 @@ describe("graph", () => {
       describe("when rendering", () => {
         it("then shows left-up corner", () => {
           const result = renderGraphRow(edges, 1, false, false, 1);
-          expect(result).toBe("╰ ●");
+          expect(result).toBe("╰ ◆");
         });
       });
     });
@@ -441,7 +441,7 @@ describe("graph", () => {
       describe("when rendering", () => {
         it("then shows combined character ┤", () => {
           const result = renderGraphRow(edges, 1, false, false, 1);
-          expect(result).toBe("┤ ●");
+          expect(result).toBe("┤ ◆");
         });
       });
     });
@@ -471,10 +471,10 @@ describe("graph", () => {
             );
           });
 
-          expect(rows[0]).toBe("●─╮"); // merge with branch
-          expect(rows[1]).toBe("● │"); // A with lane 1 continuing
-          expect(rows[2]).toBe("│ ●"); // B at lane 1
-          expect(rows[3]).toBe("● ╯"); // root with merge-in
+          expect(rows[0]).toBe("◆─╮"); // merge with branch
+          expect(rows[1]).toBe("◆ │"); // A with lane 1 continuing
+          expect(rows[2]).toBe("│ ◆"); // B at lane 1
+          expect(rows[3]).toBe("◆ ╯"); // root with merge-in
         });
       });
     });
@@ -534,10 +534,10 @@ describe("graph", () => {
           });
 
           expect(rows[0]).toBe("◉"); // head (working copy)
-          expect(rows[1]).toBe("●─╮"); // m1 with branch
-          expect(rows[2]).toBe("● │"); // a with lane 1
-          expect(rows[3]).toBe("│ ●"); // b at lane 1
-          expect(rows[4]).toBe("● ╯"); // base with merge-in
+          expect(rows[1]).toBe("◆─╮"); // m1 with branch
+          expect(rows[2]).toBe("◆ │"); // a with lane 1
+          expect(rows[3]).toBe("│ ◆"); // b at lane 1
+          expect(rows[4]).toBe("◆ ╯"); // base with merge-in
         });
       });
     });

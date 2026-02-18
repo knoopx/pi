@@ -3,6 +3,8 @@
  * Based on serie/kaospilot approach for jj commit graphs
  */
 
+import { getChangeIcon } from "./change-utils";
+
 export interface GraphNode {
   id: string;
   parentIds: string[];
@@ -267,8 +269,8 @@ export function renderGraphRow(
     if (pos >= width) continue;
 
     if (posX === commitX) {
-      // Draw commit char
-      chars[pos] = getCommitChar(isWorkingCopy, isEmpty);
+      // Draw change char
+      chars[pos] = getChangeIcon(isWorkingCopy, isEmpty);
       // If branching right, draw horizontal after commit
       if (hasBranchRight && pos + 1 < width) {
         chars[pos + 1] = GRAPH_CHARS.horizontal;
@@ -308,11 +310,4 @@ export function renderGraphRow(
   }
 
   return chars.join("");
-}
-
-function getCommitChar(isWorkingCopy: boolean, isEmpty: boolean): string {
-  if (isWorkingCopy) {
-    return isEmpty ? "◎" : "◉";
-  }
-  return isEmpty ? "○" : "●";
 }
