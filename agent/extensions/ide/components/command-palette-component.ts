@@ -1,19 +1,16 @@
 /**
  * Command Palette Component
  *
- * Global command palette (Ctrl+Shift+P) that lists all available commands:
- * - Built-in slash commands
- * - Extension-registered commands
- * - App actions (interrupt, clear, exit, etc.)
- * - Extension shortcuts
+ * Global command palette (Ctrl+Shift+P) that lists commands:
+ * - Commands from `~/.pi/agent/commands/*.md` (shell-aware prompt templates)
  */
 
 import type {
   ExtensionAPI,
   KeybindingsManager,
   AppAction,
+  Theme,
 } from "@mariozechner/pi-coding-agent";
-import type { Theme } from "@mariozechner/pi-coding-agent";
 import type { KeyId } from "@mariozechner/pi-tui";
 import { matchesKey } from "@mariozechner/pi-tui";
 import { truncateAnsi, ensureWidth, buildHelpText } from "./utils";
@@ -23,78 +20,31 @@ import {
   horizontalSeparator,
   bottomBorder,
 } from "./shared-utils";
-
-/** Unified command type for display */
-interface PaletteCommand {
-  id: string;
-  name: string;
-  description: string;
-  category: "command" | "action" | "shortcut";
-  keybinding?: string;
-  action: () => void;
-}
-
-interface CommandPaletteTui {
-  terminal: { rows: number };
-  requestRender: () => void;
-}
-
-interface CommandPaletteComponent {
-  render: (width: number) => string[];
-  handleInput: (data: string) => void;
-  invalidate: () => void;
-  dispose: () => void;
-}
-
-/** App actions with descriptions */
-const APP_ACTION_DESCRIPTIONS: Partial<Record<AppAction, string>> = {
-  interrupt: "Stop the current agent operation",
-  clear: "Clear the conversation display",
-  exit: "Exit pi",
-  suspend: "Suspend pi (Ctrl+Z)",
-  cycleThinkingLevel: "Cycle through thinking levels",
-  cycleModelForward: "Switch to next model",
-  cycleModelBackward: "Switch to previous model",
-  selectModel: "Open model selector",
-  expandTools: "Toggle tool output expansion",
-  toggleThinking: "Toggle thinking display",
-  toggleSessionNamedFilter: "Toggle session filter by name",
-  externalEditor: "Open external editor",
-  followUp: "Send follow-up message",
-  dequeue: "Clear queued messages",
-  pasteImage: "Paste image from clipboard",
-  newSession: "Start a new session",
-  tree: "Open session tree navigator",
-  fork: "Fork current session",
-};
-
-/** Format a KeyId for display */
-function formatKeybinding(keyId: KeyId): string {
-  if (typeof keyId === "string") {
-    return keyId
-      .replace("ctrl+", "Ctrl+")
-      .replace("alt+", "Alt+")
-      .replace("shift+", "Shift+")
-      .replace("escape", "Esc")
-      .replace("enter", "Enter")
-      .replace("tab", "Tab");
-  }
-  return String(keyId);
-}
+import type {
+  PaletteCommand,
+  CommandPaletteTui,
+  CommandPaletteComponent,
+} from "./command-palette-types";
+import { loadFileCommands, evaluateShellCommands } from "./command-file-loader";
+import { createArgFormComponent } from "./command-arg-form";
 
 export function createCommandPaletteComponent(
   pi: ExtensionAPI,
   tui: CommandPaletteTui,
   theme: Theme,
-  keybindings: KeybindingsManager,
+  _keybindings: KeybindingsManager,
   done: () => void,
   onExecuteCommand: (command: string) => void,
-  onExecuteAction: (action: AppAction) => void,
-  registeredShortcuts: {
+  _onExecuteAction: (action: AppAction) => void,
+  _registeredShortcuts: {
     shortcut: KeyId;
     description?: string;
     execute: () => void;
   }[],
+  ctx?: {
+    hasUI: boolean;
+    ui: { custom: unknown; setEditorText: unknown; notify: unknown };
+  },
 ): CommandPaletteComponent {
   // State
   let commands: PaletteCommand[] = [];
@@ -103,6 +53,7 @@ export function createCommandPaletteComponent(
   let searchQuery = "";
   let cachedLines: string[] = [];
   let cachedWidth = 0;
+  let isExecuting = false;
 
   function invalidate(): void {
     cachedLines = [];
@@ -113,51 +64,98 @@ export function createCommandPaletteComponent(
   function loadCommands(): void {
     commands = [];
 
-    // Add slash commands
-    const slashCommands = pi.getCommands();
-    for (const cmd of slashCommands) {
+    // Add file commands (shell-aware prompt templates)
+    const fileCommands = loadFileCommands(pi);
+    for (const cmd of fileCommands) {
+      const hasArgs = cmd.args && Object.keys(cmd.args).length > 0;
       commands.push({
-        id: `cmd:${cmd.name}`,
-        name: `/${cmd.name}`,
-        description: cmd.description || "",
-        category: "command",
+        id: `filecmd:${cmd.name}`,
+        name: cmd.name,
+        description: cmd.description,
         action: () => {
-          onExecuteCommand(`/${cmd.name}`);
+          // Fire and forget: async execution without blocking
+          void (async () => {
+            if (isExecuting) return;
+            isExecuting = true;
+            tui.requestRender();
+
+            try {
+              // If command has args, show form to fill them
+              if (hasArgs && cmd.args && ctx && ctx.hasUI && ctx.ui) {
+                // Close the palette first, then show form
+                done();
+                // Show the arg form component
+                (ctx.ui.custom as (factory: unknown, opts: unknown) => void)(
+                  (
+                    formTui: CommandPaletteTui,
+                    formTheme: Theme,
+                    _keybindings: unknown,
+                    formDone: () => void,
+                  ) => {
+                    return createArgFormComponent(
+                      pi,
+                      cmd.args!,
+                      (result) => {
+                        formDone(); // Close overlay first
+                        if (Object.keys(result).length > 0) {
+                          // Fill template with named arguments ($from, $to, etc.)
+                          let expandedTemplate = cmd.template;
+                          for (const [key, value] of Object.entries(result)) {
+                            expandedTemplate = expandedTemplate.replace(
+                              new RegExp(`\\$${key}`, "g"),
+                              value,
+                            );
+                          }
+
+                          // Evaluate shell commands if present
+                          if (cmd.hasShellCommands) {
+                            const cwd = process.cwd();
+                            void evaluateShellCommands(
+                              pi,
+                              expandedTemplate,
+                              cwd,
+                            ).then((evaluated) => {
+                              onExecuteCommand(evaluated);
+                            });
+                          } else {
+                            onExecuteCommand(expandedTemplate);
+                          }
+                        }
+                      },
+                      formTui,
+                      formTheme,
+                    );
+                  },
+                  {
+                    overlay: true,
+                    overlayOptions: {
+                      width: "50%",
+                      anchor: "center",
+                    },
+                  },
+                );
+              } else {
+                // Execute template directly
+                let expandedTemplate = cmd.template;
+
+                if (cmd.hasShellCommands) {
+                  const cwd = process.cwd();
+                  expandedTemplate = await evaluateShellCommands(
+                    pi,
+                    cmd.template,
+                    cwd,
+                  );
+                }
+
+                onExecuteCommand(expandedTemplate);
+              }
+            } catch (error) {
+              console.error("Failed to execute command:", error);
+            } finally {
+              isExecuting = false;
+            }
+          })();
         },
-      });
-    }
-
-    // Only add app actions that can be executed programmatically
-    // Other actions require keybindings and are shown for reference only
-    const executableActions: AppAction[] = ["interrupt"];
-
-    for (const action of executableActions) {
-      const keys = keybindings.getKeys(action);
-      const keybinding =
-        keys.length > 0 ? keys.map(formatKeybinding).join(", ") : undefined;
-
-      commands.push({
-        id: `action:${action}`,
-        name: action,
-        description: APP_ACTION_DESCRIPTIONS[action] || "",
-        category: "action",
-        keybinding,
-        action: () => {
-          onExecuteAction(action);
-        },
-      });
-    }
-
-    // Add registered extension shortcuts
-    for (const shortcut of registeredShortcuts) {
-      const keybinding = formatKeybinding(shortcut.shortcut);
-      commands.push({
-        id: `shortcut:${keybinding}`,
-        name: shortcut.description || keybinding,
-        description: `Shortcut: ${keybinding}`,
-        category: "shortcut",
-        keybinding,
-        action: shortcut.execute,
       });
     }
 
@@ -177,29 +175,12 @@ export function createCommandPaletteComponent(
       );
     }
 
-    // Sort: commands first, then actions, then shortcuts
-    filteredCommands.sort((a, b) => {
-      const categoryOrder = { command: 0, action: 1, shortcut: 2 };
-      const catDiff = categoryOrder[a.category] - categoryOrder[b.category];
-      if (catDiff !== 0) return catDiff;
-      return a.name.localeCompare(b.name);
-    });
+    // Sort alphabetically by name
+    filteredCommands.sort((a, b) => a.name.localeCompare(b.name));
 
     selectedIndex = Math.min(selectedIndex, filteredCommands.length - 1);
     if (selectedIndex < 0) selectedIndex = 0;
     invalidate();
-  }
-
-  /** Get category icon */
-  function getCategoryIcon(category: PaletteCommand["category"]): string {
-    switch (category) {
-      case "command":
-        return "󰘳"; // slash command
-      case "action":
-        return "󰌌"; // keyboard action
-      case "shortcut":
-        return "󰌑"; // shortcut key
-    }
   }
 
   /** Render a single command row */
@@ -208,15 +189,13 @@ export function createCommandPaletteComponent(
     isFocused: boolean,
     innerWidth: number,
   ): string {
-    const icon = getCategoryIcon(cmd.category);
-    const keybindingText = cmd.keybinding ? ` [${cmd.keybinding}]` : "";
-    const keybindingLen = cmd.keybinding ? keybindingText.length : 0;
+    const icon = "󰘳";
 
     // Calculate available space
     const iconLen = 2; // icon + space
     const nameLen = cmd.name.length;
     const separatorLen = cmd.description ? 3 : 0; // " · "
-    const fixedLen = iconLen + nameLen + separatorLen + keybindingLen + 2; // padding
+    const fixedLen = iconLen + nameLen + separatorLen + 2; // padding
     const descMaxLen = Math.max(0, innerWidth - fixedLen);
 
     const desc =
@@ -224,16 +203,13 @@ export function createCommandPaletteComponent(
         ? cmd.description.slice(0, descMaxLen - 1) + "…"
         : cmd.description;
 
-    // Build the row content
+    // Build row content
     const nameText = isFocused
       ? theme.fg("accent", theme.bold(cmd.name))
       : cmd.name;
     const descText = desc ? theme.fg("dim", ` · ${desc}`) : "";
-    const keyText = cmd.keybinding
-      ? theme.fg("dim", ` [${cmd.keybinding}]`)
-      : "";
 
-    const content = ` ${icon} ${nameText}${descText}${keyText}`;
+    const content = ` ${icon} ${nameText}${descText}`;
     const truncated = truncateAnsi(content, innerWidth);
 
     if (isFocused) {
@@ -258,7 +234,9 @@ export function createCommandPaletteComponent(
 
     // Search input row
     const searchIcon = "󰍉";
-    const searchPlaceholder = theme.fg("dim", "Type to filter commands...");
+    const searchPlaceholder = isExecuting
+      ? theme.fg("warning", "Executing command...")
+      : theme.fg("dim", "Type to filter commands...");
     const searchDisplay = searchQuery || searchPlaceholder;
     const cursor = searchQuery ? theme.fg("accent", "▏") : "";
     const searchContent = ` ${searchIcon}  ${searchDisplay}${cursor}`;
@@ -324,6 +302,10 @@ export function createCommandPaletteComponent(
 
   /** Handle keyboard input */
   function handleInput(data: string): void {
+    if (isExecuting) {
+      return; // Block input while executing
+    }
+
     if (matchesKey(data, "escape")) {
       done();
       return;
@@ -401,7 +383,7 @@ export function createCommandPaletteComponent(
     // No cleanup needed
   }
 
-  // Initialize
+  // Initialize commands
   loadCommands();
 
   return {

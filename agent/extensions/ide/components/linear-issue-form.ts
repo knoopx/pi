@@ -10,6 +10,8 @@ import {
   topBorderWithTitle,
   horizontalSeparator,
   bottomBorder,
+  renderFormFieldContent,
+  renderFormFooter,
 } from "./shared-utils";
 import { linearGraphQL, type LinearIssue } from "./linear-issues-component";
 
@@ -267,12 +269,13 @@ export function createLinearIssueForm(
       valueText = truncateAnsi(valueText, valueWidth);
     }
 
-    const content = `${theme.fg("dim", labelText)} ${valueText}`;
-
-    if (isFocused) {
-      return theme.bg("selectedBg", ensureWidth(content, innerWidth));
-    }
-    return content;
+    return renderFormFieldContent(
+      theme,
+      labelText,
+      valueText,
+      isFocused,
+      innerWidth,
+    );
   }
 
   function render(width: number): string[] {
@@ -372,11 +375,7 @@ export function createLinearIssueForm(
       focusedField === "state" || focusedField === "priority"
         ? ["←→ change", "↑↓ field", "enter save", "esc cancel"]
         : ["↑↓ field", "enter save", "esc cancel"];
-    const helpText = buildHelpText(...helpParts);
-    lines.push(
-      borderedLine(theme, ` ${theme.fg("dim", helpText)}`, innerWidth),
-    );
-    lines.push(bottomBorder(theme, innerWidth));
+    lines.push(...renderFormFooter(theme, innerWidth, ...helpParts));
 
     return lines;
   }

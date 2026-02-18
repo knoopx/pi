@@ -102,9 +102,9 @@ function shortenHomePath(cwd: string): string {
   return cwd;
 }
 
-type FooterTheme = {
+interface FooterTheme {
   fg(color: string, text: string): string;
-};
+}
 
 function colorizeUsagePercent(theme: FooterTheme, usedPercent: number): string {
   const percentText = `${usedPercent}%`;
@@ -1726,8 +1726,8 @@ async function openCommandPalette(
         keybindings,
         done,
         (command) => {
-          // Execute a slash command by setting it in the editor
-          ctx.ui.setEditorText(command);
+          // Send command directly to agent
+          pi.sendUserMessage(command);
         },
         (action: AppAction) => {
           // Execute actions that we can handle directly
@@ -1741,6 +1741,7 @@ async function openCommandPalette(
           }
         },
         registeredShortcuts,
+        ctx,
       );
     },
     {

@@ -99,6 +99,34 @@ export function bottomBorder(theme: Theme, innerWidth: number): string {
     theme.fg("dim", BOX.bottomRight)
   );
 }
+
+/** Render form field content with focus styling */
+export function renderFormFieldContent(
+  theme: Theme,
+  labelText: string,
+  valueText: string,
+  isFocused: boolean,
+  innerWidth: number,
+): string {
+  const content = `${theme.fg("dim", labelText)} ${valueText}`;
+  if (isFocused) {
+    return theme.bg("selectedBg", ensureWidth(content, innerWidth));
+  }
+  return content;
+}
+
+/** Render form footer with help text and bottom border */
+export function renderFormFooter(
+  theme: Theme,
+  innerWidth: number,
+  ...helpParts: string[]
+): string[] {
+  const helpText = buildHelpText(...helpParts);
+  return [
+    borderedLine(theme, ` ${theme.fg("dim", helpText)}`, innerWidth),
+    bottomBorder(theme, innerWidth),
+  ];
+}
 import { calculateDiffScroll } from "./split-panel";
 import type { SplitPanelConfig } from "./split-panel";
 
