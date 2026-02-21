@@ -7,6 +7,13 @@ description: Manages version control with Jujutsu (jj), including rebasing, conf
 
 Git-compatible VCS focused on concurrent development and ease of use.
 
+> ⚠️ **Not Git!** Jujutsu syntax differs from Git:
+>
+> - Parent: `@-` not `@~1` or `@^`
+> - Grandparent: `@--` not `@~2`
+> - Child: `@+` not `@~-1`
+> - Use `jj log` not `jj changes`
+
 ## Key Commands
 
 | Command                    | Description                                  |
@@ -67,13 +74,39 @@ jj resolve              # Interactive conflict resolution
 # Edit files, then continue
 ```
 
-## Templates & Revsets
+## Revset Syntax
+
+**Parent/child operators:**
+
+| Syntax | Meaning          | Example              |
+| ------ | ---------------- | -------------------- |
+| `@-`   | Parent of @      | `jj diff -r @-`      |
+| `@--`  | Grandparent      | `jj log -r @--`      |
+| `x-`   | Parent of x      | `jj diff -r abc123-` |
+| `@+`   | Child of @       | `jj log -r @+`       |
+| `x::y` | x to y inclusive | `jj log -r main::@`  |
+| `x..y` | x to y exclusive | `jj log -r main..@`  |
+
+**⚠️ Common mistakes:**
+
+- ❌ `@~1` → ✅ `@-` (parent)
+- ❌ `@^` → ✅ `@-` (parent)
+- ❌ `@~-1` → ✅ `@+` (child)
+- ❌ `jj changes` → ✅ `jj log` or `jj diff`
+
+**Functions:**
+
+```bash
+jj log -r 'heads(all())'        # All heads
+jj log -r 'remote_bookmarks()..'  # Not on remote
+jj log -r 'author(name)'        # By author
+jj log -r 'description(regex)'  # By description
+```
+
+## Templates
 
 ```bash
 jj log -T 'commit_id ++ "\n" ++ description'
-jj log -r 'heads(all())'    # All heads
-jj log -r 'remote_bookmarks()..'  # Not on remote
-jj log -r 'author(name)'    # By author
 ```
 
 ## Git Interop
