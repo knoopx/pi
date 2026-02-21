@@ -3,6 +3,7 @@ import type {
   KeybindingsManager,
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
+import { matchesKey } from "@mariozechner/pi-tui";
 import {
   createListPicker,
   type ListPickerItem,
@@ -33,12 +34,13 @@ async function querySymbols(
   pi: ExtensionAPI,
   cwd: string,
   query: string,
+  typeFilter?: SymbolTypeFilter,
 ): Promise<SymbolInfo[]> {
-  const result = await pi.exec(
-    "cm",
-    ["query", query, "--format", "ai", "--limit", "500"],
-    { cwd },
-  );
+  const args = ["query", query, "--format", "ai"];
+  if (typeFilter && typeFilter !== "all") {
+    args.push("--type", typeFilter);
+  }
+  const result = await pi.exec("cm", args, { cwd });
   if (result.code !== 0) {
     return [];
   }
@@ -73,6 +75,10 @@ async function querySymbols(
     .filter((s): s is SymbolInfo => s !== null && !!s.name && !!s.path);
 }
 
+// Symbol types available for filtering (cycle order)
+const SYMBOL_TYPES = ["class", "function", "method", "enum", "all"] as const;
+type SymbolTypeFilter = (typeof SYMBOL_TYPES)[number];
+
 export function createSymbolsComponent(
   pi: ExtensionAPI,
   tui: { terminal: { rows: number }; requestRender: () => void },
@@ -84,6 +90,9 @@ export function createSymbolsComponent(
 ): ListPickerComponent & { invalidate: () => void } {
   // Track pending action for when an action key is pressed
   let pendingAction: CmActionType | undefined;
+
+  // Current symbol type filter (defaults to class)
+  let currentTypeFilter: SymbolTypeFilter = "class";
 
   // Wrapper to close picker with action metadata
   function doneWithAction(item: SymbolInfo | null): void {
@@ -188,6 +197,10 @@ export function createSymbolsComponent(
     }
   };
 
+  // Helper to get the dynamic title
+  const getTitle = () =>
+    `Symbols [${currentTypeFilter === "all" ? "*" : currentTypeFilter}]`;
+
   const picker = createListPicker<SymbolInfo>(
     pi,
     tui,
@@ -196,8 +209,8 @@ export function createSymbolsComponent(
     internalDone,
     initialQuery,
     {
-      title: "Symbols",
-      helpParts: ["↑↓ nav", "type to search"],
+      title: getTitle,
+      helpParts: ["↑↓ nav", "tab cycle type", "type to search"],
       actions,
       onEdit: async (item) => {
         const { join } = await import("node:path");
@@ -206,7 +219,7 @@ export function createSymbolsComponent(
           `${join(cwd, item.path)}:${String(item.startLine)}`,
         ]);
       },
-      loadItems: (query) => querySymbols(pi, cwd, query),
+      loadItems: (query) => querySymbols(pi, cwd, query, currentTypeFilter),
       filterItems: (items, query) =>
         items.filter((s) => s.name.toLowerCase().includes(query)),
       reloadDebounceMs: 300,
@@ -217,6 +230,17 @@ export function createSymbolsComponent(
           isFocused,
         ),
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
+      onKey: (key) => {
+        if (matchesKey(key, "tab")) {
+          // Cycle to next type filter
+          const currentIndex = SYMBOL_TYPES.indexOf(currentTypeFilter);
+          const nextIndex = (currentIndex + 1) % SYMBOL_TYPES.length;
+          currentTypeFilter = SYMBOL_TYPES[nextIndex];
+          void picker.reload();
+          return true;
+        }
+        return false;
+      },
     },
   );
 
