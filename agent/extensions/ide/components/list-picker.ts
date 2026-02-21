@@ -4,7 +4,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { matchesKey } from "@mariozechner/pi-tui";
-import { truncateAnsi, ensureWidth, pad, buildHelpText } from "./utils";
+import { truncateAnsi, ensureWidth, pad, buildHelpText } from "./text-utils";
 import {
   calculateDimensions,
   renderSplitPanel,

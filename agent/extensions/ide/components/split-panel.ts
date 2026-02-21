@@ -1,14 +1,8 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
-import {
-  pad,
-  ensureWidth,
-  truncateAnsi,
-  getChangeIcon,
-  getFileStatusIcon,
-  getFileIcon,
-  getFileIconColor,
-  hexColor,
-} from "./utils";
+import { pad, ensureWidth, truncateAnsi } from "./text-utils";
+import { getChangeIcon } from "./change-utils";
+import { getFileStatusIcon, getFileIcon, getFileIconColor } from "./file-icons";
+import { hexColor } from "./style-utils";
 import { BOX } from "./shared-utils";
 
 /**

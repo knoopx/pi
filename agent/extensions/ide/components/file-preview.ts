@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 /**
  * Load file preview using bat with syntax highlighting.
- * Shared across files-component and symbols-component.
+ * Shared across files and symbols components.
  */
 export async function loadFilePreviewWithBat(
   pi: ExtensionAPI,

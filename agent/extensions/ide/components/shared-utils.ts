@@ -4,7 +4,7 @@ import type {
   Theme,
 } from "@mariozechner/pi-coding-agent";
 import type { MarkdownTheme } from "@mariozechner/pi-tui";
-import { pad, buildHelpText, ensureWidth, truncateAnsi } from "./utils";
+import { pad, buildHelpText, ensureWidth, truncateAnsi } from "./text-utils";
 
 /** Create a markdown theme from the pi theme */
 export function createMarkdownTheme(theme: Theme): MarkdownTheme {

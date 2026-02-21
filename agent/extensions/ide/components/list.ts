@@ -1,6 +1,6 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { matchesKey } from "@mariozechner/pi-tui";
-import { truncateAnsi, ensureWidth } from "./utils";
+import { truncateAnsi, ensureWidth } from "./text-utils";
 
 export interface ListItem {
   id: string;
