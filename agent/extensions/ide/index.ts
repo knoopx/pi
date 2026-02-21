@@ -15,9 +15,7 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
-import { Key, Text, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
-import { textResult, errorResult } from "../../shared/tool-utils";
+import { Key, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
 import { formatFileStats } from "./types";
 import { fetchUsageForModel, type UsageSnapshot } from "./footer/usage";
 import {
@@ -57,7 +55,6 @@ import {
   createLinearIssueForm,
   getLinearApiKey,
   saveLinearApiKey,
-  linearGraphQL,
   type LinearIssuesResult,
   type IssueFormResult,
 } from "./components/linear-issues-component";
