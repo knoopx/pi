@@ -50,6 +50,8 @@ export interface ListPickerConfig<T extends ListPickerItem> {
   actions?: ListPickerAction<T>[];
   /** Debounce delay for reloading on query change (0 = no reload, default) */
   reloadDebounceMs?: number;
+  /** Custom key handler, return true if handled */
+  onKey?: (key: string) => boolean;
 }
 
 export interface ListPickerTui {
@@ -286,6 +288,11 @@ export function createListPicker<T extends ListPickerItem>(
   function handleInput(data: string): void {
     if (matchesKey(data, "escape")) {
       done(null);
+      return;
+    }
+
+    // Custom key handler
+    if (config.onKey?.(data)) {
       return;
     }
 
