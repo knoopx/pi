@@ -76,7 +76,7 @@ async function main() {
   const dailyRecords = buildDailyRecords(allSessions);
 
   // Print compliance report
-  printRegistroJornada(dailyRecords);
+  printTimesheet(dailyRecords);
 }
 
 async function findWorkSessionDirs(): Promise<string[]> {
@@ -404,7 +404,7 @@ function groupByWeek(dailyRecords: Map<string, DayRecord>): WeekRecord[] {
   return weeks;
 }
 
-function printRegistroJornada(dailyRecords: Map<string, DayRecord>): void {
+function printTimesheet(dailyRecords: Map<string, DayRecord>): void {
   const weeks = groupByWeek(dailyRecords);
   let grandTotalMs = 0;
   let totalDays = 0;
