@@ -12,16 +12,39 @@ export type KeyPattern = Parameters<typeof matchesKey>[1];
 export interface KeyBinding<TContext = void> {
   /** Key pattern to match (e.g., "ctrl+d", "escape", "enter") */
   key: KeyPattern;
+  /** Help label (e.g., "delete"). If provided, shown in help text. */
+  label?: string;
   /** Handler function - return true to stop propagation */
   handler: (ctx: TContext) => boolean | void | Promise<boolean | void>;
   /** Optional condition to check before handling */
   when?: (ctx: TContext) => boolean;
 }
 
-export interface NavigationState {
+interface NavigationState {
   index: number;
   maxIndex: number;
   pageSize?: number;
+}
+
+/** Format a key pattern for display in help text */
+function formatKeyForHelp(key: KeyPattern): string {
+  if (typeof key !== "string") return "";
+  // Convert key patterns to display format
+  return key
+    .replace("ctrl+", "ctrl+")
+    .replace("up", "↑")
+    .replace("down", "↓")
+    .replace("pageUp", "pgup")
+    .replace("pageDown", "pgdn")
+    .replace("escape", "esc");
+}
+
+/** Build help text from bindings that have labels */
+export function buildHelpFromBindings(bindings: KeyBinding[]): string {
+  return bindings
+    .filter((b) => b.label)
+    .map((b) => `${formatKeyForHelp(b.key)} ${b.label}`)
+    .join("  ");
 }
 
 export interface KeyboardHandlerConfig<TContext = void> {
@@ -136,39 +159,10 @@ export function createKeyboardHandler<TContext = void>(
 }
 
 /**
- * Standard navigation bindings for list-based components.
+ * Standard action keys for overlay components.
+ * Only truly universal actions that apply across all contexts.
  */
-export const NAVIGATION_KEYS: KeyPattern[] = [
-  "up",
-  "down",
-  "pageUp",
-  "pageDown",
-];
-
-/**
- * Check if a key is a navigation key.
- */
-export function isNavigationKey(data: string): boolean {
-  return NAVIGATION_KEYS.some((key) => matchesKey(data, key));
-}
-
-/**
- * Standard help text for common shortcuts.
- */
-export const COMMON_HELP = {
-  navigation: "↑↓ navigate",
-  select: "enter select",
-  close: "esc close",
-  filter: "ctrl+/ filter",
-  tab: "tab switch",
-  page: "pgup/pgdn scroll",
+export const ACTION_KEYS = {
+  /** Destructive action: delete, drop, forget, discard */
+  delete: "ctrl+d" as KeyPattern,
 } as const;
-
-/**
- * Build help text from shortcut descriptions.
- */
-export function buildShortcutHelp(
-  shortcuts: { key: string; label: string }[],
-): string {
-  return shortcuts.map((s) => `${s.key} ${s.label}`).join("  ");
-}
