@@ -597,7 +597,7 @@ export function createSkillBrowserComponent(
       return theme.fg(color, statusMessage.text);
     }
 
-    const parts = ["↑↓ nav", "tab pane", "type filter", "ctrl+l/r"];
+    const parts = ["↑↓ nav", "tab pane", "type filter", "ctrl+/ toggle"];
 
     if (skills.length > 0) {
       if (viewMode === "local") {
@@ -619,27 +619,13 @@ export function createSkillBrowserComponent(
       return;
     }
 
-    // Switch to local view
-    if (matchesKey(data, "ctrl+l")) {
-      if (viewMode !== "local") {
-        viewMode = "local";
-        searchQuery = "";
-        filesCache.clear();
-        contentCache.clear();
-        void loadSkills();
-      }
-      return;
-    }
-
-    // Switch to remote view
-    if (matchesKey(data, "ctrl+r")) {
-      if (viewMode !== "remote") {
-        viewMode = "remote";
-        searchQuery = "";
-        filesCache.clear();
-        contentCache.clear();
-        void loadSkills();
-      }
+    // Toggle between local and remote view
+    if (matchesKey(data, "ctrl+/")) {
+      viewMode = viewMode === "local" ? "remote" : "local";
+      searchQuery = "";
+      filesCache.clear();
+      contentCache.clear();
+      void loadSkills();
       return;
     }
 

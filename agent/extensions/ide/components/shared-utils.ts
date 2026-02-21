@@ -41,6 +41,78 @@ export function formatRelativeTime(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
+/** Interface for Linear issue */
+export interface LinearIssue {
+  identifier: string;
+  title: string;
+  description: string | null;
+  priority: number;
+  url: string;
+  state: { name: string; type: string } | null;
+  team: { key: string; name: string } | null;
+  assignee: { name: string; displayName: string | null } | null;
+}
+
+/** Interface for Linear issue with extended fields */
+export interface LinearIssueExtended extends LinearIssue {
+  labels: { nodes: { name: string }[] };
+  comments: { nodes: { body: string; user: { name: string } | null }[] };
+}
+
+const PRIORITY_LABELS = ["none", "urgent", "high", "normal", "low"] as const;
+
+/** Extract common issue fields for display */
+function extractIssueFields(issue: LinearIssue): {
+  priority: string;
+  state: string;
+  team: string;
+  assignee: string;
+} {
+  return {
+    priority: PRIORITY_LABELS[issue.priority] ?? "none",
+    state: issue.state?.name ?? "unknown",
+    team: issue.team?.key ?? "-",
+    assignee:
+      issue.assignee?.displayName ?? issue.assignee?.name ?? "unassigned",
+  };
+}
+
+/** Format a Linear issue for agent display */
+export function formatLinearIssueForAgent(issue: LinearIssue): string {
+  const { priority, state, team, assignee } = extractIssueFields(issue);
+  return `${issue.identifier}: ${issue.title}\n  State: ${state} | Priority: ${priority} | Team: ${team} | Assignee: ${assignee}\n  URL: ${issue.url}`;
+}
+
+/** Format a Linear issue for agent display with additional fields */
+export function formatLinearIssueForAgentExtended(
+  issue: LinearIssueExtended,
+): string {
+  const { priority, state, team, assignee } = extractIssueFields(issue);
+  const labels = issue.labels.nodes.map((l) => l.name).join(", ") || "none";
+
+  let text = `**${issue.identifier}: ${issue.title}**\n`;
+  text += `State: ${state} | Priority: ${priority} | Team: ${team} | Assignee: ${assignee}\n`;
+  text += `URL: ${issue.url}\n`;
+  text += `Labels: ${labels}`;
+
+  if (issue.description) {
+    text += `\n\nDescription:\n${issue.description}`;
+  }
+
+  const comments = issue.comments.nodes
+    .map(
+      (c) =>
+        `  - ${c.user?.name ?? "Unknown"}: ${c.body.slice(0, 100)}${c.body.length > 100 ? "..." : ""}`,
+    )
+    .join("\n");
+
+  if (comments) {
+    text += `\n\nRecent comments:\n${comments}`;
+  }
+
+  return text;
+}
+
 /** Box drawing characters for bordered UI components */
 export const BOX = {
   topLeft: "╭",
@@ -127,8 +199,6 @@ export function renderFormFooter(
     bottomBorder(theme, innerWidth),
   ];
 }
-import { calculateDiffScroll } from "./split-panel";
-import type { SplitPanelConfig } from "./split-panel";
 
 /**
  * Common TUI interface for components
@@ -157,28 +227,7 @@ export interface ComponentCache<T = unknown> {
   diffs: Map<string, string[]>;
 }
 
-/**
- * Generic selection state for list-based components
- */
-export interface SelectionState {
-  selectedIndex: number;
-  fileIndex: number;
-  diffScroll: number;
-  focus: "left" | "right";
-}
-
-/**
- * Generic loading state
- */
-export interface LoadingState {
-  loading: boolean;
-  cachedLines: string[];
-  cachedWidth: number;
-}
-
-/**
- * Creates a standardized cache instance
- */
+/** Creates a standardized cache instance */
 export function createComponentCache<T = unknown>(
   files: T[] = [],
 ): ComponentCache<T> {
@@ -188,10 +237,13 @@ export function createComponentCache<T = unknown>(
   };
 }
 
-/**
- * Creates standardized selection state
- */
-export function createSelectionState(): SelectionState {
+/** Creates standardized selection state */
+export function createSelectionState(): {
+  selectedIndex: number;
+  fileIndex: number;
+  diffScroll: number;
+  focus: "left" | "right";
+} {
   return {
     selectedIndex: 0,
     fileIndex: 0,
@@ -200,10 +252,12 @@ export function createSelectionState(): SelectionState {
   };
 }
 
-/**
- * Creates standardized loading state
- */
-export function createLoadingState(): LoadingState {
+/** Creates standardized loading state */
+export function createLoadingState(): {
+  loading: boolean;
+  cachedLines: string[];
+  cachedWidth: number;
+} {
   return {
     loading: true,
     cachedLines: [],
@@ -211,16 +265,19 @@ export function createLoadingState(): LoadingState {
   };
 }
 
-/**
- * Generic navigation handler for list components
- */
+/** Generic navigation handler for list components */
 export function createNavigationHandler<T>(
   items: T[],
-  state: SelectionState,
+  state: {
+    selectedIndex: number;
+    fileIndex: number;
+    diffScroll: number;
+    focus: "left" | "right";
+  },
   onSelectionChange: (item: T | null) => void,
   invalidate: () => void,
   requestRender: () => void,
-) {
+): (direction: "up" | "down") => void {
   return (direction: "up" | "down") => {
     const maxIndex = items.length - 1;
     const newIndex =
@@ -237,16 +294,19 @@ export function createNavigationHandler<T>(
   };
 }
 
-/**
- * Generic file navigation handler
- */
+/** Generic file navigation handler */
 export function createFileNavigationHandler<T extends { path?: string }>(
   files: T[],
-  state: SelectionState,
+  state: {
+    selectedIndex: number;
+    fileIndex: number;
+    diffScroll: number;
+    focus: "left" | "right";
+  },
   onFileChange: (file: T | null) => void,
   invalidate: () => void,
   requestRender: () => void,
-) {
+): (direction: "up" | "down") => void {
   return (direction: "up" | "down") => {
     const maxIndex = files.length - 1;
     const newIndex =
@@ -263,38 +323,43 @@ export function createFileNavigationHandler<T extends { path?: string }>(
   };
 }
 
-/**
- * Generic diff scrolling handler
- */
+/** Generic diff scrolling handler */
 export function createDiffScrollHandler(
   diffContent: string[],
-  state: SelectionState,
+  state: {
+    selectedIndex: number;
+    fileIndex: number;
+    diffScroll: number;
+    focus: "left" | "right";
+  },
   terminalRows: number,
-  cachedWidth: number,
+  _cachedWidth: number,
   invalidate: () => void,
   requestRender: () => void,
-) {
+): (direction: "up" | "down") => void {
   return (direction: "up" | "down") => {
-    state.diffScroll = calculateDiffScroll(
-      direction,
-      state.diffScroll,
-      diffContent.length,
-      terminalRows,
-      cachedWidth,
-    );
+    const maxScroll = Math.max(0, diffContent.length - terminalRows + 5);
+    const newScroll =
+      direction === "up"
+        ? Math.max(0, state.diffScroll - 1)
+        : Math.min(maxScroll, state.diffScroll + 1);
+    state.diffScroll = newScroll;
     invalidate();
     requestRender();
   };
 }
 
-/**
- * Generic focus switching handler
- */
+/** Generic focus switching handler */
 export function createFocusHandler(
-  state: SelectionState,
+  state: {
+    selectedIndex: number;
+    fileIndex: number;
+    diffScroll: number;
+    focus: "left" | "right";
+  },
   invalidate: () => void,
   requestRender: () => void,
-) {
+): () => void {
   return () => {
     state.focus = state.focus === "left" ? "right" : "left";
     invalidate();
@@ -302,17 +367,17 @@ export function createFocusHandler(
   };
 }
 
-/**
- * Generic cache invalidation
- */
-export function invalidateCache(state: LoadingState): void {
+/** Generic cache invalidation */
+export function invalidateCache(state: {
+  loading: boolean;
+  cachedLines: string[];
+  cachedWidth: number;
+}): void {
   state.cachedLines = [];
   state.cachedWidth = 0;
 }
 
-/**
- * Generic error message formatter
- */
+/** Generic error message formatter */
 export function formatErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -320,9 +385,7 @@ export function formatErrorMessage(error: unknown): string {
   return String(error);
 }
 
-/**
- * Generic loading row renderer
- */
+/** Generic loading row renderer */
 export function renderLoadingRow(
   width: number,
   message = "Loading...",
@@ -330,9 +393,7 @@ export function renderLoadingRow(
   return pad(` ${message}`, width);
 }
 
-/**
- * Generic empty state renderer
- */
+/** Generic empty state renderer */
 export function renderEmptyState(
   width: number,
   message: string,
@@ -345,9 +406,7 @@ export function renderEmptyState(
   return rows;
 }
 
-/**
- * Wrap rows in a single-panel border frame.
- */
+/** Wrap rows in a single-panel border frame */
 export function renderFramedRows(
   theme: Theme,
   rows: string[],
@@ -376,9 +435,7 @@ export function renderFramedRows(
   return [top, ...content, bottom];
 }
 
-/**
- * Generic row renderer with selection styling
- */
+/** Generic row renderer with selection styling */
 export function renderSelectableRow(
   text: string,
   width: number,
@@ -393,9 +450,7 @@ export function renderSelectableRow(
   return isSelected ? theme.fg("accent", theme.bold(padded)) : padded;
 }
 
-/**
- * Generic help text builder for navigation
- */
+/** Generic help text builder for navigation */
 export function buildNavigationHelp(
   focus: "left" | "right",
   leftActions: string[] = [],
@@ -410,9 +465,7 @@ export function buildNavigationHelp(
   }
 }
 
-/**
- * Check if render cache is valid
- */
+/** Check if render cache is valid */
 export function isRenderCacheValid(
   width: number,
   cachedWidth: number,
@@ -421,13 +474,17 @@ export function isRenderCacheValid(
   return cachedWidth === width && cachedLines.length > 0;
 }
 
-/**
- * Base configuration for split panel dimensions calculation
- */
+/** Base configuration for split panel dimensions calculation */
 export function createBaseDimensionsConfig(
   leftFocus: boolean,
   rightFocus = false,
-): SplitPanelConfig {
+): {
+  leftTitle: string;
+  rightTitle: string;
+  helpText: string;
+  leftFocus: boolean;
+  rightFocus: boolean;
+} {
   return {
     leftTitle: "",
     rightTitle: "",
@@ -437,17 +494,13 @@ export function createBaseDimensionsConfig(
   };
 }
 
-/**
- * Status message state for notifications within overlays
- */
+/** Status message state for notifications within overlays */
 export interface StatusMessageState {
   message: { text: string; type: "info" | "error" } | null;
   timeout: ReturnType<typeof setTimeout> | null;
 }
 
-/**
- * Creates a status message handler for overlay components
- */
+/** Creates a status message handler for overlay components */
 export function createStatusNotifier(
   state: StatusMessageState,
   onUpdate: () => void,
@@ -464,9 +517,7 @@ export function createStatusNotifier(
   };
 }
 
-/**
- * Format help text with optional status message override
- */
+/** Format help text with optional status message override */
 export function formatHelpWithStatus(
   theme: Theme,
   statusMessage: { text: string; type: "info" | "error" } | null,

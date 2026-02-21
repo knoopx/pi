@@ -84,6 +84,17 @@ function groupBookmarksByChange(
   );
 }
 
+import { matchesKey } from "@mariozechner/pi-tui";
+
+// Filter modes for bookmarks (cycle order)
+const BOOKMARK_FILTER_MODES = [
+  "all",
+  "bookmarks",
+  "descriptions",
+  "authors",
+] as const;
+type BookmarkFilterMode = (typeof BOOKMARK_FILTER_MODES)[number];
+
 export function createBookmarksComponent(
   pi: ExtensionAPI,
   tui: { terminal: { rows: number }; requestRender: () => void },
@@ -96,6 +107,8 @@ export function createBookmarksComponent(
   // Picker reference for reload in actions
   let pickerRef: ListPickerComponent | null = null;
   let notify: (message: string, type?: "info" | "error") => void = () => {};
+  // Current filter mode (defaults to all)
+  let currentFilterMode: BookmarkFilterMode = "all";
 
   const actions: ListPickerAction<BookmarkEntry>[] = [
     {
@@ -156,19 +169,52 @@ export function createBookmarksComponent(
     "",
     {
       title: "Bookmarks",
-      helpParts: ["↑↓ nav", "type to filter"],
+      helpParts: ["↑↓ nav", "ctrl+/ cycle filter", "type to filter"],
       actions,
       loadItems: async (_query) => {
         const entries = await listBookmarksByChange(pi, cwd);
         return groupBookmarksByChange(entries);
       },
-      filterItems: (items, query) =>
-        items.filter(
-          (item) =>
-            item.bookmarks.some((b) => b.toLowerCase().includes(query)) ||
-            item.description.toLowerCase().includes(query) ||
-            item.author.toLowerCase().includes(query),
-        ),
+      filterItems: (items, query) => {
+        const lowerQuery = query.toLowerCase();
+        switch (currentFilterMode) {
+          case "all":
+            return items.filter(
+              (item) =>
+                item.bookmarks.some((b) =>
+                  b.toLowerCase().includes(lowerQuery),
+                ) ||
+                item.description.toLowerCase().includes(lowerQuery) ||
+                item.author.toLowerCase().includes(lowerQuery),
+            );
+          case "bookmarks":
+            return items.filter((item) =>
+              item.bookmarks.some((b) => b.toLowerCase().includes(lowerQuery)),
+            );
+          case "descriptions":
+            return items.filter((item) =>
+              item.description.toLowerCase().includes(lowerQuery),
+            );
+          case "authors":
+            return items.filter((item) =>
+              item.author.toLowerCase().includes(lowerQuery),
+            );
+          default:
+            return items;
+        }
+      },
+      onKey: (key) => {
+        if (matchesKey(key, "ctrl+/")) {
+          // Cycle to next filter mode
+          const currentIndex = BOOKMARK_FILTER_MODES.indexOf(currentFilterMode);
+          const nextIndex = (currentIndex + 1) % BOOKMARK_FILTER_MODES.length;
+          currentFilterMode = BOOKMARK_FILTER_MODES[nextIndex];
+          void picker.reload();
+          notify(`Filter: ${currentFilterMode}`, "info");
+          return true;
+        }
+        return false;
+      },
       formatItem: (item, width, theme, isFocused) => {
         const bookmarkLabels = item.displayNames
           .map((name) => formatBookmarkReference(theme, name))

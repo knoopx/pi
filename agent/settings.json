@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.54.0",
-  "defaultProvider": "anthropic",
-  "defaultModel": "claude-opus-4-5",
+  "defaultProvider": "local",
+  "defaultModel": "glm-4.7-flash",
   "theme": "custom",
   "lsp": {
     "hookMode": "edit_write"
