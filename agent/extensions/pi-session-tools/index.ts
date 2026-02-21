@@ -11,6 +11,7 @@ import { basename, join } from "node:path";
 import { homedir } from "node:os";
 import { Text } from "@mariozechner/pi-tui";
 import { renderTextToolResult } from "../../shared/render-utils";
+import { fuzzyFilter } from "../../shared/fuzzy";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 200;
@@ -38,6 +39,42 @@ interface SessionEvent {
   sessionPath: string;
   timestampIso: string;
   role: "user" | "userBashCommand";
+  text: string;
+}
+
+interface ToolCall {
+  sessionPath: string;
+  timestampIso: string;
+  toolName: string;
+  toolKey: string;
+  command: string | null;
+  isError: boolean;
+  resultText: string;
+}
+
+interface ToolCallsParams {
+  project?: string;
+  tool?: string;
+  errorsOnly?: boolean;
+  days?: number;
+  limit?: number;
+}
+
+interface ReadSessionParams {
+  session: string;
+  project?: string;
+  offset?: number;
+  limit?: number;
+  role?: string;
+  query?: string;
+}
+
+interface SessionMessage {
+  index: number;
+  timestampIso: string | null;
+  role: string;
+  toolName: string | null;
+  isError: boolean;
   text: string;
 }
 
@@ -454,13 +491,6 @@ function renderToolCallLabel(
   );
 }
 
-function extractAction(text: string): string {
-  const clean = text
-    .replace(/^(implement|fix|add|continue|work on|refactor|improve)\s+/i, "")
-    .replace(/\.$/, "")
-    .trim();
-  return clean.length > 100 ? `${clean.slice(0, 97)}…` : clean;
-}
 async function loadSessionEvents(
   sessionPath: string,
   fromTimestamp: number,
@@ -533,9 +563,214 @@ async function loadSessionEvents(
   }
 }
 
+function getToolKey(toolName: string, command: string | null): string {
+  if (toolName === "bash" && command) {
+    const firstWord = command.split(/\s+/)[0];
+    return `bash:${firstWord}`;
+  }
+  return toolName;
+}
+
+async function loadSessionToolCalls(
+  sessionPath: string,
+  fromTimestamp: number,
+  toTimestamp: number,
+): Promise<ToolCall[]> {
+  const handle = await open(sessionPath, "r");
+
+  try {
+    const content = await handle.readFile({ encoding: "utf8" });
+    const lines = getJsonlLines(content);
+    const toolCallArgs: Record<string, { command?: string }> = {};
+    const toolCalls: ToolCall[] = [];
+
+    for (const line of lines) {
+      try {
+        const entry = JSON.parse(line) as SessionLine;
+        if (entry.type !== "message") continue;
+
+        const message = entry.message as {
+          content?: {
+            type: string;
+            id?: string;
+            arguments?: { command?: string };
+          }[];
+        };
+
+        if (message?.content) {
+          for (const c of message.content) {
+            if (c.type === "toolCall" && c.id) {
+              toolCallArgs[c.id] = c.arguments ?? {};
+            }
+          }
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    for (const line of lines) {
+      try {
+        const entry = JSON.parse(line) as SessionLine;
+        if (entry.type !== "message") continue;
+
+        const message = entry.message as {
+          role?: string;
+          toolName?: string;
+          toolCallId?: string;
+          isError?: boolean;
+          content?: { type: string; text?: string }[];
+        };
+
+        if (message?.role !== "toolResult") continue;
+
+        const timestamp = parseLineTimestamp(entry);
+        if (!timestamp) continue;
+
+        const timestampMs = timestamp.getTime();
+        if (timestampMs < fromTimestamp || timestampMs > toTimestamp) continue;
+
+        const toolName = message.toolName ?? "unknown";
+        const args = toolCallArgs[message.toolCallId ?? ""];
+        const command = args?.command ?? null;
+        const isError = message.isError === true;
+        const resultText =
+          message.content?.[0]?.text ?? JSON.stringify(message.content);
+
+        toolCalls.push({
+          sessionPath,
+          timestampIso: timestamp.toISOString(),
+          toolName,
+          toolKey: getToolKey(toolName, command),
+          command,
+          isError,
+          resultText: truncateLine(resultText, 500),
+        });
+      } catch {
+        continue;
+      }
+    }
+
+    return toolCalls;
+  } finally {
+    await handle.close();
+  }
+}
+
+function extractMessageText(message: {
+  role?: string;
+  content?: unknown;
+  command?: string;
+  toolName?: string;
+}): string {
+  if (message.role === "userBashCommand" && message.command) {
+    return message.command;
+  }
+
+  if (!Array.isArray(message.content)) {
+    return "";
+  }
+
+  const parts: string[] = [];
+  for (const block of message.content) {
+    if (typeof block !== "object" || block === null) continue;
+    const b = block as { type?: string; text?: string; arguments?: unknown };
+
+    if (b.type === "text" && typeof b.text === "string") {
+      parts.push(b.text);
+    } else if (b.type === "toolCall" && b.arguments) {
+      const args =
+        typeof b.arguments === "string"
+          ? b.arguments
+          : JSON.stringify(b.arguments);
+      parts.push(`[toolCall: ${args}]`);
+    }
+  }
+
+  return parts.join("\n").trim();
+}
+
+async function loadSessionMessages(
+  sessionPath: string,
+): Promise<SessionMessage[]> {
+  const handle = await open(sessionPath, "r");
+
+  try {
+    const content = await handle.readFile({ encoding: "utf8" });
+    const lines = getJsonlLines(content);
+    const messages: SessionMessage[] = [];
+    let index = 0;
+
+    for (const line of lines) {
+      try {
+        const entry = JSON.parse(line) as SessionLine;
+        if (entry.type !== "message") continue;
+
+        const message = entry.message as {
+          role?: string;
+          content?: unknown;
+          command?: string;
+          toolName?: string;
+          isError?: boolean;
+        };
+
+        if (!message?.role) continue;
+
+        const timestamp = parseLineTimestamp(entry);
+        const text = extractMessageText(message);
+
+        messages.push({
+          index,
+          timestampIso: timestamp?.toISOString() ?? null,
+          role: message.role,
+          toolName: message.toolName ?? null,
+          isError: message.isError === true,
+          text,
+        });
+
+        index++;
+      } catch {
+        continue;
+      }
+    }
+
+    return messages;
+  } finally {
+    await handle.close();
+  }
+}
+
+async function resolveSessionPath(
+  project: SessionProject,
+  sessionArg: string,
+): Promise<string | null> {
+  const sessions = await loadProjectSessions(project);
+
+  // Exact filename match
+  const byFilename = sessions.find(
+    (s) => s.filename === sessionArg || basename(s.sessionPath) === sessionArg,
+  );
+  if (byFilename) return byFilename.sessionPath;
+
+  // Partial filename match
+  const byPartial = sessions.find(
+    (s) =>
+      s.filename.includes(sessionArg) || s.sessionPath.includes(sessionArg),
+  );
+  if (byPartial) return byPartial.sessionPath;
+
+  // Index match (e.g., "0" for most recent, "1" for second most recent)
+  const idx = parseInt(sessionArg, 10);
+  if (!Number.isNaN(idx) && idx >= 0 && idx < sessions.length) {
+    return sessions[idx].sessionPath;
+  }
+
+  return null;
+}
+
 export default function piSessionToolsExtension(pi: ExtensionAPI): void {
   pi.registerTool({
-    name: "pi-list-session-projects",
+    name: "pi-list-projects",
     label: "Pi Session Projects",
     description:
       "List Pi session projects from ~/.pi/agent/sessions with session counts, size, and latest activity.",
@@ -562,15 +797,15 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
     ) {
       try {
         const allProjects = await loadProjects();
-        const query = params.query?.trim().toLowerCase() ?? "";
+        const query = params.query?.trim() ?? "";
         const limit = normalizeLimit(params.limit);
 
         const filtered = query
-          ? allProjects.filter(
-              (project) =>
-                project.displayPath.toLowerCase().includes(query) ||
-                project.cwdPath.toLowerCase().includes(query),
-            )
+          ? fuzzyFilter(
+              allProjects,
+              query,
+              (p) => `${p.displayPath} ${p.cwdPath}`,
+            ).map((r) => r.item)
           : allProjects;
 
         const projects = filtered.slice(0, limit);
@@ -601,12 +836,7 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
       }
     },
     renderCall(args, theme) {
-      return renderToolCallLabel(
-        theme,
-        "pi-list-session-projects",
-        args.query,
-        "all",
-      );
+      return renderToolCallLabel(theme, "pi-list-projects", args.query, "all");
     },
     renderResult(result, _options, theme) {
       return renderTextToolResult(result, theme);
@@ -745,7 +975,7 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
           return errorResult("Invalid from/to timestamp. Use ISO 8601 values.");
         }
 
-        const query = params.query?.trim().toLowerCase() ?? "";
+        const query = params.query?.trim() ?? "";
         const limit = normalizeLimit(params.limit ?? 50);
 
         const sessions = await loadProjectSessions(project);
@@ -767,7 +997,7 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
         );
 
         const filtered = query
-          ? sorted.filter((event) => event.text.toLowerCase().includes(query))
+          ? fuzzyFilter(sorted, query, (e) => e.text).map((r) => r.item)
           : sorted;
 
         const events = filtered.slice(0, limit);
@@ -803,6 +1033,300 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
           ? args.query
           : "all";
       return renderToolCallLabel(theme, "pi-session-events", query, "all");
+    },
+    renderResult(result, _options, theme) {
+      return renderTextToolResult(result, theme);
+    },
+  });
+
+  pi.registerTool({
+    name: "pi-tool-calls",
+    label: "Pi Tool Calls",
+    description:
+      "Analyze tool calls from Pi sessions. Shows call counts by tool, with optional error filtering.",
+    parameters: Type.Object({
+      project: Type.Optional(
+        Type.String({
+          description: "Project id or path. Defaults to current cwd project.",
+        }),
+      ),
+      tool: Type.Optional(
+        Type.String({
+          description:
+            "Filter by tool name or command prefix (e.g., 'bash', 'edit', 'bash:jj').",
+        }),
+      ),
+      errorsOnly: Type.Optional(
+        Type.Boolean({
+          description: "Only show failed tool calls (default: false).",
+        }),
+      ),
+      days: Type.Optional(
+        Type.Number({
+          description: "Days to look back (default: 7).",
+          minimum: 1,
+          maximum: 365,
+        }),
+      ),
+      limit: Type.Optional(
+        Type.Number({
+          description: "Maximum number of results (default: 50).",
+          minimum: 1,
+          maximum: MAX_LIMIT,
+        }),
+      ),
+    }),
+    async execute(
+      _toolCallId,
+      params: ToolCallsParams,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      ctx: ExtensionContext,
+    ) {
+      try {
+        const project = await resolveProject(ctx, params.project);
+        if (!project) {
+          return textResult("No matching session project found.", {
+            project: params.project ?? null,
+            calls: [],
+            summary: {},
+          });
+        }
+
+        const days = params.days ?? 7;
+        const now = new Date();
+        const fromDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+        const toolFilter = params.tool?.trim() ?? "";
+        const errorsOnly = params.errorsOnly === true;
+        const limit = normalizeLimit(params.limit ?? 50);
+
+        const sessions = await loadProjectSessions(project);
+        const allCalls: ToolCall[] = [];
+
+        for (const session of sessions) {
+          const calls = await loadSessionToolCalls(
+            session.sessionPath,
+            fromDate.getTime(),
+            now.getTime(),
+          );
+          allCalls.push(...calls);
+        }
+
+        let filtered = allCalls;
+
+        if (errorsOnly) {
+          filtered = filtered.filter((c) => c.isError);
+        }
+
+        if (toolFilter) {
+          filtered = fuzzyFilter(
+            filtered,
+            toolFilter,
+            (c) => `${c.toolKey} ${c.command ?? ""}`,
+          ).map((r) => r.item);
+        }
+
+        filtered.sort(
+          (a, b) =>
+            new Date(b.timestampIso).getTime() -
+            new Date(a.timestampIso).getTime(),
+        );
+
+        const summary: Record<string, { total: number; errors: number }> = {};
+        for (const call of filtered) {
+          if (!summary[call.toolKey]) {
+            summary[call.toolKey] = { total: 0, errors: 0 };
+          }
+          summary[call.toolKey].total++;
+          if (call.isError) {
+            summary[call.toolKey].errors++;
+          }
+        }
+
+        const sortedSummary = Object.entries(summary)
+          .sort((a, b) => b[1].total - a[1].total)
+          .map(
+            ([key, counts]) =>
+              `${key}: ${counts.total} (${counts.errors} errors)`,
+          );
+
+        const calls = filtered.slice(0, limit);
+        const lines = calls.map((call) => {
+          const stamp = new Date(call.timestampIso).toLocaleString();
+          const status = call.isError ? "✗" : "✓";
+          const label =
+            call.toolName === "bash" && call.command
+              ? `bash: ${truncateLine(call.command, 60)}`
+              : call.toolName;
+          const result = call.isError ? call.resultText : "";
+          return result
+            ? `${status} [${stamp}] ${label}\n   ${result}`
+            : `${status} [${stamp}] ${label}`;
+        });
+
+        const summaryText =
+          sortedSummary.length > 0
+            ? `Summary (${days} days):\n${sortedSummary.join("\n")}\n\n`
+            : "";
+
+        const detailText =
+          lines.length > 0
+            ? `Recent calls:\n${lines.join("\n")}`
+            : "No matching tool calls found.";
+
+        const suffix =
+          filtered.length > limit
+            ? ` (showing ${limit} of ${filtered.length})`
+            : "";
+
+        return textResult(`${summaryText}${detailText}${suffix}`, {
+          project: project.displayPath,
+          days,
+          errorsOnly,
+          tool: toolFilter || null,
+          totalFound: filtered.length,
+          summary,
+          calls,
+        });
+      } catch (error) {
+        return errorResult(getErrorMessage(error));
+      }
+    },
+    renderCall(args, theme) {
+      const label = args.errorsOnly ? "errors" : (args.tool ?? "all");
+      return renderToolCallLabel(theme, "pi-tool-calls", label, "all");
+    },
+    renderResult(result, _options, theme) {
+      return renderTextToolResult(result, theme);
+    },
+  });
+
+  pi.registerTool({
+    name: "pi-read-session",
+    label: "Pi Read Session",
+    description:
+      "Read messages from a Pi session file with offset/limit pagination and filtering by role or content.",
+    parameters: Type.Object({
+      session: Type.String({
+        description:
+          "Session identifier: filename, partial match, or index (0=most recent).",
+      }),
+      project: Type.Optional(
+        Type.String({
+          description: "Project id or path. Defaults to current cwd project.",
+        }),
+      ),
+      offset: Type.Optional(
+        Type.Number({
+          description: "Message index to start from (0-indexed, default: 0).",
+          minimum: 0,
+        }),
+      ),
+      limit: Type.Optional(
+        Type.Number({
+          description: "Maximum messages to return (default: 20).",
+          minimum: 1,
+          maximum: MAX_LIMIT,
+        }),
+      ),
+      role: Type.Optional(
+        Type.String({
+          description:
+            "Filter by role: user, assistant, toolCall, toolResult, userBashCommand.",
+        }),
+      ),
+      query: Type.Optional(
+        Type.String({
+          description: "Case-insensitive text filter for message content.",
+        }),
+      ),
+    }),
+    async execute(
+      _toolCallId,
+      params: ReadSessionParams,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      ctx: ExtensionContext,
+    ) {
+      try {
+        const project = await resolveProject(ctx, params.project);
+        if (!project) {
+          return textResult("No matching session project found.", {
+            project: params.project ?? null,
+            session: params.session,
+            messages: [],
+          });
+        }
+
+        const sessionPath = await resolveSessionPath(project, params.session);
+        if (!sessionPath) {
+          return textResult(
+            `Session not found: ${params.session}. Use pi-list-sessions to see available sessions.`,
+            {
+              project: project.displayPath,
+              session: params.session,
+              messages: [],
+            },
+          );
+        }
+
+        const allMessages = await loadSessionMessages(sessionPath);
+        const roleFilter = params.role?.toLowerCase() ?? "";
+        const queryFilter = params.query?.trim() ?? "";
+
+        let filtered = allMessages;
+
+        if (roleFilter) {
+          filtered = filtered.filter((m) =>
+            m.role.toLowerCase().includes(roleFilter),
+          );
+        }
+
+        if (queryFilter) {
+          filtered = fuzzyFilter(filtered, queryFilter, (m) => m.text).map(
+            (r) => r.item,
+          );
+        }
+
+        const offset = params.offset ?? 0;
+        const limit = normalizeLimit(params.limit);
+        const sliced = filtered.slice(offset, offset + limit);
+
+        const lines = sliced.map((msg) => {
+          const stamp = msg.timestampIso
+            ? new Date(msg.timestampIso).toLocaleString()
+            : "?";
+          const status = msg.isError ? " ✗" : "";
+          const tool = msg.toolName ? ` [${msg.toolName}]` : "";
+          const text = truncateLine(msg.text, 300);
+          return `[${msg.index}] ${stamp} | ${msg.role}${tool}${status}\n${text}`;
+        });
+
+        const hasMore = offset + limit < filtered.length;
+        const rangeInfo = `messages ${offset}-${Math.min(offset + limit, filtered.length) - 1} of ${filtered.length}`;
+        const nextHint = hasMore
+          ? `\nUse offset=${offset + limit} to continue.`
+          : "";
+
+        return textResult(
+          `${basename(sessionPath)} (${rangeInfo}):\n\n${lines.join("\n\n")}${nextHint}`,
+          {
+            project: project.displayPath,
+            sessionPath,
+            totalMessages: allMessages.length,
+            filteredCount: filtered.length,
+            offset,
+            limit,
+            hasMore,
+            messages: sliced,
+          },
+        );
+      } catch (error) {
+        return errorResult(getErrorMessage(error));
+      }
+    },
+    renderCall(args, theme) {
+      return renderToolCallLabel(theme, "pi-read-session", args.session, "?");
     },
     renderResult(result, _options, theme) {
       return renderTextToolResult(result, theme);
