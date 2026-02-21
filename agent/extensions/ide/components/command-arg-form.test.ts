@@ -33,7 +33,7 @@ describe("command-arg-form", () => {
   let mockPi: ExtensionAPI;
   let mockTui: CommandPaletteTui;
   let mockTheme: Theme;
-  let onDone: ReturnType<typeof vi.fn>;
+  let onDone: (result: Record<string, string>) => void;
 
   beforeEach(() => {
     mockPi = createMockPi();
