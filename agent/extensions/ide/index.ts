@@ -16,7 +16,6 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Key, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
-import type { KeyId } from "@mariozechner/pi-tui";
 
 import { fetchUsageForModel, type UsageSnapshot } from "./footer/usage";
 import {
@@ -79,19 +78,16 @@ interface ThemeWithFg {
   fg(color: string, text: string): string;
 }
 
-function colorizeUsagePercent<T extends ThemeWithFg>(
-  theme: T,
-  usedPercent: number,
-): string {
+function colorizeUsagePercent(theme: ThemeWithFg, usedPercent: number): string {
   const percentText = `${usedPercent}%`;
   if (usedPercent > 90) return theme.fg("error", percentText);
   if (usedPercent > 70) return theme.fg("warning", percentText);
   return theme.fg("dim", percentText);
 }
 
-function formatCompactQuota<T extends ThemeWithFg>(
+function formatCompactQuota(
   usage: UsageSnapshot | undefined,
-  theme: T,
+  theme: ThemeWithFg,
 ): string {
   if (!usage || usage.error || usage.windows.length === 0) {
     return "";
@@ -155,7 +151,7 @@ async function spawnWorkspaceAgent(
     ctx.ui.notify(`Spawned agent in workspace ${workspaceName}`, "info");
   }
 
-  monitorWorkspace(pi, workspaceName, ctx);
+  void monitorWorkspace(pi, workspaceName, ctx);
 }
 
 export default function ideExtension(pi: ExtensionAPI) {
