@@ -16,65 +16,40 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Key, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
-import { formatFileStats } from "./types";
+import type { KeyId } from "@mariozechner/pi-tui";
+
 import { fetchUsageForModel, type UsageSnapshot } from "./footer/usage";
 import {
   generateWorkspaceName,
   createWorkspace,
-  spawnAgent,
-  forkSessionToWorkspace,
   getCurrentChangeId,
   isCurrentChangeEmpty,
-  loadAgentWorkspaces,
 } from "./workspace";
 import { createWorkspacesComponent } from "./components/workspaces";
-import {
-  createSymbolsComponent,
-  type SymbolResult,
-} from "./components/symbols";
-import {
-  createCmResultsComponent,
-  CM_COMMANDS,
-  type CmResult,
-  type CmActionType,
-} from "./components/cm-results";
-import {
-  createFilesComponent,
-  type FileResult,
-} from "./components/files";
-
-import { createChangesComponent } from "./components/changes";
 import { createBookmarkPromptComponent } from "./components/bookmark-prompt";
-import { createBookmarksComponent } from "./components/bookmarks";
-import { createOpLogComponent } from "./components/oplog";
-import { createSkillBrowserComponent } from "./components/skill-browser";
-import { createCommandPaletteComponent } from "./components/command-palette";
-import { createPullRequestsComponent } from "./components/pull-requests";
-import {
-  createLinearIssuesComponent,
-  createLinearIssueForm,
-  getLinearApiKey,
-  saveLinearApiKey,
-  type LinearIssuesResult,
-  type IssueFormResult,
-} from "./components/linear-issues";
+import { saveLinearApiKey } from "./components/linear-issues";
 import { registerAllTools } from "./tools/registration";
 import {
   setBookmarkToChange,
   getJjLogForSystemPrompt,
   getVcsLabel,
 } from "./jj";
-import type { AppAction } from "@mariozechner/pi-coding-agent";
-import type { KeyId } from "@mariozechner/pi-tui";
 
-// Common overlay options for full-screen components
-const FULL_OVERLAY_OPTIONS = {
-  overlay: true,
-  overlayOptions: {
-    width: "95%" as const,
-    anchor: "center" as const,
-  },
-};
+// Overlay imports
+import { openFilesPicker } from "./overlays/files";
+import { openSymbolsPicker } from "./overlays/symbols";
+import { openBookmarksBrowser } from "./overlays/bookmarks";
+import { openOpLogBrowser } from "./overlays/oplog";
+import { openSkillBrowser } from "./overlays/skills";
+import { openPullRequestsBrowser } from "./overlays/pull-requests";
+import { openLinearIssuesBrowser } from "./overlays/linear";
+import {
+  openCommandPalette,
+  type RegisteredShortcut,
+} from "./overlays/command-palette";
+import { openChangesBrowser } from "./overlays/changes";
+import { monitorWorkspace } from "./overlays/workspace-monitor";
+import { FULL_OVERLAY_OPTIONS } from "./overlays/options";
 
 function formatTokenCount(value: number): string {
   if (value >= 1_000_000) {
@@ -100,27 +75,23 @@ function shortenHomePath(cwd: string): string {
   return cwd;
 }
 
-interface FooterTheme {
+interface ThemeWithFg {
   fg(color: string, text: string): string;
 }
 
-function colorizeUsagePercent(theme: FooterTheme, usedPercent: number): string {
+function colorizeUsagePercent<T extends ThemeWithFg>(
+  theme: T,
+  usedPercent: number,
+): string {
   const percentText = `${usedPercent}%`;
-
-  if (usedPercent > 90) {
-    return theme.fg("error", percentText);
-  }
-
-  if (usedPercent > 70) {
-    return theme.fg("warning", percentText);
-  }
-
+  if (usedPercent > 90) return theme.fg("error", percentText);
+  if (usedPercent > 70) return theme.fg("warning", percentText);
   return theme.fg("dim", percentText);
 }
 
-function formatCompactQuota(
+function formatCompactQuota<T extends ThemeWithFg>(
   usage: UsageSnapshot | undefined,
-  theme: FooterTheme,
+  theme: T,
 ): string {
   if (!usage || usage.error || usage.windows.length === 0) {
     return "";
@@ -144,31 +115,20 @@ function padLine(
   right: string,
   width: number,
 ): string {
-  const minGap = 2;
   const leftWidth = visibleWidth(left);
-  const rightWidth = visibleWidth(right);
   const centerWidth = visibleWidth(center);
+  const rightWidth = visibleWidth(right);
 
-  const availableCenter = width - leftWidth - rightWidth - minGap * 2;
-
-  if (availableCenter <= 0) {
-    return truncateToWidth(`${left} ${right}`, width);
+  const totalContent = leftWidth + centerWidth + rightWidth;
+  if (totalContent >= width) {
+    return left + " " + center + " " + right;
   }
 
-  const centerText =
-    centerWidth > availableCenter
-      ? truncateToWidth(center, availableCenter)
-      : center;
+  const availableSpace = width - totalContent;
+  const leftPad = Math.floor(availableSpace / 2);
+  const rightPad = availableSpace - leftPad;
 
-  const currentWidth = leftWidth + visibleWidth(centerText) + rightWidth;
-  const remaining = Math.max(0, width - currentWidth);
-  const leftGap = " ".repeat(minGap);
-  const rightGap = " ".repeat(Math.max(minGap, remaining - minGap));
-
-  return truncateToWidth(
-    `${left}${leftGap}${centerText}${rightGap}${right}`,
-    width,
-  );
+  return left + " ".repeat(leftPad) + center + " ".repeat(rightPad) + right;
 }
 
 async function spawnWorkspaceAgent(
@@ -179,24 +139,23 @@ async function spawnWorkspaceAgent(
   description: string,
   sessionFile: string,
 ): Promise<void> {
-  const forkedSessionPath = forkSessionToWorkspace(sessionFile, workspacePath);
+  const { spawnAgent, forkSessionToWorkspace } = await import("./workspace");
+
+  const newSessionFile = forkSessionToWorkspace(sessionFile, workspacePath);
 
   await spawnAgent(
     pi,
     workspacePath,
     workspaceName,
     description,
-    forkedSessionPath,
+    newSessionFile,
   );
 
   if (ctx.hasUI) {
-    ctx.ui.notify(
-      `Created workspace ${workspaceName} and spawned agent`,
-      "info",
-    );
+    ctx.ui.notify(`Spawned agent in workspace ${workspaceName}`, "info");
   }
 
-  void monitorWorkspace(pi, workspaceName, ctx);
+  monitorWorkspace(pi, workspaceName, ctx);
 }
 
 export default function ideExtension(pi: ExtensionAPI) {
@@ -310,6 +269,7 @@ export default function ideExtension(pi: ExtensionAPI) {
     }
   }
 
+  // Event handlers
   pi.on("session_start", async (_event, ctx) => {
     lastContext = ctx;
     installGlobalFooter(ctx);
@@ -335,6 +295,7 @@ export default function ideExtension(pi: ExtensionAPI) {
     return { systemPrompt: event.systemPrompt + "\n\n" + jjLog };
   });
 
+  // Bookmark prompt helper
   async function promptAndSetBookmark(
     ctx: ExtensionContext,
     changeId: string,
@@ -374,16 +335,13 @@ export default function ideExtension(pi: ExtensionAPI) {
     return bookmarkName;
   }
 
+  // Automatic jj change creation on first write tool
   let pendingChangeDescription: string | null = null;
 
-  /**
-   * Capture interactive prompt text and defer change creation until tool execution.
-   */
   pi.on("input", async (event) => {
     if (event.source !== "interactive") {
       return;
     }
-
     pendingChangeDescription = event.text.split("\n")[0]?.trim() || null;
   });
 
@@ -428,31 +386,19 @@ export default function ideExtension(pi: ExtensionAPI) {
     toolName: string;
     input?: unknown;
   }): boolean {
-    if (event.toolName === "read") {
-      return true;
-    }
-
+    if (event.toolName === "read") return true;
     if (event.toolName === "bash") {
       const input = event.input as { command?: string } | undefined;
       const command = input?.command?.trim() ?? "";
       const firstWord = command.split(/\s+/)[0] ?? "";
       return READONLY_BASH_COMMANDS.has(firstWord);
     }
-
     return false;
   }
 
-  /**
-   * Create a jj change only when the agent actually starts executing a write tool.
-   */
   pi.on("tool_call", async (event, ctx) => {
-    if (!pendingChangeDescription) {
-      return;
-    }
-
-    if (isReadonlyToolCall(event)) {
-      return;
-    }
+    if (!pendingChangeDescription) return;
+    if (isReadonlyToolCall(event)) return;
 
     try {
       if (await isCurrentChangeEmpty(pi, ctx.cwd)) {
@@ -465,27 +411,18 @@ export default function ideExtension(pi: ExtensionAPI) {
         });
       }
     } catch {
-      // Silently fail if jj commands fail (e.g., not a jj repo)
+      // Silently fail if jj commands fail
     } finally {
       pendingChangeDescription = null;
     }
   });
 
-  /**
-   * Hook into /fork to create a jj workspace and spawn a subagent
-   */
+  // Hook into /fork to create a jj workspace
   pi.on("session_fork", async (event, ctx) => {
     try {
-      // Get current change ID
       const parentChangeId = await getCurrentChangeId(pi, ctx.cwd);
-
-      // Generate workspace name
       const workspaceName = generateWorkspaceName();
-
-      // Get a description from the forked session or use a default
       const description = `Fork from ${event.previousSessionFile || "session"}`;
-
-      // Create the jj workspace
       const workspacePath = await createWorkspace(
         pi,
         workspaceName,
@@ -493,14 +430,9 @@ export default function ideExtension(pi: ExtensionAPI) {
         parentChangeId,
       );
 
-      // The new session file is already created by /fork
-      // We use it directly for the subagent
       const newSessionFile = ctx.sessionManager.getSessionFile();
-      if (!newSessionFile) {
-        throw new Error("No session file available");
-      }
+      if (!newSessionFile) throw new Error("No session file available");
 
-      // Spawn agent in workspace
       await spawnWorkspaceAgent(
         pi,
         ctx,
@@ -517,30 +449,21 @@ export default function ideExtension(pi: ExtensionAPI) {
     }
   });
 
-  /**
-   * /workspace <desc> - Create a workspace and spawn a subagent
-   */
+  // Commands
   pi.registerCommand("workspace", {
     description:
       "Create a jujutsu workspace and spawn a pi subagent (usage: /workspace <task description>)",
     handler: async (args, ctx) => {
       const description = args.trim();
-
       if (!description) {
-        if (ctx.hasUI) {
+        if (ctx.hasUI)
           ctx.ui.notify("Usage: /workspace <task description>", "warning");
-        }
         return;
       }
 
       try {
-        // Get current change ID
         const parentChangeId = await getCurrentChangeId(pi);
-
-        // Generate workspace name
         const workspaceName = generateWorkspaceName();
-
-        // Create the workspace
         const workspacePath = await createWorkspace(
           pi,
           workspaceName,
@@ -548,13 +471,9 @@ export default function ideExtension(pi: ExtensionAPI) {
           parentChangeId,
         );
 
-        // Fork the current session to the workspace for context continuity
         const currentSessionFile = ctx.sessionManager.getSessionFile();
-        if (!currentSessionFile) {
-          throw new Error("No session file available");
-        }
+        if (!currentSessionFile) throw new Error("No session file available");
 
-        // Spawn agent in workspace
         await spawnWorkspaceAgent(
           pi,
           ctx,
@@ -565,32 +484,22 @@ export default function ideExtension(pi: ExtensionAPI) {
         );
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        if (ctx.hasUI) {
+        if (ctx.hasUI)
           ctx.ui.notify(`Failed to create workspace: ${msg}`, "error");
-        }
       }
     },
   });
 
-  /**
-   * /workspaces - Open the review interface
-   */
   pi.registerCommand("workspaces", {
     description: "Review ide workspaces and their diffs",
     handler: async (_args, ctx) => {
-      if (!ctx.hasUI) {
-        return;
-      }
-
+      if (!ctx.hasUI) return;
       await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
         return createWorkspacesComponent(pi, tui, theme, keybindings, done);
       }, FULL_OVERLAY_OPTIONS);
     },
   });
 
-  /**
-   * /symbols - Browse and pick symbols from the codebase
-   */
   pi.registerCommand("symbols", {
     description:
       "Browse and pick symbols from the codebase with source preview",
@@ -600,9 +509,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * /files - Browse and pick files from the codebase
-   */
   pi.registerCommand("files", {
     description: "Browse and pick files from the codebase with source preview",
     handler: async (args, ctx) => {
@@ -611,9 +517,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * /bookmarks - Browse bookmarks and forget selected
-   */
   pi.registerCommand("bookmarks", {
     description: "Browse bookmarks (name@remote), insert, refresh, and forget",
     handler: async (_args, ctx) => {
@@ -622,9 +525,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * /changes - Browse jujutsu changes on current branch with diff preview
-   */
   pi.registerCommand("changes", {
     description: "Browse jujutsu changes on current branch with diff preview",
     handler: async (_args, ctx) => {
@@ -633,9 +533,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * /oplog - Browse jujutsu operation log
-   */
   pi.registerCommand("oplog", {
     description: "Browse jujutsu operation log with restore capability",
     handler: async (_args, ctx) => {
@@ -644,9 +541,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * /skills - Browse and install skills
-   */
   pi.registerCommand("skills", {
     description: "Browse local skills and install from skills.sh",
     handler: async (args, ctx) => {
@@ -655,9 +549,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * /pull-requests - Browse GitHub pull requests
-   */
   pi.registerCommand("pull-requests", {
     description: "Browse GitHub pull requests with diff preview",
     handler: async (_args, ctx) => {
@@ -666,9 +557,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * /linear - Browse Linear issues
-   */
   pi.registerCommand("linear", {
     description: "Browse Linear issues with markdown preview",
     handler: async (_args, ctx) => {
@@ -677,14 +565,10 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * /linear-login - Save Linear API key
-   */
   pi.registerCommand("linear-login", {
     description: "Save Linear API key for /linear command",
     handler: async (args, ctx) => {
       const apiKey = args.trim();
-
       if (!apiKey) {
         if (ctx.hasUI) {
           ctx.ui.notify(
@@ -697,21 +581,16 @@ export default function ideExtension(pi: ExtensionAPI) {
 
       try {
         saveLinearApiKey(apiKey);
-        if (ctx.hasUI) {
+        if (ctx.hasUI)
           ctx.ui.notify("Linear API key saved successfully", "info");
-        }
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        if (ctx.hasUI) {
-          ctx.ui.notify(`Failed to save API key: ${msg}`, "error");
-        }
+        if (ctx.hasUI) ctx.ui.notify(`Failed to save API key: ${msg}`, "error");
       }
     },
   });
 
-  /**
-   * Ctrl+T shortcut to launch symbol picker
-   */
+  // Shortcuts
   pi.registerShortcut(Key.ctrl("t"), {
     description: "Open symbol picker",
     handler: async (ctx) => {
@@ -720,9 +599,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * Ctrl+P shortcut to launch file picker
-   */
   pi.registerShortcut(Key.ctrl("p"), {
     description: "Open file picker",
     handler: async (ctx) => {
@@ -731,9 +607,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * Ctrl+B shortcut to open bookmarks browser
-   */
   pi.registerShortcut(Key.ctrl("b"), {
     description: "Open bookmarks browser",
     handler: async (ctx) => {
@@ -742,23 +615,16 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * Ctrl+J shortcut to open workspaces review
-   */
   pi.registerShortcut(Key.ctrl("j"), {
     description: "Open workspaces review",
     handler: async (ctx) => {
       if (!ctx.hasUI) return;
-
       await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
         return createWorkspacesComponent(pi, tui, theme, keybindings, done);
       }, FULL_OVERLAY_OPTIONS);
     },
   });
 
-  /**
-   * Ctrl+K shortcut to open changes browser
-   */
   pi.registerShortcut(Key.ctrl("k"), {
     description: "Open changes browser",
     handler: async (ctx) => {
@@ -767,9 +633,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * Ctrl+O shortcut to open op log browser
-   */
   pi.registerShortcut(Key.ctrl("o"), {
     description: "Open operation log browser",
     handler: async (ctx) => {
@@ -778,9 +641,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * Ctrl+S shortcut to open skill browser
-   */
   pi.registerShortcut(Key.ctrl("s"), {
     description: "Open skill browser",
     handler: async (ctx) => {
@@ -789,9 +649,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * Ctrl+G shortcut to open pull requests browser
-   */
   pi.registerShortcut(Key.ctrl("g"), {
     description: "Open pull requests browser",
     handler: async (ctx) => {
@@ -800,9 +657,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * Ctrl+U shortcut to open Linear issues browser
-   */
   pi.registerShortcut(Key.ctrl("u"), {
     description: "Open Linear issues browser",
     handler: async (ctx) => {
@@ -811,110 +665,86 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  // Track registered shortcuts for command palette
-  // The execute functions capture ctx from openCommandPalette
+  // Command palette with registered shortcuts
   let currentCtx: ExtensionContext | null = null;
 
-  const registeredShortcuts: {
-    shortcut: KeyId;
-    description?: string;
-    execute: () => void;
-  }[] = [
+  const registeredShortcuts: RegisteredShortcut[] = [
     {
       shortcut: Key.ctrl("t"),
       description: "Open symbol picker",
       execute: () => {
-        if (currentCtx) {
-          void openSymbolsPicker(pi, currentCtx, "");
-        }
+        if (currentCtx) void openSymbolsPicker(pi, currentCtx, "");
       },
     },
     {
       shortcut: Key.ctrl("p"),
       description: "Open file picker",
       execute: () => {
-        if (currentCtx) {
-          void openFilesPicker(pi, currentCtx, "");
-        }
+        if (currentCtx) void openFilesPicker(pi, currentCtx, "");
       },
     },
     {
       shortcut: Key.ctrl("b"),
       description: "Open bookmarks browser",
       execute: () => {
-        if (currentCtx) {
-          void openBookmarksBrowser(pi, currentCtx);
-        }
+        if (currentCtx) void openBookmarksBrowser(pi, currentCtx);
       },
     },
     {
       shortcut: Key.ctrl("j"),
       description: "Open workspaces review",
       execute: () => {
-        if (currentCtx) {
-          void currentCtx.ui.custom<void>((tui, theme, keybindings, done) => {
-            return createWorkspacesComponent(pi, tui, theme, keybindings, done);
-          }, FULL_OVERLAY_OPTIONS);
-        }
+        if (currentCtx)
+          void currentCtx.ui.custom<void>(
+            (tui, theme, keybindings, done) =>
+              createWorkspacesComponent(pi, tui, theme, keybindings, done),
+            FULL_OVERLAY_OPTIONS,
+          );
       },
     },
     {
       shortcut: Key.ctrl("k"),
       description: "Open changes browser",
       execute: () => {
-        if (currentCtx) {
+        if (currentCtx)
           void openChangesBrowser(pi, currentCtx, promptAndSetBookmark);
-        }
       },
     },
     {
       shortcut: Key.ctrl("o"),
       description: "Open operation log browser",
       execute: () => {
-        if (currentCtx) {
-          void openOpLogBrowser(pi, currentCtx);
-        }
+        if (currentCtx) void openOpLogBrowser(pi, currentCtx);
       },
     },
     {
       shortcut: Key.ctrl("s"),
       description: "Open skill browser",
       execute: () => {
-        if (currentCtx) {
-          void openSkillBrowser(pi, currentCtx, "");
-        }
+        if (currentCtx) void openSkillBrowser(pi, currentCtx, "");
       },
     },
     {
       shortcut: Key.ctrl("g"),
       description: "Open pull requests browser",
       execute: () => {
-        if (currentCtx) {
-          void openPullRequestsBrowser(pi, currentCtx);
-        }
+        if (currentCtx) void openPullRequestsBrowser(pi, currentCtx);
       },
     },
     {
       shortcut: Key.ctrl("u"),
       description: "Open Linear issues browser",
       execute: () => {
-        if (currentCtx) {
-          void openLinearIssuesBrowser(pi, currentCtx);
-        }
+        if (currentCtx) void openLinearIssuesBrowser(pi, currentCtx);
       },
     },
     {
       shortcut: Key.ctrlShift("p"),
       description: "Open command palette",
-      execute: () => {
-        // Don't re-open command palette from itself
-      },
+      execute: () => {},
     },
   ];
 
-  /**
-   * /commands - Open the command palette
-   */
   pi.registerCommand("commands", {
     description: "Open command palette to search and execute commands",
     handler: async (_args, ctx) => {
@@ -925,9 +755,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  /**
-   * Ctrl+Shift+P shortcut handler also needs to set currentCtx
-   */
   pi.registerShortcut(Key.ctrlShift("p"), {
     description: "Open command palette",
     handler: async (ctx) => {
@@ -938,447 +765,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  // Register all tools from separate modules
+  // Register all tools
   registerAllTools(pi);
-}
-
-/**
- * Navigation stack for overlay history.
- * Escape pops to previous screen instead of closing all.
- */
-type ScreenFactory<T> = (
-  pi: ExtensionAPI,
-  ctx: ExtensionContext,
-) => Promise<{ result: T | null; action?: CmActionType; target?: string }>;
-
-interface NavScreen {
-  factory: ScreenFactory<unknown>;
-}
-
-/**
- * Run a navigation stack loop. Screens can push new screens via actions,
- * and escape pops back to the previous screen.
- */
-async function runNavigationStack<T>(
-  pi: ExtensionAPI,
-  ctx: ExtensionContext,
-  initialScreen: ScreenFactory<T>,
-): Promise<T | null> {
-  const stack: NavScreen[] = [
-    { factory: initialScreen as ScreenFactory<unknown> },
-  ];
-
-  while (stack.length > 0) {
-    const current = stack[stack.length - 1];
-    const { result, action, target } = await current.factory(pi, ctx);
-
-    if (result === null) {
-      // Escape pressed - pop current screen
-      stack.pop();
-      continue;
-    }
-
-    if (action && target) {
-      // Action triggered - push cm results screen
-      const cmDef = CM_COMMANDS[action];
-      if (cmDef) {
-        stack.push({
-          factory: async (pi, ctx) => {
-            const cmResult = await ctx.ui.custom<CmResult | null>(
-              (tui, theme, keybindings, done) =>
-                createCmResultsComponent(pi, tui, theme, keybindings, done, {
-                  title: cmDef.titleFn(target),
-                  command: cmDef.command,
-                  args: cmDef.argsFn(target),
-                  cwd: ctx.cwd,
-                }),
-              FULL_OVERLAY_OPTIONS,
-            );
-            if (!cmResult) return { result: null };
-            return {
-              result: cmResult.item,
-              action: cmResult.action,
-              target: cmResult.item.name,
-            };
-          },
-        });
-      }
-      continue;
-    }
-
-    // Final selection - return result and clear stack
-    return result as T;
-  }
-
-  return null;
-}
-
-/**
- * Handler factories to reduce duplication between commands and shortcuts
- */
-
-async function openFilesPicker(
-  pi: ExtensionAPI,
-  ctx: ExtensionContext,
-  initialQuery: string,
-): Promise<void> {
-  const result = await runNavigationStack(pi, ctx, async (pi, ctx) => {
-    const fileResult = await ctx.ui.custom<FileResult | null>(
-      (tui, theme, keybindings, done) =>
-        createFilesComponent(
-          pi,
-          tui,
-          theme,
-          keybindings,
-          done,
-          initialQuery,
-          ctx.cwd,
-        ),
-      FULL_OVERLAY_OPTIONS,
-    );
-    if (!fileResult) return { result: null };
-    return {
-      result: fileResult.file,
-      action: fileResult.action,
-      target: fileResult.file.path,
-    };
-  });
-
-  if (result) {
-    const currentText = ctx.ui.getEditorText();
-    ctx.ui.setEditorText(currentText + result.path);
-  }
-}
-
-async function openSymbolsPicker(
-  pi: ExtensionAPI,
-  ctx: ExtensionContext,
-  initialQuery: string,
-): Promise<void> {
-  const result = await runNavigationStack(pi, ctx, async (pi, ctx) => {
-    const symbolResult = await ctx.ui.custom<SymbolResult | null>(
-      (tui, theme, keybindings, done) =>
-        createSymbolsComponent(
-          pi,
-          tui,
-          theme,
-          keybindings,
-          done,
-          initialQuery,
-          ctx.cwd,
-        ),
-      FULL_OVERLAY_OPTIONS,
-    );
-    if (!symbolResult) return { result: null };
-    return {
-      result: symbolResult.symbol,
-      action: symbolResult.action,
-      target: symbolResult.symbol.name,
-    };
-  });
-
-  if (result) {
-    const currentText = ctx.ui.getEditorText();
-    ctx.ui.setEditorText(currentText + `${result.path}:${result.startLine}`);
-  }
-}
-
-async function openBookmarksBrowser(
-  pi: ExtensionAPI,
-  ctx: ExtensionContext,
-): Promise<void> {
-  await ctx.ui.custom((tui, theme, keybindings, done) => {
-    return createBookmarksComponent(
-      pi,
-      tui,
-      theme,
-      keybindings,
-      done,
-      ctx.cwd,
-      (text) => {
-        ctx.ui.setEditorText(ctx.ui.getEditorText() + text);
-      },
-    );
-  }, FULL_OVERLAY_OPTIONS);
-}
-
-async function openOpLogBrowser(
-  pi: ExtensionAPI,
-  ctx: ExtensionContext,
-): Promise<void> {
-  await ctx.ui.custom((tui, theme, keybindings, done) => {
-    return createOpLogComponent(pi, tui, theme, keybindings, done, ctx.cwd);
-  }, FULL_OVERLAY_OPTIONS);
-}
-
-async function openSkillBrowser(
-  pi: ExtensionAPI,
-  ctx: ExtensionContext,
-  initialQuery: string,
-): Promise<void> {
-  const result = await ctx.ui.custom<string | undefined>(
-    (tui, theme, keybindings, done) => {
-      return createSkillBrowserComponent(
-        pi,
-        tui,
-        theme,
-        keybindings,
-        done,
-        initialQuery,
-        ctx,
-      );
-    },
-    FULL_OVERLAY_OPTIONS,
-  );
-
-  if (result) {
-    ctx.ui.setEditorText(result);
-  }
-}
-
-async function openPullRequestsBrowser(
-  pi: ExtensionAPI,
-  ctx: ExtensionContext,
-): Promise<void> {
-  await ctx.ui.custom((tui, theme, keybindings, done) => {
-    return createPullRequestsComponent(
-      pi,
-      tui,
-      theme,
-      keybindings,
-      done,
-      ctx.cwd,
-      (text) => {
-        ctx.ui.setEditorText(ctx.ui.getEditorText() + text);
-      },
-    );
-  }, FULL_OVERLAY_OPTIONS);
-}
-
-async function openLinearIssuesBrowser(
-  pi: ExtensionAPI,
-  ctx: ExtensionContext,
-): Promise<void> {
-  const apiKey = getLinearApiKey();
-
-  while (true) {
-    const result = await ctx.ui.custom<LinearIssuesResult>(
-      (tui, theme, keybindings, done) => {
-        return createLinearIssuesComponent(
-          pi,
-          tui,
-          theme,
-          keybindings,
-          done,
-          ctx.cwd,
-          (text) => {
-            ctx.ui.setEditorText(ctx.ui.getEditorText() + text);
-          },
-        );
-      },
-      FULL_OVERLAY_OPTIONS,
-    );
-
-    if (!result.action) {
-      break;
-    }
-
-    if (!apiKey) {
-      ctx.ui.notify("Not logged in to Linear", "error");
-      break;
-    }
-
-    const formResult = await ctx.ui.custom<IssueFormResult>(
-      (tui, theme, keybindings, done) => {
-        const issue =
-          result.action?.type === "edit" ? result.action.issue : null;
-        return createLinearIssueForm(
-          pi,
-          tui,
-          theme,
-          keybindings,
-          done,
-          apiKey,
-          issue,
-        );
-      },
-      {
-        overlay: true,
-        overlayOptions: {
-          width: "70%",
-          minWidth: 60,
-          anchor: "center",
-        },
-      },
-    );
-
-    if (formResult.action === "saved" && formResult.issue) {
-      ctx.ui.notify(`Created ${formResult.issue.identifier}`, "info");
-    }
-  }
-}
-
-async function openCommandPalette(
-  pi: ExtensionAPI,
-  ctx: ExtensionContext,
-  registeredShortcuts: {
-    shortcut: KeyId;
-    description?: string;
-    execute: () => void;
-  }[],
-): Promise<void> {
-  await ctx.ui.custom<void>(
-    (tui, theme, keybindings, done) => {
-      return createCommandPaletteComponent(
-        pi,
-        tui,
-        theme,
-        keybindings,
-        done,
-        (command) => {
-          // Send command directly to agent
-          pi.sendUserMessage(command);
-        },
-        (action: AppAction) => {
-          // Execute actions that we can handle directly
-          if (action === "interrupt") {
-            ctx.abort();
-          } else {
-            // Actions that can only be triggered via keybinding
-            const keys = keybindings.getKeys(action);
-            const keyStr = keys.length > 0 ? keys[0] : "no keybinding";
-            ctx.ui.notify(`Press ${keyStr} to ${action}`, "info");
-          }
-        },
-        registeredShortcuts,
-        ctx,
-      );
-    },
-    {
-      overlay: true,
-      overlayOptions: {
-        width: "70%",
-        maxHeight: "60%",
-        minWidth: 60,
-        anchor: "center",
-      },
-    },
-  );
-}
-
-async function openChangesBrowser(
-  pi: ExtensionAPI,
-  ctx: ExtensionContext,
-  promptAndSetBookmark: (
-    ctx: ExtensionContext,
-    changeId: string,
-  ) => Promise<string | null>,
-): Promise<void> {
-  const showChanges = async (): Promise<{
-    filePath: string;
-    action: CmActionType;
-  } | null> => {
-    let pendingCmAction: { filePath: string; action: CmActionType } | null =
-      null;
-
-    await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
-      return createChangesComponent(
-        { pi, tui, theme, keybindings, cwd: ctx.cwd },
-        done,
-        (text) => {
-          ctx.ui.setEditorText(ctx.ui.getEditorText() + text);
-        },
-        (changeId) => promptAndSetBookmark(ctx, changeId),
-        async (filePath, action) => {
-          pendingCmAction = { filePath, action };
-          done();
-        },
-      );
-    }, FULL_OVERLAY_OPTIONS);
-
-    return pendingCmAction;
-  };
-
-  // Loop to handle cm actions and return to changes
-  while (true) {
-    const cmAction = await showChanges();
-
-    if (!cmAction) break;
-
-    // Show cm results, then loop back to changes
-    const cmDef = CM_COMMANDS[cmAction.action];
-    if (cmDef) {
-      await ctx.ui.custom<CmResult | null>(
-        (tui, theme, keybindings, done) =>
-          createCmResultsComponent(pi, tui, theme, keybindings, done, {
-            title: cmDef.titleFn(cmAction.filePath),
-            command: cmDef.command,
-            args: cmDef.argsFn(cmAction.filePath),
-            cwd: ctx.cwd,
-          }),
-        FULL_OVERLAY_OPTIONS,
-      );
-    }
-  }
-}
-
-/**
- * Monitor a workspace and notify when the agent completes
- */
-async function monitorWorkspace(
-  pi: ExtensionAPI,
-  workspaceName: string,
-  ctx: ExtensionContext,
-): Promise<void> {
-  const checkInterval = 5000; // 5 seconds
-  const maxWait = 3600000; // 1 hour
-
-  const startTime = Date.now();
-
-  const check = async (): Promise<void> => {
-    if (Date.now() - startTime > maxWait) {
-      return;
-    }
-
-    try {
-      const workspaces = await loadAgentWorkspaces(pi);
-      const ws = workspaces.find((w) => w.name === workspaceName);
-
-      if (!ws) {
-        return; // Workspace was deleted
-      }
-
-      if (ws.status !== "running") {
-        // Agent finished
-        const stats = formatFileStats(ws);
-        const statusText = ws.status === "completed" ? "completed" : ws.status;
-
-        if (ctx.hasUI) {
-          ctx.ui.notify(
-            `Agent ${workspaceName} ${statusText} ${stats}`,
-            ws.status === "completed" ? "info" : "warning",
-          );
-        }
-
-        // Send desktop notification
-        await pi.exec("notify-send", [
-          "-a",
-          "IDE",
-          `Agent ${statusText}`,
-          `${ws.description}\n${stats}`,
-        ]);
-
-        return;
-      }
-
-      // Still running, check again later
-      setTimeout(() => void check(), checkInterval);
-    } catch {
-      // Error checking, try again
-      setTimeout(() => void check(), checkInterval);
-    }
-  };
-
-  // Start checking after initial delay
-  setTimeout(() => void check(), checkInterval);
 }
