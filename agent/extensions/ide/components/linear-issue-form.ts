@@ -4,7 +4,8 @@ import type {
   Theme,
 } from "@mariozechner/pi-coding-agent";
 import { Input, matchesKey } from "@mariozechner/pi-tui";
-import { buildHelpText, ensureWidth, truncateAnsi } from "./utils";
+import { buildHelpText, ensureWidth, truncateAnsi } from "./text-utils";
+import { createKeyboardHandler } from "../keyboard";
 import {
   borderedLine,
   topBorderWithTitle,
@@ -13,7 +14,8 @@ import {
   renderFormFieldContent,
   renderFormFooter,
 } from "./shared-utils";
-import { linearGraphQL, type LinearIssue } from "./linear-issues-component";
+import { linearGraphQL } from "../api/linear";
+import type { LinearIssue } from "./linear-issues";
 
 interface LinearState {
   id: string;
@@ -380,62 +382,70 @@ export function createLinearIssueForm(
     return lines;
   }
 
+  const handleKeyboard = createKeyboardHandler({
+    bindings: [
+      {
+        key: "tab",
+        handler: () => {
+          const idx = FORM_FIELDS.indexOf(focusedField);
+          if (idx < FORM_FIELDS.length - 1) {
+            focusedField = FORM_FIELDS[idx + 1];
+            tui.requestRender();
+          }
+        },
+      },
+      {
+        key: "left",
+        handler: () => {
+          if (focusedField === "state" && states.length > 0) {
+            selectedStateIndex =
+              (selectedStateIndex - 1 + states.length) % states.length;
+            tui.requestRender();
+            return true;
+          }
+          if (focusedField === "priority") {
+            selectedPriorityIndex =
+              (selectedPriorityIndex - 1 + PRIORITIES.length) %
+              PRIORITIES.length;
+            tui.requestRender();
+            return true;
+          }
+          return false;
+        },
+      },
+      {
+        key: "right",
+        handler: () => {
+          if (focusedField === "state" && states.length > 0) {
+            selectedStateIndex = (selectedStateIndex + 1) % states.length;
+            tui.requestRender();
+            return true;
+          }
+          if (focusedField === "priority") {
+            selectedPriorityIndex =
+              (selectedPriorityIndex + 1) % PRIORITIES.length;
+            tui.requestRender();
+            return true;
+          }
+          return false;
+        },
+      },
+    ],
+    navigation: () => ({
+      index: FORM_FIELDS.indexOf(focusedField),
+      maxIndex: FORM_FIELDS.length - 1,
+    }),
+    onNavigate: (newIndex) => {
+      focusedField = FORM_FIELDS[newIndex];
+      tui.requestRender();
+    },
+    onEscape: () => done({ action: "cancelled" }),
+    onEnter: () => void saveIssue(),
+  });
+
   function handleInput(data: string): void {
-    if (matchesKey(data, "escape")) {
-      done({ action: "cancelled" });
+    if (handleKeyboard(data)) {
       return;
-    }
-
-    if (matchesKey(data, "enter")) {
-      void saveIssue();
-      return;
-    }
-
-    if (matchesKey(data, "up")) {
-      const idx = FORM_FIELDS.indexOf(focusedField);
-      if (idx > 0) {
-        focusedField = FORM_FIELDS[idx - 1];
-        tui.requestRender();
-      }
-      return;
-    }
-
-    if (matchesKey(data, "down") || matchesKey(data, "tab")) {
-      const idx = FORM_FIELDS.indexOf(focusedField);
-      if (idx < FORM_FIELDS.length - 1) {
-        focusedField = FORM_FIELDS[idx + 1];
-        tui.requestRender();
-      }
-      return;
-    }
-
-    // Left/right for selectors
-    if (focusedField === "state") {
-      if (matchesKey(data, "left") && states.length > 0) {
-        selectedStateIndex =
-          (selectedStateIndex - 1 + states.length) % states.length;
-        tui.requestRender();
-        return;
-      }
-      if (matchesKey(data, "right") && states.length > 0) {
-        selectedStateIndex = (selectedStateIndex + 1) % states.length;
-        tui.requestRender();
-        return;
-      }
-    }
-
-    if (focusedField === "priority") {
-      if (matchesKey(data, "left")) {
-        selectedPriorityIndex =
-          (selectedPriorityIndex - 1 + PRIORITIES.length) % PRIORITIES.length;
-        tui.requestRender();
-        return;
-      }
-      if (matchesKey(data, "right")) {
-        selectedPriorityIndex = (selectedPriorityIndex + 1) % PRIORITIES.length;
-        tui.requestRender();
-        return;
-      }
     }
 
     // Text input for title/description

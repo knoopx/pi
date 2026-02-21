@@ -1,6 +1,7 @@
 import type { Theme, ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Input, matchesKey } from "@mariozechner/pi-tui";
-import { truncateAnsi, ensureWidth } from "./utils";
+import { truncateAnsi, ensureWidth } from "./text-utils";
+import { createKeyboardHandler } from "../keyboard";
 import {
   borderedLine,
   topBorderWithTitle,
@@ -190,60 +191,72 @@ export function createArgFormComponent(
     return lines;
   }
 
-  function handleInput(data: string): void {
-    if (matchesKey(data, "escape")) {
-      onDone({});
-      return;
-    }
-
-    if (matchesKey(data, "enter")) {
+  const handleKeyboard = createKeyboardHandler({
+    bindings: [
+      {
+        key: "tab",
+        handler: () => {
+          if (focusedIndex < fieldOrder.length - 1) {
+            focusedIndex++;
+            tui.requestRender();
+          }
+        },
+      },
+      {
+        key: "left",
+        handler: () => {
+          const state = fields.get(fieldOrder[focusedIndex])!;
+          if (state.isSelector && state.choices.length > 0) {
+            state.choiceIndex =
+              (state.choiceIndex - 1 + state.choices.length) %
+              state.choices.length;
+            state.input.setValue(state.choices[state.choiceIndex]);
+            tui.requestRender();
+            return true;
+          }
+          return false;
+        },
+      },
+      {
+        key: "right",
+        handler: () => {
+          const state = fields.get(fieldOrder[focusedIndex])!;
+          if (state.isSelector && state.choices.length > 0) {
+            state.choiceIndex = (state.choiceIndex + 1) % state.choices.length;
+            state.input.setValue(state.choices[state.choiceIndex]);
+            tui.requestRender();
+            return true;
+          }
+          return false;
+        },
+      },
+    ],
+    navigation: () => ({
+      index: focusedIndex,
+      maxIndex: fieldOrder.length - 1,
+    }),
+    onNavigate: (newIndex) => {
+      focusedIndex = newIndex;
+      tui.requestRender();
+    },
+    onEscape: () => onDone({}),
+    onEnter: () => {
       const result: Record<string, string> = {};
       for (const key of fieldOrder) {
         const inputValue = fields.get(key)!.input.getValue().trim();
         result[key] = inputValue || args[key].default || "";
       }
       onDone(result);
+    },
+  });
+
+  function handleInput(data: string): void {
+    if (handleKeyboard(data)) {
       return;
-    }
-
-    if (matchesKey(data, "up")) {
-      if (focusedIndex > 0) {
-        focusedIndex--;
-        tui.requestRender();
-      }
-      return;
-    }
-
-    if (matchesKey(data, "down") || matchesKey(data, "tab")) {
-      if (focusedIndex < fieldOrder.length - 1) {
-        focusedIndex++;
-        tui.requestRender();
-      }
-      return;
-    }
-
-    const currentKey = fieldOrder[focusedIndex];
-    const state = fields.get(currentKey)!;
-
-    // Left/right to cycle through choices (selector fields)
-    if (state.isSelector && state.choices.length > 0) {
-      if (matchesKey(data, "left")) {
-        state.choiceIndex =
-          (state.choiceIndex - 1 + state.choices.length) % state.choices.length;
-        state.input.setValue(state.choices[state.choiceIndex]);
-        tui.requestRender();
-        return;
-      }
-
-      if (matchesKey(data, "right")) {
-        state.choiceIndex = (state.choiceIndex + 1) % state.choices.length;
-        state.input.setValue(state.choices[state.choiceIndex]);
-        tui.requestRender();
-        return;
-      }
     }
 
     // Text input for non-selector fields
+    const state = fields.get(fieldOrder[focusedIndex])!;
     if (!state.isSelector) {
       state.input.handleInput(data);
       tui.requestRender();
