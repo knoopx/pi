@@ -14,7 +14,7 @@ Personal [Pi Coding Agent](https://buildwithpi.ai/) configuration.
 ```bash
 bun install              # Install root deps
 bun run install-deps     # Install extension deps
-bun run test             # Run tests
+bunx vitest run          # Run tests (NOT bun test)
 bun run format           # Format (prettier)
 bun run typecheck        # Type check (tsc)
 bun run lint             # Lint (eslint --fix)
@@ -54,8 +54,14 @@ export default function extension(pi: ExtensionAPI) {
 - **TypeScript only**: Never create `.js` files, always `.ts`
 - **No regex for parsing**: Use proper parsers (HTML, JSON, etc.)
 - **No re-exports**: Import directly from source modules
+- **No vague names**: Avoid `shared`, `utils`, `common`, `lib`, `helpers`, `support` - name by purpose
 
 ## Tool Best Practices
+
+### Write Tool
+
+- **One file at a time**: Write/create files sequentially, wait for confirmation
+- Never batch multiple file writes in parallel
 
 ### Edit Tool
 
@@ -78,6 +84,12 @@ export default function extension(pi: ExtensionAPI) {
 - Use `pi-list-projects` to discover valid project paths
 - Project paths are auto-resolved from cwd when not specified
 - Session indices: `0` = most recent, `1` = second most recent
+
+### Testing
+
+- **Use `bunx vitest run`** - NOT `bun test` (different runners, different configs)
+- `bun test` ignores vitest.config.ts - it's Bun's own test runner
+- Native modules (koffi, etc.) can't be mocked with vi.mock - exclude affected tests
 
 ### TypeScript Refactoring
 
