@@ -11,6 +11,7 @@ import type { ImageContent, TextContent } from "@mariozechner/pi-ai";
 import { Type, type Static } from "@sinclair/typebox";
 
 import type * as Transformers from "@huggingface/transformers";
+import { textResult, errorResult } from "../../shared/tool-utils";
 
 // Lazy import transformers to avoid loading at startup
 let transformersModule: typeof Transformers | null = null;
@@ -99,30 +100,11 @@ async function rawAudioToBase64(audio: RawAudioLike): Promise<string> {
   return Buffer.from(audio.toWav()).toString("base64");
 }
 
-function textResult(
-  text: string,
-  details: Record<string, unknown> = {},
-): AgentToolResult<Record<string, unknown>> {
-  const content: TextContent[] = [{ type: "text", text }];
-  return { content, details };
-}
-
 function contentResult(
   content: ToolContent[],
   details: Record<string, unknown> = {},
 ): AgentToolResult<Record<string, unknown>> {
   return { content, details };
-}
-
-function errorResult(
-  error: unknown,
-  details: Record<string, unknown> = {},
-): AgentToolResult<Record<string, unknown>> {
-  const message = error instanceof Error ? error.message : String(error);
-  return {
-    content: [{ type: "text", text: `Error: ${message}` }],
-    details: { ...details, error: message },
-  };
 }
 
 async function loadImage(source: string): Promise<unknown> {
