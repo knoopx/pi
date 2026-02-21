@@ -1,13 +1,8 @@
 /* eslint-disable @typescript-eslint/unbound-method, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import {
-  truncateAnsi,
-  pad,
-  ensureWidth,
-  loadFilePreviewWithBat,
-  buildHelpText,
-  formatBookmarkReference,
-} from "./utils";
+import { truncateAnsi, pad, ensureWidth, buildHelpText } from "./text-utils";
+import { loadFilePreviewWithBat } from "./file-preview";
+import { formatBookmarkReference } from "./change-utils";
 import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
 import stringWidth from "string-width";
 
