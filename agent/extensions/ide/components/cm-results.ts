@@ -242,7 +242,6 @@ export function createCmResultsComponent(
     "",
     {
       title: config.title,
-      helpParts: ["↑↓ nav", "type to filter"],
       actions,
       onEdit: async (item) => {
         const { join } = await import("node:path");

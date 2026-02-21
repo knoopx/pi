@@ -85,7 +85,7 @@ function groupBookmarksByChange(
   );
 }
 
-import { matchesKey } from "@mariozechner/pi-tui";
+import { ACTION_KEYS, createKeyboardHandler } from "../keyboard";
 
 // Filter modes for bookmarks (cycle order)
 const BOOKMARK_FILTER_MODES = [
@@ -113,8 +113,8 @@ export function createBookmarksComponent(
 
   const actions: ListPickerAction<BookmarkEntry>[] = [
     {
-      key: "ctrl+f",
-      label: "forget",
+      key: ACTION_KEYS.delete,
+      label: "delete",
       handler: async (item) => {
         for (const bookmark of item.bookmarks) {
           await forgetBookmark(pi, cwd, bookmark);
@@ -125,7 +125,7 @@ export function createBookmarksComponent(
     },
     {
       key: "ctrl+g",
-      label: "fetch all",
+      label: "fetch",
       handler: async () => {
         const result = await pi.exec("jj", ["git", "fetch"], { cwd });
         if (result.code === 0) {
@@ -138,7 +138,7 @@ export function createBookmarksComponent(
     },
     {
       key: "ctrl+p",
-      label: "push all",
+      label: "push",
       handler: async () => {
         const result = await pi.exec("jj", ["git", "push", "--all"], { cwd });
         if (result.code === 0) {
@@ -170,7 +170,6 @@ export function createBookmarksComponent(
     "",
     {
       title: "Bookmarks",
-      helpParts: ["↑↓ nav", "ctrl+/ cycle filter", "type to filter"],
       actions,
       loadItems: async (_query) => {
         const entries = await listBookmarksByChange(pi, cwd);
@@ -204,18 +203,22 @@ export function createBookmarksComponent(
             return items;
         }
       },
-      onKey: (key) => {
-        if (matchesKey(key, "ctrl+/")) {
-          // Cycle to next filter mode
-          const currentIndex = BOOKMARK_FILTER_MODES.indexOf(currentFilterMode);
-          const nextIndex = (currentIndex + 1) % BOOKMARK_FILTER_MODES.length;
-          currentFilterMode = BOOKMARK_FILTER_MODES[nextIndex];
-          void picker.reload();
-          notify(`Filter: ${currentFilterMode}`, "info");
-          return true;
-        }
-        return false;
-      },
+      onKey: createKeyboardHandler({
+        bindings: [
+          {
+            key: "ctrl+/",
+            handler: () => {
+              const currentIndex =
+                BOOKMARK_FILTER_MODES.indexOf(currentFilterMode);
+              const nextIndex =
+                (currentIndex + 1) % BOOKMARK_FILTER_MODES.length;
+              currentFilterMode = BOOKMARK_FILTER_MODES[nextIndex];
+              void picker.reload();
+              notify(`Filter: ${currentFilterMode}`, "info");
+            },
+          },
+        ],
+      }),
       formatItem: (item, width, theme, isFocused) => {
         const bookmarkLabels = item.displayNames
           .map((name) => formatBookmarkReference(theme, name))

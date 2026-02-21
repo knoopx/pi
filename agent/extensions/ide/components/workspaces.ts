@@ -3,8 +3,13 @@ import type {
   KeybindingsManager,
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
-import { matchesKey } from "@mariozechner/pi-tui";
-import { pad, ensureWidth, truncateAnsi, buildHelpText } from "./text-utils";
+import {
+  ACTION_KEYS,
+  createKeyboardHandler,
+  buildHelpFromBindings,
+  type KeyBinding,
+} from "../keyboard";
+import { pad, ensureWidth, truncateAnsi } from "./text-utils";
 import {
   calculateDimensions,
   renderSplitPanel,
@@ -399,31 +404,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
       theme,
     );
 
-    const wsForHelp = selectedWorkspace;
-    const isDefaultWs = wsForHelp?.name === "default";
-    const isRunningWs = wsForHelp?.status === "running";
-    const hasWsChanges =
-      wsForHelp?.fileStats &&
-      (wsForHelp.fileStats.added > 0 ||
-        wsForHelp.fileStats.modified > 0 ||
-        wsForHelp.fileStats.deleted > 0);
-
-    const helpText =
-      focus === "workspaces"
-        ? buildHelpText(
-            "tab ↑↓ nav",
-            "n new",
-            wsForHelp && !isDefaultWs && isRunningWs && "a attach",
-            wsForHelp && !isDefaultWs && hasWsChanges && "r rebase",
-            wsForHelp && "e edit",
-            wsForHelp && "t term",
-            wsForHelp && !isDefaultWs && "x delete",
-          )
-        : buildHelpText(
-            "tab ↑↓ nav",
-            !isDefaultWs && files.length > 0 && "d discard",
-            "pgup/pgdn scroll",
-          );
+    const helpText = getHelpText();
 
     cachedLines = renderSplitPanel(
       theme,
@@ -449,161 +430,244 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
     return cachedLines;
   }
 
-  function handleInput(data: string): void {
-    if (matchesKey(data, "escape")) {
-      done();
-      return;
-    }
+  // Helper conditions
+  const isLeftFocus = () => focus === "workspaces";
+  const isRightFocus = () => focus === "files";
+  const hasWorkspace = () => selectedWorkspace !== null;
+  const isDefaultWs = () => selectedWorkspace?.name === "default";
+  const isRunningWs = () => selectedWorkspace?.status === "running";
+  const hasFile = () => files[fileIndex] !== undefined;
 
-    if (data === "q") {
-      done();
-      return;
-    }
-
-    if (matchesKey(data, "tab")) {
-      focus = focus === "workspaces" ? "files" : "workspaces";
-      invalidate();
-      tui.requestRender();
-      return;
-    }
-
-    // Create new workspace hotkey
-    if (data === "n") {
-      void (async () => {
-        try {
-          const repoRoot = await getRepoRoot(pi);
-          const parentChangeId = await getCurrentChangeId(pi, repoRoot);
-          const workspaceName = generateWorkspaceName();
-          const workspacePath = await createWorkspace(
-            pi,
-            workspaceName,
-            "New workspace",
-            parentChangeId,
-          );
-          await pi.exec("wezterm", [
-            "start",
-            "--cwd",
-            workspacePath,
-            "--",
-            "pi",
-          ]);
-          workspaceCache.delete(workspaceName);
-          await loadWorkspaces();
-        } catch {
-          // Silently fail
-        }
-      })();
-      return;
-    }
-
-    // Hotkeys for workspace actions
-    if (selectedWorkspace) {
-      const ws = selectedWorkspace;
-      const isDefault = ws.name === "default";
-      const isRunning = ws.status === "running";
-
-      if (data === "a" && !isDefault && isRunning) {
-        void executeAction("attach");
-        return;
-      }
-      if (data === "r" && !isDefault && ws.fileStats) {
-        void executeAction("rebase");
-        return;
-      }
-      if (data === "e") {
-        void executeAction("vscode");
-        return;
-      }
-      if (data === "t") {
-        void executeAction("terminal");
-        return;
-      }
-      if (data === "x" && !isDefault) {
-        // Kill and forget in one action
-        if (isRunning) {
-          void killTmuxSession(pi, ws.name).then(() => executeAction("forget"));
-        } else {
-          void executeAction("forget");
-        }
-        return;
-      }
-    }
-
-    if (focus === "workspaces") {
-      if (matchesKey(data, "up")) {
-        if (selectedIndex > 0) {
-          selectedIndex--;
-          selectedWorkspace = workspaces[selectedIndex];
-          void loadFilesAndDiff(selectedWorkspace);
-          invalidate();
-          tui.requestRender();
-        }
-      } else if (matchesKey(data, "down")) {
-        if (selectedIndex < workspaces.length - 1) {
-          selectedIndex++;
-          selectedWorkspace = workspaces[selectedIndex];
-          void loadFilesAndDiff(selectedWorkspace);
-          invalidate();
-          tui.requestRender();
-        }
-      }
-    } else {
-      const ws = selectedWorkspace;
-      if (ws === null) {
-        return;
-      }
-
-      const isDefault = ws.name === "default";
-      const maxIndex = isDefault ? changes.length - 1 : files.length - 1;
-
-      // Discard file changes
-      if (data === "d" && !isDefault && files[fileIndex]) {
-        const file = files[fileIndex];
-        void (async () => {
-          await pi.exec("jj", ["restore", file.path], {
-            cwd: ws.path,
-          });
-          workspaceCache.delete(ws.name);
-          await loadFilesAndDiff(ws);
-        })();
-        return;
-      }
-
-      const navigateFile = (direction: "up" | "down") => {
-        const newIndex =
-          direction === "up"
-            ? Math.max(0, fileIndex - 1)
-            : Math.min(maxIndex, fileIndex + 1);
-        if (newIndex !== fileIndex) {
-          fileIndex = newIndex;
-          if (isDefault) {
-            void loadChangeDiff(ws, changes[fileIndex]?.changeId);
-          } else {
-            void loadDiff(ws, files[fileIndex]?.path);
-          }
-          invalidate();
-          tui.requestRender();
-        }
-      };
-
-      if (matchesKey(data, "up")) {
-        navigateFile("up");
-      } else if (matchesKey(data, "down")) {
-        navigateFile("down");
-      }
-    }
-
-    if (matchesKey(data, "pageDown") || matchesKey(data, "pageUp")) {
-      const direction = matchesKey(data, "pageDown") ? "down" : "up";
-      diffScroll = calculateDiffScroll(
-        direction,
-        diffScroll,
-        diffContent.length,
-        tui.terminal.rows,
-        cachedWidth,
+  // Create new workspace
+  const createNewWorkspace = async () => {
+    try {
+      const repoRoot = await getRepoRoot(pi);
+      const parentChangeId = await getCurrentChangeId(pi, repoRoot);
+      const workspaceName = generateWorkspaceName();
+      const workspacePath = await createWorkspace(
+        pi,
+        workspaceName,
+        "New workspace",
+        parentChangeId,
       );
+      await pi.exec("wezterm", ["start", "--cwd", workspacePath, "--", "pi"]);
+      workspaceCache.delete(workspaceName);
+      await loadWorkspaces();
+    } catch {
+      // Silently fail
+    }
+  };
+
+  // Delete workspace (kill + forget)
+  const deleteWorkspace = async () => {
+    if (!selectedWorkspace || isDefaultWs()) return;
+    if (isRunningWs()) {
+      await killTmuxSession(pi, selectedWorkspace.name);
+    }
+    await executeAction("forget");
+  };
+
+  // Discard file changes
+  const discardFile = async () => {
+    if (!selectedWorkspace || isDefaultWs() || !files[fileIndex]) return;
+    const file = files[fileIndex];
+    await pi.exec("jj", ["restore", file.path], {
+      cwd: selectedWorkspace.path,
+    });
+    workspaceCache.delete(selectedWorkspace.name);
+    await loadFilesAndDiff(selectedWorkspace);
+  };
+
+  // Navigate workspaces
+  const navigateWorkspace = (direction: "up" | "down") => {
+    const newIndex =
+      direction === "up"
+        ? Math.max(0, selectedIndex - 1)
+        : Math.min(workspaces.length - 1, selectedIndex + 1);
+    if (newIndex !== selectedIndex) {
+      selectedIndex = newIndex;
+      selectedWorkspace = workspaces[selectedIndex];
+      void loadFilesAndDiff(selectedWorkspace);
       invalidate();
       tui.requestRender();
+    }
+  };
+
+  // Navigate files
+  const navigateFile = (direction: "up" | "down") => {
+    if (!selectedWorkspace) return;
+    const isDefault = isDefaultWs();
+    const maxIndex = isDefault ? changes.length - 1 : files.length - 1;
+    const newIndex =
+      direction === "up"
+        ? Math.max(0, fileIndex - 1)
+        : Math.min(maxIndex, fileIndex + 1);
+    if (newIndex !== fileIndex) {
+      fileIndex = newIndex;
+      if (isDefault) {
+        void loadChangeDiff(selectedWorkspace, changes[fileIndex]?.changeId);
+      } else {
+        void loadDiff(selectedWorkspace, files[fileIndex]?.path);
+      }
+      invalidate();
+      tui.requestRender();
+    }
+  };
+
+  // Global bindings
+  const globalBindings: KeyBinding[] = [
+    {
+      key: "tab",
+      label: "nav",
+      handler: () => {
+        focus = focus === "workspaces" ? "files" : "workspaces";
+        invalidate();
+        tui.requestRender();
+      },
+    },
+    { key: "escape", handler: () => done() },
+    { key: "q", handler: () => done() },
+    {
+      key: "n",
+      label: "new",
+      handler: () => {
+        void createNewWorkspace();
+      },
+    },
+  ];
+
+  // Workspace action bindings (work when workspace selected)
+  const workspaceActionBindings: KeyBinding[] = [
+    {
+      key: "a",
+      label: "attach",
+      when: () => hasWorkspace() && !isDefaultWs() && isRunningWs(),
+      handler: () => {
+        void executeAction("attach");
+      },
+    },
+    {
+      key: "r",
+      label: "rebase",
+      when: () =>
+        hasWorkspace() &&
+        !isDefaultWs() &&
+        selectedWorkspace?.fileStats !== undefined,
+      handler: () => {
+        void executeAction("rebase");
+      },
+    },
+    {
+      key: "e",
+      label: "edit",
+      when: hasWorkspace,
+      handler: () => {
+        void executeAction("vscode");
+      },
+    },
+    {
+      key: "t",
+      label: "term",
+      when: hasWorkspace,
+      handler: () => {
+        void executeAction("terminal");
+      },
+    },
+    {
+      key: ACTION_KEYS.delete,
+      label: "delete",
+      when: () => hasWorkspace() && !isDefaultWs(),
+      handler: () => {
+        void deleteWorkspace();
+      },
+    },
+  ];
+
+  // Left pane bindings
+  const leftPaneBindings: KeyBinding[] = [
+    { key: "up", handler: () => navigateWorkspace("up") },
+    { key: "down", handler: () => navigateWorkspace("down") },
+  ];
+
+  // Right pane bindings
+  const rightPaneBindings: KeyBinding[] = [
+    {
+      key: "d",
+      label: "discard",
+      when: () => hasWorkspace() && !isDefaultWs() && hasFile(),
+      handler: () => {
+        void discardFile();
+      },
+    },
+    { key: "up", handler: () => navigateFile("up") },
+    { key: "down", handler: () => navigateFile("down") },
+    {
+      key: "pageUp",
+      label: "scroll",
+      handler: () => {
+        diffScroll = calculateDiffScroll(
+          "up",
+          diffScroll,
+          diffContent.length,
+          tui.terminal.rows,
+          cachedWidth,
+        );
+        invalidate();
+        tui.requestRender();
+      },
+    },
+    {
+      key: "pageDown",
+      handler: () => {
+        diffScroll = calculateDiffScroll(
+          "down",
+          diffScroll,
+          diffContent.length,
+          tui.terminal.rows,
+          cachedWidth,
+        );
+        invalidate();
+        tui.requestRender();
+      },
+    },
+  ];
+
+  // Generate help text from active bindings
+  function getHelpText(): string {
+    const bindings =
+      focus === "workspaces"
+        ? [...globalBindings, ...workspaceActionBindings, ...leftPaneBindings]
+        : [...globalBindings, ...rightPaneBindings];
+
+    const activeBindings = bindings.filter((b) => {
+      if (!b.label) return false;
+      if (b.when && !b.when(undefined as never)) return false;
+      return true;
+    });
+    return buildHelpFromBindings(activeBindings);
+  }
+
+  // Create handlers
+  const leftHandler = createKeyboardHandler({
+    bindings: [
+      ...globalBindings,
+      ...workspaceActionBindings,
+      ...leftPaneBindings,
+    ],
+  });
+  const rightHandler = createKeyboardHandler({
+    bindings: [
+      ...globalBindings,
+      ...workspaceActionBindings,
+      ...rightPaneBindings,
+    ],
+  });
+
+  function handleInput(data: string): void {
+    if (isLeftFocus()) {
+      leftHandler(data);
+    } else {
+      rightHandler(data);
     }
   }
 

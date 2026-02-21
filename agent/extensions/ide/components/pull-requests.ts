@@ -249,7 +249,6 @@ export function createPullRequestsComponent(
     "",
     {
       title: "Pull Requests",
-      helpParts: ["↑↓ nav", "type to filter"],
       actions,
       loadItems: async () => {
         return fetchPullRequests(pi, cwd, currentState);

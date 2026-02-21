@@ -76,7 +76,6 @@ export function createOpLogComponent(
     "",
     {
       title: "Op Log",
-      helpParts: ["↑↓ nav", "type to filter"],
       actions,
       loadItems: async (_query) => {
         const entries = await loadOpLog(pi, cwd);

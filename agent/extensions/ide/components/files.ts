@@ -83,7 +83,6 @@ export function createFilesComponent(
     initialQuery,
     {
       title: "Files",
-      helpParts: ["↑↓ nav", "type to search"],
       actions,
       onEdit: async (item) => {
         await pi.exec("code", [item.path], { cwd });

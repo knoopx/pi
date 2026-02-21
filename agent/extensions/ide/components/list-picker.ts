@@ -3,8 +3,12 @@ import type {
   KeybindingsManager,
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
-import { matchesKey } from "@mariozechner/pi-tui";
-import { truncateAnsi, ensureWidth, pad, buildHelpText } from "./text-utils";
+import {
+  createKeyboardHandler,
+  buildHelpFromBindings,
+  type KeyBinding,
+} from "../keyboard";
+import { truncateAnsi, ensureWidth, pad } from "./text-utils";
 import {
   calculateDimensions,
   renderSplitPanel,
@@ -46,7 +50,6 @@ export interface ListPickerConfig<T extends ListPickerItem> {
   ) => string;
   loadPreview: (item: T) => Promise<string[]>;
   onEdit?: (item: T) => Promise<void> | void;
-  helpParts?: string[];
   actions?: ListPickerAction<T>[];
   /** Debounce delay for reloading on query change (0 = no reload, default) */
   reloadDebounceMs?: number;
@@ -252,18 +255,10 @@ export function createListPicker<T extends ListPickerItem>(
         : undefined,
     );
 
-    const baseParts = config.helpParts ?? ["↑↓ nav", "type to search"];
-    const actionHelp = (config.actions ?? []).map((a) => `${a.key} ${a.label}`);
     const helpText = formatHelpWithStatus(
       theme,
       statusState.message,
-      buildHelpText(
-        ...baseParts,
-        filteredItems.length > 0 && "enter select",
-        filteredItems.length > 0 && config.onEdit && "ctrl+e edit",
-        ...(filteredItems.length > 0 ? actionHelp : []),
-        "esc",
-      ),
+      getHelpText(),
     );
 
     cachedLines = renderSplitPanel(
@@ -285,136 +280,120 @@ export function createListPicker<T extends ListPickerItem>(
     return cachedLines;
   }
 
-  function handleInput(data: string): void {
-    if (matchesKey(data, "escape")) {
-      done(null);
-      return;
+  // Navigation helpers
+  const navigate = (direction: "up" | "down") => {
+    const newIndex =
+      direction === "up"
+        ? Math.max(0, focusedIndex - 1)
+        : Math.min(filteredItems.length - 1, focusedIndex + 1);
+    if (newIndex !== focusedIndex) {
+      focusedIndex = newIndex;
+      const item = getFocusedItem();
+      if (item !== null) {
+        void loadPreview(item);
+      }
+      invalidate();
+      tui.requestRender();
     }
+  };
 
-    // Custom key handler
+  const navigatePage = (direction: "up" | "down") => {
+    const dims = calculateDimensions(tui.terminal.rows, 100, {
+      leftTitle: "",
+      rightTitle: "",
+      helpText: "",
+      leftFocus: true,
+    });
+    focusedIndex =
+      direction === "up"
+        ? Math.max(0, focusedIndex - dims.contentH)
+        : Math.min(filteredItems.length - 1, focusedIndex + dims.contentH);
+    const item = getFocusedItem();
+    if (item !== null) {
+      void loadPreview(item);
+    }
+    invalidate();
+    tui.requestRender();
+  };
+
+  const updateSearch = () => {
+    filterItems();
+    scheduleReload(searchQuery);
+    const item = getFocusedItem();
+    if (item !== null) {
+      void loadPreview(item);
+    }
+    invalidate();
+    tui.requestRender();
+  };
+
+  // Build action bindings from config (actions already have labels)
+  const actionBindings: KeyBinding[] = (config.actions ?? []).map((action) => ({
+    key: action.key as KeyBinding["key"],
+    label: action.label,
+    when: () => filteredItems.length > 0,
+    handler: () => {
+      const item = getFocusedItem();
+      if (item !== null) {
+        void Promise.resolve(action.handler(item));
+      }
+    },
+  }));
+
+  // Core bindings with labels for help text generation
+  const coreBindings: KeyBinding[] = [
+    { key: "up", label: "nav", handler: () => navigate("up") },
+    { key: "down", handler: () => navigate("down") },
+    { key: "enter", label: "select", handler: () => done(getFocusedItem()) },
+    { key: "escape", handler: () => done(null) },
+    {
+      key: "ctrl+e",
+      label: "edit",
+      when: () => config.onEdit !== undefined,
+      handler: () => {
+        const item = getFocusedItem();
+        if (item !== null && config.onEdit) {
+          void Promise.resolve(config.onEdit(item));
+        }
+      },
+    },
+    { key: "pageUp", handler: () => navigatePage("up") },
+    { key: "pageDown", handler: () => navigatePage("down") },
+  ];
+
+  const allBindings = [...coreBindings, ...actionBindings];
+
+  // Generate help text dynamically based on current state
+  function getHelpText(): string {
+    const activeBindings = allBindings.filter((b) => {
+      if (!b.label) return false;
+      if (b.when && !b.when(undefined as never)) return false;
+      return true;
+    });
+    return buildHelpFromBindings(activeBindings);
+  }
+
+  // Create handler with custom onKey support
+  const keyboardHandler = createKeyboardHandler({
+    bindings: [...coreBindings, ...actionBindings],
+    onBackspace: () => {
+      if (searchQuery.length > 0) {
+        searchQuery = searchQuery.slice(0, -1);
+        updateSearch();
+      }
+    },
+    onTextInput: (char) => {
+      searchQuery += char;
+      updateSearch();
+    },
+  });
+
+  function handleInput(data: string): void {
+    // Custom key handler takes precedence
     if (config.onKey?.(data)) {
       return;
     }
-
-    if (matchesKey(data, "enter")) {
-      done(getFocusedItem());
-      return;
-    }
-
-    if (matchesKey(data, "ctrl+e") && config.onEdit) {
-      const item = getFocusedItem();
-      if (item !== null) {
-        void Promise.resolve(config.onEdit(item));
-      }
-      return;
-    }
-
-    if (matchesKey(data, "up")) {
-      if (focusedIndex > 0) {
-        focusedIndex--;
-        const item = getFocusedItem();
-        if (item !== null) {
-          void loadPreview(item);
-        }
-        invalidate();
-        tui.requestRender();
-      }
-      return;
-    }
-
-    if (matchesKey(data, "down")) {
-      if (focusedIndex < filteredItems.length - 1) {
-        focusedIndex++;
-        const item = getFocusedItem();
-        if (item !== null) {
-          void loadPreview(item);
-        }
-        invalidate();
-        tui.requestRender();
-      }
-      return;
-    }
-
-    if (matchesKey(data, "pageUp")) {
-      const dims = calculateDimensions(tui.terminal.rows, 100, {
-        leftTitle: "",
-        rightTitle: "",
-        helpText: "",
-        leftFocus: true,
-      });
-      focusedIndex = Math.max(0, focusedIndex - dims.contentH);
-      const item = getFocusedItem();
-      if (item !== null) {
-        void loadPreview(item);
-      }
-      invalidate();
-      tui.requestRender();
-      return;
-    }
-
-    if (matchesKey(data, "pageDown")) {
-      const dims = calculateDimensions(tui.terminal.rows, 100, {
-        leftTitle: "",
-        rightTitle: "",
-        helpText: "",
-        leftFocus: true,
-      });
-      focusedIndex = Math.min(
-        filteredItems.length - 1,
-        focusedIndex + dims.contentH,
-      );
-      const item = getFocusedItem();
-      if (item !== null) {
-        void loadPreview(item);
-      }
-      invalidate();
-      tui.requestRender();
-      return;
-    }
-
-    // Backspace - delete from search query
-    if (data === "\x7f" || data === "\b") {
-      if (searchQuery.length > 0) {
-        searchQuery = searchQuery.slice(0, -1);
-        filterItems();
-        scheduleReload(searchQuery);
-        const item = getFocusedItem();
-        if (item !== null) {
-          void loadPreview(item);
-        }
-        invalidate();
-        tui.requestRender();
-      }
-      return;
-    }
-
-    // Check custom actions first (before printable characters)
-    if (config.actions && filteredItems.length > 0) {
-      const action = config.actions.find((a) =>
-        matchesKey(data, a.key as Parameters<typeof matchesKey>[1]),
-      );
-      if (action) {
-        const item = getFocusedItem();
-        if (item !== null) {
-          void Promise.resolve(action.handler(item));
-        }
-        return;
-      }
-    }
-
-    // Printable characters - add to search query
-    if (data.length === 1 && data >= " " && data <= "~") {
-      searchQuery += data;
-      filterItems();
-      scheduleReload(searchQuery);
-      const item = getFocusedItem();
-      if (item !== null) {
-        void loadPreview(item);
-      }
-      invalidate();
-      tui.requestRender();
-      return;
-    }
+    keyboardHandler(data);
   }
 
   function dispose(): void {

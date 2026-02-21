@@ -1,5 +1,5 @@
 import type { Theme, ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Input, matchesKey } from "@mariozechner/pi-tui";
+import { Input } from "@mariozechner/pi-tui";
 import { truncateAnsi, ensureWidth } from "./text-utils";
 import { createKeyboardHandler } from "../keyboard";
 import {

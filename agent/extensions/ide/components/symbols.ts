@@ -3,7 +3,7 @@ import type {
   KeybindingsManager,
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
-import { matchesKey } from "@mariozechner/pi-tui";
+import { createKeyboardHandler } from "../keyboard";
 import {
   createListPicker,
   type ListPickerItem,
@@ -214,7 +214,6 @@ export function createSymbolsComponent(
     initialQuery,
     {
       title: getTitle,
-      helpParts: ["↑↓ nav", "ctrl+/ cycle type", "type to search"],
       actions,
       onEdit: async (item) => {
         const { join } = await import("node:path");
@@ -234,17 +233,19 @@ export function createSymbolsComponent(
           isFocused,
         ),
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
-      onKey: (key) => {
-        if (matchesKey(key, "ctrl+/")) {
-          // Cycle to next type filter
-          const currentIndex = SYMBOL_TYPES.indexOf(currentTypeFilter);
-          const nextIndex = (currentIndex + 1) % SYMBOL_TYPES.length;
-          currentTypeFilter = SYMBOL_TYPES[nextIndex];
-          void picker.reload();
-          return true;
-        }
-        return false;
-      },
+      onKey: createKeyboardHandler({
+        bindings: [
+          {
+            key: "ctrl+/",
+            handler: () => {
+              const currentIndex = SYMBOL_TYPES.indexOf(currentTypeFilter);
+              const nextIndex = (currentIndex + 1) % SYMBOL_TYPES.length;
+              currentTypeFilter = SYMBOL_TYPES[nextIndex];
+              void picker.reload();
+            },
+          },
+        ],
+      }),
     },
   );
 

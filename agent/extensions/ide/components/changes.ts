@@ -1,5 +1,10 @@
 import path from "node:path";
-import { matchesKey } from "@mariozechner/pi-tui";
+import {
+  ACTION_KEYS,
+  createKeyboardHandler,
+  buildHelpFromBindings,
+  type KeyBinding,
+} from "../keyboard";
 import { ensureWidth, truncateAnsi } from "./text-utils";
 import { formatChangeRow } from "./change-utils";
 import {
@@ -18,7 +23,7 @@ import {
   type ComponentCache,
   type BaseComponentParams,
 } from "./state/factories";
-import { buildNavigationHelp } from "./state/navigation";
+
 import { renderLoadingRow, renderEmptyState } from "./ui/render";
 import {
   createStatusNotifier,
@@ -680,52 +685,10 @@ Use the **conventional-commits** skill for commit message format.`;
       theme,
     );
 
-    const describeTargetCount =
-      selectedChangeIds.size || (selectedChange ? 1 : 0);
-
-    const leftHelp =
-      mode === "move"
-        ? ["↑↓ move", "enter apply", "esc cancel"]
-        : ([
-            "[/] filter",
-            "space select",
-            selectedChange && "n new",
-            selectedChange && "e edit",
-            describeTargetCount > 0 &&
-              `d describe(${String(describeTargetCount)})`,
-            selectedChange && "s split",
-            selectedChange &&
-              changes.length > 1 &&
-              selectionState.selectedIndex < changes.length - 1 &&
-              "f fixup",
-            selectedChange &&
-              changes.length > 1 &&
-              currentChangeId !== selectedChange.changeId &&
-              "ctrl+m move",
-            selectedChange && onInsert && "i insert",
-            selectedChange && onBookmark && "b bookmark",
-            selectedChange &&
-              (bookmarksByChange.get(selectedChange.changeId)?.length ?? 0) >
-                0 &&
-              "ctrl+p push",
-            selectedChange && "ctrl+d drop",
-          ].filter(Boolean) as string[]);
-
     const helpText = formatHelpWithStatus(
       theme,
       statusState.message,
-      buildNavigationHelp(
-        selectionState.focus,
-        leftHelp,
-        [
-          files.length > 0 && "e edit",
-          files.length > 0 && "d discard",
-          files.length > 0 && onFileCmAction && "ctrl+i inspect",
-          files.length > 0 && onFileCmAction && "ctrl+d deps",
-          files.length > 0 && onFileCmAction && "ctrl+u used-by",
-          "pgup/pgdn scroll",
-        ].filter(Boolean) as string[],
-      ),
+      getHelpText(),
     );
 
     loadingState.cachedLines = renderSplitPanel(
@@ -752,238 +715,298 @@ Use the **conventional-commits** skill for commit message format.`;
     return loadingState.cachedLines;
   }
 
-  function handleInput(data: string): void {
-    // Move mode handling
-    if (mode === "move") {
-      if (matchesKey(data, "escape")) {
-        cancelMoveMode();
-        return;
+  // Helper conditions for bindings
+  const isLeftFocus = () => selectionState.focus === "left";
+  const isRightFocus = () => selectionState.focus === "right";
+  const hasSelectedChange = () => selectedChange !== null;
+  const hasSelectedFile = () => files[selectionState.fileIndex] !== undefined;
+  const canSquash = () =>
+    hasSelectedChange() &&
+    changes.length > 1 &&
+    selectionState.selectedIndex < changes.length - 1;
+  const canMove = () =>
+    hasSelectedChange() &&
+    changes.length > 1 &&
+    currentChangeId !== selectedChange?.changeId;
+  const hasBookmarks = () =>
+    selectedChange !== null &&
+    (bookmarksByChange.get(selectedChange.changeId)?.length ?? 0) > 0;
+
+  // Cycle filter helper
+  const cycleFilter = (direction: 1 | -1) => {
+    currentFilterIndex =
+      (currentFilterIndex + direction + REVISION_FILTERS.length) %
+      REVISION_FILTERS.length;
+    selectionState.selectedIndex = 0;
+    selectionState.fileIndex = 0;
+    selectionState.diffScroll = 0;
+    changeCache.clear();
+    void reloadChanges();
+  };
+
+  // Discard file helper
+  const discardFile = async () => {
+    if (!selectedChange || !files[selectionState.fileIndex]) return;
+    const file = files[selectionState.fileIndex];
+    try {
+      await restoreFile(pi, cwd, selectedChange.changeId, file.path);
+      changeCache.delete(selectedChange.changeId);
+      await loadFilesAndDiff(selectedChange);
+    } catch (error) {
+      notify(`Failed to discard file: ${formatErrorMessage(error)}`, "error");
+    }
+  };
+
+  // Push bookmarks helper
+  const pushBookmarks = async () => {
+    if (!selectedChange) return;
+    const bookmarks = bookmarksByChange.get(selectedChange.changeId) ?? [];
+    if (bookmarks.length === 0) return;
+    try {
+      for (const bookmark of bookmarks) {
+        await pi.exec("jj", ["git", "push", "-b", bookmark], { cwd });
       }
-      if (matchesKey(data, "enter")) {
+      await reloadChanges();
+      invalidateCache(loadingState);
+      tui.requestRender();
+      notify(
+        `Pushed bookmark${bookmarks.length > 1 ? "s" : ""}: ${bookmarks.join(", ")}`,
+        "info",
+      );
+    } catch (error) {
+      notify(`Failed to push: ${formatErrorMessage(error)}`, "error");
+    }
+  };
+
+  // Set bookmark helper
+  const setBookmark = async () => {
+    if (!selectedChange || !onBookmark) return;
+    try {
+      const bookmarkName = await onBookmark(selectedChange.changeId);
+      if (!bookmarkName) return;
+      await reloadBookmarks();
+      invalidateCache(loadingState);
+      tui.requestRender();
+      notify(
+        `Updated bookmark '${bookmarkName}' to ${selectedChange.changeId}`,
+        "info",
+      );
+    } catch (error) {
+      notify(
+        `Failed to update bookmark: ${formatErrorMessage(error)}`,
+        "error",
+      );
+    }
+  };
+
+  // Move mode bindings
+  const moveModeBindings: KeyBinding[] = [
+    { key: "up", label: "move", handler: () => moveChange("up") },
+    { key: "down", handler: () => moveChange("down") },
+    {
+      key: "enter",
+      label: "apply",
+      handler: () => {
         void applyMoveMode();
-        return;
-      }
-      if (matchesKey(data, "up")) {
-        moveChange("up");
-        return;
-      }
-      if (matchesKey(data, "down")) {
-        moveChange("down");
-        return;
-      }
-      return; // Ignore other keys in move mode
-    }
+      },
+    },
+    { key: "escape", label: "cancel", handler: () => cancelMoveMode() },
+  ];
 
-    if (matchesKey(data, "escape") || data === "q") {
-      done();
-      return;
-    }
+  // Left pane bindings
+  const leftPaneBindings: KeyBinding[] = [
+    { key: "up", label: "nav", handler: () => navigateChanges("up") },
+    { key: "down", handler: () => navigateChanges("down") },
+    { key: "ctrl+/", label: "filter", handler: () => cycleFilter(1) },
+    {
+      key: "space",
+      label: "select",
+      when: hasSelectedChange,
+      handler: () => {
+        if (selectedChange) {
+          if (selectedChangeIds.has(selectedChange.changeId)) {
+            selectedChangeIds.delete(selectedChange.changeId);
+          } else {
+            selectedChangeIds.add(selectedChange.changeId);
+          }
+          invalidateCache(loadingState);
+          tui.requestRender();
+        }
+      },
+    },
+    {
+      key: "n",
+      label: "new",
+      when: hasSelectedChange,
+      handler: () => {
+        void executeAction("new");
+      },
+    },
+    {
+      key: "e",
+      label: "edit",
+      when: hasSelectedChange,
+      handler: () => {
+        void executeAction("edit");
+      },
+    },
+    {
+      key: "d",
+      label: "describe",
+      when: () => hasSelectedChange() || selectedChangeIds.size > 0,
+      handler: () => {
+        void executeAction("describe");
+      },
+    },
+    {
+      key: "s",
+      label: "split",
+      when: hasSelectedChange,
+      handler: () => {
+        void executeAction("split");
+      },
+    },
+    {
+      key: "f",
+      label: "fixup",
+      when: canSquash,
+      handler: () => {
+        void executeAction("squash");
+      },
+    },
+    {
+      key: "ctrl+m",
+      label: "move",
+      when: canMove,
+      handler: () => enterMoveMode(),
+    },
+    {
+      key: "i",
+      label: "insert",
+      when: () => hasSelectedChange() && onInsert !== undefined,
+      handler: () => {
+        onInsert!(selectedChange!.changeId);
+        done();
+      },
+    },
+    {
+      key: "b",
+      label: "bookmark",
+      when: () => hasSelectedChange() && onBookmark !== undefined,
+      handler: () => {
+        void setBookmark();
+      },
+    },
+    {
+      key: "ctrl+p",
+      label: "push",
+      when: hasBookmarks,
+      handler: () => {
+        void pushBookmarks();
+      },
+    },
+    {
+      key: ACTION_KEYS.delete,
+      label: "drop",
+      when: hasSelectedChange,
+      handler: () => {
+        void executeAction("drop");
+      },
+    },
+  ];
 
-    if (matchesKey(data, "tab")) {
-      switchFocus();
-      return;
-    }
-
-    if (data === "e") {
-      if (selectionState.focus === "right" && files[selectionState.fileIndex]) {
+  // Right pane bindings
+  const rightPaneBindings: KeyBinding[] = [
+    { key: "up", label: "nav", handler: () => navigateFiles("up") },
+    { key: "down", handler: () => navigateFiles("down") },
+    {
+      key: "e",
+      label: "edit",
+      when: hasSelectedFile,
+      handler: () => {
         const file = files[selectionState.fileIndex];
         void pi.exec("code", [path.join(cwd, file.path)]);
-      } else if (selectionState.focus === "left" && selectedChange) {
-        void executeAction("edit");
-      }
+      },
+    },
+    {
+      key: "d",
+      label: "discard",
+      when: () => hasSelectedChange() && hasSelectedFile(),
+      handler: () => {
+        void discardFile();
+      },
+    },
+    {
+      key: "ctrl+i",
+      label: "inspect",
+      when: () => onFileCmAction !== undefined && hasSelectedFile(),
+      handler: () => {
+        void onFileCmAction!(files[selectionState.fileIndex].path, "inspect");
+      },
+    },
+    {
+      key: "ctrl+d",
+      label: "deps",
+      when: () => onFileCmAction !== undefined && hasSelectedFile(),
+      handler: () => {
+        void onFileCmAction!(files[selectionState.fileIndex].path, "deps");
+      },
+    },
+    {
+      key: "ctrl+u",
+      label: "used-by",
+      when: () => onFileCmAction !== undefined && hasSelectedFile(),
+      handler: () => {
+        void onFileCmAction!(files[selectionState.fileIndex].path, "used-by");
+      },
+    },
+    { key: "pageUp", label: "scroll", handler: () => scrollDiff("up") },
+    { key: "pageDown", handler: () => scrollDiff("down") },
+  ];
+
+  // Global bindings (work in both panes)
+  const globalBindings: KeyBinding[] = [
+    { key: "tab", label: "pane", handler: () => switchFocus() },
+    { key: "escape", handler: () => done() },
+    { key: "q", handler: () => done() },
+  ];
+
+  // Generate help text from active bindings
+  function getHelpText(): string {
+    const bindings =
+      mode === "move"
+        ? moveModeBindings
+        : selectionState.focus === "left"
+          ? [...globalBindings, ...leftPaneBindings]
+          : [...globalBindings, ...rightPaneBindings];
+
+    const activeBindings = bindings.filter((b) => {
+      if (!b.label) return false;
+      if (b.when && !b.when(undefined as never)) return false;
+      return true;
+    });
+    return buildHelpFromBindings(activeBindings);
+  }
+
+  // Create keyboard handlers for each mode/pane
+  const moveModeHandler = createKeyboardHandler({ bindings: moveModeBindings });
+  const leftPaneHandler = createKeyboardHandler({
+    bindings: [...globalBindings, ...leftPaneBindings],
+  });
+  const rightPaneHandler = createKeyboardHandler({
+    bindings: [...globalBindings, ...rightPaneBindings],
+  });
+
+  function handleInput(data: string): void {
+    if (mode === "move") {
+      moveModeHandler(data);
       return;
     }
 
-    if (data === "d" && selectionState.focus === "left") {
-      if (selectedChange || selectedChangeIds.size > 0) {
-        void executeAction("describe");
-      }
-      return;
-    }
-
-    if (data === "s" && selectionState.focus === "left") {
-      if (selectedChange) {
-        void executeAction("split");
-      }
-      return;
-    }
-
-    if (data === "n" && selectionState.focus === "left") {
-      if (selectedChange) {
-        void executeAction("new");
-      }
-      return;
-    }
-
-    if (data === " " && selectionState.focus === "left") {
-      if (selectedChange) {
-        if (selectedChangeIds.has(selectedChange.changeId)) {
-          selectedChangeIds.delete(selectedChange.changeId);
-        } else {
-          selectedChangeIds.add(selectedChange.changeId);
-        }
-        invalidateCache(loadingState);
-        tui.requestRender();
-      }
-      return;
-    }
-
-    if (data === "f") {
-      if (
-        selectedChange &&
-        changes.length > 1 &&
-        selectionState.selectedIndex < changes.length - 1
-      ) {
-        void executeAction("squash");
-      }
-      return;
-    }
-
-    if (selectionState.focus === "left" && matchesKey(data, "ctrl+d")) {
-      if (selectedChange) {
-        void executeAction("drop");
-      }
-      return;
-    }
-
-    if (data === "i") {
-      if (selectedChange && onInsert) {
-        onInsert(selectedChange.changeId);
-        done();
-      }
-      return;
-    }
-
-    if (data === "b" && selectionState.focus === "left") {
-      if (selectedChange && onBookmark) {
-        void (async () => {
-          try {
-            const bookmarkName = await onBookmark(selectedChange.changeId);
-            if (!bookmarkName) {
-              return;
-            }
-            await reloadBookmarks();
-            invalidateCache(loadingState);
-            tui.requestRender();
-            notify(
-              `Updated bookmark '${bookmarkName}' to ${selectedChange.changeId}`,
-              "info",
-            );
-          } catch (error) {
-            notify(
-              `Failed to update bookmark: ${formatErrorMessage(error)}`,
-              "error",
-            );
-          }
-        })();
-      }
-      return;
-    }
-
-    // Filter cycling with [ and ]
-    if (data === "[" && selectionState.focus === "left") {
-      currentFilterIndex =
-        (currentFilterIndex - 1 + REVISION_FILTERS.length) %
-        REVISION_FILTERS.length;
-      selectionState.selectedIndex = 0;
-      selectionState.fileIndex = 0;
-      selectionState.diffScroll = 0;
-      changeCache.clear();
-      void reloadChanges();
-      return;
-    }
-
-    if (data === "]" && selectionState.focus === "left") {
-      currentFilterIndex = (currentFilterIndex + 1) % REVISION_FILTERS.length;
-      selectionState.selectedIndex = 0;
-      selectionState.fileIndex = 0;
-      selectionState.diffScroll = 0;
-      changeCache.clear();
-      void reloadChanges();
-      return;
-    }
-
-    if (matchesKey(data, "ctrl+p") && selectionState.focus === "left") {
-      if (selectedChange) {
-        const bookmarks = bookmarksByChange.get(selectedChange.changeId) ?? [];
-        if (bookmarks.length > 0) {
-          void (async () => {
-            try {
-              for (const bookmark of bookmarks) {
-                await pi.exec("jj", ["git", "push", "-b", bookmark], { cwd });
-              }
-              await reloadChanges();
-              invalidateCache(loadingState);
-              tui.requestRender();
-              notify(
-                `Pushed bookmark${bookmarks.length > 1 ? "s" : ""}: ${bookmarks.join(", ")}`,
-                "info",
-              );
-            } catch (error) {
-              notify(`Failed to push: ${formatErrorMessage(error)}`, "error");
-            }
-          })();
-        }
-      }
-      return;
-    }
-
-    if (matchesKey(data, "ctrl+m") && selectionState.focus === "left") {
-      enterMoveMode();
-      return;
-    }
-
-    if (selectionState.focus === "left") {
-      if (matchesKey(data, "up")) {
-        navigateChanges("up");
-      } else if (matchesKey(data, "down")) {
-        navigateChanges("down");
-      }
+    if (isLeftFocus()) {
+      leftPaneHandler(data);
     } else {
-      if (data === "d" && selectedChange && files[selectionState.fileIndex]) {
-        const file = files[selectionState.fileIndex];
-        void (async () => {
-          try {
-            await restoreFile(pi, cwd, selectedChange.changeId, file.path);
-            changeCache.delete(selectedChange.changeId);
-            await loadFilesAndDiff(selectedChange);
-          } catch (error) {
-            notify(
-              `Failed to discard file: ${formatErrorMessage(error)}`,
-              "error",
-            );
-          }
-        })();
-        return;
-      }
-
-      // cm actions on files
-      if (onFileCmAction && files[selectionState.fileIndex]) {
-        const file = files[selectionState.fileIndex];
-        if (matchesKey(data, "ctrl+i")) {
-          void onFileCmAction(file.path, "inspect");
-          return;
-        }
-        if (matchesKey(data, "ctrl+d")) {
-          void onFileCmAction(file.path, "deps");
-          return;
-        }
-        if (matchesKey(data, "ctrl+u")) {
-          void onFileCmAction(file.path, "used-by");
-          return;
-        }
-      }
-
-      if (matchesKey(data, "up")) {
-        navigateFiles("up");
-      } else if (matchesKey(data, "down")) {
-        navigateFiles("down");
-      }
-    }
-
-    if (matchesKey(data, "pageDown") || matchesKey(data, "pageUp")) {
-      const direction = matchesKey(data, "pageDown") ? "down" : "up";
-      scrollDiff(direction);
+      rightPaneHandler(data);
     }
   }
 

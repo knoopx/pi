@@ -498,7 +498,6 @@ export function createLinearIssuesComponent(
     "",
     {
       title: () => `Linear: ${getCurrentFilterLabel()}`,
-      helpParts: ["↑↓ nav", "enter insert", "type to filter"],
       actions,
       loadItems: async () => {
         const data = await fetchLinearIssues(apiKey);

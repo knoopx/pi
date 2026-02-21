@@ -13,7 +13,12 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
-import { matchesKey } from "@mariozechner/pi-tui";
+import {
+  ACTION_KEYS,
+  createKeyboardHandler,
+  buildHelpFromBindings,
+  type KeyBinding,
+} from "../keyboard";
 import { join } from "node:path";
 import { existsSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import {
@@ -33,7 +38,7 @@ import {
   renderSplitPanel,
   type SplitPanelConfig,
 } from "./split-panel";
-import { truncateAnsi, ensureWidth, pad, buildHelpText } from "./text-utils";
+import { truncateAnsi, ensureWidth, pad } from "./text-utils";
 import { getFileIcon } from "./file-icons";
 
 type ViewMode = "local" | "remote";
@@ -553,7 +558,7 @@ export function createSkillBrowserComponent(
       rightTitle: "",
       rightTopTitle: skill ? ` ${truncateAnsi(skill.name, 30)}` : " Files",
       rightBottomTitle: file ? ` ${truncateAnsi(file.name, 30)}` : " Preview",
-      helpText: formatHelpText(),
+      helpText: getHelpText(),
       leftFocus: focusPane === "skills",
       rightFocus: focusPane === "files",
       leftRatio: 0.35,
@@ -580,8 +585,122 @@ export function createSkillBrowserComponent(
     return cachedLines;
   }
 
-  // Format help text
-  function formatHelpText(): string {
+  // Helper conditions
+  const isSkillsFocus = () => focusPane === "skills";
+  const isLocalMode = () => viewMode === "local";
+  const isRemoteMode = () => viewMode === "remote";
+  const hasSkill = () => skills.length > 0 && skillIndex < skills.length;
+  const hasFile = () => files.length > 0 && fileIndex < files.length;
+
+  // Navigation helpers
+  const navigateSkills = (direction: "up" | "down") => {
+    const newIndex =
+      direction === "up"
+        ? Math.max(0, skillIndex - 1)
+        : Math.min(skills.length - 1, skillIndex + 1);
+    if (newIndex !== skillIndex) {
+      skillIndex = newIndex;
+      const skill = getFocusedSkill();
+      if (skill) void loadFiles(skill);
+      invalidate();
+      tui.requestRender();
+    }
+  };
+
+  const navigateFiles = (direction: "up" | "down") => {
+    const newIndex =
+      direction === "up"
+        ? Math.max(0, fileIndex - 1)
+        : Math.min(files.length - 1, fileIndex + 1);
+    if (newIndex !== fileIndex) {
+      fileIndex = newIndex;
+      const file = getFocusedFile();
+      if (file) void loadPreview(file);
+      invalidate();
+      tui.requestRender();
+    }
+  };
+
+  const scrollPreview = (direction: "up" | "down") => {
+    if (direction === "up") {
+      previewScroll = Math.max(0, previewScroll - 10);
+    } else if (previewContent) {
+      const lines = previewContent.split("\n");
+      const maxScroll = Math.max(0, lines.length - 10);
+      previewScroll = Math.min(maxScroll, previewScroll + 10);
+    }
+    invalidate();
+    tui.requestRender();
+  };
+
+  const toggleView = () => {
+    viewMode = viewMode === "local" ? "remote" : "local";
+    searchQuery = "";
+    filesCache.clear();
+    contentCache.clear();
+    void loadSkills();
+  };
+
+  const selectSkill = () => {
+    const skill = getFocusedSkill();
+    if (!skill) return;
+    if (skill.isLocal) {
+      done(`/skill:${skill.name}`);
+    } else {
+      void installSkill();
+    }
+  };
+
+  // Global bindings
+  const globalBindings: KeyBinding[] = [
+    {
+      key: "up",
+      label: "nav",
+      handler: () =>
+        isSkillsFocus() ? navigateSkills("up") : navigateFiles("up"),
+    },
+    {
+      key: "down",
+      handler: () =>
+        isSkillsFocus() ? navigateSkills("down") : navigateFiles("down"),
+    },
+    {
+      key: "tab",
+      label: "pane",
+      handler: () => {
+        focusPane = focusPane === "skills" ? "files" : "skills";
+        invalidate();
+        tui.requestRender();
+      },
+    },
+    { key: "ctrl+/", label: "toggle", handler: toggleView },
+    {
+      key: "enter",
+      label: "use",
+      when: () => hasSkill() && isLocalMode(),
+      handler: selectSkill,
+    },
+    {
+      key: "enter",
+      label: "install",
+      when: () => hasSkill() && isRemoteMode(),
+      handler: selectSkill,
+    },
+    {
+      key: ACTION_KEYS.delete,
+      label: "delete",
+      when: isLocalMode,
+      handler: () => {
+        void deleteSkill();
+      },
+    },
+    { key: "pageUp", label: "scroll", handler: () => scrollPreview("up") },
+    { key: "pageDown", handler: () => scrollPreview("down") },
+    { key: "escape", handler: () => done() },
+  ];
+
+  // Generate help text from active bindings
+  function getHelpText(): string {
     if (statusMessage) {
       const color =
         statusMessage.type === "error"
@@ -592,146 +711,35 @@ export function createSkillBrowserComponent(
       return theme.fg(color, statusMessage.text);
     }
 
-    const parts = ["↑↓ nav", "tab pane", "type filter", "ctrl+/ toggle"];
-
-    if (skills.length > 0) {
-      if (viewMode === "local") {
-        parts.push("enter use", "x delete");
-      } else {
-        parts.push("enter install");
-      }
-    }
-
-    parts.push("pgup/dn", "esc");
-
-    return buildHelpText(...parts);
+    const activeBindings = globalBindings.filter((b) => {
+      if (!b.label) return false;
+      if (b.when && !b.when(undefined as never)) return false;
+      return true;
+    });
+    return buildHelpFromBindings(activeBindings);
   }
 
-  // Handle keyboard input
-  function handleInput(data: string): void {
-    if (matchesKey(data, "escape")) {
-      done();
-      return;
-    }
-
-    // Toggle between local and remote view
-    if (matchesKey(data, "ctrl+/")) {
-      viewMode = viewMode === "local" ? "remote" : "local";
-      searchQuery = "";
-      filesCache.clear();
-      contentCache.clear();
-      void loadSkills();
-      return;
-    }
-
-    if (matchesKey(data, "tab")) {
-      focusPane = focusPane === "skills" ? "files" : "skills";
-      invalidate();
-      tui.requestRender();
-      return;
-    }
-
-    if (matchesKey(data, "enter")) {
-      const skill = getFocusedSkill();
-      if (!skill) return;
-
-      if (skill.isLocal) {
-        // Return skill command for local skills
-        done(`/skill:${skill.name}`);
-      } else {
-        // Install remote skills
-        void installSkill();
-      }
-      return;
-    }
-
-    // Delete local skill
-    if (data === "x" || data === "X") {
-      if (viewMode === "local") {
-        void deleteSkill();
-      }
-      return;
-    }
-
-    if (matchesKey(data, "up")) {
-      if (focusPane === "skills") {
-        if (skillIndex > 0) {
-          skillIndex--;
-          const skill = getFocusedSkill();
-          if (skill) void loadFiles(skill);
-          invalidate();
-          tui.requestRender();
-        }
-      } else {
-        if (fileIndex > 0) {
-          fileIndex--;
-          const file = getFocusedFile();
-          if (file) void loadPreview(file);
-          invalidate();
-          tui.requestRender();
-        }
-      }
-      return;
-    }
-
-    if (matchesKey(data, "down")) {
-      if (focusPane === "skills") {
-        if (skillIndex < skills.length - 1) {
-          skillIndex++;
-          const skill = getFocusedSkill();
-          if (skill) void loadFiles(skill);
-          invalidate();
-          tui.requestRender();
-        }
-      } else {
-        if (fileIndex < files.length - 1) {
-          fileIndex++;
-          const file = getFocusedFile();
-          if (file) void loadPreview(file);
-          invalidate();
-          tui.requestRender();
-        }
-      }
-      return;
-    }
-
-    if (matchesKey(data, "pageUp")) {
-      previewScroll = Math.max(0, previewScroll - 10);
-      invalidate();
-      tui.requestRender();
-      return;
-    }
-
-    if (matchesKey(data, "pageDown")) {
-      if (previewContent) {
-        const lines = previewContent.split("\n");
-        const maxScroll = Math.max(0, lines.length - 10);
-        previewScroll = Math.min(maxScroll, previewScroll + 10);
-      }
-      invalidate();
-      tui.requestRender();
-      return;
-    }
-
-    // Backspace - delete from search query
-    if (data === "\x7f" || data === "\b") {
+  // Create keyboard handler
+  const keyboardHandler = createKeyboardHandler({
+    bindings: globalBindings,
+    onBackspace: () => {
       if (searchQuery.length > 0) {
         searchQuery = searchQuery.slice(0, -1);
         scheduleSearch();
         invalidate();
         tui.requestRender();
       }
-      return;
-    }
-
-    // Printable characters - add to search query
-    if (data.length === 1 && data >= " " && data <= "~") {
-      searchQuery += data;
+    },
+    onTextInput: (char) => {
+      searchQuery += char;
       scheduleSearch();
       invalidate();
       tui.requestRender();
-      return;
-    }
+    },
+  });
+
+  function handleInput(data: string): void {
+    keyboardHandler(data);
   }
 
   // Cleanup

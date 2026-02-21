@@ -3,7 +3,7 @@ import type {
   KeybindingsManager,
   Theme,
 } from "@mariozechner/pi-coding-agent";
-import { Input, matchesKey } from "@mariozechner/pi-tui";
+import { Input } from "@mariozechner/pi-tui";
 import { buildHelpText, ensureWidth, truncateAnsi } from "./text-utils";
 import { createKeyboardHandler } from "../keyboard";
 import {
