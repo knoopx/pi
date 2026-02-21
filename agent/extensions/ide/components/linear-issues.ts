@@ -13,8 +13,10 @@ import {
   type ListPickerComponent,
   type ListPickerItem,
 } from "./list-picker";
-import { applyFocusedStyle, truncateAnsi } from "./utils";
+import { truncateAnsi } from "./text-utils";
+import { applyFocusedStyle } from "./style-utils";
 import { createMarkdownTheme, formatRelativeTime } from "./shared-utils";
+import { linearGraphQL } from "../api/linear";
 
 export {
   createLinearIssueForm,
@@ -60,11 +62,6 @@ export function saveLinearApiKey(apiKey: string): void {
 
   data.linear = { apiKey };
   fs.writeFileSync(AUTH_FILE_PATH, JSON.stringify(data, null, 2));
-}
-
-interface LinearApiResponse<T> {
-  data?: T;
-  errors?: { message: string }[];
 }
 
 interface LinearIssueNode {
@@ -161,36 +158,6 @@ const STATE_ICONS: Record<string, string> = {
 
 function isIssueActive(stateType: string): boolean {
   return stateType !== "completed" && stateType !== "canceled";
-}
-
-export async function linearGraphQL<T>(
-  apiKey: string,
-  body: { query: string; variables?: Record<string, unknown> },
-): Promise<T> {
-  const response = await fetch("https://api.linear.app/graphql", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: apiKey,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Linear API request failed with status ${response.status}`);
-  }
-
-  const payload = (await response.json()) as LinearApiResponse<T>;
-
-  if (payload.errors && payload.errors.length > 0) {
-    throw new Error(payload.errors[0]?.message ?? "Linear API request failed");
-  }
-
-  if (!payload.data) {
-    throw new Error("Linear API returned no data");
-  }
-
-  return payload.data;
 }
 
 interface LinearTeam {

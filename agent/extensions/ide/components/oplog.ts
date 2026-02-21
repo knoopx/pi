@@ -9,7 +9,8 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { getChangeIcon, applyFocusedStyle } from "./utils";
+import { getChangeIcon } from "./change-utils";
+import { applyFocusedStyle } from "./style-utils";
 import {
   loadOpLog,
   getOpShow,

@@ -3,8 +3,9 @@ import type {
   KeybindingsManager,
   Theme,
 } from "@mariozechner/pi-coding-agent";
-import { Input, matchesKey } from "@mariozechner/pi-tui";
-import { buildHelpText, ensureWidth } from "./utils";
+import { Input } from "@mariozechner/pi-tui";
+import { buildHelpText, ensureWidth } from "./text-utils";
+import { createKeyboardHandler } from "../keyboard";
 import {
   borderedLine,
   topBorderWithTitle,
@@ -228,39 +229,32 @@ export function createBookmarkPromptComponent(
     return lines;
   }
 
-  function handleInput(data: string): void {
-    if (matchesKey(data, "escape")) {
-      done(null);
-      return;
-    }
-
-    if (matchesKey(data, "up")) {
-      selectedIndex = Math.max(0, selectedIndex - 1);
+  const handleKeyboard = createKeyboardHandler({
+    navigation: () => ({
+      index: selectedIndex,
+      maxIndex: Math.max(0, getCandidates().length - 1),
+    }),
+    onNavigate: (newIndex) => {
+      selectedIndex = newIndex;
       tui.requestRender();
-      return;
-    }
-
-    if (matchesKey(data, "down")) {
-      const candidates = getCandidates();
-      if (candidates.length === 0) {
-        tui.requestRender();
-        return;
-      }
-      selectedIndex = Math.min(candidates.length - 1, selectedIndex + 1);
-      tui.requestRender();
-      return;
-    }
-
-    if (matchesKey(data, "enter")) {
+    },
+    onEscape: () => done(null),
+    onEnter: () => {
       const candidates = getCandidates();
       if (candidates.length === 0) {
         done(null);
         return;
       }
       done(candidates[selectedIndex] || null);
+    },
+  });
+
+  function handleInput(data: string): void {
+    if (handleKeyboard(data)) {
       return;
     }
 
+    // Forward remaining input to text field
     const before = input.getValue();
     input.handleInput(data);
     const after = input.getValue();

@@ -33,13 +33,8 @@ import {
   renderSplitPanel,
   type SplitPanelConfig,
 } from "./split-panel";
-import {
-  truncateAnsi,
-  ensureWidth,
-  pad,
-  buildHelpText,
-  getFileIcon,
-} from "./utils";
+import { truncateAnsi, ensureWidth, pad, buildHelpText } from "./text-utils";
+import { getFileIcon } from "./file-icons";
 
 type ViewMode = "local" | "remote";
 type FocusPane = "skills" | "files";

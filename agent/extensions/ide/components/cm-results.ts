@@ -9,11 +9,9 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import {
-  formatSymbolListEntry,
-  loadFilePreviewWithBat,
-  applyFocusedStyle,
-} from "./utils";
+import { formatSymbolListEntry } from "./symbol-utils";
+import { loadFilePreviewWithBat } from "./file-preview";
+import { applyFocusedStyle } from "./style-utils";
 
 export interface CmResultItem extends ListPickerItem {
   name: string;

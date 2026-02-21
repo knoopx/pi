@@ -10,7 +10,8 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { applyFocusedStyle, truncateAnsi } from "./utils";
+import { truncateAnsi } from "./text-utils";
+import { applyFocusedStyle } from "./style-utils";
 import { createMarkdownTheme, formatRelativeTime } from "./shared-utils";
 
 /** Pull request data from GitHub CLI */

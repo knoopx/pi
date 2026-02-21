@@ -1,6 +1,7 @@
 import path from "node:path";
 import { matchesKey } from "@mariozechner/pi-tui";
-import { ensureWidth, formatChangeRow, truncateAnsi } from "./utils";
+import { ensureWidth, truncateAnsi } from "./text-utils";
+import { formatChangeRow } from "./change-utils";
 import {
   calculateDimensions,
   calculateDiffScroll,
@@ -32,7 +33,7 @@ import {
   listBookmarksByChange,
   getCurrentChangeIdShort,
 } from "../jj";
-import type { CmActionType } from "./cm-results-component";
+import type { CmActionType } from "./cm-results";
 import {
   calculateGraphLayout,
   renderGraphRow,

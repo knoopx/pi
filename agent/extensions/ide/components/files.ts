@@ -9,12 +9,10 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import {
-  loadFilePreviewWithBat,
-  getFileIcon,
-  applyFocusedStyle,
-} from "./utils";
-import type { CmActionType } from "./cm-results-component";
+import { loadFilePreviewWithBat } from "./file-preview";
+import { getFileIcon } from "./file-icons";
+import { applyFocusedStyle } from "./style-utils";
+import type { CmActionType } from "./cm-results";
 
 export interface FileInfo extends ListPickerItem {
   path: string;

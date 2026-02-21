@@ -27,29 +27,29 @@ import {
   isCurrentChangeEmpty,
   loadAgentWorkspaces,
 } from "./workspace";
-import { createWorkspacesComponent } from "./components/workspaces-component";
+import { createWorkspacesComponent } from "./components/workspaces";
 import {
   createSymbolsComponent,
   type SymbolResult,
-} from "./components/symbols-component";
+} from "./components/symbols";
 import {
   createCmResultsComponent,
   CM_COMMANDS,
   type CmResult,
   type CmActionType,
-} from "./components/cm-results-component";
+} from "./components/cm-results";
 import {
   createFilesComponent,
   type FileResult,
-} from "./components/files-component";
+} from "./components/files";
 
-import { createChangesComponent } from "./components/changes-component";
-import { createBookmarkPromptComponent } from "./components/bookmark-prompt-component";
-import { createBookmarksComponent } from "./components/bookmarks-component";
-import { createOpLogComponent } from "./components/oplog-component";
-import { createSkillBrowserComponent } from "./components/skill-browser-component";
-import { createCommandPaletteComponent } from "./components/command-palette-component";
-import { createPullRequestsComponent } from "./components/pull-requests-component";
+import { createChangesComponent } from "./components/changes";
+import { createBookmarkPromptComponent } from "./components/bookmark-prompt";
+import { createBookmarksComponent } from "./components/bookmarks";
+import { createOpLogComponent } from "./components/oplog";
+import { createSkillBrowserComponent } from "./components/skill-browser";
+import { createCommandPaletteComponent } from "./components/command-palette";
+import { createPullRequestsComponent } from "./components/pull-requests";
 import {
   createLinearIssuesComponent,
   createLinearIssueForm,
@@ -57,7 +57,7 @@ import {
   saveLinearApiKey,
   type LinearIssuesResult,
   type IssueFormResult,
-} from "./components/linear-issues-component";
+} from "./components/linear-issues";
 import { registerAllTools } from "./tools/registration";
 import {
   setBookmarkToChange,

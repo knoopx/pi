@@ -9,7 +9,8 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { formatBookmarkReference, applyFocusedStyle } from "./utils";
+import { formatBookmarkReference } from "./change-utils";
+import { applyFocusedStyle } from "./style-utils";
 import { forgetBookmark, getDiff, listBookmarksByChange } from "../jj";
 
 interface BookmarkEntry extends ListPickerItem {
