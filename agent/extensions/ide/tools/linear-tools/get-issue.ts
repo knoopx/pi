@@ -6,10 +6,8 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
 import { errorResult, textResult } from "../../../../shared/tool-utils.js";
-import {
-  getLinearApiKey,
-  linearGraphQL,
-} from "../../components/linear-issues-component.js";
+import { getLinearApiKey } from "../../components/linear-issues.js";
+import { linearGraphQL } from "../../api/linear";
 import {
   formatLinearIssueForAgentExtended,
   LinearIssueExtended,

@@ -3,7 +3,7 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { saveLinearApiKey } from "../../components/linear-issues-component.js";
+import { saveLinearApiKey } from "../../components/linear-issues.js";
 
 export function registerLinearLoginCommand(pi: ExtensionAPI): void {
   pi.registerCommand("linear-login", {

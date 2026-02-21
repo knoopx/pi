@@ -6,7 +6,7 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
 import { errorResult, textResult } from "../../../../shared/tool-utils.js";
-import { linearGraphQL } from "../../components/linear-issues-component.js";
+import { linearGraphQL } from "../../api/linear";
 import { PriorityParam, requireLinearAuth } from "./common.js";
 
 interface LinearUpdateResult {

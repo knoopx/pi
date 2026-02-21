@@ -4,7 +4,7 @@
 
 import { Type } from "@sinclair/typebox";
 import { errorResult } from "../../../../shared/tool-utils.js";
-import { getLinearApiKey } from "../../components/linear-issues-component.js";
+import { getLinearApiKey } from "../../components/linear-issues.js";
 
 /** Shared priority parameter schema */
 export const PriorityParam = Type.Optional(
