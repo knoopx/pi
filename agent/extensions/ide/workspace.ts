@@ -13,6 +13,7 @@ import {
   updateStaleWorkspace,
   loadChangedFiles,
   sanitizeDescription,
+  getDiff,
 } from "./jj";
 
 const WORKSPACE_PREFIX = "ide-";
@@ -341,25 +342,8 @@ export async function getWorkspaceDiff(
   workspacePath: string,
   filePath?: string,
 ): Promise<string> {
-  await updateStaleWorkspace(pi, workspacePath);
-
-  const fileArg = filePath ? `'${filePath.replace(/'/g, `'"'"'`)}'` : "";
-  const result = await pi.exec(
-    "bash",
-    [
-      "-c",
-      `set -o pipefail; jj diff --git --color=never -r @ ${fileArg} | diff-so-fancy`,
-    ],
-    { cwd: workspacePath },
-  );
-
-  if (result.code !== 0) {
-    const details =
-      result.stderr.trim() || result.stdout.trim() || "unknown error";
-    return `Failed to get diff: ${details}`;
-  }
-
-  return result.stdout;
+  const lines = await getDiff(pi, workspacePath, "@", filePath);
+  return lines.join("\n");
 }
 
 /**

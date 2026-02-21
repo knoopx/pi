@@ -241,17 +241,17 @@ describe("utils", () => {
 
   describe("loadFilePreviewWithBat", () => {
     let mockPi: ExtensionAPI;
+    let execMock: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
-      mockPi = {
-        exec: vi.fn(),
-      } as unknown as ExtensionAPI;
+      execMock = vi.fn();
+      mockPi = { exec: execMock } as unknown as ExtensionAPI;
     });
 
     describe("given bat command succeeds", () => {
       describe("when loading file preview", () => {
         it("then returns lines from stdout", async () => {
-          vi.mocked(mockPi.exec).mockResolvedValue({
+          execMock.mockResolvedValue({
             code: 0,
             stdout: "line1\nline2\nline3",
             stderr: "",
@@ -265,7 +265,7 @@ describe("utils", () => {
           );
 
           expect(result).toEqual(["line1", "line2", "line3"]);
-          expect(mockPi.exec).toHaveBeenCalledWith(
+          expect(execMock).toHaveBeenCalledWith(
             "bat",
             ["--plain", "--color=always", "test.ts"],
             { cwd: "/home/user" },
@@ -275,7 +275,7 @@ describe("utils", () => {
 
       describe("when file is empty", () => {
         it("then returns array with empty string", async () => {
-          vi.mocked(mockPi.exec).mockResolvedValue({
+          execMock.mockResolvedValue({
             code: 0,
             stdout: "",
             stderr: "",
@@ -296,7 +296,7 @@ describe("utils", () => {
     describe("given bat command fails", () => {
       describe("when file not found", () => {
         it("then returns error message", async () => {
-          vi.mocked(mockPi.exec).mockResolvedValue({
+          execMock.mockResolvedValue({
             code: 1,
             stdout: "",
             stderr: "bat: 'missing.ts': No such file or directory",

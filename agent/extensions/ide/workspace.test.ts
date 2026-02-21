@@ -173,7 +173,7 @@ describe("workspace module", () => {
           "bash",
           [
             "-c",
-            "set -o pipefail; jj diff --git --color=never -r @ 'src/o'\"'\"'reilly.ts' | diff-so-fancy",
+            "jj 'diff' '--git' '-r' '@' 'src/o'\\''reilly.ts' | delta --paging=never",
           ],
           { cwd: "/repo/.jj/workspaces/ide-abc" },
         );

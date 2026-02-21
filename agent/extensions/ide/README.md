@@ -13,7 +13,7 @@ A development environment extension for pi that provides code browsing, Codemapp
 - **Workspace management** - Create isolated jj workspaces and spawn subagents
 - **Skill browser** - Browse local/remote skills and install or insert `/skill:<name>`
 - **Command palette** - Fuzzy-search slash commands and shortcuts from one overlay
-- **Rich diffs** - Colorized diffs via diff-so-fancy
+- **Rich diffs** - Colorized diffs via delta
 - **Quick navigation** - Keyboard shortcuts for fast access
 
 ## Commands
@@ -278,6 +278,6 @@ Readonly operations (for example `read`, and readonly shell commands like `ls`, 
 - `bat` - Syntax-highlighted file preview
 - `rg` - Fast file search
 - `cm` - Codemapper for symbol indexing
-- `diff-so-fancy` - Beautiful diff formatting
+- `delta` - Beautiful diff formatting with syntax highlighting
 - `tmux` - Session management for subagents
 - `code` - VS Code CLI for opening files from overlays

@@ -123,7 +123,7 @@ export async function loadChangedFiles(
 }
 
 /**
- * Get diff output with diff-so-fancy formatting
+ * Get diff output with delta formatting
  */
 export async function getDiff(
   pi: ExtensionAPI,
@@ -133,52 +133,20 @@ export async function getDiff(
 ): Promise<string[]> {
   await updateStaleWorkspace(pi, cwd);
 
-  const jjArgs = ["diff", "--git", "--color=never", "-r", changeId];
+  const jjArgs = ["diff", "--git", "-r", changeId];
   if (filePath) {
     jjArgs.push(filePath);
   }
 
+  const escapeArg = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`;
   const result = await pi.exec(
     "bash",
-    ["-c", `jj ${jjArgs.map((a) => `'${a}'`).join(" ")} | diff-so-fancy`],
+    ["-c", `jj ${jjArgs.map(escapeArg).join(" ")} | delta --paging=never`],
     { cwd },
   );
 
   if (result.code === 0) {
-    // Filter out redundant file header lines (e.g., "modified: path/to/file")
-    // when viewing a single file diff, as the file is already shown in the UI
-    const lines = result.stdout.split("\n");
-    if (filePath) {
-      const headerPattern = /^(modified|added|deleted|renamed|copied):\s/;
-      const separatorPattern = /^─+$/;
-      // Hunk header pattern: @ path/to/file:123 @ -> @ :123 @
-      const hunkHeaderPattern = /^(@\s*)[^\s:]+:(\d+)(\s*@.*)$/;
-      // eslint-disable-next-line no-control-regex
-      const ansiPattern = /\x1b\[[0-9;]*m/g;
-      return lines
-        .filter((line) => {
-          const stripped = line.replace(ansiPattern, "");
-          return (
-            !headerPattern.test(stripped) && !separatorPattern.test(stripped)
-          );
-        })
-        .map((line) => {
-          // Replace hunk headers with a divider: ───── line N ─────
-          const stripped = line.replace(ansiPattern, "");
-          const match = hunkHeaderPattern.exec(stripped);
-          if (match) {
-            const label = ` line ${match[2]} `;
-            const totalWidth = 78;
-            const sideWidth = Math.max(
-              4,
-              Math.floor((totalWidth - label.length) / 2),
-            );
-            return `${"─".repeat(sideWidth)}${label}${"─".repeat(sideWidth)}`;
-          }
-          return line;
-        });
-    }
-    return lines;
+    return result.stdout.split("\n");
   }
   return [`Failed to get diff: ${result.stderr}`];
 }
