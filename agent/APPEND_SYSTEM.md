@@ -120,3 +120,26 @@ You are a coding assistant. Your goal is to help users understand, modify, and i
 | Long parameter list | Use parameter object      |
 | Primitive obsession | Create value objects      |
 | Dead code           | Delete it                 |
+
+---
+
+## 5. Tool Usage
+
+### Edit Tool
+
+- **Always read first**: Read the file before editing to get exact content
+- **Re-read on failure**: If edit fails, re-read - content may have changed
+- **Small edits**: Prefer surgical edits over large replacements
+- **Match exactly**: Whitespace, quotes, and newlines must match precisely
+
+### Bash Tool
+
+- Use `grep ... || true` when no match is acceptable
+- Use `rg` (ripgrep) over `grep` for code searches
+- Avoid `cd path &&` - use absolute paths
+- Suppress errors: `find ... 2>/dev/null || true`
+
+### Scripting
+
+- Prefer nu-shell for complex data processing scripts
+- Never create `.js` files - always use TypeScript
