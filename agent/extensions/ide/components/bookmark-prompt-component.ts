@@ -11,45 +11,10 @@ import {
   horizontalSeparator,
   bottomBorder,
 } from "./shared-utils";
-
-function fuzzyScore(candidate: string, query: string): number {
-  const text = candidate.toLowerCase();
-  const q = query.toLowerCase();
-
-  if (!q) {
-    return 1;
-  }
-
-  const containsIndex = text.indexOf(q);
-  if (containsIndex >= 0) {
-    return 1000 - containsIndex;
-  }
-
-  let qi = 0;
-  let score = 0;
-  let lastMatch = -1;
-
-  for (let i = 0; i < text.length && qi < q.length; i++) {
-    if (text[i] === q[qi]) {
-      score += lastMatch >= 0 ? Math.max(1, 8 - (i - lastMatch)) : 8;
-      lastMatch = i;
-      qi++;
-    }
-  }
-
-  return qi === q.length ? score : -1;
-}
+import { fuzzySort } from "../../../shared/fuzzy";
 
 function filterBookmarks(bookmarks: string[], query: string): string[] {
-  if (!query) {
-    return bookmarks;
-  }
-
-  return bookmarks
-    .map((bookmark) => ({ bookmark, score: fuzzyScore(bookmark, query) }))
-    .filter((item) => item.score >= 0)
-    .sort((a, b) => b.score - a.score)
-    .map((item) => item.bookmark);
+  return fuzzySort(bookmarks, query, (b) => b);
 }
 
 export function createBookmarkPromptComponent(
