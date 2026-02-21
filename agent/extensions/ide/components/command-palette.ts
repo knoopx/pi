@@ -12,8 +12,8 @@ import type {
   Theme,
 } from "@mariozechner/pi-coding-agent";
 import type { KeyId } from "@mariozechner/pi-tui";
-import { matchesKey } from "@mariozechner/pi-tui";
-import { truncateAnsi, ensureWidth, buildHelpText } from "./utils";
+import { truncateAnsi, ensureWidth, buildHelpText } from "./text-utils";
+import { createKeyboardHandler } from "../keyboard";
 import {
   borderedLine,
   topBorderWithTitle,
@@ -301,82 +301,54 @@ export function createCommandPaletteComponent(
   }
 
   /** Handle keyboard input */
-  function handleInput(data: string): void {
-    if (isExecuting) {
-      return; // Block input while executing
-    }
-
-    if (matchesKey(data, "escape")) {
-      done();
-      return;
-    }
-
-    if (matchesKey(data, "enter")) {
+  const handleKeyboard = createKeyboardHandler({
+    bindings: [
+      {
+        key: "ctrl+u",
+        handler: () => {
+          searchQuery = "";
+          filterCommands();
+          tui.requestRender();
+        },
+      },
+    ],
+    navigation: () => ({
+      index: selectedIndex,
+      maxIndex: filteredCommands.length - 1,
+      pageSize: 10,
+    }),
+    onNavigate: (newIndex) => {
+      selectedIndex = newIndex;
+      invalidate();
+      tui.requestRender();
+    },
+    onEscape: () => done(),
+    onEnter: () => {
       const cmd = filteredCommands[selectedIndex];
       if (cmd) {
         done();
         cmd.action();
       }
-      return;
-    }
-
-    if (matchesKey(data, "up")) {
-      if (selectedIndex > 0) {
-        selectedIndex--;
-        invalidate();
-        tui.requestRender();
-      }
-      return;
-    }
-
-    if (matchesKey(data, "down")) {
-      if (selectedIndex < filteredCommands.length - 1) {
-        selectedIndex++;
-        invalidate();
-        tui.requestRender();
-      }
-      return;
-    }
-
-    if (matchesKey(data, "pageUp")) {
-      selectedIndex = Math.max(0, selectedIndex - 10);
-      invalidate();
-      tui.requestRender();
-      return;
-    }
-
-    if (matchesKey(data, "pageDown")) {
-      selectedIndex = Math.min(filteredCommands.length - 1, selectedIndex + 10);
-      invalidate();
-      tui.requestRender();
-      return;
-    }
-
-    // Backspace - delete from search query
-    if (data === "\x7f" || data === "\b") {
+    },
+    onBackspace: () => {
       if (searchQuery.length > 0) {
         searchQuery = searchQuery.slice(0, -1);
         filterCommands();
         tui.requestRender();
       }
-      return;
-    }
-
-    // Ctrl+U - clear search
-    if (data === "\x15") {
-      searchQuery = "";
+    },
+    onTextInput: (char) => {
+      searchQuery += char;
       filterCommands();
       tui.requestRender();
-      return;
-    }
+    },
+  });
 
-    // Printable characters - add to search query
-    if (data.length === 1 && data >= " " && data <= "~") {
-      searchQuery += data;
-      filterCommands();
-      tui.requestRender();
+  function handleInput(data: string): void {
+    if (isExecuting) {
       return;
     }
+    handleKeyboard(data);
   }
 
   function dispose(): void {
