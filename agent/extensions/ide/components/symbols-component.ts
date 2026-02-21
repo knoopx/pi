@@ -49,6 +49,9 @@ async function querySymbols(
     .split("\n")
     .filter((line) => line.includes("|") && !line.startsWith("["));
 
+  const isTestFile = (path: string) =>
+    /\.(test|spec)\.[jt]sx?$/.test(path) || path.includes("__tests__");
+
   return lines
     .map((line) => {
       const match = /^(.+)\|([a-z_]+)\|(\.[^|]+)\|(\d+-\d+)/.exec(line);
@@ -72,7 +75,10 @@ async function querySymbols(
         endLine: normalizedEndLine,
       };
     })
-    .filter((s): s is SymbolInfo => s !== null && !!s.name && !!s.path);
+    .filter(
+      (s): s is SymbolInfo =>
+        s !== null && !!s.name && !!s.path && !isTestFile(s.path),
+    );
 }
 
 // Symbol types available for filtering (cycle order)
@@ -210,7 +216,7 @@ export function createSymbolsComponent(
     initialQuery,
     {
       title: getTitle,
-      helpParts: ["↑↓ nav", "tab cycle type", "type to search"],
+      helpParts: ["↑↓ nav", "ctrl+/ cycle type", "type to search"],
       actions,
       onEdit: async (item) => {
         const { join } = await import("node:path");
@@ -231,7 +237,7 @@ export function createSymbolsComponent(
         ),
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
       onKey: (key) => {
-        if (matchesKey(key, "tab")) {
+        if (matchesKey(key, "ctrl+/")) {
           // Cycle to next type filter
           const currentIndex = SYMBOL_TYPES.indexOf(currentTypeFilter);
           const nextIndex = (currentIndex + 1) % SYMBOL_TYPES.length;
