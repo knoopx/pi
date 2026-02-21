@@ -78,3 +78,12 @@ export default function extension(pi: ExtensionAPI) {
 - Use `pi-list-projects` to discover valid project paths
 - Project paths are auto-resolved from cwd when not specified
 - Session indices: `0` = most recent, `1` = second most recent
+
+### TypeScript Refactoring
+
+- **Use `retype-cli`** for AST-aware refactoring (rename, extract, move)
+- **Before adding commands**: `bunx retype-cli search registerCommand -p ./src --list`
+- **Extract to module**: `bunx retype-cli extract <symbol> <target-file> -p ./src --yes`
+- **Rename across codebase**: `bunx retype-cli rename <old> <new> -p ./src --yes`
+- **Find references**: `bunx retype-cli references <symbol> -p ./src --list`
+- **Use ast-grep** for pattern-based search/replace across multiple languages
