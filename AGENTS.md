@@ -71,3 +71,10 @@ export default function extension(pi: ExtensionAPI) {
 - Jujutsu parent syntax: `@-` not `@~1` or `@^`
 - Avoid `cd /path &&` - use absolute paths or rely on cwd
 - For file checks: `test -f file` or `[[ -f file ]]`
+- Verify paths exist before multi-step operations: `[[ -d /path ]] && cmd`
+
+### Pi Session Tools
+
+- Use `pi-list-projects` to discover valid project paths
+- Project paths are auto-resolved from cwd when not specified
+- Session indices: `0` = most recent, `1` = second most recent

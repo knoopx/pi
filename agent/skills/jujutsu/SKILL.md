@@ -86,6 +86,7 @@ jj resolve              # Interactive conflict resolution
 | `@+`   | Child of @       | `jj log -r @+`       |
 | `x::y` | x to y inclusive | `jj log -r main::@`  |
 | `x..y` | x to y exclusive | `jj log -r main..@`  |
+| `x\|y` | Union (or)       | `jj log -r 'a \| b'` |
 
 **⚠️ Common mistakes:**
 
@@ -93,6 +94,7 @@ jj resolve              # Interactive conflict resolution
 - ❌ `@^` → ✅ `@-` (parent)
 - ❌ `@~-1` → ✅ `@+` (child)
 - ❌ `jj changes` → ✅ `jj log` or `jj diff`
+- ❌ `a,b,c` → ✅ `a | b | c` (union uses pipe, not comma)
 
 **Functions:**
 
@@ -101,6 +103,9 @@ jj log -r 'heads(all())'        # All heads
 jj log -r 'remote_bookmarks()..'  # Not on remote
 jj log -r 'author(name)'        # By author
 jj log -r 'description(regex)'  # By description
+jj log -r 'mine()'              # My commits
+jj log -r 'committer_date(after:"7 days ago")'  # Recent commits
+jj log -r 'mine() & committer_date(after:"yesterday")'  # My recent
 ```
 
 ## Templates
