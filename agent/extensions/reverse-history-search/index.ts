@@ -1,15 +1,5 @@
-// Simple fuzzy matching - returns true if all chars in query appear in text in order
-export function fuzzyMatch(text: string, query: string): boolean {
-  if (!query) return true;
-  let queryIndex = 0;
-  for (const char of text) {
-    if (char.toLowerCase() === query[queryIndex].toLowerCase()) {
-      queryIndex++;
-      if (queryIndex === query.length) return true;
-    }
-  }
-  return false;
-}
+import { fuzzyMatch } from "../../shared/fuzzy";
+export { fuzzyMatch };
 
 /**
  * Reverse History Search - Ctrl+R fuzzy history search
@@ -40,8 +30,6 @@ interface HistoryEntry {
   timestamp: number;
   type: "command" | "message";
 }
-
-// Simple fuzzy matching - returns true if all chars in query appear in text in order
 
 // Load history (commands and messages) from session files matching the given cwd
 const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
@@ -140,11 +128,14 @@ const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
                       }
                     }
 
-                    const message = textParts.join("\n").trim();
-                    if (message && !seen.has(message)) {
-                      seen.add(message);
+                    const firstLine = textParts
+                      .join("\n")
+                      .split("\n")[0]
+                      .trim();
+                    if (firstLine && !seen.has(firstLine)) {
+                      seen.add(firstLine);
                       history.push({
-                        content: message,
+                        content: firstLine,
                         timestamp,
                         type: "message",
                       });
@@ -294,7 +285,7 @@ class HistorySearchComponent {
       const isSelected = i === this.selectedIndex;
 
       // Type indicator
-      const typeIndicator = entry.type === "command" ? "$" : "💬";
+      const typeIndicator = entry.type === "command" ? "$" : "󰆉";
       const typeColor = entry.type === "command" ? "success" : "accent";
 
       let line = isSelected ? this.theme.fg("accent", "► ") : "  ";
@@ -323,7 +314,7 @@ class HistorySearchComponent {
       new Text(
         this.theme.fg(
           "dim",
-          "$ = command | 💬 = message • ↑↓ navigate • enter select • esc cancel",
+          "$ = command | 󰆉 = message • ↑↓ navigate • enter select • esc cancel",
         ),
         1,
         0,
