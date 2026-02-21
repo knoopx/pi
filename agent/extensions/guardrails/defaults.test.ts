@@ -468,6 +468,41 @@ describe("Guardrails Defaults Configuration", () => {
       });
     });
 
+    describe("when checking tilde parent syntax rule", () => {
+      const tildeRule = jjGroup!.rules.find((r) => r.pattern.includes("~\\d"));
+
+      it("then blocks jj commands with ~N syntax", () => {
+        expect(tildeRule).toBeDefined();
+        expect(tildeRule!.action).toBe("block");
+        expect(tildeRule!.reason).toContain("@-");
+      });
+
+      it("then pattern matches ~N parent syntax", () => {
+        const regex = new RegExp(tildeRule!.pattern);
+        expect(regex.test("jj diff -r @~1")).toBe(true);
+        expect(regex.test("jj log -r abc123~2")).toBe(true);
+        expect(regex.test("jj diff -r @-")).toBe(false);
+        expect(regex.test("jj log -r main")).toBe(false);
+      });
+    });
+
+    describe("when checking caret parent syntax rule", () => {
+      const caretRule = jjGroup!.rules.find((r) => r.pattern.includes("@\\^"));
+
+      it("then blocks jj commands with @^ syntax", () => {
+        expect(caretRule).toBeDefined();
+        expect(caretRule!.action).toBe("block");
+        expect(caretRule!.reason).toContain("@-");
+      });
+
+      it("then pattern matches @^ parent syntax", () => {
+        const regex = new RegExp(caretRule!.pattern);
+        expect(regex.test("jj diff -r @^")).toBe(true);
+        expect(regex.test("jj log @^")).toBe(true);
+        expect(regex.test("jj diff -r @-")).toBe(false);
+      });
+    });
+
     describe("when checking revert rule", () => {
       const revertRule = jjGroup!.rules.find((r) =>
         r.pattern.includes("revert"),
@@ -542,6 +577,36 @@ describe("Guardrails Defaults Configuration", () => {
         expect(regex.test("docker run nginx")).toBe(true);
         expect(regex.test("docker build .")).toBe(true);
         expect(regex.test("podman run nginx")).toBe(false);
+      });
+    });
+  });
+
+  describe("given typescript-only group", () => {
+    const tsGroup = typedDefaults.find((g) => g.group === "typescript-only");
+
+    describe("when group exists", () => {
+      it("then is active for TypeScript projects", () => {
+        expect(tsGroup).toBeDefined();
+        expect(tsGroup!.pattern).toBe("tsconfig.json");
+        expect(tsGroup!.rules.length).toBe(1);
+      });
+    });
+
+    describe("when checking .js file rule", () => {
+      const jsRule = tsGroup!.rules[0];
+
+      it("then blocks .js files with TypeScript alternative", () => {
+        expect(jsRule.context).toBe("file_name");
+        expect(jsRule.action).toBe("block");
+        expect(jsRule.reason).toContain(".ts");
+      });
+
+      it("then pattern matches .js files but not config files", () => {
+        const regex = new RegExp(jsRule.pattern);
+        expect(regex.test("utils.js")).toBe(true);
+        expect(regex.test("index.js")).toBe(true);
+        expect(regex.test("eslint.config.js")).toBe(false);
+        expect(regex.test("utils.ts")).toBe(false);
       });
     });
   });

@@ -263,6 +263,18 @@
     "rules": [
       {
         "context": "command",
+        "pattern": "^jj\\s+.*~\\d",
+        "action": "block",
+        "reason": "Jujutsu uses `-` not `~N` for parent syntax. Use: `@-` (parent), `@--` (grandparent), `commit-` (parent of commit). Example: `jj diff -r @-` not `jj diff -r @~1` (see skill: jujutsu)"
+      },
+      {
+        "context": "command",
+        "pattern": "^jj\\s+.*@\\^",
+        "action": "block",
+        "reason": "Jujutsu uses `-` not `^` for parent syntax. Use: `@-` (parent), `commit-` (parent of commit). Example: `jj diff -r @-` not `jj diff -r @^` (see skill: jujutsu)"
+      },
+      {
+        "context": "command",
         "pattern": "^jj\\s+revert",
         "action": "block",
         "reason": "`jj revert` creates a new commit that undoes changes (like git revert). You probably want: `jj undo` (undo last jj operation), `jj restore` (restore files), or `jj abandon` (discard working changes) (see skill: jujutsu)"
@@ -326,6 +338,18 @@
         "pattern": "^docker\\s",
         "action": "block",
         "reason": "use Podman instead of Docker. Podman is a drop-in replacement with rootless containers by default. Replace `docker` with `podman`: `podman run`, `podman build`, `podman compose`, etc. (see skill: podman)"
+      }
+    ]
+  },
+  {
+    "group": "typescript-only",
+    "pattern": "tsconfig.json",
+    "rules": [
+      {
+        "context": "file_name",
+        "pattern": "(?<!eslint\\.config)\\.js$",
+        "action": "block",
+        "reason": "this project uses TypeScript. Create `.ts` files instead of `.js`. For config files that require JS (like eslint.config.js), those are excepted"
       }
     ]
   }
