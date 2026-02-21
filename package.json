@@ -21,6 +21,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "@leeoniya/ufuzzy": "^1.0.19",
     "@mariozechner/pi-agent-core": "^0.51.3",
     "@mariozechner/pi-ai": "^0.51.3",
     "@mariozechner/pi-coding-agent": "^0.51.3",
