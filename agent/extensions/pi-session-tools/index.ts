@@ -24,6 +24,7 @@ interface SessionProject {
   cwdPath: string;
   sessionCount: number;
   latestSessionIso: string | null;
+  createdIso: string;
   totalSizeBytes: number;
 }
 
@@ -309,6 +310,10 @@ async function getProjectInfo(dirName: string): Promise<SessionProject> {
     }
   }
 
+  // Get project creation date from the directory itself
+  const dirStat = await stat(sessionsPath);
+  const createdIso = dirStat.birthtime.toISOString();
+
   return {
     id: dirName,
     sessionsPath,
@@ -316,6 +321,7 @@ async function getProjectInfo(dirName: string): Promise<SessionProject> {
     cwdPath,
     sessionCount: jsonlFiles.length,
     latestSessionIso: toIsoOrNull(latestSessionDate),
+    createdIso,
     totalSizeBytes,
   };
 }
@@ -812,10 +818,12 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
 
         const lines = projects.map((project) => {
           const latest = project.latestSessionIso
-            ? new Date(project.latestSessionIso).toLocaleString()
+            ? new Date(project.latestSessionIso).toLocaleDateString()
             : "never";
 
-          return `• ${project.displayPath} | cwd=${project.cwdPath} | sessions=${project.sessionCount} | size=${formatBytes(project.totalSizeBytes)} | latest=${latest}`;
+          const created = new Date(project.createdIso).toLocaleDateString();
+
+          return `• ${project.displayPath} | cwd=${project.cwdPath} | sessions=${project.sessionCount} | size=${formatBytes(project.totalSizeBytes)} | created=${created} | latest=${latest}`;
         });
 
         const text = buildListResponseText({
@@ -883,7 +891,7 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
         const lines = sessions.map((session) => {
           const fileName = basename(session.sessionPath);
           const timestamp = new Date(session.timestampIso).toLocaleString();
-          return `• ${timestamp} | ${session.title} | ${formatBytes(session.sizeBytes)} | ${fileName}`;
+          return `• ${timestamp} | ${session.title} | ${formatBytes(session.sizeBytes)} | ${fileName} | created=${new Date(project.createdIso).toLocaleDateString()}`;
         });
 
         const text = buildListResponseText({
@@ -1308,8 +1316,12 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
           ? `\nUse offset=${offset + limit} to continue.`
           : "";
 
+        const projectCreated = new Date(
+          project.createdIso,
+        ).toLocaleDateString();
+
         return textResult(
-          `${basename(sessionPath)} (${rangeInfo}):\n\n${lines.join("\n\n")}${nextHint}`,
+          `${basename(sessionPath)} (${rangeInfo}) | project: ${project.displayPath} | created: ${projectCreated}\n\n${lines.join("\n\n")}${nextHint}`,
           {
             project: project.displayPath,
             sessionPath,
