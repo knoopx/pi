@@ -52,7 +52,7 @@ async function callMcpTool(
   const text = await response.text();
 
   // Parse SSE response
-  const dataMatch = text.match(/^data:\s*(.+)$/m);
+  const dataMatch = /^data:\s*(.+)$/m.exec(text);
   if (!dataMatch) {
     throw new Error("Invalid MCP response format");
   }
