@@ -7,6 +7,7 @@ import type {
 import { Type } from "@sinclair/typebox";
 import { SelectList, type SelectItem } from "@mariozechner/pi-tui";
 import { SELECT_LIST_STYLES } from "../../shared/select-list-styles";
+import { fuzzyFilter } from "../../shared/fuzzy";
 
 // Cached stations to avoid repeated API calls
 let cachedStations: Station[] | null = null;
@@ -52,35 +53,6 @@ interface DepartureItem {
   delay: string;
   trainType: string;
   cancelled: boolean;
-}
-
-/**
- * Levenshtein distance for fuzzy string matching
- */
-export function levenshteinDistance(a: string, b: string): number {
-  const matrix: number[][] = [];
-  for (let i = 0; i <= b.length; i++) {
-    matrix[i] = [i];
-  }
-  for (let j = 0; j <= a.length; j++) {
-    matrix[0][j] = j;
-  }
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      const aChar = a.charAt(j - 1);
-      const bChar = b.charAt(i - 1);
-      if (bChar === aChar) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1,
-        );
-      }
-    }
-  }
-  return matrix[b.length][a.length];
 }
 
 /**
@@ -232,20 +204,9 @@ export default function (pi: ExtensionAPI) {
           stationId = match.id;
         } else {
           // Try fuzzy matching - find best match
-          const nameLower = stationName.toLowerCase();
-          const bestMatch = stations.reduce<{
-            station: Station;
-            distance: number;
-          } | null>((best, current) => {
-            const currentLower = current.name.toLowerCase();
-            const nameDistance = levenshteinDistance(nameLower, currentLower);
-            return nameDistance < (best?.distance || Infinity)
-              ? { station: current, distance: nameDistance }
-              : best;
-          }, null);
-
-          if (bestMatch && bestMatch.distance <= 3) {
-            stationId = bestMatch.station.id;
+          const matches = fuzzyFilter(stations, stationName, (s) => s.name);
+          if (matches.length > 0) {
+            stationId = matches[0].item.id;
           }
         }
       }

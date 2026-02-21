@@ -1,77 +1,15 @@
 /**
  * Unit Tests for Rodalies Extension
- * Tests: Levenshtein distance, station resolution, and fuzzy matching
+ * Tests: Station resolution and fuzzy matching
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import {
-  levenshteinDistance,
-  getStations,
-  resetCache,
-  setCache,
-} from "./index";
+import { getStations, resetCache, setCache } from "./index";
+import { fuzzyFilter } from "../../shared/fuzzy";
 
 // Mock global fetch
 const mockFetch = vi.fn();
 globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
-
-// ============================================================================
-// Levenshtein Distance Tests
-// ============================================================================
-
-describe("Levenshtein Distance", () => {
-  describe("given identical strings", () => {
-    it("then distance should be 0", () => {
-      const result = levenshteinDistance("test", "test");
-      expect(result).toBe(0);
-    });
-  });
-
-  describe("given single character difference", () => {
-    it("then distance should be 1", () => {
-      const result = levenshteinDistance("test", "tent");
-      expect(result).toBe(1);
-    });
-
-    it("then it should handle case differences", () => {
-      const result = levenshteinDistance("test", "Test");
-      expect(result).toBe(1);
-    });
-  });
-
-  describe("given multiple character differences", () => {
-    it("then distance should be 2", () => {
-      const result = levenshteinDistance("test", "toast");
-      expect(result).toBe(2);
-    });
-  });
-
-  describe("given one string is empty", () => {
-    it("then distance should be length of other string", () => {
-      const result = levenshteinDistance("", "test");
-      expect(result).toBe(4);
-    });
-
-    it("then it should handle both empty", () => {
-      const result = levenshteinDistance("", "");
-      expect(result).toBe(0);
-    });
-  });
-
-  describe("given identical strings with special characters", () => {
-    it("then distance should be 0", () => {
-      const result = levenshteinDistance(
-        "Estación Central",
-        "Estación Central",
-      );
-      expect(result).toBe(0);
-    });
-  });
-});
-
-// ============================================================================
-// Station Resolution Tests
-// ============================================================================
 
 describe("Station Resolution", () => {
   beforeEach(() => {
@@ -127,48 +65,20 @@ describe("Station Resolution", () => {
   });
 
   describe("given fuzzy matching", () => {
-    it("then it should find station with small distance", async () => {
+    it("then it should find station with fuzzy match", () => {
       const stations = [
         { id: 1, name: "Estación Central" },
         { id: 2, name: "Estación Manresa" },
       ];
-      const params = { stationName: "Estacione Cenral" };
-      const bestMatch = stations.reduce<{
-        station: { id: number; name: string };
-        distance: number;
-      } | null>((best, current) => {
-        const currentLower = current.name.toLowerCase();
-        const nameDistance = levenshteinDistance(
-          params.stationName.toLowerCase(),
-          currentLower,
-        );
-        return nameDistance < (best?.distance || Infinity)
-          ? { station: current, distance: nameDistance }
-          : best;
-      }, null);
-      expect(bestMatch).toBeDefined();
-      expect(bestMatch?.distance).toBeLessThanOrEqual(3);
-      expect(bestMatch?.station.id).toBe(1);
+      const matches = fuzzyFilter(stations, "Central", (s) => s.name);
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].item.id).toBe(1);
     });
 
-    it("then it should return null for no match", async () => {
+    it("then it should return empty for no match", () => {
       const stations = [{ id: 1, name: "Estación Central" }];
-      const params = { stationName: "Nonexistent" };
-      const bestMatch = stations.reduce<{
-        station: { id: number; name: string };
-        distance: number;
-      } | null>((best, current) => {
-        const currentLower = current.name.toLowerCase();
-        const nameDistance = levenshteinDistance(
-          params.stationName.toLowerCase(),
-          currentLower,
-        );
-        return nameDistance < (best?.distance || Infinity)
-          ? { station: current, distance: nameDistance }
-          : best;
-      }, null);
-      // Distance of 12 > 3 means no match
-      expect(bestMatch?.distance).toBeGreaterThan(3);
+      const matches = fuzzyFilter(stations, "xyz123", (s) => s.name);
+      expect(matches.length).toBe(0);
     });
   });
 
