@@ -89,7 +89,7 @@ describe("Nix Extension", () => {
             }),
           preconnect: vi.fn(),
         }));
-        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
         result = await registeredTool.execute(
           "tool1",
@@ -138,7 +138,7 @@ describe("Nix Extension", () => {
         const mockFetch = vi
           .fn()
           .mockRejectedValue(new Error("Network error")) as unknown;
-        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
+        globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
         const result = await registeredTool.execute(
           "tool1",
