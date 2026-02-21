@@ -7,6 +7,7 @@ import type {
 import { URL } from "url";
 import { Type, type Static } from "@sinclair/typebox";
 import type { Database } from "better-sqlite3";
+import { fuzzyFilter } from "../../shared/fuzzy";
 
 // Parameter schemas for bookmark tools
 const SearchBookmarksParams = Type.Object({
@@ -79,58 +80,6 @@ interface HistoryRowWithUrl {
   title: string | null;
   visitCount: number;
   lastVisit: number;
-}
-
-/**
- * Calculate the Levenshtein distance between two strings.
- * This is the minimum number of single-character edits (insertions, deletions, or substitutions)
- * required to transform one string into the other.
- *
- * @param str1 First string
- * @param str2 Second string
- * @returns The Levenshtein distance between the two strings
- */
-export function levenshteinDistance(str1: string, str2: string): number {
-  const len1 = str1.length;
-  const len2 = str2.length;
-  const matrix: number[][] = [];
-
-  // Initialize the matrix
-  for (let i = 0; i <= len1; i++) {
-    matrix[i] = [i];
-  }
-  for (let j = 0; j <= len2; j++) {
-    matrix[0][j] = j;
-  }
-
-  // Fill the matrix
-  for (let i = 1; i <= len1; i++) {
-    for (let j = 1; j <= len2; j++) {
-      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[i][j] = Math.min(
-        matrix[i - 1][j] + 1, // deletion
-        matrix[i][j - 1] + 1, // insertion
-        matrix[i - 1][j - 1] + cost, // substitution
-      );
-    }
-  }
-
-  return matrix[len1][len2];
-}
-
-/**
- * Calculate the similarity score between two strings using Levenshtein distance.
- * Returns a value between 0 and 1, where 1 means perfect match.
- *
- * @param str1 First string
- * @param str2 Second string
- * @returns Similarity score (0 = no similarity, 1 = identical)
- */
-export function similarityScore(str1: string, str2: string): number {
-  const distance = levenshteinDistance(str1.toLowerCase(), str2.toLowerCase());
-  const maxLen = Math.max(str1.length, str2.length);
-  if (maxLen === 0) return 1;
-  return 1 - distance / maxLen;
 }
 
 export function extractDomain(url: string): string {
@@ -209,24 +158,6 @@ async function withFirefoxDb<TResult>(
   }
 }
 
-/**
- * Filter and sort items by similarity to a query
- */
-function filterBySimilarity<T extends { similarity?: number }>(
-  items: T[],
-  query: string,
-  getSimilarity: (item: T, query: string) => number,
-  sortFn?: (a: T, b: T) => number,
-): T[] {
-  const scored = items.map((item) => ({
-    ...item,
-    similarity: getSimilarity(item, query),
-  }));
-
-  const filtered = scored.filter((item) => item.similarity >= 0.6);
-  return sortFn ? filtered.sort(sortFn) : filtered;
-}
-
 export async function getBookmarksFromDB(query?: string): Promise<Bookmark[]> {
   const allBookmarks = await withFirefoxDb<Bookmark>(
     `SELECT b.id, p.url, b.title, MAX(b.dateAdded) as dateAdded
@@ -250,13 +181,7 @@ export async function getBookmarksFromDB(query?: string): Promise<Bookmark[]> {
 
   if (!query) return allBookmarks;
 
-  return filterBySimilarity(
-    allBookmarks,
-    query,
-    (bookmark, q) =>
-      similarityScore(bookmark.title.toLowerCase(), q.toLowerCase()),
-    (a, b) => (b.similarity ?? 0) - (a.similarity ?? 0),
-  );
+  return fuzzyFilter(allBookmarks, query, (b) => b.title).map((r) => r.item);
 }
 
 async function getHistoryFromDB(query?: string): Promise<History[]> {
@@ -284,18 +209,8 @@ async function getHistoryFromDB(query?: string): Promise<History[]> {
 
   if (!query) return allHistory;
 
-  return filterBySimilarity(
-    allHistory,
-    query,
-    (entry, q) => {
-      const titleSim = similarityScore(
-        entry.title.toLowerCase(),
-        q.toLowerCase(),
-      );
-      const urlSim = similarityScore(entry.url.toLowerCase(), q.toLowerCase());
-      return Math.max(titleSim, urlSim);
-    },
-    (a, b) => b.lastVisit - a.lastVisit,
+  return fuzzyFilter(allHistory, query, (e) => `${e.title} ${e.url}`).map(
+    (r) => r.item,
   );
 }
 

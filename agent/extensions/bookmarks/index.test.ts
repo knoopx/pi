@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-// import type { Database } from "better-sqlite3";
 import {
-  levenshteinDistance,
-  similarityScore,
   extractDomain,
   getFirefoxProfilePath,
   getBookmarksFromDB,
@@ -21,57 +18,6 @@ vi.mock("fs/promises", () => ({
 }));
 
 describe("Bookmarks Extension", () => {
-  describe("given levenshteinDistance function", () => {
-    describe("when calculating distance between identical strings", () => {
-      it("then returns 0", () => {
-        expect(levenshteinDistance("test", "test")).toBe(0);
-      });
-    });
-
-    describe("when calculating distance between different strings", () => {
-      it("then returns correct distance", () => {
-        expect(levenshteinDistance("kitten", "sitting")).toBe(3);
-        expect(levenshteinDistance("", "a")).toBe(1);
-        expect(levenshteinDistance("a", "")).toBe(1);
-        expect(levenshteinDistance("abc", "def")).toBe(3);
-      });
-    });
-
-    describe("when one string is empty", () => {
-      it("then returns length of other string", () => {
-        expect(levenshteinDistance("", "hello")).toBe(5);
-        expect(levenshteinDistance("world", "")).toBe(5);
-      });
-    });
-  });
-
-  describe("given similarityScore function", () => {
-    describe("when strings are identical", () => {
-      it("then returns 1", () => {
-        expect(similarityScore("test", "test")).toBe(1);
-      });
-    });
-
-    describe("when strings are completely different", () => {
-      it("then returns 0", () => {
-        expect(similarityScore("abc", "def")).toBeCloseTo(0, 2);
-      });
-    });
-
-    describe("when strings are similar", () => {
-      it("then returns appropriate similarity", () => {
-        expect(similarityScore("kitten", "sitting")).toBeCloseTo(0.571, 3);
-        expect(similarityScore("test", "best")).toBe(0.75);
-      });
-    });
-
-    describe("when both strings are empty", () => {
-      it("then returns 1", () => {
-        expect(similarityScore("", "")).toBe(1);
-      });
-    });
-  });
-
   describe("given extractDomain function", () => {
     describe("when valid URL provided", () => {
       it("then returns hostname", () => {
@@ -212,14 +158,10 @@ describe("Bookmarks Extension", () => {
         });
 
         describe("when searching for 'github'", () => {
-          it("then returns similar bookmarks sorted by similarity", async () => {
+          it("then returns matching bookmarks", async () => {
             const result = await getBookmarksFromDB("github");
-            expect(result).toHaveLength(2);
+            expect(result.length).toBeGreaterThan(0);
             expect(result[0].title).toBe("GitHub");
-            expect(result[1].title).toBe("GitLab");
-            expect(result[0].similarity!).toBeGreaterThan(
-              result[1].similarity!,
-            );
           });
         });
 
