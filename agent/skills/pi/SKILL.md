@@ -28,12 +28,9 @@ Disable with `--no-extensions`, `--no-skills`, `--no-prompt-templates`.
 
 ## Session Management
 
-- `/new` - Create fresh session
-- `/resume` - Switch to existing session
-- `/tree` - Navigate session tree
-- `/export` - Export to HTML
-- `/share` - Upload to GitHub gist
-- `/compact` - Trigger compaction
+Commands: `/new`, `/resume`, `/tree`, `/export`, `/share`, `/compact`
+
+See [Sessions Reference](./references/sessions.md) for details.
 
 ## Model Management
 

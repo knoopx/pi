@@ -153,33 +153,9 @@ import {
 
 ## Keyboard Shortcuts
 
-Use `Ctrl` for common actions, `Shift+Delete` for destructive:
+Common shortcuts: `Ctrl+R` (refresh), `Ctrl+N` (new), `Ctrl+E` (edit), `Shift+Delete` (delete).
 
-| Shortcut       | Action  |
-| -------------- | ------- |
-| `Ctrl+R`       | Refresh |
-| `Shift+Delete` | Delete  |
-| `Ctrl+N`       | New     |
-| `Ctrl+E`       | Edit    |
-
-```tsx
-<Action
-  title="Refresh"
-  icon={Icon.RotateClockwise}
-  shortcut={{ modifiers: ["ctrl"], key: "r" }}
-  onAction={handleRefresh}
-/>
-
-<Action
-  title="Delete"
-  icon={Icon.Trash}
-  style={Action.Style.Destructive}
-  shortcut={{ modifiers: ["shift"], key: "delete" }}
-  onAction={handleDelete}
-/>
-```
-
-See [Keyboard Shortcuts](./references/shortcuts.md) for full reference.
+See [Keyboard Shortcuts](./references/shortcuts.md) for full reference and implementation examples.
 
 ## Navigation
 
