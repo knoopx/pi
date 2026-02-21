@@ -10,13 +10,13 @@ import {
   renderSplitPanel,
   renderSourceRows,
 } from "./split-panel";
+import { isRenderCacheValid } from "./state/factories";
+import { createBaseDimensionsConfig } from "./state/navigation";
 import {
-  isRenderCacheValid,
-  createBaseDimensionsConfig,
   createStatusNotifier,
   formatHelpWithStatus,
   type StatusMessageState,
-} from "./shared-utils";
+} from "./ui/status";
 
 export interface ListPickerItem {
   id: string;

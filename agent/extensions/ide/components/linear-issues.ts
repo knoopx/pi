@@ -15,7 +15,7 @@ import {
 } from "./list-picker";
 import { truncateAnsi } from "./text-utils";
 import { applyFocusedStyle } from "./style-utils";
-import { createMarkdownTheme, formatRelativeTime } from "./shared-utils";
+import { createMarkdownTheme, formatRelativeTime } from "./formatting";
 import { linearGraphQL } from "../api/linear";
 
 export {

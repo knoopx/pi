@@ -11,9 +11,8 @@ import {
   topBorderWithTitle,
   horizontalSeparator,
   bottomBorder,
-  renderFormFieldContent,
-  renderFormFooter,
-} from "./shared-utils";
+} from "./ui/frame";
+import { renderFormFieldContent, renderFormFooter } from "./ui/form";
 import { linearGraphQL } from "../api/linear";
 import type { LinearIssue } from "./linear-issues";
 

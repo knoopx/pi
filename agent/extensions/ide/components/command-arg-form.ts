@@ -6,9 +6,8 @@ import {
   borderedLine,
   topBorderWithTitle,
   horizontalSeparator,
-  renderFormFieldContent,
-  renderFormFooter,
-} from "./shared-utils";
+} from "./ui/frame";
+import { renderFormFieldContent, renderFormFooter } from "./ui/form";
 import type { ArgsSection, CommandPaletteTui } from "./command-palette-types";
 
 export interface ArgFormComponent {

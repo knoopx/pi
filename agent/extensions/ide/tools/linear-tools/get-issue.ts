@@ -10,8 +10,8 @@ import { getLinearApiKey } from "../../components/linear-issues.js";
 import { linearGraphQL } from "../../api/linear";
 import {
   formatLinearIssueForAgentExtended,
-  LinearIssueExtended,
-} from "../../components/shared-utils.js";
+  type LinearIssueExtended,
+} from "../../components/linear-formatting.js";
 
 interface LinearSingleIssueResult {
   issue: LinearIssueExtended | null;

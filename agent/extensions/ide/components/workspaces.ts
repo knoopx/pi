@@ -14,7 +14,7 @@ import {
   calculateDiffScroll,
   formatErrorMessage,
 } from "./split-panel";
-import { isRenderCacheValid } from "./shared-utils";
+import { isRenderCacheValid } from "./state/factories";
 import type {
   AgentWorkspace,
   WorkspaceStatus,

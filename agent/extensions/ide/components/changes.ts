@@ -15,15 +15,16 @@ import {
   createSelectionState,
   createLoadingState,
   invalidateCache,
-  renderLoadingRow,
-  renderEmptyState,
-  buildNavigationHelp,
-  createStatusNotifier,
-  formatHelpWithStatus,
   type ComponentCache,
   type BaseComponentParams,
+} from "./state/factories";
+import { buildNavigationHelp } from "./state/navigation";
+import { renderLoadingRow, renderEmptyState } from "./ui/render";
+import {
+  createStatusNotifier,
+  formatHelpWithStatus,
   type StatusMessageState,
-} from "./shared-utils";
+} from "./ui/status";
 import type { FileChange, Change } from "../types";
 import {
   loadChanges,

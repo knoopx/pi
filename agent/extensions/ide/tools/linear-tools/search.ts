@@ -10,8 +10,8 @@ import { getLinearApiKey } from "../../components/linear-issues.js";
 import { linearGraphQL } from "../../api/linear";
 import {
   formatLinearIssueForAgent,
-  LinearIssue,
-} from "../../components/shared-utils.js";
+  type LinearIssue,
+} from "../../components/linear-formatting.js";
 
 interface LinearIssueQueryResult {
   issues: {

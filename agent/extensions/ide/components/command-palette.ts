@@ -19,7 +19,7 @@ import {
   topBorderWithTitle,
   horizontalSeparator,
   bottomBorder,
-} from "./shared-utils";
+} from "./ui/frame";
 import type {
   PaletteCommand,
   CommandPaletteTui,

@@ -3,7 +3,7 @@ import { pad, ensureWidth, truncateAnsi } from "./text-utils";
 import { getChangeIcon } from "./change-utils";
 import { getFileStatusIcon, getFileIcon, getFileIconColor } from "./file-icons";
 import { hexColor } from "./style-utils";
-import { BOX } from "./shared-utils";
+import { BOX } from "./ui/frame";
 
 /**
  * Render a row in a split panel layout
