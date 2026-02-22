@@ -432,7 +432,6 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
 
   // Helper conditions
   const isLeftFocus = () => focus === "workspaces";
-  const isRightFocus = () => focus === "files";
   const hasWorkspace = () => selectedWorkspace !== null;
   const isDefaultWs = () => selectedWorkspace?.name === "default";
   const isRunningWs = () => selectedWorkspace?.status === "running";
@@ -525,8 +524,18 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
         tui.requestRender();
       },
     },
-    { key: "escape", handler: () => done() },
-    { key: "q", handler: () => done() },
+    {
+      key: "escape",
+      handler: () => {
+        done();
+      },
+    },
+    {
+      key: "q",
+      handler: () => {
+        done();
+      },
+    },
     {
       key: "n",
       label: "new",
@@ -585,8 +594,18 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
 
   // Left pane bindings
   const leftPaneBindings: KeyBinding[] = [
-    { key: "up", handler: () => navigateWorkspace("up") },
-    { key: "down", handler: () => navigateWorkspace("down") },
+    {
+      key: "up",
+      handler: () => {
+        navigateWorkspace("up");
+      },
+    },
+    {
+      key: "down",
+      handler: () => {
+        navigateWorkspace("down");
+      },
+    },
   ];
 
   // Right pane bindings
@@ -599,8 +618,18 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
         void discardFile();
       },
     },
-    { key: "up", handler: () => navigateFile("up") },
-    { key: "down", handler: () => navigateFile("down") },
+    {
+      key: "up",
+      handler: () => {
+        navigateFile("up");
+      },
+    },
+    {
+      key: "down",
+      handler: () => {
+        navigateFile("down");
+      },
+    },
     {
       key: "pageUp",
       label: "scroll",

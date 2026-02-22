@@ -18,12 +18,12 @@ const anthropicConfig: ProviderConfig = {
     "anthropic-beta": "oauth-2025-04-20",
   }),
   customProcessor: (rawData) => {
-    type WindowData = {
+    interface WindowData {
       utilization?: number;
       used_percent?: number;
       resets_at?: string | number;
       reset_at?: string | number;
-    };
+    }
     type DataType = Record<string, WindowData | undefined> & {
       extra_usage?: {
         is_enabled?: boolean;

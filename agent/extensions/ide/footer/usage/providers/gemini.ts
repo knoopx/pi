@@ -17,10 +17,10 @@ const geminiConfig: ProviderConfig = {
   }),
   customProcessor: (data) => {
     const d = data as {
-      buckets?: Array<{
+      buckets?: {
         modelId?: string;
         remainingFraction?: number;
-      }>;
+      }[];
     };
     const quotas: Record<string, number> = {};
     for (const bucket of d.buckets || []) {

@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
-import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import { vi, type Mock } from "vitest";
 
 /**
  * Generic mock factory for chokidar

@@ -87,7 +87,6 @@ export function createListPicker<T extends ListPickerItem>(
   let filteredItems: T[] = [];
   let focusedIndex = 0;
   let searchQuery = initialQuery;
-  let lastLoadedQuery = "";
   let sourceLines: string[] = [];
   let sourceScroll = 0;
   let loading = true;
@@ -342,10 +341,32 @@ export function createListPicker<T extends ListPickerItem>(
 
   // Core bindings with labels for help text generation
   const coreBindings: KeyBinding[] = [
-    { key: "up", label: "nav", handler: () => navigate("up") },
-    { key: "down", handler: () => navigate("down") },
-    { key: "enter", label: "select", handler: () => done(getFocusedItem()) },
-    { key: "escape", handler: () => done(null) },
+    {
+      key: "up",
+      label: "nav",
+      handler: () => {
+        navigate("up");
+      },
+    },
+    {
+      key: "down",
+      handler: () => {
+        navigate("down");
+      },
+    },
+    {
+      key: "enter",
+      label: "select",
+      handler: () => {
+        done(getFocusedItem());
+      },
+    },
+    {
+      key: "escape",
+      handler: () => {
+        done(null);
+      },
+    },
     {
       key: "ctrl+e",
       label: "edit",
@@ -357,8 +378,18 @@ export function createListPicker<T extends ListPickerItem>(
         }
       },
     },
-    { key: "pageUp", handler: () => navigatePage("up") },
-    { key: "pageDown", handler: () => navigatePage("down") },
+    {
+      key: "pageUp",
+      handler: () => {
+        navigatePage("up");
+      },
+    },
+    {
+      key: "pageDown",
+      handler: () => {
+        navigatePage("down");
+      },
+    },
   ];
 
   const allBindings = [...coreBindings, ...actionBindings];

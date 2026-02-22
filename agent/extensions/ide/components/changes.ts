@@ -717,7 +717,6 @@ Use the **conventional-commits** skill for commit message format.`;
 
   // Helper conditions for bindings
   const isLeftFocus = () => selectionState.focus === "left";
-  const isRightFocus = () => selectionState.focus === "right";
   const hasSelectedChange = () => selectedChange !== null;
   const hasSelectedFile = () => files[selectionState.fileIndex] !== undefined;
   const canSquash = () =>
@@ -801,8 +800,19 @@ Use the **conventional-commits** skill for commit message format.`;
 
   // Move mode bindings
   const moveModeBindings: KeyBinding[] = [
-    { key: "up", label: "move", handler: () => moveChange("up") },
-    { key: "down", handler: () => moveChange("down") },
+    {
+      key: "up",
+      label: "move",
+      handler: () => {
+        moveChange("up");
+      },
+    },
+    {
+      key: "down",
+      handler: () => {
+        moveChange("down");
+      },
+    },
     {
       key: "enter",
       label: "apply",
@@ -810,14 +820,37 @@ Use the **conventional-commits** skill for commit message format.`;
         void applyMoveMode();
       },
     },
-    { key: "escape", label: "cancel", handler: () => cancelMoveMode() },
+    {
+      key: "escape",
+      label: "cancel",
+      handler: () => {
+        cancelMoveMode();
+      },
+    },
   ];
 
   // Left pane bindings
   const leftPaneBindings: KeyBinding[] = [
-    { key: "up", label: "nav", handler: () => navigateChanges("up") },
-    { key: "down", handler: () => navigateChanges("down") },
-    { key: "ctrl+/", label: "filter", handler: () => cycleFilter(1) },
+    {
+      key: "up",
+      label: "nav",
+      handler: () => {
+        navigateChanges("up");
+      },
+    },
+    {
+      key: "down",
+      handler: () => {
+        navigateChanges("down");
+      },
+    },
+    {
+      key: "ctrl+/",
+      label: "filter",
+      handler: () => {
+        cycleFilter(1);
+      },
+    },
     {
       key: "space",
       label: "select",
@@ -878,7 +911,9 @@ Use the **conventional-commits** skill for commit message format.`;
       key: "ctrl+m",
       label: "move",
       when: canMove,
-      handler: () => enterMoveMode(),
+      handler: () => {
+        enterMoveMode();
+      },
     },
     {
       key: "i",
@@ -917,8 +952,19 @@ Use the **conventional-commits** skill for commit message format.`;
 
   // Right pane bindings
   const rightPaneBindings: KeyBinding[] = [
-    { key: "up", label: "nav", handler: () => navigateFiles("up") },
-    { key: "down", handler: () => navigateFiles("down") },
+    {
+      key: "up",
+      label: "nav",
+      handler: () => {
+        navigateFiles("up");
+      },
+    },
+    {
+      key: "down",
+      handler: () => {
+        navigateFiles("down");
+      },
+    },
     {
       key: "e",
       label: "edit",
@@ -960,15 +1006,42 @@ Use the **conventional-commits** skill for commit message format.`;
         void onFileCmAction!(files[selectionState.fileIndex].path, "used-by");
       },
     },
-    { key: "pageUp", label: "scroll", handler: () => scrollDiff("up") },
-    { key: "pageDown", handler: () => scrollDiff("down") },
+    {
+      key: "pageUp",
+      label: "scroll",
+      handler: () => {
+        scrollDiff("up");
+      },
+    },
+    {
+      key: "pageDown",
+      handler: () => {
+        scrollDiff("down");
+      },
+    },
   ];
 
   // Global bindings (work in both panes)
   const globalBindings: KeyBinding[] = [
-    { key: "tab", label: "pane", handler: () => switchFocus() },
-    { key: "escape", handler: () => done() },
-    { key: "q", handler: () => done() },
+    {
+      key: "tab",
+      label: "pane",
+      handler: () => {
+        switchFocus();
+      },
+    },
+    {
+      key: "escape",
+      handler: () => {
+        done();
+      },
+    },
+    {
+      key: "q",
+      handler: () => {
+        done();
+      },
+    },
   ];
 
   // Generate help text from active bindings

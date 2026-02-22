@@ -78,6 +78,13 @@ export interface CommonParamsType {
   extensions?: string[];
 }
 
+export interface CmToolParams extends CommonParamsType {
+  symbol?: string;
+  fromSymbol?: string;
+  toSymbol?: string;
+  fuzzy?: boolean;
+}
+
 export function withCommonParams<T extends TProperties>(
   extra: T,
 ): TObject<T & typeof CommonParams> {
@@ -162,11 +169,11 @@ export async function runCm(
 /** Execute a CM tool with common parameters */
 export async function executeCmTool(
   command: string,
-  params: any,
+  params: CmToolParams,
   signal: AbortSignal | undefined,
   ctx: { cwd: string },
 ): Promise<{
-  content: Array<{ type: "text"; text: string }>;
+  content: { type: "text"; text: string }[];
   details: Record<string, unknown>;
 }> {
   const args = [command];

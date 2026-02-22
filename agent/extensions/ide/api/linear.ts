@@ -8,7 +8,7 @@ const LINEAR_API_URL = "https://api.linear.app/graphql";
 
 export interface LinearApiResponse<T> {
   data?: T;
-  errors?: Array<{ message: string }>;
+  errors?: { message: string }[];
 }
 
 export interface LinearTeam {

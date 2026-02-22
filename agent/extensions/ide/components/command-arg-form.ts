@@ -117,7 +117,7 @@ export function createArgFormComponent(
 
     // Build label
     const labelWidth = 14;
-    const label = def.description ? `${key}` : key;
+    const label = def.description ? key : key;
     const labelText = ensureWidth(` ${label}:`, labelWidth);
 
     // Render value
@@ -238,7 +238,7 @@ export function createArgFormComponent(
       focusedIndex = newIndex;
       tui.requestRender();
     },
-    onEscape: () => onDone({}),
+    onEscape: () => { onDone({}); },
     onEnter: () => {
       const result: Record<string, string> = {};
       for (const key of fieldOrder) {

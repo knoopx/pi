@@ -322,7 +322,7 @@ export function createCommandPaletteComponent(
       invalidate();
       tui.requestRender();
     },
-    onEscape: () => done(),
+    onEscape: () => { done(); },
     onEnter: () => {
       const cmd = filteredCommands[selectedIndex];
       if (cmd) {

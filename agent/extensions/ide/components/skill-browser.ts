@@ -590,7 +590,6 @@ export function createSkillBrowserComponent(
   const isLocalMode = () => viewMode === "local";
   const isRemoteMode = () => viewMode === "remote";
   const hasSkill = () => skills.length > 0 && skillIndex < skills.length;
-  const hasFile = () => files.length > 0 && fileIndex < files.length;
 
   // Navigation helpers
   const navigateSkills = (direction: "up" | "down") => {
@@ -656,13 +655,17 @@ export function createSkillBrowserComponent(
     {
       key: "up",
       label: "nav",
-      handler: () =>
-        isSkillsFocus() ? navigateSkills("up") : navigateFiles("up"),
+      handler: () => {
+        if (isSkillsFocus()) navigateSkills("up");
+        else navigateFiles("up");
+      },
     },
     {
       key: "down",
-      handler: () =>
-        isSkillsFocus() ? navigateSkills("down") : navigateFiles("down"),
+      handler: () => {
+        if (isSkillsFocus()) navigateSkills("down");
+        else navigateFiles("down");
+      },
     },
     {
       key: "tab",
@@ -694,9 +697,25 @@ export function createSkillBrowserComponent(
         void deleteSkill();
       },
     },
-    { key: "pageUp", label: "scroll", handler: () => scrollPreview("up") },
-    { key: "pageDown", handler: () => scrollPreview("down") },
-    { key: "escape", handler: () => done() },
+    {
+      key: "pageUp",
+      label: "scroll",
+      handler: () => {
+        scrollPreview("up");
+      },
+    },
+    {
+      key: "pageDown",
+      handler: () => {
+        scrollPreview("down");
+      },
+    },
+    {
+      key: "escape",
+      handler: () => {
+        done();
+      },
+    },
   ];
 
   // Generate help text from active bindings

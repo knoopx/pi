@@ -4,7 +4,7 @@ import type {
   Theme,
 } from "@mariozechner/pi-coding-agent";
 import { Input } from "@mariozechner/pi-tui";
-import { buildHelpText, ensureWidth, truncateAnsi } from "./text-utils";
+import { ensureWidth, truncateAnsi } from "./text-utils";
 import { createKeyboardHandler } from "../keyboard";
 import {
   borderedLine,
@@ -438,7 +438,9 @@ export function createLinearIssueForm(
       focusedField = FORM_FIELDS[newIndex];
       tui.requestRender();
     },
-    onEscape: () => done({ action: "cancelled" }),
+    onEscape: () => {
+      done({ action: "cancelled" });
+    },
     onEnter: () => void saveIssue(),
   });
 

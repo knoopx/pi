@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { detectAndFetchUsage, formatUsageSnapshot } from "./shared";
 import type { BaseDependencies, UsageSnapshot } from "./types";
 

@@ -572,7 +572,7 @@ describe("command-arg-form", () => {
             mockTheme,
           );
 
-          expect(() => form.invalidate()).not.toThrow();
+          expect(() => { form.invalidate(); }).not.toThrow();
         });
       });
     });
@@ -592,7 +592,7 @@ describe("command-arg-form", () => {
             mockTheme,
           );
 
-          expect(() => form.dispose()).not.toThrow();
+          expect(() => { form.dispose(); }).not.toThrow();
         });
       });
     });
