@@ -1,145 +1,237 @@
-# Agent Guidelines
+# I Will Not
 
-## 1. Purpose
+A record of rules I have violated and commit to not repeating.
 
-You are a coding assistant. Your goal is to help users understand, modify, and improve codebases.
-
-**Standards:**
-
-- Read and understand context before acting
-- Ask clarifying questions when ambiguous
-- Explain reasoning for significant decisions
-- Admit uncertainty rather than guessing
-- Keep users informed of progress
-
-**Quality:**
-
-- Code builds, lints, and typechecks
-- Tests pass, no regressions
-- Small, focused changes that do one thing
-- Follow existing code style and conventions
-- Update documentation when behavior changes
-- Never add backwards compatibility layers unless explicitly requested
-- Address legacy code, don't work around it
-- Strict type checking, prefer static definitions over dynamic or generics
+This document is updated via `/report-misconduct` when I fail to meet expectations.
 
 ---
 
-## 2. Rules
+## Code Quality
 
-- Use specialized tools over generic shell commands
-- Run blocking or interactive commands in background sessions
-- Exclude dependency folders from file searches
-- Place imports at file top
-- Import directly from modules, no re-exports
+- **I will not** create `.js` files when TypeScript is required
+  - _Context_: Created JavaScript files when TypeScript was required
 
----
+- **I will not** ship code that doesn't build, lint, or typecheck
+  - _Context_: Shipped code with build/lint/type errors
 
-## 3. Workflow
+- **I will not** ignore failed tests regardless of whether I broke them
+  - _Context_: Ignored failing tests instead of fixing them
 
-### 3.1 Design
+- **I will not** skip tests with .skip, xdescribe, or xit
+  - _Context_: Skipped tests instead of fixing or deleting them
 
-- Understand requirements and edge cases
-- Analyze existing codebase structure
-- Plan approach before writing code
+- **I will not** use eslint-disable to silence lint errors
+  - _Context_: Disabled lint rules instead of fixing code
 
-### 3.2 Implement
+- **I will not** add unnecessary dependencies when simpler solutions exist
+  - _Context_: Added libraries when static assets or native solutions sufficed
 
-**Self-documenting code:**
+- **I will not** use regex to parse structured data (JSON, JSONL, HTML)
+  - _Context_: Used regex instead of proper parsers
 
-- Code should explain itself without comments
-- Use descriptive names over abbreviations
-- Extract logic into well-named functions
-- Acceptable comments: TODO, FIXME, doc links, warnings
-- Use `is` prefix for boolean identifiers (e.g., `isFocused`, `isLoading`, `isValid`)
+- **I will not** create re-exports or wrapper functions that add no value
+  - _Context_: Created pointless re-exports
 
-**Function design:**
+- **I will not** add unnecessary state, constants, or abstractions
+  - _Context_: Added tracking variables that weren't needed
 
-- 2-3 parameters max
-- Pure when possible, minimize side effects
-- Single level of abstraction per function
+- **I will not** add superfluous comments explaining obvious code
+  - _Context_: Added comments explaining imports
 
-**Error handling:**
+- **I will not** use abbreviations over descriptive names
+  - _Context_: Used unclear abbreviations instead of descriptive names
 
-- Fail fast and loud
-- Use specific exceptions with context
-- Validate at boundaries
-- Let unexpected errors propagate
+- **I will not** use dynamic/generic types when static definitions work
+  - _Context_: Used generics when concrete types were clearer
 
-### 3.3 Review
+- **I will not** create functions with more than 2-3 parameters
+  - _Context_: Created functions with long parameter lists
 
-- Run linter and fix issues
-- Verify types check
-- Look for duplicated code
-- Remove unused code and dependencies
-- Check for circular dependencies
+- **I will not** create impure functions when pure is possible
+  - _Context_: Added side effects when pure function was possible
 
-### 3.4 Test
+- **I will not** make excessive use of emojis
+  - _Context_: Pointlessly added too much emojis and introduced unnecessary visual noise
 
-**What to test:**
+- **I will not** include Spanish words in English codebases
+  - _Context_: Left Spanish text in English-only code
 
-- Business logic and edge cases
-- Error handling paths
-- Public API contracts
+- **I will not** use Git terminology in Jujutsu projects
+  - _Context_: Used Git terms instead of Jujutsu terms
 
-**Test quality:**
+- **I will not** add unnecessary visual complexity with no usability value
+  - _Context_: Added excessive padding, borders and colors that broke visual consistency
 
-- Independent and isolated
-- Deterministic, no flaky tests
-- Fast execution
-- Test behavior, not implementation
+- **I will not** leave placeholders in code
+  - _Context_: Left placeholder text instead of implementing
 
----
+- **I will not** duplicate code that should be handled by base/shared components
+  - _Context_: Reimplemented logic instead of reusing existing components
 
-## 4. Principles
+- **I will not** leave unused code or dependencies
+  - _Context_: Left dead code or unused imports
 
-### Core
+- **I will not** prefix unused variables with `_` to silence lint - remove them instead
+  - _Context_: Used `_` prefix as workaround instead of deleting dead code
 
-| Principle | Meaning                                                                                              |
-| --------- | ---------------------------------------------------------------------------------------------------- |
-| SOLID     | Single responsibility, open/closed, Liskov substitution, interface segregation, dependency inversion |
-| DRY       | Extract duplication, but don't over-abstract                                                         |
-| KISS      | Prefer clarity over cleverness                                                                       |
-| YAGNI     | Don't build until needed                                                                             |
+- **I will not** create circular dependencies
+  - _Context_: Created import cycles between modules
 
-### Simple over Complex
+- **I will not** create pointless type aliases
+  - _Context_: Created type aliases with no purpose
 
-| Avoid                              | Prefer               |
-| ---------------------------------- | -------------------- |
-| Abstract factories                 | Direct instantiation |
-| Deep indirection                   | 1-2 layers max       |
-| Generic solutions for one use case | Specific solutions   |
-| Configuration everywhere           | Sensible defaults    |
+- **I will not** use heuristics or assumptions for data extraction
+  - _Context_: Assumed data locations instead of using defined schemas
 
-### Code Smells
+- **I will not** hardcode business logic that should be data-driven
+  - _Context_: Hardcoded logic instead of reading from config
 
-| Smell               | Fix                       |
-| ------------------- | ------------------------- |
-| God class           | Split by responsibility   |
-| Feature envy        | Move method to data owner |
-| Long parameter list | Use parameter object      |
-| Primitive obsession | Create value objects      |
-| Dead code           | Delete it                 |
+- **I will not** parse manually when proper libraries exist
+  - _Context_: Manually parsed data instead of using proper libraries
 
----
+## Decision Making
 
-## 5. Tool Usage
+- **I will not** act without reading and understanding context first
+  - _Context_: Acted before understanding the codebase or request
 
-### Edit Tool
+- **I will not** guess when uncertain - I will admit uncertainty
+  - _Context_: Guessed instead of asking for clarification
 
-- **Always read first**: Read the file before editing to get exact content
-- **Re-read on failure**: If edit fails, re-read - content may have changed
-- **Small edits**: Prefer surgical edits over large replacements
-- **Match exactly**: Whitespace, quotes, and newlines must match precisely
+- **I will not** make large unfocused changes
+  - _Context_: Made changes that did multiple things at once
 
-### Bash Tool
+- **I will not** remove existing functionality without explicit request
+  - _Context_: Removed features without being asked
 
-- Use `grep ... || true` when no match is acceptable
-- Use `rg` (ripgrep) over `grep` for code searches
-- Avoid `cd path &&` - use absolute paths
-- Suppress errors: `find ... 2>/dev/null || true`
+- **I will not** create new files/skills/extensions when I should update existing ones
+  - _Context_: Created new files instead of updating existing ones
 
-### Scripting
+- **I will not** create tools/scripts when existing solutions already exist
+  - _Context_: Created new tools when existing functionality covered the need
 
-- Prefer nu-shell for complex data processing scripts
-- Never create `.js` files - always use TypeScript
+- **I will not** over-normalize different concepts that need distinct handling
+  - _Context_: Normalized concepts that needed separate handling
+
+- **I will not** look at or reference unrelated source code
+  - _Context_: Checked unrelated project source code
+
+- **I will not** make changes without understanding the full request
+  - _Context_: Made partial or wrong changes that broke existing behavior
+
+- **I will not** use keybindings that are already taken without checking first
+  - _Context_: Assigned keybindings that were already used
+
+- **I will not** filter out data when I should show all (possibly dimmed/muted)
+  - _Context_: Filtered data instead of showing it dimmed/read-only
+
+- **I will not** replace text when the action should append
+  - _Context_: Insert actions replaced text instead of appending
+
+- **I will not** add duplicate information that's already displayed elsewhere
+  - _Context_: Added redundant information already shown elsewhere
+
+- **I will not** add fallback defaults that mask errors - fail fast instead
+  - _Context_: Used fallbacks instead of failing on missing required config
+
+- **I will not** normalize/transform proxy responses - pass through as-is
+  - _Context_: Transformed responses that should be returned unchanged
+
+- **I will not** fix only one instance when multiple exist
+  - _Context_: Fixed one occurrence when all occurrences had the same issue
+
+- **I will not** inline schemas when they should remain as references
+  - _Context_: Inlined references that should stay as references
+
+- **I will not** mark required fields as optional
+  - _Context_: Made required fields optional
+
+## Tool Usage
+
+- **I will not** use the wrong API when the proper one exists
+  - _Context_: Used wrong API that caused unintended side effects
+
+- **I will not** write files when the request was to output/notify
+  - _Context_: Wrote files when user wanted console output
+
+- **I will not** create bash scripts when TypeScript/nu-shell is preferred
+  - _Context_: Created bash scripts when TypeScript was preferred
+
+- **I will not** ship changes without testing them
+  - _Context_: Made changes that immediately broke
+
+- **I will not** act without reading documentation/manual first when instructed
+  - _Context_: Made assumptions instead of reading docs
+
+- **I will not** make interactive scripts when non-interactive is required
+  - _Context_: Created interactive prompts when output should be for automation
+
+- **I will not** use custom test fixtures when real data exists in config
+  - _Context_: Created fake fixtures instead of using actual config
+
+- **I will not** blame infrastructure when my code changes broke tests
+  - _Context_: Blamed infra when failures were from code changes
+
+- **I will not** run interactive commands (REPLs, editors, watch modes, dev servers)
+  - _Context_: Ran blocking commands that hang the terminal
+
+- **I will not** edit lock files (bun.lock, uv.lock, flake.lock, etc.)
+  - _Context_: Edited auto-generated lock files instead of running install/sync
+
+- **I will not** use docker when podman is available
+  - _Context_: Used docker instead of podman
+
+- **I will not** use wrong jj syntax (~N, ^, interactive flags)
+  - _Context_: Used Git-style parent syntax instead of jj's `-` suffix
+
+- **I will not** access .git/ or .jj/ directories directly
+  - _Context_: Modified or read VCS internals instead of using commands
+
+## User Trust
+
+- **I will not** ignore repeated corrections
+  - _Context_: Made the same mistakes multiple times after being corrected
+
+- **I will not** add backwards compatibility layers unless explicitly requested
+  - _Context_: Added compatibility code when clean refactoring was wanted
+
+- **I will not** leave READMEs outdated after adding features
+  - _Context_: Added features without updating documentation
+
+- **I will not** omit legacy code - I will address/refactor it
+  - _Context_: Worked around legacy code instead of fixing it
+
+- **I will not** put code in wrong locations
+  - _Context_: Put logic in wrong layer/component
+
+- **I will not** work on unrelated things not in the request
+  - _Context_: Started working on unrelated features
+
+- **I will not** drop features during refactoring
+  - _Context_: Accidentally removed features while making other changes
+
+- **I will not** ignore reference implementations when told to copy them
+  - _Context_: Created different implementation instead of copying reference
+
+- **I will not** make UI/UX inconsistent with existing patterns
+  - _Context_: Created components that didn't match existing UI
+
+- **I will not** create excessive files/assets beyond what's needed
+  - _Context_: Created unnecessary files
+
+- **I will not** display messages when actions should just execute
+  - _Context_: Showed messages instead of executing actions
+
+- **I will not** make edits in the wrong location within a file
+  - _Context_: Added code in wrong section
+
+- **I will not** operate on entire files when only specific parts were requested
+  - _Context_: Edited whole file when only a section was needed
+
+- **I will not** use icons that look too similar to each other
+  - _Context_: Used visually similar icons for different concepts
+
+- **I will not** register/add things that are already registered
+  - _Context_: Added duplicate registrations
+
+- **I will not** add tools when the agent already has access to the data
+  - _Context_: Created redundant tools
