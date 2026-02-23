@@ -59,7 +59,7 @@
     "rules": [
       {
         "context": "file_name",
-        "pattern": "(^|/)\\.(git|jj)/",
+        "pattern": "(^|/)(\\.git/|\\.jj/(?!workspaces/))",
         "action": "block",
         "reason": ".git/ and .jj/ contain repository internals (object database, refs, config). Direct modification can corrupt history. Use git/jj commands instead: `jj st`, `jj log`, `git log`, `git status`"
       },
@@ -323,7 +323,7 @@
       },
       {
         "context": "command",
-        "pattern": "^jj\\s+.*(-i|--interactive|--tool)(?!.*--help).*$",
+        "pattern": "^jj\\s+.*(\\s-i(?:\\s|$)|--interactive|--tool)(?!.*--help).*$",
         "action": "block",
         "reason": "interactive jj flags (-i, --interactive, --tool) open editors/TUIs which don't work in this environment. Use non-interactive alternatives: `jj absorb` (auto-fixup), `jj squash -m`, `jj split -m '<msg>' <files>` (see skill: jujutsu)"
       }
