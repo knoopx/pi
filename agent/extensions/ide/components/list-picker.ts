@@ -357,13 +357,7 @@ export function createListPicker<T extends ListPickerItem>(
         navigate("down");
       },
     },
-    {
-      key: "enter",
-      label: "select",
-      handler: () => {
-        done(getFocusedItem());
-      },
-    },
+
     {
       key: "escape",
       handler: () => {
