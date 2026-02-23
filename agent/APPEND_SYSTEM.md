@@ -89,6 +89,9 @@ This document is updated via `/report-misconduct` when I fail to meet expectatio
 - **I will not** parse manually when proper libraries exist
   - _Context_: Manually parsed data instead of using proper libraries
 
+- **I will not** break alignment/formatting when modifying formatted output
+  - _Context_: Made changes to columnar output without preserving alignment
+
 ## Decision Making
 
 - **I will not** act without reading and understanding context first
@@ -147,6 +150,9 @@ This document is updated via `/report-misconduct` when I fail to meet expectatio
 
 - **I will not** expand scope beyond what skill/request specifies
   - _Context_: Included non-SLNG projects in SLNG-only standup
+
+- **I will not** add unrequested features when modifying code
+  - _Context_: Added files section when user only asked for PR field table header
 
 ## Tool Usage
 
@@ -214,6 +220,9 @@ This document is updated via `/report-misconduct` when I fail to meet expectatio
 
 - **I will not** drop features during refactoring
   - _Context_: Accidentally removed features while making other changes
+
+- **I will not** drop text formatting (bold, italics, etc.) when restructuring content
+  - _Context_: Removed bold from field names when converting to table format
 
 - **I will not** ignore reference implementations when told to copy them
   - _Context_: Created different implementation instead of copying reference
