@@ -151,15 +151,15 @@ export function createSymbolsComponent(
 
   // Actions that show results in picker
   const PICKER_ACTIONS: [string, CmActionType][] = [
-    ["ctrl+l", "callees"],
-    ["ctrl+s", "schema"],
+    ["ctrl+j", "callees"],
+    ["ctrl+k", "schema"],
   ];
 
   const actions: ListPickerAction<SymbolInfo>[] = [
     // Dynamic ctrl+t action based on symbol type
     {
       key: "ctrl+t",
-      label: "inspect",
+      label: "callers",
       handler: (item: SymbolInfo) => {
         pendingAction = getInspectAction(item.type);
         doneWithAction(item);

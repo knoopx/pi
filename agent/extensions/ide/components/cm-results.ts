@@ -99,9 +99,9 @@ export const CM_COMMANDS: Record<CmActionType, CmCommandDef> = {
 // Symbol-based actions available in cm results
 const SYMBOL_ACTION_DEFS: [string, CmActionType][] = [
   ["ctrl+t", "callers"],
-  ["ctrl+l", "callees"],
+  ["ctrl+j", "callees"],
   ["ctrl+y", "types"],
-  ["ctrl+s", "schema"],
+  ["ctrl+k", "schema"],
 ];
 
 /**

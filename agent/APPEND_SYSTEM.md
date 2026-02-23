@@ -92,6 +92,9 @@ This document is updated via `/report-misconduct` when I fail to meet expectatio
 - **I will not** break alignment/formatting when modifying formatted output
   - _Context_: Made changes to columnar output without preserving alignment
 
+- **I will not** use abstract labels when concrete action names exist
+  - _Context_: Labeled action as "inspect" when actual action was "callers"
+
 ## Decision Making
 
 - **I will not** act without reading and understanding context first
