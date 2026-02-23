@@ -120,24 +120,6 @@ async function fetchPullRequests(
   }
 }
 
-async function fetchPrDiff(
-  pi: ExtensionAPI,
-  cwd: string,
-  prNumber: number,
-): Promise<string[]> {
-  const result = await pi.exec(
-    "gh",
-    ["pr", "diff", String(prNumber), "--color=always"],
-    { cwd },
-  );
-
-  if (result.code !== 0) {
-    return [`Error fetching diff: ${result.stderr}`];
-  }
-
-  return result.stdout.split("\n");
-}
-
 export function createPullRequestsComponent(
   pi: ExtensionAPI,
   tui: { terminal: { rows: number }; requestRender: () => void },
@@ -249,6 +231,7 @@ export function createPullRequestsComponent(
     "",
     {
       title: "Pull Requests",
+      previewTitle: (item) => `#${item.number}`,
       actions,
       loadItems: async () => {
         return fetchPullRequests(pi, cwd, currentState);
@@ -313,17 +296,25 @@ export function createPullRequestsComponent(
         return applyFocusedStyle(theme, truncateAnsi(text, width), isFocused);
       },
       loadPreview: async (item) => {
-        // Render PR body as markdown
-        const bodyLines: string[] = [];
+        const mdParts: string[] = [
+          `| Field | Value |`,
+          `|-------|-------|`,
+          `| Author | @${item.author} |`,
+          `| Branch | ${item.headRefName} → ${item.baseRefName} |`,
+          `| State | ${item.state}${item.isDraft ? " (Draft)" : ""} |`,
+          `| Review | ${item.reviewDecision || "Pending"} |`,
+          `| Changes | +${item.additions} / -${item.deletions} |`,
+          `| Updated | ${formatRelativeTime(item.updatedAt)} |`,
+          ``,
+        ];
+
         if (item.body) {
-          const mdTheme = createMarkdownTheme(theme);
-          const md = new Markdown(item.body, 0, 0, mdTheme);
-          const renderedBody = md.render(80);
-          bodyLines.push(...renderedBody, "", "─".repeat(40), "");
+          mdParts.push(item.body);
         }
 
-        const diffLines = await fetchPrDiff(pi, cwd, item.number);
-        return [...bodyLines, ...diffLines];
+        const mdTheme = createMarkdownTheme(theme);
+        const md = new Markdown(mdParts.join("\n"), 0, 0, mdTheme);
+        return md.render(100);
       },
     },
   );
