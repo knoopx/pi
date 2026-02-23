@@ -154,6 +154,12 @@ This document is updated via `/report-misconduct` when I fail to meet expectatio
 - **I will not** add unrequested features when modifying code
   - _Context_: Added files section when user only asked for PR field table header
 
+- **I will not** add any code when told to remove - "remove" means delete, not intercept/disable/workaround
+  - _Context_: Kept adding handlers/options instead of deleting code when told to remove
+
+- **I will not** forget earlier instructions when implementing subsequent changes
+  - _Context_: User said ctrl+i should be insert, then said inspect should be ctrl+t, but I only did the second change and forgot the first
+
 ## Tool Usage
 
 - **I will not** use the wrong API when the proper one exists
@@ -253,3 +259,6 @@ This document is updated via `/report-misconduct` when I fail to meet expectatio
 
 - **I will not** revert user feedback when merging or creating new code
   - _Context_: Re-added change_id to output after being told to remove it
+
+- **I will not** make partial consistency fixes - check ALL aspects (icons, keybindings, behaviors, labels) when told to be consistent
+  - _Context_: Fixed only the icon when told to use consistent icons and behaviors, missing other inconsistencies
