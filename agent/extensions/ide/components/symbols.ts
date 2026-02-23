@@ -110,7 +110,7 @@ export function createSymbolsComponent(
     pendingAction = undefined;
   }
 
-  // Get context-sensitive action for ctrl+i based on symbol type
+  // Get context-sensitive action for ctrl+t based on symbol type
   function getInspectAction(type: string): CmActionType {
     // Functions and methods → show callers
     if (
@@ -156,21 +156,13 @@ export function createSymbolsComponent(
   ];
 
   const actions: ListPickerAction<SymbolInfo>[] = [
-    // Dynamic ctrl+i action based on symbol type
+    // Dynamic ctrl+t action based on symbol type
     {
-      key: "ctrl+i",
+      key: "ctrl+t",
       label: "inspect",
       handler: (item: SymbolInfo) => {
         pendingAction = getInspectAction(item.type);
         doneWithAction(item);
-      },
-    },
-    // Go to tests directly
-    {
-      key: "ctrl+t",
-      label: "tests",
-      handler: (item: SymbolInfo) => {
-        void goToFirstResult("tests", [item.name]);
       },
     },
     // Go to types directly
