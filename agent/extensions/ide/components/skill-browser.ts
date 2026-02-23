@@ -40,6 +40,8 @@ import {
 } from "./split-panel";
 import { truncateAnsi, ensureWidth, pad } from "./text-utils";
 import { getFileIcon } from "./file-icons";
+import { Markdown } from "@mariozechner/pi-tui";
+import { createMarkdownTheme } from "./formatting";
 
 type ViewMode = "local" | "remote";
 type FocusPane = "skills" | "files";
@@ -109,6 +111,7 @@ export function createSkillBrowserComponent(
 
   // Preview state
   let previewContent: string | null = null;
+  let previewRendered: string[] | null = null;
   let previewLoading = false;
   let previewError: string | null = null;
   let previewScroll = 0;
@@ -251,6 +254,7 @@ export function createSkillBrowserComponent(
     files = [];
     fileIndex = 0;
     previewContent = null;
+    previewRendered = null;
     invalidate();
     tui.requestRender();
 
@@ -307,6 +311,7 @@ export function createSkillBrowserComponent(
     const cached = contentCache.get(cacheKey);
     if (cached) {
       previewContent = cached;
+      previewRendered = null;
       previewScroll = 0;
       previewError = null;
       invalidate();
@@ -332,6 +337,7 @@ export function createSkillBrowserComponent(
 
       contentCache.set(cacheKey, content);
       previewContent = content;
+      previewRendered = null;
       previewScroll = 0;
       previewLoading = false;
       invalidate();
@@ -339,6 +345,7 @@ export function createSkillBrowserComponent(
     } catch (e) {
       previewError = e instanceof Error ? e.message : String(e);
       previewContent = null;
+      previewRendered = null;
       previewLoading = false;
       invalidate();
       tui.requestRender();
@@ -515,21 +522,29 @@ export function createSkillBrowserComponent(
       return rows;
     }
 
-    const lines = previewContent.split("\n");
-    const visible = lines.slice(previewScroll, previewScroll + height);
+    if (!previewRendered) {
+      const file = getFocusedFile();
+      const isMarkdown = file?.name.endsWith(".md") ?? false;
+
+      if (isMarkdown) {
+        const mdTheme = createMarkdownTheme(theme);
+        const md = new Markdown(previewContent, 0, 0, mdTheme);
+        previewRendered = md.render(width - 2);
+      } else {
+        previewRendered = previewContent.split("\n");
+      }
+    }
+
+    const visible = previewRendered.slice(
+      previewScroll,
+      previewScroll + height,
+    );
 
     for (const line of visible) {
       const text = " " + line;
       const truncated = truncateAnsi(text, width - 1);
       const padded = ensureWidth(truncated, width);
-
-      if (line.startsWith("#")) {
-        rows.push(theme.fg("accent", padded));
-      } else if (line.startsWith("```")) {
-        rows.push(theme.fg("dim", padded));
-      } else {
-        rows.push(padded);
-      }
+      rows.push(padded);
     }
 
     while (rows.length < height) {
@@ -623,9 +638,8 @@ export function createSkillBrowserComponent(
   const scrollPreview = (direction: "up" | "down") => {
     if (direction === "up") {
       previewScroll = Math.max(0, previewScroll - 10);
-    } else if (previewContent) {
-      const lines = previewContent.split("\n");
-      const maxScroll = Math.max(0, lines.length - 10);
+    } else if (previewRendered) {
+      const maxScroll = Math.max(0, previewRendered.length - 10);
       previewScroll = Math.min(maxScroll, previewScroll + 10);
     }
     invalidate();
