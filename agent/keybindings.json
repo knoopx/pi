@@ -8,6 +8,7 @@
   "toggleInputInfo": [],
   "toggleSessionSort": [],
   "externalEditor": [],
+  "newSession": "ctrl+n",
 
   "cursorLeft": "left",
   "cursorRight": "right",
