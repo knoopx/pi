@@ -104,7 +104,6 @@ export function createListPicker<T extends ListPickerItem>(
 
   async function loadItemsWithQuery(query: string): Promise<void> {
     try {
-      lastLoadedQuery = query;
       items = await config.loadItems(query);
       filterItems();
       loading = false;
