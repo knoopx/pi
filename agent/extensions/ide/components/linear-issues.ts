@@ -351,7 +351,7 @@ export function createLinearIssuesComponent(
       },
     },
     {
-      key: "ctrl+s",
+      key: "ctrl+/",
       label: "filter",
       handler: async () => {
         currentFilterIndex = (currentFilterIndex + 1) % ISSUE_FILTERS.length;
@@ -382,11 +382,12 @@ export function createLinearIssuesComponent(
         const updated = new Date(issue.updatedAt).toLocaleString();
         const desc = issue.description?.trim() || "No description.";
         const summary = [
-          `${issue.identifier} · ${issue.stateName} · ${issue.teamKey}`,
+          `Issue: ${issue.identifier}`,
+          `State: ${issue.stateName}`,
+          `Team: ${issue.teamKey}`,
           `Assignee: ${issue.assigneeName}`,
           `Priority: ${priorityLabel}`,
           `Updated: ${updated}`,
-          `URL: ${issue.url}`,
           "",
           desc,
         ].join("\n");
@@ -397,7 +398,15 @@ export function createLinearIssuesComponent(
     "",
     {
       title: () => `Linear: ${getCurrentFilterLabel()}`,
+      previewTitle: (item) => item.identifier,
       actions,
+      onKey: (data) => {
+        if (data === "\x1b") {
+          done({ issue: null });
+          return true;
+        }
+        return false;
+      },
       loadItems: async () => {
         const data = await fetchLinearIssues(apiKey);
         viewerId = data.viewerId;
@@ -457,27 +466,26 @@ export function createLinearIssuesComponent(
         return applyFocusedStyle(theme, truncateAnsi(text, width), isFocused);
       },
       loadPreview: async (item) => {
-        const metadata = [
-          `${item.identifier} · ${item.stateName} · ${item.teamKey}`,
-          `Assignee: ${item.assigneeName}`,
-          `Priority: ${PRIORITY_LABELS[item.priority] ?? "none"}`,
-          `Updated: ${new Date(item.updatedAt).toLocaleString()}`,
-          `URL: ${item.url}`,
-        ];
-
-        if (item.labelNames.length > 0) {
-          metadata.push(`Labels: ${item.labelNames.join(", ")}`);
-        }
-
-        if (!item.description) {
-          return [...metadata, "", "No description."];
-        }
+        const priorityLabel = PRIORITY_LABELS[item.priority] ?? "none";
+        const content = [
+          `| Field | Value |`,
+          `|-------|-------|`,
+          `| Issue | ${item.identifier} |`,
+          `| State | ${item.stateName} |`,
+          `| Team | ${item.teamKey} |`,
+          `| Assignee | ${item.assigneeName} |`,
+          `| Priority | ${priorityLabel} |`,
+          `| Created | ${formatRelativeTime(item.createdAt)} |`,
+          `| Updated | ${formatRelativeTime(item.updatedAt)} |`,
+          ``,
+          `# ${item.title}`,
+          ``,
+          item.description || "*No description.*",
+        ].join("\n");
 
         const mdTheme = createMarkdownTheme(theme);
-        const markdown = new Markdown(item.description, 0, 0, mdTheme);
-        const body = markdown.render(80);
-
-        return [...metadata, "", "─".repeat(40), "", ...body];
+        const markdown = new Markdown(content, 0, 0, mdTheme);
+        return markdown.render(80);
       },
     },
   );
