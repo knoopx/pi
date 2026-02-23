@@ -756,6 +756,22 @@ Use the **conventional-commits** skill for commit message format.`;
     }
   };
 
+  // Split file into new change helper
+  const splitFile = async () => {
+    if (!selectedChange || !files[selectionState.fileIndex]) return;
+    const file = files[selectionState.fileIndex];
+    try {
+      await pi.exec("jj", ["split", "-r", selectedChange.changeId, file.path], {
+        cwd,
+      });
+      changeCache.clear();
+      await reloadChanges();
+      notify(`Split ${file.path} into new change`, "info");
+    } catch (error) {
+      notify(`Failed to split file: ${formatErrorMessage(error)}`, "error");
+    }
+  };
+
   // Push bookmarks helper
   const pushBookmarks = async () => {
     if (!selectedChange) return;
@@ -972,6 +988,14 @@ Use the **conventional-commits** skill for commit message format.`;
       handler: () => {
         const file = files[selectionState.fileIndex];
         void pi.exec("code", [path.join(cwd, file.path)]);
+      },
+    },
+    {
+      key: "ctrl+s",
+      label: "split",
+      when: () => hasSelectedChange() && hasSelectedFile(),
+      handler: () => {
+        void splitFile();
       },
     },
     {
