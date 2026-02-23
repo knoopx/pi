@@ -113,6 +113,24 @@ export function createBookmarksComponent(
 
   const actions: ListPickerAction<BookmarkEntry>[] = [
     {
+      key: "ctrl+n",
+      label: "new",
+      handler: async (item) => {
+        const result = await pi.exec("jj", ["new", "-r", item.changeId], {
+          cwd,
+        });
+        if (result.code === 0) {
+          notify(
+            `Created new change from ${item.displayNames[0] || item.changeId}`,
+            "info",
+          );
+          done(null);
+        } else {
+          notify(result.stderr || "Failed to create new change", "error");
+        }
+      },
+    },
+    {
       key: ACTION_KEYS.delete,
       label: "delete",
       handler: async (item) => {
