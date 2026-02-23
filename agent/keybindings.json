@@ -9,6 +9,7 @@
   "toggleSessionSort": [],
   "externalEditor": [],
   "newSession": "ctrl+n",
+  "reload": "ctrl+shift+r",
 
   "cursorLeft": "left",
   "cursorRight": "right",
