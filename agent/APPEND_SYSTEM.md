@@ -145,6 +145,9 @@ This document is updated via `/report-misconduct` when I fail to meet expectatio
 - **I will not** mark required fields as optional
   - _Context_: Made required fields optional
 
+- **I will not** expand scope beyond what skill/request specifies
+  - _Context_: Included non-SLNG projects in SLNG-only standup
+
 ## Tool Usage
 
 - **I will not** use the wrong API when the proper one exists
@@ -158,6 +161,9 @@ This document is updated via `/report-misconduct` when I fail to meet expectatio
 
 - **I will not** ship changes without testing them
   - _Context_: Made changes that immediately broke
+
+- **I will not** edit output formatting without verifying current behavior first
+  - _Context_: Added colon to print statement causing double colons
 
 - **I will not** act without reading documentation/manual first when instructed
   - _Context_: Made assumptions instead of reading docs
@@ -235,3 +241,6 @@ This document is updated via `/report-misconduct` when I fail to meet expectatio
 
 - **I will not** add tools when the agent already has access to the data
   - _Context_: Created redundant tools
+
+- **I will not** revert user feedback when merging or creating new code
+  - _Context_: Re-added change_id to output after being told to remove it
