@@ -49,6 +49,7 @@ export interface ListPickerConfig<T extends ListPickerItem> {
     isFocused: boolean,
   ) => string;
   loadPreview: (item: T) => Promise<string[]>;
+  previewTitle?: (item: T) => string;
   onEdit?: (item: T) => Promise<void> | void;
   actions?: ListPickerAction<T>[];
   /** Debounce delay for reloading on query change (0 = no reload, default) */
@@ -237,8 +238,11 @@ export function createListPicker<T extends ListPickerItem>(
     const leftTitle = truncateAnsi(`${searchDisplay} ${itemCount}`, dims.leftW);
 
     const focusedItem = getFocusedItem();
-    const rightTitle = focusedItem?.path
-      ? ` ${truncateAnsi(focusedItem.path, dims.rightW - 2)}`
+    const previewTitleText = focusedItem
+      ? (config.previewTitle?.(focusedItem) ?? focusedItem.path)
+      : undefined;
+    const rightTitle = previewTitleText
+      ? ` ${truncateAnsi(previewTitleText, dims.rightW - 2)}`
       : " Source Preview";
 
     const itemRows = getItemRows(dims.leftW, dims.contentH);

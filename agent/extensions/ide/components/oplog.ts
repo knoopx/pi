@@ -76,6 +76,7 @@ export function createOpLogComponent(
     "",
     {
       title: "Op Log",
+      previewTitle: (item) => item.opId.slice(0, 12),
       actions,
       loadItems: async (_query) => {
         const entries = await loadOpLog(pi, cwd);

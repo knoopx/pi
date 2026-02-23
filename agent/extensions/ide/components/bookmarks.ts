@@ -170,6 +170,8 @@ export function createBookmarksComponent(
     "",
     {
       title: "Bookmarks",
+      previewTitle: (item) =>
+        item.displayNames[0] ?? item.changeId.slice(0, 12),
       actions,
       loadItems: async (_query) => {
         const entries = await listBookmarksByChange(pi, cwd);
