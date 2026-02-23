@@ -932,7 +932,7 @@ Use the **conventional-commits** skill for commit message format.`;
       },
     },
     {
-      key: "i",
+      key: "ctrl-i",
       label: "insert",
       when: () => hasSelectedChange() && onInsert !== undefined,
       handler: () => {
