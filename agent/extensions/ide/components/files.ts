@@ -35,6 +35,9 @@ export function createFilesComponent(
   // Track pending action for when an action key is pressed
   let pendingAction: CmActionType | undefined;
 
+  // Multi-selection state
+  const selectedFiles = new Set<string>();
+
   // Wrapper to close picker with action metadata
   function doneWithAction(item: FileInfo | null): void {
     if (item && pendingAction) {
@@ -49,21 +52,10 @@ export function createFilesComponent(
 
   // Action definitions: [key, label/action]
   const ACTION_DEFS: [string, CmActionType][] = [
-    ["ctrl+i", "inspect"],
+    ["ctrl+t", "inspect"],
     ["ctrl+d", "deps"],
     ["ctrl+u", "used-by"],
   ];
-
-  const actions: ListPickerAction<FileInfo>[] = ACTION_DEFS.map(
-    ([key, action]) => ({
-      key,
-      label: action,
-      handler: (item: FileInfo) => {
-        pendingAction = action;
-        doneWithAction(item);
-      },
-    }),
-  );
 
   // Internal done handler that wraps results
   const internalDone = (item: FileInfo | null) => {
@@ -74,6 +66,58 @@ export function createFilesComponent(
     }
   };
 
+  // Split selected files into new change
+  const splitFiles = async (
+    focusedItem: FileInfo | null,
+    notify?: (msg: string, type?: "info" | "error") => void,
+  ) => {
+    const filesToSplit =
+      selectedFiles.size > 0
+        ? [...selectedFiles]
+        : focusedItem
+          ? [focusedItem.path]
+          : [];
+
+    if (filesToSplit.length === 0) {
+      notify?.("No files selected", "error");
+      return;
+    }
+
+    try {
+      await pi.exec("jj", ["split", "-m", "", "--", ...filesToSplit], { cwd });
+      selectedFiles.clear();
+      notify?.(
+        `Split ${filesToSplit.length} file${filesToSplit.length > 1 ? "s" : ""} into new change`,
+        "info",
+      );
+    } catch (error) {
+      notify?.(
+        `Failed to split: ${error instanceof Error ? error.message : String(error)}`,
+        "error",
+      );
+    }
+  };
+
+  const actions: ListPickerAction<FileInfo>[] = [
+    {
+      key: "ctrl+i",
+      label: "insert",
+      handler: (item: FileInfo) => {
+        internalDone(item);
+      },
+    },
+    ...ACTION_DEFS.map(([key, action]) => ({
+      key,
+      label: action,
+      handler: (item: FileInfo) => {
+        pendingAction = action;
+        doneWithAction(item);
+      },
+    })),
+  ];
+
+  let pickerInstance: ListPickerComponent | null = null;
+
   const picker = createListPicker<FileInfo>(
     pi,
     tui,
@@ -82,8 +126,33 @@ export function createFilesComponent(
     internalDone,
     initialQuery,
     {
-      title: "Files",
-      actions,
+      title: () =>
+        selectedFiles.size > 0
+          ? `Files (${selectedFiles.size} selected)`
+          : "Files",
+      actions: [
+        ...actions,
+        {
+          key: "space",
+          label: "select",
+          handler: (item: FileInfo) => {
+            if (selectedFiles.has(item.path)) {
+              selectedFiles.delete(item.path);
+            } else {
+              selectedFiles.add(item.path);
+            }
+            picker.invalidate();
+            tui.requestRender();
+          },
+        },
+        {
+          key: "ctrl+s",
+          label: "split",
+          handler: (item: FileInfo) => {
+            void splitFiles(item, pickerInstance?.notify);
+          },
+        },
+      ],
       onEdit: async (item) => {
         await pi.exec("code", [item.path], { cwd });
       },
@@ -128,20 +197,22 @@ export function createFilesComponent(
       },
       filterItems: (items, query) =>
         items.filter((item) => item.path.toLowerCase().includes(query)),
-      formatItem: (item, _width, theme, isFocused) =>
-        applyFocusedStyle(
-          theme,
-          `${getFileIcon(item.path)} ${item.path}`,
-          isFocused,
-        ),
+      formatItem: (item, _width, theme, isFocused) => {
+        const isSelected = selectedFiles.has(item.path);
+        const marker = isSelected ? theme.fg("accent", "✓ ") : "  ";
+        const text = `${marker}${getFileIcon(item.path)} ${item.path}`;
+        return applyFocusedStyle(theme, text, isFocused);
+      },
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
     },
   );
 
+  pickerInstance = picker;
+
   return {
     ...picker,
     invalidate: () => {
-      // Trigger re-render
+      picker.invalidate();
     },
   };
 }
