@@ -1,4 +1,5 @@
 import path from "node:path";
+import { Key } from "@mariozechner/pi-tui";
 import {
   ACTION_KEYS,
   createKeyboardHandler,
@@ -861,7 +862,7 @@ Use the **conventional-commits** skill for commit message format.`;
       },
     },
     {
-      key: "ctrl+/",
+      key: Key.ctrl("/"),
       label: "filter",
       handler: () => {
         cycleFilter(1);
@@ -924,7 +925,7 @@ Use the **conventional-commits** skill for commit message format.`;
       },
     },
     {
-      key: "ctrl+m",
+      key: Key.ctrl("m"),
       label: "move",
       when: canMove,
       handler: () => {
@@ -932,7 +933,7 @@ Use the **conventional-commits** skill for commit message format.`;
       },
     },
     {
-      key: "ctrl-i",
+      key: Key.ctrl("i"),
       label: "insert",
       when: () => hasSelectedChange() && onInsert !== undefined,
       handler: () => {
@@ -949,7 +950,7 @@ Use the **conventional-commits** skill for commit message format.`;
       },
     },
     {
-      key: "ctrl+p",
+      key: Key.ctrl("p"),
       label: "push",
       when: hasBookmarks,
       handler: () => {
@@ -991,7 +992,7 @@ Use the **conventional-commits** skill for commit message format.`;
       },
     },
     {
-      key: "ctrl+s",
+      key: Key.ctrl("s"),
       label: "split",
       when: () => hasSelectedChange() && hasSelectedFile(),
       handler: () => {
@@ -1007,7 +1008,7 @@ Use the **conventional-commits** skill for commit message format.`;
       },
     },
     {
-      key: "ctrl+i",
+      key: Key.ctrl("i"),
       label: "inspect",
       when: () => onFileCmAction !== undefined && hasSelectedFile(),
       handler: () => {
@@ -1015,7 +1016,7 @@ Use the **conventional-commits** skill for commit message format.`;
       },
     },
     {
-      key: "ctrl+d",
+      key: Key.ctrl("d"),
       label: "deps",
       when: () => onFileCmAction !== undefined && hasSelectedFile(),
       handler: () => {
@@ -1023,7 +1024,7 @@ Use the **conventional-commits** skill for commit message format.`;
       },
     },
     {
-      key: "ctrl+u",
+      key: Key.ctrl("u"),
       label: "used-by",
       when: () => onFileCmAction !== undefined && hasSelectedFile(),
       handler: () => {

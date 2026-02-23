@@ -5,12 +5,12 @@
  * boilerplate across list pickers, browsers, and form components.
  */
 
-import { matchesKey } from "@mariozechner/pi-tui";
+import { Key, matchesKey } from "@mariozechner/pi-tui";
 
 export type KeyPattern = Parameters<typeof matchesKey>[1];
 
 export interface KeyBinding<TContext = void> {
-  /** Key pattern to match (e.g., "ctrl+d", "escape", "enter") */
+  /** Key pattern to match (e.g., Key.ctrl("d"), "escape", "enter") */
   key: KeyPattern;
   /** Help label (e.g., "delete"). If provided, shown in help text. */
   label?: string;
@@ -73,7 +73,7 @@ export interface KeyboardHandlerConfig<TContext = void> {
  * ```ts
  * const handleInput = createKeyboardHandler({
  *   bindings: [
- *     { key: "ctrl+d", handler: () => { deleteItem(); return true; } },
+ *     { key: Key.ctrl("d"), handler: () => { deleteItem(); return true; } },
  *   ],
  *   navigation: () => ({ index: selectedIndex, maxIndex: items.length - 1 }),
  *   onNavigate: (i) => { selectedIndex = i; render(); },
@@ -164,5 +164,5 @@ export function createKeyboardHandler<TContext = void>(
  */
 export const ACTION_KEYS = {
   /** Destructive action: delete, drop, forget, discard */
-  delete: "ctrl+d" as KeyPattern,
+  delete: Key.ctrl("d") as KeyPattern,
 } as const;

@@ -3,7 +3,7 @@ import type {
   KeybindingsManager,
   Theme,
 } from "@mariozechner/pi-coding-agent";
-import { Markdown } from "@mariozechner/pi-tui";
+import { Key, Markdown } from "@mariozechner/pi-tui";
 import {
   createListPicker,
   type ListPickerItem,
@@ -135,7 +135,7 @@ export function createPullRequestsComponent(
 
   const actions: ListPickerAction<PullRequest>[] = [
     {
-      key: "ctrl+o",
+      key: Key.ctrl("o"),
       label: "open",
       handler: async (item) => {
         await pi.exec("gh", ["pr", "view", String(item.number), "--web"], {
@@ -145,7 +145,7 @@ export function createPullRequestsComponent(
       },
     },
     {
-      key: "ctrl+c",
+      key: Key.ctrl("c"),
       label: "checkout",
       handler: async (item) => {
         const result = await pi.exec(
@@ -161,7 +161,7 @@ export function createPullRequestsComponent(
       },
     },
     {
-      key: "ctrl+a",
+      key: Key.ctrl("a"),
       label: "approve",
       handler: async (item) => {
         const result = await pi.exec(
@@ -178,7 +178,7 @@ export function createPullRequestsComponent(
       },
     },
     {
-      key: "ctrl+m",
+      key: Key.ctrl("m"),
       label: "merge",
       handler: async (item) => {
         const result = await pi.exec(
@@ -195,7 +195,7 @@ export function createPullRequestsComponent(
       },
     },
     {
-      key: "ctrl+s",
+      key: Key.ctrl("s"),
       label: "state",
       handler: async () => {
         const states: ("open" | "closed" | "merged" | "all")[] = [
@@ -211,7 +211,7 @@ export function createPullRequestsComponent(
       },
     },
     {
-      key: "ctrl+i",
+      key: Key.ctrl("i"),
       label: "insert",
       handler: (item) => {
         if (onInsert) {

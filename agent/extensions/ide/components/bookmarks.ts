@@ -3,6 +3,7 @@ import type {
   KeybindingsManager,
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
+import { Key } from "@mariozechner/pi-tui";
 import {
   createListPicker,
   type ListPickerItem,
@@ -113,7 +114,7 @@ export function createBookmarksComponent(
 
   const actions: ListPickerAction<BookmarkEntry>[] = [
     {
-      key: "ctrl+n",
+      key: Key.ctrl("n"),
       label: "new",
       handler: async (item) => {
         const result = await pi.exec("jj", ["new", "-r", item.changeId], {
@@ -142,7 +143,7 @@ export function createBookmarksComponent(
       },
     },
     {
-      key: "ctrl+g",
+      key: Key.ctrl("g"),
       label: "fetch",
       handler: async () => {
         const result = await pi.exec("jj", ["git", "fetch"], { cwd });
@@ -155,7 +156,7 @@ export function createBookmarksComponent(
       },
     },
     {
-      key: "ctrl+p",
+      key: Key.ctrl("p"),
       label: "push",
       handler: async () => {
         const result = await pi.exec("jj", ["git", "push", "--all"], { cwd });
@@ -168,7 +169,7 @@ export function createBookmarksComponent(
       },
     },
     {
-      key: "ctrl+i",
+      key: Key.ctrl("i"),
       label: "insert",
       handler: (item) => {
         if (onInsert) {
@@ -226,7 +227,7 @@ export function createBookmarksComponent(
       onKey: createKeyboardHandler({
         bindings: [
           {
-            key: "ctrl+/",
+            key: Key.ctrl("/"),
             handler: () => {
               const currentIndex =
                 BOOKMARK_FILTER_MODES.indexOf(currentFilterMode);

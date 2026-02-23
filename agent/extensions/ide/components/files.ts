@@ -3,6 +3,7 @@ import type {
   KeybindingsManager,
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
+import { Key } from "@mariozechner/pi-tui";
 import {
   createListPicker,
   type ListPickerItem,
@@ -52,9 +53,9 @@ export function createFilesComponent(
 
   // Action definitions: [key, label/action]
   const ACTION_DEFS: [string, CmActionType][] = [
-    ["ctrl+t", "inspect"],
-    ["ctrl+d", "deps"],
-    ["ctrl+u", "used-by"],
+    [Key.ctrl("t"), "inspect"],
+    [Key.ctrl("d"), "deps"],
+    [Key.ctrl("u"), "used-by"],
   ];
 
   // Internal done handler that wraps results
@@ -100,7 +101,7 @@ export function createFilesComponent(
 
   const actions: ListPickerAction<FileInfo>[] = [
     {
-      key: "ctrl+i",
+      key: Key.ctrl("i"),
       label: "insert",
       handler: (item: FileInfo) => {
         internalDone(item);
@@ -146,7 +147,7 @@ export function createFilesComponent(
           },
         },
         {
-          key: "ctrl+s",
+          key: Key.ctrl("s"),
           label: "split",
           handler: (item: FileInfo) => {
             void splitFiles(item, pickerInstance?.notify);

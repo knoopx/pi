@@ -15,7 +15,12 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
-import { Key, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
+import {
+  Key,
+  truncateToWidth,
+  visibleWidth,
+  type KeyId,
+} from "@mariozechner/pi-tui";
 
 import { fetchUsageForModel, type UsageSnapshot } from "./footer/usage";
 import {
@@ -586,160 +591,94 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  // Shortcuts
-  pi.registerShortcut(Key.ctrl("t"), {
-    description: "Open symbol picker",
-    handler: async (ctx) => {
-      if (!ctx.hasUI) return;
-      await openSymbolsPicker(pi, ctx, "");
-    },
-  });
+  // Shortcuts - single source of truth for both registration and command palette
+  interface ShortcutDef {
+    key: KeyId;
+    description: string;
+    handler: (ctx: ExtensionContext) => Promise<void>;
+  }
 
-  pi.registerShortcut(Key.ctrl("p"), {
-    description: "Open file picker",
-    handler: async (ctx) => {
-      if (!ctx.hasUI) return;
-      await openFilesPicker(pi, ctx, "");
-    },
-  });
-
-  pi.registerShortcut(Key.ctrl("b"), {
-    description: "Open bookmarks browser",
-    handler: async (ctx) => {
-      if (!ctx.hasUI) return;
-      await openBookmarksBrowser(pi, ctx);
-    },
-  });
-
-  pi.registerShortcut(Key.ctrl("j"), {
-    description: "Open workspaces review",
-    handler: async (ctx) => {
-      if (!ctx.hasUI) return;
-      await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
-        return createWorkspacesComponent(pi, tui, theme, keybindings, done);
-      }, FULL_OVERLAY_OPTIONS);
-    },
-  });
-
-  pi.registerShortcut(Key.ctrl("k"), {
-    description: "Open changes browser",
-    handler: async (ctx) => {
-      if (!ctx.hasUI) return;
-      await openChangesBrowser(pi, ctx, promptAndSetBookmark);
-    },
-  });
-
-  pi.registerShortcut(Key.ctrl("o"), {
-    description: "Open operation log browser",
-    handler: async (ctx) => {
-      if (!ctx.hasUI) return;
-      await openOpLogBrowser(pi, ctx);
-    },
-  });
-
-  pi.registerShortcut(Key.ctrl("s"), {
-    description: "Open skill browser",
-    handler: async (ctx) => {
-      if (!ctx.hasUI) return;
-      await openSkillBrowser(pi, ctx, "");
-    },
-  });
-
-  pi.registerShortcut(Key.ctrl("g"), {
-    description: "Open pull requests browser",
-    handler: async (ctx) => {
-      if (!ctx.hasUI) return;
-      await openPullRequestsBrowser(pi, ctx);
-    },
-  });
-
-  pi.registerShortcut(Key.ctrl("u"), {
-    description: "Open Linear issues browser",
-    handler: async (ctx) => {
-      if (!ctx.hasUI) return;
-      await openLinearIssuesBrowser(pi, ctx);
-    },
-  });
-
-  // Command palette with registered shortcuts
-  let currentCtx: ExtensionContext | null = null;
-
-  const registeredShortcuts: RegisteredShortcut[] = [
+  const shortcuts: ShortcutDef[] = [
     {
-      shortcut: Key.ctrl("t"),
+      key: Key.ctrl("t"),
       description: "Open symbol picker",
-      execute: () => {
-        if (currentCtx) void openSymbolsPicker(pi, currentCtx, "");
-      },
+      handler: async (ctx) => openSymbolsPicker(pi, ctx, ""),
     },
     {
-      shortcut: Key.ctrl("p"),
+      key: Key.ctrl("p"),
       description: "Open file picker",
-      execute: () => {
-        if (currentCtx) void openFilesPicker(pi, currentCtx, "");
-      },
+      handler: async (ctx) => openFilesPicker(pi, ctx, ""),
     },
     {
-      shortcut: Key.ctrl("b"),
+      key: Key.ctrl("b"),
       description: "Open bookmarks browser",
-      execute: () => {
-        if (currentCtx) void openBookmarksBrowser(pi, currentCtx);
-      },
+      handler: async (ctx) => openBookmarksBrowser(pi, ctx),
     },
     {
-      shortcut: Key.ctrl("j"),
+      key: Key.ctrl("j"),
       description: "Open workspaces review",
-      execute: () => {
-        if (currentCtx)
-          void currentCtx.ui.custom<void>(
-            (tui, theme, keybindings, done) =>
-              createWorkspacesComponent(pi, tui, theme, keybindings, done),
-            FULL_OVERLAY_OPTIONS,
-          );
-      },
+      handler: async (ctx) =>
+        ctx.ui.custom<void>(
+          (tui, theme, keybindings, done) =>
+            createWorkspacesComponent(pi, tui, theme, keybindings, done),
+          FULL_OVERLAY_OPTIONS,
+        ),
     },
     {
-      shortcut: Key.ctrl("k"),
+      key: Key.ctrl("k"),
       description: "Open changes browser",
-      execute: () => {
-        if (currentCtx)
-          void openChangesBrowser(pi, currentCtx, promptAndSetBookmark);
-      },
+      handler: async (ctx) => openChangesBrowser(pi, ctx, promptAndSetBookmark),
     },
     {
-      shortcut: Key.ctrl("o"),
+      key: Key.ctrl("o"),
       description: "Open operation log browser",
-      execute: () => {
-        if (currentCtx) void openOpLogBrowser(pi, currentCtx);
-      },
+      handler: async (ctx) => openOpLogBrowser(pi, ctx),
     },
     {
-      shortcut: Key.ctrl("s"),
+      key: Key.ctrl("s"),
       description: "Open skill browser",
-      execute: () => {
-        if (currentCtx) void openSkillBrowser(pi, currentCtx, "");
-      },
+      handler: async (ctx) => openSkillBrowser(pi, ctx, ""),
     },
     {
-      shortcut: Key.ctrl("g"),
+      key: Key.ctrl("g"),
       description: "Open pull requests browser",
-      execute: () => {
-        if (currentCtx) void openPullRequestsBrowser(pi, currentCtx);
-      },
+      handler: async (ctx) => openPullRequestsBrowser(pi, ctx),
     },
     {
-      shortcut: Key.ctrl("u"),
+      key: Key.ctrl("u"),
       description: "Open Linear issues browser",
-      execute: () => {
-        if (currentCtx) void openLinearIssuesBrowser(pi, currentCtx);
-      },
-    },
-    {
-      shortcut: Key.ctrlShift("p"),
-      description: "Open command palette",
-      execute: () => {},
+      handler: async (ctx) => openLinearIssuesBrowser(pi, ctx),
     },
   ];
+
+  // Register all shortcuts
+  for (const shortcut of shortcuts) {
+    pi.registerShortcut(shortcut.key, {
+      description: shortcut.description,
+      handler: async (ctx) => {
+        if (!ctx.hasUI) return;
+        await shortcut.handler(ctx);
+      },
+    });
+  }
+
+  // Build command palette list from shortcuts
+  let currentCtx: ExtensionContext | null = null;
+
+  const registeredShortcuts: RegisteredShortcut[] = shortcuts.map((s) => ({
+    shortcut: s.key,
+    description: s.description,
+    execute: () => {
+      if (currentCtx) void s.handler(currentCtx);
+    },
+  }));
+
+  // Add command palette itself (self-referential, no-op execute)
+  registeredShortcuts.push({
+    shortcut: Key.ctrlShift("p"),
+    description: "Open command palette",
+    execute: () => {},
+  });
 
   pi.registerCommand("commands", {
     description: "Open command palette to search and execute commands",

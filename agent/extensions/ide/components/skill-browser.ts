@@ -40,7 +40,7 @@ import {
 } from "./split-panel";
 import { truncateAnsi, ensureWidth, pad } from "./text-utils";
 import { getFileIcon } from "./file-icons";
-import { Markdown } from "@mariozechner/pi-tui";
+import { Key, Markdown } from "@mariozechner/pi-tui";
 import { createMarkdownTheme } from "./formatting";
 
 type ViewMode = "local" | "remote";
@@ -690,7 +690,7 @@ export function createSkillBrowserComponent(
         tui.requestRender();
       },
     },
-    { key: "ctrl+/", label: "toggle", handler: toggleView },
+    { key: Key.ctrl("/"), label: "toggle", handler: toggleView },
     {
       key: "enter",
       label: "use",

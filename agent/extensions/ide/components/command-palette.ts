@@ -11,7 +11,7 @@ import type {
   AppAction,
   Theme,
 } from "@mariozechner/pi-coding-agent";
-import type { KeyId } from "@mariozechner/pi-tui";
+import { Key, type KeyId } from "@mariozechner/pi-tui";
 import { truncateAnsi, ensureWidth, buildHelpText } from "./text-utils";
 import { createKeyboardHandler } from "../keyboard";
 import {
@@ -304,7 +304,7 @@ export function createCommandPaletteComponent(
   const handleKeyboard = createKeyboardHandler({
     bindings: [
       {
-        key: "ctrl+u",
+        key: Key.ctrl("u"),
         handler: () => {
           searchQuery = "";
           filterCommands();
@@ -322,7 +322,9 @@ export function createCommandPaletteComponent(
       invalidate();
       tui.requestRender();
     },
-    onEscape: () => { done(); },
+    onEscape: () => {
+      done();
+    },
     onEnter: () => {
       const cmd = filteredCommands[selectedIndex];
       if (cmd) {

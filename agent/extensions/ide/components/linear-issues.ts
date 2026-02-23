@@ -6,7 +6,7 @@ import type {
   KeybindingsManager,
   Theme,
 } from "@mariozechner/pi-coding-agent";
-import { Markdown } from "@mariozechner/pi-tui";
+import { Key, Markdown } from "@mariozechner/pi-tui";
 import {
   createListPicker,
   type ListPickerAction,
@@ -329,21 +329,21 @@ export function createLinearIssuesComponent(
 
   const actions: ListPickerAction<LinearIssue>[] = [
     {
-      key: "ctrl+n",
+      key: Key.ctrl("n"),
       label: "new",
       handler: () => {
         done({ issue: null, action: { type: "create" } });
       },
     },
     {
-      key: "ctrl+e",
+      key: Key.ctrl("e"),
       label: "edit",
       handler: (item) => {
         done({ issue: item, action: { type: "edit", issue: item } });
       },
     },
     {
-      key: "ctrl+o",
+      key: Key.ctrl("o"),
       label: "open",
       handler: async (item) => {
         await openIssueUrl(pi, item.url, cwd);
@@ -351,7 +351,7 @@ export function createLinearIssuesComponent(
       },
     },
     {
-      key: "ctrl+/",
+      key: Key.ctrl("/"),
       label: "filter",
       handler: async () => {
         currentFilterIndex = (currentFilterIndex + 1) % ISSUE_FILTERS.length;
@@ -359,7 +359,7 @@ export function createLinearIssuesComponent(
       },
     },
     {
-      key: "ctrl+i",
+      key: Key.ctrl("i"),
       label: "insert",
       handler: (item) => {
         if (onInsert) {

@@ -3,6 +3,7 @@ import type {
   KeybindingsManager,
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
+import { Key } from "@mariozechner/pi-tui";
 import {
   createListPicker,
   type ListPickerItem,
@@ -98,10 +99,10 @@ export const CM_COMMANDS: Record<CmActionType, CmCommandDef> = {
 
 // Symbol-based actions available in cm results
 const SYMBOL_ACTION_DEFS: [string, CmActionType][] = [
-  ["ctrl+t", "callers"],
-  ["ctrl+j", "callees"],
-  ["ctrl+y", "types"],
-  ["ctrl+k", "schema"],
+  [Key.ctrl("t"), "callers"],
+  [Key.ctrl("j"), "callees"],
+  [Key.ctrl("y"), "types"],
+  [Key.ctrl("k"), "schema"],
 ];
 
 /**

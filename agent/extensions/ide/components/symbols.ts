@@ -3,6 +3,7 @@ import type {
   KeybindingsManager,
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
+import { Key } from "@mariozechner/pi-tui";
 import { createKeyboardHandler } from "../keyboard";
 import {
   createListPicker,
@@ -151,14 +152,14 @@ export function createSymbolsComponent(
 
   // Actions that show results in picker
   const PICKER_ACTIONS: [string, CmActionType][] = [
-    ["ctrl+j", "callees"],
-    ["ctrl+k", "schema"],
+    [Key.ctrl("j"), "callees"],
+    [Key.ctrl("k"), "schema"],
   ];
 
   const actions: ListPickerAction<SymbolInfo>[] = [
     // Dynamic ctrl+t action based on symbol type
     {
-      key: "ctrl+t",
+      key: Key.ctrl("t"),
       label: "callers",
       handler: (item: SymbolInfo) => {
         pendingAction = getInspectAction(item.type);
@@ -167,7 +168,7 @@ export function createSymbolsComponent(
     },
     // Go to types directly
     {
-      key: "ctrl+y",
+      key: Key.ctrl("y"),
       label: "types",
       handler: (item: SymbolInfo) => {
         void goToFirstResult("types", [item.name]);
@@ -228,7 +229,7 @@ export function createSymbolsComponent(
       onKey: createKeyboardHandler({
         bindings: [
           {
-            key: "ctrl+/",
+            key: Key.ctrl("/"),
             handler: () => {
               const currentIndex = SYMBOL_TYPES.indexOf(currentTypeFilter);
               const nextIndex = (currentIndex + 1) % SYMBOL_TYPES.length;

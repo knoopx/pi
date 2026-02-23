@@ -3,6 +3,7 @@ import type {
   KeybindingsManager,
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
+import { Key } from "@mariozechner/pi-tui";
 import {
   createKeyboardHandler,
   buildHelpFromBindings,
@@ -365,7 +366,7 @@ export function createListPicker<T extends ListPickerItem>(
       },
     },
     {
-      key: "ctrl+e",
+      key: Key.ctrl("e"),
       label: "edit",
       when: () => config.onEdit !== undefined,
       handler: () => {
