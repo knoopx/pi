@@ -119,7 +119,8 @@ export async function loadChangedFiles(
       const match = /^([AMD])\s+(.+)$/.exec(line);
       return match ? { status: match[1], path: match[2] } : null;
     })
-    .filter((f): f is FileChange => f !== null);
+    .filter((f): f is FileChange => f !== null)
+    .sort((a, b) => a.path.localeCompare(b.path));
 }
 
 /**
