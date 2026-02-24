@@ -185,16 +185,20 @@ describe("Guardrails Defaults Configuration", () => {
     });
 
     describe("when checking .git/.jj protection", () => {
-      const vcsRules = protectGroup!.rules.filter((r) =>
-        r.pattern.includes("(git|jj)"),
+      const fileRule = protectGroup!.rules.find(
+        (r) => r.context === "file_name" && r.pattern.includes("\\.git/"),
+      );
+      const commandRule = protectGroup!.rules.find(
+        (r) => r.context === "command" && r.pattern.includes("\\.(git|jj)/"),
       );
 
       it("then blocks direct VCS directory access", () => {
-        expect(vcsRules.length).toBe(2);
-        vcsRules.forEach((rule) => {
-          expect(rule.action).toBe("block");
-          expect(rule.reason).toContain("repository");
-        });
+        expect(fileRule).toBeDefined();
+        expect(commandRule).toBeDefined();
+        expect(fileRule!.action).toBe("block");
+        expect(commandRule!.action).toBe("block");
+        expect(fileRule!.reason).toContain("repository");
+        expect(commandRule!.reason).toContain("repository");
       });
     });
   });

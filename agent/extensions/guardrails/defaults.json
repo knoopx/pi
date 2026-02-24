@@ -275,13 +275,13 @@
       },
       {
         "context": "command",
-        "pattern": "^jj\\s+revert",
+        "pattern": "^jj\\s+revert(?!.*--help).*$",
         "action": "block",
         "reason": "`jj revert` creates a new commit that undoes changes (like git revert). You probably want: `jj undo` (undo last jj operation), `jj restore` (restore files), or `jj abandon` (discard working changes) (see skill: jujutsu)"
       },
       {
         "context": "command",
-        "pattern": "^jj\\s+restore",
+        "pattern": "^jj\\s+restore(?!.*--help).*$",
         "action": "block",
         "reason": "`jj restore` opens an editor for interactive file selection. For non-interactive restore, use: `jj restore --from <rev> <file>` or `jj edit <change-id>` to switch to a change (see skill: jujutsu)"
       },
