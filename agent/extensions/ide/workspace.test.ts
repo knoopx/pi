@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { getDiff } from "./jj";
 import {
   generateWorkspaceName,
   parseWorkspaceList,
   parseDiffStats,
   getTmuxSessionStatus,
-  getWorkspaceDiff,
   spawnAgent,
   loadAgentWorkspaces,
 } from "./workspace";
@@ -161,13 +161,14 @@ describe("workspace module", () => {
             stderr: "",
           });
 
-        const result = await getWorkspaceDiff(
+        const result = await getDiff(
           pi,
           "/repo/.jj/workspaces/ide-abc",
+          "@",
           "src/o'reilly.ts",
         );
 
-        expect(result).toBe("diff output");
+        expect(result).toEqual(["diff output"]);
         expect(execMock).toHaveBeenNthCalledWith(
           2,
           "bash",
@@ -190,12 +191,9 @@ describe("workspace module", () => {
             stderr: "pipe failed",
           });
 
-        const result = await getWorkspaceDiff(
-          pi,
-          "/repo/.jj/workspaces/ide-abc",
-        );
+        const result = await getDiff(pi, "/repo/.jj/workspaces/ide-abc", "@");
 
-        expect(result).toBe("Failed to get diff: pipe failed");
+        expect(result).toEqual(["Failed to get diff: pipe failed"]);
       });
     });
   });

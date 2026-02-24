@@ -31,14 +31,12 @@ import {
   getRepoRoot,
   getCurrentChangeId,
   loadAgentWorkspaces,
-  getWorkspaceDiff,
   forgetWorkspace,
   killTmuxSession,
-  loadFiles,
   createWorkspace,
   generateWorkspaceName,
 } from "../workspace";
-import { loadChanges, getDiff } from "../jj";
+import { loadChanges, getDiff, loadChangedFiles } from "../jj";
 
 const STATUS_TEXT: Record<WorkspaceStatus, string> = {
   running: "running",
@@ -159,7 +157,7 @@ export function createWorkspacesComponent(
         }
 
         if (!cache) {
-          files = await loadFiles(pi, ws.path, ws.changeId);
+          files = await loadChangedFiles(pi, ws.path, ws.changeId);
           changes = [];
           cache = { files, changes: [], diffs: new Map() };
           workspaceCache.set(ws.name, cache);
@@ -216,8 +214,7 @@ export function createWorkspacesComponent(
     }
 
     try {
-      const diff = await getWorkspaceDiff(pi, ws.path, filePath);
-      const content = diff.split("\n");
+      const content = await getDiff(pi, ws.path, "@", filePath);
       cache?.diffs.set(diffKey, content);
       setDiffContent(content);
     } catch (error) {

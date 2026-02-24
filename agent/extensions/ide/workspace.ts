@@ -7,14 +7,8 @@ import type {
   WorkspaceStatus,
   WorkspaceListEntry,
   DiffStats,
-  FileChange,
 } from "./types";
-import {
-  updateStaleWorkspace,
-  loadChangedFiles,
-  sanitizeDescription,
-  getDiff,
-} from "./jj";
+import { updateStaleWorkspace, sanitizeDescription } from "./jj";
 
 const WORKSPACE_PREFIX = "ide-";
 
@@ -323,29 +317,8 @@ export async function spawnAgent(
 }
 
 /**
- * Load changed files for a workspace.
- * Re-exports loadChangedFiles from jj.ts for backward compatibility.
- */
-export async function loadFiles(
-  pi: ExtensionAPI,
-  workspacePath: string,
-  changeId: string,
-): Promise<FileChange[]> {
-  return loadChangedFiles(pi, workspacePath, changeId);
-}
-
-/**
  * Get the full diff output for a workspace
  */
-export async function getWorkspaceDiff(
-  pi: ExtensionAPI,
-  workspacePath: string,
-  filePath?: string,
-): Promise<string> {
-  const lines = await getDiff(pi, workspacePath, "@", filePath);
-  return lines.join("\n");
-}
-
 /**
  * Rebase workspace changes on top of the latest root workspace change
  */
