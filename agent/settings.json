@@ -1,13 +1,12 @@
 {
   "lastChangelogVersion": "0.54.2",
   "defaultProvider": "anthropic",
-  "defaultModel": "claude-opus-4-5",
+  "defaultModel": "claude-opus-4-6",
   "theme": "custom",
   "lsp": {
     "hookMode": "edit_write"
   },
   "enabledModels": [
-    "github-copilot/claude-opus-4.5",
     "github-copilot/gpt-5.2",
     "github-copilot/grok-code-fast-1",
     "xiaomi/mimo-v2-flash",
@@ -19,8 +18,9 @@
     "openai-codex/gpt-5.2",
     "modal/zai-org/GLM-5-FP8",
     "anthropic/claude-opus-4-5",
-    "github-copilot/claude-opus-4.6"
+    "anthropic/claude-opus-4-6",
+    "anthropic/claude-sonnet-4-6"
   ],
   "hideThinkingBlock": false,
-  "defaultThinkingLevel": "medium"
+  "defaultThinkingLevel": "low"
 }
