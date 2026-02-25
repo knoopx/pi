@@ -36,7 +36,7 @@ import {
   createWorkspace,
   generateWorkspaceName,
 } from "../workspace";
-import { loadChanges, getDiff, loadChangedFiles } from "../jj";
+import { loadChanges, getDiff, loadChangedFiles, notifyMutation } from "../jj";
 
 const STATUS_TEXT: Record<WorkspaceStatus, string> = {
   running: "running",
@@ -467,11 +467,16 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
   const discardFile = async () => {
     if (!selectedWorkspace || isDefaultWs() || !files[fileIndex]) return;
     const file = files[fileIndex];
-    await pi.exec("jj", ["restore", file.path], {
+    const restoreResult = await pi.exec("jj", ["restore", file.path], {
       cwd: selectedWorkspace.path,
     });
     workspaceCache.delete(selectedWorkspace.name);
     await loadFilesAndDiff(selectedWorkspace);
+    notifyMutation(
+      pi,
+      "jj restore",
+      restoreResult.stderr || restoreResult.stdout,
+    );
   };
 
   // Navigate workspaces

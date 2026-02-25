@@ -13,6 +13,7 @@ import {
 import { loadFilePreviewWithBat } from "./file-preview";
 import { getFileIcon } from "./file-icons";
 import { applyFocusedStyle } from "./style-utils";
+import { notifyMutation } from "../jj";
 import type { CmActionType } from "./cm-results";
 
 export interface FileInfo extends ListPickerItem {
@@ -85,12 +86,17 @@ export function createFilesComponent(
     }
 
     try {
-      await pi.exec("jj", ["split", "-m", "", "--", ...filesToSplit], { cwd });
+      const splitResult = await pi.exec(
+        "jj",
+        ["split", "-m", "", "--", ...filesToSplit],
+        { cwd },
+      );
       selectedFiles.clear();
       notify?.(
         `Split ${filesToSplit.length} file${filesToSplit.length > 1 ? "s" : ""} into new change`,
         "info",
       );
+      notifyMutation(pi, "jj split", splitResult.stderr || splitResult.stdout);
     } catch (error) {
       notify?.(
         `Failed to split: ${error instanceof Error ? error.message : String(error)}`,

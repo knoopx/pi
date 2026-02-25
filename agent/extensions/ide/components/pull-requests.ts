@@ -13,6 +13,7 @@ import {
 import { truncateAnsi } from "./text-utils";
 import { applyFocusedStyle } from "./style-utils";
 import { createMarkdownTheme, formatRelativeTime } from "./formatting";
+import { notifyMutation } from "../jj";
 
 /** Pull request data from GitHub CLI */
 export interface PullRequest extends ListPickerItem {
@@ -155,6 +156,7 @@ export function createPullRequestsComponent(
         );
         if (result.code === 0) {
           notify(`Checked out PR #${item.number}`, "info");
+          notifyMutation(pi, "gh pr checkout", result.stderr || result.stdout);
         } else {
           notify(result.stderr || "Checkout failed", "error");
         }
@@ -171,6 +173,7 @@ export function createPullRequestsComponent(
         );
         if (result.code === 0) {
           notify(`Approved PR #${item.number}`, "info");
+          notifyMutation(pi, "gh pr review", result.stderr || result.stdout);
           await pickerRef?.reload();
         } else {
           notify(result.stderr || "Approve failed", "error");
@@ -188,6 +191,7 @@ export function createPullRequestsComponent(
         );
         if (result.code === 0) {
           notify(`Merged PR #${item.number}`, "info");
+          notifyMutation(pi, "gh pr merge", result.stderr || result.stdout);
           await pickerRef?.reload();
         } else {
           notify(result.stderr || "Merge failed", "error");

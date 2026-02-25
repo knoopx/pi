@@ -37,6 +37,7 @@ import {
   setBookmarkToChange,
   getJjLogForSystemPrompt,
   getVcsLabel,
+  notifyMutation,
 } from "./jj";
 
 // Overlay imports
@@ -403,13 +404,23 @@ export default function ideExtension(pi: ExtensionAPI) {
 
     try {
       if (await isCurrentChangeEmpty(pi, ctx.cwd)) {
-        await pi.exec("jj", ["desc", "-m", pendingChangeDescription], {
-          cwd: ctx.cwd,
-        });
+        const descResult = await pi.exec(
+          "jj",
+          ["desc", "-m", pendingChangeDescription],
+          {
+            cwd: ctx.cwd,
+          },
+        );
+        notifyMutation(pi, "jj desc", descResult.stderr || descResult.stdout);
       } else {
-        await pi.exec("jj", ["new", "-m", pendingChangeDescription], {
-          cwd: ctx.cwd,
-        });
+        const newResult = await pi.exec(
+          "jj",
+          ["new", "-m", pendingChangeDescription],
+          {
+            cwd: ctx.cwd,
+          },
+        );
+        notifyMutation(pi, "jj new", newResult.stderr || newResult.stdout);
       }
     } catch {
       // Silently fail if jj commands fail

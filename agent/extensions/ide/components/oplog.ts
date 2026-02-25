@@ -16,6 +16,7 @@ import {
   getOpShow,
   restoreOp,
   undoOp,
+  notifyMutation,
   type OpLogEntry,
 } from "../jj";
 
@@ -46,6 +47,7 @@ export function createOpLogComponent(
         const result = await restoreOp(pi, cwd, item.opId);
         if (result.success) {
           notify(`Restored to ${item.opId}`, "info");
+          notifyMutation(pi, "jj op restore", result.output ?? "");
           await pickerRef?.reload();
         } else {
           notify(`Failed: ${result.error ?? "Unknown error"}`, "error");
@@ -59,6 +61,7 @@ export function createOpLogComponent(
         const result = await undoOp(pi, cwd);
         if (result.success) {
           notify("Undone", "info");
+          notifyMutation(pi, "jj undo", result.output ?? "");
           await pickerRef?.reload();
         } else {
           notify(`Failed: ${result.error ?? "Unknown error"}`, "error");

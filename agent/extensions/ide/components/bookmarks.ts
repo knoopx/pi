@@ -12,7 +12,12 @@ import {
 } from "./list-picker";
 import { formatBookmarkReference } from "./change-utils";
 import { applyFocusedStyle } from "./style-utils";
-import { forgetBookmark, getDiff, listBookmarksByChange } from "../jj";
+import {
+  forgetBookmark,
+  getDiff,
+  listBookmarksByChange,
+  notifyMutation,
+} from "../jj";
 
 interface BookmarkEntry extends ListPickerItem {
   bookmarks: string[];
@@ -125,6 +130,7 @@ export function createBookmarksComponent(
             `Created new change from ${item.displayNames[0] || item.changeId}`,
             "info",
           );
+          notifyMutation(pi, "jj new", result.stderr || result.stdout);
           done(null);
         } else {
           notify(result.stderr || "Failed to create new change", "error");
@@ -135,10 +141,12 @@ export function createBookmarksComponent(
       key: ACTION_KEYS.delete,
       label: "delete",
       handler: async (item) => {
+        const forgetOutputs: string[] = [];
         for (const bookmark of item.bookmarks) {
-          await forgetBookmark(pi, cwd, bookmark);
+          forgetOutputs.push(await forgetBookmark(pi, cwd, bookmark));
         }
         notify(`Forgot ${item.bookmarks.length} bookmark(s)`, "info");
+        notifyMutation(pi, "jj bookmark forget", forgetOutputs.join("\n"));
         await pickerRef?.reload();
       },
     },
@@ -149,6 +157,7 @@ export function createBookmarksComponent(
         const result = await pi.exec("jj", ["git", "fetch"], { cwd });
         if (result.code === 0) {
           notify("Fetched all from remote", "info");
+          notifyMutation(pi, "jj git fetch", result.stderr || result.stdout);
         } else {
           notify(result.stderr || "Fetch failed", "error");
         }
@@ -162,6 +171,7 @@ export function createBookmarksComponent(
         const result = await pi.exec("jj", ["git", "push", "--all"], { cwd });
         if (result.code === 0) {
           notify("Pushed all bookmarks", "info");
+          notifyMutation(pi, "jj git push", result.stderr || result.stdout);
         } else {
           notify(result.stderr || "Push failed", "error");
         }

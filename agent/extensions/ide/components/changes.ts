@@ -39,6 +39,7 @@ import {
   restoreFile,
   listBookmarksByChange,
   getCurrentChangeIdShort,
+  notifyMutation,
 } from "../jj";
 import type { CmActionType } from "./cm-results";
 import {
@@ -225,10 +226,11 @@ export function createChangesComponent(
       // Moving DOWN in list = becoming a parent = use --before the change above
       const changeToMove = selectedChange;
 
+      let result;
       if (currentIndex < moveOriginalIndex) {
         // Moved up - become a child of what's now below us
         const targetChange = changes[currentIndex + 1];
-        await pi.exec(
+        result = await pi.exec(
           "jj",
           [
             "rebase",
@@ -242,7 +244,7 @@ export function createChangesComponent(
       } else {
         // Moved down - become a parent of what's now above us
         const targetChange = changes[currentIndex - 1];
-        await pi.exec(
+        result = await pi.exec(
           "jj",
           [
             "rebase",
@@ -263,6 +265,7 @@ export function createChangesComponent(
       changeCache.clear();
       await reloadChanges();
       notify(`Moved change ${changeToMove.changeId.slice(0, 8)}`, "info");
+      notifyMutation(pi, "jj rebase", result.stderr || result.stdout);
     } catch (error) {
       notify(`Failed to move: ${formatErrorMessage(error)}`, "error");
       // Restore original order on failure
@@ -322,12 +325,15 @@ ${workflowLines}
 
         case "edit": {
           if (!change) return;
-          await pi.exec("jj", ["edit", change.changeId], { cwd });
+          const editResult = await pi.exec("jj", ["edit", change.changeId], {
+            cwd,
+          });
           changeCache.clear();
           selectionState.fileIndex = 0;
           selectionState.diffScroll = 0;
           await reloadChanges();
           notify(`Editing change ${change.changeId.slice(0, 8)}`, "info");
+          notifyMutation(pi, "jj edit", editResult.stderr || editResult.stdout);
           return;
         }
 
@@ -351,7 +357,11 @@ Use the **conventional-commits** skill for commit message format.`;
         case "squash": {
           if (!change) return;
           const prevIndex = selectionState.selectedIndex;
-          await pi.exec("jj", ["squash", "-u", "-r", change.changeId], { cwd });
+          const squashResult = await pi.exec(
+            "jj",
+            ["squash", "-u", "-r", change.changeId],
+            { cwd },
+          );
           changeCache.clear();
           selectionState.fileIndex = 0;
           selectionState.diffScroll = 0;
@@ -369,13 +379,20 @@ Use the **conventional-commits** skill for commit message format.`;
             files = [];
             diffContent = [];
           }
+          notifyMutation(
+            pi,
+            "jj squash",
+            squashResult.stderr || squashResult.stdout,
+          );
           return;
         }
 
         case "drop": {
           if (!change) return;
           const prevIndex = selectionState.selectedIndex;
-          await pi.exec("jj", ["abandon", change.changeId], { cwd });
+          const dropResult = await pi.exec("jj", ["abandon", change.changeId], {
+            cwd,
+          });
           selectedChangeIds.delete(change.changeId);
           changeCache.clear();
           selectionState.fileIndex = 0;
@@ -395,12 +412,19 @@ Use the **conventional-commits** skill for commit message format.`;
             diffContent = [];
           }
           notify(`Dropped change ${change.changeId}`, "info");
+          notifyMutation(
+            pi,
+            "jj abandon",
+            dropResult.stderr || dropResult.stdout,
+          );
           return;
         }
 
         case "new": {
           if (!change) return;
-          await pi.exec("jj", ["new", change.changeId], { cwd });
+          const newResult = await pi.exec("jj", ["new", change.changeId], {
+            cwd,
+          });
           changeCache.clear();
           selectionState.fileIndex = 0;
           selectionState.diffScroll = 0;
@@ -409,6 +433,7 @@ Use the **conventional-commits** skill for commit message format.`;
             `Created new change after ${change.changeId.slice(0, 8)}`,
             "info",
           );
+          notifyMutation(pi, "jj new", newResult.stderr || newResult.stdout);
           return;
         }
       }
@@ -749,9 +774,15 @@ Use the **conventional-commits** skill for commit message format.`;
     if (!selectedChange || !files[selectionState.fileIndex]) return;
     const file = files[selectionState.fileIndex];
     try {
-      await restoreFile(pi, cwd, selectedChange.changeId, file.path);
+      const restoreOutput = await restoreFile(
+        pi,
+        cwd,
+        selectedChange.changeId,
+        file.path,
+      );
       changeCache.delete(selectedChange.changeId);
       await loadFilesAndDiff(selectedChange);
+      notifyMutation(pi, "jj restore", restoreOutput);
     } catch (error) {
       notify(`Failed to discard file: ${formatErrorMessage(error)}`, "error");
     }
@@ -762,12 +793,17 @@ Use the **conventional-commits** skill for commit message format.`;
     if (!selectedChange || !files[selectionState.fileIndex]) return;
     const file = files[selectionState.fileIndex];
     try {
-      await pi.exec("jj", ["split", "-r", selectedChange.changeId, file.path], {
-        cwd,
-      });
+      const splitResult = await pi.exec(
+        "jj",
+        ["split", "-r", selectedChange.changeId, file.path],
+        {
+          cwd,
+        },
+      );
       changeCache.clear();
       await reloadChanges();
       notify(`Split ${file.path} into new change`, "info");
+      notifyMutation(pi, "jj split", splitResult.stderr || splitResult.stdout);
     } catch (error) {
       notify(`Failed to split file: ${formatErrorMessage(error)}`, "error");
     }
@@ -779,8 +815,10 @@ Use the **conventional-commits** skill for commit message format.`;
     const bookmarks = bookmarksByChange.get(selectedChange.changeId) ?? [];
     if (bookmarks.length === 0) return;
     try {
+      const pushOutputs: string[] = [];
       for (const bookmark of bookmarks) {
-        await pi.exec("jj", ["git", "push", "-b", bookmark], { cwd });
+        const r = await pi.exec("jj", ["git", "push", "-b", bookmark], { cwd });
+        pushOutputs.push(r.stderr || r.stdout);
       }
       await reloadChanges();
       invalidateCache(loadingState);
@@ -789,6 +827,7 @@ Use the **conventional-commits** skill for commit message format.`;
         `Pushed bookmark${bookmarks.length > 1 ? "s" : ""}: ${bookmarks.join(", ")}`,
         "info",
       );
+      notifyMutation(pi, "jj git push", pushOutputs.join("\n"));
     } catch (error) {
       notify(`Failed to push: ${formatErrorMessage(error)}`, "error");
     }
@@ -806,6 +845,11 @@ Use the **conventional-commits** skill for commit message format.`;
       notify(
         `Updated bookmark '${bookmarkName}' to ${selectedChange.changeId}`,
         "info",
+      );
+      notifyMutation(
+        pi,
+        "jj bookmark set",
+        `Set bookmark '${bookmarkName}' to ${selectedChange.changeId.slice(0, 8)}`,
       );
     } catch (error) {
       notify(

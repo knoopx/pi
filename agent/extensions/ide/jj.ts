@@ -7,6 +7,20 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { FileChange, Change } from "./types";
 
+export function notifyMutation(
+  pi: ExtensionAPI,
+  customType: string,
+  output: string,
+): void {
+  const text = output.trim();
+  if (!text) return;
+  pi.sendMessage({
+    customType,
+    content: [{ type: "text", text }],
+    display: true,
+  });
+}
+
 export function sanitizeDescription(rawDescription: string): string {
   const asciiOnly = rawDescription.replace(/[^\p{ASCII}]/gu, "");
   const normalizedWhitespace = asciiOnly.replace(/\s+/g, " ").trim();
@@ -160,7 +174,7 @@ export async function restoreFile(
   cwd: string,
   changeId: string,
   filePath: string,
-): Promise<void> {
+): Promise<string> {
   const result = await pi.exec(
     "jj",
     ["restore", "--changes-in", changeId, filePath],
@@ -171,6 +185,7 @@ export async function restoreFile(
     const error = result.stderr.trim() || "Failed to discard file changes";
     throw new Error(error);
   }
+  return result.stderr || result.stdout;
 }
 
 /**
@@ -265,17 +280,18 @@ export async function forgetBookmark(
   pi: ExtensionAPI,
   cwd: string,
   bookmarkRef: string,
-): Promise<void> {
+): Promise<string> {
   const bookmarkName = bookmarkRef.split("@")[0]?.trim();
   if (!bookmarkName) {
-    return;
+    return "";
   }
 
-  await pi.exec(
+  const result = await pi.exec(
     "jj",
     ["bookmark", "forget", "--include-remotes", bookmarkName],
     { cwd },
   );
+  return result.stderr || result.stdout;
 }
 
 /** Operation log entry */
@@ -345,10 +361,10 @@ export async function restoreOp(
   pi: ExtensionAPI,
   cwd: string,
   opId: string,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; output?: string; error?: string }> {
   const result = await pi.exec("jj", ["op", "restore", opId], { cwd });
   if (result.code === 0) {
-    return { success: true };
+    return { success: true, output: result.stderr || result.stdout };
   }
   return { success: false, error: result.stderr };
 }
@@ -359,10 +375,10 @@ export async function restoreOp(
 export async function undoOp(
   pi: ExtensionAPI,
   cwd: string,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; output?: string; error?: string }> {
   const result = await pi.exec("jj", ["undo"], { cwd });
   if (result.code === 0) {
-    return { success: true };
+    return { success: true, output: result.stderr || result.stdout };
   }
   return { success: false, error: result.stderr };
 }
