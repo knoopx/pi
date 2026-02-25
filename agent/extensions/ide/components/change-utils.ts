@@ -51,7 +51,7 @@ export function formatChangeRow(
   const selectMarker = opts.isSelected ? theme.fg("accent", "✓ ") : "";
 
   const bookmarkLabel = opts.isImmutable
-    ? ""
+    ? theme.fg("dim", formatBookmarkLabels(theme, opts.bookmarks))
     : formatBookmarkLabels(theme, opts.bookmarks);
 
   const moveIndicator = opts.isMoving ? theme.fg("warning", "↕ ") : "";
