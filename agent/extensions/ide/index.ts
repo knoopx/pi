@@ -404,14 +404,7 @@ export default function ideExtension(pi: ExtensionAPI) {
 
     try {
       if (await isCurrentChangeEmpty(pi, ctx.cwd)) {
-        const descResult = await pi.exec(
-          "jj",
-          ["desc", "-m", pendingChangeDescription],
-          {
-            cwd: ctx.cwd,
-          },
-        );
-        notifyMutation(pi, "jj desc", descResult.stderr || descResult.stdout);
+        // Reuse empty change as-is, no description update needed
       } else {
         const newResult = await pi.exec(
           "jj",
