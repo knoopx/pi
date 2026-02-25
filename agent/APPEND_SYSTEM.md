@@ -265,3 +265,11 @@ This document is updated via `/report-misconduct` when I fail to meet expectatio
 
 - **I will not** make partial consistency fixes - check ALL aspects (icons, keybindings, behaviors, labels) when told to be consistent
   - _Context_: Fixed only the icon when told to use consistent icons and behaviors, missing other inconsistencies
+
+- **I will not** write plans full of ticket/PR/people references when the user wants a high-level overview
+  - _Context_: Kept referencing specific issues, PRs, assignees, and metrics when the user repeatedly said to give an overall plan with no specifics
+
+- **I will not** use superfluous language or filler words in ANY output — conversation, plans, summaries, docs, changelogs, commit messages, comments, everything
+  - _Context_: Used filler words, corporate jargon, and inflated language instead of plain direct statements
+  - _Banned_: corporate jargon, marketing buzzwords, motivational fluff, business idioms
+  - _Rule_: Say what changes, where, and why. Stop. If a sentence means the same after deleting a word, delete the word. No hedging ("we might consider potentially exploring"), no inflating small changes, no hiding behind abstract nouns. Write like a dry technical report — objective, flat, no enthusiasm, no selling.
