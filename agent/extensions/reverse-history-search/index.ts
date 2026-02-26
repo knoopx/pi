@@ -1,5 +1,4 @@
 import { fuzzyMatch } from "../../shared/fuzzy";
-export { fuzzyMatch };
 
 /**
  * Reverse History Search - Ctrl+R fuzzy history search
@@ -31,7 +30,127 @@ interface HistoryEntry {
   type: "command" | "message";
 }
 
-// Load history (commands and messages) from session files matching the given cwd
+interface SessionMessageLine {
+  role?: unknown;
+  timestamp?: unknown;
+  command?: unknown;
+  content?: unknown;
+}
+
+interface SessionLine {
+  type?: unknown;
+  timestamp?: unknown;
+  cwd?: unknown;
+  message?: unknown;
+}
+
+function asSessionMessage(message: unknown): SessionMessageLine | null {
+  if (typeof message !== "object" || message === null) {
+    return null;
+  }
+
+  return message as SessionMessageLine;
+}
+
+const addHistoryEntry = (
+  history: HistoryEntry[],
+  seen: Set<string>,
+  entry: HistoryEntry,
+): void => {
+  const content = entry.content.trim();
+  if (!content) return;
+
+  const key = `${entry.type}:${content}`;
+  if (seen.has(key)) return;
+
+  seen.add(key);
+  history.push({ ...entry, content });
+};
+
+const extractBangCommandsFromUserText = (text: string): string[] => {
+  const commands: string[] = [];
+
+  for (const rawLine of text.split("\n")) {
+    const line = rawLine.trim();
+    if (!line.startsWith("!")) continue;
+
+    const command = line.replace(/^!+/, "").trim();
+    if (command) {
+      commands.push(command);
+    }
+  }
+
+  return commands;
+};
+
+const getUserTextFromContent = (content: unknown): string => {
+  if (!Array.isArray(content)) {
+    return "";
+  }
+
+  const parts = content
+    .map((block) => {
+      if (typeof block !== "object" || block === null) {
+        return "";
+      }
+
+      const typedBlock = block as { type?: unknown; text?: unknown };
+      return typedBlock.type === "text" && typeof typedBlock.text === "string"
+        ? typedBlock.text
+        : "";
+    })
+    .filter((part) => part.length > 0);
+
+  return parts.join("\n").trim();
+};
+
+const isPathMatch = (sessionCwd: string, targetCwd: string): boolean => {
+  return (
+    sessionCwd === targetCwd ||
+    sessionCwd.startsWith(`${targetCwd}/`) ||
+    targetCwd.startsWith(`${sessionCwd}/`)
+  );
+};
+
+const extractBashToolCommands = (content: unknown): string[] => {
+  if (!Array.isArray(content)) return [];
+
+  const commands: string[] = [];
+  for (const block of content) {
+    if (typeof block !== "object" || block === null) continue;
+
+    const typedBlock = block as {
+      type?: unknown;
+      name?: unknown;
+      arguments?: unknown;
+    };
+
+    if (typedBlock.type !== "toolCall") continue;
+    if (typedBlock.name !== "bash") continue;
+    if (
+      typeof typedBlock.arguments !== "object" ||
+      typedBlock.arguments === null
+    ) {
+      continue;
+    }
+
+    const args = typedBlock.arguments as { command?: unknown };
+    if (typeof args.command === "string" && args.command.trim()) {
+      commands.push(args.command.trim());
+    }
+  }
+
+  return commands;
+};
+
+const truncateSingleLine = (value: string, maxLength: number): string => {
+  const oneLine = value.replace(/\s+/g, " ").trim();
+  const safeMaxLength = Math.max(12, maxLength);
+  if (oneLine.length <= safeMaxLength) return oneLine;
+  return `${oneLine.slice(0, safeMaxLength - 1)}…`;
+};
+
+// Load command history from session files matching the given cwd
 const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
   const history: HistoryEntry[] = [];
   const seen = new Set<string>();
@@ -70,74 +189,71 @@ const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
               }
 
               // Skip sessions that don't match the target cwd
-              if (sessionCwd !== targetCwd) return;
+              if (!sessionCwd || !isPathMatch(sessionCwd, targetCwd)) continue;
 
               for (const line of lines) {
                 if (!line.trim()) continue;
                 try {
-                  const entry = JSON.parse(line);
+                  const entry = JSON.parse(line) as SessionLine;
+                  if (entry.type !== "message") continue;
 
-                  if (entry.type !== "message" || !entry.message) continue;
+                  const message = asSessionMessage(entry.message);
+                  if (!message) continue;
 
                   let timestamp: number;
                   if (typeof entry.timestamp === "string") {
                     timestamp = new Date(entry.timestamp).getTime();
                   } else if (typeof entry.timestamp === "number") {
                     timestamp = entry.timestamp;
-                  } else if (
-                    entry.message.timestamp &&
-                    typeof entry.message.timestamp === "number"
-                  ) {
-                    timestamp = entry.message.timestamp;
+                  } else if (typeof message.timestamp === "number") {
+                    timestamp = message.timestamp;
                   } else {
                     timestamp = Date.now();
                   }
 
-                  // Look for user bash commands (! and !!)
                   if (
-                    entry.message.role === "userBashCommand" &&
-                    entry.message.command
+                    message.role === "userBashCommand" &&
+                    typeof message.command === "string"
                   ) {
-                    const command = entry.message.command;
-                    if (typeof command === "string" && !seen.has(command)) {
-                      const trimmedCommand = command.trim();
-                      if (trimmedCommand) {
-                        seen.add(trimmedCommand);
-                        history.push({
-                          content: trimmedCommand,
-                          timestamp,
-                          type: "command",
-                        });
-                      }
-                    }
+                    addHistoryEntry(history, seen, {
+                      content: message.command,
+                      timestamp,
+                      type: "command",
+                    });
                   }
 
-                  // Look for user messages
-                  if (
-                    entry.message.role === "user" &&
-                    Array.isArray(entry.message.content)
-                  ) {
-                    // Extract text from content blocks
-                    const textParts: string[] = [];
-                    for (const block of entry.message.content) {
-                      if (
-                        block.type === "text" &&
-                        typeof block.text === "string"
-                      ) {
-                        textParts.push(block.text);
-                      }
-                    }
+                  if (message.role === "user") {
+                    const text = getUserTextFromContent(message.content);
+                    if (!text) continue;
 
-                    const firstLine = textParts
-                      .join("\n")
-                      .split("\n")[0]
-                      .trim();
-                    if (firstLine && !seen.has(firstLine)) {
-                      seen.add(firstLine);
-                      history.push({
+                    const firstLine = text.split("\n")[0]?.trim();
+                    if (firstLine) {
+                      addHistoryEntry(history, seen, {
                         content: firstLine,
                         timestamp,
                         type: "message",
+                      });
+                    }
+
+                    for (const command of extractBangCommandsFromUserText(
+                      text,
+                    )) {
+                      addHistoryEntry(history, seen, {
+                        content: command,
+                        timestamp,
+                        type: "command",
+                      });
+                    }
+                  }
+
+                  if (message.role === "assistant") {
+                    for (const command of extractBashToolCommands(
+                      message.content,
+                    )) {
+                      addHistoryEntry(history, seen, {
+                        content: command,
+                        timestamp,
+                        type: "command",
                       });
                     }
                   }
@@ -251,24 +367,6 @@ class HistorySearchComponent {
     // Top border
     container.addChild(border);
 
-    // Title with search query
-    const title = this.query
-      ? `Reverse History Search: ${this.query}`
-      : "Reverse History Search (type to filter)";
-    container.addChild(
-      new Text(this.theme.fg("accent", this.theme.bold(title)), 1, 0),
-    );
-
-    // Results count
-    const countText =
-      this.filteredHistory.length === 0
-        ? this.theme.fg("warning", "No matching items")
-        : this.theme.fg(
-            "dim",
-            `${this.filteredHistory.length} item${this.filteredHistory.length === 1 ? "" : "s"}`,
-          );
-    container.addChild(new Text(countText, 1, 0));
-
     // History list (show up to 10)
     const maxVisible = 10;
     const start = Math.max(
@@ -292,8 +390,9 @@ class HistorySearchComponent {
 
       line += this.theme.fg(typeColor, typeIndicator + " ");
 
-      // Truncate long content for display (show first line only)
-      const displayContent = entry.content.split("\n")[0] || "";
+      // Keep one visual row per entry
+      const rowMaxWidth = Math.max(20, width - 8);
+      const displayContent = truncateSingleLine(entry.content, rowMaxWidth);
       const contentText = isSelected
         ? this.theme.fg("accent", displayContent)
         : displayContent;
