@@ -77,7 +77,7 @@
     "rules": [
       {
         "context": "command",
-        "pattern": "rm\\s+(-[^\\s]*)?r[^\\s]*f|rm\\s+(-[^\\s]*)?f[^\\s]*r",
+        "pattern": "^\\s*(?:sudo\\s+)?rm\\s+(-[^\\s]*)?r[^\\s]*f|^\\s*(?:sudo\\s+)?rm\\s+(-[^\\s]*)?f[^\\s]*r",
         "action": "confirm",
         "reason": "⚠️ `rm -rf` permanently deletes files without confirmation or trash. Double-check the path is correct. Consider `rm -ri` (interactive) or moving to trash first"
       },

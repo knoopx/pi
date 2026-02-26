@@ -225,6 +225,22 @@ describe("Guardrails Defaults Configuration", () => {
         expect(rmRule!.reason).toContain("⚠️");
       });
 
+      it("then rm rule matches real rm -rf commands only", () => {
+        const rmRule = permissionGroup!.rules.find((r) =>
+          r.pattern.includes("rm\\s+"),
+        );
+        expect(rmRule).toBeDefined();
+
+        const regex = new RegExp(rmRule!.pattern);
+        expect(regex.test("rm -rf /tmp/test")).toBe(true);
+        expect(regex.test("sudo rm -fr /tmp/test")).toBe(true);
+        expect(
+          regex.test(
+            'jj split -r ymrruwyp -m "fix(packages): use host platform for camper package"\n modules/home-manager/packages/gui.nix',
+          ),
+        ).toBe(false);
+      });
+
       it("then requires confirmation for sudo", () => {
         const sudoRule = permissionGroup!.rules.find((r) =>
           r.pattern.includes("sudo"),
