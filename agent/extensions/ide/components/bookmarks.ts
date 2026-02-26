@@ -127,7 +127,6 @@ export function createBookmarksComponent(
         });
         if (result.code === 0) {
           const msg = `Started work from change ${item.changeId.slice(0, 8)} (${item.displayNames[0] || item.changeId})`;
-          notify(msg, "info");
           notifyMutation(pi, msg, result.stderr || result.stdout);
           done(null);
         } else {
@@ -148,7 +147,6 @@ export function createBookmarksComponent(
           forgetOutputs.push(await forgetBookmark(pi, cwd, bookmark));
         }
         const msg = `Forgot bookmarks (${item.bookmarks.length}): ${item.bookmarks.join(", ")}`;
-        notify(msg, "info");
         notifyMutation(pi, msg, forgetOutputs.join("\n"));
         await pickerRef?.reload();
       },
@@ -160,7 +158,6 @@ export function createBookmarksComponent(
         const result = await pi.exec("jj", ["git", "fetch"], { cwd });
         if (result.code === 0) {
           const msg = "Fetched all bookmarks from all remotes";
-          notify(msg, "info");
           notifyMutation(pi, msg, result.stderr || result.stdout);
         } else {
           notify(result.stderr || "Fetch failed", "error");
@@ -175,7 +172,6 @@ export function createBookmarksComponent(
         const result = await pi.exec("jj", ["git", "push", "--all"], { cwd });
         if (result.code === 0) {
           const msg = "Pushed all local bookmarks to remote";
-          notify(msg, "info");
           notifyMutation(pi, msg, result.stderr || result.stdout);
         } else {
           notify(result.stderr || "Push failed", "error");

@@ -156,7 +156,6 @@ export function createPullRequestsComponent(
         );
         if (result.code === 0) {
           const msg = `Checked out PR #${item.number} to current workspace`;
-          notify(msg, "info");
           notifyMutation(pi, msg, result.stderr || result.stdout);
         } else {
           notify(result.stderr || "Checkout failed", "error");
@@ -174,7 +173,6 @@ export function createPullRequestsComponent(
         );
         if (result.code === 0) {
           const msg = `Approved PR #${item.number} (review submitted)`;
-          notify(msg, "info");
           notifyMutation(pi, msg, result.stderr || result.stdout);
           await pickerRef?.reload();
         } else {
@@ -193,7 +191,6 @@ export function createPullRequestsComponent(
         );
         if (result.code === 0) {
           const msg = `Merged PR #${item.number} (squash + delete branch)`;
-          notify(msg, "info");
           notifyMutation(pi, msg, result.stderr || result.stdout);
           await pickerRef?.reload();
         } else {

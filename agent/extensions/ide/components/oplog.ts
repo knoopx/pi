@@ -54,7 +54,6 @@ export function createOpLogComponent(
           const msg = currentOpId
             ? `Restored operation ${currentOpId.slice(0, 12)} -> ${targetOpId}`
             : `Restored operation -> ${targetOpId}`;
-          notify(msg, "info");
           notifyMutation(pi, msg, result.output ?? "");
           await pickerRef?.reload();
         } else {
@@ -78,7 +77,6 @@ export function createOpLogComponent(
               : currentOpId
                 ? `Undid operation ${currentOpId.slice(0, 12)}`
                 : "Undid operation";
-          notify(msg, "info");
           notifyMutation(pi, msg, result.output ?? "");
           await pickerRef?.reload();
         } else {

@@ -271,7 +271,6 @@ export function createChangesComponent(
       changeCache.clear();
       await reloadChanges();
       const msg = `Moved change ${changeToMove.changeId.slice(0, 8)} ${relation} ${targetChangeId.slice(0, 8)}`;
-      notify(msg, "info");
       notifyMutation(pi, msg, result.stderr || result.stdout);
     } catch (error) {
       notify(`Failed to move: ${formatErrorMessage(error)}`, "error");
@@ -340,7 +339,6 @@ ${workflowLines}
           selectionState.diffScroll = 0;
           await reloadChanges();
           const msg = `Set working copy to change ${change.changeId.slice(0, 8)}`;
-          notify(msg, "info");
           notifyMutation(pi, msg, editResult.stderr || editResult.stdout);
           return;
         }
@@ -387,11 +385,10 @@ Use the **conventional-commits** skill for commit message format.`;
             files = [];
             diffContent = [];
           }
-          const parentChangeId = change.parentIds[0]?.slice(0, 8);
+          const parentChangeId = change.parentIds?.[0]?.slice(0, 8);
           const msg = parentChangeId
             ? `Squashed change ${change.changeId.slice(0, 8)} into change ${parentChangeId}`
             : `Squashed change ${change.changeId.slice(0, 8)}`;
-          notify(msg, "info");
           notifyMutation(pi, msg, squashResult.stderr || squashResult.stdout);
           return;
         }
@@ -421,7 +418,6 @@ Use the **conventional-commits** skill for commit message format.`;
             diffContent = [];
           }
           const msg = `Dropped change ${change.changeId}`;
-          notify(msg, "info");
           notifyMutation(pi, msg, dropResult.stderr || dropResult.stdout);
           return;
         }
@@ -438,8 +434,29 @@ Use the **conventional-commits** skill for commit message format.`;
           const msg = currentChangeId
             ? `Created change ${currentChangeId} from change ${change.changeId.slice(0, 8)}`
             : `Started a child change from change ${change.changeId.slice(0, 8)}`;
-          notify(msg, "info");
           notifyMutation(pi, msg, newResult.stderr || newResult.stdout);
+          return;
+        }
+
+        case "revert": {
+          if (!change) return;
+          const revertResult = await pi.exec(
+            "jj",
+            [
+              "revert",
+              "-r",
+              change.changeId,
+              "--insert-after",
+              change.changeId,
+            ],
+            { cwd },
+          );
+          changeCache.clear();
+          selectionState.fileIndex = 0;
+          selectionState.diffScroll = 0;
+          await reloadChanges();
+          const msg = `Reverted change ${change.changeId.slice(0, 8)}`;
+          notifyMutation(pi, msg, revertResult.stderr || revertResult.stdout);
           return;
         }
       }
@@ -789,7 +806,6 @@ Use the **conventional-commits** skill for commit message format.`;
       changeCache.delete(selectedChange.changeId);
       await loadFilesAndDiff(selectedChange);
       const msg = `Restored file ${file.path} in change ${selectedChange.changeId.slice(0, 8)}`;
-      notify(msg, "info");
       notifyMutation(pi, msg, restoreOutput);
     } catch (error) {
       notify(`Failed to discard file: ${formatErrorMessage(error)}`, "error");
@@ -820,7 +836,6 @@ Use the **conventional-commits** skill for commit message format.`;
       );
       changeCache.clear();
       await reloadChanges();
-      notify(msg, "info");
       notifyMutation(pi, msg, splitResult.stderr || splitResult.stdout);
     } catch (error) {
       notify(`Failed to split file: ${formatErrorMessage(error)}`, "error");
@@ -842,7 +857,6 @@ Use the **conventional-commits** skill for commit message format.`;
       invalidateCache(loadingState);
       tui.requestRender();
       const msg = `Pushed bookmark${bookmarks.length > 1 ? "s" : ""}: ${bookmarks.join(", ")}`;
-      notify(msg, "info");
       notifyMutation(pi, msg, pushOutputs.join("\n"));
     } catch (error) {
       notify(`Failed to push: ${formatErrorMessage(error)}`, "error");
@@ -859,7 +873,6 @@ Use the **conventional-commits** skill for commit message format.`;
       invalidateCache(loadingState);
       tui.requestRender();
       const msg = `Updated bookmark '${bookmarkName}' to ${selectedChange.changeId}`;
-      notify(msg, "info");
       notifyMutation(
         pi,
         msg,
@@ -956,6 +969,14 @@ Use the **conventional-commits** skill for commit message format.`;
       when: hasSelectedChange,
       handler: () => {
         void executeAction("edit");
+      },
+    },
+    {
+      key: "r",
+      label: "revert",
+      when: hasSelectedChange,
+      handler: () => {
+        void executeAction("revert");
       },
     },
     {

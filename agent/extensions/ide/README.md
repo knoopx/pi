@@ -94,6 +94,7 @@ Browse all mutable jujutsu changes with file/diff preview.
 | `Space`  | Toggle selected change                         |
 | `n`      | Create new change after selected change        |
 | `e`      | Edit change                                    |
+| `r`      | Revert change                                  |
 | `d`      | Describe selected changes (or focused change)  |
 | `s`      | Split change                                   |
 | `f`      | Fixup (squash into parent)                     |
