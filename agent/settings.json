@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.55.1",
-  "defaultProvider": "anthropic",
-  "defaultModel": "claude-opus-4-6",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.3-codex",
   "theme": "custom",
   "lsp": {
     "hookMode": "edit_write"
