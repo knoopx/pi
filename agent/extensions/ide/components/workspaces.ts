@@ -472,11 +472,8 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
     });
     workspaceCache.delete(selectedWorkspace.name);
     await loadFilesAndDiff(selectedWorkspace);
-    notifyMutation(
-      pi,
-      "jj restore",
-      restoreResult.stderr || restoreResult.stdout,
-    );
+    const msg = `Restored file ${file.path} in workspace ${selectedWorkspace.name}`;
+    notifyMutation(pi, msg, restoreResult.stderr || restoreResult.stdout);
   };
 
   // Navigate workspaces

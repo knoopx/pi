@@ -126,14 +126,16 @@ export function createBookmarksComponent(
           cwd,
         });
         if (result.code === 0) {
-          notify(
-            `Created new change from ${item.displayNames[0] || item.changeId}`,
-            "info",
-          );
-          notifyMutation(pi, "jj new", result.stderr || result.stdout);
+          const msg = `Started work from change ${item.changeId.slice(0, 8)} (${item.displayNames[0] || item.changeId})`;
+          notify(msg, "info");
+          notifyMutation(pi, msg, result.stderr || result.stdout);
           done(null);
         } else {
-          notify(result.stderr || "Failed to create new change", "error");
+          notify(
+            result.stderr ||
+              `Failed to start work from change ${item.changeId.slice(0, 8)}`,
+            "error",
+          );
         }
       },
     },
@@ -145,8 +147,9 @@ export function createBookmarksComponent(
         for (const bookmark of item.bookmarks) {
           forgetOutputs.push(await forgetBookmark(pi, cwd, bookmark));
         }
-        notify(`Forgot ${item.bookmarks.length} bookmark(s)`, "info");
-        notifyMutation(pi, "jj bookmark forget", forgetOutputs.join("\n"));
+        const msg = `Forgot bookmarks (${item.bookmarks.length}): ${item.bookmarks.join(", ")}`;
+        notify(msg, "info");
+        notifyMutation(pi, msg, forgetOutputs.join("\n"));
         await pickerRef?.reload();
       },
     },
@@ -156,8 +159,9 @@ export function createBookmarksComponent(
       handler: async () => {
         const result = await pi.exec("jj", ["git", "fetch"], { cwd });
         if (result.code === 0) {
-          notify("Fetched all from remote", "info");
-          notifyMutation(pi, "jj git fetch", result.stderr || result.stdout);
+          const msg = "Fetched all bookmarks from all remotes";
+          notify(msg, "info");
+          notifyMutation(pi, msg, result.stderr || result.stdout);
         } else {
           notify(result.stderr || "Fetch failed", "error");
         }
@@ -170,8 +174,9 @@ export function createBookmarksComponent(
       handler: async () => {
         const result = await pi.exec("jj", ["git", "push", "--all"], { cwd });
         if (result.code === 0) {
-          notify("Pushed all bookmarks", "info");
-          notifyMutation(pi, "jj git push", result.stderr || result.stdout);
+          const msg = "Pushed all local bookmarks to remote";
+          notify(msg, "info");
+          notifyMutation(pi, msg, result.stderr || result.stdout);
         } else {
           notify(result.stderr || "Push failed", "error");
         }

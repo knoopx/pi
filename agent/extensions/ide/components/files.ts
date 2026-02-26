@@ -92,11 +92,9 @@ export function createFilesComponent(
         { cwd },
       );
       selectedFiles.clear();
-      notify?.(
-        `Split ${filesToSplit.length} file${filesToSplit.length > 1 ? "s" : ""} into new change`,
-        "info",
-      );
-      notifyMutation(pi, "jj split", splitResult.stderr || splitResult.stdout);
+      const msg = `Split selected files (${filesToSplit.length}): ${filesToSplit.join(", ")}`;
+      notify?.(msg, "info");
+      notifyMutation(pi, msg, splitResult.stderr || splitResult.stdout);
     } catch (error) {
       notify?.(
         `Failed to split: ${error instanceof Error ? error.message : String(error)}`,

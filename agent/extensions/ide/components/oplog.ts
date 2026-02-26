@@ -44,10 +44,18 @@ export function createOpLogComponent(
           notify("Already at this operation", "info");
           return;
         }
+
+        const entriesBeforeRestore = await loadOpLog(pi, cwd);
+        const currentOpId = entriesBeforeRestore[0]?.opId;
+
         const result = await restoreOp(pi, cwd, item.opId);
         if (result.success) {
-          notify(`Restored to ${item.opId}`, "info");
-          notifyMutation(pi, "jj op restore", result.output ?? "");
+          const targetOpId = item.opId.slice(0, 12);
+          const msg = currentOpId
+            ? `Restored operation ${currentOpId.slice(0, 12)} -> ${targetOpId}`
+            : `Restored operation -> ${targetOpId}`;
+          notify(msg, "info");
+          notifyMutation(pi, msg, result.output ?? "");
           await pickerRef?.reload();
         } else {
           notify(`Failed: ${result.error ?? "Unknown error"}`, "error");
@@ -58,10 +66,20 @@ export function createOpLogComponent(
       key: "u",
       label: "undo",
       handler: async () => {
+        const entriesBeforeUndo = await loadOpLog(pi, cwd);
+        const currentOpId = entriesBeforeUndo[0]?.opId;
+        const targetOpId = entriesBeforeUndo[1]?.opId;
+
         const result = await undoOp(pi, cwd);
         if (result.success) {
-          notify("Undone", "info");
-          notifyMutation(pi, "jj undo", result.output ?? "");
+          const msg =
+            currentOpId && targetOpId
+              ? `Undid operation ${currentOpId.slice(0, 12)} -> ${targetOpId.slice(0, 12)}`
+              : currentOpId
+                ? `Undid operation ${currentOpId.slice(0, 12)}`
+                : "Undid operation";
+          notify(msg, "info");
+          notifyMutation(pi, msg, result.output ?? "");
           await pickerRef?.reload();
         } else {
           notify(`Failed: ${result.error ?? "Unknown error"}`, "error");
