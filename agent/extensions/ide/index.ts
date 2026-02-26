@@ -413,7 +413,7 @@ export default function ideExtension(pi: ExtensionAPI) {
             cwd: ctx.cwd,
           },
         );
-        const msg = `Opened mutable working copy for pending tool mutation: ${pendingChangeDescription}`;
+        const msg = `Created working copy snapshot for user prompt: ${pendingChangeDescription}`;
         notifyMutation(pi, msg, newResult.stderr || newResult.stdout);
       }
     } catch {
