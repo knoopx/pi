@@ -344,6 +344,9 @@ export default function ideExtension(pi: ExtensionAPI) {
     if (event.source !== "interactive") {
       return;
     }
+    if (pendingChangeDescription) {
+      return;
+    }
     pendingChangeDescription = event.text.split("\n")[0]?.trim() || null;
   });
 
