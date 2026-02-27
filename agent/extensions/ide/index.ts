@@ -53,6 +53,7 @@ import {
   type RegisteredShortcut,
 } from "./overlays/command-palette";
 import { openChangesBrowser } from "./overlays/changes";
+import { openTodosBrowser } from "./overlays/todos";
 import { monitorWorkspace } from "./overlays/workspace-monitor";
 import { FULL_OVERLAY_OPTIONS } from "./overlays/options";
 
@@ -416,7 +417,7 @@ export default function ideExtension(pi: ExtensionAPI) {
             cwd: ctx.cwd,
           },
         );
-        const msg = `Created working copy snapshot for user prompt: ${pendingChangeDescription}`;
+        const msg = `Created working copy snapshot`;
         notifyMutation(pi, msg, newResult.stderr || newResult.stdout);
       }
     } catch {
@@ -563,6 +564,14 @@ export default function ideExtension(pi: ExtensionAPI) {
     handler: async (_args, ctx) => {
       if (!ctx.hasUI) return;
       await openPullRequestsBrowser(pi, ctx);
+    },
+  });
+
+  pi.registerCommand("todos", {
+    description: "Browse TODO/FIXME/HACK/XXX comments with source preview",
+    handler: async (args, ctx) => {
+      if (!ctx.hasUI) return;
+      await openTodosBrowser(pi, ctx, args.trim());
     },
   });
 

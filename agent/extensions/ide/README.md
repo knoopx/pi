@@ -56,6 +56,20 @@ Browse code symbols (functions, classes, methods) with source preview. Enter ins
 | `Ctrl+S` | Show schema       |
 | `Esc`    | Exit              |
 
+### `/todos [query]`
+
+Browse TODO, FIXME, HACK, and XXX comments across the codebase using ast-grep AST comment node matching. Source preview scrolls to the comment.
+
+![TODOs](../../../screenshots/todos.png)
+
+| Key      | Action                         |
+| -------- | ------------------------------ |
+| `↑/↓`    | Navigate                       |
+| `Enter`  | Select                         |
+| `Ctrl+I` | Insert `path:line comment`     |
+| `Type`   | Filter by comment text or path |
+| `Esc`    | Exit                           |
+
 ### `/bookmarks`
 
 Browse bookmarks in `name@remote` format (`name@` for local bookmarks).

@@ -15,6 +15,7 @@ jj git init --colocate 2>/dev/null
 mkdir -p src tests
 
 cat >src/utils.ts <<'EOF'
+// TODO handle timezone conversion
 export function formatDate(date: Date): string {
   return date.toISOString().split("T")[0];
 }
@@ -23,6 +24,7 @@ export function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+// FIXME does not handle unicode properly
 export function slugify(text: string): string {
   return text.toLowerCase().replace(/\s+/g, "-");
 }
@@ -43,6 +45,7 @@ export async function fetchUsers(): Promise<User[]> {
   return response.json();
 }
 
+// HACK hardcoded API endpoint
 export async function createUser(name: string, email: string): Promise<User> {
   const response = await fetch("/api/users", {
     method: "POST",
@@ -119,6 +122,7 @@ jj new -m "Add user validation to API" 2>/dev/null
 
 cat >>src/api.ts <<'EOF'
 
+// TODO add email format validation
 export function validateUser(user: Partial<User>): string[] {
   const errors: string[] = [];
   if (!user.name) errors.push("Name is required");
@@ -132,6 +136,7 @@ jj new -m "Add logging utility" 2>/dev/null
 cat >src/logger.ts <<'EOF'
 type LogLevel = "debug" | "info" | "warn" | "error";
 
+// XXX replace with structured logging library
 export function log(level: LogLevel, message: string): void {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] [${level.toUpperCase()}] ${message}`);

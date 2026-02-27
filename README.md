@@ -22,6 +22,10 @@ Full terminal IDE built as a pi extension: file/symbol browsing, jujutsu version
 
 ![Describe](screenshots/describe.png)
 
+**TODOs** — browse TODO/FIXME/HACK/XXX comments via ast-grep AST comment matching, with source preview.
+
+![TODOs](screenshots/todos.png)
+
 **Bookmarks** — fuzzy picker, create/forget/push bookmarks, git fetch.
 
 ![Bookmarks](screenshots/bookmarks.png)
