@@ -25,7 +25,7 @@ A development environment extension for pi that provides code browsing, Codemapp
 
 Browse files with syntax-highlighted preview. Type to filter, enter to insert path into editor.
 
-![Files](screenshots/files.png)
+![Files](../../screenshots/files.png)
 
 | Key      | Action               |
 | -------- | -------------------- |
@@ -41,7 +41,7 @@ Browse files with syntax-highlighted preview. Type to filter, enter to insert pa
 
 Browse code symbols (functions, classes, methods) with source preview. Enter inserts `path:line` reference.
 
-![Symbols](screenshots/symbols.png)
+![Symbols](../../screenshots/symbols.png)
 
 | Key      | Action            |
 | -------- | ----------------- |
@@ -56,17 +56,11 @@ Browse code symbols (functions, classes, methods) with source preview. Enter ins
 | `Ctrl+S` | Show schema       |
 | `Esc`    | Exit              |
 
-#### Symbol Callers
-
-Press `Ctrl+C` on a symbol to view all callers with source preview.
-
-![Symbol Callers](screenshots/symbol-callers.png)
-
 ### `/bookmarks`
 
 Browse bookmarks in `name@remote` format (`name@` for local bookmarks).
 
-![Bookmarks](screenshots/bookmarks.png)
+![Bookmarks](../../screenshots/bookmarks.png)
 
 | Key      | Action               |
 | -------- | -------------------- |
@@ -82,7 +76,7 @@ Browse bookmarks in `name@remote` format (`name@` for local bookmarks).
 
 Browse all mutable jujutsu changes with file/diff preview.
 
-![Changes](screenshots/changes.png)
+![Changes](../../screenshots/changes.png)
 
 **Changes pane:**
 
@@ -108,7 +102,7 @@ Browse all mutable jujutsu changes with file/diff preview.
 
 Select changes with `Space`, then press `d` to generate conventional commit descriptions via the agent.
 
-![Describe](screenshots/describe.png)
+![Describe](../../screenshots/describe.png)
 
 **Files pane:**
 
@@ -128,7 +122,7 @@ Select changes with `Space`, then press `d` to generate conventional commit desc
 
 Browse jujutsu operation log with restore and undo capability.
 
-![Op Log](screenshots/oplog.png)
+![Op Log](../../screenshots/oplog.png)
 
 | Key   | Action               |
 | ----- | -------------------- |
@@ -141,7 +135,7 @@ Browse jujutsu operation log with restore and undo capability.
 
 Review all workspaces and their changes.
 
-![Workspaces](screenshots/workspaces.png)
+![Workspaces](../../screenshots/workspaces.png)
 
 **Workspaces pane:**
 
@@ -170,7 +164,7 @@ Review all workspaces and their changes.
 
 Browse local and remote skills, preview files, install remote skills, or insert local skill invocation.
 
-![Skills](screenshots/skills.png)
+![Skills](../../screenshots/skills.png)
 
 | Key         | Action                                           |
 | ----------- | ------------------------------------------------ |
@@ -187,7 +181,7 @@ Browse local and remote skills, preview files, install remote skills, or insert 
 
 Open the command palette to fuzzy-search slash commands and shortcuts.
 
-![Commands](screenshots/commands.png)
+![Commands](../../screenshots/commands.png)
 
 | Key         | Action         |
 | ----------- | -------------- |
@@ -202,7 +196,7 @@ Open the command palette to fuzzy-search slash commands and shortcuts.
 
 Browse GitHub pull requests with diff preview. Uses the `gh` CLI for GitHub API access.
 
-![Pull Requests](screenshots/pull-requests.png)
+![Pull Requests](../../screenshots/pull-requests.png)
 
 | Key      | Action                                     |
 | -------- | ------------------------------------------ |

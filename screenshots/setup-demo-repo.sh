@@ -1,22 +1,14 @@
 #!/usr/bin/env bash
+# Creates a demo jj repository for screenshot generation.
+# Usage: DEMO_DIR=/tmp/pi-demo ./setup-demo-repo.sh
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEMO_DIR="/tmp/pi-demo-repo-$$"
-PI_DIR="$HOME/.pi"
-
-cleanup() {
-	rm -rf "$DEMO_DIR"
-	rm -f "$SCRIPT_DIR"/*.tape
-}
-trap cleanup EXIT
+DEMO_DIR="${DEMO_DIR:-/tmp/pi-demo}"
 
 rm -rf "$DEMO_DIR"
 mkdir -p "$DEMO_DIR"
-
-echo "==> Creating demo repository in $DEMO_DIR"
-
 cd "$DEMO_DIR"
+
 git init -q
 jj git init --colocate 2>/dev/null
 
@@ -156,106 +148,4 @@ EOF
 
 jj bookmark create feature/logging 2>/dev/null
 
-echo "==> Generating screenshots"
-cd "$SCRIPT_DIR"
-
-gen_tape() {
-	local name="$1"
-	local keys="$2"
-	cat >"$name.tape" <<EOF
-Output $name.png
-Set Shell "bash"
-Set FontSize 14
-Set Width 1400
-Set Height 800
-Set Theme "Catppuccin Mocha"
-
-Hide
-Type "cd $DEMO_DIR && pi -ne -e $PI_DIR/agent/extensions/ide --no-session"
-Enter
-Sleep 1s
-Show
-
-$keys
-
-Escape
-Sleep 200ms
-Type "q"
-Enter
-EOF
-}
-
-gen_tape "files" 'Ctrl+p
-Sleep 300ms
-Type "api"
-Sleep 200ms
-Screenshot files.png'
-
-gen_tape "symbols" 'Ctrl+t
-Sleep 300ms
-Type "user"
-Sleep 200ms
-Screenshot symbols.png'
-
-gen_tape "bookmarks" 'Type "/bookmarks"
-Enter
-Sleep 1200ms
-Down
-Sleep 200ms
-Screenshot bookmarks.png'
-
-gen_tape "changes" 'Type "/changes"
-Enter
-Sleep 300ms
-Down
-Sleep 200ms
-Screenshot changes.png'
-
-gen_tape "oplog" 'Type "/oplog"
-Enter
-Sleep 300ms
-Screenshot oplog.png'
-
-gen_tape "workspaces" 'Ctrl+j
-Sleep 300ms
-Screenshot workspaces.png'
-
-gen_tape "skills" 'Type "/skills"
-Enter
-Sleep 300ms
-Screenshot skills.png'
-
-gen_tape "commands" 'Type "/commands"
-Enter
-Sleep 300ms
-Type "change"
-Sleep 200ms
-Screenshot commands.png'
-
-gen_tape "symbol-callers" 'Ctrl+t
-Sleep 300ms
-Type "formatDate"
-Sleep 200ms
-Ctrl+c
-Sleep 300ms
-Screenshot symbol-callers.png
-Escape'
-
-gen_tape "describe" 'Type "/changes"
-Enter
-Sleep 300ms
-Space
-Down
-Space
-Sleep 200ms
-Type "d"
-Sleep 1s
-Screenshot describe.png'
-
-for tape in files symbols bookmarks changes oplog workspaces skills commands symbol-callers describe; do
-	echo "--- $tape ---"
-	nix run nixpkgs#vhs -- "$tape.tape" 2>&1 | tail -1
-done
-
-echo "==> Done!"
-ls -la *.png
+echo "$DEMO_DIR"
