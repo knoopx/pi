@@ -112,37 +112,6 @@ const isPathMatch = (sessionCwd: string, targetCwd: string): boolean => {
   );
 };
 
-const extractBashToolCommands = (content: unknown): string[] => {
-  if (!Array.isArray(content)) return [];
-
-  const commands: string[] = [];
-  for (const block of content) {
-    if (typeof block !== "object" || block === null) continue;
-
-    const typedBlock = block as {
-      type?: unknown;
-      name?: unknown;
-      arguments?: unknown;
-    };
-
-    if (typedBlock.type !== "toolCall") continue;
-    if (typedBlock.name !== "bash") continue;
-    if (
-      typeof typedBlock.arguments !== "object" ||
-      typedBlock.arguments === null
-    ) {
-      continue;
-    }
-
-    const args = typedBlock.arguments as { command?: unknown };
-    if (typeof args.command === "string" && args.command.trim()) {
-      commands.push(args.command.trim());
-    }
-  }
-
-  return commands;
-};
-
 const truncateSingleLine = (value: string, maxLength: number): string => {
   const oneLine = value.replace(/\s+/g, " ").trim();
   const safeMaxLength = Math.max(12, maxLength);
@@ -150,10 +119,13 @@ const truncateSingleLine = (value: string, maxLength: number): string => {
   return `${oneLine.slice(0, safeMaxLength - 1)}…`;
 };
 
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
 // Load command history from session files matching the given cwd
 const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
   const history: HistoryEntry[] = [];
   const seen = new Set<string>();
+  const cutoffTimestamp = Date.now() - ONE_WEEK_MS;
 
   try {
     const sessionsDir = join(homedir(), ".pi", "agent", "sessions");
@@ -169,6 +141,8 @@ const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
             if (stat.isDirectory()) {
               walkDir(fullPath);
             } else if (entry.endsWith(".jsonl")) {
+              if (stat.mtimeMs < cutoffTimestamp) continue;
+
               // Parse session file
               const content = readFileSync(fullPath, "utf-8");
               const lines = content.trim().split("\n");
@@ -211,8 +185,10 @@ const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
                     timestamp = Date.now();
                   }
 
+                  if (timestamp < cutoffTimestamp) continue;
+
                   if (
-                    message.role === "userBashCommand" &&
+                    message.role === "bashExecution" &&
                     typeof message.command === "string"
                   ) {
                     addHistoryEntry(history, seen, {
@@ -237,18 +213,6 @@ const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
 
                     for (const command of extractBangCommandsFromUserText(
                       text,
-                    )) {
-                      addHistoryEntry(history, seen, {
-                        content: command,
-                        timestamp,
-                        type: "command",
-                      });
-                    }
-                  }
-
-                  if (message.role === "assistant") {
-                    for (const command of extractBashToolCommands(
-                      message.content,
                     )) {
                       addHistoryEntry(history, seen, {
                         content: command,
