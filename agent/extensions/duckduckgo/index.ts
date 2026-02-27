@@ -44,11 +44,21 @@ async function searchDuckDuckGo(
     if (results.length > 0) {
       return results;
     }
-  } catch (error) {
-    console.warn("Preload URL method failed, trying HTML method:", error);
+  } catch {
+    // fall through to HTML method
   }
 
-  return await searchDuckDuckGoHtml(query, limit);
+  try {
+    return await searchDuckDuckGoHtml(query, limit);
+  } catch (error) {
+    const status = (error as { response?: { status?: number } })?.response
+      ?.status;
+    throw new Error(
+      status
+        ? `DuckDuckGo search failed (HTTP ${status})`
+        : "DuckDuckGo search failed",
+    );
+  }
 }
 
 /**
