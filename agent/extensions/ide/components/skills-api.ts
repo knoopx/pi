@@ -5,6 +5,7 @@
  */
 
 import { readdir, readFile, stat } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join } from "node:path";
 
 const SKILLS_API_BASE = "https://skills.sh";
@@ -277,34 +278,39 @@ export interface LocalFile {
 }
 
 /**
- * Discover local skills in agent/skills directory
+ * Discover local skills in ~/.pi/agent/skills and $cwd/.pi/skills
  */
 export async function discoverLocalSkills(cwd: string): Promise<LocalSkill[]> {
-  const skillsDir = join(cwd, "agent", "skills");
+  const skillDirectories = [
+    join(homedir(), ".pi", "agent", "skills"),
+    join(cwd, ".pi", "skills"),
+  ];
   const skills: LocalSkill[] = [];
 
-  try {
-    const entries = await readdir(skillsDir, { withFileTypes: true });
+  for (const skillsDir of skillDirectories) {
+    try {
+      const entries = await readdir(skillsDir, { withFileTypes: true });
 
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
 
-      const skillPath = join(skillsDir, entry.name);
-      const skillMdPath = join(skillPath, "SKILL.md");
+        const skillPath = join(skillsDir, entry.name);
+        const skillMdPath = join(skillPath, "SKILL.md");
 
-      try {
-        const content = await readFile(skillMdPath, "utf-8");
-        const { name, description } = parseSkillFrontmatter(
-          content,
-          entry.name,
-        );
-        skills.push({ name, description, path: skillPath });
-      } catch {
-        // No SKILL.md, skip
+        try {
+          const content = await readFile(skillMdPath, "utf-8");
+          const { name, description } = parseSkillFrontmatter(
+            content,
+            entry.name,
+          );
+          skills.push({ name, description, path: skillPath });
+        } catch {
+          // No SKILL.md, skip
+        }
       }
+    } catch {
+      // Skills directory doesn't exist
     }
-  } catch {
-    // Skills directory doesn't exist
   }
 
   return skills.sort((a, b) => a.name.localeCompare(b.name));
