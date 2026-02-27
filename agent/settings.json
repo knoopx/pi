@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.55.1",
+  "lastChangelogVersion": "0.55.3",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.3-codex",
   "theme": "custom",
@@ -11,7 +11,6 @@
     "github-copilot/grok-code-fast-1",
     "xiaomi/mimo-v2-flash",
     "zai-coding-plan/glm-4.7",
-    "local/gemma-3-27b-it",
     "local/nemotron-3-nano-30b-a3b",
     "local/glm-4.7-flash",
     "openai-codex/gpt-5.3-codex",
