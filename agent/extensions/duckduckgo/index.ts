@@ -332,7 +332,7 @@ async function searchDuckDuckGoHtml(
 
     return results.slice(0, maxResults);
   } catch (error) {
-    console.error("DuckDuckGo HTML search failed:", error);
+    console.error("DuckDuckGo HTML search failed");
     return [];
   }
 }
