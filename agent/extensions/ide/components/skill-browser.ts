@@ -692,8 +692,8 @@ export function createSkillBrowserComponent(
     },
     { key: Key.ctrl("/"), label: "toggle", handler: toggleView },
     {
-      key: "enter",
-      label: "use",
+      key: Key.ctrl("i"),
+      label: "insert",
       when: () => hasSkill() && isLocalMode(),
       handler: selectSkill,
     },
@@ -701,7 +701,9 @@ export function createSkillBrowserComponent(
       key: "enter",
       label: "install",
       when: () => hasSkill() && isRemoteMode(),
-      handler: selectSkill,
+      handler: () => {
+        void installSkill();
+      },
     },
     {
       key: ACTION_KEYS.delete,

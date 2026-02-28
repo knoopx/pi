@@ -219,7 +219,15 @@ export function createPullRequestsComponent(
       label: "insert",
       handler: (item) => {
         if (onInsert) {
-          onInsert(`#${item.number}`);
+          const parts = [
+            `#${item.number}: ${item.title}`,
+            `State: ${item.state}${item.isDraft ? " (draft)" : ""}`,
+            `Author: ${item.author}`,
+            `Branch: ${item.headRefName} → ${item.baseRefName}`,
+            `+${item.additions} -${item.deletions}`,
+            item.body?.trim() || "",
+          ].filter(Boolean);
+          onInsert(parts.join("\n"));
           done(null);
         }
       },

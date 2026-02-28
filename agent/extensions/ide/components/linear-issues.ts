@@ -363,7 +363,15 @@ export function createLinearIssuesComponent(
       label: "insert",
       handler: (item) => {
         if (onInsert) {
-          onInsert(item.identifier);
+          const parts = [
+            `${item.identifier}: ${item.title}`,
+            `State: ${item.stateName}`,
+            `Team: ${item.teamKey}`,
+            `Assignee: ${item.assigneeName}`,
+            `Priority: ${PRIORITY_LABELS[item.priority] ?? "none"}`,
+            item.description?.trim() || "",
+          ].filter(Boolean);
+          onInsert(parts.join("\n"));
           done({ issue: null });
         }
       },
