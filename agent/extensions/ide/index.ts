@@ -417,8 +417,6 @@ export default function ideExtension(pi: ExtensionAPI) {
             cwd: ctx.cwd,
           },
         );
-        const msg = `Created working copy snapshot`;
-        notifyMutation(pi, msg, newResult.stderr || newResult.stdout);
       }
     } catch {
       // Silently fail if jj commands fail
