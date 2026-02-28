@@ -836,8 +836,25 @@ Use the **conventional-commits** skill for commit message format.`;
           cwd,
         },
       );
+      const prevChangeId = selectedChange.changeId;
+      const prevFileIndex = selectionState.fileIndex;
       changeCache.clear();
       await reloadChanges();
+      // Restore selection to the original change, not the new working copy
+      const restoredIndex = changes.findIndex(
+        (c) => c.changeId === prevChangeId,
+      );
+      if (restoredIndex >= 0) {
+        selectionState.selectedIndex = restoredIndex;
+        selectedChange = changes[restoredIndex];
+        selectionState.fileIndex = Math.min(
+          prevFileIndex,
+          (files.length || 1) - 1,
+        );
+        await loadFilesAndDiff(selectedChange);
+        invalidateCache(loadingState);
+        tui.requestRender();
+      }
       notifyMutation(pi, msg, splitResult.stderr || splitResult.stdout);
     } catch (error) {
       notify(`Failed to split file: ${formatErrorMessage(error)}`, "error");
