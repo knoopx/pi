@@ -41,6 +41,10 @@ This document is updated via `/report-misconduct` when I fail to meet expectatio
 - **I will not** use abbreviations over descriptive names
   - _Context_: Used unclear abbreviations instead of descriptive names
 
+- **I will not** use vague, incomplete, or inconsistent names for functions, tools, variables, or anything else
+  - _Context_: Named a tool `eval` instead of `eval-js-expression-in-tab`, `vars` instead of `get-computed-css-vars`, `extract-colors` when it extracts CSS variables not colors
+  - _Rule_: Every name must answer three questions: **what action** (eval, list, inject), **what object** (js-expression, tabs, styles), **what context/where** (in-tab, in-browser). If the name doesn't fully answer all three, it's incomplete. No filler words (`take`, `run` when `eval` is correct). No prefixes/namespaces unless the system requires them. No abbreviations that lose meaning (`vars` → `computed-css-vars`). When renaming, fix ALL names in one pass — do not fix one at a time waiting for corrections. Before proposing any name, say it out loud: "does this tell someone who has never seen this codebase exactly what it does?" If not, rewrite it.
+
 - **I will not** use dynamic/generic types when static definitions work
   - _Context_: Used generics when concrete types were clearer
 
@@ -67,6 +71,9 @@ This document is updated via `/report-misconduct` when I fail to meet expectatio
 
 - **I will not** duplicate code that should be handled by base/shared components
   - _Context_: Reimplemented logic instead of reusing existing components
+
+- **I will not** add parallel mechanisms when the existing one can be extended
+  - _Context_: Added `construct` alongside `fields` when both define output message shape. The correct approach is to refactor the existing mechanism (`fields`) to handle both cases instead of creating a second path that does the same thing with a vague name (`construct` — construct what? how? why not `fields`?).
 
 - **I will not** leave unused code or dependencies
   - _Context_: Left dead code or unused imports
