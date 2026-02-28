@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.55.3",
+  "lastChangelogVersion": "0.55.4",
   "defaultProvider": "anthropic",
   "defaultModel": "claude-opus-4-6",
   "theme": "custom",
@@ -11,14 +11,16 @@
     "github-copilot/grok-code-fast-1",
     "xiaomi/mimo-v2-flash",
     "zai-coding-plan/glm-4.7",
-    "local/nemotron-3-nano-30b-a3b",
-    "local/glm-4.7-flash",
     "openai-codex/gpt-5.3-codex",
     "openai-codex/gpt-5.2",
     "modal/zai-org/GLM-5-FP8",
     "anthropic/claude-opus-4-5",
     "anthropic/claude-opus-4-6",
-    "anthropic/claude-sonnet-4-6"
+    "anthropic/claude-sonnet-4-6",
+    "local/unsloth/Qwen3-Coder-Next-GGUF:UD-IQ3_XXS",
+    "local/unsloth/Qwen3.5-9B-GGUF:UD-Q8_K_XL",
+    "local/unsloth/Qwen3.5-27B-GGUF:UD-Q4_K_XL",
+    "local/unsloth/Qwen3.5-35B-A3B-GGUF:UD-Q4_K_M"
   ],
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "medium"
