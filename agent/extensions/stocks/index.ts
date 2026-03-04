@@ -50,7 +50,7 @@ export interface StockData {
 
 // Constants for the stock market extension
 const YAHOO_FINANCE_BASE_URL =
-  "https://query1.finance.yahoo.com/v6/api/builtin/chart/";
+  "https://query1.finance.yahoo.com/v8/finance/chart/";
 const USER_AGENT = "Mozilla/5.0 (compatible; StockMarketExtension/1.0)";
 const VALID_RANGES = [
   "1d",
@@ -98,23 +98,46 @@ export async function fetchStockData(
     else if (range === "1y") interval = "1wk";
     else if (range === "5y" || range === "max") interval = "1mo";
 
-    const response = await fetch(
-      `${YAHOO_FINANCE_BASE_URL}${symbol.toUpperCase()}?interval=${interval}&range=${range}`,
-      {
-        headers: {
-          "User-Agent": USER_AGENT,
-        },
-      },
-    );
+    const url = `${YAHOO_FINANCE_BASE_URL}${symbol.toUpperCase()}?interval=${interval}&range=${range}`;
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
+    // Add retry logic for rate limiting
+    let retries = 0;
+    const maxRetries = 3;
+    while (retries < maxRetries) {
+      try {
+        const response = await fetch(url, {
+          headers: {
+            "User-Agent": USER_AGENT,
+            Accept: "application/json",
+          },
+        });
 
-    const data = await response.json();
+        if (!response.ok) {
+          // Handle 429 (Too Many Requests)
+          if (response.status === 429) {
+            const waitTime = Math.pow(2, retries) * 1000;
+            console.log(
+              `Rate limited, waiting ${waitTime}ms before retry ${retries + 1}`,
+            );
+            await new Promise((resolve) => setTimeout(resolve, waitTime));
+            retries++;
+            continue;
+          }
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
 
-    if (!data.chart?.result?.[0]) {
-      return null;
+        const data = await response.json();
+
+        if (!data.chart?.result?.[0]) {
+          return null;
+        }
+
+        break;
+      } catch (error) {
+        if (retries === maxRetries - 1) break;
+        retries++;
+        await new Promise((resolve) => setTimeout(resolve, retries * 1000));
+      }
     }
 
     const result = data.chart.result[0];
@@ -258,7 +281,14 @@ export default function (pi: ExtensionAPI) {
       _ctx: ExtensionContext,
     ) {
       try {
-        const symbol = params.symbol || "AAPL"; // Default to Apple
+        // Require symbol parameter - don't silently default
+        const symbol = params.symbol;
+        if (!symbol) {
+          return createStockErrorResult(
+            "Please specify a stock symbol (e.g., AAPL, MSFT, NVDA). Example: stocks(symbol='AAPL', range='1d')",
+          );
+        }
+
         const range = params.range || "1d";
         const data = await getCachedStockData(symbol, range);
         const summary = formatStockSummary(data);
@@ -269,6 +299,12 @@ export default function (pi: ExtensionAPI) {
         } as AgentToolResult<{ stock: StockData; error?: string }>;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        // Provide more helpful error message for API failures
+        if (message.includes("Failed to fetch") || message.includes("500")) {
+          return createStockErrorResult(
+            `Yahoo Finance API is temporarily unavailable. Please try again later or use a different symbol.`,
+          );
+        }
         return createStockErrorResult(message);
       }
     },
