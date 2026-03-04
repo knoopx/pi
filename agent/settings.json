@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.55.4",
+  "lastChangelogVersion": "0.56.0",
   "defaultProvider": "anthropic",
   "defaultModel": "claude-opus-4-6",
   "theme": "custom",
@@ -23,5 +23,8 @@
     "local/unsloth/Qwen3.5-35B-A3B-GGUF:UD-Q4_K_M"
   ],
   "hideThinkingBlock": false,
-  "defaultThinkingLevel": "medium"
+  "defaultThinkingLevel": "medium",
+  "branchSummary": {
+    "skipPrompt": true
+  }
 }
