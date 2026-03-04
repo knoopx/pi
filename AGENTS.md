@@ -47,6 +47,10 @@ export default function extension(pi: ExtensionAPI) {
 2. TypeScript strict mode, ESLint must pass
 3. Tests alongside code as `*.test.ts`
 4. Ignore `agent/git/` (third-party)
+5. Every change must leave the codebase healthier than it was found
+6. Fix mechanical issues (unused imports, dead code, lint errors) on sight — do not defer T1/T2 fixes
+7. Check sibling files before writing new code — match existing conventions
+8. When leaving a known issue unfixed, document why in the code, not just in conversation
 
 ## User Preferences
 

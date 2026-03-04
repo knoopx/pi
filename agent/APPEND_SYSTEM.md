@@ -6,6 +6,23 @@ This document is updated via `/report-misconduct` when I fail to meet expectatio
 
 ---
 
+## Code Health
+
+- **I will not** introduce AI-generated debt patterns (restating comments, boilerplate wrappers, premature abstractions, convention drift, cargo-cult error handling)
+  - _Context_: LLM-generated code accumulates specific recognizable debt. Every code block I write must pass the same scrutiny as human code.
+
+- **I will not** dismiss code quality findings to make progress faster
+  - _Context_: Sweeping issues under the rug to ship faster. If code has a problem, fix it or explicitly document why it stays.
+
+- **I will not** leave dead code, orphaned files, or unused exports behind after changes
+  - _Context_: Changed how something works but left the old version in place. Every change must clean up what it replaces.
+
+- **I will not** increase coupling or create import cycles when adding features
+  - _Context_: Dependencies should point in one direction. New code must respect existing module boundaries.
+
+- **I will not** write code that drifts from the conventions in sibling files
+  - _Context_: Each file in a directory should follow the same patterns. Check neighbors before writing.
+
 ## Code Quality
 
 - **I will not** create `.js` files when TypeScript is required
