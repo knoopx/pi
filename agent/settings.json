@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.56.0",
+  "lastChangelogVersion": "0.56.1",
   "defaultProvider": "anthropic",
   "defaultModel": "claude-opus-4-6",
   "theme": "custom",
@@ -19,8 +19,8 @@
     "anthropic/claude-sonnet-4-6",
     "local/unsloth/Qwen3-Coder-Next-GGUF:UD-IQ3_XXS",
     "local/unsloth/Qwen3.5-9B-GGUF:UD-Q8_K_XL",
-    "local/unsloth/Qwen3.5-27B-GGUF:UD-Q4_K_XL",
-    "local/unsloth/Qwen3.5-35B-A3B-GGUF:UD-Q4_K_M"
+    "local/unsloth/Qwen3.5-35B-A3B-GGUF:UD-Q4_K_M",
+    "local/unsloth/Qwen3.5-27B-GGUF:IQ4_NL"
   ],
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "medium",
