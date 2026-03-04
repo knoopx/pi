@@ -1,0 +1,93 @@
+---
+name: gtkx
+description: Build GTK4 desktop applications with GTKX React framework. Use when creating React components that render as native GTK widgets, working with GTK4/Libadwaita UI, handling signals, virtual lists, menus, or building Linux desktop UIs.
+---
+
+# Developing GTKX Applications
+
+GTKX renders React components as native GTK4 widgets through a Rust FFI bridge.
+
+## Quick Start
+
+```tsx
+import { GtkApplicationWindow, GtkBox, GtkButton, render, quit } from "@gtkx/react";
+import * as Gtk from "@gtkx/ffi/gtk";
+
+const App = () => (
+    <GtkApplicationWindow title="My App" defaultWidth={800} defaultHeight={600} onClose={quit}>
+        <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12}>
+            Hello, GTKX!
+            <GtkButton label="Quit" onClicked={quit} />
+        </GtkBox>
+    </GtkApplicationWindow>
+);
+
+render(<App />, "com.example.myapp");
+```
+
+## Essential Patterns
+
+### Layout
+
+```tsx
+<GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12}>
+    <GtkLabel label="Title" />
+    <GtkButton label="Click" onClicked={handleClick} />
+</GtkBox>
+```
+
+### Controlled Input
+
+```tsx
+const [text, setText] = useState("");
+<GtkEntry text={text} onChanged={(e) => setText(e.getText())} />
+```
+
+### Signals
+
+GTK signals map to `on<SignalName>` props: `clicked` → `onClicked`, `toggled` → `onToggled`.
+
+### Widget Slots
+
+Some widgets require children in specific slots:
+
+```tsx
+<GtkPaned>
+    <x.Slot for={GtkPaned} id="startChild"><Sidebar /></x.Slot>
+    <x.Slot for={GtkPaned} id="endChild"><Content /></x.Slot>
+</GtkPaned>
+```
+
+### Container Slots (HeaderBar, ActionBar, ToolbarView, ActionRow, ExpanderRow)
+
+```tsx
+<GtkHeaderBar>
+    <x.ContainerSlot for={GtkHeaderBar} id="packStart"><GtkButton iconName="go-previous-symbolic" /></x.ContainerSlot>
+    <x.ContainerSlot for={GtkHeaderBar} id="packEnd"><GtkMenuButton iconName="open-menu-symbolic" /></x.ContainerSlot>
+</GtkHeaderBar>
+```
+
+### Animations
+
+```tsx
+<x.Animation
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ mode: "spring", damping: 0.8, stiffness: 200 }}
+    animateOnMount
+>
+    <GtkLabel label="Animated!" />
+</x.Animation>
+```
+
+## Key Constraints
+
+- GTK is single-threaded: all widget operations on main thread
+- GtkEntry requires two-way binding with `onChanged`
+- Virtual lists need stable object references (immutable data patterns)
+- Use `quit` from `@gtkx/react` to close the application
+
+## References
+
+For complete widget API, see [WIDGETS.md](WIDGETS.md).
+For code patterns and examples, see [EXAMPLES.md](EXAMPLES.md).
