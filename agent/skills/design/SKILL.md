@@ -136,10 +136,37 @@ function deleteUser(request: AuthenticatedRequest, userId: string) {
 }
 ```
 
+## Health Assessment Before Design
+
+Before designing new features, assess the health of the area you're changing:
+
+### Mechanical Check (quick, verifiable)
+
+- [ ] No unused imports or dead exports in affected files
+- [ ] No import cycles involving the module
+- [ ] No orphaned files (files nothing imports)
+- [ ] No near-duplicate logic across sibling files
+- [ ] Complexity within bounds (no functions > 50 LOC, nesting > 4)
+
+### Subjective Check (requires reading)
+
+- [ ] Names communicate intent — would a stranger understand without reading the body?
+- [ ] Error handling is consistent with sibling modules
+- [ ] Abstractions earn their cost — no single-use wrappers
+- [ ] Dependencies point in the right direction (domain has no infrastructure imports)
+- [ ] Conventions match the rest of the directory
+
+### If Health Is Poor
+
+Fix the existing issues before adding new features. Adding features to unhealthy code compounds debt. The order is:
+
+1. Fix T1/T2 mechanical issues (unused, dead, lint)
+2. Fix convention drift (make siblings consistent)
+3. Add the new feature
+4. Verify no new issues introduced
+
 ## Related Skills
 
-- **implementation**: Code quality guidelines
-- **review**: Code review checklist
-- **maintenance**: Refactoring and technical debt
+- **swe**: Code quality guidelines, anti-patterns, code health dimensions
 - **typescript**: Type safety and interfaces
 - **vitest**: Test design and patterns

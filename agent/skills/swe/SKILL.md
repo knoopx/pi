@@ -344,3 +344,71 @@ describe("UserService", () => {
 | Circular Deps    | Coupling          | Abstraction layer |
 | Feature Flags    | Hidden complexity | One code path     |
 | Backwards Compat | Legacy burden     | Replace entirely  |
+
+---
+
+## AI-Generated Debt
+
+Code written by LLMs (including by this agent) accumulates specific debt patterns. Detect and fix on sight.
+
+| Pattern                   | Description                                                  |
+| ------------------------- | ------------------------------------------------------------ |
+| Restating comments        | Comment says what the next line does in different words      |
+| Boilerplate sprawl        | Verbose wrappers, re-exports, adapters that add no value     |
+| Premature abstraction     | Generic solution for a single use case                       |
+| Convention drift          | Each file follows a slightly different style                 |
+| Cargo-cult error handling | try/catch everywhere with no actual recovery strategy        |
+| Orphan interfaces         | Interface defined but only one implementor, no extension     |
+| Placeholder logic         | TODO/stub/mock left behind, never replaced                   |
+| Over-typing               | Complex generics when a concrete type is clearer             |
+| Hallucinated API usage    | Calling methods/options that don't exist in the actual lib   |
+| Copy-paste signatures     | Same function shape repeated across files with minor changes |
+
+---
+
+## Code Health Dimensions
+
+When reviewing or writing code, assess across two axes.
+
+### Mechanical (verifiable by tools)
+
+| Dimension   | What to check                                       |
+| ----------- | --------------------------------------------------- |
+| Dead code   | Unused imports, exports, variables, functions       |
+| Duplication | Near-identical blocks across files                  |
+| Complexity  | Deep nesting, long functions, high cyclomatic count |
+| Dependency  | Import cycles, orphaned files, coupling violations  |
+| Test health | Critical paths without tests, flaky tests           |
+| Security    | Unsanitized input, hardcoded secrets, SQL injection |
+
+### Subjective (requires judgment)
+
+| Dimension              | What to check                                                   |
+| ---------------------- | --------------------------------------------------------------- |
+| Naming quality         | Do names communicate intent without reading the implementation? |
+| Logic clarity          | Can you follow control flow without mental stack overflow?      |
+| Error consistency      | Same error strategy across modules, or a mix of patterns?       |
+| Abstraction fitness    | Does each abstraction earn its cost with real leverage?         |
+| Contract coherence     | Do functions honor their stated interfaces?                     |
+| Cross-module arch      | Dependency direction correct? Hub modules justified?            |
+| Convention consistency | Same patterns in sibling files? Or style islands?               |
+
+### Prioritizing Fixes
+
+| Tier | Effort         | Examples                                  |
+| ---- | -------------- | ----------------------------------------- |
+| T1   | Auto-fixable   | Unused imports, debug logs, formatting    |
+| T2   | Quick manual   | Unused vars, dead exports, simple rename  |
+| T3   | Needs judgment | Near-duplicates, questionable abstraction |
+| T4   | Major refactor | God class split, mixed-concern untangle   |
+
+Fix T1/T2 immediately. T3/T4 require a plan.
+
+### Acknowledging vs Hiding Debt
+
+When leaving an issue unfixed:
+
+- **Document the decision** - why it stays, not just that it does
+- **Track the cost** - wontfix debt is still debt, it just has a reason
+- **Revisit periodically** - reasons expire; what was acceptable 6 months ago may not be now
+- **Never dismiss to improve metrics** - if the code is worse, admit it
