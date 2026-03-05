@@ -23,7 +23,7 @@ Analyze Pi sessions to improve agent behavior.
 | `agent/extensions/guardrails/defaults.json` | Block/confirm dangerous patterns |
 | `agent/extensions/hooks/defaults.json`      | Auto-format/lint after changes   |
 | `AGENTS.md`                                 | Project-specific rules           |
-| `agent/APPEND_SYSTEM.md`                    | Universal agent guidelines       |
+| `agent/APPEND_SYSTEM.md`                    | Universal agent manifesto        |
 
 ## Session Tools
 
@@ -91,6 +91,10 @@ pi-tool-calls --errorsOnly --days 7
 ### 4. Create Improvements
 
 Based on findings, update appropriate files.
+
+### APPEND_SYSTEM.md Format
+
+New sections use numbered Roman headings with `Against` or `For` stance (`## N. Against X` or `## N. For X`). Prose paragraphs, no bullet lists, no bold markers, no indented context blocks. Declarative statements in first person. General principles, no project-specific tool names or examples. Read existing sections before adding new ones — match the style exactly.
 
 ## Common Failure Patterns
 

@@ -49,12 +49,16 @@ Reflect on the current session to extract learnings and improvements.
 
 ## Output Files
 
-| File                      | Purpose                    |
-| ------------------------- | -------------------------- |
-| `agent/skills/<name>/`    | Multi-step workflows       |
-| `agent/prompts/<name>.md` | Reusable prompt templates  |
-| `AGENTS.md`               | Project-specific rules     |
-| `agent/APPEND_SYSTEM.md`  | Universal agent guidelines |
+| File                      | Purpose                   |
+| ------------------------- | ------------------------- |
+| `agent/skills/<name>/`    | Multi-step workflows      |
+| `agent/prompts/<name>.md` | Reusable prompt templates |
+| `AGENTS.md`               | Project-specific rules    |
+| `agent/APPEND_SYSTEM.md`  | Universal agent manifesto |
+
+## APPEND_SYSTEM.md Format
+
+New sections use numbered Roman headings with `Against` or `For` stance (`## N. Against X` or `## N. For X`). Prose paragraphs, no bullet lists, no bold markers, no indented context blocks. Declarative statements in first person. General principles, no project-specific tool names or examples. Read existing sections before adding new ones — match the style exactly.
 
 ## Common Issues
 
