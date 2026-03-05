@@ -11,32 +11,8 @@ import { renderTextToolResult } from "../../shared/render-utils";
 
 // Type definitions for stock market data
 export interface StockData {
-  meta: {
-    regularMarketPrice: number;
-    chartPreviousClose: number;
-    currency: string;
-    timezone: string;
-    symbol: string;
-    currencySymbol: string;
-  };
-  chart: {
-    result: [
-      {
-        timestamp: number[];
-        indicators: {
-          quote: [
-            {
-              open: (number | null)[];
-              close: (number | null)[];
-              high: (number | null)[];
-              low: (number | null)[];
-              volume: (number | null)[];
-            },
-          ];
-        };
-      },
-    ];
-  };
+  meta: YahooFinanceChartResult["meta"];
+  chart: YahooFinanceResponse["chart"];
   currentPrice: number;
   previousClose: number;
   change: number;
@@ -46,6 +22,35 @@ export interface StockData {
   low?: number;
   volume?: number;
   timestamp?: number[];
+}
+
+interface YahooFinanceChartResult {
+  meta: {
+    regularMarketPrice: number;
+    chartPreviousClose: number;
+    currency: string;
+    timezone: string;
+    symbol: string;
+    currencySymbol: string;
+  };
+  timestamp: number[];
+  indicators: {
+    quote: [
+      {
+        open: (number | null)[];
+        close: (number | null)[];
+        high: (number | null)[];
+        low: (number | null)[];
+        volume: (number | null)[];
+      },
+    ];
+  };
+}
+
+interface YahooFinanceResponse {
+  chart: {
+    result: YahooFinanceChartResult[];
+  };
 }
 
 // Constants for the stock market extension
@@ -100,9 +105,10 @@ export async function fetchStockData(
 
     const url = `${YAHOO_FINANCE_BASE_URL}${symbol.toUpperCase()}?interval=${interval}&range=${range}`;
 
-    // Add retry logic for rate limiting
+    // Retry logic for rate limiting
     let retries = 0;
     const maxRetries = 3;
+    let data: YahooFinanceResponse | null = null;
     while (retries < maxRetries) {
       try {
         const response = await fetch(url, {
@@ -113,7 +119,6 @@ export async function fetchStockData(
         });
 
         if (!response.ok) {
-          // Handle 429 (Too Many Requests)
           if (response.status === 429) {
             const waitTime = Math.pow(2, retries) * 1000;
             console.log(
@@ -126,19 +131,21 @@ export async function fetchStockData(
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        const data = await response.json();
+        data = await response.json();
 
-        if (!data.chart?.result?.[0]) {
+        if (!data?.chart?.result?.[0]) {
           return null;
         }
 
         break;
       } catch (error) {
-        if (retries === maxRetries - 1) break;
+        if (retries === maxRetries - 1) throw error;
         retries++;
         await new Promise((resolve) => setTimeout(resolve, retries * 1000));
       }
     }
+
+    if (!data?.chart?.result?.[0]) return null;
 
     const result = data.chart.result[0];
     const meta = result.meta;
@@ -169,7 +176,7 @@ export async function fetchStockData(
     let latestIdx = quote.close.length - 1;
     while (
       latestIdx >= 0 &&
-      (quote.close[latestIdx] == null || isNaN(quote.close[latestIdx]))
+      (quote.close[latestIdx] == null || isNaN(quote.close[latestIdx]!))
     ) {
       latestIdx--;
     }
@@ -178,15 +185,17 @@ export async function fetchStockData(
     }
 
     return {
-      ...result,
+      meta: result.meta,
+      chart: data.chart,
       currentPrice,
       previousClose,
       change,
       changePercent,
-      open: quote.open[latestIdx] || undefined,
-      high: quote.high[latestIdx] || undefined,
-      low: quote.low[latestIdx] || undefined,
-      volume: quote.volume[latestIdx] || undefined,
+      open: quote.open[latestIdx] ?? undefined,
+      high: quote.high[latestIdx] ?? undefined,
+      low: quote.low[latestIdx] ?? undefined,
+      volume: quote.volume[latestIdx] ?? undefined,
+      timestamp: result.timestamp,
     };
   } catch (error) {
     console.error(`Error fetching stock data for ${symbol}:`, error);
