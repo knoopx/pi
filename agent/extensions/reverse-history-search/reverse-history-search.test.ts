@@ -1,12 +1,12 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
+// @ts-nocheck — test calls use incorrect arity/types; needs execute signature migration
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type {
   ExtensionAPI,
   ExtensionContext,
   ExtensionUIContext,
 } from "@mariozechner/pi-coding-agent";
-import setupExtension, { fuzzyMatch } from "./index";
+import setupExtension from "./index";
+import { fuzzyMatch } from "../../shared/fuzzy";
 import type { MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 

@@ -16,7 +16,7 @@ describe("Nix Extension", () => {
   beforeEach(() => {
     mockPi = createMockExtensionAPI();
     originalFetch = globalThis.fetch;
-    setupNixExtension(mockPi as ExtensionAPI);
+    setupNixExtension(mockPi as unknown as ExtensionAPI);
   });
 
   afterEach(() => {

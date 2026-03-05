@@ -277,27 +277,26 @@ export default function (pi: ExtensionAPI) {
         label: s.name,
       }));
 
-      /* eslint-disable @typescript-eslint/no-explicit-any */
-      const selectList = new SelectList(
-        stationOptions as any,
-        12,
-        SELECT_LIST_STYLES as any,
-      ) as any;
+      const selectList = new SelectList(stationOptions, 12, SELECT_LIST_STYLES);
 
-      // Use UI selection
       const selectedId = await new Promise<string | null>((resolve) => {
-        selectList.onSelect = (item: { value: string }) => {
+        (
+          selectList as unknown as { onSelect: (item: SelectItem) => void }
+        ).onSelect = (item: SelectItem) => {
           resolve(item.value);
         };
-        selectList.onCancel = () => {
+        (selectList as unknown as { onCancel: () => void }).onCancel = () => {
           resolve(null);
         };
-        (ctx as any).ui.custom(selectList, {
+        (
+          ctx.ui as unknown as {
+            custom: (widget: unknown, opts: unknown) => void;
+          }
+        ).custom(selectList, {
           overlay: true,
           overlayOptions: { width: 60 },
-        } as any);
+        });
       });
-      /* eslint-enable @typescript-eslint/no-explicit-any */
 
       if (!selectedId) {
         ctx.ui.notify("Cancelled", "info");

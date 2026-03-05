@@ -31,7 +31,7 @@ export interface MockTool {
 export interface MockExtensionAPI {
   on: ReturnType<typeof vi.fn>;
   registerTool: ReturnType<typeof vi.fn>;
-  registerCommand?: ReturnType<typeof vi.fn>;
+  registerCommand: ReturnType<typeof vi.fn>;
   registerShortcut: ReturnType<typeof vi.fn>;
   registerFlag: ReturnType<typeof vi.fn>;
   getFlag: ReturnType<typeof vi.fn>;
@@ -50,6 +50,7 @@ export interface MockExtensionAPI {
   getThinkingLevel: ReturnType<typeof vi.fn>;
   setThinkingLevel: ReturnType<typeof vi.fn>;
   registerProvider: ReturnType<typeof vi.fn>;
+  unregisterProvider: ReturnType<typeof vi.fn>;
   getCommands: ReturnType<typeof vi.fn>;
   events: unknown;
   [key: string]: unknown;
@@ -81,6 +82,7 @@ export function createMockExtensionAPI(): MockExtensionAPI {
     getThinkingLevel: vi.fn(),
     setThinkingLevel: vi.fn(),
     registerProvider: vi.fn(),
+    unregisterProvider: vi.fn(),
     getCommands: vi.fn(),
     events: {},
   };
