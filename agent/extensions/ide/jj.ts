@@ -433,32 +433,6 @@ export async function getBlame(
 /**
  * Get jj log output formatted for system prompt injection
  */
-export async function getJjLogForSystemPrompt(
-  pi: ExtensionAPI,
-  cwd: string,
-): Promise<string | null> {
-  const result = await pi.exec(
-    "jj",
-    ["log", "-r", "ancestors(@, 20)", "--no-graph"],
-    { cwd },
-  );
-
-  if (result.code !== 0) {
-    return null;
-  }
-
-  const log = result.stdout.trim();
-  if (!log) {
-    return null;
-  }
-
-  return `## Jujutsu History
-
-\`\`\`
-${log}
-\`\`\``;
-}
-
 /**
  * Get current branch/bookmark label for status display
  */

@@ -33,12 +33,7 @@ import { createWorkspacesComponent } from "./components/workspaces";
 import { createBookmarkPromptComponent } from "./components/bookmark-prompt";
 import { saveLinearApiKey } from "./components/linear-issues";
 import { registerAllTools } from "./tools/registration";
-import {
-  setBookmarkToChange,
-  getJjLogForSystemPrompt,
-  getVcsLabel,
-  notifyMutation,
-} from "./jj";
+import { setBookmarkToChange, getVcsLabel } from "./jj";
 
 // Overlay imports
 import { openFilesPicker } from "./overlays/files";
@@ -162,7 +157,6 @@ async function spawnWorkspaceAgent(
 }
 
 export default function ideExtension(pi: ExtensionAPI) {
-  let jjLog: string | null = null;
   let lastContext: ExtensionContext | null = null;
   let currentVcsLabel: string | null = null;
   let currentUsage: UsageSnapshot | undefined;
@@ -276,7 +270,6 @@ export default function ideExtension(pi: ExtensionAPI) {
   pi.on("session_start", async (_event, ctx) => {
     lastContext = ctx;
     installGlobalFooter(ctx);
-    jjLog = await getJjLogForSystemPrompt(pi, ctx.cwd);
     await refreshFooterData();
   });
 
@@ -292,11 +285,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
     5 * 60 * 1000,
   );
-
-  pi.on("before_agent_start", async (event) => {
-    if (!jjLog) return;
-    return { systemPrompt: event.systemPrompt + "\n\n" + jjLog };
-  });
 
   // Bookmark prompt helper
   async function promptAndSetBookmark(
@@ -410,13 +398,9 @@ export default function ideExtension(pi: ExtensionAPI) {
       if (await isCurrentChangeEmpty(pi, ctx.cwd)) {
         // Reuse empty change as-is, no description update needed
       } else {
-        const newResult = await pi.exec(
-          "jj",
-          ["new", "-m", pendingChangeDescription],
-          {
-            cwd: ctx.cwd,
-          },
-        );
+        await pi.exec("jj", ["new", "-m", pendingChangeDescription], {
+          cwd: ctx.cwd,
+        });
       }
     } catch {
       // Silently fail if jj commands fail
