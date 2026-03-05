@@ -1,5 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
+// @ts-nocheck — test calls use incorrect arity/types; needs execute signature migration
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { TextContent } from "@mariozechner/pi-ai";
 import type {

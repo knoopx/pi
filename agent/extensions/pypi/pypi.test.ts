@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
+// @ts-nocheck — test calls use incorrect arity/types; needs execute signature migration
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";

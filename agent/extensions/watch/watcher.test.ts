@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
+// @ts-nocheck — test calls use incorrect arity/types; needs execute signature migration
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as core from "./core";
 import { PIWatcher } from "./watcher";

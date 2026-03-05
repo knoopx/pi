@@ -66,6 +66,14 @@ export default tseslint.config(
     files: ["agent/extensions/**/*.test.ts", "agent/extensions/**/*.test.js"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/ban-ts-comment": [
+        "error",
+        {
+          "ts-nocheck": "allow-with-description",
+          "ts-expect-error": "allow-with-description",
+          minimumDescriptionLength: 10,
+        },
+      ],
     },
   },
   {
