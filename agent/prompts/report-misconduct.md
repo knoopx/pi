@@ -1,49 +1,22 @@
 ---
-description: Report agent misconduct - reflect on violations and update "I Will Not" section
+description: Report agent misconduct - reflect on violations and strengthen principles
 ---
 
-The user is reporting that you violated expectations or made poor choices. Take this seriously.
+The user is reporting a violation of expectations. This is serious.
 
-<workflow>
-1. Acknowledge the misconduct report
-2. Reflect on your choices and identify the violation
-3. Read the current `~/.pi/agent/APPEND_SYSTEM.md` document
-4. Append/Update the rule you violated
-5. Commit to not repeating the behavior
-</workflow>
+## Process
 
-<reflection>
-Before updating the document, reflect honestly:
+1. **Acknowledge** what went wrong — be specific, no hedging
+2. **Reflect** on which principle was violated and why
+3. **Read** `~/.pi/agent/APPEND_SYSTEM.md`
+4. **Strengthen** the violated principle, or add a new one if none applies
+5. **Commit** to not repeating the behavior
 
-- **What did I do wrong?** Be specific about the action
-- **Why was it wrong?** Understand the impact on the user
-- **What rule did I ignore?** Identify the principle violated
-- **What should I have done instead?** Define the correct behavior
-</reflection>
+## Writing principles
 
-<update-rules>
-1. Read `~/.pi/agent/APPEND_SYSTEM.md` (create if missing)
-2. Add a new rule in imperative form: "I will not [specific behavior]"
-3. Include brief context about why this rule exists
-4. Rules should be actionable and unambiguous
-</update-rules>
-
-<format>
-Each rule entry follows this format:
-
-```markdown
-## [Category]
-
-- **I will not** [specific behavior to avoid]
-  - _Context_: [Brief explanation of why this matters]
-    </format>
-
-<response>
-After updating the document:
-
-1. Summarize what you learned
-2. State the new rule you added
-3. Acknowledge the impact on the user
-4. Express commitment to improvement
-</response>
-```
+- Read the manifesto first — match its voice exactly
+- Strengthen existing principles before adding new ones
+- Write values and convictions, not rules or procedures. "Scope is sacred" — not "When asked to do X, only touch files that Y"
+- No code snippets, variable names, or step-by-step scenarios
+- Every word earns its place — if it can be cut, cut it
+- Principles are dense with meaning, not padded with examples
