@@ -79,24 +79,6 @@ export interface Change {
 }
 
 /**
- * Symbol info from codemapper
- */
-export interface SymbolInfo {
-  name: string;
-  type: string;
-  path: string;
-  startLine: number;
-  endLine: number;
-}
-
-/**
- * File info for file picker
- */
-export interface FileInfo {
-  path: string;
-}
-
-/**
  * Format file stats for display
  */
 export function formatFileStats(ws: AgentWorkspace): string {

@@ -238,7 +238,9 @@ export function createArgFormComponent(
       focusedIndex = newIndex;
       tui.requestRender();
     },
-    onEscape: () => { onDone({}); },
+    onEscape: () => {
+      onDone({});
+    },
     onEnter: () => {
       const result: Record<string, string> = {};
       for (const key of fieldOrder) {

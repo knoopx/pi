@@ -24,7 +24,7 @@ function safeFsOperation<T>(operation: () => T, fallback: T): T {
   }
 }
 
-export async function nodeFetch(
+async function nodeFetch(
   url: string,
   options: FetchOptions = {},
 ): Promise<HttpResponse> {

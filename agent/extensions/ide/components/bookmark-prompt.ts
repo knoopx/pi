@@ -238,7 +238,9 @@ export function createBookmarkPromptComponent(
       selectedIndex = newIndex;
       tui.requestRender();
     },
-    onEscape: () => { done(null); },
+    onEscape: () => {
+      done(null);
+    },
     onEnter: () => {
       const candidates = getCandidates();
       if (candidates.length === 0) {

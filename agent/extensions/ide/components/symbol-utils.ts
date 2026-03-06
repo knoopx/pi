@@ -24,7 +24,7 @@ const SYMBOL_TYPE_ICONS: Record<string, string> = {
   struct: "󰙅",
 };
 
-export function getSymbolIcon(type: string): string {
+function getSymbolIcon(type: string): string {
   return SYMBOL_TYPE_ICONS[type] || "󰈚";
 }
 

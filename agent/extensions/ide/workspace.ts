@@ -24,7 +24,7 @@ export function generateWorkspaceName(): string {
 /**
  * Check if a workspace name is an ide workspace
  */
-export function isIdeWorkspace(name: string): boolean {
+function isIdeWorkspace(name: string): boolean {
   return name.startsWith(WORKSPACE_PREFIX);
 }
 
@@ -97,9 +97,7 @@ export function parseWorkspaceList(output: string): WorkspaceListEntry[] {
 /**
  * List all jujutsu workspaces
  */
-export async function listWorkspaces(
-  pi: ExtensionAPI,
-): Promise<WorkspaceListEntry[]> {
+async function listWorkspaces(pi: ExtensionAPI): Promise<WorkspaceListEntry[]> {
   const result = await pi.exec("jj", ["workspace", "list"]);
   if (result.code !== 0) {
     throw new Error(`Failed to list workspaces: ${result.stderr}`);
@@ -146,7 +144,7 @@ export async function createWorkspace(
 /**
  * Get diff stats for a workspace compared to its parent
  */
-export async function getDiffStats(
+async function getDiffStats(
   pi: ExtensionAPI,
   workspacePath: string,
 ): Promise<DiffStats> {
@@ -194,7 +192,7 @@ export function parseDiffStats(output: string): DiffStats {
 /**
  * Check if a tmux session exists
  */
-export async function tmuxSessionExists(
+async function tmuxSessionExists(
   pi: ExtensionAPI,
   sessionName: string,
 ): Promise<boolean> {
@@ -317,43 +315,6 @@ export async function spawnAgent(
 }
 
 /**
- * Get the full diff output for a workspace
- */
-/**
- * Rebase workspace changes on top of the latest root workspace change
- */
-export async function rebaseWorkspace(
-  pi: ExtensionAPI,
-  workspacePath: string,
-  targetChangeId: string,
-): Promise<void> {
-  const result = await pi.exec("jj", ["rebase", "-d", targetChangeId], {
-    cwd: workspacePath,
-  });
-
-  if (result.code !== 0) {
-    throw new Error(`Failed to rebase workspace: ${result.stderr}`);
-  }
-}
-
-/**
- * Set the change description for a workspace
- */
-export async function setDescription(
-  pi: ExtensionAPI,
-  workspacePath: string,
-  description: string,
-): Promise<void> {
-  const result = await pi.exec("jj", ["desc", "-m", description], {
-    cwd: workspacePath,
-  });
-
-  if (result.code !== 0) {
-    throw new Error(`Failed to set description: ${result.stderr}`);
-  }
-}
-
-/**
  * Kill a tmux session
  */
 export async function killTmuxSession(
@@ -361,25 +322,6 @@ export async function killTmuxSession(
   sessionName: string,
 ): Promise<void> {
   await pi.exec("tmux", ["kill-session", "-t", sessionName]);
-}
-
-/**
- * Capture tmux session output
- */
-export async function captureTmuxOutput(
-  pi: ExtensionAPI,
-  sessionName: string,
-): Promise<string> {
-  const result = await pi.exec("tmux", [
-    "capture-pane",
-    "-t",
-    sessionName,
-    "-p",
-    "-S",
-    "-",
-  ]);
-
-  return result.code === 0 ? result.stdout : "";
 }
 
 /**
@@ -421,7 +363,7 @@ export async function loadAgentWorkspaces(
 /**
  * Remove the workspace directory
  */
-export async function cleanupWorkspaceDir(
+async function cleanupWorkspaceDir(
   pi: ExtensionAPI,
   workspaceName: string,
 ): Promise<void> {

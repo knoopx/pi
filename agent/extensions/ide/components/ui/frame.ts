@@ -1,5 +1,5 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
-import { pad, ensureWidth } from "../text-utils";
+import { ensureWidth } from "../text-utils";
 
 /** Box drawing characters for bordered UI components */
 export const BOX = {
@@ -58,33 +58,4 @@ export function bottomBorder(theme: Theme, innerWidth: number): string {
     theme.fg("dim", BOX.horizontal.repeat(innerWidth)) +
     theme.fg("dim", BOX.bottomRight)
   );
-}
-
-/** Wrap rows in a single-panel border frame */
-export function renderFramedRows(
-  theme: Theme,
-  rows: string[],
-  width: number,
-  borderColor: "border" | "borderAccent" = "borderAccent",
-): string[] {
-  const innerWidth = Math.max(1, width - 2);
-
-  const top =
-    theme.fg(borderColor, "┌") +
-    theme.fg(borderColor, "─".repeat(innerWidth)) +
-    theme.fg(borderColor, "┐");
-
-  const bottom =
-    theme.fg(borderColor, "└") +
-    theme.fg(borderColor, "─".repeat(innerWidth)) +
-    theme.fg(borderColor, "┘");
-
-  const content = rows.map(
-    (row) =>
-      theme.fg(borderColor, "│") +
-      pad(row, innerWidth) +
-      theme.fg(borderColor, "│"),
-  );
-
-  return [top, ...content, bottom];
 }

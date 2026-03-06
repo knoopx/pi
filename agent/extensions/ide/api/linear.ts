@@ -17,7 +17,7 @@ export interface LinearTeam {
   name: string;
 }
 
-export interface LinearState {
+interface LinearState {
   id: string;
   name: string;
   type: string;
@@ -246,23 +246,4 @@ export async function fetchLinearIssues(apiKey: string): Promise<{
     viewerId: data.viewer.id,
     issues: data.issues.nodes,
   };
-}
-
-/**
- * Open an issue URL in the default browser.
- */
-export async function openIssueUrl(url: string): Promise<void> {
-  const { exec } = await import("node:child_process");
-  const { promisify } = await import("node:util");
-  const execAsync = promisify(exec);
-
-  const platform = process.platform;
-  const command =
-    platform === "darwin"
-      ? `open "${url}"`
-      : platform === "win32"
-        ? `start "" "${url}"`
-        : `xdg-open "${url}"`;
-
-  await execAsync(command);
 }

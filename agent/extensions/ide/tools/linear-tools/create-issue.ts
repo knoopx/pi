@@ -5,7 +5,11 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
-import { errorResult, textResult } from "../../../../shared/tool-utils.js";
+import {
+  dangerousOperationConfirmation,
+  errorResult,
+  textResult,
+} from "../../../../shared/tool-utils.js";
 import { linearGraphQL } from "../../api/linear";
 import { PriorityParam, requireLinearAuth } from "./common.js";
 
@@ -84,16 +88,13 @@ export function registerLinearCreateIssue(pi: ExtensionAPI): void {
         );
       }
 
-      // Require confirmation via UI
-      if (ctx.hasUI) {
-        const confirmed = await ctx.ui.confirm(
-          "Create Linear Issue",
-          `Create issue: "${params.title}"?`,
-        );
-        if (!confirmed) {
-          return textResult("Issue creation cancelled by user.");
-        }
-      }
+      // Require confirmation
+      const denied = await dangerousOperationConfirmation(
+        ctx,
+        "Create Linear Issue",
+        `Create issue: "${params.title}"?`,
+      );
+      if (denied) return denied;
 
       try {
         // Get team ID

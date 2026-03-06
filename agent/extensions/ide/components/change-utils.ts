@@ -7,10 +7,7 @@ export function formatBookmarkReference(
   return theme.inverse(theme.fg("accent", ` 󰃀 ${bookmark} `));
 }
 
-export function formatBookmarkLabels(
-  theme: Theme,
-  bookmarks: string[],
-): string {
+function formatBookmarkLabels(theme: Theme, bookmarks: string[]): string {
   if (bookmarks.length === 0) return "";
   return (
     bookmarks

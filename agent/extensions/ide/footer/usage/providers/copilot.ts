@@ -1,7 +1,7 @@
 import type { BaseDependencies, ProviderConfig } from "../types";
 import { createGenericProvider, loadTokenFromPiAuthJson } from "../util";
 
-export function loadGithubToken(deps: BaseDependencies): string | undefined {
+function loadGithubToken(deps: BaseDependencies): string | undefined {
   return loadTokenFromPiAuthJson(deps, "github-copilot", (data) => {
     const copilot = data["github-copilot"] as
       | { refresh?: string; access?: string }

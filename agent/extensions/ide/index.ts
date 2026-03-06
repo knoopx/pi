@@ -31,7 +31,6 @@ import {
 } from "./workspace";
 import { createWorkspacesComponent } from "./components/workspaces";
 import { createBookmarkPromptComponent } from "./components/bookmark-prompt";
-import { saveLinearApiKey } from "./components/linear-issues";
 import { registerAllTools } from "./tools/registration";
 import { setBookmarkToChange, getVcsLabel } from "./jj";
 
@@ -48,6 +47,7 @@ import {
   type RegisteredShortcut,
 } from "./overlays/command-palette";
 import { openChangesBrowser } from "./overlays/changes";
+import { openSemanticChangesBrowser } from "./overlays/semantic-changes";
 import { openTodosBrowser } from "./overlays/todos";
 import { monitorWorkspace } from "./overlays/workspace-monitor";
 import { FULL_OVERLAY_OPTIONS } from "./overlays/options";
@@ -557,36 +557,20 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
+  pi.registerCommand("semantic-changes", {
+    description:
+      "Browse entity-level semantic changes (functions, classes, types)",
+    handler: async (args, ctx) => {
+      if (!ctx.hasUI) return;
+      await openSemanticChangesBrowser(pi, ctx);
+    },
+  });
+
   pi.registerCommand("linear", {
     description: "Browse Linear issues with markdown preview",
     handler: async (_args, ctx) => {
       if (!ctx.hasUI) return;
       await openLinearIssuesBrowser(pi, ctx);
-    },
-  });
-
-  pi.registerCommand("linear-login", {
-    description: "Save Linear API key for /linear command",
-    handler: async (args, ctx) => {
-      const apiKey = args.trim();
-      if (!apiKey) {
-        if (ctx.hasUI) {
-          ctx.ui.notify(
-            "Usage: /linear-login <api-key> (get key from Linear Settings > API)",
-            "warning",
-          );
-        }
-        return;
-      }
-
-      try {
-        saveLinearApiKey(apiKey);
-        if (ctx.hasUI)
-          ctx.ui.notify("Linear API key saved successfully", "info");
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        if (ctx.hasUI) ctx.ui.notify(`Failed to save API key: ${msg}`, "error");
-      }
     },
   });
 
@@ -647,6 +631,11 @@ export default function ideExtension(pi: ExtensionAPI) {
       key: Key.ctrl("u"),
       description: "Open Linear issues browser",
       handler: async (ctx) => openLinearIssuesBrowser(pi, ctx),
+    },
+    {
+      key: Key.ctrl("e"),
+      description: "Open semantic diff browser",
+      handler: async (ctx) => openSemanticChangesBrowser(pi, ctx),
     },
   ];
 

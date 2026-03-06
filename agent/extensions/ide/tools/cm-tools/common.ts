@@ -8,30 +8,30 @@ import { promisify } from "util";
 
 const execAsync = promisify(exec);
 
-export const MAX_OUTPUT_BYTES = 50 * 1024;
-export const MAX_OUTPUT_LINES = 2000;
+const MAX_OUTPUT_BYTES = 50 * 1024;
+const MAX_OUTPUT_LINES = 2000;
 
 // Common parameter schemas
-export const PathParam = Type.Optional(
+const PathParam = Type.Optional(
   Type.String({
     description:
       "Path to analyze (defaults to current directory where supported)",
   }),
 );
 
-export const CacheDirParam = Type.Optional(
+const CacheDirParam = Type.Optional(
   Type.String({ description: "Override CodeMapper cache directory" }),
 );
 
-export const NoCacheParam = Type.Optional(
+const NoCacheParam = Type.Optional(
   Type.Boolean({ description: "Disable cache for this command" }),
 );
 
-export const RebuildCacheParam = Type.Optional(
+const RebuildCacheParam = Type.Optional(
   Type.Boolean({ description: "Force cache rebuild before running" }),
 );
 
-export const ExtensionsParam = Type.Optional(
+const ExtensionsParam = Type.Optional(
   Type.Array(Type.String(), {
     description: 'Limit indexing to these file extensions (e.g. ["ts","py"])',
   }),
@@ -91,7 +91,7 @@ export function withCommonParams<T extends TProperties>(
   return Type.Object({ ...CommonParams, ...extra } as T & typeof CommonParams);
 }
 
-export function truncateOutput(text: string): {
+function truncateOutput(text: string): {
   text: string;
   truncated: boolean;
 } {

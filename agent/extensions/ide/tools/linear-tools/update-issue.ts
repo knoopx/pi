@@ -5,7 +5,11 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
-import { errorResult, textResult } from "../../../../shared/tool-utils.js";
+import {
+  dangerousOperationConfirmation,
+  errorResult,
+  textResult,
+} from "../../../../shared/tool-utils.js";
 import { linearGraphQL } from "../../api/linear";
 import { PriorityParam, requireLinearAuth } from "./common.js";
 
@@ -61,16 +65,13 @@ export function registerLinearUpdateIssue(pi: ExtensionAPI): void {
         return errorResult("No changes specified.");
       }
 
-      // Require confirmation via UI
-      if (ctx.hasUI) {
-        const confirmed = await ctx.ui.confirm(
-          "Update Linear Issue",
-          `Update ${params.identifier}?\n\nChanges:\n${changes.map((c) => `  - ${c}`).join("\n")}`,
-        );
-        if (!confirmed) {
-          return textResult("Issue update cancelled by user.");
-        }
-      }
+      // Require confirmation
+      const denied = await dangerousOperationConfirmation(
+        ctx,
+        "Update Linear Issue",
+        `Update ${params.identifier}?\n\nChanges:\n${changes.map((c) => `  - ${c}`).join("\n")}`,
+      );
+      if (denied) return denied;
 
       try {
         // Get issue ID from identifier

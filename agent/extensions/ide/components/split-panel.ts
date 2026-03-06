@@ -259,45 +259,6 @@ export function renderSplitPanel(
 }
 
 /**
- * Generate rows for a list with selection
- */
-export function renderListRows(
-  items: { text: string; selected?: boolean; highlighted?: boolean }[],
-  width: number,
-  height: number,
-  selectedIndex: number,
-  theme: Theme,
-): string[] {
-  const rows: string[] = [];
-
-  // Calculate visible range (scroll window around selection)
-  let startIdx = 0;
-  if (selectedIndex >= height) {
-    startIdx = selectedIndex - height + 1;
-  }
-
-  for (let i = 0; i < height && startIdx + i < items.length; i++) {
-    const idx = startIdx + i;
-    const item = items[idx];
-    const isSelected = idx === selectedIndex;
-    const text = " " + truncateAnsi(item.text, width - 2);
-    const final = ensureWidth(text, width);
-
-    let styled: string;
-    if (isSelected) {
-      styled = theme.fg("accent", theme.bold(final));
-    } else if (item.highlighted) {
-      styled = theme.fg("warning", final);
-    } else {
-      styled = final;
-    }
-    rows.push(styled);
-  }
-
-  return rows;
-}
-
-/**
  * Generate rows for diff content (preserves ANSI colors from jj)
  */
 export function renderDiffRows(
