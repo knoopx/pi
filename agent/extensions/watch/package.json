@@ -20,11 +20,11 @@
     ]
   },
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "^0.54.0",
+    "@mariozechner/pi-coding-agent": "^0.57.0",
     "chokidar": "^5.0.0"
   },
   "devDependencies": {
-    "@types/node": "^25.3.0",
+    "@types/node": "^25.3.5",
     "typescript": "^5.9.3"
   }
 }
