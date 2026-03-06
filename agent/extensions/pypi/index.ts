@@ -13,6 +13,9 @@ import type {
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, type Static } from "@sinclair/typebox";
 import { textResult } from "../../shared/tool-utils";
+import { throttledFetch } from "../../shared/throttle";
+import { dotJoin, countLabel, table, detail } from "../renderers";
+import type { Column } from "../renderers";
 
 // Parameter schemas
 const SearchPyPIPackagesParams = Type.Object({
@@ -59,6 +62,66 @@ interface PyPIPackageResponse {
   info: PyPIPackageInfo;
 }
 
+interface PyPISearchResult {
+  name: string;
+  version: string;
+  description: string;
+}
+
+function extractBetween(source: string, start: string, end: string): string {
+  const startIndex = source.indexOf(start);
+  if (startIndex === -1) return "";
+  const contentStart = startIndex + start.length;
+  const endIndex = source.indexOf(end, contentStart);
+  if (endIndex === -1) return "";
+  return source.slice(contentStart, endIndex).trim();
+}
+
+function parseSearchResultsFromHtml(
+  html: string,
+  limit: number,
+): PyPISearchResult[] {
+  const packages: PyPISearchResult[] = [];
+  let offset = 0;
+
+  while (packages.length < limit) {
+    const anchorStart = html.indexOf('<a class="package-snippet"', offset);
+    if (anchorStart === -1) break;
+
+    const anchorEnd = html.indexOf("</a>", anchorStart);
+    if (anchorEnd === -1) break;
+
+    const block = html.slice(anchorStart, anchorEnd + 4);
+    const name = extractBetween(
+      block,
+      '<span class="package-snippet__name">',
+      "</span>",
+    );
+    const version = extractBetween(
+      block,
+      '<span class="package-snippet__version">',
+      "</span>",
+    );
+    const description = extractBetween(
+      block,
+      '<p class="package-snippet__description">',
+      "</p>",
+    );
+
+    if (name.length > 0 && version.length > 0) {
+      packages.push({
+        name,
+        version,
+        description: description || "No description available",
+      });
+    }
+
+    offset = anchorEnd + 4;
+  }
+
+  return packages;
+}
+
 /**
  * Helper function to create an error result
  */
@@ -80,7 +143,7 @@ async function tryDirectPackageLookup(
   signal?: AbortSignal,
 ): Promise<AgentToolResult<Record<string, unknown>> | null> {
   try {
-    const response = await fetch(
+    const response = await throttledFetch(
       `https://pypi.org/pypi/${encodeURIComponent(query)}/json`,
       { signal },
     );
@@ -90,7 +153,9 @@ async function tryDirectPackageLookup(
     const text = await response.text();
     const data = JSON.parse(text) as PyPIPackageResponse;
     const info = data.info;
-    return textResult(`${info.name} ${info.version}: ${info.summary || "-"}`, {
+    const summary = info.summary || "-";
+
+    return textResult(`${info.name} ${info.version}: ${summary}`.trim(), {
       query,
       total: 1,
       returned: 1,
@@ -129,7 +194,7 @@ Returns matching packages with metadata.`,
       try {
         // Use PyPI Simple API search endpoint
         const searchUrl = `https://pypi.org/search/?q=${encodeURIComponent(query)}&o=`;
-        const response = await fetch(searchUrl, {
+        const response = await throttledFetch(searchUrl, {
           signal: _signal,
           headers: {
             Accept: "application/vnd.pypi.simple.v1+json",
@@ -146,28 +211,7 @@ Returns matching packages with metadata.`,
 
         // Parse HTML response to extract package info (PyPI doesn't have a JSON search API)
         const html = await response.text();
-
-        // Extract package names and descriptions from search results
-        const packageRegex =
-          /<a class="package-snippet"[^>]*href="\/project\/([^/]+)\/"[^>]*>[\s\S]*?<span class="package-snippet__name">([^<]+)<\/span>[\s\S]*?<span class="package-snippet__version">([^<]+)<\/span>[\s\S]*?<p class="package-snippet__description">([^<]*)<\/p>/g;
-
-        const packages: {
-          name: string;
-          version: string;
-          description: string;
-        }[] = [];
-        let match;
-
-        while (
-          (match = packageRegex.exec(html)) !== null &&
-          packages.length < limit
-        ) {
-          packages.push({
-            name: match[2].trim(),
-            version: match[3].trim(),
-            description: match[4].trim() || "No description available",
-          });
-        }
+        const packages = parseSearchResultsFromHtml(html, limit);
 
         if (packages.length === 0) {
           // Try direct package lookup as fallback
@@ -177,9 +221,32 @@ Returns matching packages with metadata.`,
           );
         }
 
-        const output = packages
-          .map((p) => `${p.name} ${p.version}: ${p.description}`)
-          .join("\n");
+        const cols: Column[] = [
+          { key: "#", align: "right", minWidth: 3 },
+          { key: "version", minWidth: 7 },
+          {
+            key: "package",
+            format: (_v, row) => {
+              const r = row as { package: string; description: string };
+              return r.description
+                ? `${r.package}\n${r.description}`
+                : r.package;
+            },
+          },
+        ];
+
+        const rows = packages.map((p, i) => ({
+          "#": String(i + 1),
+          version: p.version,
+          package: p.name,
+          description: p.description,
+        }));
+
+        const output = [
+          dotJoin(countLabel(packages.length, "result")),
+          "",
+          table(cols, rows),
+        ].join("\n");
 
         return textResult(output, {
           query,
@@ -222,7 +289,7 @@ Shows comprehensive package details from PyPI.`,
 
       try {
         // Use PyPI JSON API instead of local pip command
-        const response = await fetch(
+        const response = await throttledFetch(
           `https://pypi.org/pypi/${encodeURIComponent(packageName)}/json`,
           { signal: _signal },
         );
@@ -244,24 +311,28 @@ Shows comprehensive package details from PyPI.`,
         const info = data.info;
 
         const author = info.author || info.maintainer || "-";
-        let result = `${info.name} ${info.version}: ${info.summary || "-"} [${author}]`;
-        if (info.license) result += ` ${info.license}`;
-        if (info.requires_python) result += ` ${info.requires_python}`;
-        if (info.home_page || info.project_url)
-          result += ` ${info.home_page || info.project_url}`;
-        if (info.author_email || info.maintainer_email)
-          result += ` ${info.author_email || info.maintainer_email}`;
-        if (info.requires_dist && info.requires_dist.length > 0) {
-          const deps = info.requires_dist.slice(0, 20).join(" ");
-          result += ` ${deps}${info.requires_dist.length > 20 ? ` +${info.requires_dist.length - 20}` : ""}`;
-        }
-        if (info.project_urls)
-          result += ` ${Object.entries(info.project_urls)
-            .map(([k, v]) => `${k}:${v}`)
-            .join(" ")}`;
-        if (info.keywords) result += ` ${info.keywords}`;
+        const license = info.license || "-";
+        const homePage = info.home_page || info.project_url || "-";
+        const summary = info.summary || "-";
 
-        return textResult(result, { package: packageName, info });
+        const fields = [
+          { label: "name", value: info.name },
+          { label: "version", value: info.version },
+          { label: "license", value: license },
+          { label: "author", value: author },
+          { label: "description", value: summary },
+          { label: "homepage", value: homePage !== "-" ? homePage : "-" },
+          ...(Array.isArray(info.requires_dist) && info.requires_dist.length > 0
+            ? [{ label: "dependencies", value: info.requires_dist.join(", ") }]
+            : []),
+        ].filter((f) => f.value && f.value !== "-");
+
+        const output = detail(fields);
+
+        return textResult(output, {
+          package: packageName,
+          info,
+        });
       } catch (error) {
         return createPypiErrorResult(
           `Failed to show package info: ${String(error)}`,

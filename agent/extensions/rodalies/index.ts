@@ -8,6 +8,9 @@ import { Type } from "@sinclair/typebox";
 import { SelectList, type SelectItem } from "@mariozechner/pi-tui";
 import { SELECT_LIST_STYLES } from "../../shared/select-list-styles";
 import { fuzzyFilter } from "../../shared/fuzzy";
+import { throttledFetch } from "../../shared/throttle";
+import { dotJoin, countLabel, table } from "../renderers";
+import type { Column } from "../renderers";
 
 // Cached stations to avoid repeated API calls
 let cachedStations: Station[] | null = null;
@@ -50,7 +53,7 @@ interface DepartureItem {
   destination: string;
   line: string;
   platform: string;
-  delay: string;
+  delay: number;
   trainType: string;
   cancelled: boolean;
 }
@@ -68,7 +71,7 @@ export async function getStations(): Promise<Station[]> {
 
   try {
     // Fetch all stations using a high limit
-    const response = await fetch(
+    const response = await throttledFetch(
       "https://serveisgrs.rodalies.gencat.cat/api/stations?lang=en&limit=250",
     );
     const data = await response.json();
@@ -107,7 +110,7 @@ export async function getStations(): Promise<Station[]> {
  */
 async function getDepartures(stationId: number): Promise<DepartureItem[]> {
   try {
-    const response = await fetch(
+    const response = await throttledFetch(
       `https://serveisgrs.rodalies.gencat.cat/api/departures?stationId=${stationId}&minute=60&fullResponse=true&lang=en`,
     );
     const data = await response.json();
@@ -133,11 +136,7 @@ async function getDepartures(stationId: number): Promise<DepartureItem[]> {
             destination: train.destinationStation.name,
             line: train.line.name,
             platform: train.platformSelectedStation || "—",
-            delay: train.delay
-              ? train.delay > 0
-                ? `+${train.delay}min`
-                : `${train.delay}min`
-              : "",
+            delay: train.delay,
             trainType: train.trainType,
             cancelled: train.trainCancelled,
           }),
@@ -152,6 +151,39 @@ async function getDepartures(stationId: number): Promise<DepartureItem[]> {
   }
 }
 
+export function formatDelayStatus(delay: number, cancelled: boolean): string {
+  if (cancelled) return "✗ cancelled";
+  if (delay === 0) return "● on time";
+  if (delay > 0) return `▲ +${delay}min`;
+  return `▼ ${delay}min`;
+}
+
+export function formatDeparturesOutput(
+  _stationName: string,
+  _stationId: number,
+  departures: DepartureItem[],
+): string {
+  const cols: Column[] = [
+    { key: "departs", align: "right" },
+    { key: "line" },
+    { key: "destination" },
+    { key: "status", align: "right" },
+  ];
+
+  const rows = departures.map((dep) => ({
+    departs: dep.departureTime,
+    line: dep.line,
+    destination: dep.destination,
+    status: formatDelayStatus(dep.delay, dep.cancelled),
+  }));
+
+  return [
+    dotJoin(countLabel(departures.length, "departure")),
+    "",
+    table(cols, rows),
+  ].join("\n");
+}
+
 /**
  * Extension entry point
  */
@@ -163,7 +195,7 @@ export default function (pi: ExtensionAPI) {
 
   // Register custom tool to get departures
   pi.registerTool({
-    name: "rodalies_departures",
+    name: "rodalies-departures",
     label: "Rodalies Departures",
     description:
       "Get real-time train departures for a station. Provide either stationId or stationName - the station ID will be automatically resolved if using a station name.",
@@ -187,42 +219,46 @@ export default function (pi: ExtensionAPI) {
     ) {
       // Resolve station ID
       let stationId: number | undefined;
+      let stationName: string | undefined;
       const stations = await getStations();
 
       if (params.stationId !== undefined) {
-        // Use provided station ID
         stationId = params.stationId;
+        const found = stations.find((s) => s.id === stationId);
+        stationName = found?.name ?? String(stationId);
       } else if (params.stationName !== undefined) {
-        // Automatically find station ID from name
-        const stationName = params.stationName;
+        stationName = params.stationName;
         const match = stations.find(
           (s) =>
-            s.name.toLowerCase() === stationName.toLowerCase() ||
-            s.name.toLowerCase().includes(stationName.toLowerCase()),
+            s.name.toLowerCase() === stationName!.toLowerCase() ||
+            s.name.toLowerCase().includes(stationName!.toLowerCase()),
         );
         if (match) {
           stationId = match.id;
+          stationName = match.name;
         } else {
           // Try fuzzy matching - find best match
           const matches = fuzzyFilter(stations, stationName, (s) => s.name);
           if (matches.length > 0) {
             stationId = matches[0].item.id;
+            stationName = matches[0].item.name;
           }
         }
       }
 
       if (stationId === undefined) {
-        // Try to provide more helpful error message
-        const stationName = params.stationName;
-        const availableStations = stations.map((s) => s.name).join(", ");
+        const name = params.stationName;
+        const stationList = stations
+          .map((s) => `${s.name} (${s.id})`)
+          .join(", ");
         return {
           content: [
             {
               type: "text",
-              text: `Error: Station "${stationName}" not found.\n\nAvailable stations:\n${availableStations}`,
+              text: `Error: Station "${name}" not found.\n\nAvailable stations: ${stationList}`,
             },
           ],
-          details: { error: `Station "${stationName}" not found` },
+          details: { error: `Station "${name}" not found` },
         } as unknown as AgentToolResult<
           { stationId: number; count: number } | undefined
         >;
@@ -241,19 +277,10 @@ export default function (pi: ExtensionAPI) {
         } as AgentToolResult<{ stationId: number; count: number } | undefined>;
       }
 
-      // Build response
-      const formatted = departures.map((dep: DepartureItem) => ({
-        departureTime: dep.departureTime,
-        destination: dep.destination,
-        line: dep.line,
-        platform: dep.platform,
-        delay: dep.delay,
-        trainType: dep.trainType,
-        cancelled: dep.cancelled,
-      }));
+      const text = formatDeparturesOutput(stationName!, stationId, departures);
 
       return {
-        content: [{ type: "text", text: JSON.stringify(formatted, null, 2) }],
+        content: [{ type: "text", text }],
         details: { stationId, count: departures.length },
       } as AgentToolResult<{ stationId: number; count: number } | undefined>;
     },
@@ -320,7 +347,8 @@ export default function (pi: ExtensionAPI) {
 
       // Show each departure
       departures.forEach((dep: DepartureItem) => {
-        const message = `🕒 ${dep.departureTime} → ${dep.destination} (${dep.line}) | Platform: ${dep.platform} ${dep.delay ? `| Delay: ${dep.delay}` : ""}`;
+        const status = formatDelayStatus(dep.delay, dep.cancelled);
+        const message = `${dep.departureTime} → ${dep.destination} (${dep.line}) · Platform: ${dep.platform} · ${status}`;
         ctx.ui.notify(message, "info");
       });
     },

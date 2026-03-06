@@ -11,6 +11,7 @@ import {
   type MockTool,
 } from "../../shared/test-utils";
 import duckduckgoExtension from "./index";
+import { disableThrottle } from "../../shared/throttle";
 
 // Mock axios
 vi.mock("axios");
@@ -21,6 +22,7 @@ describe("DuckDuckGo Extension", () => {
   let toolConfig: MockTool;
 
   beforeEach(() => {
+    disableThrottle();
     mockPi = createMockExtensionAPI();
     duckduckgoExtension(mockPi as unknown as ExtensionAPI);
     toolConfig = mockPi.registerTool.mock.calls[0][0] as MockTool;
@@ -56,9 +58,7 @@ describe("DuckDuckGo Extension", () => {
         new AbortController().signal,
       );
 
-      expect((result.content[0] as TextContent).text).toContain(
-        "No results found",
-      );
+      expect((result.content[0] as TextContent).text).toBe("No results found.");
       expect(result.details).toEqual({ query: "test query", limit: 5 });
     });
 
@@ -96,9 +96,7 @@ describe("DuckDuckGo Extension", () => {
         new AbortController().signal,
       );
 
-      expect((result.content[0] as TextContent).text).toBe(
-        "Example Title\nhttps://example.com\nExample description\n",
-      );
+      expect((result.content[0] as TextContent).text).toMatchSnapshot();
       expect(result.details.results).toBeDefined();
     });
   });

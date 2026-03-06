@@ -6,6 +6,9 @@ import type {
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, type Static } from "@sinclair/typebox";
 import { textResult } from "../../shared/tool-utils";
+import { throttledFetch } from "../../shared/throttle";
+import { dotJoin, countLabel, table, detail } from "../renderers";
+import type { Column } from "../renderers";
 
 // Parameter schemas
 const SearchNpmPackagesParams = Type.Object({
@@ -77,7 +80,7 @@ async function fetchNpmPackage(
   | { ok: false; result: AgentToolResult<Record<string, unknown>> }
 > {
   try {
-    const response = await fetch(
+    const response = await throttledFetch(
       `https://registry.npmjs.org/${encodeURIComponent(pkg)}`,
     );
 
@@ -221,7 +224,7 @@ async function searchNpmPackages(
   size: number,
 ): Promise<AgentToolResult<Record<string, unknown>>> {
   try {
-    const response = await fetch(
+    const response = await throttledFetch(
       `https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(
         query,
       )}&size=${Math.min(size, 100)}`,
@@ -252,18 +255,44 @@ async function searchNpmPackages(
       author: obj.package.author?.name ?? "Unknown",
     }));
 
-    const result = packages
-      .map(
-        (pkg) =>
-          `${pkg.name} ${pkg.version}: ${pkg.description} [${pkg.author}] ${pkg.keywords.join(",")}`,
-      )
-      .join("\n");
+    if (packages.length === 0) {
+      return textResult("No packages found.", { query, count: 0, packages });
+    }
 
-    return textResult(result || "No packages found.", {
-      query,
-      count: packages.length,
-      packages,
-    });
+    const cols: Column[] = [
+      { key: "#", align: "right", minWidth: 3 },
+      { key: "version", minWidth: 7 },
+      {
+        key: "package",
+        format: (_v, row) => {
+          const r = row as {
+            package: string;
+            description: string;
+            keywords: string;
+          };
+          const lines = [r.package];
+          if (r.description) lines.push(r.description);
+          if (r.keywords) lines.push(r.keywords);
+          return lines.join("\n");
+        },
+      },
+    ];
+
+    const rows = packages.map((pkg, i) => ({
+      "#": String(i + 1),
+      version: pkg.version,
+      package: pkg.name,
+      description: pkg.description,
+      keywords: pkg.keywords.join(", "),
+    }));
+
+    const text = [
+      dotJoin(countLabel(packages.length, "result")),
+      "",
+      table(cols, rows),
+    ].join("\n");
+
+    return textResult(text, { query, count: packages.length, packages });
   } catch (error) {
     return {
       content: [
@@ -310,9 +339,27 @@ async function getNpmPackageInfo(
       : 0,
   };
 
-  const result = `${info.name} ${info.latestVersion}: ${info.description} [${info.author}] ${info.license} ${info.homepage} ${info.repository} ${info.keywords} ${info.dependencies} ${info.devDependencies}`;
+  const fields = [
+    { label: "name", value: info.name },
+    { label: "version", value: info.latestVersion },
+    { label: "license", value: info.license },
+    { label: "author", value: info.author },
+    { label: "description", value: info.description },
+    { label: "homepage", value: info.homepage ? info.homepage : "" },
+    {
+      label: "repository",
+      value: info.repository ? info.repository : "",
+    },
+    { label: "keywords", value: info.keywords ? info.keywords : "" },
+    {
+      label: "dependencies",
+      value: `${info.dependencies} deps · ${info.devDependencies} devDeps`,
+    },
+  ].filter((f) => f.value);
 
-  return textResult(result, { package: pkg, info });
+  const sections = [detail(fields)];
+
+  return textResult(sections.join("\n"), { package: pkg, info });
 }
 
 async function getNpmPackageVersions(
@@ -325,13 +372,17 @@ async function getNpmPackageVersions(
   const versions = Object.keys(data?.versions ?? {});
   const distTags = data?.["dist-tags"] ?? {};
 
-  const result = `${data?.name ?? pkg} ${versions.length} versions ${Object.entries(
-    distTags,
-  )
-    .map(([t, v]) => `${t}:${v}`)
-    .join(",")} ${versions.join(",")}`;
+  const fields = [
+    ...Object.entries(distTags).map(([tag, version]) => ({
+      label: tag,
+      value: version,
+    })),
+    { label: "versions", value: versions.join(", ") },
+  ];
 
-  return textResult(result, {
+  const sections = [dotJoin(countLabel(versions.length, "version")), "", detail(fields)];
+
+  return textResult(sections.join("\n"), {
     package: pkg,
     count: versions.length,
     distTags,

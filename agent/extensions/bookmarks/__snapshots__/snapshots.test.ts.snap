@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`bookmarks output snapshots > tool output > renders bookmarks with results 1`] = `
+"2 result(s)
+
+  # │ added      │ title
+────┼────────────┼───────────────────
+  1 │ 2026-01-15 │ GitHub
+    │            │ https://github.com
+  2 │ 2026-02-20 │ NixOS
+    │            │ https://nixos.org"
+`;
+
+exports[`bookmarks output snapshots > tool output > renders history with results 1`] = `
+"2 result(s)
+
+  # │      󰈈 │ last visit │ title
+────┼────────┼────────────┼──────────────────────────
+  1 │     42 │ 2026-03-07 │ GitHub Search
+    │        │            │ https://github.com/search
+  2 │      7 │ 2026-03-06 │ Docs.rs
+    │        │            │ https://docs.rs"
+`;

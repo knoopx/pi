@@ -8,6 +8,8 @@ import { StringEnum } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
 import { renderTextToolResult } from "../../shared/render-utils";
+import { throttledFetch } from "../../shared/throttle";
+import { dotJoin, detail } from "../renderers";
 
 // Type definitions for stock market data
 export interface StockData {
@@ -111,7 +113,7 @@ export async function fetchStockData(
     let data: YahooFinanceResponse | null = null;
     while (retries < maxRetries) {
       try {
-        const response = await fetch(url, {
+        const response = await throttledFetch(url, {
           headers: {
             "User-Agent": USER_AGENT,
             Accept: "application/json",
@@ -204,13 +206,12 @@ export async function fetchStockData(
 }
 
 export function formatStockSummary(data: StockData): string {
-  const base = `📊 ${data.currentPrice.toFixed(2)} (${data.changePercent >= 0 ? "+" : ""}${data.changePercent.toFixed(2)}%)`;
-  return base;
+  const symbol = data.meta?.symbol ?? "";
+  const prefix = symbol ? `${symbol} ` : "";
+  const arrow = data.changePercent >= 0 ? "▲" : "▼";
+  return `${prefix}${data.currentPrice.toFixed(2)} ${arrow} ${data.changePercent >= 0 ? "+" : ""}${data.changePercent.toFixed(2)}%`;
 }
 
-/**
- * Helper function to create an error result
- */
 function createStockErrorResult(
   message: string,
 ): AgentToolResult<{ stock?: StockData; error?: string }> {
@@ -218,6 +219,30 @@ function createStockErrorResult(
     content: [{ type: "text", text: `Error: ${message}` }],
     details: { error: message },
   };
+}
+
+export function formatStockOutput(data: StockData, range: string): string {
+  const arrow = data.change >= 0 ? "▲" : "▼";
+  const changeStr = `${arrow} ${data.change >= 0 ? "+" : ""}${data.change.toFixed(2)}`;
+  const pctStr = `${data.changePercent >= 0 ? "+" : ""}${data.changePercent.toFixed(2)}%`;
+
+  const lines: string[] = [
+    dotJoin(range),
+    "",
+    detail([
+      { label: "price", value: data.currentPrice.toFixed(2) },
+      { label: "open", value: data.open?.toFixed(2) ?? "-" },
+      { label: "high", value: data.high?.toFixed(2) ?? "-" },
+      { label: "low", value: data.low?.toFixed(2) ?? "-" },
+      { label: "prev close", value: data.previousClose.toFixed(2) },
+      { label: "change", value: `${changeStr} (${pctStr})` },
+      { label: "volume", value: data.volume?.toLocaleString() ?? "-" },
+      { label: "currency", value: data.meta.currency },
+      { label: "timezone", value: data.meta.timezone },
+    ]),
+  ];
+
+  return lines.join("\n");
 }
 
 export * from "./index";
@@ -290,7 +315,6 @@ export default function (pi: ExtensionAPI) {
       _ctx: ExtensionContext,
     ) {
       try {
-        // Require symbol parameter - don't silently default
         const symbol = params.symbol;
         if (!symbol) {
           return createStockErrorResult(
@@ -300,15 +324,13 @@ export default function (pi: ExtensionAPI) {
 
         const range = params.range || "1d";
         const data = await getCachedStockData(symbol, range);
-        const summary = formatStockSummary(data);
 
         return {
-          content: [{ type: "text", text: summary }],
+          content: [{ type: "text", text: formatStockOutput(data, range) }],
           details: { stock: data },
         } as AgentToolResult<{ stock: StockData; error?: string }>;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        // Provide more helpful error message for API failures
         if (message.includes("Failed to fetch") || message.includes("500")) {
           return createStockErrorResult(
             `Yahoo Finance API is temporarily unavailable. Please try again later or use a different symbol.`,

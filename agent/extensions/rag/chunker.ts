@@ -363,20 +363,3 @@ function splitLargeContent(content: string, maxSize: number): string[] {
 
   return chunks.filter((c) => c.length > 0);
 }
-
-/**
- * Chunk multiple markdown files
- */
-export async function chunkMarkdownFiles(
-  files: { path: string; content: string }[],
-  options: ChunkingOptions = {},
-): Promise<MarkdownChunk[]> {
-  const allChunks: MarkdownChunk[] = [];
-
-  for (const file of files) {
-    const chunks = chunkMarkdown(file.content, file.path, options);
-    allChunks.push(...chunks);
-  }
-
-  return allChunks;
-}

@@ -5,6 +5,9 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type, type Static } from "@sinclair/typebox";
+import { dotJoin, countLabel, table } from "../renderers";
+import type { Column } from "../renderers";
+import { throttledFetch } from "../../shared/throttle";
 
 // Parameter schema for search queries
 const SearchQueryParams = Type.Object({
@@ -233,7 +236,7 @@ const COMMON_HEADERS = {
 async function postNixSearch<T>(
   queryPayload: Record<string, unknown>,
 ): Promise<T[]> {
-  const response = await fetch(SEARCH_URL, {
+  const response = await throttledFetch(SEARCH_URL, {
     method: "POST",
     headers: COMMON_HEADERS,
     body: JSON.stringify(queryPayload),
@@ -398,7 +401,7 @@ async function searchHomeManagerOptions(
     TE: "trailers",
   };
 
-  const response = await fetch(HOME_MANAGER_OPTIONS_URL, {
+  const response = await throttledFetch(HOME_MANAGER_OPTIONS_URL, {
     method: "GET",
     headers,
   });
@@ -458,15 +461,38 @@ Returns detailed package information from nixpkgs.`,
             license: item.package_license_set.join(", "),
           }),
         (res) => {
-          return res
-            .map((pkg) => {
-              let line = `${pkg.attr_name} ${pkg.pname} ${pkg.version}: ${pkg.description || "-"} [${pkg.maintainers}]`;
-              if (pkg.longDescription) line += ` ${pkg.longDescription}`;
-              if (pkg.homepage?.[0]) line += ` ${pkg.homepage[0]}`;
-              if (pkg.license) line += ` ${pkg.license}`;
-              return line;
-            })
-            .join("\n");
+          const cols: Column[] = [
+            { key: "#", align: "right", minWidth: 3 },
+            { key: "version", minWidth: 7 },
+            {
+              key: "package",
+              format: (_v, row) => {
+                const r = row as Record<string, string>;
+                const lines = [r.package];
+                if (r.description) lines.push(r.description);
+                const meta: string[] = [];
+                if (r.attr_name) meta.push(`attr: ${r.attr_name}`);
+                if (r.license) meta.push(r.license);
+                if (meta.length > 0) lines.push(meta.join(" · "));
+                if (r.maintainers) lines.push(r.maintainers);
+                if (r.homepage) lines.push(r.homepage);
+                return lines.join("\n");
+              },
+            },
+          ];
+          const rows = res.map((pkg, i) => ({
+            "#": String(i + 1),
+            version: pkg.version || "",
+            package: pkg.pname || pkg.attr_name || "",
+            description: pkg.description || "",
+            attr_name: pkg.attr_name || "",
+            license: pkg.license || "",
+            maintainers: pkg.maintainers || "",
+            homepage: Array.isArray(pkg.homepage) ? pkg.homepage[0] || "" : "",
+          }));
+          return [dotJoin(countLabel(res.length, "result")), "", table(cols, rows)].join(
+            "\n",
+          );
         },
         query,
       );
@@ -508,15 +534,32 @@ Returns NixOS configuration option details.`,
             source: opt.option_source,
           }),
         (res) => {
-          return res
-            .map((opt) => {
-              let line = `${opt.name}: ${opt.description} ${opt.type}`;
-              if (opt.default) line += ` ${opt.default}`;
-              if (opt.example) line += ` ${opt.example}`;
-              if (opt.source) line += ` ${opt.source}`;
-              return line;
-            })
-            .join("\n");
+          const cols: Column[] = [
+            { key: "#", align: "right", minWidth: 3 },
+            { key: "type", minWidth: 11 },
+            {
+              key: "option",
+              format: (_v, row) => {
+                const r = row as Record<string, string>;
+                const lines = [r.option];
+                if (r.description) lines.push(r.description);
+                if (r.default) lines.push(`default: ${r.default}`);
+                if (r.example) lines.push(`example: ${r.example}`);
+                return lines.join("\n");
+              },
+            },
+          ];
+          const rows = res.map((opt, i) => ({
+            "#": String(i + 1),
+            type: opt.type || "",
+            option: opt.name || "",
+            description: opt.description || "",
+            default: opt.default || "",
+            example: opt.example || "",
+          }));
+          return [dotJoin(countLabel(res.length, "result")), "", table(cols, rows)].join(
+            "\n",
+          );
         },
         query,
       );
@@ -558,14 +601,34 @@ Returns Home Manager configuration options.`,
             declarations: opt.declarations.map((d) => d.url).join(", "),
           }),
         (res) => {
-          return res
-            .map((opt) => {
-              let line = `${opt.title}: ${opt.description} ${opt.type} ${opt.default}`;
-              if (opt.example) line += ` ${opt.example}`;
-              if (opt.declarations) line += ` ${opt.declarations}`;
-              return line;
-            })
-            .join("\n");
+          const cols: Column[] = [
+            { key: "#", align: "right", minWidth: 3 },
+            { key: "type", minWidth: 11 },
+            {
+              key: "option",
+              format: (_v, row) => {
+                const r = row as Record<string, string>;
+                const lines = [r.option];
+                if (r.description) lines.push(r.description);
+                if (r.default) lines.push(`default: ${r.default}`);
+                if (r.example) lines.push(`example: ${r.example}`);
+                if (r.declarations) lines.push(r.declarations);
+                return lines.join("\n");
+              },
+            },
+          ];
+          const rows = res.map((opt, i) => ({
+            "#": String(i + 1),
+            type: opt.type || "",
+            option: opt.title || "",
+            description: opt.description || "",
+            default: opt.default || "",
+            example: opt.example || "",
+            declarations: opt.declarations ?? "",
+          }));
+          return [dotJoin(countLabel(res.length, "result")), "", table(cols, rows)].join(
+            "\n",
+          );
         },
         query,
       );

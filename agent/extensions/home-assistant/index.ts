@@ -5,16 +5,15 @@
  *   /home-assistant - Interactive setup for URL and token
  *
  * Provides tools:
- *   - ha_list_entities: List all entities (optionally filtered by domain/pattern)
- *   - ha_get_state: Get state of a specific entity
- *   - ha_toggle: Toggle an entity (light, switch, etc.)
- *   - ha_turn_on: Turn on an entity
- *   - ha_turn_off: Turn off an entity
- *   - ha_call_service: Call unknown HA service
+ *   - ha-list-entities: List all entities (optionally filtered by domain/pattern)
+ *   - ha-get-state: Get state of a specific entity
+ *   - ha-toggle: Toggle an entity (light, switch, etc.)
+ *   - ha-turn-on: Turn on an entity
+ *   - ha-turn-off: Turn off an entity
+ *   - ha-call-service: Call unknown HA service
  *
  * Provides commands:
  *   /home-assistant - Configure Home Assistant connection
- *   /ha - Interactive entity browser and toggle UI
  */
 
 import type {
@@ -29,6 +28,8 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import { SELECT_LIST_STYLES } from "../../shared/select-list-styles";
+import { dotJoin, table, detail, stateDot } from "../renderers";
+import type { Column } from "../renderers";
 
 // Types for Home Assistant API responses
 interface HAState {
@@ -166,20 +167,29 @@ function formatState(entity: HAState): string {
     if (unit) stateStr += ` ${unit}`;
   }
 
-  return `${name}: ${stateStr}`;
+  const dot =
+    entity.state === "on" || entity.state === "home"
+      ? stateDot("on")
+      : entity.state === "off" || entity.state === "not_home"
+        ? stateDot("off")
+        : entity.state === "unavailable"
+          ? stateDot("inactive")
+          : "";
+  return `${dot}${dot ? " " : ""}${name}: ${stateStr}`;
 }
 
 // Format entity state details for display
 function formatStateDetails(state: HAState): string {
-  return [
-    `Entity: ${state.entity_id}`,
-    `State: ${state.state}`,
-    `Last changed: ${state.last_changed}`,
-    `Attributes:`,
-    ...Object.entries(state.attributes).map(
-      ([k, v]) => `  ${k}: ${JSON.stringify(v)}`,
-    ),
-  ].join("\n");
+  const fields = [
+    { label: "entity", value: state.entity_id },
+    { label: "state", value: state.state },
+    { label: "last changed", value: state.last_changed },
+    ...Object.entries(state.attributes).map(([k, v]) => ({
+      label: k,
+      value: typeof v === "string" ? v : JSON.stringify(v),
+    })),
+  ];
+  return detail(fields);
 }
 
 // Helper to show a SelectList and return the selected value
@@ -336,7 +346,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
 
   // Tool: List entities
   pi.registerTool({
-    name: "ha_list_entities",
+    name: "ha-list-entities",
     label: "HA List Entities",
     description:
       "List Home Assistant entities. Can filter by domain (e.g., 'light', 'switch', 'sensor') or by a pattern that matches entity_id or friendly_name.",
@@ -394,17 +404,31 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
         filtered.sort((a, b) => a.entity_id.localeCompare(b.entity_id));
 
         // Format output
-        const lines = filtered.map((e) => {
-          const name = e.attributes.friendly_name || e.entity_id;
-          return `- ${e.entity_id} (${name}): ${e.state}`;
-        });
+        const entityCols: Column[] = [
+          {
+            key: "entity",
+            format: (_v, row) => {
+              const r = row as { entity: string; state: string; name: string };
+              const nameStr = r.name !== r.entity ? `\n${r.name}` : "";
+              return `${r.entity} ${r.state}${nameStr}`;
+            },
+          },
+        ];
 
-        const summary = `Found ${filtered.length} entities${params.domain ? ` in domain '${params.domain}'` : ""}${params.pattern ? ` matching '${params.pattern}'` : ""}${params.state ? ` with state '${params.state}'` : ""}`;
+        const entityRows = filtered.map((e) => ({
+          entity: e.entity_id,
+          state: e.state,
+          name: (e.attributes.friendly_name as string) || e.entity_id,
+        }));
+
+        const text = [
+          dotJoin(`${filtered.length} entities`),
+          "",
+          table(entityCols, entityRows),
+        ].join("\n");
 
         return {
-          content: [
-            { type: "text", text: `${summary}\n\n${lines.join("\n")}` },
-          ],
+          content: [{ type: "text", text }],
           details: {
             count: filtered.length,
             entities: filtered.map((e) => e.entity_id),
@@ -416,7 +440,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
     },
 
     renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("ha_list_entities"));
+      let text = theme.fg("toolTitle", theme.bold("ha-list-entities"));
       if (args.domain) text += ` domain=${theme.fg("accent", args.domain)}`;
       if (args.pattern)
         text += ` pattern=${theme.fg("accent", `"${args.pattern}"`)}`;
@@ -427,7 +451,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
 
   // Tool: Get entity state
   pi.registerTool({
-    name: "ha_get_state",
+    name: "ha-get-state",
     label: "HA Get State",
     description:
       "Get the current state and attributes of a specific Home Assistant entity.",
@@ -456,7 +480,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
 
     renderCall(args, theme) {
       return new Text(
-        `${theme.fg("toolTitle", theme.bold("ha_get_state"))} ${theme.fg("accent", args.entity_id)}`,
+        `${theme.fg("toolTitle", theme.bold("ha-get-state"))} ${theme.fg("accent", args.entity_id)}`,
         0,
         0,
       );
@@ -465,7 +489,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
 
   // Tool: Toggle entity
   pi.registerTool({
-    name: "ha_toggle",
+    name: "ha-toggle",
     label: "HA Toggle",
     description:
       "Toggle a Home Assistant entity (works with lights, switches, fans, covers, etc.). If on, turns off. If off, turns on.",
@@ -502,7 +526,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
 
     renderCall(args, theme) {
       return new Text(
-        `${theme.fg("toolTitle", theme.bold("ha_toggle"))} ${theme.fg("warning", args.entity_id)}`,
+        `${theme.fg("toolTitle", theme.bold("ha-toggle"))} ${theme.fg("warning", args.entity_id)}`,
         0,
         0,
       );
@@ -543,7 +567,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
 
   // Tool: Turn on
   pi.registerTool({
-    name: "ha_turn_on",
+    name: "ha-turn-on",
     label: "HA Turn On",
     description:
       "Turn on a Home Assistant entity. Supports optional parameters for lights (brightness, color, etc.).",
@@ -611,7 +635,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
     },
 
     renderCall(args, theme) {
-      let text = `${theme.fg("toolTitle", theme.bold("ha_turn_on"))} ${theme.fg("success", args.entity_id)}`;
+      let text = `${theme.fg("toolTitle", theme.bold("ha-turn-on"))} ${theme.fg("success", args.entity_id)}`;
       if (args.brightness_pct !== undefined)
         text += ` ${theme.fg("muted", `${args.brightness_pct}%`)}`;
       if (args.color_name) text += ` ${theme.fg("muted", args.color_name)}`;
@@ -621,7 +645,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
 
   // Tool: Turn off
   pi.registerTool({
-    name: "ha_turn_off",
+    name: "ha-turn-off",
     label: "HA Turn Off",
     description: "Turn off a Home Assistant entity.",
     parameters: Type.Object({
@@ -647,7 +671,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
 
     renderCall(args, theme) {
       return new Text(
-        `${theme.fg("toolTitle", theme.bold("ha_turn_off"))} ${theme.fg("error", args.entity_id)}`,
+        `${theme.fg("toolTitle", theme.bold("ha-turn-off"))} ${theme.fg("error", args.entity_id)}`,
         0,
         0,
       );
@@ -656,7 +680,7 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
 
   // Tool: Call unknown service
   pi.registerTool({
-    name: "ha_call_service",
+    name: "ha-call-service",
     label: "HA Call Service",
     description:
       "Call unknown Home Assistant service. Use for advanced operations not covered by other tools.",
@@ -703,161 +727,19 @@ export default function homeAssistantExtension(pi: ExtensionAPI) {
     },
 
     renderCall(args, theme) {
-      let text = `${theme.fg("toolTitle", theme.bold("ha_call_service"))} ${theme.fg("accent", `${args.domain}.${args.service}`)}`;
+      let text = `${theme.fg("toolTitle", theme.bold("ha-call-service"))} ${theme.fg("accent", `${args.domain}.${args.service}`)}`;
       if (args.data) text += ` ${theme.fg("dim", JSON.stringify(args.data))}`;
       return new Text(text, 0, 0);
     },
   });
 
   // Command: Interactive entity browser
-  pi.registerCommand("ha", {
-    description: "Interactive Home Assistant entity browser",
-    handler: async (args, ctx) => {
-      const config = getConfig();
-      if (!config) {
-        ctx.ui.notify(
-          "Home Assistant not configured. Run /home-assistant to set up.",
-          "error",
-        );
-        return;
-      }
-
-      try {
-        // Fetch all states
-        const states = await haFetch<HAState[]>("/states");
-
-        // Filter to toggleable domains if no args, otherwise filter by args
-        const toggleableDomains = [
-          "light",
-          "switch",
-          "fan",
-          "cover",
-          "input_boolean",
-          "automation",
-          "script",
-        ];
-        let filtered = states;
-
-        if (args) {
-          // Filter by args (domain or pattern)
-          const query = args.toLowerCase();
-          filtered = states.filter(
-            (e) =>
-              e.entity_id.toLowerCase().includes(query) ||
-              (e.attributes.friendly_name as string | undefined)
-                ?.toLowerCase()
-                .includes(query),
-          );
-        } else {
-          // Only show toggleable entities
-          filtered = states.filter((e) =>
-            toggleableDomains.includes(e.entity_id.split(".")[0]),
-          );
-        }
-
-        // Sort by domain, then name
-        filtered.sort((a, b) => a.entity_id.localeCompare(b.entity_id));
-
-        if (filtered.length === 0) {
-          ctx.ui.notify("No entities found", "warning");
-          return;
-        }
-
-        // Build selection options
-        const options: SelectItem[] = filtered.map((e) => {
-          const name = (e.attributes.friendly_name as string) || e.entity_id;
-          const stateIcon =
-            e.state === "on" ? "●" : e.state === "off" ? "○" : "◌";
-          return {
-            value: e.entity_id,
-            label: `${stateIcon} ${name}`,
-            description: `${e.entity_id} - ${e.state}`,
-          };
-        });
-
-        const selectedEntityId = await showSelectList(ctx, options, 12, 80);
-
-        if (!selectedEntityId) {
-          ctx.ui.notify("Cancelled", "info");
-          return;
-        }
-
-        const entity = filtered.find((e) => e.entity_id === selectedEntityId);
-        if (!entity) {
-          ctx.ui.notify("Entity not found", "error");
-          return;
-        }
-
-        // Offer actions
-        const actionOptions: SelectItem[] = [
-          {
-            value: "toggle",
-            label: "Toggle",
-            description: "Toggle the entity state",
-          },
-          {
-            value: "turn_on",
-            label: "Turn On",
-            description: "Turn the entity on",
-          },
-          {
-            value: "turn_off",
-            label: "Turn Off",
-            description: "Turn the entity off",
-          },
-          {
-            value: "details",
-            label: "Get Details",
-            description: "Show entity details",
-          },
-          { value: "cancel", label: "Cancel", description: "Cancel action" },
-        ];
-
-        const action = await showSelectList(ctx, actionOptions, 6, 60);
-
-        if (!action || action === "cancel") return;
-
-        const domain = entity.entity_id.split(".")[0];
-
-        if (action === "toggle") {
-          // Toggle
-          await haFetch(`/services/${domain}/toggle`, {
-            method: "POST",
-            body: { entity_id: entity.entity_id },
-          });
-          const newState = await haFetch<HAState>(
-            `/states/${entity.entity_id}`,
-          );
-          ctx.ui.notify(`${entity.entity_id} → ${newState.state}`, "info");
-        } else if (action === "turn_on") {
-          // Turn On
-          await haFetch(`/services/${domain}/turn_on`, {
-            method: "POST",
-            body: { entity_id: entity.entity_id },
-          });
-          ctx.ui.notify(`${entity.entity_id} turned on`, "info");
-        } else if (action === "turn_off") {
-          // Turn Off
-          await haFetch(`/services/${domain}/turn_off`, {
-            method: "POST",
-            body: { entity_id: entity.entity_id },
-          });
-          ctx.ui.notify(`${entity.entity_id} turned off`, "info");
-        } else if (action === "details") {
-          // Get Details - show in editor for LLM context
-          const state = await haFetch<HAState>(`/states/${entity.entity_id}`);
-          ctx.ui.setEditorText(formatStateDetails(state));
-        }
-      } catch (error) {
-        ctx.ui.notify(`Error: ${(error as Error).message}`, "error");
-      }
-    },
-  });
 }
 
 // Export constants and functions for testing
 export { AUTH_FILE };
 export { formatState };
+export { formatStateDetails };
 export { getConfig };
 export { saveConfig };
 export { deleteConfig };

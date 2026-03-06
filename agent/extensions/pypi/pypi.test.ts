@@ -7,11 +7,17 @@ import setupPyPIExtension from "./index";
 import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 
+// eslint-disable-next-line no-control-regex
+const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
+
+import { disableThrottle } from "../../shared/throttle";
+
 describe("PyPI Extension", () => {
   let mockPi: MockExtensionAPI;
   let originalFetch: typeof globalThis.fetch;
 
   beforeEach(() => {
+    disableThrottle();
     mockPi = createMockExtensionAPI();
     originalFetch = globalThis.fetch;
     setupPyPIExtension(mockPi as ExtensionAPI);
@@ -94,30 +100,11 @@ describe("PyPI Extension", () => {
         );
       });
 
-      it("then it should return packages in compact format", () => {
-        expect((result.content[0] as TextContent).text).toBe(
-          "requests 2.31.0: Python HTTP for Humans.\nrequests-oauthlib 1.3.1: OAuthlib authentication support for Requests.",
-        );
+      it("then it should return formatted search results", () => {
+        expect(
+          stripAnsi((result.content[0] as TextContent).text),
+        ).toMatchSnapshot();
         expect(result.details.query).toBe("requests");
-      });
-
-      it("then it should include the package name", () => {
-        expect((result.content[0] as TextContent).text).toContain("requests");
-      });
-
-      it("then it should include the package description", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "Python HTTP for Humans.",
-        );
-      });
-
-      it("then it should include multiple packages in results", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "requests-oauthlib",
-        );
-      });
-
-      it("then it should include the total count", () => {
         expect(result.details.total).toBe(2);
       });
     });
@@ -148,14 +135,10 @@ describe("PyPI Extension", () => {
       });
 
       it("then it should fallback to direct package lookup", () => {
-        expect((result.content[0] as TextContent).text).toBe(
-          "requests 2.31.0: Python HTTP for Humans.",
-        );
+        expect(
+          stripAnsi((result.content[0] as TextContent).text),
+        ).toMatchSnapshot();
         expect(result.details.total).toBe(1);
-      });
-
-      it("then it should include the package name from fallback", () => {
-        expect((result.content[0] as TextContent).text).toContain("requests");
       });
     });
 
@@ -186,7 +169,7 @@ describe("PyPI Extension", () => {
           query: "nonexistent-pkg-xyz-123",
         });
 
-        expect((result.content[0] as TextContent).text).toContain(
+        expect((result.content[0] as TextContent).text).toBe(
           "No packages found.",
         );
         expect(result.details.total).toBe(0);
@@ -240,41 +223,11 @@ describe("PyPI Extension", () => {
         );
       });
 
-      it("then it should return package in compact format", () => {
-        expect((result.content[0] as TextContent).text).toBe(
-          "requests 2.31.0: Python HTTP for Humans. [Kenneth Reitz] Apache 2.0 https://requests.readthedocs.io/",
-        );
+      it("then it should return formatted package info", () => {
+        expect(
+          stripAnsi((result.content[0] as TextContent).text),
+        ).toMatchSnapshot();
         expect(result.details.package).toBe("requests");
-      });
-
-      it("then it should include the package name", () => {
-        expect((result.content[0] as TextContent).text).toContain("requests");
-      });
-
-      it("then it should include the package version", () => {
-        expect((result.content[0] as TextContent).text).toContain("2.31.0");
-      });
-
-      it("then it should include the package summary", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "Python HTTP for Humans.",
-        );
-      });
-
-      it("then it should include the author name", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "Kenneth Reitz",
-        );
-      });
-
-      it("then it should include the license information", () => {
-        expect((result.content[0] as TextContent).text).toContain("Apache 2.0");
-      });
-
-      it("then it should include the homepage URL", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "https://requests.readthedocs.io/",
-        );
       });
     });
 
@@ -302,7 +255,9 @@ describe("PyPI Extension", () => {
           package: "big-package",
         });
 
-        expect((result.content[0] as TextContent).text).toContain("+10");
+        expect(
+          stripAnsi((result.content[0] as TextContent).text),
+        ).toMatchSnapshot();
       });
     });
 
@@ -325,8 +280,8 @@ describe("PyPI Extension", () => {
       });
 
       it("then it should return not found message", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "not found on PyPI",
+        expect((result.content[0] as TextContent).text).toBe(
+          'Package "nonexistent-pkg-xyz-123" not found on PyPI.',
         );
         expect(result.details.package).toBe("nonexistent-pkg-xyz-123");
       });

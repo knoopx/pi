@@ -215,9 +215,9 @@ describe("Weather Extension", () => {
         context,
       );
 
-      expect((result.content[0] as TextContent).text).toContain("☀️");
-      expect((result.content[0] as TextContent).text).toContain("20°C");
-      expect((result.content[0] as TextContent).text).toContain("Clear sky");
+      expect((result.content[0] as TextContent).text).toBe(
+        "0.000, 0.000 • day\n\n☀️ Clear sky · 20°C",
+      );
     });
 
     it("then execute handles errors gracefully", async () => {
@@ -269,7 +269,9 @@ describe("Weather Extension", () => {
         context,
       );
 
-      expect((result.content[0] as TextContent).text).toContain("68°F");
+      expect((result.content[0] as TextContent).text).toBe(
+        "0.000, 0.000 • day\n\n☀️ Clear sky · 68°F",
+      );
       expect(result.details?.weather.unit).toBe("F");
     });
 

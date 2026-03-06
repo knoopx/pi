@@ -6,6 +6,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fetchStockData, formatStockSummary, type StockData } from "./index";
 
+// eslint-disable-next-line no-control-regex
+const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
+
+import { disableThrottle } from "../../shared/throttle";
+
 type StockRange =
   | "1d"
   | "1w"
@@ -21,6 +26,10 @@ type StockRange =
 // Mock the global fetch function
 
 describe("Stocks Extension", () => {
+  beforeEach(() => {
+    disableThrottle();
+  });
+
   // ============================================
   // Stock Data Fetching
   // ============================================
@@ -918,7 +927,7 @@ describe("Stocks Extension", () => {
           };
 
           const result = formatStockSummary(data as StockData);
-          expect(result).toBe("📊 150.50 (+7.31%)");
+          expect(stripAnsi(result)).toBe("150.50 ▲ +7.31%");
         });
       });
 
@@ -932,7 +941,7 @@ describe("Stocks Extension", () => {
           };
 
           const result = formatStockSummary(data as StockData);
-          expect(result).toBe("📊 95.00 (-5.00%)");
+          expect(stripAnsi(result)).toBe("95.00 ▼ -5.00%");
         });
       });
 
@@ -946,7 +955,7 @@ describe("Stocks Extension", () => {
           };
 
           const result = formatStockSummary(data as StockData);
-          expect(result).toBe("📊 100.00 (+0.00%)");
+          expect(stripAnsi(result)).toBe("100.00 ▲ +0.00%");
         });
       });
 
@@ -960,7 +969,7 @@ describe("Stocks Extension", () => {
           };
 
           const result = formatStockSummary(data as StockData);
-          expect(result).toBe("📊 1000.00 (+99990.00%)");
+          expect(stripAnsi(result)).toBe("1000.00 ▲ +99990.00%");
         });
       });
 
@@ -974,7 +983,7 @@ describe("Stocks Extension", () => {
           };
 
           const result = formatStockSummary(data as StockData);
-          expect(result).toBe("📊 0.50 (-99.50%)");
+          expect(stripAnsi(result)).toBe("0.50 ▼ -99.50%");
         });
       });
 
@@ -988,7 +997,7 @@ describe("Stocks Extension", () => {
           };
 
           const result = formatStockSummary(data as StockData);
-          expect(result).toBe("📊 123.46 (+0.94%)");
+          expect(stripAnsi(result)).toBe("123.46 ▲ +0.94%");
         });
       });
 
@@ -1002,7 +1011,7 @@ describe("Stocks Extension", () => {
           };
 
           const result = formatStockSummary(data as StockData);
-          expect(result).toBe("📊 100.00 (+0.00%)");
+          expect(stripAnsi(result)).toBe("100.00 ▲ +0.00%");
         });
       });
     });

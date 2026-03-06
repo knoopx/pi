@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`rodalies output snapshots > formatDeparturesOutput > renders departures table 1`] = `
+"3 departure(s)
+
+departs │ line │ destination                 │      status
+────────┼──────┼─────────────────────────────┼────────────
+  08:15 │ R4   │ Barcelona-Passeig de Gràcia │   ● on time
+  08:32 │ R4   │ Manresa                     │     ▲ +5min
+  08:45 │ R2   │ Sant Vicenç de Calders      │ ✗ cancelled"
+`;

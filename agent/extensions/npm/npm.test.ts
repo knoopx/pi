@@ -7,6 +7,11 @@ import setupNpmExtension from "./index";
 import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 
+// eslint-disable-next-line no-control-regex
+const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
+
+import { disableThrottle } from "../../shared/throttle";
+
 // ============================================
 // Extension Registration
 // ============================================
@@ -15,6 +20,7 @@ describe("NPM Extension", () => {
   let originalFetch: typeof globalThis.fetch;
 
   beforeEach(() => {
+    disableThrottle();
     mockPi = createMockExtensionAPI();
     originalFetch = globalThis.fetch;
     setupNpmExtension(mockPi as ExtensionAPI);
@@ -98,35 +104,12 @@ describe("NPM Extension", () => {
       it("then it should return formatted search results", () => {
         expect(result.content).toHaveLength(1);
         expect(result.content[0].type).toBe("text");
-        expect((result.content[0] as TextContent).text).toBe(
-          "lodash 4.17.21: A modern JavaScript utility library [John-David Dalton] util,functional,server,client,browser",
-        );
+        expect(
+          stripAnsi((result.content[0] as TextContent).text),
+        ).toMatchSnapshot();
         expect(result.details.query).toBe("lodash");
         expect(result.details.count).toBe(1);
-      });
-
-      it("then it should include the package name and version", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "lodash 4.17.21",
-        );
-      });
-
-      it("then it should include the package description", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "A modern JavaScript utility library",
-        );
-      });
-
-      it("then it should include the author name", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "John-David Dalton",
-        );
-      });
-
-      it("then it should include the package keywords", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "util,functional,server,client,browser",
-        );
+        expect(result.details.packages[0].author).toBe("John-David Dalton");
       });
     });
 
@@ -143,9 +126,8 @@ describe("NPM Extension", () => {
           query: "test",
         });
 
-        expect(mockFetch).toHaveBeenCalledWith(
-          expect.stringContaining("size=10"),
-        );
+        const calledUrl = mockFetch.mock.calls[0]?.[0] as string;
+        expect(calledUrl).toContain("size=10");
         expect((result.content[0] as TextContent).text).toBe(
           "No packages found.",
         );
@@ -271,44 +253,12 @@ describe("NPM Extension", () => {
       });
 
       it("then it should return formatted package info", () => {
-        expect((result.content[0] as TextContent).text).toBe(
-          "express 4.18.2: Fast, unopinionated, minimalist web framework [TJ Holowaychuk] MIT http://expressjs.com/ git+https://github.com/expressjs/express.git express, framework, web, http 2 1",
-        );
+        expect(
+          stripAnsi((result.content[0] as TextContent).text),
+        ).toMatchSnapshot();
         expect(result.details.package).toBe("express");
         expect((result.details.info as any).name).toBe("express");
         expect((result.details.info as any).license).toBe("MIT");
-      });
-
-      it("then it should include the package version", () => {
-        expect((result.content[0] as TextContent).text).toContain("4.18.2");
-      });
-
-      it("then it should include the package description", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "Fast, unopinionated, minimalist web framework",
-        );
-      });
-
-      it("then it should include the author name", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "TJ Holowaychuk",
-        );
-      });
-
-      it("then it should include the maintainers count", () => {
-        expect((result.content[0] as TextContent).text).toContain("2");
-      });
-
-      it("then it should include the homepage URL", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "http://expressjs.com/",
-        );
-      });
-
-      it("then it should include the repository URL", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "git+https://github.com/expressjs/express.git",
-        );
       });
     });
 
@@ -326,7 +276,7 @@ describe("NPM Extension", () => {
           package: "nonexistent-pkg-xyz-123",
         });
 
-        expect((result.content[0] as TextContent).text).toContain(
+        expect((result.content[0] as TextContent).text).toBe(
           'Package "nonexistent-pkg-xyz-123" not found.',
         );
         expect(result.details.status).toBe(404);
@@ -412,27 +362,11 @@ describe("NPM Extension", () => {
       });
 
       it("then it should return formatted versions", () => {
-        expect((result.content[0] as TextContent).text).toBe(
-          "lodash 3 versions latest:4.17.21,beta:4.17.21-rc.1 4.17.21,4.17.20,4.17.21-rc.1",
-        );
+        expect(
+          stripAnsi((result.content[0] as TextContent).text),
+        ).toMatchSnapshot();
         expect(result.details.package).toBe("lodash");
         expect(result.details.count).toBe(3);
-      });
-
-      it("then it should include the total count of versions", () => {
-        expect((result.content[0] as TextContent).text).toContain("3 versions");
-      });
-
-      it("then it should list all available versions", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "4.17.21,4.17.20,4.17.21-rc.1",
-        );
-      });
-
-      it("then it should include dist-tags information", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "latest:4.17.21,beta:4.17.21-rc.1",
-        );
       });
     });
 
@@ -450,7 +384,7 @@ describe("NPM Extension", () => {
           package: "nonexistent-pkg-xyz-123",
         });
 
-        expect((result.content[0] as TextContent).text).toContain(
+        expect((result.content[0] as TextContent).text).toBe(
           'Package "nonexistent-pkg-xyz-123" not found.',
         );
       });

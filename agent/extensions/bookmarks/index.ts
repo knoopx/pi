@@ -8,6 +8,8 @@ import { URL } from "url";
 import { Type, type Static } from "@sinclair/typebox";
 import type { Database } from "better-sqlite3";
 import { fuzzyFilter } from "../../shared/fuzzy";
+import { dotJoin, countLabel, table } from "../renderers";
+import type { Column } from "../renderers";
 
 // Parameter schemas for bookmark tools
 const SearchBookmarksParams = Type.Object({
@@ -94,7 +96,7 @@ export function extractDomain(url: string): string {
 /**
  * Format Firefox timestamp (microseconds) as YYYY-MM-DD
  */
-function formatFirefoxDate(timestamp: number): string {
+export function formatFirefoxDate(timestamp: number): string {
   const date = new Date(timestamp / 1000); // Firefox uses microseconds
   return date.toISOString().split("T")[0];
 }
@@ -254,34 +256,45 @@ Returns a list of matching bookmarks with details.`,
         try {
           const bookmarks = await getBookmarksFromDB(query);
 
-          // Build content
-          const content = bookmarks
-            .slice(0, limit) // Use the limit parameter
-            .map((bookmark) => {
-              const dateStr = formatFirefoxDate(bookmark.dateAdded);
-              let line = `• ${bookmark.title} - ${bookmark.url}`;
-              if (bookmark.domain) {
-                line += ` (${bookmark.domain})`;
-              }
-              if (bookmark.similarity !== undefined) {
-                line += ` [Similarity: ${(bookmark.similarity * 100).toFixed(1)}%]`;
-              }
-              line += ` [Added: ${dateStr}]`;
-              return line;
-            })
-            .join("\n");
+          const shown = bookmarks.slice(0, limit);
+
+          if (shown.length === 0) {
+            return {
+              content: [{ type: "text", text: "No bookmarks found" }],
+              details: { query, totalFound: 0 },
+            };
+          }
+
+          const header =
+            bookmarks.length > limit
+              ? `${countLabel(shown.length, "result")} (of ${bookmarks.length})`
+              : countLabel(shown.length, "result");
+          const headerLine = dotJoin(header);
+
+          const cols: Column[] = [
+            { key: "#", align: "right", minWidth: 3 },
+            { key: "added", minWidth: 10 },
+            {
+              key: "title",
+              format: (_v, row) => {
+                const r = row as { title: string; url: string };
+                return `${r.title}\n${r.url}`;
+              },
+            },
+          ];
+
+          const rows = shown.map((bm, i) => ({
+            "#": String(i + 1),
+            added: formatFirefoxDate(bm.dateAdded),
+            title: bm.title,
+            url: bm.url,
+          }));
+
+          const text = [headerLine, "", table(cols, rows)].join("\n");
 
           return {
-            content: [
-              {
-                type: "text",
-                text: `${content || "No bookmarks found"}\n\n${bookmarks.length} bookmark(s)${bookmarks.length > limit ? ` (showing first ${limit})` : ""}`,
-              },
-            ],
-            details: {
-              query,
-              totalFound: bookmarks.length,
-            },
+            content: [{ type: "text", text }],
+            details: { query, totalFound: bookmarks.length },
           };
         } catch (dbError) {
           throw new Error(
@@ -320,34 +333,47 @@ Returns a list of matching history entries with details.`,
         try {
           const history = await getHistoryFromDB(query);
 
-          // Build content
-          const content = history
-            .slice(0, limit)
-            .map((entry) => {
-              const dateStr = formatFirefoxDate(entry.lastVisit);
-              let line = `• ${entry.title} - ${entry.url}`;
-              if (entry.domain) {
-                line += ` (${entry.domain})`;
-              }
-              if (entry.similarity !== undefined) {
-                line += ` [Similarity: ${(entry.similarity * 100).toFixed(1)}%]`;
-              }
-              line += ` [Visited: ${dateStr}] [Count: ${entry.visitCount}]`;
-              return line;
-            })
-            .join("\n");
+          const shown = history.slice(0, limit);
+
+          if (shown.length === 0) {
+            return {
+              content: [{ type: "text", text: "No history found" }],
+              details: { query, totalFound: 0 },
+            };
+          }
+
+          const header =
+            history.length > limit
+              ? `${countLabel(shown.length, "result")} (of ${history.length})`
+              : countLabel(shown.length, "result");
+          const headerLine = dotJoin(header);
+
+          const cols: Column[] = [
+            { key: "#", align: "right", minWidth: 3 },
+            { key: "󰈈", align: "right", minWidth: 6 },
+            { key: "last visit", minWidth: 10 },
+            {
+              key: "title",
+              format: (_v, row) => {
+                const r = row as { title: string; url: string };
+                return `${r.title}\n${r.url}`;
+              },
+            },
+          ];
+
+          const rows = shown.map((entry, i) => ({
+            "#": String(i + 1),
+            "󰈈": String(entry.visitCount),
+            "last visit": formatFirefoxDate(entry.lastVisit),
+            title: entry.title,
+            url: entry.url,
+          }));
+
+          const text = [headerLine, "", table(cols, rows)].join("\n");
 
           return {
-            content: [
-              {
-                type: "text",
-                text: `${content || "No history found"}\n\n${history.length} history entr(y/ies)${history.length > limit ? ` (showing first ${limit})` : ""}`,
-              },
-            ],
-            details: {
-              query,
-              totalFound: history.length,
-            },
+            content: [{ type: "text", text }],
+            details: { query, totalFound: history.length },
           };
         } catch (dbError) {
           throw new Error(

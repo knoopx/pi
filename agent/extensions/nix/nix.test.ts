@@ -6,6 +6,11 @@ import setupNixExtension from "./index";
 import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 
+// eslint-disable-next-line no-control-regex
+const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
+
+import { disableThrottle } from "../../shared/throttle";
+
 // ============================================
 // Extension Registration
 // ============================================
@@ -14,6 +19,7 @@ describe("Nix Extension", () => {
   let originalFetch: typeof globalThis.fetch;
 
   beforeEach(() => {
+    disableThrottle();
     mockPi = createMockExtensionAPI();
     originalFetch = globalThis.fetch;
     setupNixExtension(mockPi as unknown as ExtensionAPI);
@@ -101,35 +107,11 @@ describe("Nix Extension", () => {
       });
 
       it("then it should return formatted package results", () => {
-        expect((result.content[0] as TextContent).text).toBe(
-          "hello hello 2.12.1: A simple hello world program [John Doe] GNU Hello prints a friendly greeting. https://www.gnu.org/software/hello/ GPL-3.0-or-later",
-        );
+        expect(
+          stripAnsi((result.content[0] as TextContent).text),
+        ).toMatchSnapshot();
         expect(result.details.query).toBe("hello");
         expect(result.details.totalFound).toBe(1);
-      });
-
-      it("then it should include the package name", () => {
-        expect((result.content[0] as TextContent).text).toContain("hello");
-      });
-
-      it("then it should include the package version", () => {
-        expect((result.content[0] as TextContent).text).toContain("2.12.1");
-      });
-
-      it("then it should include the package description", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "A simple hello world program",
-        );
-      });
-
-      it("then it should include the maintainer name", () => {
-        expect((result.content[0] as TextContent).text).toContain("John Doe");
-      });
-
-      it("then it should include the license information", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "GPL-3.0-or-later",
-        );
       });
     });
 
@@ -173,8 +155,8 @@ describe("Nix Extension", () => {
           {},
         );
 
-        expect((result.content[0] as TextContent).text).toBe(
-          "Error: Search request failed: undefined",
+        expect((result.content[0] as TextContent).text).toMatch(
+          /^Error: Search request failed/,
         );
       });
     });
@@ -230,35 +212,11 @@ describe("Nix Extension", () => {
       });
 
       it("then it should return formatted option results", () => {
-        expect((result.content[0] as TextContent).text).toBe(
-          "services.httpd.enable: Whether to enable the Apache HTTP Server. boolean false true",
-        );
+        expect(
+          stripAnsi((result.content[0] as TextContent).text),
+        ).toMatchSnapshot();
         expect(result.details.query).toBe("httpd");
         expect(result.details.totalFound).toBe(1);
-      });
-
-      it("then it should include the option name", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "services.httpd.enable",
-        );
-      });
-
-      it("then it should include the option description", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "Whether to enable the Apache HTTP Server.",
-        );
-      });
-
-      it("then it should include the option type", () => {
-        expect((result.content[0] as TextContent).text).toContain("boolean");
-      });
-
-      it("then it should include the default value", () => {
-        expect((result.content[0] as TextContent).text).toContain("false");
-      });
-
-      it("then it should include the example value", () => {
-        expect((result.content[0] as TextContent).text).toContain("true");
       });
     });
   });
@@ -332,41 +290,11 @@ describe("Nix Extension", () => {
       });
 
       it("then it should return formatted option results", () => {
-        expect((result.content[0] as TextContent).text).toBe(
-          "programs.git.enable: Whether to enable Git. boolean false true https://github.com/nix-community/home-manager/blob/master/modules/programs/git.nix",
-        );
+        expect(
+          stripAnsi((result.content[0] as TextContent).text),
+        ).toMatchSnapshot();
         expect(result.details.query).toBe("git");
         expect(result.details.totalFound).toBe(1);
-      });
-
-      it("then it should include the option title", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "programs.git.enable",
-        );
-      });
-
-      it("then it should include the option description", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "Whether to enable Git.",
-        );
-      });
-
-      it("then it should include the option type", () => {
-        expect((result.content[0] as TextContent).text).toContain("boolean");
-      });
-
-      it("then it should include the default value", () => {
-        expect((result.content[0] as TextContent).text).toContain("false");
-      });
-
-      it("then it should include the example value", () => {
-        expect((result.content[0] as TextContent).text).toContain("true");
-      });
-
-      it("then it should include the declaration URL", () => {
-        expect((result.content[0] as TextContent).text).toContain(
-          "https://github.com/nix-community/home-manager/blob/master/modules/programs/git.nix",
-        );
       });
     });
   });

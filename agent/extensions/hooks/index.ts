@@ -509,7 +509,7 @@ function sendHookResults(pi: ExtensionAPI, results: HookResult[]): void {
     lines.push(pc.bold(pc.cyan(`[${group}]`)));
     for (const r of hooks) {
       const icon = r.success ? pc.green("✓") : pc.red("✗");
-      const cmd = r.success ? pc.dim(r.command) : pc.yellow(r.command);
+      const cmd = r.success ? r.command : pc.yellow(r.command);
       lines.push(`${icon} ${cmd}`);
 
       // Show output only on failure (stderr preferred, fallback to stdout)

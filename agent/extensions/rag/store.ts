@@ -12,7 +12,7 @@ import path from "node:path";
 const CACHE_DIR = path.join(homedir(), ".cache", "pi-rag");
 const STORE_FILE = path.join(CACHE_DIR, "store.json");
 
-export interface IndexedChunk extends MarkdownChunk {
+interface IndexedChunk extends MarkdownChunk {
   embedding: number[];
 }
 

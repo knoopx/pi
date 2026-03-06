@@ -8,6 +8,11 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
 import { textResult } from "../../shared/tool-utils";
+import { dotJoin, countLabel, table } from "../renderers";
+import type { Column } from "../renderers";
+import { acquireSlot } from "../../shared/throttle";
+
+const DDG_HOST = "duckduckgo.com";
 
 // Define types
 interface SearchResult {
@@ -16,6 +21,44 @@ interface SearchResult {
   description: string;
   source: string;
   engine: string;
+}
+
+function stripHtml(text: string): string {
+  const $ = cheerio.load(`<div>${text}</div>`);
+  return $("div").text();
+}
+
+function singleLine(text: string): string {
+  return stripHtml(text).replace(/\s+/g, " ").trim();
+}
+
+const searchCols: Column[] = [
+  { key: "#", align: "right", minWidth: 3 },
+  {
+    key: "title",
+    format: (_v, row) => {
+      const r = row as { title: string; url: string; description: string };
+      const lines = [r.title];
+      if (r.description) lines.push(r.description);
+      lines.push(r.url);
+      return lines.join("\n");
+    },
+  },
+];
+
+function formatSearchOutput(query: string, results: SearchResult[]): string {
+  const rows = results.map((r, i) => ({
+    "#": String(i + 1),
+    title: singleLine(r.title) || "(untitled)",
+    url: r.url,
+    description: singleLine(r.description),
+  }));
+
+  return [
+    dotJoin(countLabel(results.length, "result")),
+    "",
+    table(searchCols, rows),
+  ].join("\n");
 }
 
 // Parameter schema
@@ -96,6 +139,7 @@ async function searchDuckDuckGoPreloadUrl(
     };
 
     const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&t=h_&ia=web`;
+    await acquireSlot(DDG_HOST);
     const response = await axios.get(searchUrl, requestOptions);
 
     let basePreloadUrl = "";
@@ -150,6 +194,7 @@ async function searchDuckDuckGoPreloadUrl(
       const currentPageUrl = preloadUrlObj.toString();
 
       // Request search results using current page URL
+      await acquireSlot(DDG_HOST);
       const dataResponse = await axios.get(currentPageUrl, {
         ...requestOptions,
         headers: {
@@ -293,6 +338,7 @@ async function searchDuckDuckGoHtml(
   };
 
   try {
+    await acquireSlot(DDG_HOST);
     let response = await axios.post(
       requestUrl,
       new URLSearchParams({ q: query }).toString(),
@@ -311,6 +357,7 @@ async function searchDuckDuckGoHtml(
     while (results.length < maxResults && items.length > 0) {
       offset += items.length;
 
+      await acquireSlot(DDG_HOST);
       response = await axios.post(
         requestUrl,
         new URLSearchParams({
@@ -365,10 +412,7 @@ Returns search results with titles, URLs, and descriptions.`,
         return textResult("No results found.", { query, limit });
       }
 
-      const text = results
-        .map((r) => `${r.title}\n${r.url}\n${r.description}\n`)
-        .join("\n");
-
+      const text = formatSearchOutput(query, results);
       return textResult(text, { query, limit, results });
     },
   });

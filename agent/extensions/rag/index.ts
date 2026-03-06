@@ -77,24 +77,19 @@ function formatSearchResults(results: SearchResult[]): string {
   return results
     .map((r, i) => {
       const lines = [
-        `## Result ${i + 1} (${(r.similarity * 100).toFixed(1)}% match)`,
-        `**File:** ${r.chunk.filePath}`,
+        `${i + 1}. ${r.chunk.filePath} (${(r.similarity * 100).toFixed(0)}%)`,
       ];
 
       if (r.chunk.heading) {
-        lines.push(`**Section:** ${r.chunk.heading}`);
+        lines.push(`   § ${r.chunk.heading}`);
       }
 
       if (r.chunk.startLine !== undefined) {
         const lineInfo =
           r.chunk.endLine !== undefined
-            ? `${r.chunk.startLine}-${r.chunk.endLine}`
-            : `${r.chunk.startLine}`;
-        lines.push(`**Lines:** ${lineInfo}`);
-      }
-
-      if (r.chunk.codeLanguage) {
-        lines.push(`**Language:** ${r.chunk.codeLanguage}`);
+            ? `lines ${r.chunk.startLine}–${r.chunk.endLine}`
+            : `line ${r.chunk.startLine}`;
+        lines.push(`   ${lineInfo}`);
       }
 
       lines.push("");

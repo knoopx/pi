@@ -7,6 +7,8 @@ import type {
 import { Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
 import { renderTextToolResult } from "../../shared/render-utils";
+import { dotJoin, sectionDivider, table } from "../renderers";
+import type { Column } from "../renderers";
 import { fetchWeather } from "./api";
 import {
   createWeatherErrorResult,
@@ -14,6 +16,54 @@ import {
   formatHourlySummary,
 } from "./emoji";
 import type { WeatherInfo, WeatherUnit } from "./types";
+
+function formatWeatherOutput(info: WeatherInfo): string {
+  const location = `${info.latitude.toFixed(3)}, ${info.longitude.toFixed(3)}`;
+  const dayNight = info.isDay ? "day" : "night";
+
+  const lines: string[] = [
+    dotJoin(location, dayNight),
+    "",
+    `${info.icon} ${info.description} · ${info.temperature}°${info.unit}`,
+  ];
+
+  if (info.moonPhase) {
+    lines.push(`${info.moonPhase.icon} ${info.moonPhase.name}`);
+  }
+
+  if (info.hourly.length > 0) {
+    lines.push("");
+    lines.push(sectionDivider("Forecast"));
+
+    const forecastCols: Column[] = [
+      {
+        key: "time",
+        align: "right",
+      },
+      {
+        key: "weather",
+      },
+      {
+        key: "temp",
+        align: "right",
+      },
+    ];
+
+    const forecastRows = info.hourly.map((entry) => ({
+      time: new Date(entry.time).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }),
+      weather: `${entry.icon} ${entry.description}`,
+      temp: `${entry.temperature}°${info.unit}`,
+    }));
+
+    lines.push(table(forecastCols, forecastRows));
+  }
+
+  return lines.join("\n");
+}
 
 export default function weatherExtension(pi: ExtensionAPI) {
   let cached: { key: string; info: WeatherInfo; timestamp: number } | null =
@@ -68,12 +118,9 @@ export default function weatherExtension(pi: ExtensionAPI) {
           params.longitude,
           unit,
         );
-        const summary = formatWeatherSummary(info);
-        const hourly = formatHourlySummary(info);
-        const text = hourly ? `${summary}\n${hourly}` : summary;
 
         return {
-          content: [{ type: "text", text }],
+          content: [{ type: "text", text: formatWeatherOutput(info) }],
           details: { weather: info },
         } as AgentToolResult<{ weather: WeatherInfo; error?: string }>;
       } catch (error) {

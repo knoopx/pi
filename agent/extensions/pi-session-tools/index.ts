@@ -12,6 +12,14 @@ import { homedir } from "node:os";
 import { Text } from "@mariozechner/pi-tui";
 import { renderTextToolResult } from "../../shared/render-utils";
 import { fuzzyFilter } from "../../shared/fuzzy";
+import {
+  dotJoin,
+  sectionDivider,
+  threadSeparator,
+  table,
+  passFail,
+} from "../renderers";
+import type { Column } from "../renderers";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 200;
@@ -462,24 +470,6 @@ async function resolveProjectForTool(
   return resolveProject(ctx, projectArg);
 }
 
-function buildListResponseText(options: {
-  lines: string[];
-  emptyText: string;
-  totalCount: number;
-  shownCount: number;
-  summaryLabel: string;
-}): string {
-  const { lines, emptyText, totalCount, shownCount, summaryLabel } = options;
-
-  if (lines.length === 0) {
-    return emptyText;
-  }
-
-  const suffix =
-    totalCount > shownCount ? ` (showing first ${shownCount})` : "";
-  return `${lines.join("\n")}\n\n${totalCount} ${summaryLabel}${suffix}`;
-}
-
 function renderToolCallLabel(
   theme: Theme,
   toolName: string,
@@ -491,7 +481,7 @@ function renderToolCallLabel(
       ? rawValue
       : fallbackValue;
   return new Text(
-    `${theme.fg("toolTitle", theme.bold(toolName))} ${theme.fg("dim", value)}`,
+    `${theme.fg("toolTitle", toolName)} ${theme.fg("dim", value)}`,
     0,
     0,
   );
@@ -816,23 +806,44 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
 
         const projects = filtered.slice(0, limit);
 
-        const lines = projects.map((project) => {
-          const latest = project.latestSessionIso
-            ? new Date(project.latestSessionIso).toLocaleDateString()
-            : "never";
+        const projCols: Column[] = [
+          { key: "sessions", align: "right", minWidth: 4 },
+          { key: "size", align: "right", minWidth: 7 },
+          { key: "latest", minWidth: 10 },
+          {
+            key: "project",
+            format: (_v, row) => {
+              const r = row as Record<string, string>;
+              return r.cwd !== r.project ? `${r.project}\n${r.cwd}` : r.project;
+            },
+          },
+        ];
 
-          const created = new Date(project.createdIso).toLocaleDateString();
+        const projRows = projects.map((p) => ({
+          sessions: String(p.sessionCount),
+          size: formatBytes(p.totalSizeBytes),
+          latest: p.latestSessionIso
+            ? new Date(p.latestSessionIso).toLocaleDateString()
+            : "never",
+          project: p.displayPath,
+          cwd: p.cwdPath,
+        }));
 
-          return `• ${project.displayPath} | cwd=${project.cwdPath} | sessions=${project.sessionCount} | size=${formatBytes(project.totalSizeBytes)} | created=${created} | latest=${latest}`;
-        });
+        if (projects.length === 0) {
+          return textResult("No session projects found.", {
+            totalFound: 0,
+            projects: [],
+          });
+        }
 
-        const text = buildListResponseText({
-          lines,
-          emptyText: "No session projects found.",
-          totalCount: filtered.length,
-          shownCount: projects.length,
-          summaryLabel: "project(s)",
-        });
+        const suffix =
+          filtered.length > projects.length ? ` (of ${filtered.length})` : "";
+
+        const text = [
+          dotJoin(`${projects.length} projects${suffix}`),
+          "",
+          table(projCols, projRows),
+        ].join("\n");
 
         return textResult(text, {
           query,
@@ -888,19 +899,43 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
         const limit = normalizeLimit(params.limit);
         const sessions = allSessions.slice(0, limit);
 
-        const lines = sessions.map((session) => {
-          const fileName = basename(session.sessionPath);
-          const timestamp = new Date(session.timestampIso).toLocaleString();
-          return `• ${timestamp} | ${session.title} | ${formatBytes(session.sizeBytes)} | ${fileName} | created=${new Date(project.createdIso).toLocaleDateString()}`;
-        });
+        if (sessions.length === 0) {
+          return textResult(`No sessions found for ${project.displayPath}.`, {
+            project,
+            totalFound: 0,
+            sessions: [],
+          });
+        }
 
-        const text = buildListResponseText({
-          lines,
-          emptyText: `No sessions found for ${project.displayPath}.`,
-          totalCount: allSessions.length,
-          shownCount: sessions.length,
-          summaryLabel: `session(s) for ${project.displayPath}`,
-        });
+        const sessCols: Column[] = [
+          { key: "size", align: "right", minWidth: 7 },
+          { key: "timestamp", minWidth: 18 },
+          {
+            key: "title",
+            format: (_v, row) => {
+              const r = row as Record<string, string>;
+              return `${r.title}\n${r.file}`;
+            },
+          },
+        ];
+
+        const sessRows = sessions.map((s) => ({
+          size: formatBytes(s.sizeBytes),
+          timestamp: new Date(s.timestampIso).toLocaleString(),
+          title: s.title,
+          file: basename(s.sessionPath),
+        }));
+
+        const suffix =
+          allSessions.length > sessions.length
+            ? ` (of ${allSessions.length})`
+            : "";
+
+        const text = [
+          dotJoin(`${sessions.length} sessions${suffix}`),
+          "",
+          table(sessCols, sessRows),
+        ].join("\n");
 
         return textResult(text, {
           project,
@@ -1009,19 +1044,48 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
           : sorted;
 
         const events = filtered.slice(0, limit);
-        const lines = events.map((event) => {
-          const stamp = new Date(event.timestampIso).toLocaleString();
-          const label = event.role === "user" ? "user" : "bash";
-          return `• ${stamp} | ${label} | ${event.text} | ${basename(event.sessionPath)}`;
-        });
 
-        const text = buildListResponseText({
-          lines,
-          emptyText: `No events found in ${project.displayPath} for the selected filters.`,
-          totalCount: filtered.length,
-          shownCount: events.length,
-          summaryLabel: `event(s) in ${project.displayPath}`,
-        });
+        if (events.length === 0) {
+          return textResult(
+            `No events found in ${project.displayPath} for the selected filters.`,
+            {
+              project,
+              query,
+              from: fromDate.toISOString(),
+              to: toDate.toISOString(),
+              totalFound: 0,
+              events: [],
+            },
+          );
+        }
+
+        const eventCols: Column[] = [
+          { key: "role", minWidth: 4 },
+          { key: "timestamp", minWidth: 18 },
+          {
+            key: "text",
+            format: (_v, row) => {
+              const r = row as Record<string, string>;
+              return `${r.text}\n${r.file}`;
+            },
+          },
+        ];
+
+        const eventRows = events.map((e) => ({
+          role: e.role === "user" ? "user" : "bash",
+          timestamp: new Date(e.timestampIso).toLocaleString(),
+          text: e.text,
+          file: basename(e.sessionPath),
+        }));
+
+        const suffix =
+          filtered.length > events.length ? ` (of ${filtered.length})` : "";
+
+        const text = [
+          dotJoin(`${events.length} events${suffix}`),
+          "",
+          table(eventCols, eventRows),
+        ].join("\n");
 
         return textResult(text, {
           project,
@@ -1151,43 +1215,71 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
           }
         }
 
-        const sortedSummary = Object.entries(summary)
-          .sort((a, b) => b[1].total - a[1].total)
-          .map(
-            ([key, counts]) =>
-              `${key}: ${counts.total} (${counts.errors} errors)`,
-          );
+        // Summary table
+        const summaryCols: Column[] = [
+          { key: "calls", align: "right", minWidth: 5 },
+          { key: "errors", align: "right", minWidth: 6 },
+          { key: "tool" },
+        ];
 
+        const summaryRows = Object.entries(summary)
+          .sort((a, b) => b[1].total - a[1].total)
+          .map(([key, counts]) => ({
+            calls: String(counts.total),
+            errors: counts.errors > 0 ? String(counts.errors) : "0",
+            tool: key,
+          }));
+
+        // Recent calls table
         const calls = filtered.slice(0, limit);
-        const lines = calls.map((call) => {
-          const stamp = new Date(call.timestampIso).toLocaleString();
-          const status = call.isError ? "✗" : "✓";
-          const label =
+        const callCols: Column[] = [
+          { key: "status", minWidth: 1 },
+          { key: "timestamp", minWidth: 18 },
+          {
+            key: "tool",
+            format: (_v, row) => {
+              const r = row as Record<string, string>;
+              return r.result ? `${r.tool}\n${r.result}` : r.tool;
+            },
+          },
+        ];
+
+        const callRows = calls.map((call) => ({
+          status: passFail(!call.isError),
+          timestamp: new Date(call.timestampIso).toLocaleString(),
+          tool:
             call.toolName === "bash" && call.command
               ? `bash: ${truncateLine(call.command, 60)}`
-              : call.toolName;
-          const result = call.isError ? call.resultText : "";
-          return result
-            ? `${status} [${stamp}] ${label}\n   ${result}`
-            : `${status} [${stamp}] ${label}`;
-        });
-
-        const summaryText =
-          sortedSummary.length > 0
-            ? `Summary (${days} days):\n${sortedSummary.join("\n")}\n\n`
-            : "";
-
-        const detailText =
-          lines.length > 0
-            ? `Recent calls:\n${lines.join("\n")}`
-            : "No matching tool calls found.";
+              : call.toolName,
+          result: call.isError ? call.resultText : "",
+        }));
 
         const suffix =
-          filtered.length > limit
-            ? ` (showing ${limit} of ${filtered.length})`
-            : "";
+          filtered.length > limit ? ` (of ${filtered.length})` : "";
 
-        return textResult(`${summaryText}${detailText}${suffix}`, {
+        const sections: string[] = [
+          dotJoin(`${filtered.length} calls${suffix}`),
+        ];
+
+        if (summaryRows.length > 0) {
+          sections.push(
+            "",
+            sectionDivider("Summary"),
+            table(summaryCols, summaryRows),
+          );
+        }
+
+        if (callRows.length > 0) {
+          sections.push(
+            "",
+            sectionDivider("Recent"),
+            table(callCols, callRows),
+          );
+        } else {
+          sections.push("", "No matching tool calls found.");
+        }
+
+        return textResult(sections.join("\n"), {
           project: project.displayPath,
           days,
           errorsOnly,
@@ -1304,35 +1396,33 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
           const stamp = msg.timestampIso
             ? new Date(msg.timestampIso).toLocaleString()
             : "?";
-          const status = msg.isError ? " ✗" : "";
+          const status = msg.isError ? ` ✗` : "";
           const tool = msg.toolName ? ` [${msg.toolName}]` : "";
           const text = truncateLine(msg.text, 300);
-          return `[${msg.index}] ${stamp} | ${msg.role}${tool}${status}\n${text}`;
+          return [
+            threadSeparator(`#${msg.index} ${msg.role}${tool}${status}`, stamp),
+            text,
+          ].join("\n");
         });
 
         const hasMore = offset + limit < filtered.length;
-        const rangeInfo = `messages ${offset}-${Math.min(offset + limit, filtered.length) - 1} of ${filtered.length}`;
+        const rangeInfo = `${offset}–${Math.min(offset + limit, filtered.length) - 1} of ${filtered.length}`;
         const nextHint = hasMore
           ? `\nUse offset=${offset + limit} to continue.`
           : "";
 
-        const projectCreated = new Date(
-          project.createdIso,
-        ).toLocaleDateString();
+        const text = [dotJoin(rangeInfo), "", ...lines, nextHint].join("\n");
 
-        return textResult(
-          `${basename(sessionPath)} (${rangeInfo}) | project: ${project.displayPath} | created: ${projectCreated}\n\n${lines.join("\n\n")}${nextHint}`,
-          {
-            project: project.displayPath,
-            sessionPath,
-            totalMessages: allMessages.length,
-            filteredCount: filtered.length,
-            offset,
-            limit,
-            hasMore,
-            messages: sliced,
-          },
-        );
+        return textResult(text, {
+          project: project.displayPath,
+          sessionPath,
+          totalMessages: allMessages.length,
+          filteredCount: filtered.length,
+          offset,
+          limit,
+          hasMore,
+          messages: sliced,
+        });
       } catch (error) {
         return errorResult(getErrorMessage(error));
       }

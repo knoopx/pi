@@ -5,6 +5,7 @@ import type {
   AgentToolResult,
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import { dangerousOperationConfirmation } from "../../shared/tool-utils";
 
 type GogToolResult<T = unknown> = AgentToolResult<T>;
 
@@ -1115,8 +1116,14 @@ Use this to:
       },
       signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
+      ctx: ExtensionContext,
     ) {
+      const denied = await dangerousOperationConfirmation(
+        ctx,
+        "Add Task",
+        `"${params.title}"`,
+      );
+      if (denied) return denied;
       try {
         const args = [
           "tasks",
@@ -1193,8 +1200,14 @@ Use this to:
       },
       signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
+      ctx: ExtensionContext,
     ) {
+      const denied = await dangerousOperationConfirmation(
+        ctx,
+        "Update Task",
+        `Task ${params.taskId}`,
+      );
+      if (denied) return denied;
       try {
         const args = [
           "tasks",
@@ -1261,8 +1274,14 @@ Use this to:
       params: { tasklistId: string; taskId: string; account: string },
       signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
+      ctx: ExtensionContext,
     ) {
+      const denied = await dangerousOperationConfirmation(
+        ctx,
+        "Complete Task",
+        `Task ${params.taskId}`,
+      );
+      if (denied) return denied;
       try {
         const task = await runGogJson<unknown>(
           pi,
@@ -1316,8 +1335,14 @@ Use this to:
       params: { tasklistId: string; taskId: string; account: string },
       signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
+      ctx: ExtensionContext,
     ) {
+      const denied = await dangerousOperationConfirmation(
+        ctx,
+        "Uncomplete Task",
+        `Task ${params.taskId}`,
+      );
+      if (denied) return denied;
       try {
         const task = await runGogJson<unknown>(
           pi,
@@ -1371,8 +1396,14 @@ Use this to:
       params: { tasklistId: string; taskId: string; account: string },
       signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
+      ctx: ExtensionContext,
     ) {
+      const denied = await dangerousOperationConfirmation(
+        ctx,
+        "Delete Task",
+        `Task ${params.taskId}`,
+      );
+      if (denied) return denied;
       try {
         await runGogCommand(
           pi,
@@ -1418,8 +1449,14 @@ Use this to:
       params: { tasklistId: string; account: string },
       signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
+      ctx: ExtensionContext,
     ) {
+      const denied = await dangerousOperationConfirmation(
+        ctx,
+        "Clear Completed Tasks",
+        `List ${params.tasklistId}`,
+      );
+      if (denied) return denied;
       try {
         await runGogCommand(
           pi,
@@ -1637,8 +1674,14 @@ Use this to:
       params: { title: string; content?: string; account: string },
       signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
+      ctx: ExtensionContext,
     ) {
+      const denied = await dangerousOperationConfirmation(
+        ctx,
+        "Create Doc",
+        `"${params.title}"`,
+      );
+      if (denied) return denied;
       try {
         const args = ["docs", "create", "--json", params.title];
         if (params.content) {
@@ -1686,8 +1729,14 @@ Use this to:
       params: { docId: string; title: string; account?: string },
       signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
+      ctx: ExtensionContext,
     ) {
+      const denied = await dangerousOperationConfirmation(
+        ctx,
+        "Copy Doc",
+        `"${params.title}" from ${params.docId}`,
+      );
+      if (denied) return denied;
       try {
         if (params.account) {
           const doc = await runGogJson<unknown>(

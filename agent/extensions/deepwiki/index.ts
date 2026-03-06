@@ -5,6 +5,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { Type, type Static } from "@sinclair/typebox";
 import { textResult, errorResult } from "../../shared/tool-utils";
+import { throttledFetch } from "../../shared/throttle";
 
 const MCP_ENDPOINT = "https://mcp.deepwiki.com/mcp";
 
@@ -31,7 +32,7 @@ async function callMcpTool(
   args: Record<string, unknown>,
   signal?: AbortSignal,
 ): Promise<string> {
-  const response = await fetch(MCP_ENDPOINT, {
+  const response = await throttledFetch(MCP_ENDPOINT, {
     method: "POST",
     headers: HEADERS,
     body: JSON.stringify({
