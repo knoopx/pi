@@ -1,11 +1,8 @@
 {
-  "lastChangelogVersion": "0.56.2",
-  "defaultProvider": "anthropic",
-  "defaultModel": "claude-opus-4-6",
+  "lastChangelogVersion": "0.57.1",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.3-codex",
   "theme": "custom",
-  "lsp": {
-    "hookMode": "edit_write"
-  },
   "enabledModels": [
     "github-copilot/gpt-5.2",
     "github-copilot/grok-code-fast-1",
@@ -17,10 +14,12 @@
     "anthropic/claude-opus-4-5",
     "anthropic/claude-opus-4-6",
     "anthropic/claude-sonnet-4-6",
-    "local/unsloth/Qwen3-Coder-Next-GGUF:UD-IQ3_XXS",
-    "local/unsloth/Qwen3.5-9B-GGUF:UD-Q8_K_XL",
-    "local/unsloth/Qwen3.5-35B-A3B-GGUF:UD-Q4_K_M",
-    "local/unsloth/Qwen3.5-27B-GGUF:IQ4_NL"
+    "local/unsloth/GLM-4.7-Flash-GGUF",
+    "local/unsloth/Qwen3-Coder-Next-GGUF",
+    "local/unsloth/Qwen3.5-9B-GGUF",
+    "local/unsloth/Qwen3.5-27B-GGUF",
+    "local/unsloth/Qwen3.5-35B-A3B-GGUF",
+    "local/unsloth/Qwen3.5-4B-GGUF"
   ],
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "medium",
