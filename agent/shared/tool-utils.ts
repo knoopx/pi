@@ -17,6 +17,25 @@ export function textResult(
 }
 
 /**
+ * Prompt user to confirm a destructive operation.
+ * Blocks in non-interactive mode. Returns an error result on denial, or null to proceed.
+ */
+export async function dangerousOperationConfirmation(
+  ctx: {
+    hasUI: boolean;
+    ui: { confirm(title: string, message: string): Promise<boolean> };
+  },
+  title: string,
+  message: string,
+): Promise<AgentToolResult<Record<string, unknown>> | null> {
+  if (!ctx.hasUI)
+    return errorResult("Blocked: requires interactive confirmation");
+  if (!(await ctx.ui.confirm(title, message)))
+    return errorResult("Cancelled by user");
+  return null;
+}
+
+/**
  * Create an error result for tool execution
  */
 export function errorResult(
