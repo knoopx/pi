@@ -9,8 +9,13 @@ import { dirname, resolve } from "node:path";
  * ResolvedConfig is the internal schema (all fields required, defaults applied).
  */
 
-interface GuardrailsRule {
+export interface GuardrailsRule {
   context: "command" | "file_name" | "file_content";
+  /**
+   * Pattern used for matching:
+   * - command context: AST-like command token pattern (`?`, `*`)
+   * - file_name/file_content contexts: regular expression
+   */
   pattern: string;
   /**
    * Optional pattern that must also match for the rule to apply.
@@ -44,6 +49,113 @@ const EXTENSION_CONFIG_PATH = resolve(
   import.meta.dirname || __dirname,
   "defaults.json",
 );
+const GUARDRAILS_SETTINGS_KEY = "guardrails";
+
+export interface GuardrailsSettings {
+  enabled: boolean;
+}
+
+const DEFAULT_GUARDRAILS_SETTINGS: GuardrailsSettings = {
+  enabled: true,
+};
+
+function isMissingFileError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "ENOENT"
+  );
+}
+
+function toSettingsRecord(parsed: unknown): Record<string, unknown> {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error("settings.json must contain a JSON object");
+  }
+  return parsed as Record<string, unknown>;
+}
+
+async function readGlobalSettingsOrEmpty(): Promise<Record<string, unknown>> {
+  try {
+    const content = await readFile(GLOBAL_CONFIG_PATH, "utf-8");
+    return toSettingsRecord(JSON.parse(content));
+  } catch (error) {
+    if (isMissingFileError(error)) {
+      return {};
+    }
+    throw new Error(
+      "Unable to read settings.json safely; refusing to overwrite existing configuration.",
+    );
+  }
+}
+
+export async function loadGuardrailsSettings(): Promise<GuardrailsSettings> {
+  const settings = await readGlobalSettingsOrEmpty();
+  const raw = settings[GUARDRAILS_SETTINGS_KEY];
+
+  if (raw === undefined || Array.isArray(raw)) {
+    // Legacy format uses `guardrails` as rule array.
+    return { ...DEFAULT_GUARDRAILS_SETTINGS };
+  }
+
+  if (typeof raw !== "object" || raw === null) {
+    throw new Error("Invalid guardrails settings format in settings.json");
+  }
+
+  const rawRecord = raw as Record<string, unknown>;
+
+  return {
+    enabled:
+      typeof rawRecord.enabled === "boolean"
+        ? rawRecord.enabled
+        : DEFAULT_GUARDRAILS_SETTINGS.enabled,
+  };
+}
+
+export async function saveGuardrailsSettings(
+  updates: Partial<GuardrailsSettings>,
+): Promise<GuardrailsSettings> {
+  await mkdir(dirname(GLOBAL_CONFIG_PATH), { recursive: true });
+
+  const existingSettings = await readGlobalSettingsOrEmpty();
+  const current = await loadGuardrailsSettings();
+  const next: GuardrailsSettings = {
+    ...current,
+    ...updates,
+  };
+
+  const currentGuardrailsValue = existingSettings[GUARDRAILS_SETTINGS_KEY];
+  const guardrailsRecord =
+    typeof currentGuardrailsValue === "object" &&
+    currentGuardrailsValue !== null &&
+    !Array.isArray(currentGuardrailsValue)
+      ? (currentGuardrailsValue as Record<string, unknown>)
+      : {};
+
+  existingSettings[GUARDRAILS_SETTINGS_KEY] = {
+    ...guardrailsRecord,
+    enabled: next.enabled,
+  };
+
+  await writeFile(
+    GLOBAL_CONFIG_PATH,
+    `${JSON.stringify(existingSettings, null, 2)}\n`,
+    "utf-8",
+  );
+
+  return next;
+}
+
+export async function loadGuardrailsEnabledSetting(): Promise<boolean> {
+  const settings = await loadGuardrailsSettings();
+  return settings.enabled;
+}
+
+export async function saveGuardrailsEnabledSetting(
+  enabled: boolean,
+): Promise<void> {
+  await saveGuardrailsSettings({ enabled });
+}
 
 class ConfigLoader {
   private defaultsConfig: GuardrailsConfig | null = null;
@@ -69,11 +181,24 @@ class ConfigLoader {
   private async loadGlobalFile(): Promise<GuardrailsConfig | null> {
     try {
       const content = await readFile(GLOBAL_CONFIG_PATH, "utf-8");
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content) as Record<string, unknown>;
       const guardrails = parsed.guardrails;
-      return Array.isArray(guardrails)
-        ? (guardrails as GuardrailsConfig)
-        : null;
+
+      // Legacy format: guardrails is an array of groups.
+      if (Array.isArray(guardrails)) {
+        return guardrails as GuardrailsConfig;
+      }
+
+      // Current format: guardrails is an object with a `rules` array.
+      if (
+        typeof guardrails === "object" &&
+        guardrails !== null &&
+        Array.isArray((guardrails as Record<string, unknown>).rules)
+      ) {
+        return (guardrails as { rules: GuardrailsConfig }).rules;
+      }
+
+      return null;
     } catch {
       return null;
     }
@@ -128,14 +253,27 @@ class ConfigLoader {
 
     if (path === GLOBAL_CONFIG_PATH) {
       // For global config, merge into existing settings.json
-      let existingSettings: Record<string, unknown> = {};
-      try {
-        const content = await readFile(path, "utf-8");
-        existingSettings = JSON.parse(content);
-      } catch {
-        // File doesn't exist or invalid, use empty object
-      }
-      existingSettings.guardrails = config;
+      const existingSettings = await readGlobalSettingsOrEmpty();
+      const currentGuardrailsValue = existingSettings[GUARDRAILS_SETTINGS_KEY];
+
+      const existingGuardrailsRecord =
+        typeof currentGuardrailsValue === "object" &&
+        currentGuardrailsValue !== null &&
+        !Array.isArray(currentGuardrailsValue)
+          ? (currentGuardrailsValue as Record<string, unknown>)
+          : {};
+
+      const enabled =
+        typeof existingGuardrailsRecord.enabled === "boolean"
+          ? existingGuardrailsRecord.enabled
+          : DEFAULT_GUARDRAILS_SETTINGS.enabled;
+
+      existingSettings[GUARDRAILS_SETTINGS_KEY] = {
+        ...existingGuardrailsRecord,
+        enabled,
+        rules: config,
+      };
+
       await writeFile(
         path,
         `${JSON.stringify(existingSettings, null, 2)}\n`,

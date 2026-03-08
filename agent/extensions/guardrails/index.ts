@@ -1,6 +1,11 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { configLoader } from "./config";
-import type { ResolvedConfig } from "./config";
+import {
+  configLoader,
+  loadGuardrailsSettings,
+  saveGuardrailsSettings,
+} from "./config";
+import type { GuardrailsRule, ResolvedConfig } from "./config";
+import { matchCommandPattern } from "./command-parser";
 import { glob } from "tinyglobby";
 
 /**
@@ -19,7 +24,42 @@ export default async function (pi: ExtensionAPI) {
   await configLoader.load();
   const config = configLoader.getConfig();
 
-  setupPermissionGateHook(pi, config);
+  let guardrailsEnabled = (await loadGuardrailsSettings()).enabled;
+
+  pi.registerCommand("guardrails", {
+    description: "Enable or disable guardrails (usage: /guardrails on|off)",
+    handler: async (args, ctx) => {
+      const action = args.trim().toLowerCase();
+
+      if (action === "on") {
+        guardrailsEnabled = true;
+        await saveGuardrailsSettings({ enabled: true });
+        if (ctx.hasUI) {
+          ctx.ui.notify("Guardrails enabled", "info");
+        }
+        return;
+      }
+
+      if (action === "off") {
+        guardrailsEnabled = false;
+        await saveGuardrailsSettings({ enabled: false });
+        if (ctx.hasUI) {
+          ctx.ui.notify("Guardrails disabled", "warning");
+        }
+        return;
+      }
+
+      const status = guardrailsEnabled ? "enabled" : "disabled";
+      if (ctx.hasUI) {
+        ctx.ui.notify(
+          `Guardrails are currently ${status}. Use /guardrails on|off.`,
+          "info",
+        );
+      }
+    },
+  });
+
+  setupPermissionGateHook(pi, config, () => guardrailsEnabled);
 }
 
 /**
@@ -63,18 +103,101 @@ function getInputFieldAsString(
   return String(value);
 }
 
+function matchesPattern(
+  context: GuardrailsRule["context"],
+  targetValue: string,
+  pattern: string,
+): boolean {
+  if (context === "command") {
+    return matchCommandPattern(targetValue, pattern);
+  }
+
+  return new RegExp(pattern).test(targetValue);
+}
+
+/**
+ * Test whether a rule matches the current tool call.
+ *
+ * For "command" context, `pattern` uses AST-like token matching
+ * implemented by `matchCommandPattern` (`?`, `*`).
+ *
+ * For "file_name" and "file_content" contexts, `pattern` is regex.
+ *
+ * @returns The matched target value for includes/excludes filtering, or null.
+ */
+function matchRule(
+  rule: GuardrailsRule,
+  toolName: string,
+  input: unknown,
+): { targetValue: string } | null {
+  if (rule.context === "command") {
+    if (toolName !== "bash") return null;
+    const command = getInputFieldAsString(input, "command");
+    if (!command) return null;
+
+    if (!matchCommandPattern(command, rule.pattern)) return null;
+    return { targetValue: command };
+  }
+
+  let targetValue: string | undefined;
+
+  if (rule.context === "file_name") {
+    if (["edit", "write"].includes(toolName)) {
+      targetValue = getInputFieldAsString(input, "path");
+    }
+  } else if (rule.context === "file_content") {
+    if (toolName === "edit") {
+      targetValue = getInputFieldAsString(input, "newText");
+    } else if (toolName === "write") {
+      targetValue = getInputFieldAsString(input, "content");
+    }
+  }
+
+  if (!targetValue) return null;
+
+  const rulePattern = new RegExp(rule.pattern);
+  if (!rulePattern.test(targetValue)) return null;
+
+  return { targetValue };
+}
+
 /**
  * Permission gate that prompts user confirmation for blocked operations.
  * Uses groups config to define blocking rules based on context.
  * Groups are only active if their file pattern matches files in the project.
  */
-function setupPermissionGateHook(pi: ExtensionAPI, config: ResolvedConfig) {
-  pi.on("tool_call", async (event, ctx) => {
-    // Skip "read" tool to avoid noise on every file read
-    if (event.toolName === "read") return;
+function setupPermissionGateHook(
+  pi: ExtensionAPI,
+  config: ResolvedConfig,
+  isEnabled: () => boolean,
+) {
+  const inspectedRoots = new Set<string>();
 
+  pi.on("tool_call", async (event, ctx) => {
+    if (!isEnabled()) {
+      return;
+    }
     const toolName = event.toolName;
     const input = event.input;
+
+    if (!inspectedRoots.has(ctx.cwd)) {
+      if (toolName === "bash") {
+        const command = getInputFieldAsString(input, "command");
+        if (command && matchCommandPattern(command, "tree *")) {
+          inspectedRoots.add(ctx.cwd);
+          return;
+        }
+      }
+
+      return {
+        block: true,
+        reason:
+          "Blocked: Run `tree -a -L 3 -I 'node_modules|dist|build|coverage|.git|.jj|.turbo|.next|.cache|tmp|.direnv' .` first to inspect project structure before calling other tools.",
+      };
+    }
+
+    // Skip "read" tool to avoid noise on every file read
+    if (toolName === "read") return;
 
     for (const group of config) {
       const isActive = await isGroupActive(group.pattern, ctx.cwd);
@@ -84,67 +207,49 @@ function setupPermissionGateHook(pi: ExtensionAPI, config: ResolvedConfig) {
 
       for (const rule of group.rules) {
         try {
-          const rulePattern = new RegExp(rule.pattern);
-          let targetValue: string | undefined;
+          const matched = matchRule(rule, toolName, input);
+          if (!matched) continue;
 
-          // Determine what to check based on context
-          switch (rule.context) {
-            case "command":
-              if (toolName === "bash") {
-                targetValue = getInputFieldAsString(input, "command");
-              }
-              break;
-            case "file_name":
-              if (["edit", "write"].includes(toolName)) {
-                targetValue = getInputFieldAsString(input, "path");
-              }
-              break;
-            case "file_content":
-              if (toolName === "edit") {
-                targetValue = getInputFieldAsString(input, "newText");
-              } else if (toolName === "write") {
-                targetValue = getInputFieldAsString(input, "content");
-              }
-              break;
+          const { targetValue } = matched;
+
+          // Check includes: if specified, must also match
+          if (
+            rule.includes &&
+            !matchesPattern(rule.context, targetValue, rule.includes)
+          ) {
+            continue;
           }
 
-          if (targetValue && rulePattern.test(targetValue)) {
-            // Check includes: if specified, must also match
-            if (rule.includes) {
-              const includesPattern = new RegExp(rule.includes);
-              if (!includesPattern.test(targetValue)) {
-                continue;
-              }
+          // Check excludes: if specified and matches, skip this rule
+          if (
+            rule.excludes &&
+            matchesPattern(rule.context, targetValue, rule.excludes)
+          ) {
+            continue;
+          }
+
+          const { action, reason } = rule;
+
+          if (action === "block") {
+            return { block: true, reason: `Blocked [${group.group}]: ${reason}` };
+          } else if (action === "confirm") {
+            if (!ctx.hasUI) {
+              return {
+                block: true,
+                reason: `Blocked [${group.group}]: ${reason}`,
+              };
             }
 
-            // Check excludes: if specified and matches, skip this rule
-            if (rule.excludes) {
-              const excludesPattern = new RegExp(rule.excludes);
-              if (excludesPattern.test(targetValue)) {
-                continue;
-              }
-            }
+            const proceed = await ctx.ui.confirm(
+              `⚠️ ${group.group}: ${reason}`,
+              targetValue,
+            );
 
-            const { action, reason } = rule;
-
-            if (action === "block") {
-              return { block: true, reason: `Blocked: ${reason}` };
-            } else if (action === "confirm") {
-              if (!ctx.hasUI) {
-                return {
-                  block: true,
-                  reason: `Blocked: ${reason}`,
-                };
-              }
-
-              const proceed = await ctx.ui.confirm(reason, targetValue);
-
-              if (!proceed) {
-                return {
-                  block: true,
-                  reason: "Blocked: User denied execution",
-                };
-              }
+            if (!proceed) {
+              return {
+                block: true,
+                reason: "Blocked: User denied execution",
+              };
             }
           }
         } catch {

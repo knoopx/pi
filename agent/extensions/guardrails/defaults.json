@@ -5,9 +5,9 @@
     "rules": [
       {
         "context": "command",
-        "pattern": "^npm",
+        "pattern": "npm *",
         "action": "block",
-        "reason": "this project uses Bun, not npm. npm would create package-lock.json conflicts. Use Bun equivalents: `bun add <pkg>`, `bun remove <pkg>`, `bun run <script>`, `bun install` (see skill: bun)"
+        "reason": "this project uses Bun, not npm. Use Bun equivalents: `bun add`, `bun remove`, `bun run`, `bun install` (see skill: bun)"
       }
     ]
   },
@@ -17,9 +17,9 @@
     "rules": [
       {
         "context": "command",
-        "pattern": "^bun test",
+        "pattern": "bun test *",
         "action": "block",
-        "reason": "`bun test` invokes Bun's built-in test runner, not Vitest. This project uses Vitest. Use: `bun vitest run` (all tests), `bun vitest run -t 'pattern'` (filtered), or `bun vitest run path/to/test.ts` (specific file) (see skill: vitest)"
+        "reason": "`bun test` invokes Bun's built-in test runner, not Vitest. Use `bun vitest run` instead (see skill: vitest)"
       }
     ]
   },
@@ -29,15 +29,9 @@
     "rules": [
       {
         "context": "command",
-        "pattern": "^python",
+        "pattern": "{python,python3,pip,pip3} *",
         "action": "block",
-        "reason": "this project uses uv for dependency management. Running python directly bypasses the virtual environment. Use `uv run python script.py` or `uv run -m pytest`. For one-off dependencies: `uv run --with requests script.py` (see skill: uv)"
-      },
-      {
-        "context": "command",
-        "pattern": "^pip",
-        "action": "block",
-        "reason": "this project uses uv, not pip. pip would bypass uv.lock and create inconsistencies. Use uv equivalents: `uv add <pkg>`, `uv add --dev <pkg>`, `uv remove <pkg>`, `uv sync` (see skill: uv)"
+        "reason": "this project uses uv. Use uv equivalents: `uv run`, `uv add`, `uv remove`, `uv sync` (see skill: uv)"
       }
     ]
   },
@@ -47,9 +41,9 @@
     "rules": [
       {
         "context": "command",
-        "pattern": "^nix\\s+(run|build|develop)\\s+\\.",
+        "pattern": "nix ? . *",
         "action": "block",
-        "reason": "using `.` without `path:` prefix causes Nix to only include tracked files (missing uncommitted changes). Use `path:.` to include all files: `nix run path:.`, `nix build path:.#pkg`, `nix develop path:.` (see skill: nix-flakes)"
+        "reason": "`.` without `path:` prefix only includes tracked files. Use `path:.` instead (see skill: nix-flakes)"
       }
     ]
   },
@@ -61,13 +55,14 @@
         "context": "file_name",
         "pattern": "(^|/)(\\.git/|\\.jj/(?!workspaces/))",
         "action": "block",
-        "reason": ".git/ and .jj/ contain repository internals (object database, refs, config). Direct modification can corrupt history. Use git/jj commands instead: `jj st`, `jj log`, `git log`, `git status`"
+        "reason": "VCS internals — direct modification can corrupt history. Use git/jj commands instead"
       },
       {
         "context": "command",
-        "pattern": "(cat|less|head|tail|rm|mv|cp)\\s+[^|]*\\.(git|jj)/",
+        "pattern": "{cat,less,head,tail,rm,mv,cp} *",
+        "includes": "* {*.git/*,*.jj/*} *",
         "action": "block",
-        "reason": ".git/ and .jj/ contain repository internals. Direct access can corrupt history or lose commits. Use version control commands: `jj st`, `jj log`, `jj diff`, `git log --oneline`"
+        "reason": "VCS internals — direct access can corrupt history. Use git/jj commands instead"
       }
     ]
   },
@@ -77,45 +72,33 @@
     "rules": [
       {
         "context": "command",
-        "pattern": "^\\s*(?:sudo\\s+)?rm\\s+(-[^\\s]*)?r[^\\s]*f|^\\s*(?:sudo\\s+)?rm\\s+(-[^\\s]*)?f[^\\s]*r",
-        "action": "confirm",
-        "reason": "⚠️ `rm -rf` permanently deletes files without confirmation or trash. Double-check the path is correct. Consider `rm -ri` (interactive) or moving to trash first"
+        "pattern": "rm *",
+        "action": "block",
+        "reason": "permanent file deletion. Use `trash` instead for recoverable removal"
       },
       {
         "context": "command",
-        "pattern": "^sudo\\s",
+        "pattern": "sudo *",
         "action": "confirm",
-        "reason": "⚠️ sudo runs commands as root, which can modify system files and configurations. Verify this elevated access is actually needed for this operation"
+        "reason": "elevated privileges. Verify root access is needed"
       },
       {
         "context": "command",
-        "pattern": "\\|\\s*(sh|bash|zsh|fish)($|\\s)",
+        "pattern": "{sh,bash,zsh,fish} *",
         "action": "confirm",
-        "reason": "⚠️ piping to shell executes arbitrary code, which could be malicious if the source is untrusted. Review the piped content before executing"
+        "reason": "arbitrary code execution via shell pipe. Review the content"
       },
       {
         "context": "command",
-        "pattern": "\\bdd\\s+.*if=",
+        "pattern": "{dd,mkfs.*} *",
         "action": "confirm",
-        "reason": "⚠️ dd writes raw data to devices and can overwrite entire disks. Triple-check of= target path. Wrong device = total data loss"
+        "reason": "destructive disk operation. Verify the target device"
       },
       {
         "context": "command",
-        "pattern": "\\bmkfs\\.",
+        "pattern": "{chmod,chown} * {777,-R} *",
         "action": "confirm",
-        "reason": "⚠️ mkfs formats filesystems, erasing ALL data on the target. Verify the device path is correct before proceeding"
-      },
-      {
-        "context": "command",
-        "pattern": "chmod\\s+(-[^\\s]*)?R[^\\s]*\\s+777|chmod\\s+777\\s+(-[^\\s]*)?R",
-        "action": "confirm",
-        "reason": "⚠️ chmod -R 777 makes files world-readable/writable/executable, which is a security risk. Use specific permissions: `chmod -R 755` (dirs) or `chmod -R 644` (files)"
-      },
-      {
-        "context": "command",
-        "pattern": "chown\\s+(-[^\\s]*)?R",
-        "action": "confirm",
-        "reason": "⚠️ recursive chown changes ownership of all files below. This can break applications expecting specific owners. Verify the path is correct"
+        "reason": "recursive or permissive permission change. Verify the path and mode"
       }
     ]
   },
@@ -127,7 +110,7 @@
         "context": "file_name",
         "pattern": "(package-lock\\.json|bun\\.lockb|yarn\\.lock|pnpm-lock\\.yaml|poetry\\.lock|uv\\.lock|Cargo\\.lock|Gemfile\\.lock|flake\\.lock)",
         "action": "block",
-        "reason": "lock files are auto-generated and contain checksums/hashes that must stay consistent. Edit package.json/pyproject.toml instead, then run: `bun install`, `uv sync`, `nix flake update`, or `cargo update` to regenerate"
+        "reason": "lock files are auto-generated. Edit the manifest instead and run the package manager to regenerate"
       }
     ]
   },
@@ -139,7 +122,7 @@
         "context": "file_content",
         "pattern": "\\.skip\\(|describe\\.skip|xdescribe|xit\\(",
         "action": "block",
-        "reason": "skipped tests create blind spots and accumulate over time. Either: (1) fix the failing test, (2) delete it if the feature was removed, or (3) use `it.todo('description')` if it's a placeholder for future work (see skill: vitest)"
+        "reason": "skipped tests create blind spots. Fix, delete, or use `it.todo()` instead (see skill: vitest)"
       }
     ]
   },
@@ -151,7 +134,7 @@
         "context": "file_content",
         "pattern": "eslint-disable",
         "action": "block",
-        "reason": "disabling lint rules hides code quality issues. Instead: (1) run `eslint --fix .` to auto-fix, (2) refactor code to satisfy the rule, or (3) if truly necessary, use inline `// eslint-disable-next-line rule-name` with a comment explaining why (see skill: eslint)"
+        "reason": "disabling lint rules hides issues. Fix the code or use inline `eslint-disable-next-line` with justification (see skill: eslint)"
       }
     ]
   },
@@ -161,99 +144,53 @@
     "rules": [
       {
         "context": "command",
-        "pattern": "^(bun|npm|yarn|pnpm)\\s+run\\s+dev",
+        "pattern": "{bun run dev,modal serve,zuplo dev,zuplo docs} *",
         "action": "block",
-        "reason": "dev servers run indefinitely and block the terminal. Run in tmux: `tmux new-session -d -s dev 'bun run dev'`. Check output: `tmux capture-pane -t dev -p`. Stop: `tmux kill-session -t dev` (see skill: tmux)"
+        "reason": "long-running server that blocks the terminal. Run in tmux instead (see skill: tmux)"
       },
       {
         "context": "command",
-        "pattern": "^(vite|next\\s+dev|nuxt\\s+dev|remix\\s+dev|astro\\s+dev|webpack\\s+serve|parcel|turbo\\s+dev)",
+        "pattern": "vitest *",
+        "excludes": "* run *",
         "action": "block",
-        "reason": "dev servers run indefinitely and block the terminal. Run in tmux: `tmux new-session -d -s dev '<cmd>'`. Check output: `tmux capture-pane -t dev -p`. Stop: `tmux kill-session -t dev` (see skill: tmux)"
+        "reason": "`vitest` without `run` starts watch mode. Use `bun vitest run` (see skill: vitest)"
       },
       {
         "context": "command",
-        "pattern": "^vitest(?!.*\\s+run)",
+        "pattern": "bun vitest *",
+        "excludes": "* run *",
         "action": "block",
-        "reason": "`vitest` without `run` starts watch mode (interactive). Use `bun vitest run` for single test run, or run in tmux for watch mode: `tmux new-session -d -s test 'bun vitest'` (see skill: vitest, tmux)"
+        "reason": "`vitest` without `run` starts watch mode. Use `bun vitest run` (see skill: vitest)"
       },
       {
         "context": "command",
-        "pattern": "^(bun|npx)\\s+vitest(?!.*\\s+run)",
+        "pattern": "tsc * {--watch,-w} *",
         "action": "block",
-        "reason": "`vitest` without `run` starts watch mode (interactive). Use `bun vitest run` for single test run, or run in tmux for watch mode: `tmux new-session -d -s test 'bun vitest'` (see skill: vitest, tmux)"
+        "reason": "watch mode blocks the terminal. Use `tsc --noEmit` or run in tmux (see skill: tmux)"
       },
       {
         "context": "command",
-        "pattern": "^tsc\\s+.*--watch|^tsc\\s+-w",
+        "pattern": "{node,modal shell} *",
         "action": "block",
-        "reason": "`tsc --watch` runs indefinitely. For one-time check: `tsc --noEmit`. For continuous: `tmux new-session -d -s tsc 'tsc --watch'` (see skill: tmux)"
+        "reason": "interactive REPL/shell that blocks the terminal. Use non-interactive alternatives"
       },
       {
         "context": "command",
-        "pattern": "^(nodemon|tsx\\s+watch|ts-node-dev)",
+        "pattern": "{bun,deno} repl *",
         "action": "block",
-        "reason": "file watchers run indefinitely and block the terminal. Run in tmux: `tmux new-session -d -s watch '<cmd>'`. Or use `bun --watch script.ts` in tmux (see skill: tmux)"
-      },
+        "reason": "interactive REPL that blocks the terminal. Use `-e` flag to evaluate inline"
+      }
+    ]
+  },
+  {
+    "group": "jj-not-git",
+    "pattern": ".jj",
+    "rules": [
       {
         "context": "command",
-        "pattern": "^node\\s*$",
+        "pattern": "git *",
         "action": "block",
-        "reason": "`node` without arguments starts an interactive REPL. To run a script: `node script.js`. To evaluate code: `node -e 'console.log(1+1)'`. To inspect: `node --inspect script.js`"
-      },
-      {
-        "context": "command",
-        "pattern": "^(bun|deno)\\s+repl",
-        "action": "block",
-        "reason": "REPLs are interactive and block the terminal. To evaluate code: `bun -e 'console.log(1+1)'` or `deno eval 'console.log(1+1)'`. To run a script: `bun run script.ts`"
-      },
-      {
-        "context": "command",
-        "pattern": "^nix\\s+repl",
-        "action": "block",
-        "reason": "`nix repl` is interactive. To evaluate expressions: `nix eval --expr '1+1'`. To inspect a flake: `nix flake show` or `nix flake metadata` (see skill: nix)"
-      },
-      {
-        "context": "command",
-        "pattern": "^(vim|nvim|vi|nano|emacs|micro|helix|hx|code)\\s",
-        "action": "block",
-        "reason": "text editors are interactive and require user input. Use the `edit` or `write` tools to modify files programmatically instead"
-      },
-      {
-        "context": "command",
-        "pattern": "^(htop|btop|top|atop|gtop|ytop|gotop|glances)\\s*",
-        "action": "block",
-        "reason": "system monitors are interactive TUIs. For process info: `ps aux | grep <name>`. For system stats: `free -h`, `df -h`, `uptime`. For one-shot top: `ps aux --sort=-%mem | head -20`"
-      },
-      {
-        "context": "command",
-        "pattern": "^less\\s*$|^more\\s*$",
-        "action": "block",
-        "reason": "`less`/`more` without a file waits for stdin interactively. To page a file: `less file.txt` or use `head -100 file.txt` for first lines, `tail -100 file.txt` for last lines"
-      },
-      {
-        "context": "command",
-        "pattern": "^man\\s",
-        "action": "block",
-        "reason": "`man` opens an interactive pager. For quick help: `<cmd> --help`. To dump manpage: `man <cmd> | head -100` or search online documentation"
-      },
-      {
-        "context": "command",
-        "pattern": "^tail\\s+.*-[fF]|^tail\\s+-[^\\s]*[fF]",
-        "action": "block",
-        "reason": "`tail -f` follows file changes indefinitely. For last lines: `tail -100 file.log`. For continuous monitoring in background: `tmux new-session -d -s logs 'tail -f file.log'` (see skill: tmux)"
-      },
-      {
-        "context": "command",
-        "pattern": "^watch\\s",
-        "action": "block",
-        "reason": "`watch` runs commands repeatedly (interactive). For one-time execution, run the command directly. For continuous monitoring: `tmux new-session -d -s watch 'watch -n5 <cmd>'` (see skill: tmux)"
-      },
-      {
-        "context": "command",
-        "pattern": "^(ipython|ptpython|bpython|jupyter|irb|pry|ghci|erl|iex|lein\\s+repl|clj|scala|sbt\\s+console|psql|mysql|sqlite3)\\s*",
-        "action": "block",
-        "reason": "REPLs and database shells are interactive. For scripts: run with interpreter directly. For database queries: use CLI flags like `psql -c 'SELECT 1'` or `sqlite3 db.sqlite 'SELECT 1'`"
+        "reason": "this project uses Jujutsu, not Git. Use jj equivalents (see skill: jujutsu)"
       }
     ]
   },
@@ -263,69 +200,55 @@
     "rules": [
       {
         "context": "command",
-        "pattern": "^jj\\s+.*~\\d",
+        "pattern": "jj * {*@~*,*@^*} *",
         "action": "block",
-        "reason": "Jujutsu uses `-` not `~N` for parent syntax. Use: `@-` (parent), `@--` (grandparent), `commit-` (parent of commit). Example: `jj diff -r @-` not `jj diff -r @~1` (see skill: jujutsu)"
+        "reason": "Jujutsu uses `-` for parent syntax, not `~` or `^`. Use `@-`, `@--` (see skill: jujutsu)"
       },
       {
         "context": "command",
-        "pattern": "^jj\\s+.*@\\^",
+        "pattern": "jj {revert,restore,diffedit,simplify,forget,undo,recover} *",
+        "excludes": "* --help *",
         "action": "block",
-        "reason": "Jujutsu uses `-` not `^` for parent syntax. Use: `@-` (parent), `commit-` (parent of commit). Example: `jj diff -r @-` not `jj diff -r @^` (see skill: jujutsu)"
+        "reason": "interactive or destructive jj command. Inspect with `jj st`/`jj diff`/`jj log` first (see skill: jujutsu)"
       },
       {
         "context": "command",
-        "pattern": "^jj\\s+revert(?!.*--help).*$",
+        "pattern": "jj {squash,split,describe,commit} *",
+        "excludes": "* -m *",
         "action": "block",
-        "reason": "`jj revert` creates a new commit that undoes changes (like git revert). You probably want: `jj undo` (undo last jj operation), `jj restore` (restore files), or `jj abandon` (discard working changes) (see skill: jujutsu)"
+        "reason": "opens an editor without `-m`. Use non-interactive form with `-m 'message'` (see skill: jujutsu)"
       },
       {
         "context": "command",
-        "pattern": "^jj\\s+restore(?!.*--help).*$",
+        "pattern": "jj resolve *",
+        "excludes": "* --list *",
         "action": "block",
-        "reason": "`jj restore` opens an editor for interactive file selection. For non-interactive restore, use: `jj restore --from <rev> <file>` or `jj edit <change-id>` to switch to a change (see skill: jujutsu)"
+        "reason": "opens a merge tool UI. Use `jj resolve --list` first, then edit files directly (see skill: jujutsu)"
       },
       {
         "context": "command",
-        "pattern": "^jj\\s+(?:diffedit|simplify|forget|undo|recover)",
+        "pattern": "jj * {-i,--interactive,--tool} *",
+        "excludes": "* --help *",
         "action": "block",
-        "reason": "these jj commands are either interactive or destructive. First inspect with `jj st`, `jj diff`, `jj log`. For discarding changes: `jj abandon`. For viewing history: `jj log -r 'all()'` (see skill: jujutsu)"
+        "reason": "interactive flags open editors/TUIs. Use non-interactive alternatives (see skill: jujutsu)"
       },
       {
         "context": "command",
-        "pattern": "^jj\\s+squash(?:(?!-m).)*$",
-        "action": "block",
-        "reason": "`jj squash` without -m opens an editor for the commit message. Use non-interactive form: `jj squash -m 'feat: combine changes'` or `jj absorb` to auto-move fixup changes to their original commits (see skill: jujutsu)"
-      },
+        "pattern": "jj git push *",
+        "action": "confirm",
+        "reason": "pushing to remote. Verify the target branch and remote"
+      }
+    ]
+  },
+  {
+    "group": "git-push",
+    "pattern": ".git",
+    "rules": [
       {
         "context": "command",
-        "pattern": "^jj\\s+split(?:(?!-m).)*$",
-        "action": "block",
-        "reason": "`jj split` without -m opens an editor. For non-interactive splitting: `jj split -m 'first part message' <files>` to split specific files into a new commit (see skill: jujutsu)"
-      },
-      {
-        "context": "command",
-        "pattern": "^jj\\s+resolve(?!.*--list).*$",
-        "action": "block",
-        "reason": "`jj resolve` opens a merge tool UI. First list conflicts with `jj resolve --list`, then edit conflicted files directly in your editor and mark resolved with `jj resolve --all` when done (see skill: jujutsu)"
-      },
-      {
-        "context": "command",
-        "pattern": "^jj\\s+describe(?:(?!-m).)*$",
-        "action": "block",
-        "reason": "`jj describe` without -m opens an editor. Use: `jj describe -m 'type(scope): description'` for conventional commits. Check current message with `jj log -r @` first (see skill: jujutsu)"
-      },
-      {
-        "context": "command",
-        "pattern": "^jj\\s+commit(?:(?!-m).)*$",
-        "action": "block",
-        "reason": "`jj commit` without -m opens an editor. Use: `jj commit -m 'type(scope): description'` for conventional commits. Alternative: `jj new` to start a new change without committing (see skill: jujutsu)"
-      },
-      {
-        "context": "command",
-        "pattern": "^jj\\s+.*(\\s-i(?:\\s|$)|--interactive|--tool)(?!.*--help).*$",
-        "action": "block",
-        "reason": "interactive jj flags (-i, --interactive, --tool) open editors/TUIs which don't work in this environment. Use non-interactive alternatives: `jj absorb` (auto-fixup), `jj squash -m`, `jj split -m '<msg>' <files>` (see skill: jujutsu)"
+        "pattern": "git push *",
+        "action": "confirm",
+        "reason": "pushing to remote. Verify the target branch and remote"
       }
     ]
   },
@@ -335,9 +258,9 @@
     "rules": [
       {
         "context": "command",
-        "pattern": "^docker\\s",
+        "pattern": "{docker,docker-compose} *",
         "action": "block",
-        "reason": "use Podman instead of Docker. Podman is a drop-in replacement with rootless containers by default. Replace `docker` with `podman`: `podman run`, `podman build`, `podman compose`, etc. (see skill: podman)"
+        "reason": "use Podman instead of Docker (see skill: podman)"
       }
     ]
   },
@@ -349,7 +272,56 @@
         "context": "file_name",
         "pattern": "(?<!eslint\\.config)\\.js$",
         "action": "block",
-        "reason": "this project uses TypeScript. Create `.ts` files instead of `.js`. For config files that require JS (like eslint.config.js), those are excepted"
+        "reason": "this project uses TypeScript. Create `.ts` files instead"
+      }
+    ]
+  },
+  {
+    "group": "modal",
+    "pattern": "*",
+    "rules": [
+      {
+        "context": "command",
+        "pattern": "modal {app stop,app rollback,container stop,volume delete,volume rm,dict delete,dict clear,queue delete,queue clear,secret delete,environment delete} *",
+        "action": "confirm",
+        "reason": "destructive Modal operation. Verify the target resource before proceeding"
+      }
+    ]
+  },
+  {
+    "group": "zuplo",
+    "pattern": "*",
+    "rules": [
+      {
+        "context": "command",
+        "pattern": "zuplo {delete,tunnel delete,mtls-certificate delete,mtls-certificate disable} *",
+        "action": "confirm",
+        "reason": "destructive Zuplo operation. Verify the target resource before proceeding"
+      }
+    ]
+  },
+  {
+    "group": "gh-cli",
+    "pattern": "*",
+    "rules": [
+      {
+        "context": "command",
+        "pattern": "gh {repo delete,repo archive,repo rename,release delete,issue delete,gist delete,run delete,label delete,secret delete,variable delete} *",
+        "action": "block",
+        "reason": "destructive GitHub operation. Use the GitHub web UI or pi's built-in gh tools"
+      }
+    ]
+  },
+  {
+    "group": "data-exfiltration",
+    "pattern": "*",
+    "rules": [
+      {
+        "context": "command",
+        "pattern": "curl *",
+        "includes": "* {-X POST,-X PUT,-X PATCH,--data,--data-raw,--data-binary,--data-urlencode,-d ,-F ,--form,--upload-file} *",
+        "action": "confirm",
+        "reason": "curl is sending data to an external server. Verify the destination and payload"
       }
     ]
   }

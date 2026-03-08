@@ -9,41 +9,41 @@ import {
   type Mock,
 } from "vitest";
 
-// Use doMock instead of mock to avoid hoisting pollution
-let guardrailsExtension: any;
-let isGroupActive: any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let guardrailsExtension: (pi: any) => Promise<void>;
+let isGroupActive: (pattern: string, root: string) => Promise<boolean>;
 let configLoader: {
   load: Mock;
   getConfig: Mock;
-  getGlobalConfig: Mock;
-  saveGlobal: Mock;
 };
+let loadGuardrailsSettings: Mock;
+let saveGuardrailsSettings: Mock;
 let glob: Mock;
 
 beforeAll(async () => {
-  // Setup mocks before imports
   vi.doMock("./config", () => ({
     configLoader: {
       load: vi.fn(),
       getConfig: vi.fn(),
-      getGlobalConfig: vi.fn(),
-      saveGlobal: vi.fn(),
     },
+    loadGuardrailsSettings: vi.fn().mockResolvedValue({ enabled: true }),
+    saveGuardrailsSettings: vi.fn().mockResolvedValue({ enabled: true }),
   }));
 
   const globMock = vi.fn();
   glob = globMock as unknown as Mock;
-  vi.doMock("tinyglobby", () => ({
-    glob: globMock,
-  }));
+  vi.doMock("tinyglobby", () => ({ glob: globMock }));
 
-  // Import after mocking
-  const guardrailsExtensionModule = await import("./index");
-  guardrailsExtension = guardrailsExtensionModule.default;
-  isGroupActive = guardrailsExtensionModule.isGroupActive;
+  const mod = await import("./index");
+  guardrailsExtension = mod.default;
+  isGroupActive = mod.isGroupActive;
 
   const configModule = await import("./config");
   configLoader = configModule.configLoader as unknown as typeof configLoader;
+  loadGuardrailsSettings =
+    configModule.loadGuardrailsSettings as unknown as Mock;
+  saveGuardrailsSettings =
+    configModule.saveGuardrailsSettings as unknown as Mock;
 });
 
 afterAll(() => {
@@ -52,776 +52,394 @@ afterAll(() => {
   vi.resetModules();
 });
 
-describe("Guardrails Extension", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+function makeCtx(overrides: Record<string, unknown> = {}) {
+  return {
+    cwd: "/test/project",
+    hasUI: true,
+    ui: {
+      notify: vi.fn(),
+      confirm: vi.fn().mockResolvedValue(true),
+    },
+    ...overrides,
+  };
+}
 
-  describe("isGroupActive", () => {
-    describe("given pattern is '*'", () => {
-      it("then returns true", async () => {
-        const result = await isGroupActive("*", "/test");
+async function setupHandler(
+  config: unknown[],
+  options: { primeTree?: boolean } = {},
+) {
+  configLoader.load.mockResolvedValue(undefined);
+  configLoader.getConfig.mockReturnValue(config);
+  glob.mockResolvedValue(["package.json"]);
 
-        expect(result).toBe(true);
-      });
-    });
+  const pi = { on: vi.fn(), registerCommand: vi.fn() };
+  await guardrailsExtension(pi as unknown);
+  const handler = pi.on.mock.calls.find((c) => c[0] === "tool_call")?.[1] as (
+    event: unknown,
+    ctx: unknown,
+  ) => Promise<unknown>;
 
-    describe("given pattern matches files", () => {
-      beforeEach(() => {
-        glob.mockResolvedValue(["package.json"]);
-      });
+  if (options.primeTree ?? true) {
+    await handler(
+      { toolName: "bash", input: { command: "tree ." } },
+      makeCtx(),
+    );
+  }
 
-      it("then returns true", async () => {
-        const result = await isGroupActive("*.json", "/test");
+  return handler;
+}
 
-        expect(result).toBe(true);
-        expect(glob).toHaveBeenCalledWith("*.json", {
-          cwd: "/test",
-          absolute: false,
-          dot: true,
-          onlyDirectories: false,
-        });
-      });
-    });
+describe("isGroupActive", () => {
+  beforeEach(() => vi.clearAllMocks());
 
-    describe("given pattern matches no files", () => {
-      beforeEach(() => {
-        glob.mockResolvedValue([]);
-      });
-
-      it("then returns false", async () => {
-        const result = await isGroupActive("*.lock", "/test");
-
-        expect(result).toBe(false);
-      });
-    });
-
-    describe("given glob throws error", () => {
-      beforeEach(() => {
-        glob.mockRejectedValue(new Error("Permission denied"));
-      });
-
-      it("then returns false", async () => {
-        const result = await isGroupActive("*.txt", "/test");
-
-        expect(result).toBe(false);
-      });
+  describe("given wildcard pattern", () => {
+    it("then returns true", async () => {
+      expect(await isGroupActive("*", "/test")).toBe(true);
     });
   });
 
-  describe("guardrailsExtension", () => {
-    describe("given valid config", () => {
-      beforeEach(() => {
-        configLoader.load.mockResolvedValue(undefined);
-        configLoader.getConfig.mockReturnValue([
-          {
-            group: "coreutils",
-            pattern: "*",
-            rules: [
-              {
-                context: "command",
-                pattern: "^find",
-                action: "block",
-                reason: "use `fd` instead",
-              },
-            ],
-          },
-        ]);
+  describe("given matching pattern", () => {
+    it("then returns true", async () => {
+      glob.mockResolvedValue(["tsconfig.json"]);
+      expect(await isGroupActive("*.json", "/test")).toBe(true);
+    });
+  });
+
+  describe("given no matches", () => {
+    it("then returns false", async () => {
+      glob.mockResolvedValue([]);
+      expect(await isGroupActive("*.lock", "/test")).toBe(false);
+    });
+  });
+
+  describe("given glob failure", () => {
+    it("then returns false", async () => {
+      glob.mockRejectedValue(new Error("boom"));
+      expect(await isGroupActive("*.ts", "/test")).toBe(false);
+    });
+  });
+});
+
+describe("guardrails extension", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  describe("given extension startup", () => {
+    it("then loads config and registers tool_call hook", async () => {
+      configLoader.load.mockResolvedValue(undefined);
+      configLoader.getConfig.mockReturnValue([]);
+
+      const pi = { on: vi.fn(), registerCommand: vi.fn() };
+      await guardrailsExtension(pi as unknown);
+
+      expect(configLoader.load).toHaveBeenCalled();
+      expect(configLoader.getConfig).toHaveBeenCalled();
+      expect(loadGuardrailsSettings).toHaveBeenCalled();
+      expect(pi.on).toHaveBeenCalledWith("tool_call", expect.any(Function));
+    });
+  });
+
+  describe("given /guardrails command", () => {
+    it("then persists on/off state", async () => {
+      configLoader.load.mockResolvedValue(undefined);
+      configLoader.getConfig.mockReturnValue([]);
+      glob.mockResolvedValue(["package.json"]);
+
+      const pi = { on: vi.fn(), registerCommand: vi.fn() };
+      await guardrailsExtension(pi as unknown);
+
+      const command = pi.registerCommand.mock.calls.find(
+        (c) => c[0] === "guardrails",
+      )?.[1] as {
+        handler: (
+          args: string,
+          ctx: ReturnType<typeof makeCtx>,
+        ) => Promise<void>;
+      };
+
+      const ctx = makeCtx();
+      await command.handler("off", ctx);
+      await command.handler("on", ctx);
+
+      expect(saveGuardrailsSettings).toHaveBeenCalledWith({ enabled: false });
+      expect(saveGuardrailsSettings).toHaveBeenCalledWith({ enabled: true });
+    });
+  });
+
+  describe("given command context AST-like pattern", () => {
+    it("then blocks matching command", async () => {
+      const handler = await setupHandler([
+        {
+          group: "bun",
+          pattern: "*",
+          rules: [
+            {
+              context: "command",
+              pattern: "npm *",
+              action: "block",
+              reason: "use bun",
+            },
+          ],
+        },
+      ]);
+
+      const result = await handler(
+        { toolName: "bash", input: { command: "npm install" } },
+        makeCtx(),
+      );
+
+      expect(result).toEqual({ block: true, reason: "Blocked [bun]: use bun" });
+    });
+
+    it("then allows non-matching command", async () => {
+      const handler = await setupHandler([
+        {
+          group: "bun",
+          pattern: "*",
+          rules: [
+            {
+              context: "command",
+              pattern: "npm *",
+              action: "block",
+              reason: "use bun",
+            },
+          ],
+        },
+      ]);
+
+      const result = await handler(
+        { toolName: "bash", input: { command: "bun install" } },
+        makeCtx(),
+      );
+
+      expect(result).toBeUndefined();
+    });
+
+    it("then matches command after env and &&", async () => {
+      const handler = await setupHandler([
+        {
+          group: "bun",
+          pattern: "*",
+          rules: [
+            {
+              context: "command",
+              pattern: "npm *",
+              action: "block",
+              reason: "use bun",
+            },
+          ],
+        },
+      ]);
+
+      const result = await handler(
+        {
+          toolName: "bash",
+          input: { command: "NODE_ENV=prod cd /tmp && env npm install" },
+        },
+        makeCtx(),
+      );
+
+      expect(result).toEqual({ block: true, reason: "Blocked [bun]: use bun" });
+    });
+  });
+
+  describe("given command includes/excludes patterns", () => {
+    it("then enforces includes with AST-like matcher", async () => {
+      const handler = await setupHandler([
+        {
+          group: "danger",
+          pattern: "*",
+          rules: [
+            {
+              context: "command",
+              pattern: "find *",
+              includes: "find * --delete *",
+              action: "block",
+              reason: "dangerous find",
+            },
+          ],
+        },
+      ]);
+
+      const blocked = await handler(
+        { toolName: "bash", input: { command: "find . --delete" } },
+        makeCtx(),
+      );
+      const allowed = await handler(
+        { toolName: "bash", input: { command: "find . -name '*.ts'" } },
+        makeCtx(),
+      );
+
+      expect(blocked).toEqual({
+        block: true,
+        reason: "Blocked [danger]: dangerous find",
       });
+      expect(allowed).toBeUndefined();
+    });
 
-      it("then loads config and sets up hooks", async () => {
-        const mockPI = {
-          on: vi.fn(),
-          registerCommand: vi.fn(),
-        };
+    it("then enforces excludes with AST-like matcher", async () => {
+      const handler = await setupHandler([
+        {
+          group: "jj",
+          pattern: "*",
+          rules: [
+            {
+              context: "command",
+              pattern: "jj squash *",
+              excludes: "jj squash * -m *",
+              action: "block",
+              reason: "add -m",
+            },
+          ],
+        },
+      ]);
 
-        await guardrailsExtension(mockPI as unknown);
+      const blocked = await handler(
+        { toolName: "bash", input: { command: "jj squash" } },
+        makeCtx(),
+      );
+      const allowed = await handler(
+        { toolName: "bash", input: { command: "jj squash -m 'msg'" } },
+        makeCtx(),
+      );
 
-        expect(configLoader.load).toHaveBeenCalled();
-        expect(configLoader.getConfig).toHaveBeenCalled();
-        expect(mockPI.on).toHaveBeenCalledWith(
-          "tool_call",
-          expect.any(Function),
-        );
+      expect(blocked).toEqual({ block: true, reason: "Blocked [jj]: add -m" });
+      expect(allowed).toBeUndefined();
+    });
+  });
+
+  describe("given confirm action", () => {
+    it("then prompts and allows when user confirms", async () => {
+      const handler = await setupHandler([
+        {
+          group: "danger",
+          pattern: "*",
+          rules: [
+            {
+              context: "command",
+              pattern: "rm -rf *",
+              action: "confirm",
+              reason: "dangerous",
+            },
+          ],
+        },
+      ]);
+
+      const c = makeCtx();
+      const result = await handler(
+        { toolName: "bash", input: { command: "rm -rf /tmp" } },
+        c,
+      );
+
+      expect((c.ui as { confirm: Mock }).confirm).toHaveBeenCalled();
+      expect(result).toBeUndefined();
+    });
+
+    it("then blocks when user denies", async () => {
+      const handler = await setupHandler([
+        {
+          group: "danger",
+          pattern: "*",
+          rules: [
+            {
+              context: "command",
+              pattern: "rm -rf *",
+              action: "confirm",
+              reason: "dangerous",
+            },
+          ],
+        },
+      ]);
+
+      const c = makeCtx();
+      (c.ui as { confirm: Mock }).confirm.mockResolvedValue(false);
+      const result = await handler(
+        { toolName: "bash", input: { command: "rm -rf /tmp" } },
+        c,
+      );
+
+      expect(result).toEqual({
+        block: true,
+        reason: "Blocked: User denied execution",
       });
     });
   });
 
-  describe("Rule Enforcement Integration", () => {
-    describe("given coreutils blocking rules", () => {
-      beforeEach(() => {
-        // Mock config loader
-        configLoader.load.mockResolvedValue(undefined);
-        configLoader.getConfig.mockReturnValue([
-          {
-            group: "coreutils",
-            pattern: "*",
-            rules: [
-              {
-                context: "command",
-                pattern: "^find",
-                action: "block",
-                reason: "use `fd` instead",
-              },
-            ],
-          },
-        ]);
-
-        // Mock glob to return matches (group is active)
-        glob.mockResolvedValue(["package.json"]);
-      });
-
-      describe("when find command is executed", () => {
-        it("then blocks the operation", async () => {
-          const mockPI = {
-            on: vi.fn(),
-            registerCommand: vi.fn(),
-          };
-
-          await guardrailsExtension(mockPI as unknown);
-
-          // Get the tool_call handler
-          const toolCallHandler = mockPI.on.mock.calls.find(
-            (call) => call[0] === "tool_call",
-          )?.[1];
-
-          expect(toolCallHandler).toBeDefined();
-
-          const mockEvent = {
-            toolName: "bash",
-            input: { command: "find . -name '*.ts'" },
-          };
-
-          const mockCtx = {
-            cwd: "/test/project",
-            hasUI: true,
-            ui: {
-              notify: vi.fn(),
-              confirm: vi.fn(),
+  describe("given file_name and file_content contexts", () => {
+    it("then matches file_name rules on edit/write", async () => {
+      const handler = await setupHandler([
+        {
+          group: "lock",
+          pattern: "*",
+          rules: [
+            {
+              context: "file_name",
+              pattern: "package-lock\\.json",
+              action: "block",
+              reason: "no lock edits",
             },
-          };
+          ],
+        },
+      ]);
 
-          const result = await toolCallHandler(mockEvent, mockCtx);
-
-          expect(result).toEqual({
-            block: true,
-            reason: expect.stringContaining("Blocked:"),
-          });
-        });
-      });
-
-      describe("when allowed command is executed", () => {
-        it("then allows the operation", async () => {
-          const mockPI = {
-            on: vi.fn(),
-            registerCommand: vi.fn(),
-          };
-
-          await guardrailsExtension(mockPI as unknown);
-
-          const toolCallHandler = mockPI.on.mock.calls.find(
-            (call) => call[0] === "tool_call",
-          )?.[1];
-
-          const mockEvent = {
-            toolName: "bash",
-            input: { command: "ls -la" },
-          };
-
-          const mockCtx = {
-            cwd: "/test/project",
-            ui: {
-              notify: vi.fn(),
-              confirm: vi.fn(),
-            },
-          };
-
-          const result = await toolCallHandler(mockEvent, mockCtx);
-
-          expect(result).toBeUndefined();
-          expect(mockCtx.ui.notify).not.toHaveBeenCalled();
-        });
-      });
+      const result = await handler(
+        {
+          toolName: "edit",
+          input: { path: "package-lock.json", oldText: "", newText: "" },
+        },
+        makeCtx(),
+      );
+      expect(result).toEqual({ block: true, reason: "Blocked [lock]: no lock edits" });
     });
 
-    describe("given inactive groups", () => {
-      beforeEach(() => {
-        configLoader.load.mockResolvedValue(undefined);
-        configLoader.getConfig.mockReturnValue([
-          {
-            group: "bun-specific",
-            pattern: "bun.lock",
-            rules: [
-              {
-                context: "command",
-                pattern: "^npm",
-                action: "block",
-                reason: "use `bun` instead",
-              },
-            ],
-          },
-        ]);
-
-        // Mock glob to return no matches (group is inactive)
-        glob.mockResolvedValue([]);
-      });
-
-      describe("when npm command is executed in non-bun project", () => {
-        it("then allows the operation", async () => {
-          const mockPI = {
-            on: vi.fn(),
-            registerCommand: vi.fn(),
-          };
-
-          await guardrailsExtension(mockPI as unknown);
-
-          const toolCallHandler = mockPI.on.mock.calls.find(
-            (call) => call[0] === "tool_call",
-          )?.[1];
-
-          const mockEvent = {
-            toolName: "bash",
-            input: { command: "npm install lodash" },
-          };
-
-          const mockCtx = {
-            cwd: "/test/project",
-            ui: {
-              notify: vi.fn(),
-              confirm: vi.fn(),
+    it("then matches file_content rules on write", async () => {
+      const handler = await setupHandler([
+        {
+          group: "ts",
+          pattern: "*",
+          rules: [
+            {
+              context: "file_content",
+              pattern: "@ts-ignore",
+              action: "block",
+              reason: "no ts-ignore",
             },
-          };
+          ],
+        },
+      ]);
 
-          const result = await toolCallHandler(mockEvent, mockCtx);
-
-          expect(result).toBeUndefined();
-          expect(mockCtx.ui.notify).not.toHaveBeenCalled();
-        });
-      });
+      const result = await handler(
+        {
+          toolName: "write",
+          input: { path: "src/a.ts", content: "// @ts-ignore" },
+        },
+        makeCtx(),
+      );
+      expect(result).toEqual({ block: true, reason: "Blocked [ts]: no ts-ignore" });
     });
+  });
 
-    describe("given lock file blocking rules", () => {
-      beforeEach(() => {
-        configLoader.load.mockResolvedValue(undefined);
-        configLoader.getConfig.mockReturnValue([
-          {
-            group: "lock-files",
-            pattern: "*",
-            rules: [
-              {
-                context: "file_name",
-                pattern: "(package-lock\\.json|bun\\.lockb)",
-                action: "block",
-                reason:
-                  "auto-generated lock files should not be edited directly",
-              },
-            ],
-          },
-        ]);
-
-        glob.mockResolvedValue(["package.json"]);
-      });
-
-      describe("when editing package-lock.json", () => {
-        it("then blocks the operation", async () => {
-          const mockPI = {
-            on: vi.fn(),
-            registerCommand: vi.fn(),
-          };
-
-          await guardrailsExtension(mockPI as unknown);
-
-          const toolCallHandler = mockPI.on.mock.calls.find(
-            (call) => call[0] === "tool_call",
-          )?.[1];
-
-          const mockEvent = {
-            toolName: "edit",
-            input: {
-              path: "package-lock.json",
-              oldText: "old content",
-              newText: "new content",
+  describe("given read tool", () => {
+    it("then bypasses guardrails", async () => {
+      const handler = await setupHandler([
+        {
+          group: "all",
+          pattern: "*",
+          rules: [
+            {
+              context: "file_name",
+              pattern: ".*",
+              action: "block",
+              reason: "block all",
             },
-          };
-
-          const mockCtx = {
-            cwd: "/test/project",
-            ui: {
-              notify: vi.fn(),
-              confirm: vi.fn(),
-            },
-          };
-
-          const result = await toolCallHandler(mockEvent, mockCtx);
-
-          expect(result).toEqual({
-            block: true,
-            reason:
-              "Blocked: auto-generated lock files should not be edited directly",
-          });
-        });
-      });
-
-      describe("when reading package.json", () => {
-        it("then allows the operation", async () => {
-          const mockPI = {
-            on: vi.fn(),
-            registerCommand: vi.fn(),
-          };
-
-          await guardrailsExtension(mockPI as unknown);
-
-          const toolCallHandler = mockPI.on.mock.calls.find(
-            (call) => call[0] === "tool_call",
-          )?.[1];
-
-          const mockEvent = {
-            toolName: "read",
-            input: { path: "package.json" },
-          };
-
-          const mockCtx = {
-            cwd: "/test/project",
-            ui: {
-              notify: vi.fn(),
-              confirm: vi.fn(),
-            },
-          };
-
-          const result = await toolCallHandler(mockEvent, mockCtx);
-
-          expect(result).toBeUndefined();
-        });
-      });
-    });
-
-    describe("given TypeScript content blocking rules", () => {
-      beforeEach(() => {
-        configLoader.load.mockResolvedValue(undefined);
-        configLoader.getConfig.mockReturnValue([
-          {
-            group: "typescript",
-            pattern: "tsconfig.json",
-            rules: [
-              {
-                context: "file_content",
-                pattern: "@ts-ignore",
-                action: "block",
-                reason: "`@ts-ignore` comments are not allowed",
-              },
-            ],
-          },
-        ]);
-
-        // Mock tsconfig.json exists
-        glob.mockResolvedValue(["tsconfig.json"]);
-      });
-
-      describe("when writing file with @ts-ignore", () => {
-        it("then blocks the operation", async () => {
-          const mockPI = {
-            on: vi.fn(),
-            registerCommand: vi.fn(),
-          };
-
-          await guardrailsExtension(mockPI as unknown);
-
-          const toolCallHandler = mockPI.on.mock.calls.find(
-            (call) => call[0] === "tool_call",
-          )?.[1];
-
-          const mockEvent = {
-            toolName: "write",
-            input: {
-              path: "src/index.ts",
-              content: "// @ts-ignore\nconst x: any = {};",
-            },
-          };
-
-          const mockCtx = {
-            cwd: "/test/project",
-            ui: {
-              notify: vi.fn(),
-              confirm: vi.fn(),
-            },
-          };
-
-          const result = await toolCallHandler(mockEvent, mockCtx);
-
-          expect(result).toEqual({
-            block: true,
-            reason: "Blocked: `@ts-ignore` comments are not allowed",
-          });
-        });
-      });
-    });
-
-    describe("given confirm action rules", () => {
-      beforeEach(() => {
-        configLoader.load.mockResolvedValue(undefined);
-        configLoader.getConfig.mockReturnValue([
-          {
-            group: "dangerous",
-            pattern: "*",
-            rules: [
-              {
-                context: "command",
-                pattern: "^rm ",
-                action: "confirm",
-                reason: "This command deletes files",
-              },
-            ],
-          },
-        ]);
-
-        glob.mockResolvedValue(["package.json"]);
-      });
-
-      describe("when dangerous command is executed and user confirms", () => {
-        it("then allows the operation", async () => {
-          const mockPI = {
-            on: vi.fn(),
-            registerCommand: vi.fn(),
-          };
-
-          await guardrailsExtension(mockPI as unknown);
-
-          const toolCallHandler = mockPI.on.mock.calls.find(
-            (call) => call[0] === "tool_call",
-          )?.[1];
-
-          const mockEvent = {
-            toolName: "bash",
-            input: { command: "rm -rf /tmp/test" },
-          };
-
-          const mockCtx = {
-            cwd: "/test/project",
-            hasUI: true,
-            ui: {
-              notify: vi.fn(),
-              confirm: vi.fn().mockResolvedValue(true), // User confirms
-            },
-          };
-
-          const result = await toolCallHandler(mockEvent, mockCtx);
-
-          expect(result).toBeUndefined(); // Operation allowed
-          expect(mockCtx.ui.confirm).toHaveBeenCalled();
-        });
-      });
-
-      describe("when dangerous command is executed and user denies", () => {
-        it("then blocks the operation", async () => {
-          const mockPI = {
-            on: vi.fn(),
-            registerCommand: vi.fn(),
-          };
-
-          await guardrailsExtension(mockPI as unknown);
-
-          const toolCallHandler = mockPI.on.mock.calls.find(
-            (call) => call[0] === "tool_call",
-          )?.[1];
-
-          const mockEvent = {
-            toolName: "bash",
-            input: { command: "rm -rf /tmp/test" },
-          };
-
-          const mockCtx = {
-            cwd: "/test/project",
-            hasUI: true,
-            ui: {
-              notify: vi.fn(),
-              confirm: vi.fn().mockResolvedValue(false), // User denies
-            },
-          };
-
-          const result = await toolCallHandler(mockEvent, mockCtx);
-
-          expect(result).toEqual({
-            block: true,
-            reason: "Blocked: User denied execution",
-          });
-        });
-      });
-
-      describe("when dangerous command is executed without UI", () => {
-        it("then blocks automatically", async () => {
-          const mockPI = {
-            on: vi.fn(),
-            registerCommand: vi.fn(),
-          };
-
-          await guardrailsExtension(mockPI as unknown);
-
-          const toolCallHandler = mockPI.on.mock.calls.find(
-            (call) => call[0] === "tool_call",
-          )?.[1];
-
-          const mockEvent = {
-            toolName: "bash",
-            input: { command: "rm -rf /tmp/test" },
-          };
-
-          const mockCtx = {
-            cwd: "/test/project",
-            hasUI: false,
-            ui: {
-              notify: vi.fn(),
-              confirm: vi.fn(),
-            },
-          };
-
-          const result = await toolCallHandler(mockEvent, mockCtx);
-
-          expect(result).toEqual({
-            block: true,
-            reason: expect.stringContaining("Blocked:"),
-          });
-          expect(mockCtx.ui.confirm).not.toHaveBeenCalled();
-        });
-      });
-    });
-
-    describe("given rules with includes pattern", () => {
-      beforeEach(() => {
-        configLoader.load.mockResolvedValue(undefined);
-        configLoader.getConfig.mockReturnValue([
-          {
-            group: "includes-test",
-            pattern: "*",
-            rules: [
-              {
-                context: "command",
-                pattern: "^find",
-                includes: "--delete",
-                action: "block",
-                reason: "find with --delete is dangerous",
-              },
-            ],
-          },
-        ]);
-
-        glob.mockResolvedValue(["package.json"]);
-      });
-
-      describe("when command matches pattern and includes", () => {
-        it("then blocks the operation", async () => {
-          const mockPI = {
-            on: vi.fn(),
-            registerCommand: vi.fn(),
-          };
-
-          await guardrailsExtension(mockPI as unknown);
-
-          const toolCallHandler = mockPI.on.mock.calls.find(
-            (call) => call[0] === "tool_call",
-          )?.[1];
-
-          const mockEvent = {
-            toolName: "bash",
-            input: { command: "find . -name '*.tmp' --delete" },
-          };
-
-          const mockCtx = {
-            cwd: "/test/project",
-            hasUI: true,
-            ui: {
-              notify: vi.fn(),
-              confirm: vi.fn(),
-            },
-          };
-
-          const result = await toolCallHandler(mockEvent, mockCtx);
-
-          expect(result).toEqual({
-            block: true,
-            reason: "Blocked: find with --delete is dangerous",
-          });
-        });
-      });
-
-      describe("when command matches pattern but not includes", () => {
-        it("then allows the operation", async () => {
-          const mockPI = {
-            on: vi.fn(),
-            registerCommand: vi.fn(),
-          };
-
-          await guardrailsExtension(mockPI as unknown);
-
-          const toolCallHandler = mockPI.on.mock.calls.find(
-            (call) => call[0] === "tool_call",
-          )?.[1];
-
-          const mockEvent = {
-            toolName: "bash",
-            input: { command: "find . -name '*.ts'" },
-          };
-
-          const mockCtx = {
-            cwd: "/test/project",
-            hasUI: true,
-            ui: {
-              notify: vi.fn(),
-              confirm: vi.fn(),
-            },
-          };
-
-          const result = await toolCallHandler(mockEvent, mockCtx);
-
-          expect(result).toBeUndefined();
-        });
-      });
-    });
-
-    describe("given rules with excludes pattern", () => {
-      beforeEach(() => {
-        configLoader.load.mockResolvedValue(undefined);
-        configLoader.getConfig.mockReturnValue([
-          {
-            group: "excludes-test",
-            pattern: "*",
-            rules: [
-              {
-                context: "command",
-                pattern: "^find",
-                excludes: "\\| head",
-                action: "block",
-                reason: "use `fd` instead",
-              },
-            ],
-          },
-        ]);
-
-        glob.mockResolvedValue(["package.json"]);
-      });
-
-      describe("when command matches pattern but also excludes", () => {
-        it("then allows the operation", async () => {
-          const mockPI = {
-            on: vi.fn(),
-            registerCommand: vi.fn(),
-          };
-
-          await guardrailsExtension(mockPI as unknown);
-
-          const toolCallHandler = mockPI.on.mock.calls.find(
-            (call) => call[0] === "tool_call",
-          )?.[1];
-
-          const mockEvent = {
-            toolName: "bash",
-            input: { command: "find . -name '*.ts' | head -20" },
-          };
-
-          const mockCtx = {
-            cwd: "/test/project",
-            hasUI: true,
-            ui: {
-              notify: vi.fn(),
-              confirm: vi.fn(),
-            },
-          };
-
-          const result = await toolCallHandler(mockEvent, mockCtx);
-
-          expect(result).toBeUndefined();
-        });
-      });
-
-      describe("when command matches pattern and not excludes", () => {
-        it("then blocks the operation", async () => {
-          const mockPI = {
-            on: vi.fn(),
-            registerCommand: vi.fn(),
-          };
-
-          await guardrailsExtension(mockPI as unknown);
-
-          const toolCallHandler = mockPI.on.mock.calls.find(
-            (call) => call[0] === "tool_call",
-          )?.[1];
-
-          const mockEvent = {
-            toolName: "bash",
-            input: { command: "find . -name '*.ts'" },
-          };
-
-          const mockCtx = {
-            cwd: "/test/project",
-            hasUI: true,
-            ui: {
-              notify: vi.fn(),
-              confirm: vi.fn(),
-            },
-          };
-
-          const result = await toolCallHandler(mockEvent, mockCtx);
-
-          expect(result).toEqual({
-            block: true,
-            reason: "Blocked: use `fd` instead",
-          });
-        });
-      });
-    });
-
-    describe("given malformed regex patterns", () => {
-      beforeEach(() => {
-        configLoader.load.mockResolvedValue(undefined);
-        configLoader.getConfig.mockReturnValue([
-          {
-            group: "broken",
-            pattern: "*",
-            rules: [
-              {
-                context: "command",
-                pattern: "[invalid regex",
-                action: "block",
-                reason: "This pattern is broken",
-              },
-            ],
-          },
-        ]);
-
-        glob.mockResolvedValue(["package.json"]);
-      });
-
-      describe("when command is executed", () => {
-        it("then skips malformed regex gracefully", async () => {
-          const mockPI = {
-            on: vi.fn(),
-            registerCommand: vi.fn(),
-          };
-
-          await guardrailsExtension(mockPI as unknown);
-
-          const toolCallHandler = mockPI.on.mock.calls.find(
-            (call) => call[0] === "tool_call",
-          )?.[1];
-
-          const mockEvent = {
-            toolName: "bash",
-            input: { command: "some command" },
-          };
-
-          const mockCtx = {
-            cwd: "/test/project",
-            ui: {
-              notify: vi.fn(),
-              confirm: vi.fn(),
-            },
-          };
-
-          const result = await toolCallHandler(mockEvent, mockCtx);
-
-          // Malformed regex should be skipped, no blocking
-          expect(result).toBeUndefined();
-        });
-      });
+          ],
+        },
+      ]);
+
+      const result = await handler(
+        { toolName: "read", input: { path: "any" } },
+        makeCtx(),
+      );
+      expect(result).toBeUndefined();
     });
   });
 });

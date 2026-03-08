@@ -1,222 +1,84 @@
 # Guardrails
 
-Security hooks to prevent potentially dangerous operations.
-
-## Default Configuration
-
-Guardrails comes with a comprehensive set of default rules to prevent common issues:
-
-### JavaScript/Node.js Commands
-
-- `node` - Blocked in favor of bun or bunx
-- `npm` - Blocked in favor of bun or bunx
-
-### Python Commands
-
-- `pip` - Blocked in favor of uv or uvx
-- `python`, `python2`, `python3` - Blocked in favor of uv or uvx
-  - Exceptions: Virtual environment python commands are allowed (e.g., `.venv/bin/python`)
-
-### Git Commands
-
-- Write operations - Only read-only git commands are allowed:
-  - ✅ `git status`, `git diff`, `git show`
-  - ❌ `git add`, `git commit`, `git push`, `git checkout`, etc.
-
-### JJ (JetBrains Jump) Commands
-
-- Various jj commands blocked or require confirmation:
-  - `jj diffedit`, `jj simplify`, `jj forget`, `jj undo`, `jj recover` - Blocked
-  - `jj squash` without `-m` - Blocked (opens editor)
-  - `jj split` without `-m` - Blocked (opens editor or diff view)
-  - `jj resolve` without `--list` - Blocked (opens merge tool)
-  - `jj describe` without `-m` - Blocked (opens editor)
-  - `jj commit` without `-m` - Blocked (opens editor)
-  - `jj -i/--interactive/--tool` - Blocked (opens diff editor)
-
-### Nix Commands
-
-- Local flake references - Must use proper prefixes:
-  - ✅ `nix run path:./my-flake#output`
-  - ✅ `nix run github:user/repo#output`
-  - ✅ `nix run git+https://github.com/user/repo#output`
-  - ❌ `nix run ./my-flake#output`
-
-### Privilege Escalation Commands
-
-- `sudo` and `su` - Blocked to prevent privilege escalation
-  - ❌ `sudo apt update`
-  - ❌ `su root`
-  - Rationale: Agents should instruct system administrators to perform privileged operations
-
-### File Edit Blocking - Lock Files
-
-Prevents editing of auto-generated lock files:
-
-- `package-lock.json` - Use bun install or bun update instead
-- `bun.lockb` - Use bun install or bun update instead
-- `yarn.lock` - Use yarn install or yarn upgrade instead
-- `pnpm-lock.yaml` - Use pnpm install or pnpm update instead
-- `poetry.lock` - Use poetry install or poetry update instead
-- `uv.lock` - Use uv sync or uv lock instead
-- `Cargo.lock` - Use cargo update instead
-- `Gemfile.lock` - Use bundle install or bundle update instead
-- `flake.lock` - Use nix flake update instead
+Security rules that block or confirm risky tool calls.
 
 ## Configuration
 
-Configuration is loaded from:
+Guardrails are loaded from:
 
-- **Global**: `~/.pi/agent/settings.json` under key `"guardrails"`
-- **Defaults**: Built-in `defaults.json` (used when no global config exists)
+- Global rules: `~/.pi/agent/settings.json` under key `guardrails`
+- Defaults: `agent/extensions/guardrails/defaults.json`
 
-### Configuration Schema
+Runtime command state is also stored in `~/.pi/agent/settings.json` under the same `guardrails` object (`enabled`).
 
-```json
-{
-  "enabled": true,
-  "groups": [
-    {
-      "group": "jj",
-      "pattern": "^jj",
-      "rules": [
-        {
-          "pattern": "^jj\\s+(?:diffedit|simplify|forget|undo|recover)",
-          "action": "block",
-          "reason": "jj diffedit and related commands are blocked. Use jj restore instead."
-        }
-      ]
-    }
-  ]
-}
-```
+## Command
 
-All fields are optional. Missing fields use defaults shown above.
+- `/guardrails on`
+- `/guardrails off`
 
-### Configuration Details
+Toggles guardrails enforcement and persists the setting.
 
-#### `groups`
+A rule has:
 
-Array of groups with patterns and rules.
+- `context`: `command` | `file_name` | `file_content`
+- `pattern`: matcher string
+- `includes` (optional): additional matcher that must match
+- `excludes` (optional): matcher that must **not** match
+- `action`: `block` | `confirm`
+- `reason`: message shown to user
 
-| Key       | Required | Description                                       |
-| --------- | -------- | ------------------------------------------------- |
-| `group`   | Required | Name of the group (human-readable identifier)     |
-| `pattern` | Required | Regex pattern to match the item (command or file) |
-| `rules`   | Required | Array of rule objects                             |
+## Command Pattern Syntax
 
-#### `rules`
+For `context: "command"`, `pattern`/`includes`/`excludes` use token matching (not regex):
 
-Each rule defines what to do when the group pattern matches.
+- `?` = match exactly one token
+- `*` = match zero or more tokens
+- `{token1,token2}` = match one of multiple literal tokens
+- literal token = exact match
+- literal token supports wildcard `*` inside token (`mkfs.*`, `/*`, `*@^*`, `{python,python3*}`)
 
-| Key       | Required | Description                                                |
-| --------- | -------- | ---------------------------------------------------------- |
-| `pattern` | Required | Regex pattern to match the specific item                   |
-| `action`  | Required | `"block"` or `"confirm"` - whether to auto-block or prompt |
-| `reason`  | Required | Human-readable reason for blocking                         |
+Matching is done against parsed shell command segments (split by `|`, `&&`, `||`, `;`).
+Leading env assignments and wrappers (`env`, `nohup`, `time`, etc.) are normalized out.
 
 ### Examples
 
-#### Customize Python Rules
+- `npm *` → any npm command
+- `{npm,bun} test *` → npm or bun test commands
+- `? run dev *` → any package manager running dev
+- `jj squash *` with `excludes: "* -m *"` → block squash without `-m`
+- `dd * if=? *` → dd commands containing `if=`
+- `nix ? . *` → local flake invocation with `.`
 
-Allow virtual environment python commands:
+## Non-command Contexts
 
-```json
-{
-  "groups": [
-    {
-      "group": "python",
-      "pattern": "^python",
-      "rules": [
-        {
-          "pattern": "^(?!.*(?:/\\.venv/|/venv/|/env/).*python$)\\bpython\\b",
-          "action": "block",
-          "reason": "use uv or uvx instead"
-        }
-      ]
-    }
-  ]
-}
-```
+For `file_name` and `file_content`, `pattern`/`includes`/`excludes` are regular expressions.
 
-#### Remove Nix Local Flake Blocking
+## Minimal Example
 
 ```json
-{
-  "groups": [
-    {
-      "group": "nix",
-      "pattern": "^nix",
-      "rules": []
-    }
-  ]
-}
+[
+  {
+    "group": "bun",
+    "pattern": "bun.lock",
+    "rules": [
+      {
+        "context": "command",
+        "pattern": "npm *",
+        "action": "block",
+        "reason": "Use bun instead of npm"
+      }
+    ]
+  }
+]
 ```
 
-#### Allow Sudo for Package Updates
+## Built-in Defaults
 
-```json
-{
-  "groups": [
-    {
-      "group": "privilege",
-      "pattern": "^(sudo|su)",
-      "rules": []
-    }
-  ]
-}
-```
+`defaults.json` includes guardrails for:
 
-#### Customize JJ Commands
-
-Add jj diffedit to the blocked commands:
-
-```json
-{
-  "groups": [
-    {
-      "group": "jj",
-      "pattern": "^jj",
-      "rules": [
-        {
-          "pattern": "^jj\\s+(?:diffedit|simplify|forget|undo|recover)",
-          "action": "block",
-          "reason": "jj diffedit and related commands are blocked. Use jj restore instead."
-        }
-      ]
-    }
-  ]
-}
-```
-
-## Events
-
-The extension emits events on the pi event bus for inter-extension communication.
-
-### `guardrails:blocked`
-
-Emitted when a tool call is blocked by any guardrail.
-
-```typescript
-interface GuardrailsBlockedEvent {
-  feature: "blockedCommands";
-  toolName: string;
-  input: Record<string, unknown>;
-  reason: string;
-  userDenied?: boolean;
-}
-```
-
-### `guardrails:dangerous`
-
-Emitted when a blocked command with `action: "confirm"` is detected (before the confirmation dialog).
-
-```typescript
-interface GuardrailsDangerousEvent {
-  command: string;
-  description: string;
-  pattern: string;
-}
-```
-
-The [presenter extension](../presenter) listens for `guardrails:dangerous` events and plays a notification sound.
+- package manager usage
+- interactive command prevention
+- dangerous command confirmation (`rm -rf`, `sudo`, `dd`, etc.)
+- jj safety rules
+- lock-file protection
+- test/lint hygiene
