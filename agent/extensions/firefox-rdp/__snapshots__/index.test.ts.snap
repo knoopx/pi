@@ -1,0 +1,22 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`firefox-rdp extension > given query-dom business behavior > when selector matches elements > then returns devtools-like prettified HTML blocks 1`] = `
+"2 match(s) • .card
+
+─── match 1 ────────────────────────────────────────────────
+<div class="card">
+  <span>hello</span>
+</div>
+
+─── match 2 ────────────────────────────────────────────────
+<a href="/x">x</a>"
+`;
+
+exports[`firefox-rdp extension > given tab management > when listing open tabs > then returns indexed tab URLs 1`] = `
+"2 tab(s)
+
+tab │ url
+────┼────────────────────
+  0 │ https://example.com
+  1 │ https://mozilla.org"
+`;
