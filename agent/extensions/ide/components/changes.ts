@@ -1090,7 +1090,7 @@ Use the **conventional-commits** skill for commit message format.`;
       },
     },
     {
-      key: Key.ctrl("s"),
+      key: "s",
       label: "split",
       when: () => hasSelectedChange() && hasSelectedFile(),
       handler: () => {
