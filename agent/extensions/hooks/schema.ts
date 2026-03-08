@@ -21,7 +21,13 @@ const HookContextSchema = Type.Union([
 export const HookRuleSchema = Type.Object({
   event: HookEventSchema,
   context: Type.Optional(HookContextSchema),
+  /**
+   * Matcher pattern:
+   * - tool_name/file_name contexts: regular expression
+   * - command context: token pattern (`?` = one token, `*` = any tokens)
+   */
   pattern: Type.Optional(Type.String()),
+
   command: Type.String(),
   cwd: Type.Optional(Type.String()),
   timeout: Type.Optional(Type.Number({ minimum: 0 })),

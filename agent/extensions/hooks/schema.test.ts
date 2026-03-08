@@ -29,7 +29,7 @@ describe("validateConfig", () => {
             event: "tool_result",
             context: "file_name",
             pattern: "\\.ts$",
-            command: "prettier ${file}",
+            command: "prettier %file%",
             cwd: "/tmp",
             timeout: 5000,
             notify: false,

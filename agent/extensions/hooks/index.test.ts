@@ -67,10 +67,10 @@ describe("isGroupActive", () => {
 });
 
 describe("substituteVariables", () => {
-  describe("given command with ${file} variable", () => {
+  describe("given command with %file% variable", () => {
     describe("when file is provided", () => {
       it("then substitutes the file path", () => {
-        const result = substituteVariables('biome format "${file}"', {
+        const result = substituteVariables('biome format "%file%"', {
           file: "src/index.ts",
           cwd: "/home/user/project",
         });
@@ -80,7 +80,7 @@ describe("substituteVariables", () => {
 
     describe("when file is undefined", () => {
       it("then replaces with empty string", () => {
-        const result = substituteVariables("command ${file}", {
+        const result = substituteVariables("command %file%", {
           cwd: "/home/user",
         });
         expect(result).toBe("command ");
@@ -88,10 +88,10 @@ describe("substituteVariables", () => {
     });
   });
 
-  describe("given command with ${tool} variable", () => {
+  describe("given command with %tool% variable", () => {
     describe("when tool is provided", () => {
       it("then substitutes the tool name", () => {
-        const result = substituteVariables("echo ${tool}", {
+        const result = substituteVariables("echo %tool%", {
           tool: "write",
           cwd: "/home/user/project",
         });
@@ -101,7 +101,7 @@ describe("substituteVariables", () => {
 
     describe("when tool is undefined", () => {
       it("then replaces with empty string", () => {
-        const result = substituteVariables("echo ${tool}", {
+        const result = substituteVariables("echo %tool%", {
           cwd: "/home/user",
         });
         expect(result).toBe("echo ");
@@ -109,10 +109,10 @@ describe("substituteVariables", () => {
     });
   });
 
-  describe("given command with ${cwd} variable", () => {
+  describe("given command with %cwd% variable", () => {
     describe("when cwd is always provided", () => {
       it("then substitutes the working directory", () => {
-        const result = substituteVariables("cd ${cwd} && ls", {
+        const result = substituteVariables("cd %cwd% && ls", {
           cwd: "/home/user/project",
         });
         expect(result).toBe("cd /home/user/project && ls");
@@ -124,7 +124,7 @@ describe("substituteVariables", () => {
     describe("when all variables are provided", () => {
       it("then substitutes all variables", () => {
         const result = substituteVariables(
-          'echo "${tool}: ${file}" in ${cwd}',
+          'echo "%tool%: %file%" in %cwd%',
           {
             file: "test.ts",
             tool: "edit",
@@ -137,7 +137,7 @@ describe("substituteVariables", () => {
 
     describe("when same variable appears multiple times", () => {
       it("then substitutes all occurrences", () => {
-        const result = substituteVariables("${file} and ${file}", {
+        const result = substituteVariables("%file% and %file%", {
           file: "test.ts",
           cwd: "/tmp",
         });
@@ -149,7 +149,7 @@ describe("substituteVariables", () => {
   describe("given command with special characters in values", () => {
     describe("when file path contains spaces", () => {
       it("then preserves spaces in output", () => {
-        const result = substituteVariables('cmd "${file}"', {
+        const result = substituteVariables('cmd "%file%"', {
           file: "path/with spaces/file.ts",
           cwd: "/tmp",
         });
@@ -159,7 +159,7 @@ describe("substituteVariables", () => {
 
     describe("when cwd contains special characters", () => {
       it("then preserves special characters", () => {
-        const result = substituteVariables("cd ${cwd}", {
+        const result = substituteVariables("cd %cwd%", {
           cwd: "/home/user/my-project_v2",
         });
         expect(result).toBe("cd /home/user/my-project_v2");
@@ -257,7 +257,7 @@ describe("doesRuleMatch", () => {
     describe("when pattern matches file extension", () => {
       const rule = {
         event: "tool_result" as const,
-        command: "prettier ${file}",
+        command: "prettier %file%",
         context: "file_name" as const,
         pattern: "\\.(ts|tsx)$",
       };
@@ -284,7 +284,7 @@ describe("doesRuleMatch", () => {
     describe("when pattern matches test files", () => {
       const rule = {
         event: "tool_result" as const,
-        command: "vitest run ${file}",
+        command: "vitest run %file%",
         context: "file_name" as const,
         pattern: "\\.test\\.ts$",
       };
@@ -346,7 +346,7 @@ describe("doesRuleMatch", () => {
         event: "tool_call" as const,
         command: "echo 'running npm'",
         context: "command" as const,
-        pattern: "^npm ",
+        pattern: "npm *",
       };
 
       it("then matches npm commands", () => {
@@ -373,7 +373,7 @@ describe("doesRuleMatch", () => {
         event: "tool_call" as const,
         command: "exit 2",
         context: "command" as const,
-        pattern: "rm\\s+-rf\\s+/",
+        pattern: "rm -rf /*",
       };
 
       it("then matches rm -rf with root path", () => {
@@ -422,6 +422,97 @@ describe("doesRuleMatch", () => {
       it("then does not match", () => {
         expect(doesRuleMatch(rule, "bash", {})).toBe(false);
         expect(doesRuleMatch(rule, "bash", { path: "/tmp" })).toBe(false);
+      });
+    });
+  });
+
+  describe("given command context with AST-like pattern", () => {
+    describe("when literal + spread pattern matches", () => {
+      const rule = {
+        event: "tool_call" as const,
+        command: "echo blocked",
+        context: "command" as const,
+        pattern: "npm *",
+      };
+
+      it("then matches npm commands", () => {
+        expect(doesRuleMatch(rule, "bash", { command: "npm install" })).toBe(
+          true,
+        );
+        expect(doesRuleMatch(rule, "bash", { command: "npx create-app" })).toBe(
+          false,
+        );
+      });
+    });
+
+    describe("when single-token placeholder is used", () => {
+      const rule = {
+        event: "tool_call" as const,
+        command: "echo blocked",
+        context: "command" as const,
+        pattern: "? run dev *",
+      };
+
+      it("then matches package manager dev commands", () => {
+        expect(doesRuleMatch(rule, "bash", { command: "bun run dev" })).toBe(
+          true,
+        );
+        expect(doesRuleMatch(rule, "bash", { command: "npm run dev" })).toBe(
+          true,
+        );
+        expect(doesRuleMatch(rule, "bash", { command: "bun run build" })).toBe(
+          false,
+        );
+      });
+    });
+
+    describe("when command is behind env vars or wrappers", () => {
+      const rule = {
+        event: "tool_call" as const,
+        command: "echo blocked",
+        context: "command" as const,
+        pattern: "npm *",
+      };
+
+      it("then still matches normalized command", () => {
+        expect(
+          doesRuleMatch(rule, "bash", {
+            command: "NODE_ENV=prod env npm start",
+          }),
+        ).toBe(true);
+      });
+    });
+
+    describe("when command appears after &&", () => {
+      const rule = {
+        event: "tool_call" as const,
+        command: "echo blocked",
+        context: "command" as const,
+        pattern: "npm *",
+      };
+
+      it("then matches any segment", () => {
+        expect(
+          doesRuleMatch(rule, "bash", {
+            command: "cd /project && npm install",
+          }),
+        ).toBe(true);
+      });
+    });
+
+    describe("when tool is not bash or input missing", () => {
+      const rule = {
+        event: "tool_call" as const,
+        command: "echo blocked",
+        context: "command" as const,
+        pattern: "npm *",
+      };
+
+      it("then does not match", () => {
+        expect(doesRuleMatch(rule, "write", { command: "npm install" })).toBe(
+          false,
+        );
+        expect(doesRuleMatch(rule, "bash", {})).toBe(false);
       });
     });
   });

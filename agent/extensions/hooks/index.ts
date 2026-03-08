@@ -8,6 +8,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import pc from "picocolors";
 import { glob } from "tinyglobby";
+import { matchCommandPattern } from "../guardrails/command-parser";
 import { configLoader } from "./config";
 import type {
   HookEvent,
@@ -29,7 +30,7 @@ import { parseHookOutput } from "./schema";
  * - JSON input via stdin (Claude Code compatible)
  * - JSON output for decision control (allow/deny/block)
  * - Exit code 2 for blocking tool calls
- * - Variable substitution (${file}, ${tool}, ${cwd})
+ * - Variable substitution (%file%, %tool%, %cwd%)
  * - Group-based activation via file patterns
  *
  * Supported events:
@@ -172,9 +173,9 @@ export function substituteVariables(
   vars: HookVariables,
 ): string {
   return command
-    .replace(/\$\{file\}/g, vars.file ?? "")
-    .replace(/\$\{tool\}/g, vars.tool ?? "")
-    .replace(/\$\{cwd\}/g, vars.cwd);
+    .replace(/%file%/g, vars.file ?? "")
+    .replace(/%tool%/g, vars.tool ?? "")
+    .replace(/%cwd%/g, vars.cwd);
 }
 
 export function doesRuleMatch(
@@ -182,13 +183,34 @@ export function doesRuleMatch(
   toolName?: string,
   input?: unknown,
 ): boolean {
-  if (!rule.context || !rule.pattern) return true;
+  // No context means match everything
+  if (!rule.context) return true;
+
+  if (!rule.pattern) return true;
+
+  // Command context uses token pattern matching (`?`, `*`, `{a,b}`)
+  if (rule.context === "command") {
+    const command =
+      toolName === "bash" ? getInputField(input, "command") : undefined;
+    if (!command) return false;
+    return matchCommandPattern(command, rule.pattern);
+  }
 
   const targetValue = getContextValue(rule.context, toolName, input);
   if (targetValue === undefined) return false;
 
+  return matchValuePattern(targetValue, rule.pattern);
+}
+
+function matchValuePattern(value: string, pattern: string): boolean {
+  // New token pattern syntax support for non-command contexts
+  if (matchCommandPattern(value, pattern)) {
+    return true;
+  }
+
+  // Backward-compatible regex support
   try {
-    return new RegExp(rule.pattern).test(targetValue);
+    return new RegExp(pattern).test(value);
   } catch {
     return false;
   }
@@ -266,8 +288,8 @@ async function runHook(
 ): Promise<HookResult> {
   const command = substituteVariables(rule.command, vars);
 
-  // Skip if variables weren't substituted
-  if (command.includes("${")) {
+  // Skip if placeholders weren't substituted
+  if (/%[A-Za-z_][A-Za-z0-9_]*%/.test(command)) {
     return {
       success: true,
       exitCode: 0,
