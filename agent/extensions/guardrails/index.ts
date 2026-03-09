@@ -68,20 +68,32 @@ export default async function (pi: ExtensionAPI) {
 export async function isGroupActive(
   pattern: string,
   root: string,
+  excludePattern?: string,
 ): Promise<boolean> {
   try {
     if (pattern === "*") {
-      return true;
+      if (!excludePattern) return true;
+    } else {
+      const matches = await glob(pattern, {
+        cwd: root,
+        absolute: false,
+        dot: true,
+        onlyDirectories: false,
+      });
+      if (matches.length === 0) return false;
     }
 
-    const matches = await glob(pattern, {
-      cwd: root,
-      absolute: false,
-      dot: true,
-      onlyDirectories: false,
-    });
+    if (excludePattern) {
+      const excludeMatches = await glob(excludePattern, {
+        cwd: root,
+        absolute: false,
+        dot: true,
+        onlyDirectories: false,
+      });
+      if (excludeMatches.length > 0) return false;
+    }
 
-    return matches.length > 0;
+    return true;
   } catch {
     return false;
   }
@@ -208,7 +220,7 @@ function setupPermissionGateHook(
     if (toolName === "read") return;
 
     for (const group of config) {
-      const isActive = await isGroupActive(group.pattern, ctx.cwd);
+      const isActive = await isGroupActive(group.pattern, ctx.cwd, group.excludePattern);
       if (!isActive) {
         continue;
       }

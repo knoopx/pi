@@ -11,7 +11,7 @@ import {
 
  
 let guardrailsExtension: (pi: any) => Promise<void>;
-let isGroupActive: (pattern: string, root: string) => Promise<boolean>;
+let isGroupActive: (pattern: string, root: string, excludePattern?: string) => Promise<boolean>;
 let configLoader: {
   load: Mock;
   getConfig: Mock;
@@ -116,6 +116,42 @@ describe("isGroupActive", () => {
     it("then returns false", async () => {
       glob.mockRejectedValue(new Error("boom"));
       expect(await isGroupActive("*.ts", "/test")).toBe(false);
+    });
+  });
+
+  describe("given excludePattern", () => {
+    it("then deactivates group when exclude matches", async () => {
+      glob.mockImplementation(async (pattern: string) => {
+        if (pattern === "flake.nix") return ["flake.nix"];
+        if (pattern === ".jj") return [".jj"];
+        return [];
+      });
+      expect(await isGroupActive("flake.nix", "/test", ".jj")).toBe(false);
+    });
+
+    it("then keeps group active when exclude does not match", async () => {
+      glob.mockImplementation(async (pattern: string) => {
+        if (pattern === "flake.nix") return ["flake.nix"];
+        if (pattern === ".jj") return [];
+        return [];
+      });
+      expect(await isGroupActive("flake.nix", "/test", ".jj")).toBe(true);
+    });
+
+    it("then deactivates wildcard group when exclude matches", async () => {
+      glob.mockImplementation(async (pattern: string) => {
+        if (pattern === ".jj") return [".jj"];
+        return [];
+      });
+      expect(await isGroupActive("*", "/test", ".jj")).toBe(false);
+    });
+
+    it("then keeps wildcard group active when exclude does not match", async () => {
+      glob.mockImplementation(async (pattern: string) => {
+        if (pattern === ".jj") return [];
+        return [];
+      });
+      expect(await isGroupActive("*", "/test", ".jj")).toBe(true);
     });
   });
 });
@@ -497,6 +533,38 @@ describe("guardrails extension", () => {
         makeCtx(),
       );
       expect(tsResult).toBeUndefined();
+    });
+  });
+
+  describe("given group with excludePattern", () => {
+    it("then skips group when exclude matches", async () => {
+      const handler = await setupHandler([
+        {
+          group: "nix",
+          pattern: "flake.nix",
+          excludePattern: ".jj",
+          rules: [
+            {
+              context: "command",
+              pattern: "nix ? . *",
+              action: "block",
+              reason: "use path:.",
+            },
+          ],
+        },
+      ]);
+
+      glob.mockImplementation(async (pattern: string) => {
+        if (pattern === "flake.nix") return ["flake.nix"];
+        if (pattern === ".jj") return [".jj"];
+        return [];
+      });
+
+      const result = await handler(
+        { toolName: "bash", input: { command: "nix build ." } },
+        makeCtx(),
+      );
+      expect(result).toBeUndefined();
     });
   });
 

@@ -38,6 +38,7 @@
   {
     "group": "nix",
     "pattern": "flake.nix",
+    "excludePattern": ".jj",
     "rules": [
       {
         "context": "command",

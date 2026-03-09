@@ -43,6 +43,11 @@ export interface GuardrailsGroup {
    * The group is activated if any matching file exists in the project root.
    */
   pattern: string;
+  /**
+   * Optional file glob pattern to deactivate this group.
+   * If any matching file exists, the group is skipped even if `pattern` matches.
+   */
+  excludePattern?: string;
   rules: GuardrailsRule[];
 }
 
@@ -223,6 +228,8 @@ class ConfigLoader {
       group !== null &&
       typeof g.group === "string" &&
       typeof g.pattern === "string" &&
+      (g.excludePattern === undefined ||
+        typeof g.excludePattern === "string") &&
       Array.isArray(g.rules) &&
       g.rules.every((rule: unknown) => {
         const r = rule as Record<string, unknown>;
