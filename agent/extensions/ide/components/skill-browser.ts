@@ -84,7 +84,7 @@ interface StatusMessage {
 }
 
 export function createSkillBrowserComponent(
-  _pi: ExtensionAPI,
+  pi: ExtensionAPI,
   tui: SkillBrowserTui,
   theme: Theme,
   _keybindings: KeybindingsManager,
@@ -415,6 +415,23 @@ export function createSkillBrowserComponent(
     }
   }
 
+  // Open skill folder in external editor
+  async function openInEditor(): Promise<void> {
+    const skill = getFocusedSkill();
+    if (!skill || !skill.isLocal || !skill.localPath) {
+      showStatus("Select a local skill to edit", "info");
+      return;
+    }
+
+    try {
+      await pi.exec("code", [skill.localPath], { cwd: ctx.cwd });
+      showStatus(`Opened "${skill.name}" in editor`, "success");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      showStatus(`Failed to open editor: ${msg}`, "error");
+    }
+  }
+
   // Style a row based on focus state
   function styleRow(
     text: string,
@@ -711,6 +728,14 @@ export function createSkillBrowserComponent(
       when: isLocalMode,
       handler: () => {
         void deleteSkill();
+      },
+    },
+    {
+      key: Key.ctrl("e"),
+      label: "edit",
+      when: isLocalMode,
+      handler: () => {
+        void openInEditor();
       },
     },
     {
