@@ -9,7 +9,7 @@ import {
   type Mock,
 } from "vitest";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 let guardrailsExtension: (pi: any) => Promise<void>;
 let isGroupActive: (pattern: string, root: string) => Promise<boolean>;
 let configLoader: {

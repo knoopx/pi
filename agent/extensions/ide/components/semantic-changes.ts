@@ -472,16 +472,16 @@ export function createSemanticChangesComponent(
     {
       key: "up",
       label: "nav",
-      handler: () => navigateChanges("up"),
+      handler: () => { navigateChanges("up"); },
     },
     {
       key: "down",
-      handler: () => navigateChanges("down"),
+      handler: () => { navigateChanges("down"); },
     },
     {
       key: Key.ctrl("/"),
       label: "filter",
-      handler: () => cycleFilter(1),
+      handler: () => { cycleFilter(1); },
     },
     {
       key: Key.ctrl("i"),
@@ -498,11 +498,11 @@ export function createSemanticChangesComponent(
     {
       key: "up",
       label: "nav",
-      handler: () => navigateFiles("up"),
+      handler: () => { navigateFiles("up"); },
     },
     {
       key: "down",
-      handler: () => navigateFiles("down"),
+      handler: () => { navigateFiles("down"); },
     },
     {
       key: "enter",
@@ -520,15 +520,15 @@ export function createSemanticChangesComponent(
     {
       key: "tab",
       label: "pane",
-      handler: () => switchFocus(),
+      handler: () => { switchFocus(); },
     },
     {
       key: "escape",
-      handler: () => done(),
+      handler: () => { done(); },
     },
     {
       key: "q",
-      handler: () => done(),
+      handler: () => { done(); },
     },
   ];
 
@@ -570,7 +570,7 @@ export function createSemanticChangesComponent(
   return {
     render,
     handleInput,
-    invalidate: () => invalidateCache(loadingState),
+    invalidate: () => { invalidateCache(loadingState); },
     dispose,
   };
 }

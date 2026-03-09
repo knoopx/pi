@@ -4,16 +4,16 @@ import path from "node:path";
 import os from "node:os";
 import crypto from "node:crypto";
 
-type OpencodeSession = {
+interface OpencodeSession {
   id: string;
   directory: string;
   time?: {
     created?: number;
   };
   title?: string;
-};
+}
 
-type OpencodeMessage = {
+interface OpencodeMessage {
   id: string;
   sessionID: string;
   role: "user" | "assistant" | "system";
@@ -39,9 +39,9 @@ type OpencodeMessage = {
   };
   modelID?: string;
   providerID?: string;
-};
+}
 
-type OpencodePart = {
+interface OpencodePart {
   id: string;
   messageID: string;
   type: string;
@@ -75,17 +75,17 @@ type OpencodePart = {
     start?: number;
     end?: number;
   };
-};
+}
 
-type PiSessionLine = {
+interface PiSessionLine {
   type: "session";
   version: 3;
   id: string;
   timestamp: string;
   cwd: string;
-};
+}
 
-type PiMessageLine = {
+interface PiMessageLine {
   type: "message";
   id: string;
   parentId: string | null;
@@ -115,7 +115,7 @@ type PiMessageLine = {
     };
     stopReason?: string;
   };
-};
+}
 
 const DEFAULT_OPENCODE_ROOT = path.join(
   os.homedir(),

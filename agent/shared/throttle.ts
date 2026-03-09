@@ -14,7 +14,7 @@ export function disableThrottle(): void {
   disabled = true;
 }
 
-function enableThrottle(): void {
+export function enableThrottle(): void {
   disabled = false;
 }
 
@@ -22,7 +22,7 @@ interface HostState {
   /** Timestamp of last request start */
   lastRequest: number;
   /** Pending waiters in FIFO order */
-  queue: Array<() => void>;
+  queue: (() => void)[];
   /** Whether the drain loop is running */
   draining: boolean;
 }

@@ -6,48 +6,46 @@ import os from "node:os";
 import readline from "node:readline";
 
 const PI_SESSIONS_ROOT = path.join(os.homedir(), ".pi", "agent", "sessions");
-const PROJECT_PATTERN = /slng/;
-
 // Gap threshold: sessions within 30 minutes are considered continuous work
 const GAP_THRESHOLD_MS = 30 * 60 * 1000;
 
-type SessionLine = {
+interface SessionLine {
   type: "session";
   timestamp: string;
   cwd: string;
-};
+}
 
-type MessageLine = {
+interface MessageLine {
   type: "message";
   timestamp: string;
   message: {
     role: "user" | "assistant";
     timestamp?: number;
   };
-};
+}
 
-type SessionEntry = {
+interface SessionEntry {
   project: string;
   startTime: Date;
   endTime: Date;
   durationMs: number;
-};
+}
 
-type WorkBlock = {
+interface WorkBlock {
   startTime: Date;
   endTime: Date;
   durationMs: number;
   projects: Set<string>;
-};
+}
 
-type DayRecord = {
+interface DayRecord {
   date: string;
   dayStart: Date;
   dayEnd: Date;
   workBlocks: WorkBlock[];
   totalEffectiveMs: number;
   projects: Set<string>;
-};
+}
 
 async function main() {
   const sessionDirs = await findWorkSessionDirs();
@@ -84,7 +82,7 @@ async function findWorkSessionDirs(): Promise<string[]> {
   const workDirs: string[] = [];
 
   for (const entry of entries) {
-    if (entry.isDirectory() && PROJECT_PATTERN.test(entry.name)) {
+    if (entry.isDirectory() && entry.name.includes('slng')) {
       workDirs.push(path.join(PI_SESSIONS_ROOT, entry.name));
     }
   }
@@ -120,7 +118,7 @@ async function parseSessionFile(
     crlfDelay: Infinity,
   });
 
-  let sessionCwd: string | null = null;
+
   let firstTimestamp: Date | null = null;
   let lastTimestamp: Date | null = null;
 
@@ -131,7 +129,6 @@ async function parseSessionFile(
       const parsed = JSON.parse(line) as SessionLine | MessageLine;
 
       if (parsed.type === "session") {
-        sessionCwd = parsed.cwd;
         firstTimestamp = new Date(parsed.timestamp);
       } else if (parsed.type === "message") {
         const ts = new Date(parsed.timestamp);
@@ -338,13 +335,13 @@ function formatDurationPair(effectiveMs: number, scheduleMs: number): string {
   return effective === schedule ? effective : `${effective} ─ ${schedule}`;
 }
 
-type WeekRecord = {
+interface WeekRecord {
   weekKey: string;
   weekStart: string;
   weekEnd: string;
   days: DayRecord[];
   totalMs: number;
-};
+}
 
 function getISOWeek(date: Date): { year: number; week: number } {
   const d = new Date(date);

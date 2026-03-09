@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fuzzyMatch, fuzzyScore, fuzzyFilter, fuzzySort } from "./fuzzy";
+import { fuzzyMatch, fuzzyFilter, fuzzySort } from "./fuzzy";
 
 describe("fuzzy", () => {
   describe("fuzzyMatch", () => {
