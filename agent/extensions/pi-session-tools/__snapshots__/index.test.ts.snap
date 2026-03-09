@@ -1,0 +1,232 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Pi Session Tools Extension > pi-list-projects > filters by query 1`] = `
+"1 projects
+
+sessions │    size │ latest     │ project
+─────────┼─────────┼────────────┼─────────────────────
+       1 │   316 B │ 9/3/2026   │ /home/user/myproject"
+`;
+
+exports[`Pi Session Tools Extension > pi-list-projects > lists projects with session count and size 1`] = `
+"1 projects
+
+sessions │    size │ latest     │ project
+─────────┼─────────┼────────────┼─────────────────────
+       1 │   546 B │ 9/3/2026   │ /home/user/myproject"
+`;
+
+exports[`Pi Session Tools Extension > pi-list-projects > returns empty message when no projects 1`] = `"No session projects found."`;
+
+exports[`Pi Session Tools Extension > pi-list-sessions > filters sessions by title query 1`] = `
+"1 sessions (of 2)
+
+   size │ timestamp          │ title
+────────┼────────────────────┼─────────────────
+  310 B │ 2/3/2026, 9:00:05  │ run the tests
+        │                    │ 2026-03-02.jsonl"
+`;
+
+exports[`Pi Session Tools Extension > pi-list-sessions > lists sessions with title and size 1`] = `
+"2 sessions
+
+   size │ timestamp          │ title
+────────┼────────────────────┼──────────────────────
+  310 B │ 2/3/2026, 9:00:05  │ run the tests
+        │                    │ 2026-03-02.jsonl
+  546 B │ 1/3/2026, 11:00:16 │ list all files in src
+        │                    │ 2026-03-01.jsonl"
+`;
+
+exports[`Pi Session Tools Extension > pi-list-sessions > returns empty when no sessions 1`] = `"No sessions found for /home/user/myproject."`;
+
+exports[`Pi Session Tools Extension > pi-read-session > filters by role 1`] = `
+"0–0 of 1
+
+── #0 user • 1/3/2026, 11:00:10 ────────────────────────────
+list all files in src
+"
+`;
+
+exports[`Pi Session Tools Extension > pi-read-session > filters by text query 1`] = `
+"0–1 of 2
+
+── #2 toolResult [bash] • 1/3/2026, 11:00:14 ───────────────
+index.ts
+utils.ts
+config.ts
+── #3 assistant • 1/3/2026, 11:00:16 ───────────────────────
+Found 3 files in src: index.ts, utils.ts, config.ts
+"
+`;
+
+exports[`Pi Session Tools Extension > pi-read-session > paginates with offset/limit 1`] = `
+"2–3 of 5
+
+── #2 toolResult [bash] • 1/3/2026, 11:00:14 ───────────────
+index.ts
+utils.ts
+config.ts
+── #3 assistant • 1/3/2026, 11:00:16 ───────────────────────
+Found 3 files in src: index.ts, utils.ts, config.ts
+
+Use offset=4 to continue."
+`;
+
+exports[`Pi Session Tools Extension > pi-read-session > reads messages by session index 1`] = `
+"0–4 of 5
+
+── #0 user • 1/3/2026, 11:00:10 ────────────────────────────
+list all files in src
+── #1 assistant • 1/3/2026, 11:00:12 ───────────────────────
+I'll list the files for you.
+[toolCall: {"command":"ls src/"}]
+── #2 toolResult [bash] • 1/3/2026, 11:00:14 ───────────────
+index.ts
+utils.ts
+config.ts
+── #3 assistant • 1/3/2026, 11:00:16 ───────────────────────
+Found 3 files in src: index.ts, utils.ts, config.ts
+── #4 bashExecution • 1/3/2026, 11:00:20 ───────────────────
+git status
+"
+`;
+
+exports[`Pi Session Tools Extension > pi-read-session > resolves by partial filename 1`] = `
+"0–4 of 5
+
+── #0 user • 1/3/2026, 11:00:10 ────────────────────────────
+list all files in src
+── #1 assistant • 1/3/2026, 11:00:12 ───────────────────────
+I'll list the files for you.
+[toolCall: {"command":"ls src/"}]
+── #2 toolResult [bash] • 1/3/2026, 11:00:14 ───────────────
+index.ts
+utils.ts
+config.ts
+── #3 assistant • 1/3/2026, 11:00:16 ───────────────────────
+Found 3 files in src: index.ts, utils.ts, config.ts
+── #4 bashExecution • 1/3/2026, 11:00:20 ───────────────────
+git status
+"
+`;
+
+exports[`Pi Session Tools Extension > pi-read-session > returns error for unknown session 1`] = `"Session not found: nonexistent. Use pi-list-sessions to see available sessions."`;
+
+exports[`Pi Session Tools Extension > pi-session-search > filters by role=assistant 1`] = `
+"2 events
+
+role      │ timestamp          │ text
+──────────┼────────────────────┼────────────────────────────────────────────────────
+assistant │ 1/3/2026, 11:00:16 │ Found 3 files in src: index.ts, utils.ts, config.ts
+          │                    │ 2026-03-01.jsonl
+assistant │ 1/3/2026, 11:00:12 │ I'll list the files for you.
+          │                    │ 2026-03-01.jsonl"
+`;
+
+exports[`Pi Session Tools Extension > pi-session-search > filters by role=bash 1`] = `
+"1 events
+
+role │ timestamp          │ text
+─────┼────────────────────┼─────────────────
+bash │ 1/3/2026, 11:00:20 │ git status
+     │                    │ 2026-03-01.jsonl"
+`;
+
+exports[`Pi Session Tools Extension > pi-session-search > filters by role=toolResult 1`] = `
+"1 events
+
+role       │ timestamp          │ text
+───────────┼────────────────────┼────────────────────────────
+toolResult │ 1/3/2026, 11:00:14 │ index.ts utils.ts config.ts
+           │                    │ 2026-03-01.jsonl"
+`;
+
+exports[`Pi Session Tools Extension > pi-session-search > filters by role=user 1`] = `
+"1 events
+
+role │ timestamp          │ text
+─────┼────────────────────┼──────────────────────
+user │ 1/3/2026, 11:00:10 │ list all files in src
+     │                    │ 2026-03-01.jsonl"
+`;
+
+exports[`Pi Session Tools Extension > pi-session-search > filters by text query 1`] = `
+"1 events
+
+role │ timestamp          │ text
+─────┼────────────────────┼─────────────────
+bash │ 1/3/2026, 11:00:20 │ git status
+     │                    │ 2026-03-01.jsonl"
+`;
+
+exports[`Pi Session Tools Extension > pi-session-search > returns all event types 1`] = `
+"5 events
+
+role       │ timestamp          │ text
+───────────┼────────────────────┼────────────────────────────────────────────────────
+bash       │ 1/3/2026, 11:00:20 │ git status
+           │                    │ 2026-03-01.jsonl
+assistant  │ 1/3/2026, 11:00:16 │ Found 3 files in src: index.ts, utils.ts, config.ts
+           │                    │ 2026-03-01.jsonl
+toolResult │ 1/3/2026, 11:00:14 │ index.ts utils.ts config.ts
+           │                    │ 2026-03-01.jsonl
+assistant  │ 1/3/2026, 11:00:12 │ I'll list the files for you.
+           │                    │ 2026-03-01.jsonl
+user       │ 1/3/2026, 11:00:10 │ list all files in src
+           │                    │ 2026-03-01.jsonl"
+`;
+
+exports[`Pi Session Tools Extension > pi-session-search > returns empty for out-of-range time 1`] = `"No events found in /home/user/myproject for the selected filters."`;
+
+exports[`Pi Session Tools Extension > pi-session-search > searches across all projects with project='*' 1`] = `
+"1 events
+
+role │ timestamp          │ text
+─────┼────────────────────┼─────────────────────
+user │ 1/3/2026, 11:00:10 │ deploy to production
+     │                    │ 2026-03-01.jsonl"
+`;
+
+exports[`Pi Session Tools Extension > pi-tool-calls > filters by tool name 1`] = `
+"1 calls
+
+─── Summary ────────────────────────────────────────────────
+calls │ errors │ tool
+──────┼────────┼────────
+    1 │      0 │ bash:ls
+
+─── Recent ─────────────────────────────────────────────────
+status │ timestamp          │ tool
+───────┼────────────────────┼──────────────
+✓      │ 1/3/2026, 11:00:14 │ bash: ls src/"
+`;
+
+exports[`Pi Session Tools Extension > pi-tool-calls > filters errors only 1`] = `
+"1 calls
+
+─── Summary ────────────────────────────────────────────────
+calls │ errors │ tool
+──────┼────────┼────────
+    1 │      1 │ bash:ls
+
+─── Recent ─────────────────────────────────────────────────
+status │ timestamp          │ tool
+───────┼────────────────────┼───────────────────────────────────────
+✗      │ 1/3/2026, 11:00:14 │ bash: ls src/
+       │                    │ ls: cannot access 'src/': No such file"
+`;
+
+exports[`Pi Session Tools Extension > pi-tool-calls > shows tool call summary and recent calls 1`] = `
+"1 calls
+
+─── Summary ────────────────────────────────────────────────
+calls │ errors │ tool
+──────┼────────┼────────
+    1 │      0 │ bash:ls
+
+─── Recent ─────────────────────────────────────────────────
+status │ timestamp          │ tool
+───────┼────────────────────┼──────────────
+✓      │ 1/3/2026, 11:00:14 │ bash: ls src/"
+`;

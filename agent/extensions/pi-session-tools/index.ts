@@ -23,7 +23,18 @@ import type { Column } from "../renderers";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 200;
-const SESSIONS_DIR = join(homedir(), ".pi", "agent", "sessions");
+const DEFAULT_SESSIONS_DIR = join(homedir(), ".pi", "agent", "sessions");
+
+/** Overridable for testing. */
+let sessionsDir = DEFAULT_SESSIONS_DIR;
+
+export function setSessionsDir(dir: string): void {
+  sessionsDir = dir;
+}
+
+export function getSessionsDir(): string {
+  return sessionsDir;
+}
 
 interface SessionProject {
   id: string;
@@ -47,7 +58,7 @@ interface SessionFileSummary {
 interface SessionEvent {
   sessionPath: string;
   timestampIso: string;
-  role: "user" | "userBashCommand";
+  role: "user" | "bash" | "assistant" | "toolResult";
   text: string;
 }
 
@@ -62,16 +73,19 @@ interface ToolCall {
 }
 
 interface ToolCallsParams {
-  project?: string;
+  project: string;
   tool?: string;
+  resultQuery?: string;
   errorsOnly?: boolean;
   days?: number;
+  from?: string;
+  to?: string;
   limit?: number;
 }
 
 interface ReadSessionParams {
   session: string;
-  project?: string;
+  project: string;
   offset?: number;
   limit?: number;
   role?: string;
@@ -93,13 +107,15 @@ interface ListProjectsParams {
 }
 
 interface ListSessionsParams {
-  project?: string;
+  project: string;
+  query?: string;
   limit?: number;
 }
 
 interface SessionEventsParams {
-  project?: string;
+  project: string;
   query?: string;
+  role?: string;
   from?: string;
   to?: string;
   limit?: number;
@@ -284,7 +300,7 @@ function getUserTextFromContent(content: unknown): string {
 }
 
 async function getProjectInfo(dirName: string): Promise<SessionProject> {
-  const sessionsPath = join(SESSIONS_DIR, dirName);
+  const sessionsPath = join(sessionsDir, dirName);
   const displayPath = decodeSessionPath(dirName);
 
   const files = await readdir(sessionsPath);
@@ -335,7 +351,7 @@ async function getProjectInfo(dirName: string): Promise<SessionProject> {
 }
 
 async function loadProjects(): Promise<SessionProject[]> {
-  const entries = await readdir(SESSIONS_DIR, { withFileTypes: true });
+  const entries = await readdir(sessionsDir, { withFileTypes: true });
   const projectDirs = entries
     .filter((entry) => entry.isDirectory() && entry.name.startsWith("--"))
     .map((entry) => entry.name);
@@ -361,20 +377,11 @@ async function loadProjects(): Promise<SessionProject[]> {
 }
 
 async function resolveProject(
-  ctx: ExtensionContext,
-  project: string | undefined,
+  project: string,
 ): Promise<SessionProject | null> {
   const projects = await loadProjects();
-
-  if (!project || project.trim().length === 0) {
-    return (
-      projects.find(
-        (item) => item.cwdPath === ctx.cwd || item.displayPath === ctx.cwd,
-      ) ?? null
-    );
-  }
-
   const search = project.trim();
+
   return (
     projects.find((item) => item.id === search) ??
     projects.find((item) => item.displayPath === search) ??
@@ -463,12 +470,6 @@ function missingProjectResult(
   });
 }
 
-async function resolveProjectForTool(
-  ctx: ExtensionContext,
-  projectArg: string | undefined,
-): Promise<SessionProject | null> {
-  return resolveProject(ctx, projectArg);
-}
 
 function renderToolCallLabel(
   theme: Theme,
@@ -535,7 +536,7 @@ async function loadSessionEvents(
         }
 
         if (
-          message?.role === "userBashCommand" &&
+          message?.role === "bashExecution" &&
           typeof message.command === "string"
         ) {
           const text = truncateLine(message.command, 500);
@@ -543,7 +544,39 @@ async function loadSessionEvents(
             events.push({
               sessionPath,
               timestampIso: timestamp.toISOString(),
-              role: "userBashCommand",
+              role: "bash",
+              text,
+            });
+          }
+          continue;
+        }
+
+        if (message?.role === "assistant") {
+          const text = truncateLine(
+            getUserTextFromContent(message.content),
+            500,
+          );
+          if (text) {
+            events.push({
+              sessionPath,
+              timestampIso: timestamp.toISOString(),
+              role: "assistant",
+              text,
+            });
+          }
+          continue;
+        }
+
+        if (message?.role === "toolResult") {
+          const text = truncateLine(
+            getUserTextFromContent(message.content),
+            500,
+          );
+          if (text) {
+            events.push({
+              sessionPath,
+              timestampIso: timestamp.toISOString(),
+              role: "toolResult",
               text,
             });
           }
@@ -586,37 +619,25 @@ async function loadSessionToolCalls(
         if (entry.type !== "message") continue;
 
         const message = entry.message as {
-          content?: {
-            type: string;
-            id?: string;
-            arguments?: { command?: string };
-          }[];
-        };
-
-        if (message?.content) {
-          for (const c of message.content) {
-            if (c.type === "toolCall" && c.id) {
-              toolCallArgs[c.id] = c.arguments ?? {};
-            }
-          }
-        }
-      } catch {
-        continue;
-      }
-    }
-
-    for (const line of lines) {
-      try {
-        const entry = JSON.parse(line) as SessionLine;
-        if (entry.type !== "message") continue;
-
-        const message = entry.message as {
           role?: string;
           toolName?: string;
           toolCallId?: string;
           isError?: boolean;
-          content?: { type: string; text?: string }[];
+          content?: (
+            | { type: "toolCall"; id?: string; arguments?: { command?: string } }
+            | { type: "text"; text?: string }
+          )[];
         };
+
+        // Collect toolCall arguments for later correlation
+        if (message?.content) {
+          for (const c of message.content) {
+            if (c.type === "toolCall" && "id" in c && c.id) {
+              toolCallArgs[c.id] =
+                ("arguments" in c ? c.arguments : undefined) ?? {};
+            }
+          }
+        }
 
         if (message?.role !== "toolResult") continue;
 
@@ -630,8 +651,10 @@ async function loadSessionToolCalls(
         const args = toolCallArgs[message.toolCallId ?? ""];
         const command = args?.command ?? null;
         const isError = message.isError === true;
+        const firstContent = message.content?.[0];
         const resultText =
-          message.content?.[0]?.text ?? JSON.stringify(message.content);
+          (firstContent && "text" in firstContent ? firstContent.text : null) ??
+          JSON.stringify(message.content);
 
         toolCalls.push({
           sessionPath,
@@ -659,7 +682,7 @@ function extractMessageText(message: {
   command?: string;
   toolName?: string;
 }): string {
-  if (message.role === "userBashCommand" && message.command) {
+  if (message.role === "bashExecution" && message.command) {
     return message.command;
   }
 
@@ -667,23 +690,22 @@ function extractMessageText(message: {
     return "";
   }
 
-  const parts: string[] = [];
+  const textPart = getUserTextFromContent(message.content);
+  const toolParts: string[] = [];
+
   for (const block of message.content) {
     if (typeof block !== "object" || block === null) continue;
-    const b = block as { type?: string; text?: string; arguments?: unknown };
-
-    if (b.type === "text" && typeof b.text === "string") {
-      parts.push(b.text);
-    } else if (b.type === "toolCall" && b.arguments) {
+    const b = block as { type?: string; arguments?: unknown };
+    if (b.type === "toolCall" && b.arguments) {
       const args =
         typeof b.arguments === "string"
           ? b.arguments
           : JSON.stringify(b.arguments);
-      parts.push(`[toolCall: ${args}]`);
+      toolParts.push(`[toolCall: ${args}]`);
     }
   }
 
-  return parts.join("\n").trim();
+  return [textPart, ...toolParts].filter((p) => p.length > 0).join("\n");
 }
 
 async function loadSessionMessages(
@@ -742,6 +764,12 @@ async function resolveSessionPath(
 ): Promise<string | null> {
   const sessions = await loadProjectSessions(project);
 
+  // Index match first — pure numeric strings like "0", "1" are always indices
+  const idx = parseInt(sessionArg, 10);
+  if (String(idx) === sessionArg && idx >= 0 && idx < sessions.length) {
+    return sessions[idx].sessionPath;
+  }
+
   // Exact filename match
   const byFilename = sessions.find(
     (s) => s.filename === sessionArg || basename(s.sessionPath) === sessionArg,
@@ -754,12 +782,6 @@ async function resolveSessionPath(
       s.filename.includes(sessionArg) || s.sessionPath.includes(sessionArg),
   );
   if (byPartial) return byPartial.sessionPath;
-
-  // Index match (e.g., "0" for most recent, "1" for second most recent)
-  const idx = parseInt(sessionArg, 10);
-  if (!Number.isNaN(idx) && idx >= 0 && idx < sessions.length) {
-    return sessions[idx].sessionPath;
-  }
 
   return null;
 }
@@ -868,10 +890,14 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
     description:
       "List session files for a Pi project. Defaults to the project that matches the current cwd.",
     parameters: Type.Object({
-      project: Type.Optional(
+      project: Type.String({
+        description:
+          "Project id or path. Accepts encoded dir name, decoded project path, cwd path, or partial match.",
+      }),
+      query: Type.Optional(
         Type.String({
           description:
-            "Project id or path. Accepts encoded dir name, decoded project path, cwd path, or partial match.",
+            "Filter sessions by title (first user prompt). Fuzzy match.",
         }),
       ),
       limit: Type.Optional(
@@ -887,17 +913,24 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
       params: ListSessionsParams,
       _signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-      ctx: ExtensionContext,
+      _ctx: ExtensionContext,
     ) {
       try {
-        const project = await resolveProjectForTool(ctx, params.project);
+        const project = await resolveProject(params.project);
         if (!project) {
           return missingProjectResult(params.project, "sessions");
         }
 
         const allSessions = await loadProjectSessions(project);
+        const queryFilter = params.query?.trim() ?? "";
         const limit = normalizeLimit(params.limit);
-        const sessions = allSessions.slice(0, limit);
+
+        const matched = queryFilter
+          ? fuzzyFilter(allSessions, queryFilter, (s) => s.title).map(
+              (r) => r.item,
+            )
+          : allSessions;
+        const sessions = matched.slice(0, limit);
 
         if (sessions.length === 0) {
           return textResult(`No sessions found for ${project.displayPath}.`, {
@@ -960,19 +993,24 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
   });
 
   pi.registerTool({
-    name: "pi-session-events",
-    label: "Pi Session Events",
+    name: "pi-session-search",
+    label: "Pi Session Search",
     description:
-      "Search user prompts and bash commands from Pi sessions in a project and time range.",
+      "Full-text search across all session content in a project. Searches user prompts, assistant responses, bash commands, and tool results. Filter by role and time range.",
     parameters: Type.Object({
-      project: Type.Optional(
-        Type.String({
-          description: "Project id or path. Defaults to current cwd project.",
-        }),
-      ),
+      project: Type.String({
+        description:
+          "Project id or path. Use '*' to search all projects.",
+      }),
       query: Type.Optional(
         Type.String({
-          description: "Optional case-insensitive text filter for event text.",
+          description: "Text filter for event content. Fuzzy match.",
+        }),
+      ),
+      role: Type.Optional(
+        Type.String({
+          description:
+            "Filter by role: 'user', 'bash', 'assistant', or 'toolResult'. Returns all roles if omitted.",
         }),
       ),
       from: Type.Optional(
@@ -998,12 +1036,20 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
       params: SessionEventsParams,
       _signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-      ctx: ExtensionContext,
+      _ctx: ExtensionContext,
     ) {
       try {
-        const project = await resolveProject(ctx, params.project);
-        if (!project) {
-          return missingProjectResult(params.project, "events");
+        const searchAll = params.project.trim() === "*";
+        let targetProjects: SessionProject[];
+
+        if (searchAll) {
+          targetProjects = await loadProjects();
+        } else {
+          const project = await resolveProject(params.project);
+          if (!project) {
+            return missingProjectResult(params.project, "events");
+          }
+          targetProjects = [project];
         }
 
         const now = new Date();
@@ -1019,25 +1065,34 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
         }
 
         const query = params.query?.trim() ?? "";
+        const roleFilter = params.role?.trim() ?? "";
         const limit = normalizeLimit(params.limit ?? 50);
 
-        const sessions = await loadProjectSessions(project);
         const allEvents: SessionEvent[] = [];
 
-        for (const session of sessions) {
-          const events = await loadSessionEvents(
-            session.sessionPath,
-            fromDate.getTime(),
-            toDate.getTime(),
-          );
-          allEvents.push(...events);
+        for (const project of targetProjects) {
+          const sessions = await loadProjectSessions(project);
+          for (const session of sessions) {
+            const events = await loadSessionEvents(
+              session.sessionPath,
+              fromDate.getTime(),
+              toDate.getTime(),
+            );
+            allEvents.push(...events);
+          }
         }
 
-        const sorted = allEvents.sort(
+        let sorted = allEvents.sort(
           (left, right) =>
             new Date(right.timestampIso).getTime() -
             new Date(left.timestampIso).getTime(),
         );
+
+        if (roleFilter) {
+          sorted = sorted.filter(
+            (e) => e.role.toLowerCase() === roleFilter.toLowerCase(),
+          );
+        }
 
         const filtered = query
           ? fuzzyFilter(sorted, query, (e) => e.text).map((r) => r.item)
@@ -1045,12 +1100,17 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
 
         const events = filtered.slice(0, limit);
 
+        const scopeLabel = searchAll
+          ? "all projects"
+          : targetProjects[0].displayPath;
+
         if (events.length === 0) {
           return textResult(
-            `No events found in ${project.displayPath} for the selected filters.`,
+            `No events found in ${scopeLabel} for the selected filters.`,
             {
-              project,
+              project: searchAll ? "*" : targetProjects[0],
               query,
+              role: roleFilter || null,
               from: fromDate.toISOString(),
               to: toDate.toISOString(),
               totalFound: 0,
@@ -1072,7 +1132,7 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
         ];
 
         const eventRows = events.map((e) => ({
-          role: e.role === "user" ? "user" : "bash",
+          role: e.role,
           timestamp: new Date(e.timestampIso).toLocaleString(),
           text: e.text,
           file: basename(e.sessionPath),
@@ -1088,8 +1148,9 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
         ].join("\n");
 
         return textResult(text, {
-          project,
+          project: searchAll ? "*" : targetProjects[0],
           query,
+          role: roleFilter || null,
           from: fromDate.toISOString(),
           to: toDate.toISOString(),
           totalFound: filtered.length,
@@ -1104,7 +1165,7 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
         typeof args.query === "string" && args.query.trim().length > 0
           ? args.query
           : "all";
-      return renderToolCallLabel(theme, "pi-session-events", query, "all");
+      return renderToolCallLabel(theme, "pi-session-search", query, "all");
     },
     renderResult(result, _options, theme) {
       return renderTextToolResult(result, theme);
@@ -1117,11 +1178,9 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
     description:
       "Analyze tool calls from Pi sessions. Shows call counts by tool, with optional error filtering.",
     parameters: Type.Object({
-      project: Type.Optional(
-        Type.String({
-          description: "Project id or path. Defaults to current cwd project.",
-        }),
-      ),
+      project: Type.String({
+        description: "Project id or path.",
+      }),
       tool: Type.Optional(
         Type.String({
           description:
@@ -1153,13 +1212,13 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
       params: ToolCallsParams,
       _signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-      ctx: ExtensionContext,
+      _ctx: ExtensionContext,
     ) {
       try {
-        const project = await resolveProject(ctx, params.project);
+        const project = await resolveProject(params.project);
         if (!project) {
           return textResult("No matching session project found.", {
-            project: params.project ?? null,
+            project: params.project,
             calls: [],
             summary: {},
           });
@@ -1311,11 +1370,9 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
         description:
           "Session identifier: filename, partial match, or index (0=most recent).",
       }),
-      project: Type.Optional(
-        Type.String({
-          description: "Project id or path. Defaults to current cwd project.",
-        }),
-      ),
+      project: Type.String({
+        description: "Project id or path.",
+      }),
       offset: Type.Optional(
         Type.Number({
           description: "Message index to start from (0-indexed, default: 0).",
@@ -1332,7 +1389,7 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
       role: Type.Optional(
         Type.String({
           description:
-            "Filter by role: user, assistant, toolCall, toolResult, userBashCommand.",
+            "Filter by role: user, assistant, toolResult, bashExecution.",
         }),
       ),
       query: Type.Optional(
@@ -1346,13 +1403,13 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
       params: ReadSessionParams,
       _signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-      ctx: ExtensionContext,
+      _ctx: ExtensionContext,
     ) {
       try {
-        const project = await resolveProject(ctx, params.project);
+        const project = await resolveProject(params.project);
         if (!project) {
           return textResult("No matching session project found.", {
-            project: params.project ?? null,
+            project: params.project,
             session: params.session,
             messages: [],
           });
@@ -1398,7 +1455,7 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
             : "?";
           const status = msg.isError ? ` ✗` : "";
           const tool = msg.toolName ? ` [${msg.toolName}]` : "";
-          const text = truncateLine(msg.text, 300);
+          const text = msg.text;
           return [
             threadSeparator(`#${msg.index} ${msg.role}${tool}${status}`, stamp),
             text,
@@ -1406,7 +1463,11 @@ export default function piSessionToolsExtension(pi: ExtensionAPI): void {
         });
 
         const hasMore = offset + limit < filtered.length;
-        const rangeInfo = `${offset}–${Math.min(offset + limit, filtered.length) - 1} of ${filtered.length}`;
+        const end = offset + sliced.length;
+        const rangeInfo =
+          sliced.length === 0
+            ? `0 of ${filtered.length}`
+            : `${offset}–${end - 1} of ${filtered.length}`;
         const nextHint = hasMore
           ? `\nUse offset=${offset + limit} to continue.`
           : "";
