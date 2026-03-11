@@ -122,6 +122,7 @@ function matchesPattern(
  * implemented by `matchCommandPattern` (`?`, `*`).
  *
  * For "file_name" and "file_content" contexts, `pattern` is regex.
+ * If `file_pattern` is specified, the file path must match it first.
  *
  * @returns The matched target value for includes/excludes filtering, or null.
  */
@@ -139,11 +140,18 @@ function matchRule(
     return { targetValue: command };
   }
 
+  // For file_name and file_content contexts, check file_pattern first
+  const filePath = getInputFieldAsString(input, "path");
+  if (rule.file_pattern && filePath) {
+    const filePatternRegex = new RegExp(rule.file_pattern);
+    if (!filePatternRegex.test(filePath)) return null;
+  }
+
   let targetValue: string | undefined;
 
   if (rule.context === "file_name") {
     if (["edit", "write"].includes(toolName)) {
-      targetValue = getInputFieldAsString(input, "path");
+      targetValue = filePath;
     }
   } else if (rule.context === "file_content") {
     if (toolName === "edit") {

@@ -120,6 +120,7 @@
     "rules": [
       {
         "context": "file_content",
+        "file_pattern": "\\.(js|jsx|ts|tsx|mjs|cjs)$",
         "pattern": "\\.skip\\(|describe\\.skip|xdescribe|xit\\(",
         "action": "block",
         "reason": "skipped tests create blind spots. Fix, delete, or use `it.todo()` instead (see skill: vitest)"
@@ -128,10 +129,11 @@
   },
   {
     "group": "linting",
-    "pattern": "eslint.config.js",
+    "pattern": "eslint.config.*",
     "rules": [
       {
         "context": "file_content",
+        "file_pattern": "\\.(js|jsx|ts|tsx|mjs|cjs)$",
         "pattern": "eslint-disable",
         "action": "block",
         "reason": "disabling lint rules hides issues. Fix the code or use inline `eslint-disable-next-line` with justification (see skill: eslint)"

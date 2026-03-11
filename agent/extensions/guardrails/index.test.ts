@@ -416,6 +416,88 @@ describe("guardrails extension", () => {
       );
       expect(result).toEqual({ block: true, reason: "Blocked [ts]: no ts-ignore" });
     });
+
+    it("then applies file_pattern filter to file_content rules", async () => {
+      const handler = await setupHandler([
+        {
+          group: "linting",
+          pattern: "*",
+          rules: [
+            {
+              context: "file_content",
+              file_pattern: "\\.(js|ts)$",
+              pattern: "eslint-disable",
+              action: "block",
+              reason: "no eslint-disable",
+            },
+          ],
+        },
+      ]);
+
+      // Should block for .ts files
+      const tsResult = await handler(
+        {
+          toolName: "write",
+          input: { path: "src/a.ts", content: "// eslint-disable-next-line" },
+        },
+        makeCtx(),
+      );
+      expect(tsResult).toEqual({
+        block: true,
+        reason: "Blocked [linting]: no eslint-disable",
+      });
+
+      // Should allow for .md files
+      const mdResult = await handler(
+        {
+          toolName: "write",
+          input: { path: "README.md", content: "Use eslint-disable sparingly" },
+        },
+        makeCtx(),
+      );
+      expect(mdResult).toBeUndefined();
+    });
+
+    it("then applies file_pattern filter to file_name rules", async () => {
+      const handler = await setupHandler([
+        {
+          group: "js-only",
+          pattern: "*",
+          rules: [
+            {
+              context: "file_name",
+              file_pattern: "\\.js$",
+              pattern: "src/",
+              action: "block",
+              reason: "no js in src",
+            },
+          ],
+        },
+      ]);
+
+      // Should block .js in src/
+      const jsResult = await handler(
+        {
+          toolName: "write",
+          input: { path: "src/a.js", content: "" },
+        },
+        makeCtx(),
+      );
+      expect(jsResult).toEqual({
+        block: true,
+        reason: "Blocked [js-only]: no js in src",
+      });
+
+      // Should allow .ts in src/
+      const tsResult = await handler(
+        {
+          toolName: "write",
+          input: { path: "src/a.ts", content: "" },
+        },
+        makeCtx(),
+      );
+      expect(tsResult).toBeUndefined();
+    });
   });
 
   describe("given read tool", () => {

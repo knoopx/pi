@@ -18,6 +18,12 @@ export interface GuardrailsRule {
    */
   pattern: string;
   /**
+   * Optional regex pattern to filter which files this rule applies to.
+   * Only used for file_name and file_content contexts.
+   * If not specified, the rule applies to all files.
+   */
+  file_pattern?: string;
+  /**
    * Optional pattern that must also match for the rule to apply.
    */
   includes?: string;
@@ -224,6 +230,7 @@ class ConfigLoader {
           typeof rule === "object" &&
           rule !== null &&
           typeof r.pattern === "string" &&
+          (r.file_pattern === undefined || typeof r.file_pattern === "string") &&
           (r.includes === undefined || typeof r.includes === "string") &&
           (r.excludes === undefined || typeof r.excludes === "string") &&
           (r.action === "block" || r.action === "confirm") &&
