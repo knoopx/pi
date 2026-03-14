@@ -13,9 +13,9 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
-    "@mariozechner/pi-coding-agent": "^0.57.0",
-    "@mariozechner/pi-agent-core": "^0.57.0",
-    "@mariozechner/pi-ai": "^0.57.0",
+    "@mariozechner/pi-coding-agent": "^0.61.1",
+    "@mariozechner/pi-agent-core": "^0.61.1",
+    "@mariozechner/pi-ai": "^0.61.1",
     "@sinclair/typebox": "^0.34.48",
     "glob": "^13.0.6",
     "mdast-util-from-markdown": "^2.0.3",

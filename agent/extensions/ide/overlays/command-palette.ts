@@ -5,7 +5,7 @@
 import type {
   ExtensionAPI,
   ExtensionContext,
-  AppAction,
+  AppKeybinding,
 } from "@mariozechner/pi-coding-agent";
 import type { KeyId } from "@mariozechner/pi-tui";
 import { createCommandPaletteComponent } from "../components/command-palette";
@@ -32,8 +32,8 @@ export async function openCommandPalette(
         (command) => {
           pi.sendUserMessage(command);
         },
-        (action: AppAction) => {
-          if (action === "interrupt") {
+        (action: AppKeybinding) => {
+          if (action === "app.interrupt") {
             ctx.abort();
           } else {
             const keys = keybindings.getKeys(action);

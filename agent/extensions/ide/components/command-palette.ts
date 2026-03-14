@@ -8,7 +8,7 @@
 import type {
   ExtensionAPI,
   KeybindingsManager,
-  AppAction,
+  AppKeybinding,
   Theme,
 } from "@mariozechner/pi-coding-agent";
 import { Key, type KeyId } from "@mariozechner/pi-tui";
@@ -35,7 +35,7 @@ export function createCommandPaletteComponent(
   _keybindings: KeybindingsManager,
   done: () => void,
   onExecuteCommand: (command: string) => void,
-  _onExecuteAction: (action: AppAction) => void,
+  _onExecuteAction: (action: AppKeybinding) => void,
   _registeredShortcuts: {
     shortcut: KeyId;
     description?: string;
