@@ -200,6 +200,9 @@ function setupPermissionGateHook(
     const toolName = event.toolName;
     const input = event.input;
 
+    // Skip tools that don't modify the project
+    if (toolName === "read" || toolName === "genui") return;
+
     if (!inspectedRoots.has(ctx.cwd)) {
       if (toolName === "bash") {
         const command = getInputFieldAsString(input, "command");
@@ -215,9 +218,6 @@ function setupPermissionGateHook(
           "Blocked: Run `tree -a -L 3 -I 'node_modules|dist|build|coverage|.git|.jj|.turbo|.next|.cache|tmp|.direnv' .` first to inspect project structure before calling other tools.",
       };
     }
-
-    // Skip tools that don't modify the project
-    if (toolName === "read" || toolName === "genui") return;
 
     for (const group of config) {
       const isActive = await isGroupActive(group.pattern, ctx.cwd, group.excludePattern);

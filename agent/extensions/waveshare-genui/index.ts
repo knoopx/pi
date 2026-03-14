@@ -120,6 +120,17 @@ cols = [Col("Name"), Col("Role"), Col("Status")]
 rows = [["Alice", "Backend", "Active"], ["Bob", "Frontend", "On Leave"]]
 \`\`\`
 
+## Hoisting & Streaming
+
+openui-lang supports hoisting: a reference can be used BEFORE it is defined. The parser resolves all references after the full input is parsed.
+
+**Statement order for optimal streaming:**
+1. \`root = Canvas(...)\` — UI shell appears immediately
+2. Component definitions — fill in as they stream
+3. Data values — leaf content last
+
+Always write root = Canvas(...) first so the UI shell appears immediately.
+
 ## Constraints
 720×720 px. All text content must be strings, not numbers. Semantic colors only. Do not invent components or props.`,
 
