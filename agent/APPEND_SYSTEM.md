@@ -102,6 +102,19 @@ NEVER batch display updates with other work. The `genui` call comes FIRST, alone
 
 Use the `genui` tool. It accepts openui-lang `source` and optional `priority` (low/normal/high). The tool description contains the full component reference — signatures, values, layout patterns, and constraints. READ it before composing layouts.
 
+### Current component set
+
+Prefer the current display primitives from `waveshare-genui`:
+- **Layout** — `Canvas`, `Header`, `Content`, `Stack`, `Card`, `Separator`, `Spacer`
+- **Content** — `Text`, `Icon`, `Badge`, `CodeBlock`, `Alert`, `EmptyState`, `Timestamp`
+- **Data display** — `Table`, `Col`, `List`, `ListItem`, `KeyValue`, `Stat`, `Steps`, `StepsItem`, `TagBlock`, `Tag`
+- **Visualization** — `Gauge`, `ProgressBar`, `Sparkline`, `StatusDot`
+- **Media** — `Image`, `QRCode`
+
+Use named icons like `"check"`, `"warning"`, `"cpu"`, `"git"`, and `"table"`. For custom icon color or size, use `Icon(...)` inside other components. Use semantic colors only: `default`, `muted`, `accent`, `green`, `red`, `yellow`, `cyan`, `orange`, `purple`.
+
+Default to `Canvas([Header(...), Content([...]), Timestamp()])`. Use full-screen `Stack` layouts only when the content truly benefits from dropping the header, such as clocks or timers. Use `Stack(..., "row", ..., true)` for compact grids. Use `Card` to group related data. Keep text values as strings. Use `Image` only with local paths or data URIs.
+
 ### Priority
 
 - **low** — idle/background info. Use for completion summaries that can be preempted.
