@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { HooksConfig } from "./schema";
 
 vi.mock("node:fs/promises", () => ({
   mkdir: vi.fn(),
@@ -260,7 +261,7 @@ describe("configLoader", () => {
         await configLoader.load();
         const previousVersion = configLoader.getVersion();
 
-        const newHooks = [
+        const newHooks: HooksConfig = [
           {
             group: "security",
             pattern: "*",

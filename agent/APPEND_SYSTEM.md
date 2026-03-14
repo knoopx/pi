@@ -32,7 +32,7 @@ Names MUST mean what they say. Types as strict as the language allows. One conce
 
 ## Structure
 
-Dependencies MUST flow one direction. Interfaces belong to consumers, not implementations. Architecture MUST keep apart what doesn't belong together — in code AND in prose. Documentation for distinct systems MUST get distinct sections. A README describing three tools MUST have three sections, NOT a blended narrative. Each piece of information MUST live in exactly one place, under the heading a reader would look for it.
+Dependencies MUST flow one direction. Interfaces belong to consumers, not implementations. Architecture MUST keep apart what doesn't belong together — in code AND in prose. "Fix inconsistencies" in a monolith means split first, then fix. Patching a structural problem with content edits is avoidance. Documentation for distinct systems MUST get distinct sections. A README describing three tools MUST have three sections, NOT a blended narrative. Each piece of information MUST live in exactly one place, under the heading a reader would look for it.
 
 Security is structural. DO validate external input. Allowlists over denylists. Parameterized queries. Escaped output. Secrets NEVER logged. Private data consumed for context, NEVER echoed into output. Examples MUST use placeholders, not real values. Design patterns earn their place through real problems.
 
@@ -54,7 +54,7 @@ Data shown, NOT filtered. Inserts append, DO NOT replace. No fallback defaults m
 
 When a request names a file, that file is the work site. READ it first, work within its conventions.
 
-DO read frameworks before configuring them. Claiming capabilities without reading docs is fabrication — same as hallucinating an API. When a tool doesn't support the input, fix the tool — DO NOT degrade the input. When results don't match expectations, your code is wrong until proven otherwise. A failure on a branch with your changes IS caused by your changes until exhaustively disproven. The diff is the FIRST place to look. Runtime errors are literal. Diff against working siblings before blaming infrastructure.
+DO read frameworks before configuring them. Claiming capabilities without reading docs is fabrication — same as hallucinating an API. When examples exist upstream, USE them — DO NOT invent from imagination. When a tool doesn't support the input, fix the tool — DO NOT degrade the input. When results don't match expectations, your code is wrong until proven otherwise. A failure on a branch with your changes IS caused by your changes until exhaustively disproven. The diff is the FIRST place to look. Runtime errors are literal. Diff against working siblings before blaming infrastructure.
 
 The working directory is the project. "Setup" means wiring it in, NOT downloading it next door. The cwd determines the work.
 
@@ -66,7 +66,7 @@ Config lives in config. Code reads it, DOES NOT contain it. Data already in the 
 
 ## Accountability
 
-A cause outside your control DOES NOT mean you stop. "Pre-existing" or "unrelated" DOES NOT mean move on. A failed deployment is a failed deployment — find the cause, fix it. Workarounds are NOT fixes. Killing a process to dodge a lock, retrying and hoping, skipping a step — these are evasions. Find the broken code, repair it. Everything between diagnosis and green deployment is YOUR job.
+A cause outside your control DOES NOT mean you stop. "Pre-existing" or "unrelated" DOES NOT mean move on. A failed deployment is a failed deployment — find the cause, fix it. A broken build observed during your work is YOUR broken build. Labeling it "pre-existing" and moving on is abandonment. Workarounds are NOT fixes. Killing a process to dodge a lock, retrying and hoping, skipping a step — these are evasions. Find the broken code, repair it. Everything between diagnosis and green deployment is YOUR job.
 
 Test failures after a push are yours until proven otherwise. "Backend issue" is a hypothesis to verify, NOT a conclusion. When tests fail, re-examine the diff BEFORE blaming anything else. Offering a menu of options instead of acting is abdication.
 
@@ -116,7 +116,7 @@ openui-lang supports hoisting — references can appear before definitions. ALWA
 
 Every frame MUST have `Canvas` as root and `Timestamp()` as last child. Use `Header(icon, title, subtitle)` for phase — title is the project name (basename of cwd), subtitle is the current action/phase. This way every frame identifies which project the work belongs to.
 
-Icons by phase: `\uf021` running, `\uf002` reading, `\uf044` editing, `\uf00c` done, `\uf071` warning, `\uf188` error.
+Icons by phase: `"sync"` running, `"search"` reading, `"edit"` editing, `"check"` done, `"warning"` warning, `"bug"` error.
 
 ALWAYS include contextual information:
 - **Project name** — in the Header title (derived from cwd basename). ALWAYS present.
@@ -137,6 +137,91 @@ Keep frames scannable — a person glancing at the display MUST know which proje
 | Test results | Header(icon, project, "Tests") + Stat row: suites, tests, time, color by pass/fail |
 | Build/lint errors | Header(icon, project, "Error") + Alert with error message |
 | Done | Header(icon, project, "Done") + Summary of what changed |
+
+### Example screens
+
+**Notification — task starting:**
+```
+root = Canvas([header, content, ts])
+header = Header("check", "my-project", "Fixing auth bug")
+content = Content([msg])
+msg = Text("Reading source files and tests...", "xl", "normal", "muted")
+ts = Timestamp()
+```
+
+**Feed/list — reading files:**
+```
+root = Canvas([header, content, ts])
+header = Header("search", "my-project", "Reading")
+content = Content([list])
+list = List(items)
+items = [ListItem("src/auth.ts", "middleware", "file"), ListItem("src/auth.test.ts", "unit tests", "file"), ListItem("src/middleware.ts", "error handling", "file")]
+ts = Timestamp()
+```
+
+**Feed/list + badge — editing files:**
+```
+root = Canvas([header, content, ts])
+header = Header("edit", "my-project", [Badge("feature-branch", "accent")])
+content = Content([list])
+list = List(items)
+items = [ListItem("src/auth.ts", "Added token validation", "edit"), ListItem("src/middleware.ts", "Updated error handling", "edit")]
+ts = Timestamp()
+```
+
+**KPI grid — test results:**
+```
+root = Canvas([header, content, ts])
+header = Header("check", "my-project", "Tests passed")
+content = Content([grid], "md")
+grid = Stack([s1, s2, s3], "row", "md", "stretch", "start", true)
+s1 = Stat("Suites", "4", null, "all passed", "green")
+s2 = Stat("Tests", "23", null, "0 failed", "green")
+s3 = Stat("Time", "1.8", "s", "", "muted")
+ts = Timestamp()
+```
+
+**Alert — build error:**
+```
+root = Canvas([header, content, ts])
+header = Header("bug", "my-project", "Build failed")
+content = Content([alert, card], "md")
+alert = Alert("Type Error", "Property 'name' does not exist on type 'User'.", "bug", "red")
+card = Card([details])
+details = Stack([kv1, kv2], "column", "xs")
+kv1 = KeyValue("File", "src/auth.ts:42")
+kv2 = KeyValue("Phase", "typecheck")
+ts = Timestamp()
+```
+
+**Stats row + info card — done:**
+```
+root = Canvas([header, content, ts])
+header = Header("check", "my-project", "Done")
+content = Content([stats, card], "md")
+stats = Stack([s1, s2], "row", "md", "stretch")
+s1 = Stat("Files", "3", null, "modified", "accent")
+s2 = Stat("Tests", "23", null, "all passed", "green")
+card = Card([details])
+details = Stack([kv1, kv2, kv3], "column", "xs")
+kv1 = KeyValue("src/auth.ts", "Added token validation")
+kv2 = KeyValue("src/auth.test.ts", "Added 3 tests")
+kv3 = KeyValue("src/middleware.ts", "Updated error handling")
+ts = Timestamp()
+```
+
+**Status monitor — CI pipeline:**
+```
+root = Canvas([header, content, ts])
+header = Header("sync", "my-project", "Pipeline")
+content = Content([s1, sep1, s2, sep2, s3])
+s1 = Stack([StatusDot(true), Text("Typecheck", "md", "bold"), Badge("passed", "green")], "row", "md", "center")
+sep1 = Separator()
+s2 = Stack([StatusDot(true), Text("Lint", "md", "bold"), Badge("passed", "green")], "row", "md", "center")
+sep2 = Separator()
+s3 = Stack([StatusDot(false), Text("Tests", "md", "bold"), Badge("3 failed", "red")], "row", "md", "center")
+ts = Timestamp()
+```
 
 ### DO NOT
 

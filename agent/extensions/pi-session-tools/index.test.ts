@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type {
+  AgentToolResult,
+  ExtensionAPI,
+} from "@mariozechner/pi-coding-agent";
 import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 import setupPiSessionToolsExtension, {
@@ -153,8 +156,14 @@ describe("Pi Session Tools Extension", () => {
     return tool.execute("t1", params, undefined, undefined, { cwd });
   }
 
-  function textOf(result: { content: { text: string }[] }): string {
-    return result.content[0].text;
+  function textOf(result: AgentToolResult<Record<string, unknown>>): string {
+    const firstText = result.content.find(
+      (item): item is { type: "text"; text: string } =>
+        item.type === "text" && typeof item.text === "string",
+    );
+
+    expect(firstText).toBeDefined();
+    return firstText!.text;
   }
 
   beforeEach(async () => {

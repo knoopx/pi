@@ -1,10 +1,9 @@
 {
   "lastChangelogVersion": "0.58.0",
-  "defaultProvider": "anthropic",
-  "defaultModel": "claude-opus-4-6",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.4",
   "theme": "custom",
   "enabledModels": [
-    "github-copilot/gpt-5.2",
     "github-copilot/grok-code-fast-1",
     "xiaomi/mimo-v2-flash",
     "zai-coding-plan/glm-4.7",

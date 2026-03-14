@@ -307,7 +307,8 @@ async function getProjectInfo(dirName: string): Promise<SessionProject> {
   const jsonlFiles = files.filter((name) => name.endsWith(".jsonl"));
 
   let latestSessionDate: Date | null = null;
-  let latestSessionPath: string | null = null;
+  let latestSessionSummary: Awaited<ReturnType<typeof readSessionSummary>> | null =
+    null;
   let totalSizeBytes = 0;
 
   for (const file of jsonlFiles) {
@@ -315,23 +316,23 @@ async function getProjectInfo(dirName: string): Promise<SessionProject> {
     const fileStat = await stat(filePath);
     totalSizeBytes += fileStat.size;
 
-    const fileDate = fileStat.mtime;
+    let summary: Awaited<ReturnType<typeof readSessionSummary>> | null = null;
+    try {
+      summary = await readSessionSummary(filePath);
+    } catch {
+      summary = null;
+    }
+
+    const fileDate = summary?.latestTimestamp ?? fileStat.mtime;
     if (!latestSessionDate || fileDate > latestSessionDate) {
       latestSessionDate = fileDate;
-      latestSessionPath = filePath;
+      latestSessionSummary = summary;
     }
   }
 
   let cwdPath = displayPath;
-  if (latestSessionPath) {
-    try {
-      const summary = await readSessionSummary(latestSessionPath);
-      if (summary.cwdPath) {
-        cwdPath = summary.cwdPath;
-      }
-    } catch {
-      cwdPath = displayPath;
-    }
+  if (latestSessionSummary?.cwdPath) {
+    cwdPath = latestSessionSummary.cwdPath;
   }
 
   // Get project creation date from the directory itself

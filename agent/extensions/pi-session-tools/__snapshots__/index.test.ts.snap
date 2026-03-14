@@ -5,7 +5,7 @@ exports[`Pi Session Tools Extension > pi-list-projects > filters by query 1`] = 
 
 sessions │    size │ latest     │ project
 ─────────┼─────────┼────────────┼─────────────────────
-       1 │   316 B │ 9/3/2026   │ /home/user/myproject"
+       1 │   316 B │ 1/3/2026   │ /home/user/myproject"
 `;
 
 exports[`Pi Session Tools Extension > pi-list-projects > lists projects with session count and size 1`] = `
@@ -13,7 +13,7 @@ exports[`Pi Session Tools Extension > pi-list-projects > lists projects with ses
 
 sessions │    size │ latest     │ project
 ─────────┼─────────┼────────────┼─────────────────────
-       1 │   546 B │ 9/3/2026   │ /home/user/myproject"
+       1 │   546 B │ 1/3/2026   │ /home/user/myproject"
 `;
 
 exports[`Pi Session Tools Extension > pi-list-projects > returns empty message when no projects 1`] = `"No session projects found."`;
