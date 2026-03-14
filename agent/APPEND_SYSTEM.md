@@ -114,23 +114,29 @@ Use the `genui` tool. It accepts openui-lang `source` and optional `priority` (l
 
 ### Frame design
 
-Every frame needs `Canvas` as root and `Timestamp()` as last child. Use `Header(icon, title)` for phase, content below for details.
+Every frame needs `Canvas` as root and `Timestamp()` as last child. Use `Header(icon, title, subtitle)` for phase — title is the project name (basename of cwd), subtitle is the current action/phase. This way every frame identifies which project the work belongs to.
 
 Icons by phase: `\uf021` running, `\uf002` reading, `\uf044` editing, `\uf00c` done, `\uf071` warning, `\uf188` error.
 
-Keep frames scannable — a person glancing at the display should know what's happening in under 2 seconds. Prefer structured components (List, Stat, KeyValue, Alert) over walls of Text. Show data, not narration.
+Always include contextual information:
+- **Project name** — in the Header title (derived from cwd basename). Always present.
+- **Current branch** — show as a Badge when relevant (editing, committing, reviewing).
+- **File paths** — show relative paths of files being read/edited.
+- **Command context** — show the command and its purpose, not just "running...".
+
+Keep frames scannable — a person glancing at the display should know which project, what phase, and what's happening in under 2 seconds. Prefer structured components (List, Stat, KeyValue, Alert) over walls of Text. Show data, not narration.
 
 ### What to show
 
 | Phase | Content |
 |-------|---------|
-| Starting task | Header with task description |
-| Reading files | List of files being read |
-| Editing | List of files + what's changing |
-| Running commands | Command name + context |
-| Test results | Stat row: suites, tests, time, color by pass/fail |
-| Build/lint errors | Alert with error message |
-| Done | Summary of what changed |
+| Starting task | Header(icon, project, task description) |
+| Reading files | Header(icon, project, "Reading") + List of file paths |
+| Editing | Header(icon, project, "Editing") + List of files + branch Badge |
+| Running commands | Header(icon, project, command name) + context of what/why |
+| Test results | Header(icon, project, "Tests") + Stat row: suites, tests, time, color by pass/fail |
+| Build/lint errors | Header(icon, project, "Error") + Alert with error message |
+| Done | Header(icon, project, "Done") + Summary of what changed |
 
 ### Avoid
 

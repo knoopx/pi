@@ -216,8 +216,8 @@ function setupPermissionGateHook(
       };
     }
 
-    // Skip "read" tool to avoid noise on every file read
-    if (toolName === "read") return;
+    // Skip tools that don't modify the project
+    if (toolName === "read" || toolName === "genui") return;
 
     for (const group of config) {
       const isActive = await isGroupActive(group.pattern, ctx.cwd, group.excludePattern);
