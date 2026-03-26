@@ -40,12 +40,6 @@ Full terminal IDE built as a pi extension: file/symbol browsing, jujutsu version
 
 **Skill Browser** — browse local/remote skills, preview files, install or invoke.
 
-![Skills](screenshots/skills.png)
-
-**Command Palette** — fuzzy-search all slash commands and shortcuts.
-
-![Commands](screenshots/commands.png)
-
 ### Guardrails
 
 Security hooks that intercept dangerous operations (destructive shell commands, force pushes, etc.) and require confirmation before execution. Configurable rules with default protections.
@@ -83,13 +77,7 @@ File watcher that monitors the filesystem and triggers actions on changes. Debou
 
 Reusable instruction sets: conventional-commits, gtkx, jscpd, jujutsu, knip, nh, nix, nix-flakes, nu-shell, podman, retype, skill-authoring, tmux, typescript, uv, vhs, vicinae, vitest.
 
-### Prompt Templates
-
-Pre-built prompts for common workflows: feature planning, refactoring, testing, debugging, code exploration, jujutsu operations (describe, review, split), release notes, and retrospectives.
-
 ## Credits
-
-Code and ideas originally from:
 
 - https://github.com/kaofelix/pi-watch/
 - https://github.com/mitsuhiko/agent-stuff/
