@@ -131,18 +131,3 @@ bunx retype-cli unused -p ./src --list
 | `--preview`    | Dry run (rename only)         |
 | `--exact`      | Exact match (rename only)     |
 | `--all`        | Show all results (references) |
-
-## vs ast-grep
-
-| Task                 | retype-cli | ast-grep  |
-| -------------------- | ---------- | --------- |
-| Rename symbol        | ✅ Best    | ⚠️ Manual |
-| Extract to file      | ✅ Best    | ❌ No     |
-| Update imports       | ✅ Auto    | ⚠️ Manual |
-| Find references      | ✅ Best    | ✅ Good   |
-| Pattern-based search | ⚠️ Limited | ✅ Best   |
-| Multi-language       | ❌ TS only | ✅ Many   |
-| Complex rewrites     | ❌ No      | ✅ Best   |
-
-**Use retype-cli for**: TypeScript refactoring (rename, move, extract)
-**Use ast-grep for**: Pattern matching, multi-language, complex rewrites

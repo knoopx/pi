@@ -1,6 +1,6 @@
 # kPI
 
-Personal [Pi Coding Agent](https://buildwithpi.ai/) configuration with 31 extensions and 37 skills.
+Personal [Pi Coding Agent](https://buildwithpi.ai/) configuration with 13 extensions and 18 skills.
 
 ## Features
 
@@ -64,59 +64,24 @@ File watcher that monitors the filesystem and triggers actions on changes. Debou
 
 ![Reverse History Search](screenshots/reverse-history-search.png)
 
-### RAG
-
-Markdown RAG with mdast AST chunking and semantic search. Index documentation, then query by similarity.
-
-### Transformers.js
-
-Local ML inference — image classification, object detection, segmentation, depth estimation, OCR, audio transcription, text-to-speech. Runs on CPU via ONNX.
-
-### Home Assistant
-
-List, toggle, and control Home Assistant entities. Supports lights (brightness, color), switches, climate, and arbitrary service calls.
-
-### Usage & Turn Stats
-
-Track API usage, session costs, context consumption, and per-turn token statistics. Provider-specific quota monitoring (Anthropic, OpenAI, Gemini, Copilot).
-
-### Web & Search Tools
-
-- **DuckDuckGo** — web search
-- **Reddit** — browse subreddit posts (new/top/hot/rising)
-- **DeepWiki** — query GitHub repo documentation via AI
-- **Stocks** — Yahoo Finance market data
-
-### Package Managers
-
-- **npm** — search packages, get info and versions
-- **PyPI** — search and inspect Python packages
-- **Nix** — search NixOS packages, options, and Home Manager config
-
-### Google Workspace (gog)
-
-Calendar, Gmail, Drive, Docs, Contacts, and Tasks integration.
-
 ### Other Tools
 
-- **Notification** — desktop notifications via notify-send
-- **Nomnoml** — render UML diagrams from text
+- **DuckDuckGo** — web search
+- **GitHub** — search repos, code, issues, PRs; browse contents and files
+- **Guardrails** — security hooks for dangerous operations
+- **Hooks** — lifecycle commands (session start/stop, tool calls, model switches)
 - **Markitdown** — convert files and URLs to markdown
-- **Bookmarks** — Firefox bookmark and history search
-- **Rodalies** — train departure times
-- **Weather** — current weather with emoji
-- **Pi Session Tools** — browse and search past sessions, tool calls, and events
-- **Hugging Face** — search and query ML models
-- **Niri** — window manager integration
-- **Firefox RDP** — remote desktop for Firefox
-- **Renderers** — custom UI renderers
-- **Core Tools** — essential tooling
+- **Nix** — search NixOS packages, options, and Home Manager config
+- **Notification** — desktop notifications via notify-send
+- **npm** — search packages, get info and versions
+- **PyPI** — search and inspect Python packages
+- **Reverse History Search** — `Ctrl+R` fuzzy search through user messages and commands
 - **Turn Stats** — per-turn statistics
-- **Waveshare Genui** — 720×720 display integration
+- **Usage** — track API usage, session costs, context consumption
 
-### Skills (37)
+### Skills (18)
 
-Reusable instruction sets: ast-grep, bun, codemapper, conventional-commits, daily-standup, design, digest, document-sorting, eslint, firefox-theming, gtkx, jc, jscpd, jujutsu, knip, nh, nix, nix-flakes, nomnoml, nu-shell, pi, podman, python, retype, scraping, self-improve, self-reflect, skill-authoring, swe, tmux, toon, typescript, uv, vhs, vicinae, vitest, yt-dlp.
+Reusable instruction sets: conventional-commits, gtkx, jscpd, jujutsu, knip, nh, nix, nix-flakes, nu-shell, podman, retype, skill-authoring, tmux, typescript, uv, vhs, vicinae, vitest.
 
 ### Prompt Templates
 

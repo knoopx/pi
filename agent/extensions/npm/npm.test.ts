@@ -1,4 +1,3 @@
-// @ts-nocheck — test calls use incorrect arity/types; needs execute signature migration
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
@@ -7,10 +6,41 @@ import setupNpmExtension from "./index";
 import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 
-// eslint-disable-next-line no-control-regex
-const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
-
 import { disableThrottle } from "../../shared/throttle";
+
+// Strip ANSI codes from strings
+const stripAnsi = (s: string): string => {
+  // Match ANSI escape sequences: ESC [ ... m
+  const ansiEscape = String.fromCharCode(27);
+  return s.replace(new RegExp(`[${ansiEscape}][\\[][\\d;]*m`, "g"), "");
+};
+
+// Shared mock fetch helpers for error cases
+function createMockFetchNotFound() {
+  return vi.fn().mockImplementation((..._args: unknown[]) => {
+    return {
+      ok: false,
+      status: 404,
+      statusText: "Not Found",
+      preconnect: vi.fn(),
+    };
+  });
+}
+
+function createMockFetchServerError() {
+  return vi.fn().mockImplementation((..._args: unknown[]) => {
+    return {
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      preconnect: vi.fn(),
+    };
+  });
+}
+
+function createMockFetchNetworkError() {
+  return vi.fn().mockRejectedValue(new Error("Network error"));
+}
 
 // ============================================
 // Extension Registration
@@ -98,7 +128,7 @@ describe("NPM Extension", () => {
         result = await registeredTool.execute("tool1", {
           query: "lodash",
           size: 1,
-        });
+        }, undefined, undefined, {} as any);
       });
 
       it("then it should return formatted search results", () => {
@@ -109,7 +139,7 @@ describe("NPM Extension", () => {
         ).toMatchSnapshot();
         expect(result.details.query).toBe("lodash");
         expect(result.details.count).toBe(1);
-        expect(result.details.packages[0].author).toBe("John-David Dalton");
+        expect((result.details as any).packages[0].author).toBe("John-David Dalton");
       });
     });
 
@@ -124,7 +154,7 @@ describe("NPM Extension", () => {
 
         const result = await registeredTool.execute("tool1", {
           query: "test",
-        });
+        }, undefined, undefined, {} as any);
 
         const calledUrl = mockFetch.mock.calls[0]?.[0] as string;
         expect(calledUrl).toContain("size=10");
@@ -145,7 +175,7 @@ describe("NPM Extension", () => {
 
         const result = await registeredTool.execute("tool1", {
           query: "nonexistent-pkg-xyz-123",
-        });
+        }, undefined, undefined, {} as any);
 
         expect((result.content[0] as TextContent).text).toBe(
           "No packages found.",
@@ -164,7 +194,7 @@ describe("NPM Extension", () => {
         }));
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        const result = await registeredTool.execute("tool1", { query: "test" });
+        const result = await registeredTool.execute("tool1", { query: "test" }, undefined, undefined, {} as any);
 
         expect((result.content[0] as TextContent).text).toBe(
           "Failed to search packages: Not Found",
@@ -181,7 +211,7 @@ describe("NPM Extension", () => {
         }));
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        const result = await registeredTool.execute("tool1", { query: "test" });
+        const result = await registeredTool.execute("tool1", { query: "test" }, undefined, undefined, {} as any);
 
         expect((result.content[0] as TextContent).text).toBe(
           "Failed to search packages: Internal Server Error",
@@ -195,7 +225,7 @@ describe("NPM Extension", () => {
         const mockFetch = vi.fn().mockRejectedValue(new Error("Network error"));
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        const result = await registeredTool.execute("tool1", { query: "test" });
+        const result = await registeredTool.execute("tool1", { query: "test" }, undefined, undefined, {} as any);
 
         expect((result.content[0] as TextContent).text).toBe(
           "Error searching packages: Network error",
@@ -249,7 +279,7 @@ describe("NPM Extension", () => {
 
         result = await registeredTool.execute("tool1", {
           package: "express",
-        });
+        }, undefined, undefined, {} as any);
       });
 
       it("then it should return formatted package info", () => {
@@ -264,17 +294,11 @@ describe("NPM Extension", () => {
 
     describe("given a package that does not exist", () => {
       it("then it should return not found message", async () => {
-        const mockFetch = vi.fn().mockImplementation((..._args) => ({
-          ok: false,
-          status: 404,
-          statusText: "Not Found",
-          preconnect: vi.fn(),
-        }));
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = createMockFetchNotFound();
 
         const result = await registeredTool.execute("tool1", {
           package: "nonexistent-pkg-xyz-123",
-        });
+        }, undefined, undefined, {} as any);
 
         expect((result.content[0] as TextContent).text).toBe(
           'Package "nonexistent-pkg-xyz-123" not found.',
@@ -285,20 +309,11 @@ describe("NPM Extension", () => {
 
     describe("given an HTTP request returns server error", () => {
       it("then it should return error message", async () => {
-        const mockFetch = vi.fn().mockImplementation(
-          (..._args) =>
-            ({
-              ok: false,
-              status: 500,
-              statusText: "Internal Server Error",
-              preconnect: vi.fn(),
-            }) as Partial<Response>,
-        );
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = createMockFetchServerError();
 
         const result = await registeredTool.execute("tool1", {
           package: "lodash",
-        });
+        }, undefined, undefined, {} as any);
 
         expect((result.content[0] as TextContent).text).toBe(
           "Failed to get package info: Internal Server Error",
@@ -309,12 +324,11 @@ describe("NPM Extension", () => {
 
     describe("given the fetch function throws an error", () => {
       it("then it should return error message", async () => {
-        const mockFetch = vi.fn().mockRejectedValue(new Error("Network error"));
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = createMockFetchNetworkError();
 
         const result = await registeredTool.execute("tool1", {
           package: "lodash",
-        });
+        }, undefined, undefined, {} as any);
 
         expect((result.content[0] as TextContent).text).toBe(
           "Error get package info: Network error",
@@ -358,7 +372,7 @@ describe("NPM Extension", () => {
 
         result = await registeredTool.execute("tool1", {
           package: "lodash",
-        });
+        }, undefined, undefined, {} as any);
       });
 
       it("then it should return formatted versions", () => {
@@ -372,17 +386,11 @@ describe("NPM Extension", () => {
 
     describe("given a package that does not exist", () => {
       it("then it should return not found message", async () => {
-        const mockFetch = vi.fn().mockImplementation((..._args) => ({
-          ok: false,
-          status: 404,
-          statusText: "Not Found",
-          preconnect: vi.fn(),
-        }));
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = createMockFetchNotFound();
 
         const result = await registeredTool.execute("tool1", {
           package: "nonexistent-pkg-xyz-123",
-        });
+        }, undefined, undefined, {} as any);
 
         expect((result.content[0] as TextContent).text).toBe(
           'Package "nonexistent-pkg-xyz-123" not found.',
@@ -392,17 +400,11 @@ describe("NPM Extension", () => {
 
     describe("given an HTTP request returns server error", () => {
       it("then it should return error message", async () => {
-        const mockFetch = vi.fn().mockImplementation((..._args) => ({
-          ok: false,
-          status: 500,
-          statusText: "Internal Server Error",
-          preconnect: vi.fn(),
-        }));
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = createMockFetchServerError();
 
         const result = await registeredTool.execute("tool1", {
           package: "lodash",
-        });
+        }, undefined, undefined, {} as any);
 
         expect((result.content[0] as TextContent).text).toBe(
           "Failed to get package versions: Internal Server Error",
@@ -413,12 +415,11 @@ describe("NPM Extension", () => {
 
     describe("given the fetch function throws an error", () => {
       it("then it should return error message", async () => {
-        const mockFetch = vi.fn().mockRejectedValue(new Error("Network error"));
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = createMockFetchNetworkError();
 
         const result = await registeredTool.execute("tool1", {
           package: "lodash",
-        });
+        }, undefined, undefined, {} as any);
 
         expect((result.content[0] as TextContent).text).toBe(
           "Error get package versions: Network error",

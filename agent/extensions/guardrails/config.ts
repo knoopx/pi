@@ -157,17 +157,6 @@ export async function saveGuardrailsSettings(
   return next;
 }
 
-export async function loadGuardrailsEnabledSetting(): Promise<boolean> {
-  const settings = await loadGuardrailsSettings();
-  return settings.enabled;
-}
-
-export async function saveGuardrailsEnabledSetting(
-  enabled: boolean,
-): Promise<void> {
-  await saveGuardrailsSettings({ enabled });
-}
-
 class ConfigLoader {
   private defaultsConfig: GuardrailsConfig | null = null;
   private globalConfig: GuardrailsConfig | null = null;

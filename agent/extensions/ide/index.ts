@@ -39,14 +39,8 @@ import { openFilesPicker } from "./overlays/files";
 import { openSymbolsPicker } from "./overlays/symbols";
 import { openBookmarksBrowser } from "./overlays/bookmarks";
 import { openOpLogBrowser } from "./overlays/oplog";
-import { openSkillBrowser } from "./overlays/skills";
 import { openPullRequestsBrowser } from "./overlays/pull-requests";
-import {
-  openCommandPalette,
-  type RegisteredShortcut,
-} from "./overlays/command-palette";
 import { openChangesBrowser } from "./overlays/changes";
-import { openSemanticChangesBrowser } from "./overlays/semantic-changes";
 import { openTodosBrowser } from "./overlays/todos";
 import { monitorWorkspace } from "./overlays/workspace-monitor";
 import { FULL_OVERLAY_OPTIONS } from "./overlays/options";
@@ -532,14 +526,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  pi.registerCommand("skills", {
-    description: "Browse local skills and install from skills.sh",
-    handler: async (args, ctx) => {
-      if (!ctx.hasUI) return;
-      await openSkillBrowser(pi, ctx, args.trim());
-    },
-  });
-
   pi.registerCommand("pull-requests", {
     description: "Browse GitHub pull requests with diff preview",
     handler: async (_args, ctx) => {
@@ -553,15 +539,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     handler: async (args, ctx) => {
       if (!ctx.hasUI) return;
       await openTodosBrowser(pi, ctx, args.trim());
-    },
-  });
-
-  pi.registerCommand("semantic-changes", {
-    description:
-      "Browse entity-level semantic changes (functions, classes, types)",
-    handler: async (args, ctx) => {
-      if (!ctx.hasUI) return;
-      await openSemanticChangesBrowser(pi, ctx);
     },
   });
 
@@ -609,19 +586,9 @@ export default function ideExtension(pi: ExtensionAPI) {
       handler: async (ctx) => openOpLogBrowser(pi, ctx),
     },
     {
-      key: Key.ctrl("s"),
-      description: "Open skill browser",
-      handler: async (ctx) => openSkillBrowser(pi, ctx, ""),
-    },
-    {
       key: Key.ctrl("g"),
       description: "Open pull requests browser",
       handler: async (ctx) => openPullRequestsBrowser(pi, ctx),
-    },
-    {
-      key: Key.ctrl("e"),
-      description: "Open semantic diff browser",
-      handler: async (ctx) => openSemanticChangesBrowser(pi, ctx),
     },
   ];
 
@@ -635,44 +602,6 @@ export default function ideExtension(pi: ExtensionAPI) {
       },
     });
   }
-
-  // Build command palette list from shortcuts
-  let currentCtx: ExtensionContext | null = null;
-
-  const registeredShortcuts: RegisteredShortcut[] = shortcuts.map((s) => ({
-    shortcut: s.key,
-    description: s.description,
-    execute: () => {
-      if (currentCtx) void s.handler(currentCtx);
-    },
-  }));
-
-  // Add command palette itself (self-referential, no-op execute)
-  registeredShortcuts.push({
-    shortcut: Key.ctrlShift("p"),
-    description: "Open command palette",
-    execute: () => {},
-  });
-
-  pi.registerCommand("commands", {
-    description: "Open command palette to search and execute commands",
-    handler: async (_args, ctx) => {
-      if (!ctx.hasUI) return;
-      currentCtx = ctx;
-      await openCommandPalette(pi, ctx, registeredShortcuts);
-      currentCtx = null;
-    },
-  });
-
-  pi.registerShortcut(Key.ctrlShift("p"), {
-    description: "Open command palette",
-    handler: async (ctx) => {
-      if (!ctx.hasUI) return;
-      currentCtx = ctx;
-      await openCommandPalette(pi, ctx, registeredShortcuts);
-      currentCtx = null;
-    },
-  });
 
   // Register all tools
   registerAllTools(pi);

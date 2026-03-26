@@ -32,6 +32,20 @@ const projectConfig = [
   },
 ];
 
+// Shared test setup helpers
+function createMockReadFileWithGlobalHooks(globalHooks: unknown) {
+  return vi.fn().mockImplementation(async (path: unknown) => {
+    const file = String(path);
+    if (file.endsWith("defaults.json")) {
+      return JSON.stringify(defaultsConfig);
+    }
+    if (file.endsWith(".pi/agent/settings.json")) {
+      return JSON.stringify({ hooks: globalHooks });
+    }
+    throw new Error("missing file");
+  });
+}
+
 async function loadConfigModule() {
   vi.resetModules();
   const fs = await import("node:fs/promises");
@@ -95,16 +109,7 @@ describe("configLoader", () => {
           },
         ];
 
-        readFile.mockImplementation(async (path) => {
-          const file = String(path);
-          if (file.endsWith("defaults.json")) {
-            return JSON.stringify(defaultsConfig);
-          }
-          if (file.endsWith(".pi/agent/settings.json")) {
-            return JSON.stringify({ hooks: globalHooks, theme: "custom" });
-          }
-          throw new Error("missing file");
-        });
+        readFile.mockImplementation(createMockReadFileWithGlobalHooks(globalHooks));
 
         await configLoader.load();
 

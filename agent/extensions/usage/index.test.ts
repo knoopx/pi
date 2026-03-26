@@ -90,6 +90,20 @@ function createMockUsageData(): UsageData {
   };
 }
 
+function createEmptyUsageData(): UsageData {
+  const emptyTotals = {
+    sessions: 0,
+    messages: 0,
+    cost: 0,
+    tokens: { total: 0, input: 0, output: 0, cache: 0 },
+  };
+  return {
+    today: { providers: new Map(), totals: emptyTotals },
+    thisWeek: { providers: new Map(), totals: emptyTotals },
+    allTime: { providers: new Map(), totals: emptyTotals },
+  };
+}
+
 // Mock Theme object
 const mockTheme = {
   fg: (_name: string, text: string) => text,
@@ -506,35 +520,7 @@ describe("UsageComponent", () => {
 
   describe("render - Empty data", () => {
     it("then renders empty state message", () => {
-      const emptyData = {
-        today: {
-          providers: new Map(),
-          totals: {
-            sessions: 0,
-            messages: 0,
-            cost: 0,
-            tokens: { total: 0, input: 0, output: 0, cache: 0 },
-          },
-        },
-        thisWeek: {
-          providers: new Map(),
-          totals: {
-            sessions: 0,
-            messages: 0,
-            cost: 0,
-            tokens: { total: 0, input: 0, output: 0, cache: 0 },
-          },
-        },
-        allTime: {
-          providers: new Map(),
-          totals: {
-            sessions: 0,
-            messages: 0,
-            cost: 0,
-            tokens: { total: 0, input: 0, output: 0, cache: 0 },
-          },
-        },
-      };
+      const emptyData = createEmptyUsageData();
 
       const emptyComponent = new UsageComponent(
         mockTheme,

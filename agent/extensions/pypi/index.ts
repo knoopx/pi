@@ -14,8 +14,8 @@ import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, type Static } from "@sinclair/typebox";
 import { textResult } from "../../shared/tool-utils";
 import { throttledFetch } from "../../shared/throttle";
-import { dotJoin, countLabel, table, detail } from "../renderers";
-import type { Column } from "../renderers";
+import { dotJoin, countLabel, table, detail } from "../../shared/renderers";
+import type { Column } from "../../shared/renderers";
 
 // Parameter schemas
 const SearchPyPIPackagesParams = Type.Object({

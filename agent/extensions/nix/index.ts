@@ -5,8 +5,8 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type, type Static } from "@sinclair/typebox";
-import { dotJoin, countLabel, table } from "../renderers";
-import type { Column } from "../renderers";
+import { dotJoin, countLabel, table } from "../../shared/renderers";
+import type { Column } from "../../shared/renderers";
 import { throttledFetch } from "../../shared/throttle";
 
 // Parameter schema for search queries

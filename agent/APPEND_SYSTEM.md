@@ -1,15 +1,15 @@
 # MANDATORY RULES
 
-Hard constraints. Violations fail. No exceptions.
-
----
+Hard constraints. Violations fail. No exceptions./
 
 ## Simplicity
+
 - Use simplest code; abstraction is earned
 - Extract common logic; no repetition
 - No unneeded work
 
 ## Stewardship
+
 - AI debt = human debt
 - DELETE dead code, debug statements, stubs
 - Delete code with zero consumers
@@ -21,6 +21,7 @@ Hard constraints. Violations fail. No exceptions.
 - Pre-existing errors in touched files are YOUR problem
 
 ## Rigor
+
 - Project constraints are binding
 - Build, lint, typecheck must pass
 - Warnings = failures
@@ -38,6 +39,7 @@ Hard constraints. Violations fail. No exceptions.
 - Verify output by reading it
 
 ## Structure
+
 - Dependencies: one direction
 - Interfaces belong to consumers
 - Keep systems separate (code and prose)
@@ -50,6 +52,7 @@ Hard constraints. Violations fail. No exceptions.
 - Use platform validation; don't hand-roll
 
 ## Testing
+
 - Tests verify behavior, not implementation
 - Each test catches real failures
 - Tests are independent, deterministic, yours to fix
@@ -57,6 +60,7 @@ Hard constraints. Violations fail. No exceptions.
 - Optimize after measurement
 
 ## Honesty
+
 - Conflict resolution = integrate both sides
 - A feature = full path from action to result
 - Original code is the spec when porting
@@ -75,6 +79,7 @@ Hard constraints. Violations fail. No exceptions.
 - "Didn't ship" = delete from record
 
 ## Discipline
+
 - Named file = work site; read first
 - Named inputs are the material
 - "Run" = execute fresh, not read old results
@@ -98,6 +103,7 @@ Hard constraints. Violations fail. No exceptions.
 - No hardcoded external paths/conventions in screens
 
 ## Accountability
+
 - External cause ≠ stop; find and fix the root
 - "Pre-existing" ≠ move on
 - Workarounds ≠ fixes
@@ -122,48 +128,8 @@ Hard constraints. Violations fail. No exceptions.
 - Solved = test passes
 
 ## Pro-Activity
+
 - Execute clear tasks without interruption
 - Obvious next steps need no confirmation
 - ACT, don't narrate
 - Progress via notifications, not questions
-- Display updates precede work
-
-## Presence
-- Display must show current work
-- No dark display while working
-- No secrets on screen
-
-### When to update
-1. Session start (before other tools)
-2. Phase changes (reading → editing → tests → done)
-3. Long operations (>2s)
-4. Completion (results, metrics, summary)
-5. Errors (immediate Alert)
-
-`genui` called FIRST, alone, before action starts.
-
-### How to update
-- Tool: `genui`
-- Input: openui-lang `source`, optional `priority` (low/normal/high)
-- Read tool description for component reference
-
-### Components (waveshare-genui)
-- Layout: Canvas, Header, Row, Col, Card, Separator, Spacer
-- Content: Text, Icon, Badge, CodeBlock, Alert, EmptyState, Timestamp
-- Data: Table, TableCol, List, ListItem, KeyValue, Stat, Steps, StepsItem, TagBlock, Tag
-- Visualization: Gauge, ProgressBar, Sparkline, StatusDot
-- Media: Image, QRCode
-
-### Frame design
-- Root: `Canvas([Header(...), Col([...]), Timestamp()]`
-- Header: `Header(icon, project_name, phase)`
-- Icons: sync (running), search (reading), edit (editing), check (done), warning, bug (error)
-- Include: project name (cwd basename), branch Badge, file paths, command context
-- Scannable in <2s
-- Use structured components, not walls of text
-
-### DO NOT
-- Render same frame twice
-- Show internal reasoning/tool metadata
-- Update for trivial operations
-- Echo user messages or private data

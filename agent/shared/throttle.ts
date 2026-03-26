@@ -14,10 +14,6 @@ export function disableThrottle(): void {
   disabled = true;
 }
 
-export function enableThrottle(): void {
-  disabled = false;
-}
-
 interface HostState {
   /** Timestamp of last request start */
   lastRequest: number;

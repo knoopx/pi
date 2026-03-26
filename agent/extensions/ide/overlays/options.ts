@@ -12,15 +12,6 @@ export const FULL_OVERLAY_OPTIONS = {
   },
 };
 
-export const CENTERED_OVERLAY_OPTIONS = {
-  overlay: true,
-  overlayOptions: {
-    width: "70%" as const,
-    minWidth: 60,
-    anchor: "center" as const,
-  },
-};
-
 export interface CmActionResult {
   filePath: string;
   action: CmActionType;

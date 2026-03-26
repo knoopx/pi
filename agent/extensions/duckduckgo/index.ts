@@ -8,8 +8,8 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
 import { textResult } from "../../shared/tool-utils";
-import { dotJoin, countLabel, table } from "../renderers";
-import type { Column } from "../renderers";
+import { dotJoin, countLabel, table } from "../../shared/renderers";
+import type { Column } from "../../shared/renderers";
 import { acquireSlot } from "../../shared/throttle";
 
 const DDG_HOST = "duckduckgo.com";

@@ -16,16 +16,6 @@ export function fuzzyMatch(text: string, query: string): boolean {
   return idxs !== null && idxs.length > 0;
 }
 
-export function fuzzyScore(text: string, query: string): number {
-  if (!query) return 1;
-  if (!text) return 0;
-  const haystack = [text];
-  const [idxs, info] = uf.search(haystack, query);
-  if (!idxs || idxs.length === 0 || !info) return 0;
-  const order = uf.sort(info, haystack, query);
-  return order.length > 0 ? 1 - order[0] / 1000 : 0;
-}
-
 export function fuzzyFilter<T>(
   items: T[],
   query: string,

@@ -8,8 +8,8 @@ import { type Static, Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
 import { dangerousOperationConfirmation } from "../../shared/tool-utils";
 import { renderTextToolResult } from "../../shared/render-utils";
-import { dotJoin, countLabel, table, detail, stateDot } from "../renderers";
-import type { Column } from "../renderers";
+import { dotJoin, countLabel, table, detail, stateDot } from "../../shared/renderers";
+import type { Column } from "../../shared/renderers";
 
 // Type definitions
 interface GHRepo {
@@ -2550,9 +2550,9 @@ function formatGistUpdate(gist: Gist): string {
 }
 
 /**
- * Format repository view
+ * Format repo view
  */
-function formatRepoView(repo: GHRepo): string {
+function _formatRepoView(repo: GHRepo): string {
   const fields = [
     { label: "name", value: repo.full_name },
     { label: "description", value: repo.description || "No description" },
@@ -2700,24 +2700,6 @@ function formatPRSearchResult(result: {
     "",
     table(cols, rows),
   ].join("\n");
-}
-
-/**
- * Format gist clone result
- */
-function formatGistClone(result: {
-  stdout: string;
-  stderr: string;
-  exitCode: number;
-  gistId: string;
-  directory?: string;
-}): string {
-  if (result.exitCode !== 0) {
-    return `✗ Failed to clone gist ${result.gistId}\n${result.stderr || result.stdout}`;
-  }
-
-  const dirName = result.directory || result.gistId;
-  return `✓ Cloned gist ${result.gistId} to ./${dirName}\n${result.stdout || "Gist cloned successfully."}`;
 }
 
 /**
@@ -2910,12 +2892,6 @@ const CreateGistParams = Type.Object({
   ),
 });
 
-const DeleteGistParams = Type.Object({
-  gistId: Type.String({
-    description: "Gist ID to delete",
-  }),
-});
-
 const UpdateGistParams = Type.Object({
   gistId: Type.String({
     description: "Gist ID to update",
@@ -2938,52 +2914,6 @@ const UpdateGistParams = Type.Object({
   description: Type.Optional(
     Type.String({
       description: "Updated description",
-    }),
-  ),
-});
-
-const RepoViewParams = Type.Object({
-  owner: Type.String({
-    description: "Repository owner (e.g., 'facebook')",
-  }),
-  repo: Type.String({
-    description: "Repository name (e.g., 'react')",
-  }),
-  web: Type.Optional(
-    Type.Boolean({
-      description: "Open repository in browser",
-      default: false,
-    }),
-  ),
-});
-
-const RepoCloneParams = Type.Object({
-  owner: Type.String({
-    description: "Repository owner (e.g., 'facebook')",
-  }),
-  repo: Type.String({
-    description: "Repository name (e.g., 'react')",
-  }),
-  directory: Type.Optional(
-    Type.String({
-      description: "Local directory name (default: repo name)",
-    }),
-  ),
-  private: Type.Optional(
-    Type.Boolean({
-      description: "Whether cloning a private repository",
-      default: false,
-    }),
-  ),
-});
-
-const CloneGistParams = Type.Object({
-  gistId: Type.String({
-    description: "Gist ID to clone",
-  }),
-  directory: Type.Optional(
-    Type.String({
-      description: "Local directory name (default: gist ID)",
     }),
   ),
 });
@@ -3086,11 +3016,7 @@ type GetFileContentParamsType = Static<typeof GetFileContentParams>;
 type ListGistsParamsType = Static<typeof ListGistsParams>;
 type GetGistParamsType = Static<typeof GetGistParams>;
 type CreateGistParamsType = Static<typeof CreateGistParams>;
-type DeleteGistParamsType = Static<typeof DeleteGistParams>;
 type UpdateGistParamsType = Static<typeof UpdateGistParams>;
-type RepoViewParamsType = Static<typeof RepoViewParams>;
-type RepoCloneParamsType = Static<typeof RepoCloneParams>;
-type CloneGistParamsType = Static<typeof CloneGistParams>;
 type ListRepoFilesParamsType = Static<typeof ListRepoFilesParams>;
 
 export default function ghExtension(pi: ExtensionAPI) {
@@ -3605,63 +3531,6 @@ Examples:
   });
 
   pi.registerTool({
-    name: "gh-delete-gist",
-    label: "Delete Gist",
-    description: `Delete a GitHub gist.
-
-Use this to:
-- Remove unwanted gists
-- Clean up old snippets
-- Delete sensitive code
-
-Examples:
-- gh-delete-gist(gistId='abc123')`,
-    parameters: DeleteGistParams,
-
-    async execute(
-      _toolCallId,
-      params: DeleteGistParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
-      ctx: ExtensionContext,
-    ) {
-      const denied = await dangerousOperationConfirmation(
-        ctx,
-        "Delete Gist",
-        `Delete gist ${params.gistId}?`,
-      );
-      if (denied) return denied;
-      try {
-        await deleteGist(params.gistId);
-        return {
-          content: [
-            {
-              type: "text",
-              text: `✓ Gist ${params.gistId} deleted successfully.`,
-            },
-          ],
-          details: { deleted: params.gistId },
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
-      }
-    },
-
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-delete-gist"));
-      if (args.gistId) {
-        text += theme.fg("muted", ` ${args.gistId}`);
-      }
-      return new Text(text, 0, 0);
-    },
-
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
-  });
-
-  pi.registerTool({
     name: "gh-update-gist",
     label: "Update Gist",
     description: `Update an existing GitHub gist.
@@ -3720,222 +3589,6 @@ Examples:
       }
       if (args.description) {
         text += theme.fg("dim", ` desc="${args.description}"`);
-      }
-      return new Text(text, 0, 0);
-    },
-
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
-  });
-
-  pi.registerTool({
-    name: "gh-repo-view",
-    label: "View Repository",
-    description: `View details of a GitHub repository.
-
-Use this to:
-- Get repository metadata
-- See stars, forks, language info
-- Check repository URL and details
-- Open repository in browser
-
-Examples:
-- gh-repo-view(owner='facebook', repo='react')
-- gh-repo-view(owner='microsoft', repo='vscode', web=true)`,
-    parameters: RepoViewParams,
-
-    async execute(
-      _toolCallId,
-      params: RepoViewParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        if (params.web) {
-          // Open in browser using gh CLI
-          const { spawn } = await import("node:child_process");
-          return await new Promise((resolve) => {
-            const proc = spawn(
-              "gh",
-              ["repo", "view", `${params.owner}/${params.repo}`, "--web"],
-              {
-                stdio: "inherit",
-              },
-            );
-            proc.on("close", (_code) => {
-              resolve({
-                content: [
-                  {
-                    type: "text",
-                    text: `Opened ${params.owner}/${params.repo} in browser.`,
-                  },
-                ],
-                details: { opened: true },
-              });
-            });
-          });
-        }
-
-        const repo = await viewRepo(params.owner, params.repo);
-        const output = formatRepoView(repo);
-        return {
-          content: [{ type: "text", text: output }],
-          details: { repo },
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
-      }
-    },
-
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-repo-view"));
-      if (args.owner && args.repo) {
-        text += theme.fg("muted", ` (${args.owner}/${args.repo})`);
-      }
-      if (args.web) {
-        text += theme.fg("dim", " --web");
-      }
-      return new Text(text, 0, 0);
-    },
-
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
-  });
-
-  pi.registerTool({
-    name: "gh-repo-clone",
-    label: "Clone Repository",
-    description: `Clone a GitHub repository using gh CLI.
-
-Use this to:
-- Clone public or private repositories
-- Clone to a custom directory
-- Quickly get a local copy of a repo
-
-Examples:
-- gh-repo-clone(owner='facebook', repo='react')
-- gh-repo-clone(owner='octocat', repo='Hello-World', directory='my-repo')
-- gh-repo-clone(owner='myorg', repo='private-repo', private=true)`,
-    parameters: RepoCloneParams,
-
-    async execute(
-      _toolCallId,
-      params: RepoCloneParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        const result = await cloneRepo(
-          params.owner,
-          params.repo,
-          params.directory,
-          params.private || false,
-        );
-
-        if (result.exitCode !== 0) {
-          return createErrorResult(
-            `Clone failed with exit code ${result.exitCode}\n${result.stderr || result.stdout}`,
-          );
-        }
-
-        const dirName = params.directory || params.repo;
-        return {
-          content: [
-            {
-              type: "text",
-              text: `✓ Cloned ${params.owner}/${params.repo} to ./${dirName}\n${result.stdout || "Repository cloned successfully."}`,
-            },
-          ],
-          details: {
-            cloned: true,
-            repo: `${params.owner}/${params.repo}`,
-            directory: dirName,
-            stdout: result.stdout,
-            stderr: result.stderr,
-          },
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
-      }
-    },
-
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-repo-clone"));
-      if (args.owner && args.repo) {
-        text += theme.fg("muted", ` (${args.owner}/${args.repo})`);
-      }
-      if (args.directory) {
-        text += theme.fg("dim", ` -> ${args.directory}`);
-      }
-      if (args.private) {
-        text += theme.fg("dim", " (private)");
-      }
-      return new Text(text, 0, 0);
-    },
-
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
-  });
-
-  pi.registerTool({
-    name: "gh-clone-gist",
-    label: "Clone Gist",
-    description: `Clone a GitHub gist using gh CLI.
-
-Use this to:
-- Download a gist locally
-- Work with gist files offline
-- Backup gists to your machine
-
-Examples:
-- gh-clone-gist(gistId='abc123')
-- gh-clone-gist(gistId='abc123', directory='my-gist')`,
-    parameters: CloneGistParams,
-
-    async execute(
-      _toolCallId,
-      params: CloneGistParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        const result = await cloneGist(params.gistId, params.directory);
-        const output = formatGistClone({
-          ...result,
-          gistId: params.gistId,
-          directory: params.directory,
-        });
-        return {
-          content: [{ type: "text", text: output }],
-          details: {
-            cloned: result.exitCode === 0,
-            gistId: params.gistId,
-            directory: params.directory || params.gistId,
-            stdout: result.stdout,
-            stderr: result.stderr,
-          },
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
-      }
-    },
-
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-clone-gist"));
-      if (args.gistId) {
-        text += theme.fg("muted", ` ${args.gistId}`);
-      }
-      if (args.directory) {
-        text += theme.fg("dim", ` -> ${args.directory}`);
       }
       return new Text(text, 0, 0);
     },
@@ -4216,79 +3869,6 @@ Examples:
     renderCall(args, theme) {
       let text = theme.fg("toolTitle", theme.bold("gh-create-pr"));
       if (args.title) text += theme.fg("muted", ` "${args.title}"`);
-      return new Text(text, 0, 0);
-    },
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
-  });
-
-  const MergePRParams = Type.Object({
-    owner: Type.String({ description: "Repository owner" }),
-    repo: Type.String({ description: "Repository name" }),
-    number: Type.Integer({ description: "PR number" }),
-    method: Type.Optional(
-      Type.Union(
-        [Type.Literal("merge"), Type.Literal("squash"), Type.Literal("rebase")],
-        { description: "Merge method (default: merge)" },
-      ),
-    ),
-    deleteBranch: Type.Optional(
-      Type.Boolean({
-        description: "Delete branch after merge",
-        default: false,
-      }),
-    ),
-  });
-
-  pi.registerTool({
-    name: "gh-merge-pr",
-    label: "Merge Pull Request",
-    description: "Merge a pull request.",
-    parameters: MergePRParams,
-    async execute(
-      _id,
-      params: Static<typeof MergePRParams>,
-      _signal?: AbortSignal,
-      _onUpdate?: AgentToolUpdateCallback,
-      ctx?: ExtensionContext,
-    ) {
-      if (!ctx) return createErrorResult("Blocked: no context");
-      const denied = await dangerousOperationConfirmation(
-        ctx,
-        "Merge PR",
-        `Merge #${params.number} in ${params.owner}/${params.repo}?`,
-      );
-      if (denied) return denied;
-      try {
-        const result = await mergePR(
-          params.owner,
-          params.repo,
-          params.number,
-          params.method,
-          params.deleteBranch,
-        );
-        if (result.exitCode !== 0)
-          return createErrorResult(result.stderr || result.stdout);
-        return {
-          content: [
-            {
-              type: "text",
-              text: `✓ PR #${params.number} merged\n${result.stdout.trim()}`,
-            },
-          ],
-          details: { stdout: result.stdout },
-        };
-      } catch (error) {
-        return createErrorResult(
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-merge-pr"));
-      if (args.owner && args.repo)
-        text += theme.fg("muted", ` ${args.owner}/${args.repo}#${args.number}`);
       return new Text(text, 0, 0);
     },
     renderResult(result, _options, theme) {
@@ -4837,84 +4417,6 @@ Examples:
       if (args.owner && args.repo)
         text += theme.fg("muted", ` ${args.owner}/${args.repo}`);
       if (args.workflow) text += theme.fg("dim", ` workflow=${args.workflow}`);
-      return new Text(text, 0, 0);
-    },
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
-  });
-
-  // --- Label tools ---
-
-  const ListLabelsParams = Type.Object({
-    owner: Type.String({ description: "Repository owner" }),
-    repo: Type.String({ description: "Repository name" }),
-    limit: Type.Optional(
-      Type.Integer({
-        minimum: 1,
-        maximum: 200,
-        default: 100,
-        description: "Max results",
-      }),
-    ),
-  });
-
-  pi.registerTool({
-    name: "gh-list-labels",
-    label: "List Labels",
-    description: "List labels in a GitHub repository.",
-    parameters: ListLabelsParams,
-    async execute(
-      _id,
-      params: Static<typeof ListLabelsParams>,
-      _signal?: AbortSignal,
-      _onUpdate?: AgentToolUpdateCallback,
-      _ctx?: ExtensionContext,
-    ) {
-      try {
-        const labels = await listLabels(
-          params.owner,
-          params.repo,
-          params.limit,
-        );
-        const cols: Column[] = [
-          { key: "color", minWidth: 3 },
-          {
-            key: "info",
-            format: (_v, row) => {
-              const r = row as Record<string, string>;
-              return r.description ? `${r.name}\n${r.description}` : r.name;
-            },
-          },
-        ];
-        const rows = labels.map((l) => ({
-          color: `#${l.color}`,
-          name: l.name,
-          description: l.description || "",
-        }));
-        return {
-          content: [
-            {
-              type: "text",
-              text: [
-                dotJoin(`${labels.length} labels`),
-                "",
-                table(cols, rows),
-              ].join("\n"),
-            },
-          ],
-          details: { labels },
-        };
-      } catch (error) {
-        return createErrorResult(
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-list-labels"));
-      if (args.owner && args.repo)
-        text += theme.fg("muted", ` ${args.owner}/${args.repo}`);
       return new Text(text, 0, 0);
     },
     renderResult(result, _options, theme) {

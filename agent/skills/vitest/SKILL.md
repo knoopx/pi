@@ -172,9 +172,3 @@ describe("Calculator", () => {
 - [Module Mocking](./references/mocking-modules.md) - Mock external dependencies with `vi.mock()`
 - [Filesystem Mocking](./references/filesystem-mocking.md) - In-memory filesystem with memfs
 - [Request Mocking](./references/requests-mocking.md) - Mock HTTP requests
-
-## Related Skills
-
-- **typescript**: Type safety for tests
-- **bun**: Package management and scripting
-- **ast-grep**: Pattern matching for refactoring

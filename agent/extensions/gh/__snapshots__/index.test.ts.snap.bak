@@ -1,5 +1,20 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`GH Extension > gh-repo-view > given a valid repository > then it should return formatted repo info 1`] = `
+"       name │ facebook/react
+description │ A JavaScript library for building UIs
+        url │ https://github.com/facebook/react
+      stars │ 220.000
+      forks │ 45.000
+   language │ JavaScript
+     branch │ main
+    created │ 24/5/2013
+    updated │ 1/1/2025
+     pushed │ 1/1/2025
+       size │ 500000 KB
+   homepage │ https://react.dev"
+`;
+
 exports[`GH Extension > gh-search-code > given successful code search > then it should return formatted results 1`] = `
 "1 result(s)
 

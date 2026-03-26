@@ -8,11 +8,7 @@
     "cheerio",
     "domhandler",
     "tinyglobby",
-    "picocolors",
-    "nomnoml",
-    "sharp",
-    "@huggingface/transformers",
-    "wavefile"
+    "picocolors"
   ],
   "ignoreBinaries": ["tsc"],
   "rules": {

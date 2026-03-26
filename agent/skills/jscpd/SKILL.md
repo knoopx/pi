@@ -33,9 +33,3 @@ bunx jscpd --ignore "**/node_modules/**,**/dist/**" <path>
 2. Review the reported duplicates
 3. Refactor to eliminate duplication
 4. Re-run to verify cleanup
-
-## Related Skills
-
-- **maintenance**: Refactoring and technical debt management
-- **design**: DRY principle violations
-- **ast-grep**: Structural refactoring of duplicated patterns
