@@ -336,8 +336,8 @@ async function searchNixPackages(query: string): Promise<NixPackage[]> {
 
 function buildPackageAggregations(): Record<string, unknown> {
   return {
-    global: {},
-    aggregations: buildCommonAggregations(),
+    ...buildAggregationTerms(),
+    all: buildCommonAggregations(),
   };
 }
 
