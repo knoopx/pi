@@ -1,16 +1,16 @@
 {
-  "lastChangelogVersion": "0.62.0",
-  "defaultProvider": "local",
-  "defaultModel": "Qwen3.5-27B-NVFP4",
+  "lastChangelogVersion": "0.63.1",
+  "defaultProvider": "zai-coding-plan",
+  "defaultModel": "glm-4.7",
   "theme": "custom",
   "enabledModels": [
     "github-copilot/grok-code-fast-1",
-    "zai-coding-plan/glm-4.7",
     "local/unsloth/Qwen3.5-35B-A3B-GGUF",
     "github-copilot/gpt-5.4",
     "zai-coding-plan/glm-4.7-flash",
     "github-copilot/claude-opus-4.6",
-    "local/Qwen3.5-27B-NVFP4"
+    "local/Qwen3.5-27B-NVFP4",
+    "zai-coding-plan/glm-4.7"
   ],
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "medium",
