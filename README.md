@@ -1,6 +1,6 @@
 # kPI
 
-Personal [Pi Coding Agent](https://buildwithpi.ai/) configuration with 28 extensions and 35 skills.
+Personal [Pi Coding Agent](https://buildwithpi.ai/) configuration with 31 extensions and 37 skills.
 
 ## Features
 
@@ -106,10 +106,17 @@ Calendar, Gmail, Drive, Docs, Contacts, and Tasks integration.
 - **Rodalies** — train departure times
 - **Weather** — current weather with emoji
 - **Pi Session Tools** — browse and search past sessions, tool calls, and events
+- **Hugging Face** — search and query ML models
+- **Niri** — window manager integration
+- **Firefox RDP** — remote desktop for Firefox
+- **Renderers** — custom UI renderers
+- **Core Tools** — essential tooling
+- **Turn Stats** — per-turn statistics
+- **Waveshare Genui** — 720×720 display integration
 
-### Skills (35)
+### Skills (37)
 
-Reusable instruction sets: ast-grep, bun, codemapper, conventional-commits, daily-standup, design, digest, eslint, gh, jc, jscpd, jujutsu, knip, nh, nix, nix-flakes, nomnoml, nu-shell, pi, podman, python, retype, scraping, self-improve, self-reflect, skill-authoring, swe, tmux, toon, typescript, uv, vhs, vicinae, vitest, yt-dlp.
+Reusable instruction sets: ast-grep, bun, codemapper, conventional-commits, daily-standup, design, digest, document-sorting, eslint, firefox-theming, gtkx, jc, jscpd, jujutsu, knip, nh, nix, nix-flakes, nomnoml, nu-shell, pi, podman, python, retype, scraping, self-improve, self-reflect, skill-authoring, swe, tmux, toon, typescript, uv, vhs, vicinae, vitest, yt-dlp.
 
 ### Prompt Templates
 

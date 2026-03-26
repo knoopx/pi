@@ -191,8 +191,6 @@ function setupPermissionGateHook(
   config: ResolvedConfig,
   isEnabled: () => boolean,
 ) {
-  const inspectedRoots = new Set<string>();
-
   pi.on("tool_call", async (event, ctx) => {
     if (!isEnabled()) {
       return;
