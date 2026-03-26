@@ -5,10 +5,6 @@
  */
 
 import {
-  registerLinearTools,
-  registerLinearLoginCommand,
-} from "./linear-tools/index.js";
-import {
   registerProjectStats,
   registerProjectMap,
   registerSearchSymbols,
@@ -35,10 +31,6 @@ import {
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 export function registerAllTools(pi: ExtensionAPI): void {
-  // Register Linear tools
-  registerLinearTools(pi);
-  registerLinearLoginCommand(pi);
-
   // Register code analysis tools
   registerProjectStats(pi);
   registerProjectMap(pi);

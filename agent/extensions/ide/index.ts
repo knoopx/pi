@@ -41,7 +41,6 @@ import { openBookmarksBrowser } from "./overlays/bookmarks";
 import { openOpLogBrowser } from "./overlays/oplog";
 import { openSkillBrowser } from "./overlays/skills";
 import { openPullRequestsBrowser } from "./overlays/pull-requests";
-import { openLinearIssuesBrowser } from "./overlays/linear";
 import {
   openCommandPalette,
   type RegisteredShortcut,
@@ -566,14 +565,6 @@ export default function ideExtension(pi: ExtensionAPI) {
     },
   });
 
-  pi.registerCommand("linear", {
-    description: "Browse Linear issues with markdown preview",
-    handler: async (_args, ctx) => {
-      if (!ctx.hasUI) return;
-      await openLinearIssuesBrowser(pi, ctx);
-    },
-  });
-
   // Shortcuts - single source of truth for both registration and command palette
   interface ShortcutDef {
     key: KeyId;
@@ -626,11 +617,6 @@ export default function ideExtension(pi: ExtensionAPI) {
       key: Key.ctrl("g"),
       description: "Open pull requests browser",
       handler: async (ctx) => openPullRequestsBrowser(pi, ctx),
-    },
-    {
-      key: Key.ctrl("u"),
-      description: "Open Linear issues browser",
-      handler: async (ctx) => openLinearIssuesBrowser(pi, ctx),
     },
     {
       key: Key.ctrl("e"),
