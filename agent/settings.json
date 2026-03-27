@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.63.1",
-  "defaultProvider": "zai-coding-plan",
-  "defaultModel": "glm-4.7",
+  "defaultProvider": "local",
+  "defaultModel": "unsloth/Qwen3.5-27B-GGUF",
   "theme": "custom",
   "enabledModels": [
     "github-copilot/grok-code-fast-1",
@@ -10,7 +10,15 @@
     "zai-coding-plan/glm-4.7-flash",
     "github-copilot/claude-opus-4.6",
     "local/Qwen3.5-27B-NVFP4",
-    "zai-coding-plan/glm-4.7"
+    "zai-coding-plan/glm-4.7",
+    "opencode/nemotron-3-super-free",
+    "opencode/minimax-m2.5-free",
+    "opencode/mimo-v2-pro-free",
+    "opencode/mimo-v2-omni-free",
+    "opencode/mimo-v2-flash-free",
+    "opencode/trinity-large-preview-free",
+    "opencode/big-pickle",
+    "local/unsloth/Qwen3.5-27B-GGUF"
   ],
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "medium",
