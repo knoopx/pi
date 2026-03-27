@@ -147,7 +147,7 @@
     "rules": [
       {
         "context": "command",
-        "pattern": "{bun run dev,modal serve,zuplo dev,zuplo docs} *",
+        "pattern": "{bun run dev} *",
         "action": "block",
         "reason": "long-running server that blocks the terminal. Run in tmux instead (see skill: tmux)"
       },
@@ -173,12 +173,6 @@
       },
       {
         "context": "command",
-        "pattern": "{node,modal shell} *",
-        "action": "block",
-        "reason": "interactive REPL/shell that blocks the terminal. Use non-interactive alternatives"
-      },
-      {
-        "context": "command",
         "pattern": "{bun,deno} repl *",
         "action": "block",
         "reason": "interactive REPL that blocks the terminal. Use `-e` flag to evaluate inline"
@@ -192,6 +186,7 @@
       {
         "context": "command",
         "pattern": "git *",
+        "excludes": "* {log,diff} *",
         "action": "block",
         "reason": "this project uses Jujutsu, not Git. Use jj equivalents (see skill: jujutsu)"
       }
@@ -276,30 +271,6 @@
         "pattern": "(?<!eslint\\.config)\\.js$",
         "action": "block",
         "reason": "this project uses TypeScript. Create `.ts` files instead"
-      }
-    ]
-  },
-  {
-    "group": "modal",
-    "pattern": "*",
-    "rules": [
-      {
-        "context": "command",
-        "pattern": "modal {app stop,app rollback,container stop,volume delete,volume rm,dict delete,dict clear,queue delete,queue clear,secret delete,environment delete} *",
-        "action": "confirm",
-        "reason": "destructive Modal operation. Verify the target resource before proceeding"
-      }
-    ]
-  },
-  {
-    "group": "zuplo",
-    "pattern": "*",
-    "rules": [
-      {
-        "context": "command",
-        "pattern": "zuplo {delete,tunnel delete,mtls-certificate delete,mtls-certificate disable} *",
-        "action": "confirm",
-        "reason": "destructive Zuplo operation. Verify the target resource before proceeding"
       }
     ]
   },
