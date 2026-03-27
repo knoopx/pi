@@ -47,6 +47,11 @@ describe("command-parser", () => {
           { kind: "spread" },
         ]);
       });
+
+      it("then evaluates a group with a single option to literal", () => {
+        const parsed = parsePattern("{a}");
+        expect(parsed).toEqual([{ kind: "literal", value: "a" }]);
+      });
     });
   });
 

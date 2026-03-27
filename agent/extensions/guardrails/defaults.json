@@ -147,7 +147,7 @@
     "rules": [
       {
         "context": "command",
-        "pattern": "{bun run dev} *",
+        "pattern": "bun run dev *",
         "action": "block",
         "reason": "long-running server that blocks the terminal. Run in tmux instead (see skill: tmux)"
       },

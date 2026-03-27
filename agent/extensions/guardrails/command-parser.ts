@@ -118,7 +118,13 @@ export function parsePattern(pattern: string): PatternToken[] {
     if (part === "?") return { kind: "single" };
 
     const orOptions = parseOrToken(part);
-    if (orOptions) return { kind: "or", options: orOptions };
+    if (orOptions) {
+      // A group with a single token option evaluates to that literal
+      if (orOptions.length === 1 && orOptions[0].length === 1) {
+        return { kind: "literal", value: orOptions[0][0] };
+      }
+      return { kind: "or", options: orOptions };
+    }
 
     return { kind: "literal", value: part };
   });
@@ -181,16 +187,13 @@ function parseOrToken(token: string): string[][] | null {
   }
 
   const body = token.slice(1, -1);
-  if (!body.includes(",")) {
-    return null;
-  }
-
+  
   const options = body
     .split(",")
     .map((option) => option.trim().split(/\s+/).filter(Boolean))
     .filter((tokens) => tokens.length > 0);
 
-  if (options.length < 2) {
+  if (options.length === 0) {
     return null;
   }
 
