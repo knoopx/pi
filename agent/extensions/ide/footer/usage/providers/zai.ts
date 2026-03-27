@@ -8,7 +8,7 @@ import {
 const zaiConfig: ProviderConfig = {
   provider: "zai",
   displayName: "Z.AI (GLM Coding Plan)",
-  tokenLoader: (deps) => loadTokenFromPiAuthJson(deps, "z-ai", (d) => d.key),
+  tokenLoader: (deps) => loadTokenFromPiAuthJson(deps, "z-ai", (d) => d.key as string | undefined),
   apiUrl: "https://api.z.ai/api/monitor/usage/quota/limit",
   headers: (token) => ({
     Authorization: token,
@@ -82,5 +82,4 @@ const zaiConfig: ProviderConfig = {
   },
 };
 
-export { zaiConfig };
 export const fetchZAIUsage = await createGenericProvider(zaiConfig);
