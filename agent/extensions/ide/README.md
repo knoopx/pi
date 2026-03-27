@@ -331,6 +331,7 @@ The footer fetches quota information from:
 - **OpenAI** - GPT API rate limits
 - **Gemini** - Google AI rate limits
 - **GitHub Copilot** - Copilot usage quota
+- **Z.AI (GLM Coding Plan)** - Z.AI API token and MCP usage limits
 
 Quota is refreshed every 5 minutes and displayed as percentage with color coding (green < 70%, yellow 70-90%, red > 90%).
 

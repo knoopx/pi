@@ -2,6 +2,7 @@ import { fetchAnthropicUsage } from "./providers/anthropic";
 import { fetchCopilotUsage } from "./providers/copilot";
 import { fetchGeminiUsage } from "./providers/gemini";
 import { fetchOpenAIUsage } from "./providers/openai";
+import { fetchZAIUsage } from "./providers/zai";
 import { createDefaultDependencies } from "./runtime";
 import type { BaseDependencies, UsageSnapshot } from "./types";
 
@@ -12,17 +13,18 @@ export async function detectAndFetchUsage(
   dependencies: BaseDependencies = defaultDependencies,
 ): Promise<UsageSnapshot | undefined> {
   const provider = model?.provider?.toLowerCase() ?? "";
-  const modelId = model?.id?.toLowerCase() ?? "";
 
-  if (provider.includes("anthropic") || modelId.includes("claude")) {
+  // Check for Z.AI / GLM Coding Plan
+  if (provider.includes("zai-coding-plan")) {
+    // throw Error(JSON.stringify(await fetchZAIUsage(dependencies)));
+    return (await fetchZAIUsage(dependencies)) ?? undefined;
+  }
+
+  if (provider.includes("anthropic")) {
     return (await fetchAnthropicUsage(dependencies)) ?? undefined;
   }
 
-  if (
-    provider.includes("openai") ||
-    provider.includes("codex") ||
-    modelId.includes("gpt")
-  ) {
+  if (provider.includes("openai")) {
     return (await fetchOpenAIUsage(dependencies)) ?? undefined;
   }
 
@@ -30,7 +32,7 @@ export async function detectAndFetchUsage(
     return (await fetchCopilotUsage(dependencies)) ?? undefined;
   }
 
-  if (provider.includes("google") || modelId.includes("gemini")) {
+  if (provider.includes("google") || provider.includes("gemini")) {
     return (await fetchGeminiUsage(dependencies)) ?? undefined;
   }
 

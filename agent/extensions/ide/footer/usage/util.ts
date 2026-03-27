@@ -155,14 +155,14 @@ export function loadTokenFromPiAuthJson(
   tokenSelector?: (data: Record<string, unknown>) => string | undefined,
 ): string | undefined {
   const piAuthPath = path.join(deps.homedir(), ".pi", "agent", "auth.json");
-  try {
-    if (deps.fileExists(piAuthPath)) {
-      const data = JSON.parse(deps.readFile(piAuthPath) ?? "{}");
-      const token = tokenSelector
-        ? tokenSelector(data)
-        : data[providerKey]?.access || data[providerKey]?.refresh;
-      if (typeof token === "string" && token.length > 0) return token;
-    }
-  } catch {}
+  if (deps.fileExists(piAuthPath)) {
+    const data = JSON.parse(deps.readFile(piAuthPath) ?? "{}");
+
+    const token = tokenSelector
+      ? tokenSelector(data[providerKey])
+      : data[providerKey]?.access || data[providerKey]?.refresh;
+
+    if (typeof token === "string" && token.length > 0) return token;
+  }
   return undefined;
 }
