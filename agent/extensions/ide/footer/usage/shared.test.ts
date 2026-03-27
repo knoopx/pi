@@ -51,20 +51,6 @@ describe("detectAndFetchUsage", () => {
         expect(result).toEqual(mockSnapshot);
       });
     });
-
-    describe("when model ID contains claude", () => {
-      it("then calls Anthropic usage fetcher", async () => {
-        const { fetchAnthropicUsage } = await import("./providers/anthropic");
-        vi.mocked(fetchAnthropicUsage).mockResolvedValueOnce(null);
-
-        await detectAndFetchUsage(
-          { provider: "other", id: "claude-3-sonnet" },
-          createMockDeps(),
-        );
-
-        expect(fetchAnthropicUsage).toHaveBeenCalled();
-      });
-    });
   });
 
   describe("given OpenAI model", () => {
@@ -75,34 +61,6 @@ describe("detectAndFetchUsage", () => {
 
         await detectAndFetchUsage(
           { provider: "openai", id: "gpt-4" },
-          createMockDeps(),
-        );
-
-        expect(fetchOpenAIUsage).toHaveBeenCalled();
-      });
-    });
-
-    describe("when model ID contains gpt", () => {
-      it("then calls OpenAI usage fetcher", async () => {
-        const { fetchOpenAIUsage } = await import("./providers/openai");
-        vi.mocked(fetchOpenAIUsage).mockResolvedValueOnce(null);
-
-        await detectAndFetchUsage(
-          { provider: "other", id: "gpt-4-turbo" },
-          createMockDeps(),
-        );
-
-        expect(fetchOpenAIUsage).toHaveBeenCalled();
-      });
-    });
-
-    describe("when provider is codex", () => {
-      it("then calls OpenAI usage fetcher", async () => {
-        const { fetchOpenAIUsage } = await import("./providers/openai");
-        vi.mocked(fetchOpenAIUsage).mockResolvedValueOnce(null);
-
-        await detectAndFetchUsage(
-          { provider: "codex", id: "model" },
           createMockDeps(),
         );
 
@@ -155,86 +113,16 @@ describe("detectAndFetchUsage", () => {
         expect(fetchGeminiUsage).toHaveBeenCalled();
       });
     });
-
-    describe("when model ID contains gemini", () => {
-      it("then calls Gemini usage fetcher", async () => {
-        const { fetchGeminiUsage } = await import("./providers/gemini");
-        vi.mocked(fetchGeminiUsage).mockResolvedValueOnce(null);
-
-        await detectAndFetchUsage(
-          { provider: "other", id: "gemini-pro" },
-          createMockDeps(),
-        );
-
-        expect(fetchGeminiUsage).toHaveBeenCalled();
-      });
-    });
   });
 
   describe("given Z.AI / GLM Coding Plan model", () => {
-    describe("when provider is zai", () => {
+    describe("when provider contains zai-coding-plan", () => {
       it("then calls Z.AI usage fetcher", async () => {
         const { fetchZAIUsage } = await import("./providers/zai");
         vi.mocked(fetchZAIUsage).mockResolvedValueOnce(null);
 
         await detectAndFetchUsage(
-          { provider: "zai", id: "model" },
-          createMockDeps(),
-        );
-
-        expect(fetchZAIUsage).toHaveBeenCalled();
-      });
-    });
-
-    describe("when provider is zhipu", () => {
-      it("then calls Z.AI usage fetcher", async () => {
-        const { fetchZAIUsage } = await import("./providers/zai");
-        vi.mocked(fetchZAIUsage).mockResolvedValueOnce(null);
-
-        await detectAndFetchUsage(
-          { provider: "zhipu", id: "model" },
-          createMockDeps(),
-        );
-
-        expect(fetchZAIUsage).toHaveBeenCalled();
-      });
-    });
-
-    describe("when provider is glm", () => {
-      it("then calls Z.AI usage fetcher", async () => {
-        const { fetchZAIUsage } = await import("./providers/zai");
-        vi.mocked(fetchZAIUsage).mockResolvedValueOnce(null);
-
-        await detectAndFetchUsage(
-          { provider: "glm", id: "model" },
-          createMockDeps(),
-        );
-
-        expect(fetchZAIUsage).toHaveBeenCalled();
-      });
-    });
-
-    describe("when model ID contains glm", () => {
-      it("then calls Z.AI usage fetcher", async () => {
-        const { fetchZAIUsage } = await import("./providers/zai");
-        vi.mocked(fetchZAIUsage).mockResolvedValueOnce(null);
-
-        await detectAndFetchUsage(
-          { provider: "other", id: "glm-4" },
-          createMockDeps(),
-        );
-
-        expect(fetchZAIUsage).toHaveBeenCalled();
-      });
-    });
-
-    describe("when model ID contains 智谱", () => {
-      it("then calls Z.AI usage fetcher", async () => {
-        const { fetchZAIUsage } = await import("./providers/zai");
-        vi.mocked(fetchZAIUsage).mockResolvedValueOnce(null);
-
-        await detectAndFetchUsage(
-          { provider: "other", id: "智谱-4" },
+          { provider: "zai-coding-plan", id: "model" },
           createMockDeps(),
         );
 

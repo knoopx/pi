@@ -296,8 +296,8 @@ describe("loadTokenFromPiAuthJson", () => {
         };
 
         const token = loadTokenFromPiAuthJson(mockDeps, "custom", (data) => {
-          const d = data as { custom?: { nested?: { key?: string } } };
-          return d.custom?.nested?.key;
+          const d = data as { nested?: { key?: string } };
+          return d.nested?.key;
         });
         expect(token).toBe("nested-token");
       });
@@ -306,7 +306,7 @@ describe("loadTokenFromPiAuthJson", () => {
 
   describe("given invalid JSON", () => {
     describe("when loading token", () => {
-      it("then returns undefined", () => {
+      it("then throws error", () => {
         const mockDeps: BaseDependencies = {
           homedir: () => "/home/user",
           fileExists: () => true,
@@ -314,8 +314,7 @@ describe("loadTokenFromPiAuthJson", () => {
           fetch: vi.fn(),
         };
 
-        const token = loadTokenFromPiAuthJson(mockDeps, "anthropic");
-        expect(token).toBeUndefined();
+        expect(() => loadTokenFromPiAuthJson(mockDeps, "anthropic")).toThrow();
       });
     });
   });
