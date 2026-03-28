@@ -1,7 +1,7 @@
 {
-  "lastChangelogVersion": "0.63.1",
+  "lastChangelogVersion": "0.63.2",
   "defaultProvider": "local",
-  "defaultModel": "unsloth/Qwen3.5-27B-GGUF",
+  "defaultModel": "unsloth/Qwen3-Coder-Next-GGUF",
   "theme": "custom",
   "enabledModels": [
     "github-copilot/grok-code-fast-1",
@@ -9,16 +9,10 @@
     "github-copilot/gpt-5.4",
     "zai-coding-plan/glm-4.7-flash",
     "github-copilot/claude-opus-4.6",
-    "local/Qwen3.5-27B-NVFP4",
     "zai-coding-plan/glm-4.7",
-    "opencode/nemotron-3-super-free",
-    "opencode/minimax-m2.5-free",
-    "opencode/mimo-v2-pro-free",
-    "opencode/mimo-v2-omni-free",
-    "opencode/mimo-v2-flash-free",
-    "opencode/trinity-large-preview-free",
-    "opencode/big-pickle",
-    "local/unsloth/Qwen3.5-27B-GGUF"
+    "local/unsloth/Qwen3.5-27B-GGUF",
+    "local/Jackrong/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-v2-GGUF",
+    "local/unsloth/Qwen3-Coder-Next-GGUF"
   ],
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "medium",
