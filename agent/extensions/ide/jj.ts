@@ -383,10 +383,18 @@ export async function getVcsLabel(
   pi: ExtensionAPI,
   cwd: string,
 ): Promise<string | null> {
-  // Get current change bookmarks
+  // Find bookmarks in ancestry of current change (like git branch name)
   const result = await pi.exec(
     "jj",
-    ["log", "-r", "@", "--no-graph", "-T", 'separate(" ", bookmarks) ++ "\\n"'],
+    [
+      "log",
+      "-r",
+      "ancestors(@) & bookmarks()",
+      "--no-graph",
+      "-n1",
+      "-T",
+      'bookmarks.join(", ") ++ "\\n"',
+    ],
     { cwd },
   );
 
