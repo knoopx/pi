@@ -147,7 +147,7 @@ export function createSymbolsComponent(
 
     const [, filePath, line] = match;
     const { join } = await import("node:path");
-    await pi.exec("code", ["-g", `${join(cwd, filePath)}:${line}`]);
+    await pi.exec("editor", [`${join(cwd, filePath)}:${line}`]);
   }
 
   // Actions that show results in picker
@@ -210,8 +210,7 @@ export function createSymbolsComponent(
       actions,
       onEdit: async (item) => {
         const { join } = await import("node:path");
-        await pi.exec("code", [
-          "-g",
+        await pi.exec("editor", [
           `${join(cwd, item.path)}:${String(item.startLine)}`,
         ]);
       },

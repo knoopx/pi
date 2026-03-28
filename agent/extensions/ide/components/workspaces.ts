@@ -266,12 +266,12 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
           return;
         }
 
-        case "vscode":
-          await pi.exec("code", [ws.path]);
+        case "edit":
+          await pi.exec("editor", [ws.path]);
           break;
 
         case "terminal":
-          await pi.exec("wezterm", ["start", "--cwd", ws.path]);
+          await pi.exec("terminal", [ws.path]);
           break;
 
         case "kill":
@@ -570,7 +570,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
       label: "edit",
       when: hasWorkspace,
       handler: () => {
-        void executeAction("vscode");
+        void executeAction("edit");
       },
     },
     {

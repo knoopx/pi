@@ -246,8 +246,7 @@ export function createCmResultsComponent(
       onEdit: async (item) => {
         const { join } = await import("node:path");
         const line = item.callLine ?? item.startLine;
-        await pi.exec("code", [
-          "-g",
+        await pi.exec("editor", [
           `${join(config.cwd, item.path)}:${String(line)}`,
         ]);
       },

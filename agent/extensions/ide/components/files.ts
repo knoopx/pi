@@ -159,7 +159,7 @@ export function createFilesComponent(
         },
       ],
       onEdit: async (item) => {
-        await pi.exec("code", [item.path], { cwd });
+        await pi.exec("editor", [item.path], { cwd });
       },
       loadItems: async (_query) => {
         const result = await pi.exec(

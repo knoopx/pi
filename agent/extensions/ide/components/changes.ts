@@ -1086,7 +1086,7 @@ Use the **conventional-commits** skill for commit message format.`;
       when: hasSelectedFile,
       handler: () => {
         const file = files[selectionState.fileIndex];
-        void pi.exec("code", [path.join(cwd, file.path)]);
+        void pi.exec("editor", [path.join(cwd, file.path)]);
       },
     },
     {
