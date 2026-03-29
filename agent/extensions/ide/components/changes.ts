@@ -348,10 +348,13 @@ ${workflowLines}
           done();
           const task = `Split jujutsu change ${change.changeId} into semantically logical commits.
 
+Use the **jj-hunk** skill for programmatic hunk-level splitting.
+
 <workflow>
-1. Analyze: \`jj diff -r ${change.changeId} --name-only\`
+1. List hunks: \`jj-hunk list -r ${change.changeId}\`
 2. Identify logical groupings by domain/purpose
-3. Split iteratively: \`jj split -r ${change.changeId} "<file-pattern>" -m "type(scope): description"\`
+3. Split iteratively using jj-hunk:
+   \`jj-hunk split -r ${change.changeId} '{"files": {"<path>": {"action": "keep"}}, "default": "reset"}' "type(scope): description"\`
 4. Update remaining change description: \`jj desc -r ${change.changeId} -m "type(scope): description"\`
 </workflow>
 
