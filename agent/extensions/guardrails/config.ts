@@ -226,7 +226,8 @@ class ConfigLoader {
           typeof rule === "object" &&
           rule !== null &&
           typeof r.pattern === "string" &&
-          (r.file_pattern === undefined || typeof r.file_pattern === "string") &&
+          (r.file_pattern === undefined ||
+            typeof r.file_pattern === "string") &&
           (r.includes === undefined || typeof r.includes === "string") &&
           (r.excludes === undefined || typeof r.excludes === "string") &&
           (r.action === "block" || r.action === "confirm") &&

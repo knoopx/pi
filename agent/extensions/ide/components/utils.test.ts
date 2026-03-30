@@ -6,7 +6,6 @@ import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
 import stringWidth from "string-width";
 
 describe("utils", () => {
-
   describe("loadFilePreviewWithBat", () => {
     let mockPi: ExtensionAPI;
     let execMock: ReturnType<typeof vi.fn>;
@@ -84,8 +83,6 @@ describe("utils", () => {
       });
     });
   });
-
-
 
   describe("formatBookmarkReference", () => {
     let mockTheme: Theme;

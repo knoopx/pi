@@ -125,10 +125,16 @@ describe("NPM Extension", () => {
         }));
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        result = await registeredTool.execute("tool1", {
-          query: "lodash",
-          size: 1,
-        }, undefined, undefined, {} as any);
+        result = await registeredTool.execute(
+          "tool1",
+          {
+            query: "lodash",
+            size: 1,
+          },
+          undefined,
+          undefined,
+          {} as any,
+        );
       });
 
       it("then it should return formatted search results", () => {
@@ -139,7 +145,9 @@ describe("NPM Extension", () => {
         ).toMatchSnapshot();
         expect(result.details.query).toBe("lodash");
         expect(result.details.count).toBe(1);
-        expect((result.details as any).packages[0].author).toBe("John-David Dalton");
+        expect((result.details as any).packages[0].author).toBe(
+          "John-David Dalton",
+        );
       });
     });
 
@@ -152,9 +160,15 @@ describe("NPM Extension", () => {
         }));
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        const result = await registeredTool.execute("tool1", {
-          query: "test",
-        }, undefined, undefined, {} as any);
+        const result = await registeredTool.execute(
+          "tool1",
+          {
+            query: "test",
+          },
+          undefined,
+          undefined,
+          {} as any,
+        );
 
         const calledUrl = mockFetch.mock.calls[0]?.[0] as string;
         expect(calledUrl).toContain("size=10");
@@ -173,9 +187,15 @@ describe("NPM Extension", () => {
         }));
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        const result = await registeredTool.execute("tool1", {
-          query: "nonexistent-pkg-xyz-123",
-        }, undefined, undefined, {} as any);
+        const result = await registeredTool.execute(
+          "tool1",
+          {
+            query: "nonexistent-pkg-xyz-123",
+          },
+          undefined,
+          undefined,
+          {} as any,
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           "No packages found.",
@@ -194,7 +214,13 @@ describe("NPM Extension", () => {
         }));
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        const result = await registeredTool.execute("tool1", { query: "test" }, undefined, undefined, {} as any);
+        const result = await registeredTool.execute(
+          "tool1",
+          { query: "test" },
+          undefined,
+          undefined,
+          {} as any,
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           "Failed to search packages: Not Found",
@@ -211,7 +237,13 @@ describe("NPM Extension", () => {
         }));
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        const result = await registeredTool.execute("tool1", { query: "test" }, undefined, undefined, {} as any);
+        const result = await registeredTool.execute(
+          "tool1",
+          { query: "test" },
+          undefined,
+          undefined,
+          {} as any,
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           "Failed to search packages: Internal Server Error",
@@ -225,7 +257,13 @@ describe("NPM Extension", () => {
         const mockFetch = vi.fn().mockRejectedValue(new Error("Network error"));
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        const result = await registeredTool.execute("tool1", { query: "test" }, undefined, undefined, {} as any);
+        const result = await registeredTool.execute(
+          "tool1",
+          { query: "test" },
+          undefined,
+          undefined,
+          {} as any,
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           "Error searching packages: Network error",
@@ -277,9 +315,15 @@ describe("NPM Extension", () => {
         }));
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        result = await registeredTool.execute("tool1", {
-          package: "express",
-        }, undefined, undefined, {} as any);
+        result = await registeredTool.execute(
+          "tool1",
+          {
+            package: "express",
+          },
+          undefined,
+          undefined,
+          {} as any,
+        );
       });
 
       it("then it should return formatted package info", () => {
@@ -296,9 +340,15 @@ describe("NPM Extension", () => {
       it("then it should return not found message", async () => {
         globalThis.fetch = createMockFetchNotFound();
 
-        const result = await registeredTool.execute("tool1", {
-          package: "nonexistent-pkg-xyz-123",
-        }, undefined, undefined, {} as any);
+        const result = await registeredTool.execute(
+          "tool1",
+          {
+            package: "nonexistent-pkg-xyz-123",
+          },
+          undefined,
+          undefined,
+          {} as any,
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           'Package "nonexistent-pkg-xyz-123" not found.',
@@ -311,9 +361,15 @@ describe("NPM Extension", () => {
       it("then it should return error message", async () => {
         globalThis.fetch = createMockFetchServerError();
 
-        const result = await registeredTool.execute("tool1", {
-          package: "lodash",
-        }, undefined, undefined, {} as any);
+        const result = await registeredTool.execute(
+          "tool1",
+          {
+            package: "lodash",
+          },
+          undefined,
+          undefined,
+          {} as any,
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           "Failed to get package info: Internal Server Error",
@@ -326,9 +382,15 @@ describe("NPM Extension", () => {
       it("then it should return error message", async () => {
         globalThis.fetch = createMockFetchNetworkError();
 
-        const result = await registeredTool.execute("tool1", {
-          package: "lodash",
-        }, undefined, undefined, {} as any);
+        const result = await registeredTool.execute(
+          "tool1",
+          {
+            package: "lodash",
+          },
+          undefined,
+          undefined,
+          {} as any,
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           "Error get package info: Network error",
@@ -370,9 +432,15 @@ describe("NPM Extension", () => {
         }));
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        result = await registeredTool.execute("tool1", {
-          package: "lodash",
-        }, undefined, undefined, {} as any);
+        result = await registeredTool.execute(
+          "tool1",
+          {
+            package: "lodash",
+          },
+          undefined,
+          undefined,
+          {} as any,
+        );
       });
 
       it("then it should return formatted versions", () => {
@@ -388,9 +456,15 @@ describe("NPM Extension", () => {
       it("then it should return not found message", async () => {
         globalThis.fetch = createMockFetchNotFound();
 
-        const result = await registeredTool.execute("tool1", {
-          package: "nonexistent-pkg-xyz-123",
-        }, undefined, undefined, {} as any);
+        const result = await registeredTool.execute(
+          "tool1",
+          {
+            package: "nonexistent-pkg-xyz-123",
+          },
+          undefined,
+          undefined,
+          {} as any,
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           'Package "nonexistent-pkg-xyz-123" not found.',
@@ -402,9 +476,15 @@ describe("NPM Extension", () => {
       it("then it should return error message", async () => {
         globalThis.fetch = createMockFetchServerError();
 
-        const result = await registeredTool.execute("tool1", {
-          package: "lodash",
-        }, undefined, undefined, {} as any);
+        const result = await registeredTool.execute(
+          "tool1",
+          {
+            package: "lodash",
+          },
+          undefined,
+          undefined,
+          {} as any,
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           "Failed to get package versions: Internal Server Error",
@@ -417,9 +497,15 @@ describe("NPM Extension", () => {
       it("then it should return error message", async () => {
         globalThis.fetch = createMockFetchNetworkError();
 
-        const result = await registeredTool.execute("tool1", {
-          package: "lodash",
-        }, undefined, undefined, {} as any);
+        const result = await registeredTool.execute(
+          "tool1",
+          {
+            package: "lodash",
+          },
+          undefined,
+          undefined,
+          {} as any,
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           "Error get package versions: Network error",

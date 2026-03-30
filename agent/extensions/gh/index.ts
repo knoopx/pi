@@ -8,7 +8,13 @@ import { type Static, Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
 import { dangerousOperationConfirmation } from "../../shared/tool-utils";
 import { renderTextToolResult } from "../../shared/render-utils";
-import { dotJoin, countLabel, table, detail, stateDot } from "../../shared/renderers";
+import {
+  dotJoin,
+  countLabel,
+  table,
+  detail,
+  stateDot,
+} from "../../shared/renderers";
 import type { Column } from "../../shared/renderers";
 
 // Type definitions

@@ -123,14 +123,11 @@ describe("substituteVariables", () => {
   describe("given command with multiple variables", () => {
     describe("when all variables are provided", () => {
       it("then substitutes all variables", () => {
-        const result = substituteVariables(
-          'echo "%tool%: %file%" in %cwd%',
-          {
-            file: "test.ts",
-            tool: "edit",
-            cwd: "/tmp",
-          },
-        );
+        const result = substituteVariables('echo "%tool%: %file%" in %cwd%', {
+          file: "test.ts",
+          tool: "edit",
+          cwd: "/tmp",
+        });
         expect(result).toBe('echo "edit: test.ts" in /tmp');
       });
     });

@@ -109,7 +109,9 @@ describe("configLoader", () => {
           },
         ];
 
-        readFile.mockImplementation(createMockReadFileWithGlobalHooks(globalHooks));
+        readFile.mockImplementation(
+          createMockReadFileWithGlobalHooks(globalHooks),
+        );
 
         await configLoader.load();
 

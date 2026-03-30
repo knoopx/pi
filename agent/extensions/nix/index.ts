@@ -490,9 +490,11 @@ Returns detailed package information from nixpkgs.`,
             maintainers: pkg.maintainers || "",
             homepage: Array.isArray(pkg.homepage) ? pkg.homepage[0] || "" : "",
           }));
-          return [dotJoin(countLabel(res.length, "result")), "", table(cols, rows)].join(
-            "\n",
-          );
+          return [
+            dotJoin(countLabel(res.length, "result")),
+            "",
+            table(cols, rows),
+          ].join("\n");
         },
         query,
       );
@@ -557,9 +559,11 @@ Returns NixOS configuration option details.`,
             default: opt.default || "",
             example: opt.example || "",
           }));
-          return [dotJoin(countLabel(res.length, "result")), "", table(cols, rows)].join(
-            "\n",
-          );
+          return [
+            dotJoin(countLabel(res.length, "result")),
+            "",
+            table(cols, rows),
+          ].join("\n");
         },
         query,
       );
@@ -626,9 +630,11 @@ Returns Home Manager configuration options.`,
             example: opt.example || "",
             declarations: opt.declarations ?? "",
           }));
-          return [dotJoin(countLabel(res.length, "result")), "", table(cols, rows)].join(
-            "\n",
-          );
+          return [
+            dotJoin(countLabel(res.length, "result")),
+            "",
+            table(cols, rows),
+          ].join("\n");
         },
         query,
       );

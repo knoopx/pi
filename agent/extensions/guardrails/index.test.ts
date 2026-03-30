@@ -9,9 +9,12 @@ import {
   type Mock,
 } from "vitest";
 
- 
 let guardrailsExtension: (pi: any) => Promise<void>;
-let isGroupActive: (pattern: string, root: string, excludePattern?: string) => Promise<boolean>;
+let isGroupActive: (
+  pattern: string,
+  root: string,
+  excludePattern?: string,
+) => Promise<boolean>;
 let configLoader: {
   load: Mock;
   getConfig: Mock;
@@ -424,7 +427,10 @@ describe("guardrails extension", () => {
         },
         makeCtx(),
       );
-      expect(result).toEqual({ block: true, reason: "Blocked [lock]: no lock edits" });
+      expect(result).toEqual({
+        block: true,
+        reason: "Blocked [lock]: no lock edits",
+      });
     });
 
     it("then matches file_content rules on write", async () => {
@@ -450,7 +456,10 @@ describe("guardrails extension", () => {
         },
         makeCtx(),
       );
-      expect(result).toEqual({ block: true, reason: "Blocked [ts]: no ts-ignore" });
+      expect(result).toEqual({
+        block: true,
+        reason: "Blocked [ts]: no ts-ignore",
+      });
     });
 
     it("then applies file_pattern filter to file_content rules", async () => {

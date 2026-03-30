@@ -202,7 +202,11 @@ function setupPermissionGateHook(
     if (toolName === "read" || toolName === "genui") return;
 
     for (const group of config) {
-      const isActive = await isGroupActive(group.pattern, ctx.cwd, group.excludePattern);
+      const isActive = await isGroupActive(
+        group.pattern,
+        ctx.cwd,
+        group.excludePattern,
+      );
       if (!isActive) {
         continue;
       }
@@ -233,7 +237,10 @@ function setupPermissionGateHook(
           const { action, reason } = rule;
 
           if (action === "block") {
-            return { block: true, reason: `Blocked [${group.group}]: ${reason}` };
+            return {
+              block: true,
+              reason: `Blocked [${group.group}]: ${reason}`,
+            };
           } else if (action === "confirm") {
             if (!ctx.hasUI) {
               return {

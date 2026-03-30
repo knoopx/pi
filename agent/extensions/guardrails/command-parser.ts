@@ -187,7 +187,7 @@ function parseOrToken(token: string): string[][] | null {
   }
 
   const body = token.slice(1, -1);
-  
+
   const options = body
     .split(",")
     .map((option) => option.trim().split(/\s+/).filter(Boolean))

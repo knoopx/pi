@@ -157,7 +157,6 @@ describe("GH Extension", () => {
     });
   });
 
-
   describe("gh-search-code", () => {
     let tool: MockTool;
 

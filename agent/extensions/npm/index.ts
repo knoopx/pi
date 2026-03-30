@@ -380,7 +380,11 @@ async function getNpmPackageVersions(
     { label: "versions", value: versions.join(", ") },
   ];
 
-  const sections = [dotJoin(countLabel(versions.length, "version")), "", detail(fields)];
+  const sections = [
+    dotJoin(countLabel(versions.length, "version")),
+    "",
+    detail(fields),
+  ];
 
   return textResult(sections.join("\n"), {
     package: pkg,

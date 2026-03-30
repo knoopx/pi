@@ -8,7 +8,8 @@ import {
 const zaiConfig: ProviderConfig = {
   provider: "zai",
   displayName: "Z.AI (GLM Coding Plan)",
-  tokenLoader: (deps) => loadTokenFromPiAuthJson(deps, "z-ai", (d) => d.key as string | undefined),
+  tokenLoader: (deps) =>
+    loadTokenFromPiAuthJson(deps, "z-ai", (d) => d.key as string | undefined),
   apiUrl: "https://api.z.ai/api/monitor/usage/quota/limit",
   headers: (token) => ({
     Authorization: token,
@@ -65,7 +66,9 @@ const zaiConfig: ProviderConfig = {
             nextReset.setHours(next5hHour, 0, 0, 0);
           }
           // Convert ms to seconds for formatRemainingDuration
-          resetDescription = formatRemainingDuration(nextReset.getTime() / 1000);
+          resetDescription = formatRemainingDuration(
+            nextReset.getTime() / 1000,
+          );
         }
       } else {
         continue; // Skip all other limit types
