@@ -101,6 +101,7 @@ Hard constraints. Violations fail. No exceptions./
 - Missing data = crash
 - Screens = leaf renderers; don't resolve upstream context
 - No hardcoded external paths/conventions in screens
+- Purpose-built tools beat generic ones
 
 ## Accountability
 
