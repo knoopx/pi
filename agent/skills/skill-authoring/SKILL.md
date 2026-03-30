@@ -25,7 +25,7 @@ Create or refactor pi skills following the canonical spec at `agent/skills/pi/re
 
 ```yaml
 ---
-name: my-skill-name          # kebab-case, matches directory name
+name: my-skill-name # kebab-case, matches directory name
 description: "Performs X by doing Y. Use when Z happens or user asks for W."
 ---
 ```

@@ -8,9 +8,14 @@
 import { GtkApplicationWindow, GtkLabel, render, quit } from "@gtkx/react";
 
 const App = () => (
-    <GtkApplicationWindow title="Hello" defaultWidth={400} defaultHeight={300} onClose={quit}>
-        <GtkLabel label="Hello, World!" />
-    </GtkApplicationWindow>
+  <GtkApplicationWindow
+    title="Hello"
+    defaultWidth={400}
+    defaultHeight={300}
+    onClose={quit}
+  >
+    <GtkLabel label="Hello, World!" />
+  </GtkApplicationWindow>
 );
 
 render(<App />, "com.example.hello");
@@ -21,36 +26,45 @@ render(<App />, "com.example.hello");
 ```tsx
 import * as Gtk from "@gtkx/ffi/gtk";
 import {
-    AdwApplicationWindow,
-    AdwHeaderBar,
-    AdwToolbarView,
-    AdwWindowTitle,
-    AdwStatusPage,
-    GtkButton,
-    quit,
-    x,
+  AdwApplicationWindow,
+  AdwHeaderBar,
+  AdwToolbarView,
+  AdwWindowTitle,
+  AdwStatusPage,
+  GtkButton,
+  quit,
+  x,
 } from "@gtkx/react";
 
 export const App = () => (
-    <AdwApplicationWindow title="My App" defaultWidth={800} defaultHeight={600} onClose={quit}>
-        <AdwToolbarView>
-            <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
-                <AdwHeaderBar>
-                    <x.Slot for={AdwHeaderBar} id="titleWidget">
-                        <AdwWindowTitle title="My App" subtitle="Welcome" />
-                    </x.Slot>
-                </AdwHeaderBar>
-            </x.ContainerSlot>
-            <AdwStatusPage
-                iconName="applications-system-symbolic"
-                title="Welcome"
-                description="Get started with your GTKX app"
-                vexpand
-            >
-                <GtkButton label="Get Started" cssClasses={["suggested-action", "pill"]} halign={Gtk.Align.CENTER} />
-            </AdwStatusPage>
-        </AdwToolbarView>
-    </AdwApplicationWindow>
+  <AdwApplicationWindow
+    title="My App"
+    defaultWidth={800}
+    defaultHeight={600}
+    onClose={quit}
+  >
+    <AdwToolbarView>
+      <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
+        <AdwHeaderBar>
+          <x.Slot for={AdwHeaderBar} id="titleWidget">
+            <AdwWindowTitle title="My App" subtitle="Welcome" />
+          </x.Slot>
+        </AdwHeaderBar>
+      </x.ContainerSlot>
+      <AdwStatusPage
+        iconName="applications-system-symbolic"
+        title="Welcome"
+        description="Get started with your GTKX app"
+        vexpand
+      >
+        <GtkButton
+          label="Get Started"
+          cssClasses={["suggested-action", "pill"]}
+          halign={Gtk.Align.CENTER}
+        />
+      </AdwStatusPage>
+    </AdwToolbarView>
+  </AdwApplicationWindow>
 );
 
 export const appId = "com.example.myapp";
@@ -68,32 +82,46 @@ import { GtkBox, GtkButton, GtkEntry, GtkGrid, GtkLabel, x } from "@gtkx/react";
 import { useState } from "react";
 
 const LoginForm = () => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-    const handleSubmit = () => {
-        console.log("Login:", { email, password });
-    };
+  const handleSubmit = () => {
+    console.log("Login:", { email, password });
+  };
 
-    return (
-        <GtkGrid rowSpacing={12} columnSpacing={12}>
-            <x.GridChild column={0} row={0}>
-                <GtkLabel label="Email:" halign={Gtk.Align.END} />
-            </x.GridChild>
-            <x.GridChild column={1} row={0}>
-                <GtkEntry text={email} onChanged={(e) => setEmail(e.getText())} hexpand />
-            </x.GridChild>
-            <x.GridChild column={0} row={1}>
-                <GtkLabel label="Password:" halign={Gtk.Align.END} />
-            </x.GridChild>
-            <x.GridChild column={1} row={1}>
-                <GtkEntry text={password} onChanged={(e) => setPassword(e.getText())} visibility={false} hexpand />
-            </x.GridChild>
-            <x.GridChild column={0} row={2} columnSpan={2}>
-                <GtkButton label="Login" onClicked={handleSubmit} cssClasses={["suggested-action"]} halign={Gtk.Align.END} />
-            </x.GridChild>
-        </GtkGrid>
-    );
+  return (
+    <GtkGrid rowSpacing={12} columnSpacing={12}>
+      <x.GridChild column={0} row={0}>
+        <GtkLabel label="Email:" halign={Gtk.Align.END} />
+      </x.GridChild>
+      <x.GridChild column={1} row={0}>
+        <GtkEntry
+          text={email}
+          onChanged={(e) => setEmail(e.getText())}
+          hexpand
+        />
+      </x.GridChild>
+      <x.GridChild column={0} row={1}>
+        <GtkLabel label="Password:" halign={Gtk.Align.END} />
+      </x.GridChild>
+      <x.GridChild column={1} row={1}>
+        <GtkEntry
+          text={password}
+          onChanged={(e) => setPassword(e.getText())}
+          visibility={false}
+          hexpand
+        />
+      </x.GridChild>
+      <x.GridChild column={0} row={2} columnSpan={2}>
+        <GtkButton
+          label="Login"
+          onClicked={handleSubmit}
+          cssClasses={["suggested-action"]}
+          halign={Gtk.Align.END}
+        />
+      </x.GridChild>
+    </GtkGrid>
+  );
 };
 ```
 
@@ -101,49 +129,81 @@ const LoginForm = () => {
 
 ```tsx
 import * as Gtk from "@gtkx/ffi/gtk";
-import { GtkBox, GtkButton, GtkEntry, GtkLabel, GtkScrolledWindow } from "@gtkx/react";
+import {
+  GtkBox,
+  GtkButton,
+  GtkEntry,
+  GtkLabel,
+  GtkScrolledWindow,
+} from "@gtkx/react";
 import { useCallback, useState } from "react";
 
 interface Todo {
-    id: string;
-    text: string;
+  id: string;
+  text: string;
 }
 
 let nextId = 1;
 
 const TodoList = () => {
-    const [todos, setTodos] = useState<Todo[]>([]);
-    const [input, setInput] = useState("");
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [input, setInput] = useState("");
 
-    const addTodo = useCallback(() => {
-        if (!input.trim()) return;
-        setTodos((prev) => [...prev, { id: String(nextId++), text: input }]);
-        setInput("");
-    }, [input]);
+  const addTodo = useCallback(() => {
+    if (!input.trim()) return;
+    setTodos((prev) => [...prev, { id: String(nextId++), text: input }]);
+    setInput("");
+  }, [input]);
 
-    const deleteTodo = useCallback((id: string) => {
-        setTodos((prev) => prev.filter((t) => t.id !== id));
-    }, []);
+  const deleteTodo = useCallback((id: string) => {
+    setTodos((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
-    return (
-        <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12} marginStart={16} marginEnd={16} marginTop={16} marginBottom={16}>
-            <GtkBox spacing={8}>
-                <GtkEntry text={input} onChanged={(e) => setInput(e.getText())} hexpand placeholderText="New todo..." />
-                <GtkButton label="Add" onClicked={addTodo} cssClasses={["suggested-action"]} />
+  return (
+    <GtkBox
+      orientation={Gtk.Orientation.VERTICAL}
+      spacing={12}
+      marginStart={16}
+      marginEnd={16}
+      marginTop={16}
+      marginBottom={16}
+    >
+      <GtkBox spacing={8}>
+        <GtkEntry
+          text={input}
+          onChanged={(e) => setInput(e.getText())}
+          hexpand
+          placeholderText="New todo..."
+        />
+        <GtkButton
+          label="Add"
+          onClicked={addTodo}
+          cssClasses={["suggested-action"]}
+        />
+      </GtkBox>
+      <GtkScrolledWindow vexpand cssClasses={["card"]}>
+        <GtkListView
+          items={todos.map((todo) => ({ id: todo.id, value: todo }))}
+          renderItem={(todo: Todo) => (
+            <GtkBox
+              spacing={8}
+              marginStart={12}
+              marginEnd={12}
+              marginTop={8}
+              marginBottom={8}
+            >
+              <GtkLabel label={todo.text} hexpand halign={Gtk.Align.START} />
+              <GtkButton
+                iconName="edit-delete-symbolic"
+                cssClasses={["flat"]}
+                onClicked={() => deleteTodo(todo.id)}
+              />
             </GtkBox>
-            <GtkScrolledWindow vexpand cssClasses={["card"]}>
-                <GtkListView
-                    items={todos.map((todo) => ({ id: todo.id, value: todo }))}
-                    renderItem={(todo: Todo) => (
-                        <GtkBox spacing={8} marginStart={12} marginEnd={12} marginTop={8} marginBottom={8}>
-                            <GtkLabel label={todo.text} hexpand halign={Gtk.Align.START} />
-                            <GtkButton iconName="edit-delete-symbolic" cssClasses={["flat"]} onClicked={() => deleteTodo(todo.id)} />
-                        </GtkBox>
-                    )}
-                />
-            </GtkScrolledWindow>
-        </GtkBox>
-    );
+          )}
+        />
+      </GtkScrolledWindow>
+    </GtkBox>
+  );
 };
 ```
 
@@ -155,47 +215,67 @@ const TodoList = () => {
 
 ```tsx
 import * as Gtk from "@gtkx/ffi/gtk";
-import { GtkBox, GtkLabel, GtkListView, GtkPaned, GtkScrolledWindow, GtkStack, x } from "@gtkx/react";
+import {
+  GtkBox,
+  GtkLabel,
+  GtkListView,
+  GtkPaned,
+  GtkScrolledWindow,
+  GtkStack,
+  x,
+} from "@gtkx/react";
 import { useState } from "react";
 
 interface Page {
-    id: string;
-    name: string;
+  id: string;
+  name: string;
 }
 
 const pages: Page[] = [
-    { id: "home", name: "Home" },
-    { id: "settings", name: "Settings" },
-    { id: "about", name: "About" },
+  { id: "home", name: "Home" },
+  { id: "settings", name: "Settings" },
+  { id: "about", name: "About" },
 ];
 
 const SidebarNav = () => {
-    const [currentPage, setCurrentPage] = useState("home");
+  const [currentPage, setCurrentPage] = useState("home");
 
-    return (
-        <GtkPaned position={200}>
-            <x.Slot for={GtkPaned} id="startChild">
-                <GtkScrolledWindow cssClasses={["sidebar"]}>
-                    <GtkListView
-                        selected={[currentPage]}
-                        selectionMode={Gtk.SelectionMode.SINGLE}
-                        onSelectionChanged={(ids) => setCurrentPage(ids[0])}
-                        items={pages.map((page) => ({ id: page.id, value: page }))}
-                        renderItem={(page: Page) => (
-                            <GtkLabel label={page.name} halign={Gtk.Align.START} marginStart={12} marginTop={8} marginBottom={8} />
-                        )}
-                    />
-                </GtkScrolledWindow>
-            </x.Slot>
-            <x.Slot for={GtkPaned} id="endChild">
-                <GtkStack page={currentPage}>
-                    <x.StackPage id="home"><GtkLabel label="Home Content" vexpand /></x.StackPage>
-                    <x.StackPage id="settings"><GtkLabel label="Settings Content" vexpand /></x.StackPage>
-                    <x.StackPage id="about"><GtkLabel label="About Content" vexpand /></x.StackPage>
-                </GtkStack>
-            </x.Slot>
-        </GtkPaned>
-    );
+  return (
+    <GtkPaned position={200}>
+      <x.Slot for={GtkPaned} id="startChild">
+        <GtkScrolledWindow cssClasses={["sidebar"]}>
+          <GtkListView
+            selected={[currentPage]}
+            selectionMode={Gtk.SelectionMode.SINGLE}
+            onSelectionChanged={(ids) => setCurrentPage(ids[0])}
+            items={pages.map((page) => ({ id: page.id, value: page }))}
+            renderItem={(page: Page) => (
+              <GtkLabel
+                label={page.name}
+                halign={Gtk.Align.START}
+                marginStart={12}
+                marginTop={8}
+                marginBottom={8}
+              />
+            )}
+          />
+        </GtkScrolledWindow>
+      </x.Slot>
+      <x.Slot for={GtkPaned} id="endChild">
+        <GtkStack page={currentPage}>
+          <x.StackPage id="home">
+            <GtkLabel label="Home Content" vexpand />
+          </x.StackPage>
+          <x.StackPage id="settings">
+            <GtkLabel label="Settings Content" vexpand />
+          </x.StackPage>
+          <x.StackPage id="about">
+            <GtkLabel label="About Content" vexpand />
+          </x.StackPage>
+        </GtkStack>
+      </x.Slot>
+    </GtkPaned>
+  );
 };
 ```
 
@@ -203,37 +283,69 @@ const SidebarNav = () => {
 
 ```tsx
 import * as Gtk from "@gtkx/ffi/gtk";
-import { GtkApplicationWindow, GtkBox, GtkButton, GtkHeaderBar, GtkLabel, GtkStack, GtkWindow, quit, x } from "@gtkx/react";
+import {
+  GtkApplicationWindow,
+  GtkBox,
+  GtkButton,
+  GtkHeaderBar,
+  GtkLabel,
+  GtkStack,
+  GtkWindow,
+  quit,
+  x,
+} from "@gtkx/react";
 import { useState } from "react";
 
 const AppWithNavigation = () => {
-    const [page, setPage] = useState("home");
+  const [page, setPage] = useState("home");
 
-    return (
-        <GtkApplicationWindow title="App" defaultWidth={600} defaultHeight={400} onClose={quit}>
-            <x.Slot for={GtkWindow} id="titlebar">
-                <GtkHeaderBar>
-                    <x.ContainerSlot for={GtkHeaderBar} id="packStart">
-                        {page !== "home" && <GtkButton iconName="go-previous-symbolic" onClicked={() => setPage("home")} />}
-                    </x.ContainerSlot>
-                    <x.Slot for={GtkHeaderBar} id="titleWidget">
-                        <GtkLabel label={page === "home" ? "Home" : "Details"} cssClasses={["title"]} />
-                    </x.Slot>
-                </GtkHeaderBar>
-            </x.Slot>
-            <GtkStack page={page}>
-                <x.StackPage id="home">
-                    <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12} vexpand halign={Gtk.Align.CENTER} valign={Gtk.Align.CENTER}>
-                        <GtkLabel label="Welcome" />
-                        <GtkButton label="Go to Details" onClicked={() => setPage("details")} />
-                    </GtkBox>
-                </x.StackPage>
-                <x.StackPage id="details">
-                    <GtkLabel label="Details Page Content" vexpand />
-                </x.StackPage>
-            </GtkStack>
-        </GtkApplicationWindow>
-    );
+  return (
+    <GtkApplicationWindow
+      title="App"
+      defaultWidth={600}
+      defaultHeight={400}
+      onClose={quit}
+    >
+      <x.Slot for={GtkWindow} id="titlebar">
+        <GtkHeaderBar>
+          <x.ContainerSlot for={GtkHeaderBar} id="packStart">
+            {page !== "home" && (
+              <GtkButton
+                iconName="go-previous-symbolic"
+                onClicked={() => setPage("home")}
+              />
+            )}
+          </x.ContainerSlot>
+          <x.Slot for={GtkHeaderBar} id="titleWidget">
+            <GtkLabel
+              label={page === "home" ? "Home" : "Details"}
+              cssClasses={["title"]}
+            />
+          </x.Slot>
+        </GtkHeaderBar>
+      </x.Slot>
+      <GtkStack page={page}>
+        <x.StackPage id="home">
+          <GtkBox
+            orientation={Gtk.Orientation.VERTICAL}
+            spacing={12}
+            vexpand
+            halign={Gtk.Align.CENTER}
+            valign={Gtk.Align.CENTER}
+          >
+            <GtkLabel label="Welcome" />
+            <GtkButton
+              label="Go to Details"
+              onClicked={() => setPage("details")}
+            />
+          </GtkBox>
+        </x.StackPage>
+        <x.StackPage id="details">
+          <GtkLabel label="Details Page Content" vexpand />
+        </x.StackPage>
+      </GtkStack>
+    </GtkApplicationWindow>
+  );
 };
 ```
 
@@ -244,49 +356,61 @@ const AppWithNavigation = () => {
 ```tsx
 import * as Gtk from "@gtkx/ffi/gtk";
 import {
-    AdwPreferencesPage,
-    AdwPreferencesGroup,
-    AdwActionRow,
-    AdwSwitchRow,
-    AdwExpanderRow,
-    AdwEntryRow,
-    GtkImage,
-    GtkScrolledWindow,
-    x,
+  AdwPreferencesPage,
+  AdwPreferencesGroup,
+  AdwActionRow,
+  AdwSwitchRow,
+  AdwExpanderRow,
+  AdwEntryRow,
+  GtkImage,
+  GtkScrolledWindow,
+  x,
 } from "@gtkx/react";
 import { useState } from "react";
 
 const SettingsPage = () => {
-    const [darkMode, setDarkMode] = useState(false);
-    const [notifications, setNotifications] = useState(true);
-    const [username, setUsername] = useState("");
+  const [darkMode, setDarkMode] = useState(false);
+  const [notifications, setNotifications] = useState(true);
+  const [username, setUsername] = useState("");
 
-    return (
-        <GtkScrolledWindow vexpand>
-            <AdwPreferencesPage title="Settings">
-                <AdwPreferencesGroup title="Appearance">
-                    <AdwSwitchRow title="Dark Mode" subtitle="Use dark color scheme" active={darkMode} onActivated={() => setDarkMode(!darkMode)} />
-                </AdwPreferencesGroup>
+  return (
+    <GtkScrolledWindow vexpand>
+      <AdwPreferencesPage title="Settings">
+        <AdwPreferencesGroup title="Appearance">
+          <AdwSwitchRow
+            title="Dark Mode"
+            subtitle="Use dark color scheme"
+            active={darkMode}
+            onActivated={() => setDarkMode(!darkMode)}
+          />
+        </AdwPreferencesGroup>
 
-                <AdwPreferencesGroup title="Account">
-                    <AdwEntryRow title="Username" text={username} onChanged={(e) => setUsername(e.getText())} />
-                    <AdwActionRow title="Profile" subtitle="Manage your profile">
-                        <x.Slot for={AdwActionRow} id="activatableWidget">
-                            <GtkImage iconName="go-next-symbolic" valign={Gtk.Align.CENTER} />
-                        </x.Slot>
-                    </AdwActionRow>
-                </AdwPreferencesGroup>
+        <AdwPreferencesGroup title="Account">
+          <AdwEntryRow
+            title="Username"
+            text={username}
+            onChanged={(e) => setUsername(e.getText())}
+          />
+          <AdwActionRow title="Profile" subtitle="Manage your profile">
+            <x.Slot for={AdwActionRow} id="activatableWidget">
+              <GtkImage iconName="go-next-symbolic" valign={Gtk.Align.CENTER} />
+            </x.Slot>
+          </AdwActionRow>
+        </AdwPreferencesGroup>
 
-                <AdwPreferencesGroup title="Notifications">
-                    <AdwExpanderRow title="Notification Settings" subtitle="Configure alerts">
-                        <AdwSwitchRow title="Sound" active />
-                        <AdwSwitchRow title="Badges" active />
-                        <AdwSwitchRow title="Lock Screen" />
-                    </AdwExpanderRow>
-                </AdwPreferencesGroup>
-            </AdwPreferencesPage>
-        </GtkScrolledWindow>
-    );
+        <AdwPreferencesGroup title="Notifications">
+          <AdwExpanderRow
+            title="Notification Settings"
+            subtitle="Configure alerts"
+          >
+            <AdwSwitchRow title="Sound" active />
+            <AdwSwitchRow title="Badges" active />
+            <AdwSwitchRow title="Lock Screen" />
+          </AdwExpanderRow>
+        </AdwPreferencesGroup>
+      </AdwPreferencesPage>
+    </GtkScrolledWindow>
+  );
 };
 ```
 
@@ -296,56 +420,80 @@ const SettingsPage = () => {
 
 ```tsx
 import * as Gtk from "@gtkx/ffi/gtk";
-import { GtkBox, GtkColumnView, GtkLabel, GtkScrolledWindow, x } from "@gtkx/react";
+import {
+  GtkBox,
+  GtkColumnView,
+  GtkLabel,
+  GtkScrolledWindow,
+  x,
+} from "@gtkx/react";
 import { useMemo, useState } from "react";
 
 interface FileItem {
-    id: string;
-    name: string;
-    size: number;
-    modified: string;
+  id: string;
+  name: string;
+  size: number;
+  modified: string;
 }
 
 const files: FileItem[] = [
-    { id: "1", name: "document.pdf", size: 1024, modified: "2024-01-15" },
-    { id: "2", name: "image.png", size: 2048, modified: "2024-01-14" },
-    { id: "3", name: "notes.txt", size: 512, modified: "2024-01-13" },
+  { id: "1", name: "document.pdf", size: 1024, modified: "2024-01-15" },
+  { id: "2", name: "image.png", size: 2048, modified: "2024-01-14" },
+  { id: "3", name: "notes.txt", size: 512, modified: "2024-01-13" },
 ];
 
 const FileTable = () => {
-    const [sortColumn, setSortColumn] = useState("name");
-    const [sortOrder, setSortOrder] = useState(Gtk.SortType.ASCENDING);
+  const [sortColumn, setSortColumn] = useState("name");
+  const [sortOrder, setSortOrder] = useState(Gtk.SortType.ASCENDING);
 
-    const sortedFiles = useMemo(() => {
-        const sorted = [...files].sort((a, b) => {
-            const aVal = a[sortColumn as keyof FileItem];
-            const bVal = b[sortColumn as keyof FileItem];
-            const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-            return sortOrder === Gtk.SortType.ASCENDING ? cmp : -cmp;
-        });
-        return sorted;
-    }, [sortColumn, sortOrder]);
+  const sortedFiles = useMemo(() => {
+    const sorted = [...files].sort((a, b) => {
+      const aVal = a[sortColumn as keyof FileItem];
+      const bVal = b[sortColumn as keyof FileItem];
+      const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      return sortOrder === Gtk.SortType.ASCENDING ? cmp : -cmp;
+    });
+    return sorted;
+  }, [sortColumn, sortOrder]);
 
-    const handleSort = (column: string, order: Gtk.SortType) => {
-        setSortColumn(column);
-        setSortOrder(order);
-    };
+  const handleSort = (column: string, order: Gtk.SortType) => {
+    setSortColumn(column);
+    setSortOrder(order);
+  };
 
-    return (
-        <GtkScrolledWindow vexpand cssClasses={["card"]}>
-            <GtkColumnView
-                estimatedRowHeight={48}
-                sortColumn={sortColumn}
-                sortOrder={sortOrder}
-                onSortChanged={handleSort}
-                items={sortedFiles.map((file) => ({ id: file.id, value: file }))}
-            >
-                <x.ColumnViewColumn title="Name" id="name" expand sortable renderCell={(f: FileItem) => <GtkLabel label={f.name} />} />
-                <x.ColumnViewColumn title="Size" id="size" fixedWidth={100} sortable renderCell={(f: FileItem) => <GtkLabel label={`${f.size} KB`} />} />
-                <x.ColumnViewColumn title="Modified" id="modified" fixedWidth={120} sortable renderCell={(f: FileItem) => <GtkLabel label={f.modified} />} />
-            </GtkColumnView>
-        </GtkScrolledWindow>
-    );
+  return (
+    <GtkScrolledWindow vexpand cssClasses={["card"]}>
+      <GtkColumnView
+        estimatedRowHeight={48}
+        sortColumn={sortColumn}
+        sortOrder={sortOrder}
+        onSortChanged={handleSort}
+        items={sortedFiles.map((file) => ({ id: file.id, value: file }))}
+      >
+        <x.ColumnViewColumn
+          title="Name"
+          id="name"
+          expand
+          sortable
+          renderCell={(f: FileItem) => <GtkLabel label={f.name} />}
+        />
+        <x.ColumnViewColumn
+          title="Size"
+          id="size"
+          fixedWidth={100}
+          sortable
+          renderCell={(f: FileItem) => <GtkLabel label={`${f.size} KB`} />}
+        />
+        <x.ColumnViewColumn
+          title="Modified"
+          id="modified"
+          fixedWidth={120}
+          sortable
+          renderCell={(f: FileItem) => <GtkLabel label={f.modified} />}
+        />
+      </GtkColumnView>
+    </GtkScrolledWindow>
+  );
 };
 ```
 
@@ -355,37 +503,79 @@ const FileTable = () => {
 
 ```tsx
 import * as Gtk from "@gtkx/ffi/gtk";
-import { GtkBox, GtkLabel, GtkMenuButton, GtkPopoverMenu, quit, x } from "@gtkx/react";
+import {
+  GtkBox,
+  GtkLabel,
+  GtkMenuButton,
+  GtkPopoverMenu,
+  quit,
+  x,
+} from "@gtkx/react";
 import { useState } from "react";
 
 const MenuDemo = () => {
-    const [lastAction, setLastAction] = useState<string | null>(null);
+  const [lastAction, setLastAction] = useState<string | null>(null);
 
-    return (
-        <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12} marginStart={16} marginEnd={16} marginTop={16} marginBottom={16}>
-            <GtkMenuButton label="File" halign={Gtk.Align.START}>
-                <x.Slot for={GtkMenuButton} id="popover">
-                    <GtkPopoverMenu>
-                        <x.MenuSection>
-                            <x.MenuItem id="new" label="New" onActivate={() => setLastAction("New")} accels="<Control>n" />
-                            <x.MenuItem id="open" label="Open" onActivate={() => setLastAction("Open")} accels="<Control>o" />
-                            <x.MenuItem id="save" label="Save" onActivate={() => setLastAction("Save")} accels="<Control>s" />
-                        </x.MenuSection>
-                        <x.MenuSection>
-                            <x.MenuSubmenu label="Export">
-                                <x.MenuItem id="pdf" label="As PDF" onActivate={() => setLastAction("Export PDF")} />
-                                <x.MenuItem id="csv" label="As CSV" onActivate={() => setLastAction("Export CSV")} />
-                            </x.MenuSubmenu>
-                        </x.MenuSection>
-                        <x.MenuSection>
-                            <x.MenuItem id="quit" label="Quit" onActivate={quit} accels="<Control>q" />
-                        </x.MenuSection>
-                    </GtkPopoverMenu>
-                </x.Slot>
-            </GtkMenuButton>
-            <GtkLabel label={`Last action: ${lastAction ?? "(none)"}`} />
-        </GtkBox>
-    );
+  return (
+    <GtkBox
+      orientation={Gtk.Orientation.VERTICAL}
+      spacing={12}
+      marginStart={16}
+      marginEnd={16}
+      marginTop={16}
+      marginBottom={16}
+    >
+      <GtkMenuButton label="File" halign={Gtk.Align.START}>
+        <x.Slot for={GtkMenuButton} id="popover">
+          <GtkPopoverMenu>
+            <x.MenuSection>
+              <x.MenuItem
+                id="new"
+                label="New"
+                onActivate={() => setLastAction("New")}
+                accels="<Control>n"
+              />
+              <x.MenuItem
+                id="open"
+                label="Open"
+                onActivate={() => setLastAction("Open")}
+                accels="<Control>o"
+              />
+              <x.MenuItem
+                id="save"
+                label="Save"
+                onActivate={() => setLastAction("Save")}
+                accels="<Control>s"
+              />
+            </x.MenuSection>
+            <x.MenuSection>
+              <x.MenuSubmenu label="Export">
+                <x.MenuItem
+                  id="pdf"
+                  label="As PDF"
+                  onActivate={() => setLastAction("Export PDF")}
+                />
+                <x.MenuItem
+                  id="csv"
+                  label="As CSV"
+                  onActivate={() => setLastAction("Export CSV")}
+                />
+              </x.MenuSubmenu>
+            </x.MenuSection>
+            <x.MenuSection>
+              <x.MenuItem
+                id="quit"
+                label="Quit"
+                onActivate={quit}
+                accels="<Control>q"
+              />
+            </x.MenuSection>
+          </GtkPopoverMenu>
+        </x.Slot>
+      </GtkMenuButton>
+      <GtkLabel label={`Last action: ${lastAction ?? "(none)"}`} />
+    </GtkBox>
+  );
 };
 ```
 
@@ -395,60 +585,87 @@ const MenuDemo = () => {
 
 ```tsx
 import * as Gtk from "@gtkx/ffi/gtk";
-import { AdwSpinner, GtkBox, GtkLabel, GtkListView, GtkScrolledWindow } from "@gtkx/react";
+import {
+  AdwSpinner,
+  GtkBox,
+  GtkLabel,
+  GtkListView,
+  GtkScrolledWindow,
+} from "@gtkx/react";
 import { useEffect, useState } from "react";
 
 interface User {
-    id: string;
-    name: string;
-    email: string;
+  id: string;
+  name: string;
+  email: string;
 }
 
 const AsyncList = () => {
-    const [users, setUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const response = await fetch("https://api.example.com/users");
-                const data = await response.json();
-                setUsers(data);
-            } catch (error) {
-                setError(error instanceof Error ? error.message : "Failed to load");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchUsers();
-    }, []);
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch("https://api.example.com/users");
+        const data = await response.json();
+        setUsers(data);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Failed to load");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
 
-    if (loading) {
-        return (
-            <GtkBox vexpand halign={Gtk.Align.CENTER} valign={Gtk.Align.CENTER}>
-                <AdwSpinner widthRequest={32} heightRequest={32} />
-            </GtkBox>
-        );
-    }
-
-    if (error) {
-        return <GtkLabel label={`Error: ${error}`} cssClasses={["error"]} vexpand halign={Gtk.Align.CENTER} valign={Gtk.Align.CENTER} />;
-    }
-
+  if (loading) {
     return (
-        <GtkScrolledWindow vexpand>
-            <GtkListView
-                items={users.map((user) => ({ id: user.id, value: user }))}
-                renderItem={(user: User) => (
-                    <GtkBox orientation={Gtk.Orientation.VERTICAL} marginStart={12} marginTop={8} marginBottom={8}>
-                        <GtkLabel label={user.name} halign={Gtk.Align.START} cssClasses={["heading"]} />
-                        <GtkLabel label={user.email} halign={Gtk.Align.START} cssClasses={["dim-label"]} />
-                    </GtkBox>
-                )}
-            />
-        </GtkScrolledWindow>
+      <GtkBox vexpand halign={Gtk.Align.CENTER} valign={Gtk.Align.CENTER}>
+        <AdwSpinner widthRequest={32} heightRequest={32} />
+      </GtkBox>
     );
+  }
+
+  if (error) {
+    return (
+      <GtkLabel
+        label={`Error: ${error}`}
+        cssClasses={["error"]}
+        vexpand
+        halign={Gtk.Align.CENTER}
+        valign={Gtk.Align.CENTER}
+      />
+    );
+  }
+
+  return (
+    <GtkScrolledWindow vexpand>
+      <GtkListView
+        items={users.map((user) => ({ id: user.id, value: user }))}
+        renderItem={(user: User) => (
+          <GtkBox
+            orientation={Gtk.Orientation.VERTICAL}
+            marginStart={12}
+            marginTop={8}
+            marginBottom={8}
+          >
+            <GtkLabel
+              label={user.name}
+              halign={Gtk.Align.START}
+              cssClasses={["heading"]}
+            />
+            <GtkLabel
+              label={user.email}
+              halign={Gtk.Align.START}
+              cssClasses={["dim-label"]}
+            />
+          </GtkBox>
+        )}
+      />
+    </GtkScrolledWindow>
+  );
 };
 ```
 
@@ -462,33 +679,50 @@ import { GtkBox, GtkButton, GtkLabel } from "@gtkx/react";
 import type { ReactNode } from "react";
 
 interface CardProps {
-    title: string;
-    children: ReactNode;
-    onAction?: () => void;
-    actionLabel?: string;
+  title: string;
+  children: ReactNode;
+  onAction?: () => void;
+  actionLabel?: string;
 }
 
 const Card = ({ title, children, onAction, actionLabel }: CardProps) => (
-    <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={8} cssClasses={["card"]} marginStart={12} marginEnd={12} marginTop={8} marginBottom={8}>
-        <GtkLabel label={title} cssClasses={["title-4"]} halign={Gtk.Align.START} />
-        <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={4}>
-            {children}
-        </GtkBox>
-        {onAction && actionLabel && (
-            <GtkButton label={actionLabel} onClicked={onAction} halign={Gtk.Align.END} cssClasses={["flat"]} />
-        )}
+  <GtkBox
+    orientation={Gtk.Orientation.VERTICAL}
+    spacing={8}
+    cssClasses={["card"]}
+    marginStart={12}
+    marginEnd={12}
+    marginTop={8}
+    marginBottom={8}
+  >
+    <GtkLabel label={title} cssClasses={["title-4"]} halign={Gtk.Align.START} />
+    <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={4}>
+      {children}
     </GtkBox>
+    {onAction && actionLabel && (
+      <GtkButton
+        label={actionLabel}
+        onClicked={onAction}
+        halign={Gtk.Align.END}
+        cssClasses={["flat"]}
+      />
+    )}
+  </GtkBox>
 );
 
 const CardDemo = () => (
-    <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12}>
-        <Card title="Welcome" actionLabel="Learn More" onAction={() => console.log("clicked")}>
-            <GtkLabel label="This is a reusable card component." wrap />
-        </Card>
-        <Card title="Features">
-            <GtkLabel label="Build native GTK apps with React." wrap />
-        </Card>
-    </GtkBox>
+  <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12}>
+    <Card
+      title="Welcome"
+      actionLabel="Learn More"
+      onAction={() => console.log("clicked")}
+    >
+      <GtkLabel label="This is a reusable card component." wrap />
+    </Card>
+    <Card title="Features">
+      <GtkLabel label="Build native GTK apps with React." wrap />
+    </Card>
+  </GtkBox>
 );
 ```
 
@@ -499,45 +733,68 @@ const CardDemo = () => (
 ```tsx
 import * as Gtk from "@gtkx/ffi/gtk";
 import {
-    AdwApplicationWindow,
-    AdwHeaderBar,
-    AdwNavigationView,
-    AdwToolbarView,
-    GtkBox,
-    GtkButton,
-    GtkLabel,
-    quit,
-    x,
+  AdwApplicationWindow,
+  AdwHeaderBar,
+  AdwNavigationView,
+  AdwToolbarView,
+  GtkBox,
+  GtkButton,
+  GtkLabel,
+  quit,
+  x,
 } from "@gtkx/react";
 import { useState } from "react";
 
 const NavigationDemo = () => {
-    const [history, setHistory] = useState(["home"]);
+  const [history, setHistory] = useState(["home"]);
 
-    const push = (page: string) => setHistory([...history, page]);
-    const pop = () => setHistory(history.slice(0, -1));
+  const push = (page: string) => setHistory([...history, page]);
+  const pop = () => setHistory(history.slice(0, -1));
 
-    return (
-        <AdwApplicationWindow title="Navigation Demo" defaultWidth={600} defaultHeight={400} onClose={quit}>
-            <AdwNavigationView history={history} onHistoryChanged={setHistory}>
-                <x.NavigationPage for={AdwNavigationView} id="home" title="Home">
-                    <AdwToolbarView>
-                        <x.ContainerSlot for={AdwToolbarView} id="addTopBar"><AdwHeaderBar /></x.ContainerSlot>
-                        <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12} halign={Gtk.Align.CENTER} valign={Gtk.Align.CENTER}>
-                            <GtkLabel label="Welcome!" cssClasses={["title-1"]} />
-                            <GtkButton label="Go to Settings" onClicked={() => push("settings")} cssClasses={["suggested-action"]} />
-                        </GtkBox>
-                    </AdwToolbarView>
-                </x.NavigationPage>
-                <x.NavigationPage for={AdwNavigationView} id="settings" title="Settings" canPop>
-                    <AdwToolbarView>
-                        <x.ContainerSlot for={AdwToolbarView} id="addTopBar"><AdwHeaderBar /></x.ContainerSlot>
-                        <GtkLabel label="Settings page content" vexpand />
-                    </AdwToolbarView>
-                </x.NavigationPage>
-            </AdwNavigationView>
-        </AdwApplicationWindow>
-    );
+  return (
+    <AdwApplicationWindow
+      title="Navigation Demo"
+      defaultWidth={600}
+      defaultHeight={400}
+      onClose={quit}
+    >
+      <AdwNavigationView history={history} onHistoryChanged={setHistory}>
+        <x.NavigationPage for={AdwNavigationView} id="home" title="Home">
+          <AdwToolbarView>
+            <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
+              <AdwHeaderBar />
+            </x.ContainerSlot>
+            <GtkBox
+              orientation={Gtk.Orientation.VERTICAL}
+              spacing={12}
+              halign={Gtk.Align.CENTER}
+              valign={Gtk.Align.CENTER}
+            >
+              <GtkLabel label="Welcome!" cssClasses={["title-1"]} />
+              <GtkButton
+                label="Go to Settings"
+                onClicked={() => push("settings")}
+                cssClasses={["suggested-action"]}
+              />
+            </GtkBox>
+          </AdwToolbarView>
+        </x.NavigationPage>
+        <x.NavigationPage
+          for={AdwNavigationView}
+          id="settings"
+          title="Settings"
+          canPop
+        >
+          <AdwToolbarView>
+            <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
+              <AdwHeaderBar />
+            </x.ContainerSlot>
+            <GtkLabel label="Settings page content" vexpand />
+          </AdwToolbarView>
+        </x.NavigationPage>
+      </AdwNavigationView>
+    </AdwApplicationWindow>
+  );
 };
 ```
 
@@ -548,75 +805,108 @@ const NavigationDemo = () => {
 ```tsx
 import * as Gtk from "@gtkx/ffi/gtk";
 import {
-    AdwActionRow,
-    AdwApplicationWindow,
-    AdwHeaderBar,
-    AdwNavigationSplitView,
-    AdwToolbarView,
-    GtkBox,
-    GtkImage,
-    GtkLabel,
-    GtkListBox,
-    GtkScrolledWindow,
-    quit,
-    x,
+  AdwActionRow,
+  AdwApplicationWindow,
+  AdwHeaderBar,
+  AdwNavigationSplitView,
+  AdwToolbarView,
+  GtkBox,
+  GtkImage,
+  GtkLabel,
+  GtkListBox,
+  GtkScrolledWindow,
+  quit,
+  x,
 } from "@gtkx/react";
 import { useState } from "react";
 
 interface Item {
-    id: string;
-    title: string;
-    icon: string;
+  id: string;
+  title: string;
+  icon: string;
 }
 
 const items: Item[] = [
-    { id: "inbox", title: "Inbox", icon: "mail-unread-symbolic" },
-    { id: "starred", title: "Starred", icon: "starred-symbolic" },
-    { id: "sent", title: "Sent", icon: "mail-send-symbolic" },
+  { id: "inbox", title: "Inbox", icon: "mail-unread-symbolic" },
+  { id: "starred", title: "Starred", icon: "starred-symbolic" },
+  { id: "sent", title: "Sent", icon: "mail-send-symbolic" },
 ];
 
 const SplitViewDemo = () => {
-    const [selected, setSelected] = useState(items[0]);
+  const [selected, setSelected] = useState(items[0]);
 
-    return (
-        <AdwApplicationWindow title="Split View Demo" defaultWidth={800} defaultHeight={500} onClose={quit}>
-            <AdwNavigationSplitView sidebarWidthFraction={0.33} minSidebarWidth={200} maxSidebarWidth={300}>
-                <x.NavigationPage for={AdwNavigationSplitView} id="sidebar" title="Mail">
-                    <AdwToolbarView>
-                        <x.ContainerSlot for={AdwToolbarView} id="addTopBar"><AdwHeaderBar /></x.ContainerSlot>
-                        <GtkScrolledWindow vexpand>
-                            <GtkListBox
-                                cssClasses={["navigation-sidebar"]}
-                                onRowSelected={(row) => {
-                                    if (!row) return;
-                                    const item = items[row.getIndex()];
-                                    if (item) setSelected(item);
-                                }}
-                            >
-                                {items.map((item) => (
-                                    <AdwActionRow key={item.id} title={item.title}>
-                                        <x.ContainerSlot for={AdwActionRow} id="addPrefix">
-                                            <GtkImage iconName={item.icon} />
-                                        </x.ContainerSlot>
-                                    </AdwActionRow>
-                                ))}
-                            </GtkListBox>
-                        </GtkScrolledWindow>
-                    </AdwToolbarView>
-                </x.NavigationPage>
+  return (
+    <AdwApplicationWindow
+      title="Split View Demo"
+      defaultWidth={800}
+      defaultHeight={500}
+      onClose={quit}
+    >
+      <AdwNavigationSplitView
+        sidebarWidthFraction={0.33}
+        minSidebarWidth={200}
+        maxSidebarWidth={300}
+      >
+        <x.NavigationPage
+          for={AdwNavigationSplitView}
+          id="sidebar"
+          title="Mail"
+        >
+          <AdwToolbarView>
+            <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
+              <AdwHeaderBar />
+            </x.ContainerSlot>
+            <GtkScrolledWindow vexpand>
+              <GtkListBox
+                cssClasses={["navigation-sidebar"]}
+                onRowSelected={(row) => {
+                  if (!row) return;
+                  const item = items[row.getIndex()];
+                  if (item) setSelected(item);
+                }}
+              >
+                {items.map((item) => (
+                  <AdwActionRow key={item.id} title={item.title}>
+                    <x.ContainerSlot for={AdwActionRow} id="addPrefix">
+                      <GtkImage iconName={item.icon} />
+                    </x.ContainerSlot>
+                  </AdwActionRow>
+                ))}
+              </GtkListBox>
+            </GtkScrolledWindow>
+          </AdwToolbarView>
+        </x.NavigationPage>
 
-                <x.NavigationPage for={AdwNavigationSplitView} id="content" title={selected?.title ?? ""}>
-                    <AdwToolbarView>
-                        <x.ContainerSlot for={AdwToolbarView} id="addTopBar"><AdwHeaderBar /></x.ContainerSlot>
-                        <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12} halign={Gtk.Align.CENTER} valign={Gtk.Align.CENTER} vexpand>
-                            <GtkImage iconName={selected?.icon ?? ""} iconSize={Gtk.IconSize.LARGE} />
-                            <GtkLabel label={selected?.title ?? ""} cssClasses={["title-2"]} />
-                        </GtkBox>
-                    </AdwToolbarView>
-                </x.NavigationPage>
-            </AdwNavigationSplitView>
-        </AdwApplicationWindow>
-    );
+        <x.NavigationPage
+          for={AdwNavigationSplitView}
+          id="content"
+          title={selected?.title ?? ""}
+        >
+          <AdwToolbarView>
+            <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
+              <AdwHeaderBar />
+            </x.ContainerSlot>
+            <GtkBox
+              orientation={Gtk.Orientation.VERTICAL}
+              spacing={12}
+              halign={Gtk.Align.CENTER}
+              valign={Gtk.Align.CENTER}
+              vexpand
+            >
+              <GtkImage
+                iconName={selected?.icon ?? ""}
+                iconSize={Gtk.IconSize.LARGE}
+              />
+              <GtkLabel
+                label={selected?.title ?? ""}
+                cssClasses={["title-2"]}
+              />
+            </GtkBox>
+          </AdwToolbarView>
+        </x.NavigationPage>
+      </AdwNavigationSplitView>
+    </AdwApplicationWindow>
+  );
 };
 ```
 
@@ -626,55 +916,68 @@ const SplitViewDemo = () => {
 
 ```tsx
 import * as Gtk from "@gtkx/ffi/gtk";
-import { GtkBox, GtkImage, GtkLabel, GtkListView, GtkScrolledWindow } from "@gtkx/react";
+import {
+  GtkBox,
+  GtkImage,
+  GtkLabel,
+  GtkListView,
+  GtkScrolledWindow,
+} from "@gtkx/react";
 import { useState } from "react";
 
 interface FileNode {
-    id: string;
-    name: string;
-    isDirectory: boolean;
-    children?: FileNode[];
+  id: string;
+  name: string;
+  isDirectory: boolean;
+  children?: FileNode[];
 }
 
 const files: FileNode[] = [
-    {
-        id: "src",
-        name: "src",
-        isDirectory: true,
-        children: [
-            { id: "src/app.tsx", name: "app.tsx", isDirectory: false },
-            { id: "src/index.tsx", name: "index.tsx", isDirectory: false },
-        ],
-    },
-    { id: "package.json", name: "package.json", isDirectory: false },
+  {
+    id: "src",
+    name: "src",
+    isDirectory: true,
+    children: [
+      { id: "src/app.tsx", name: "app.tsx", isDirectory: false },
+      { id: "src/index.tsx", name: "index.tsx", isDirectory: false },
+    ],
+  },
+  { id: "package.json", name: "package.json", isDirectory: false },
 ];
 
 const FileBrowser = () => {
-    const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
 
-    return (
-        <GtkScrolledWindow vexpand cssClasses={["card"]}>
-            <GtkListView
-                estimatedItemHeight={36}
-                vexpand
-                autoexpand={false}
-                selectionMode={Gtk.SelectionMode.SINGLE}
-                selected={selected ? [selected] : []}
-                onSelectionChanged={(ids) => setSelected(ids[0] ?? null)}
-                items={files.map((file) => ({
-                    id: file.id,
-                    value: file,
-                    children: file.children?.map((child) => ({ id: child.id, value: child })),
-                }))}
-                renderItem={(item: FileNode) => (
-                    <GtkBox spacing={8}>
-                        <GtkImage iconName={item.isDirectory ? "folder-symbolic" : "text-x-generic-symbolic"} />
-                        <GtkLabel label={item.name} halign={Gtk.Align.START} />
-                    </GtkBox>
-                )}
+  return (
+    <GtkScrolledWindow vexpand cssClasses={["card"]}>
+      <GtkListView
+        estimatedItemHeight={36}
+        vexpand
+        autoexpand={false}
+        selectionMode={Gtk.SelectionMode.SINGLE}
+        selected={selected ? [selected] : []}
+        onSelectionChanged={(ids) => setSelected(ids[0] ?? null)}
+        items={files.map((file) => ({
+          id: file.id,
+          value: file,
+          children: file.children?.map((child) => ({
+            id: child.id,
+            value: child,
+          })),
+        }))}
+        renderItem={(item: FileNode) => (
+          <GtkBox spacing={8}>
+            <GtkImage
+              iconName={
+                item.isDirectory ? "folder-symbolic" : "text-x-generic-symbolic"
+              }
             />
-        </GtkScrolledWindow>
-    );
+            <GtkLabel label={item.name} halign={Gtk.Align.START} />
+          </GtkBox>
+        )}
+      />
+    </GtkScrolledWindow>
+  );
 };
 ```
 
@@ -688,24 +991,24 @@ import { GtkBox, GtkButton, GtkLabel, GtkStack, x } from "@gtkx/react";
 import { useState } from "react";
 
 const StackNavigation = () => {
-    const [page, setPage] = useState("home");
+  const [page, setPage] = useState("home");
 
-    return (
-        <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12}>
-            <GtkBox spacing={6} halign={Gtk.Align.CENTER}>
-                <GtkButton label="Home" onClicked={() => setPage("home")} />
-                <GtkButton label="Settings" onClicked={() => setPage("settings")} />
-            </GtkBox>
-            <GtkStack page={page} onPageChanged={setPage} vexpand>
-                <x.StackPage id="home">
-                    <GtkLabel label="Home Content" />
-                </x.StackPage>
-                <x.StackPage id="settings">
-                    <GtkLabel label="Settings Content" />
-                </x.StackPage>
-            </GtkStack>
-        </GtkBox>
-    );
+  return (
+    <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12}>
+      <GtkBox spacing={6} halign={Gtk.Align.CENTER}>
+        <GtkButton label="Home" onClicked={() => setPage("home")} />
+        <GtkButton label="Settings" onClicked={() => setPage("settings")} />
+      </GtkBox>
+      <GtkStack page={page} onPageChanged={setPage} vexpand>
+        <x.StackPage id="home">
+          <GtkLabel label="Home Content" />
+        </x.StackPage>
+        <x.StackPage id="settings">
+          <GtkLabel label="Settings Content" />
+        </x.StackPage>
+      </GtkStack>
+    </GtkBox>
+  );
 };
 ```
 
@@ -719,26 +1022,52 @@ import { GtkBox, GtkButton, GtkLabel, x } from "@gtkx/react";
 import { useState } from "react";
 
 const AnimatedCard = () => {
-    const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(true);
 
-    return (
-        <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12} marginStart={16} marginEnd={16} marginTop={16} marginBottom={16}>
-            <GtkButton label={visible ? "Hide Card" : "Show Card"} onClicked={() => setVisible(!visible)} halign={Gtk.Align.START} />
-            {visible && (
-                <x.Animation
-                    initial={{ opacity: 0, scale: 0.8, translateY: -20 }}
-                    animate={{ opacity: 1, scale: 1, translateY: 0 }}
-                    exit={{ opacity: 0, scale: 0.8, translateY: 20 }}
-                    transition={{ mode: "spring", damping: 0.7, stiffness: 200 }}
-                    animateOnMount
-                >
-                    <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={8} cssClasses={["card"]} marginStart={12} marginEnd={12} marginTop={8} marginBottom={8}>
-                        <GtkLabel label="Animated Card" cssClasses={["title-4"]} halign={Gtk.Align.START} />
-                        <GtkLabel label="This card animates in with a spring effect and fades out when dismissed." wrap />
-                    </GtkBox>
-                </x.Animation>
-            )}
-        </GtkBox>
-    );
+  return (
+    <GtkBox
+      orientation={Gtk.Orientation.VERTICAL}
+      spacing={12}
+      marginStart={16}
+      marginEnd={16}
+      marginTop={16}
+      marginBottom={16}
+    >
+      <GtkButton
+        label={visible ? "Hide Card" : "Show Card"}
+        onClicked={() => setVisible(!visible)}
+        halign={Gtk.Align.START}
+      />
+      {visible && (
+        <x.Animation
+          initial={{ opacity: 0, scale: 0.8, translateY: -20 }}
+          animate={{ opacity: 1, scale: 1, translateY: 0 }}
+          exit={{ opacity: 0, scale: 0.8, translateY: 20 }}
+          transition={{ mode: "spring", damping: 0.7, stiffness: 200 }}
+          animateOnMount
+        >
+          <GtkBox
+            orientation={Gtk.Orientation.VERTICAL}
+            spacing={8}
+            cssClasses={["card"]}
+            marginStart={12}
+            marginEnd={12}
+            marginTop={8}
+            marginBottom={8}
+          >
+            <GtkLabel
+              label="Animated Card"
+              cssClasses={["title-4"]}
+              halign={Gtk.Align.START}
+            />
+            <GtkLabel
+              label="This card animates in with a spring effect and fades out when dismissed."
+              wrap
+            />
+          </GtkBox>
+        </x.Animation>
+      )}
+    </GtkBox>
+  );
 };
 ```

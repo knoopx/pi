@@ -82,7 +82,7 @@ async function findWorkSessionDirs(): Promise<string[]> {
   const workDirs: string[] = [];
 
   for (const entry of entries) {
-    if (entry.isDirectory() && entry.name.includes('slng')) {
+    if (entry.isDirectory() && entry.name.includes("slng")) {
       workDirs.push(path.join(PI_SESSIONS_ROOT, entry.name));
     }
   }
@@ -117,7 +117,6 @@ async function parseSessionFile(
     input: fileStream.createReadStream(),
     crlfDelay: Infinity,
   });
-
 
   let firstTimestamp: Date | null = null;
   let lastTimestamp: Date | null = null;

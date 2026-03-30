@@ -2,127 +2,158 @@
 
 ## Common Props (All Widgets)
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `hexpand` / `vexpand` | boolean | Expand to fill available space |
-| `halign` / `valign` | `Gtk.Align.START \| CENTER \| END \| FILL` | Alignment |
-| `marginStart/End/Top/Bottom` | number | Margins in pixels |
-| `sensitive` | boolean | Enabled/disabled state |
-| `visible` | boolean | Visibility |
-| `cssClasses` | string[] | CSS classes for styling |
-| `widthRequest` / `heightRequest` | number | Minimum size |
+| Prop                             | Type                                       | Description                    |
+| -------------------------------- | ------------------------------------------ | ------------------------------ |
+| `hexpand` / `vexpand`            | boolean                                    | Expand to fill available space |
+| `halign` / `valign`              | `Gtk.Align.START \| CENTER \| END \| FILL` | Alignment                      |
+| `marginStart/End/Top/Bottom`     | number                                     | Margins in pixels              |
+| `sensitive`                      | boolean                                    | Enabled/disabled state         |
+| `visible`                        | boolean                                    | Visibility                     |
+| `cssClasses`                     | string[]                                   | CSS classes for styling        |
+| `widthRequest` / `heightRequest` | number                                     | Minimum size                   |
 
 ---
 
 ## Containers
 
 ### GtkBox
+
 Linear layout (horizontal or vertical).
 
 ```tsx
 <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12}>
-    {children}
+  {children}
 </GtkBox>
 ```
 
 ### GtkGrid
+
 2D grid with explicit positioning using `GridChild`.
 
 ```tsx
 <GtkGrid rowSpacing={8} columnSpacing={12}>
-    <x.GridChild column={0} row={0}><GtkLabel label="Name:" /></x.GridChild>
-    <x.GridChild column={1} row={0}><GtkEntry hexpand /></x.GridChild>
-    <x.GridChild column={0} row={1} columnSpan={2}><GtkButton label="Submit" /></x.GridChild>
+  <x.GridChild column={0} row={0}>
+    <GtkLabel label="Name:" />
+  </x.GridChild>
+  <x.GridChild column={1} row={0}>
+    <GtkEntry hexpand />
+  </x.GridChild>
+  <x.GridChild column={0} row={1} columnSpan={2}>
+    <GtkButton label="Submit" />
+  </x.GridChild>
 </GtkGrid>
 ```
 
 **GridChild props:** `column`, `row`, `columnSpan`, `rowSpan`
 
 ### GtkStack
+
 Page container, shows one child at a time.
 
 ```tsx
-<GtkStack page="page1" transitionType={Gtk.StackTransitionType.SLIDE_LEFT_RIGHT}>
-    <x.StackPage id="page1" title="First" iconName="document-new">
-        <Content1 />
-    </x.StackPage>
-    <x.StackPage id="page2" title="Second">
-        <Content2 />
-    </x.StackPage>
+<GtkStack
+  page="page1"
+  transitionType={Gtk.StackTransitionType.SLIDE_LEFT_RIGHT}
+>
+  <x.StackPage id="page1" title="First" iconName="document-new">
+    <Content1 />
+  </x.StackPage>
+  <x.StackPage id="page2" title="Second">
+    <Content2 />
+  </x.StackPage>
 </GtkStack>
 ```
 
 **StackPage props:** `id` (optional), `title`, `iconName`, `needsAttention`, `badgeNumber` (AdwViewStack only)
 
 ### GtkNotebook
+
 Tabbed container with visible tabs.
 
 ```tsx
 <GtkNotebook>
-    <x.NotebookPage label="Tab 1"><Content1 /></x.NotebookPage>
-    <x.NotebookPage label="Tab 2" tabExpand tabFill><Content2 /></x.NotebookPage>
+  <x.NotebookPage label="Tab 1">
+    <Content1 />
+  </x.NotebookPage>
+  <x.NotebookPage label="Tab 2" tabExpand tabFill>
+    <Content2 />
+  </x.NotebookPage>
 </GtkNotebook>
 ```
 
 Custom tab widget:
+
 ```tsx
 <x.NotebookPage>
-    <x.NotebookPageTab>
-        <GtkBox spacing={4}>
-            <GtkImage iconName="folder-symbolic" />
-            <GtkLabel label="Files" />
-        </GtkBox>
-    </x.NotebookPageTab>
-    <Content />
+  <x.NotebookPageTab>
+    <GtkBox spacing={4}>
+      <GtkImage iconName="folder-symbolic" />
+      <GtkLabel label="Files" />
+    </GtkBox>
+  </x.NotebookPageTab>
+  <Content />
 </x.NotebookPage>
 ```
 
 **NotebookPage props:** `label`, `tabExpand`, `tabFill`
 
 ### GtkPaned
+
 Resizable split with draggable divider. **Requires Slot components.**
 
 ```tsx
 <GtkPaned position={280} shrinkStartChild={false}>
-    <x.Slot for={GtkPaned} id="startChild"><Sidebar /></x.Slot>
-    <x.Slot for={GtkPaned} id="endChild"><MainContent /></x.Slot>
+  <x.Slot for={GtkPaned} id="startChild">
+    <Sidebar />
+  </x.Slot>
+  <x.Slot for={GtkPaned} id="endChild">
+    <MainContent />
+  </x.Slot>
 </GtkPaned>
 ```
 
 ### GtkOverlay
+
 Stack widgets on top of each other. First child is base layer, additional children need `OverlayChild` wrapper. Multiple children supported per overlay.
 
 ```tsx
 <GtkOverlay>
-    <GtkButton label="Notifications" />
-    <x.OverlayChild>
-        <GtkLabel label="3" cssClasses={["badge"]} halign={Gtk.Align.END} valign={Gtk.Align.START} />
-    </x.OverlayChild>
+  <GtkButton label="Notifications" />
+  <x.OverlayChild>
+    <GtkLabel
+      label="3"
+      cssClasses={["badge"]}
+      halign={Gtk.Align.END}
+      valign={Gtk.Align.START}
+    />
+  </x.OverlayChild>
 </GtkOverlay>
 ```
 
 ### GtkFixed
+
 Absolute positioning with optional 3D transforms. Use `x.FixedChild` wrapper for children.
 
 ```tsx
 <GtkFixed>
-    <x.FixedChild x={20} y={30}>
-        <GtkLabel label="Top Left" />
-    </x.FixedChild>
-    <x.FixedChild x={200} y={100} transform={someGskTransform}>
-        <GtkLabel label="Transformed" />
-    </x.FixedChild>
+  <x.FixedChild x={20} y={30}>
+    <GtkLabel label="Top Left" />
+  </x.FixedChild>
+  <x.FixedChild x={200} y={100} transform={someGskTransform}>
+    <GtkLabel label="Transformed" />
+  </x.FixedChild>
 </GtkFixed>
 ```
 
 **FixedChild props:** `x`, `y` (pixel coordinates), `transform` (optional `Gsk.Transform`)
 
 ### GtkScrolledWindow
+
 Scrollable container.
 
 ```tsx
 <GtkScrolledWindow vexpand hscrollbarPolicy={Gtk.PolicyType.NEVER}>
-    <Content />
+  <Content />
 </GtkScrolledWindow>
 ```
 
@@ -133,99 +164,108 @@ Scrollable container.
 All virtual list widgets use an `items` data prop and a `renderItem` function. Items are `{ id: string, value: T }` objects.
 
 ### GtkListView
+
 High-performance scrollable list with selection.
 
 ```tsx
 <GtkListView
-    estimatedItemHeight={48}
-    vexpand
-    selected={selectedId ? [selectedId] : []}
-    selectionMode={Gtk.SelectionMode.SINGLE}
-    onSelectionChanged={(ids) => setSelectedId(ids[0])}
-    items={items.map(item => ({ id: item.id, value: item }))}
-    renderItem={(item: Item) => <GtkLabel label={item.name} />}
+  estimatedItemHeight={48}
+  vexpand
+  selected={selectedId ? [selectedId] : []}
+  selectionMode={Gtk.SelectionMode.SINGLE}
+  onSelectionChanged={(ids) => setSelectedId(ids[0])}
+  items={items.map((item) => ({ id: item.id, value: item }))}
+  renderItem={(item: Item) => <GtkLabel label={item.name} />}
 />
 ```
 
 ### GtkGridView
+
 Grid-based virtual scrolling.
 
 ```tsx
 <GtkGridView
-    estimatedItemHeight={100}
-    minColumns={2}
-    maxColumns={4}
-    items={items.map(item => ({ id: item.id, value: item }))}
-    renderItem={(item: Item) => (
-        <GtkBox orientation={Gtk.Orientation.VERTICAL}>
-            <GtkImage iconName={item.icon} />
-            <GtkLabel label={item.name} />
-        </GtkBox>
-    )}
+  estimatedItemHeight={100}
+  minColumns={2}
+  maxColumns={4}
+  items={items.map((item) => ({ id: item.id, value: item }))}
+  renderItem={(item: Item) => (
+    <GtkBox orientation={Gtk.Orientation.VERTICAL}>
+      <GtkImage iconName={item.icon} />
+      <GtkLabel label={item.name} />
+    </GtkBox>
+  )}
 />
 ```
 
 ### GtkColumnView
+
 Table with sortable columns.
 
 ```tsx
 <GtkColumnView
-    estimatedRowHeight={48}
-    sortColumn="name"
-    sortOrder={Gtk.SortType.ASCENDING}
-    onSortChanged={handleSort}
-    items={items.map(item => ({ id: item.id, value: item }))}
+  estimatedRowHeight={48}
+  sortColumn="name"
+  sortOrder={Gtk.SortType.ASCENDING}
+  onSortChanged={handleSort}
+  items={items.map((item) => ({ id: item.id, value: item }))}
 >
-    <x.ColumnViewColumn
-        title="Name"
-        id="name"
-        expand
-        resizable
-        sortable
-        renderCell={(item: Item) => <GtkLabel label={item.name} />}
-    />
-    <x.ColumnViewColumn
-        title="Size"
-        id="size"
-        fixedWidth={100}
-        renderCell={(item: Item) => <GtkLabel label={`${item.size} KB`} />}
-    />
+  <x.ColumnViewColumn
+    title="Name"
+    id="name"
+    expand
+    resizable
+    sortable
+    renderCell={(item: Item) => <GtkLabel label={item.name} />}
+  />
+  <x.ColumnViewColumn
+    title="Size"
+    id="size"
+    fixedWidth={100}
+    renderCell={(item: Item) => <GtkLabel label={`${item.size} KB`} />}
+  />
 </GtkColumnView>
 ```
 
 ### GtkDropDown
+
 Selection dropdown.
 
 ```tsx
 <GtkDropDown
-    selectedId={selectedId}
-    onSelectionChanged={setSelectedId}
-    items={options.map(opt => ({ id: opt.id, value: opt.label }))}
+  selectedId={selectedId}
+  onSelectionChanged={setSelectedId}
+  items={options.map((opt) => ({ id: opt.id, value: opt.label }))}
 />
 ```
 
 ### GtkListView (tree mode)
+
 Hierarchical tree with expand/collapse. Items with nested `children` arrays trigger tree behavior.
 
 ```tsx
 <GtkListView
-    estimatedItemHeight={48}
-    vexpand
-    autoexpand={false}
-    selectionMode={Gtk.SelectionMode.SINGLE}
-    selected={selectedId ? [selectedId] : []}
-    onSelectionChanged={(ids) => setSelectedId(ids[0])}
-    items={files.map(file => ({
-        id: file.id,
-        value: file,
-        children: file.children?.map(child => ({ id: child.id, value: child })),
-    }))}
-    renderItem={(item: FileNode, row) => (
-        <GtkBox spacing={8}>
-            <GtkImage iconName={item.isDirectory ? "folder-symbolic" : "text-x-generic-symbolic"} />
-            <GtkLabel label={item.name} />
-        </GtkBox>
-    )}
+  estimatedItemHeight={48}
+  vexpand
+  autoexpand={false}
+  selectionMode={Gtk.SelectionMode.SINGLE}
+  selected={selectedId ? [selectedId] : []}
+  onSelectionChanged={(ids) => setSelectedId(ids[0])}
+  items={files.map((file) => ({
+    id: file.id,
+    value: file,
+    children: file.children?.map((child) => ({ id: child.id, value: child })),
+  }))}
+  renderItem={(item: FileNode, row) => (
+    <GtkBox spacing={8}>
+      <GtkImage
+        iconName={
+          item.isDirectory ? "folder-symbolic" : "text-x-generic-symbolic"
+        }
+      />
+      <GtkLabel label={item.name} />
+    </GtkBox>
+  )}
 />
 ```
 
@@ -236,64 +276,88 @@ Hierarchical tree with expand/collapse. Items with nested `children` arrays trig
 ## Inputs
 
 ### GtkEntry
+
 Single-line text input. **Requires two-way binding.**
 
 ```tsx
 const [text, setText] = useState("");
-<GtkEntry text={text} onChanged={(e) => setText(e.getText())} placeholderText="Enter text..." />
+<GtkEntry
+  text={text}
+  onChanged={(e) => setText(e.getText())}
+  placeholderText="Enter text..."
+/>;
 ```
 
 ### GtkToggleButton
+
 Toggle button. Auto-prevents signal feedback loops.
 
 ```tsx
-<GtkToggleButton active={isActive} onToggled={() => setIsActive(!isActive)} label="Toggle" />
+<GtkToggleButton
+  active={isActive}
+  onToggled={() => setIsActive(!isActive)}
+  label="Toggle"
+/>
 ```
 
 ### GtkCheckButton
+
 Checkbox.
 
 ```tsx
-<GtkCheckButton active={checked} onToggled={() => setChecked(!checked)} label="Option" />
+<GtkCheckButton
+  active={checked}
+  onToggled={() => setChecked(!checked)}
+  label="Option"
+/>
 ```
 
 ### GtkSwitch
+
 On/off switch.
 
 ```tsx
-<GtkSwitch active={enabled} onStateSet={() => { setEnabled(!enabled); return true; }} />
+<GtkSwitch
+  active={enabled}
+  onStateSet={() => {
+    setEnabled(!enabled);
+    return true;
+  }}
+/>
 ```
 
 ### GtkSpinButton
+
 Numeric input with increment/decrement. Adjustment props are set directly.
 
 ```tsx
 <GtkSpinButton
-    value={count}
-    lower={0}
-    upper={100}
-    stepIncrement={1}
-    onValueChanged={setCount}
+  value={count}
+  lower={0}
+  upper={100}
+  stepIncrement={1}
+  onValueChanged={setCount}
 />
 ```
 
 ### GtkScale
+
 Slider with adjustment props and optional marks.
 
 ```tsx
 <GtkScale
-    drawValue
-    valuePos={Gtk.PositionType.TOP}
-    value={volume}
-    lower={0}
-    upper={100}
-    stepIncrement={1}
-    onValueChanged={setVolume}
-    marks={[
-        { value: 0, label: "Min", position: Gtk.PositionType.BOTTOM },
-        { value: 50, position: Gtk.PositionType.BOTTOM },
-        { value: 100, label: "Max", position: Gtk.PositionType.BOTTOM },
-    ]}
+  drawValue
+  valuePos={Gtk.PositionType.TOP}
+  value={volume}
+  lower={0}
+  upper={100}
+  stepIncrement={1}
+  onValueChanged={setVolume}
+  marks={[
+    { value: 0, label: "Min", position: Gtk.PositionType.BOTTOM },
+    { value: 50, position: Gtk.PositionType.BOTTOM },
+    { value: 100, label: "Max", position: Gtk.PositionType.BOTTOM },
+  ]}
 />
 ```
 
@@ -301,26 +365,28 @@ Slider with adjustment props and optional marks.
 **ScaleMark type:** `{ value: number, position?: Gtk.PositionType, label?: string }`
 
 ### GtkCalendar
+
 Date picker with markable days.
 
 ```tsx
 <GtkCalendar
-    onDaySelected={(cal) => setDate(cal.getDate())}
-    markedDays={[15, 20, 25]}
+  onDaySelected={(cal) => setDate(cal.getDate())}
+  markedDays={[15, 20, 25]}
 />
 ```
 
 ### GtkLevelBar
+
 Progress/level indicator with customizable thresholds.
 
 ```tsx
 <GtkLevelBar
-    value={0.6}
-    offsets={[
-        { id: "low", value: 0.25 },
-        { id: "high", value: 0.75 },
-        { id: "full", value: 1.0 },
-    ]}
+  value={0.6}
+  offsets={[
+    { id: "low", value: 0.25 },
+    { id: "high", value: 0.75 },
+    { id: "full", value: 1.0 },
+  ]}
 />
 ```
 
@@ -331,16 +397,23 @@ Progress/level indicator with customizable thresholds.
 ## Display
 
 ### GtkLabel
+
 ```tsx
 <GtkLabel label="Text" halign={Gtk.Align.START} wrap useMarkup />
 ```
 
 ### GtkButton
+
 ```tsx
-<GtkButton label="Click" onClicked={handleClick} iconName="document-new-symbolic" />
+<GtkButton
+  label="Click"
+  onClicked={handleClick}
+  iconName="document-new-symbolic"
+/>
 ```
 
 ### GtkImage
+
 ```tsx
 <GtkImage iconName="folder-symbolic" pixelSize={48} />
 ```
@@ -350,25 +423,35 @@ Progress/level indicator with customizable thresholds.
 ## Header & Action Bars
 
 ### GtkHeaderBar
+
 Title bar with packed widgets. Use `x.ContainerSlot` for packing and `x.Slot` for titleWidget.
 
 ```tsx
 <GtkHeaderBar>
-    <x.ContainerSlot for={GtkHeaderBar} id="packStart"><GtkButton iconName="go-previous-symbolic" /></x.ContainerSlot>
-    <x.Slot for={GtkHeaderBar} id="titleWidget">
-        <GtkLabel label="Title" cssClasses={["title"]} />
-    </x.Slot>
-    <x.ContainerSlot for={GtkHeaderBar} id="packEnd"><GtkMenuButton iconName="open-menu-symbolic" /></x.ContainerSlot>
+  <x.ContainerSlot for={GtkHeaderBar} id="packStart">
+    <GtkButton iconName="go-previous-symbolic" />
+  </x.ContainerSlot>
+  <x.Slot for={GtkHeaderBar} id="titleWidget">
+    <GtkLabel label="Title" cssClasses={["title"]} />
+  </x.Slot>
+  <x.ContainerSlot for={GtkHeaderBar} id="packEnd">
+    <GtkMenuButton iconName="open-menu-symbolic" />
+  </x.ContainerSlot>
 </GtkHeaderBar>
 ```
 
 ### GtkActionBar
+
 Bottom action bar.
 
 ```tsx
 <GtkActionBar>
-    <x.ContainerSlot for={GtkActionBar} id="packStart"><GtkButton label="Cancel" /></x.ContainerSlot>
-    <x.ContainerSlot for={GtkActionBar} id="packEnd"><GtkButton label="Save" cssClasses={["suggested-action"]} /></x.ContainerSlot>
+  <x.ContainerSlot for={GtkActionBar} id="packStart">
+    <GtkButton label="Cancel" />
+  </x.ContainerSlot>
+  <x.ContainerSlot for={GtkActionBar} id="packEnd">
+    <GtkButton label="Save" cssClasses={["suggested-action"]} />
+  </x.ContainerSlot>
 </GtkActionBar>
 ```
 
@@ -380,23 +463,33 @@ Bottom action bar.
 
 ```tsx
 <GtkMenuButton iconName="open-menu-symbolic">
-    <x.Slot for={GtkMenuButton} id="popover">
-        <GtkPopoverMenu>
-            <x.MenuSection>
-                <x.MenuItem id="new" label="New" onActivate={handleNew} accels="<Control>n" />
-                <x.MenuItem id="open" label="Open" onActivate={handleOpen} />
-            </x.MenuSection>
-            <x.MenuSection>
-                <x.MenuSubmenu label="Export">
-                    <x.MenuItem id="pdf" label="PDF" onActivate={exportPdf} />
-                    <x.MenuItem id="csv" label="CSV" onActivate={exportCsv} />
-                </x.MenuSubmenu>
-            </x.MenuSection>
-            <x.MenuSection>
-                <x.MenuItem id="quit" label="Quit" onActivate={quit} accels="<Control>q" />
-            </x.MenuSection>
-        </GtkPopoverMenu>
-    </x.Slot>
+  <x.Slot for={GtkMenuButton} id="popover">
+    <GtkPopoverMenu>
+      <x.MenuSection>
+        <x.MenuItem
+          id="new"
+          label="New"
+          onActivate={handleNew}
+          accels="<Control>n"
+        />
+        <x.MenuItem id="open" label="Open" onActivate={handleOpen} />
+      </x.MenuSection>
+      <x.MenuSection>
+        <x.MenuSubmenu label="Export">
+          <x.MenuItem id="pdf" label="PDF" onActivate={exportPdf} />
+          <x.MenuItem id="csv" label="CSV" onActivate={exportCsv} />
+        </x.MenuSubmenu>
+      </x.MenuSection>
+      <x.MenuSection>
+        <x.MenuItem
+          id="quit"
+          label="Quit"
+          onActivate={quit}
+          accels="<Control>q"
+        />
+      </x.MenuSection>
+    </GtkPopoverMenu>
+  </x.Slot>
 </GtkMenuButton>
 ```
 
@@ -410,16 +503,17 @@ Bottom action bar.
 
 ```tsx
 <GtkApplicationWindow
-    title="App"
-    defaultWidth={800}
-    defaultHeight={600}
-    onClose={quit}
+  title="App"
+  defaultWidth={800}
+  defaultHeight={600}
+  onClose={quit}
 >
-    <Content />
+  <Content />
 </GtkApplicationWindow>
 ```
 
 Custom titlebar:
+
 ```tsx
 <GtkApplicationWindow ...>
     <x.Slot for={GtkWindow} id="titlebar">
@@ -436,81 +530,110 @@ Custom titlebar:
 Import: `import * as Adw from "@gtkx/ffi/adw";`
 
 ### AdwApplicationWindow + AdwToolbarView
+
 Modern app structure.
 
 ```tsx
-<AdwApplicationWindow title="App" defaultWidth={800} defaultHeight={600} onClose={quit}>
-    <AdwToolbarView>
-        <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
-            <AdwHeaderBar>
-                <x.Slot for={AdwHeaderBar} id="titleWidget">
-                    <AdwWindowTitle title="App" subtitle="Description" />
-                </x.Slot>
-            </AdwHeaderBar>
-        </x.ContainerSlot>
-        <MainContent />
-        <x.ContainerSlot for={AdwToolbarView} id="addBottomBar">
-            <GtkActionBar />
-        </x.ContainerSlot>
-    </AdwToolbarView>
+<AdwApplicationWindow
+  title="App"
+  defaultWidth={800}
+  defaultHeight={600}
+  onClose={quit}
+>
+  <AdwToolbarView>
+    <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
+      <AdwHeaderBar>
+        <x.Slot for={AdwHeaderBar} id="titleWidget">
+          <AdwWindowTitle title="App" subtitle="Description" />
+        </x.Slot>
+      </AdwHeaderBar>
+    </x.ContainerSlot>
+    <MainContent />
+    <x.ContainerSlot for={AdwToolbarView} id="addBottomBar">
+      <GtkActionBar />
+    </x.ContainerSlot>
+  </AdwToolbarView>
 </AdwApplicationWindow>
 ```
 
 ### AdwStatusPage
+
 Welcome, error, or empty state.
 
 ```tsx
-<AdwStatusPage iconName="applications-system-symbolic" title="Welcome" description="Get started" vexpand>
-    <GtkButton label="Start" cssClasses={["suggested-action", "pill"]} halign={Gtk.Align.CENTER} />
+<AdwStatusPage
+  iconName="applications-system-symbolic"
+  title="Welcome"
+  description="Get started"
+  vexpand
+>
+  <GtkButton
+    label="Start"
+    cssClasses={["suggested-action", "pill"]}
+    halign={Gtk.Align.CENTER}
+  />
 </AdwStatusPage>
 ```
 
 ### AdwBanner
+
 Dismissable notification.
 
 ```tsx
-<AdwBanner title="Update available" buttonLabel="Dismiss" revealed={show} onButtonClicked={() => setShow(false)} />
+<AdwBanner
+  title="Update available"
+  buttonLabel="Dismiss"
+  revealed={show}
+  onButtonClicked={() => setShow(false)}
+/>
 ```
 
 ### AdwPreferencesPage / AdwPreferencesGroup
+
 Settings UI.
 
 ```tsx
 <AdwPreferencesPage title="Settings">
-    <AdwPreferencesGroup title="Appearance" description="Customize look">
-        <AdwSwitchRow title="Dark Mode" active={dark} onActivated={() => setDark(!dark)} />
-        <AdwActionRow title="Theme" subtitle="Select color">
-            <x.ContainerSlot for={AdwActionRow} id="addPrefix">
-                <GtkImage iconName="preferences-color-symbolic" />
-            </x.ContainerSlot>
-            <x.ContainerSlot for={AdwActionRow} id="addSuffix">
-                <GtkImage iconName="go-next-symbolic" valign={Gtk.Align.CENTER} />
-            </x.ContainerSlot>
-        </AdwActionRow>
-    </AdwPreferencesGroup>
+  <AdwPreferencesGroup title="Appearance" description="Customize look">
+    <AdwSwitchRow
+      title="Dark Mode"
+      active={dark}
+      onActivated={() => setDark(!dark)}
+    />
+    <AdwActionRow title="Theme" subtitle="Select color">
+      <x.ContainerSlot for={AdwActionRow} id="addPrefix">
+        <GtkImage iconName="preferences-color-symbolic" />
+      </x.ContainerSlot>
+      <x.ContainerSlot for={AdwActionRow} id="addSuffix">
+        <GtkImage iconName="go-next-symbolic" valign={Gtk.Align.CENTER} />
+      </x.ContainerSlot>
+    </AdwActionRow>
+  </AdwPreferencesGroup>
 </AdwPreferencesPage>
 ```
 
 **ActionRow children:** Use `x.ContainerSlot for={AdwActionRow} id="addPrefix"` for left widgets, `x.ContainerSlot for={AdwActionRow} id="addSuffix"` for right widgets, or `x.Slot for={AdwActionRow} id="activatableWidget"` for clickable suffix.
 
 ### AdwExpanderRow
+
 Expandable settings row with optional action widget.
 
 ```tsx
 <AdwExpanderRow title="Advanced" subtitle="More options">
-    <x.ContainerSlot for={AdwExpanderRow} id="addAction">
-        <GtkButton iconName="emblem-system-symbolic" cssClasses={["flat"]} />
-    </x.ContainerSlot>
-    <x.ContainerSlot for={AdwExpanderRow} id="addRow">
-        <AdwSwitchRow title="Option 1" active />
-        <AdwSwitchRow title="Option 2" />
-    </x.ContainerSlot>
+  <x.ContainerSlot for={AdwExpanderRow} id="addAction">
+    <GtkButton iconName="emblem-system-symbolic" cssClasses={["flat"]} />
+  </x.ContainerSlot>
+  <x.ContainerSlot for={AdwExpanderRow} id="addRow">
+    <AdwSwitchRow title="Option 1" active />
+    <AdwSwitchRow title="Option 2" />
+  </x.ContainerSlot>
 </AdwExpanderRow>
 ```
 
 **ExpanderRow slots:** `x.ContainerSlot for={AdwExpanderRow} id="addRow"` for nested rows, `x.ContainerSlot for={AdwExpanderRow} id="addAction"` for header action widget. Direct children also work for simple cases.
 
 ### AdwEntryRow / AdwPasswordEntryRow
+
 Input in list row.
 
 ```tsx
@@ -519,16 +642,20 @@ Input in list row.
 ```
 
 ### AdwToggleGroup
+
 Segmented button group for mutually exclusive options.
 
 ```tsx
 const [mode, setMode] = useState("list");
 
-<AdwToggleGroup activeName={mode} onActiveChanged={(_index, name) => setMode(name ?? "list")}>
-    <x.Toggle id="list" iconName="view-list-symbolic" tooltip="List view" />
-    <x.Toggle id="grid" iconName="view-grid-symbolic" tooltip="Grid view" />
-    <x.Toggle id="flow" label="Flow" />
-</AdwToggleGroup>
+<AdwToggleGroup
+  activeName={mode}
+  onActiveChanged={(_index, name) => setMode(name ?? "list")}
+>
+  <x.Toggle id="list" iconName="view-list-symbolic" tooltip="List view" />
+  <x.Toggle id="grid" iconName="view-grid-symbolic" tooltip="Grid view" />
+  <x.Toggle id="flow" label="Flow" />
+</AdwToggleGroup>;
 ```
 
 **ToggleGroup props:** `activeName`, `active` (index), `onActiveChanged` (callback with index and name)
@@ -536,50 +663,72 @@ const [mode, setMode] = useState("list");
 **Toggle props:** `id` (optional), `label`, `iconName`, `tooltip`, `enabled`
 
 ### AdwNavigationView
+
 Stack-based navigation with history.
 
 ```tsx
 const [history, setHistory] = useState(["home"]);
 
 <AdwNavigationView history={history} onHistoryChanged={setHistory}>
-    <x.NavigationPage for={AdwNavigationView} id="home" title="Home">
-        <GtkButton label="Go to Details" onClicked={() => setHistory([...history, "details"])} />
-    </x.NavigationPage>
-    <x.NavigationPage for={AdwNavigationView} id="details" title="Details" canPop>
-        <GtkLabel label="Details content" />
-    </x.NavigationPage>
-</AdwNavigationView>
+  <x.NavigationPage for={AdwNavigationView} id="home" title="Home">
+    <GtkButton
+      label="Go to Details"
+      onClicked={() => setHistory([...history, "details"])}
+    />
+  </x.NavigationPage>
+  <x.NavigationPage for={AdwNavigationView} id="details" title="Details" canPop>
+    <GtkLabel label="Details content" />
+  </x.NavigationPage>
+</AdwNavigationView>;
 ```
 
 **NavigationPage props:** `for` (required, parent widget type), `id` (required), `title`, `canPop`. Control navigation via `history` array.
 
 ### AdwNavigationSplitView
+
 Sidebar/content split layout for master-detail interfaces.
 
 ```tsx
 const [selected, setSelected] = useState(items[0]);
 
-<AdwNavigationSplitView sidebarWidthFraction={0.33} minSidebarWidth={200} maxSidebarWidth={300}>
-    <x.NavigationPage for={AdwNavigationSplitView} id="sidebar" title="Sidebar">
-        <AdwToolbarView>
-            <x.ContainerSlot for={AdwToolbarView} id="addTopBar"><AdwHeaderBar /></x.ContainerSlot>
-            <GtkListBox cssClasses={["navigation-sidebar"]} onRowSelected={(row) => {
-                    if (!row) return;
-                    const item = items[row.getIndex()];
-                    if (item) setSelected(item);
-                }}>
-                {items.map((item) => <AdwActionRow key={item.id} title={item.title} />)}
-            </GtkListBox>
-        </AdwToolbarView>
-    </x.NavigationPage>
+<AdwNavigationSplitView
+  sidebarWidthFraction={0.33}
+  minSidebarWidth={200}
+  maxSidebarWidth={300}
+>
+  <x.NavigationPage for={AdwNavigationSplitView} id="sidebar" title="Sidebar">
+    <AdwToolbarView>
+      <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
+        <AdwHeaderBar />
+      </x.ContainerSlot>
+      <GtkListBox
+        cssClasses={["navigation-sidebar"]}
+        onRowSelected={(row) => {
+          if (!row) return;
+          const item = items[row.getIndex()];
+          if (item) setSelected(item);
+        }}
+      >
+        {items.map((item) => (
+          <AdwActionRow key={item.id} title={item.title} />
+        ))}
+      </GtkListBox>
+    </AdwToolbarView>
+  </x.NavigationPage>
 
-    <x.NavigationPage for={AdwNavigationSplitView} id="content" title={selected?.title ?? ""}>
-        <AdwToolbarView>
-            <x.ContainerSlot for={AdwToolbarView} id="addTopBar"><AdwHeaderBar /></x.ContainerSlot>
-            <GtkLabel label={selected?.title ?? ""} />
-        </AdwToolbarView>
-    </x.NavigationPage>
-</AdwNavigationSplitView>
+  <x.NavigationPage
+    for={AdwNavigationSplitView}
+    id="content"
+    title={selected?.title ?? ""}
+  >
+    <AdwToolbarView>
+      <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
+        <AdwHeaderBar />
+      </x.ContainerSlot>
+      <GtkLabel label={selected?.title ?? ""} />
+    </AdwToolbarView>
+  </x.NavigationPage>
+</AdwNavigationSplitView>;
 ```
 
 **Props:** `sidebarWidthFraction`, `minSidebarWidth`, `maxSidebarWidth`, `collapsed`, `showContent`.
@@ -587,29 +736,37 @@ const [selected, setSelected] = useState(items[0]);
 **Selection:** Use `GtkListBox` with `onRowSelected` (single click) not `onRowActivated` (double click).
 
 ### AdwAlertDialog
+
 Modern modal alert dialogs with response buttons.
 
 ```tsx
 const [showDialog, setShowDialog] = useState(false);
 
-{showDialog && (
+{
+  showDialog && (
     <AdwAlertDialog
-        heading="Delete File?"
-        body="This action cannot be undone."
-        onResponse={(id) => {
-            if (id === "delete") handleDelete();
-            setShowDialog(false);
-        }}
+      heading="Delete File?"
+      body="This action cannot be undone."
+      onResponse={(id) => {
+        if (id === "delete") handleDelete();
+        setShowDialog(false);
+      }}
     >
-        <x.AlertDialogResponse id="cancel" label="Cancel" />
-        <x.AlertDialogResponse id="delete" label="Delete" appearance={Adw.ResponseAppearance.DESTRUCTIVE} />
+      <x.AlertDialogResponse id="cancel" label="Cancel" />
+      <x.AlertDialogResponse
+        id="delete"
+        label="Delete"
+        appearance={Adw.ResponseAppearance.DESTRUCTIVE}
+      />
     </AdwAlertDialog>
-)}
+  );
+}
 ```
 
 **AlertDialogResponse props:** `id`, `label`, `appearance` (SUGGESTED, DESTRUCTIVE), `enabled`
 
 ### GtkColorDialogButton / GtkFontDialogButton
+
 Color and font picker dialogs.
 
 ```tsx
@@ -619,13 +776,13 @@ Color and font picker dialogs.
 
 ### Other Adwaita Widgets
 
-| Widget | Description |
-|--------|-------------|
-| `AdwClamp` | Limits content width (`maximumSize={600}`) |
-| `AdwAvatar` | User avatar (`size={48} text="Name" showInitials`) |
-| `AdwSpinner` | Loading indicator |
-| `AdwWindowTitle` | Title + subtitle for header bars |
-| `AdwButtonRow` | Button styled as list row |
+| Widget           | Description                                        |
+| ---------------- | -------------------------------------------------- |
+| `AdwClamp`       | Limits content width (`maximumSize={600}`)         |
+| `AdwAvatar`      | User avatar (`size={48} text="Name" showInitials`) |
+| `AdwSpinner`     | Loading indicator                                  |
+| `AdwWindowTitle` | Title + subtitle for header bars                   |
+| `AdwButtonRow`   | Button styled as list row                          |
 
 ---
 
@@ -635,13 +792,13 @@ Wrap widgets in `x.Animation` for declarative animations with spring or timed tr
 
 ```tsx
 <x.Animation
-    initial={{ opacity: 0, scale: 0.8 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ mode: "spring", damping: 0.8, stiffness: 200, mass: 1 }}
-    animateOnMount
-    onAnimationComplete={() => console.log("done")}
+  initial={{ opacity: 0, scale: 0.8 }}
+  animate={{ opacity: 1, scale: 1 }}
+  transition={{ mode: "spring", damping: 0.8, stiffness: 200, mass: 1 }}
+  animateOnMount
+  onAnimationComplete={() => console.log("done")}
 >
-    <GtkBox>...</GtkBox>
+  <GtkBox>...</GtkBox>
 </x.Animation>
 ```
 
@@ -662,25 +819,30 @@ import * as Gdk from "@gtkx/ffi/gdk";
 import { Type, Value } from "@gtkx/ffi/gobject";
 
 const DraggableButton = ({ label }: { label: string }) => (
-    <GtkButton
-        label={label}
-        onDragPrepare={() => Gdk.ContentProvider.newForValue(Value.newFromString(label))}
-        dragIcon={someTexture}
-        dragIconHotX={16}
-        dragIconHotY={16}
-    />
+  <GtkButton
+    label={label}
+    onDragPrepare={() =>
+      Gdk.ContentProvider.newForValue(Value.newFromString(label))
+    }
+    dragIcon={someTexture}
+    dragIconHotX={16}
+    dragIconHotY={16}
+  />
 );
 
 const DropZone = () => {
-    const [dropped, setDropped] = useState<string | null>(null);
-    return (
-        <GtkBox
-            dropTypes={[Type.STRING]}
-            onDrop={(value: Value) => { setDropped(value.getString()); return true; }}
-        >
-            <GtkLabel label={dropped ?? "Drop here"} />
-        </GtkBox>
-    );
+  const [dropped, setDropped] = useState<string | null>(null);
+  return (
+    <GtkBox
+      dropTypes={[Type.STRING]}
+      onDrop={(value: Value) => {
+        setDropped(value.getString());
+        return true;
+      }}
+    >
+      <GtkLabel label={dropped ?? "Drop here"} />
+    </GtkBox>
+  );
 };
 ```
 
@@ -711,13 +873,24 @@ Render custom graphics with `GtkDrawingArea` using the `onDraw` callback:
 import type { Context } from "@gtkx/ffi/cairo";
 
 const Canvas = () => {
-    const handleDraw = (self: Gtk.DrawingArea, cr: Context, width: number, height: number) => {
-        cr.setSourceRgb(0.2, 0.4, 0.8);
-        cr.rectangle(10, 10, width - 20, height - 20);
-        cr.fill();
-    };
+  const handleDraw = (
+    self: Gtk.DrawingArea,
+    cr: Context,
+    width: number,
+    height: number,
+  ) => {
+    cr.setSourceRgb(0.2, 0.4, 0.8);
+    cr.rectangle(10, 10, width - 20, height - 20);
+    cr.fill();
+  };
 
-    return <GtkDrawingArea contentWidth={400} contentHeight={300} onDraw={handleDraw} />;
+  return (
+    <GtkDrawingArea
+      contentWidth={400}
+      contentHeight={300}
+      onDraw={handleDraw}
+    />
+  );
 };
 ```
 
@@ -729,19 +902,19 @@ Event controllers are added as children to any widget. They are auto-generated f
 
 ```tsx
 <GtkBox focusable>
-    <GtkEventControllerMotion
-        onEnter={(x, y) => console.log("Entered at", x, y)}
-        onMotion={(x, y) => setPosition({ x, y })}
-        onLeave={() => console.log("Left")}
-    />
-    <GtkEventControllerKey
-        onKeyPressed={(keyval, keycode, state) => {
-            console.log("Key pressed:", keyval);
-            return false;
-        }}
-    />
-    <GtkGestureClick onPressed={(nPress, x, y) => console.log("Clicked")} />
-    <GtkLabel label="Hover or type here" />
+  <GtkEventControllerMotion
+    onEnter={(x, y) => console.log("Entered at", x, y)}
+    onMotion={(x, y) => setPosition({ x, y })}
+    onLeave={() => console.log("Left")}
+  />
+  <GtkEventControllerKey
+    onKeyPressed={(keyval, keycode, state) => {
+      console.log("Key pressed:", keyval);
+      return false;
+    }}
+  />
+  <GtkGestureClick onPressed={(nPress, x, y) => console.log("Clicked")} />
+  <GtkLabel label="Hover or type here" />
 </GtkBox>
 ```
 
@@ -756,9 +929,15 @@ Event controllers are added as children to any widget. They are auto-generated f
 ```tsx
 const [searchActive, setSearchActive] = useState(false);
 
-<GtkSearchBar searchModeEnabled={searchActive} onSearchModeChanged={setSearchActive}>
-    <GtkSearchEntry text={query} onSearchChanged={(entry) => setQuery(entry.getText())} />
-</GtkSearchBar>
+<GtkSearchBar
+  searchModeEnabled={searchActive}
+  onSearchModeChanged={setSearchActive}
+>
+  <GtkSearchEntry
+    text={query}
+    onSearchChanged={(entry) => setQuery(entry.getText())}
+  />
+</GtkSearchBar>;
 ```
 
 The `onSearchModeChanged` callback fires when search mode changes (e.g., user presses Escape).
@@ -769,8 +948,15 @@ Text content is provided as direct children. Use `x.TextTag` for formatting and 
 
 ```tsx
 <GtkTextView enableUndo onBufferChanged={(text) => console.log(text)}>
-    Normal text, <x.TextTag id="bold" weight={Pango.Weight.BOLD}>bold</x.TextTag>, and
-    <x.TextAnchor><GtkButton label="Click" /></x.TextAnchor> inline.
+  Normal text,{" "}
+  <x.TextTag id="bold" weight={Pango.Weight.BOLD}>
+    bold
+  </x.TextTag>
+  , and
+  <x.TextAnchor>
+    <GtkButton label="Click" />
+  </x.TextAnchor>{" "}
+  inline.
 </GtkTextView>
 ```
 
@@ -784,16 +970,16 @@ Text content is provided as direct children. Use `x.TextTag` for formatting and 
 
 ```tsx
 <GtkSourceView
-    showLineNumbers
-    highlightCurrentLine
-    language="typescript"
-    styleScheme="Adwaita-dark"
-    highlightSyntax
-    highlightMatchingBrackets
-    enableUndo
-    onBufferChanged={setCode}
+  showLineNumbers
+  highlightCurrentLine
+  language="typescript"
+  styleScheme="Adwaita-dark"
+  highlightSyntax
+  highlightMatchingBrackets
+  enableUndo
+  onBufferChanged={setCode}
 >
-    {code}
+  {code}
 </GtkSourceView>
 ```
 
@@ -805,11 +991,17 @@ Attach shortcuts with `<GtkShortcutController>` and `x.Shortcut`:
 
 ```tsx
 <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12} focusable>
-    <GtkShortcutController scope={Gtk.ShortcutScope.LOCAL}>
-        <x.Shortcut trigger="<Control>equal" onActivate={() => setCount((c) => c + 1)} />
-        <x.Shortcut trigger="<Control>minus" onActivate={() => setCount((c) => c - 1)} />
-    </GtkShortcutController>
-    <GtkLabel label={`Count: ${count}`} />
+  <GtkShortcutController scope={Gtk.ShortcutScope.LOCAL}>
+    <x.Shortcut
+      trigger="<Control>equal"
+      onActivate={() => setCount((c) => c + 1)}
+    />
+    <x.Shortcut
+      trigger="<Control>minus"
+      onActivate={() => setCount((c) => c - 1)}
+    />
+  </GtkShortcutController>
+  <GtkLabel label={`Count: ${count}`} />
 </GtkBox>
 ```
 

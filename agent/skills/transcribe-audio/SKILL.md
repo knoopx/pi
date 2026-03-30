@@ -16,13 +16,13 @@ nix run nixpkgs#whisper-cpp -- -m models/ggml-tiny.en.bin -f audio.mp3
 
 ## Available Models
 
-| Model | Size | Speed | Quality |
-|-------|------|-------|--------|
-| `ggml-tiny.en.bin` | 75 MB | ⚡ Fastest | Basic |
-| `ggml-base.en.bin` | 142 MB | ⚡ Fast | Good |
-| `ggml-small.en.bin` | 468 MB | 🐌 Medium | Better |
-| `ggml-medium.en.bin` | 1.4 GB | 🐌 Slower | Good |
-| `ggml-large-v3.bin` | 3.1 GB | 🐌🐌 Slow | Best |
+| Model                | Size   | Speed      | Quality |
+| -------------------- | ------ | ---------- | ------- |
+| `ggml-tiny.en.bin`   | 75 MB  | ⚡ Fastest | Basic   |
+| `ggml-base.en.bin`   | 142 MB | ⚡ Fast    | Good    |
+| `ggml-small.en.bin`  | 468 MB | 🐌 Medium  | Better  |
+| `ggml-medium.en.bin` | 1.4 GB | 🐌 Slower  | Good    |
+| `ggml-large-v3.bin`  | 3.1 GB | 🐌🐌 Slow  | Best    |
 
 ### Download a Model
 
@@ -33,20 +33,20 @@ curl -L https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.b
 
 ## Common Options
 
-| Option | Description |
-|--------|-------------|
-| `-m MODEL` | Model path |
-| `-f FILE` | Input audio file |
-| `-t N` | Threads (default: 4) |
-| `-l LANG` | Language (`en`, `auto`, etc.) |
-| `-otxt` | Output to `.txt` file |
-| `-osrt` | Output to `.srt` subtitle file |
-| `-ovtt` | Output to `.vtt` file |
-| `-oj` | Output to JSON |
-| `-of PATH` | Output file path (without extension) |
-| `-nt` | No timestamps in output |
-| `-np` | No prints (results only) |
-| `--print-confidence` | Show confidence scores |
+| Option               | Description                          |
+| -------------------- | ------------------------------------ |
+| `-m MODEL`           | Model path                           |
+| `-f FILE`            | Input audio file                     |
+| `-t N`               | Threads (default: 4)                 |
+| `-l LANG`            | Language (`en`, `auto`, etc.)        |
+| `-otxt`              | Output to `.txt` file                |
+| `-osrt`              | Output to `.srt` subtitle file       |
+| `-ovtt`              | Output to `.vtt` file                |
+| `-oj`                | Output to JSON                       |
+| `-of PATH`           | Output file path (without extension) |
+| `-nt`                | No timestamps in output              |
+| `-np`                | No prints (results only)             |
+| `--print-confidence` | Show confidence scores               |
 
 ## Examples
 

@@ -22,7 +22,10 @@ interface MockTool {
     ctx: unknown,
     onProgress: (msg: string) => void,
     options: Record<string, unknown>,
-  ) => Promise<{ content: { type: string; text?: string }[]; details: Record<string, unknown> }>;
+  ) => Promise<{
+    content: { type: string; text?: string }[];
+    details: Record<string, unknown>;
+  }>;
 }
 
 interface MockPi {

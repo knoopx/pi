@@ -4,7 +4,9 @@
   "description": "DuckDuckGo search integration",
   "type": "module",
   "pi": {
-    "extensions": ["./index.ts"]
+    "extensions": [
+      "./index.ts"
+    ]
   },
   "dependencies": {
     "@mariozechner/pi-ai": "^0.63.1",

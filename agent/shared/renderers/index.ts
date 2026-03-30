@@ -15,11 +15,7 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { spawnSync } from "node:child_process";
 
-export {
-  dotJoin,
-  stateDot,
-  countLabel,
-} from "./header";
+export { dotJoin, stateDot, countLabel } from "./header";
 export { table, type Column } from "./table";
 export { detail } from "./detail";
 

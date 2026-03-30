@@ -79,7 +79,9 @@ function createUserId(id: string): UserId {
 }
 
 // Compiler prevents: getUser(orderId) — type mismatch
-function getUser(id: UserId): Promise<User> { /* ... */ }
+function getUser(id: UserId): Promise<User> {
+  /* ... */
+}
 ```
 
 ### Making Invalid States Unrepresentable
@@ -96,8 +98,10 @@ type AsyncState<T> =
 // Impossible to have data without status: "success"
 function render(state: AsyncState<User[]>) {
   switch (state.status) {
-    case "success": return renderTable(state.data);
-    case "error": return renderError(state.error);
+    case "success":
+      return renderTable(state.data);
+    case "error":
+      return renderError(state.error);
     // exhaustiveness: TS errors if a case is missing
   }
 }

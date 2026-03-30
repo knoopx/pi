@@ -22,23 +22,23 @@ jj-hunk split '{"files": {"src/foo.rs": {"hunks": [0, 1]}}, "default": "reset"}'
 
 ## Commands
 
-| Command                                     | Description                            |
-| ------------------------------------------- | -------------------------------------- |
-| `jj-hunk list [options]`                    | List hunks, files, or spec templates   |
-| `jj-hunk split [-r rev] <spec> <message>`   | Split changes into two commits         |
-| `jj-hunk commit <spec> <message>`           | Commit selected hunks                  |
-| `jj-hunk squash [-r rev] <spec>`            | Squash selected hunks into parent      |
+| Command                                   | Description                          |
+| ----------------------------------------- | ------------------------------------ |
+| `jj-hunk list [options]`                  | List hunks, files, or spec templates |
+| `jj-hunk split [-r rev] <spec> <message>` | Split changes into two commits       |
+| `jj-hunk commit <spec> <message>`         | Commit selected hunks                |
+| `jj-hunk squash [-r rev] <spec>`          | Squash selected hunks into parent    |
 
 ## List Options
 
-| Option                                    | Description                               |
-| ----------------------------------------- | ----------------------------------------- |
-| `--rev <revset>`                          | Diff revision against parent              |
-| `--format json\|yaml\|text`               | Output format (default: json)             |
-| `--include <glob>` / `--exclude <glob>`   | Filter paths (repeatable)                 |
-| `--group none\|directory\|extension`      | Group output                              |
-| `--files`                                 | List files with hunk counts only          |
-| `--spec-template`                         | Emit a spec template (JSON/YAML only)     |
+| Option                                  | Description                           |
+| --------------------------------------- | ------------------------------------- |
+| `--rev <revset>`                        | Diff revision against parent          |
+| `--format json\|yaml\|text`             | Output format (default: json)         |
+| `--include <glob>` / `--exclude <glob>` | Filter paths (repeatable)             |
+| `--group none\|directory\|extension`    | Group output                          |
+| `--files`                               | List files with hunk counts only      |
+| `--spec-template`                       | Emit a spec template (JSON/YAML only) |
 
 ## Spec Format
 
@@ -47,22 +47,22 @@ Specs are JSON or YAML. Select hunks by index (0-based) or by stable `ids`.
 ```json
 {
   "files": {
-    "path/to/file": {"hunks": [0, 1]},
-    "path/to/other": {"ids": ["hunk-9a2b..."]},
-    "path/to/another": {"action": "keep"},
-    "path/to/skip": {"action": "reset"}
+    "path/to/file": { "hunks": [0, 1] },
+    "path/to/other": { "ids": ["hunk-9a2b..."] },
+    "path/to/another": { "action": "keep" },
+    "path/to/skip": { "action": "reset" }
   },
   "default": "reset"
 }
 ```
 
-| Action                    | Description                           |
-| ------------------------- | ------------------------------------- |
-| `{"hunks": [0, 1]}`      | Select by index (0-based)             |
-| `{"ids": ["hunk-..."]}`  | Select by stable ID from `jj-hunk list` |
-| `{"action": "keep"}`     | Keep all changes in file              |
-| `{"action": "reset"}`    | Discard all changes in file           |
-| `"default"`               | Action for unlisted files             |
+| Action                  | Description                             |
+| ----------------------- | --------------------------------------- |
+| `{"hunks": [0, 1]}`     | Select by index (0-based)               |
+| `{"ids": ["hunk-..."]}` | Select by stable ID from `jj-hunk list` |
+| `{"action": "keep"}`    | Keep all changes in file                |
+| `{"action": "reset"}`   | Discard all changes in file             |
+| `"default"`             | Action for unlisted files               |
 
 ## Example: Split by Hunk
 
@@ -74,6 +74,7 @@ jj-hunk list --format text
 ```
 
 Output:
+
 ```
 M src/main.rs
   hunk 0 insert hunk-abc123 (before 1+0 after 1+10)

@@ -10,16 +10,27 @@ GTKX renders React components as native GTK4 widgets through a Rust FFI bridge.
 ## Quick Start
 
 ```tsx
-import { GtkApplicationWindow, GtkBox, GtkButton, render, quit } from "@gtkx/react";
+import {
+  GtkApplicationWindow,
+  GtkBox,
+  GtkButton,
+  render,
+  quit,
+} from "@gtkx/react";
 import * as Gtk from "@gtkx/ffi/gtk";
 
 const App = () => (
-    <GtkApplicationWindow title="My App" defaultWidth={800} defaultHeight={600} onClose={quit}>
-        <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12}>
-            Hello, GTKX!
-            <GtkButton label="Quit" onClicked={quit} />
-        </GtkBox>
-    </GtkApplicationWindow>
+  <GtkApplicationWindow
+    title="My App"
+    defaultWidth={800}
+    defaultHeight={600}
+    onClose={quit}
+  >
+    <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12}>
+      Hello, GTKX!
+      <GtkButton label="Quit" onClicked={quit} />
+    </GtkBox>
+  </GtkApplicationWindow>
 );
 
 render(<App />, "com.example.myapp");
@@ -31,8 +42,8 @@ render(<App />, "com.example.myapp");
 
 ```tsx
 <GtkBox orientation={Gtk.Orientation.VERTICAL} spacing={12}>
-    <GtkLabel label="Title" />
-    <GtkButton label="Click" onClicked={handleClick} />
+  <GtkLabel label="Title" />
+  <GtkButton label="Click" onClicked={handleClick} />
 </GtkBox>
 ```
 
@@ -40,7 +51,7 @@ render(<App />, "com.example.myapp");
 
 ```tsx
 const [text, setText] = useState("");
-<GtkEntry text={text} onChanged={(e) => setText(e.getText())} />
+<GtkEntry text={text} onChanged={(e) => setText(e.getText())} />;
 ```
 
 ### Signals
@@ -53,8 +64,12 @@ Some widgets require children in specific slots:
 
 ```tsx
 <GtkPaned>
-    <x.Slot for={GtkPaned} id="startChild"><Sidebar /></x.Slot>
-    <x.Slot for={GtkPaned} id="endChild"><Content /></x.Slot>
+  <x.Slot for={GtkPaned} id="startChild">
+    <Sidebar />
+  </x.Slot>
+  <x.Slot for={GtkPaned} id="endChild">
+    <Content />
+  </x.Slot>
 </GtkPaned>
 ```
 
@@ -62,8 +77,12 @@ Some widgets require children in specific slots:
 
 ```tsx
 <GtkHeaderBar>
-    <x.ContainerSlot for={GtkHeaderBar} id="packStart"><GtkButton iconName="go-previous-symbolic" /></x.ContainerSlot>
-    <x.ContainerSlot for={GtkHeaderBar} id="packEnd"><GtkMenuButton iconName="open-menu-symbolic" /></x.ContainerSlot>
+  <x.ContainerSlot for={GtkHeaderBar} id="packStart">
+    <GtkButton iconName="go-previous-symbolic" />
+  </x.ContainerSlot>
+  <x.ContainerSlot for={GtkHeaderBar} id="packEnd">
+    <GtkMenuButton iconName="open-menu-symbolic" />
+  </x.ContainerSlot>
 </GtkHeaderBar>
 ```
 
@@ -71,12 +90,12 @@ Some widgets require children in specific slots:
 
 ```tsx
 <x.Animation
-    initial={{ opacity: 0, scale: 0.8 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ mode: "spring", damping: 0.8, stiffness: 200 }}
-    animateOnMount
+  initial={{ opacity: 0, scale: 0.8 }}
+  animate={{ opacity: 1, scale: 1 }}
+  transition={{ mode: "spring", damping: 0.8, stiffness: 200 }}
+  animateOnMount
 >
-    <GtkLabel label="Animated!" />
+  <GtkLabel label="Animated!" />
 </x.Animation>
 ```
 
