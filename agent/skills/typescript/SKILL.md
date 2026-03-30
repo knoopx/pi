@@ -1,11 +1,11 @@
 ---
 name: typescript
-description: Configures TypeScript projects, defines types and interfaces, writes generics, and implements type guards. Use when setting up tsconfig.json, creating type definitions, or ensuring type safety in JS/TS codebases.
+description: "Configures TypeScript projects, defines types and interfaces, writes generics, and implements type guards. Use when setting up tsconfig.json, creating type definitions, or ensuring type safety in JS/TS codebases."
 ---
 
 # TypeScript
 
-Type-safe JavaScript with static typing and modern features.
+Type-safe JavaScript development with bun and vitest in this project.
 
 ## Quick Start
 
@@ -15,9 +15,9 @@ bunx tsc --noEmit        # Type check
 vitest run               # Run tests
 ```
 
-## Configuration
+## Project Configuration
 
-### tsconfig.json
+This project uses bun with ESNext targets. Reference config in `templates/tsconfig.json`:
 
 ```json
 {
@@ -40,151 +40,72 @@ vitest run               # Run tests
 }
 ```
 
-### Strict Mode Options
+## Decision Guide: Interfaces vs Types
 
-| Option                | Description                     |
-| --------------------- | ------------------------------- |
-| `strictNullChecks`    | Enforce strict null checks      |
-| `strictFunctionTypes` | Strict function parameter types |
-| `noImplicitAny`       | Disallow implicit any types     |
-| `alwaysStrict`        | Apply all strict checks         |
+Use this when choosing between `interface` and `type`:
 
-## Type Definitions
-
-### Basic Types
+- **Interface** when: defining object shapes that may be extended, or when declaration merging is needed (e.g., augmenting third-party types)
+- **Type** when: defining unions, intersections, mapped types, conditional types, or function signatures
 
 ```typescript
-let str: string = "hello";
-let num: number = 42;
-let bool: boolean = true;
-let arr: number[] = [1, 2, 3];
-let tuple: [string, number] = ["age", 25];
-let obj: { name: string; age: number } = { name: "John", age: 30 };
-```
-
-### Interfaces vs Types
-
-```typescript
-// Interface for object shapes
+// Interface — extendable object shape
 interface User {
   id: number;
   name: string;
   email: string;
 }
 
-// Type for unions and function signatures
+// Type — unions and computed types
 type Status = "loading" | "success" | "error";
 type CreateUser = (data: Partial<User>) => Promise<User>;
 
-// Discriminated union
+// Discriminated union — use type, not interface
 type Result<T> = { ok: true; value: T } | { ok: false; error: Error };
 ```
 
-### Utility Types
+## Type Safety Patterns
+
+### Branded Types for Domain Primitives
+
+Use branded types when a plain `string` or `number` could be confused across domains:
 
 ```typescript
-type PartialUser = Partial<User>;
-type RequiredUser = Required<User>;
-type ReadonlyUser = Readonly<User>;
-type UserName = Pick<User, "name">;
-type UserWithoutEmail = Omit<User, "email">;
+type UserId = string & { readonly __brand: "UserId" };
+type OrderId = string & { readonly __brand: "OrderId" };
+
+function createUserId(id: string): UserId {
+  // validate format here
+  return id as UserId;
+}
+
+// Compiler prevents: getUser(orderId) — type mismatch
+function getUser(id: UserId): Promise<User> { /* ... */ }
 ```
 
-## Functions
+### Making Invalid States Unrepresentable
+
+Model states as discriminated unions so illegal combinations are compile errors:
 
 ```typescript
-// Basic function
-function add(a: number, b: number): number {
-  return a + b;
-}
+type AsyncState<T> =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; data: T }
+  | { status: "error"; error: Error };
 
-// Arrow function
-const add = (a: number, b: number): number => a + b;
-
-// Optional parameters
-function greet(name: string, title?: string): string {
-  return title ? `${title} ${name}` : name;
-}
-
-// Rest parameters
-function sum(...nums: number[]): number {
-  return nums.reduce((a, b) => a + b, 0);
-}
-
-// Function overloads
-function format(input: string): string;
-function format(input: number): string;
-function format(input: string | number): string {
-  return String(input);
-}
-
-// Async function
-async function fetchData(url: string): Promise<unknown> {
-  const response = await fetch(url);
-  return response.json();
-}
-```
-
-## Classes
-
-```typescript
-class Person {
-  constructor(
-    public name: string,
-    private age: number,
-  ) {}
-
-  greet(): string {
-    return `Hello, ${this.name}`;
+// Impossible to have data without status: "success"
+function render(state: AsyncState<User[]>) {
+  switch (state.status) {
+    case "success": return renderTable(state.data);
+    case "error": return renderError(state.error);
+    // exhaustiveness: TS errors if a case is missing
   }
 }
-
-// Inheritance
-class Employee extends Person {
-  constructor(
-    name: string,
-    age: number,
-    public role: string,
-  ) {
-    super(name, age);
-  }
-}
-
-// Abstract class
-abstract class Shape {
-  abstract area(): number;
-}
 ```
 
-## Generics
+### Type Guards with Runtime Validation
 
 ```typescript
-// Generic function
-function wrap<T>(value: T): { value: T } {
-  return { value };
-}
-
-// Generic class
-class Container<T> {
-  constructor(private value: T) {}
-  get(): T {
-    return this.value;
-  }
-}
-
-// Generic constraints
-function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
-  return obj[key];
-}
-```
-
-## Type Guards
-
-```typescript
-function isString(value: unknown): value is string {
-  return typeof value === "string";
-}
-
 function isUser(value: unknown): value is User {
   return (
     typeof value === "object" &&
@@ -193,31 +114,11 @@ function isUser(value: unknown): value is User {
     "name" in value
   );
 }
-
-function process(value: unknown) {
-  if (isString(value)) {
-    console.log(value.toUpperCase()); // value is string
-  }
-}
 ```
 
-## Error Handling
+### Result Type for Error Handling
 
-### Custom Errors
-
-```typescript
-class ValidationError extends Error {
-  constructor(
-    public field: string,
-    message: string,
-  ) {
-    super(message);
-    this.name = "ValidationError";
-  }
-}
-```
-
-### Result Type
+Prefer `Result<T>` over try/catch for composable error handling:
 
 ```typescript
 type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E };
@@ -231,29 +132,18 @@ function safeParse(json: string): Result<unknown> {
 }
 ```
 
-## Compilation
+## Workflow
 
-```bash
-tsc                    # Compile
-tsc --noEmit           # Type check only
-tsc --watch            # Watch mode (use tmux)
+1. **Set up project**: `bun init --typescript`, copy `templates/tsconfig.json`
+2. **Write types first**: Define interfaces/types at module boundaries before implementation
+3. **Type check**: `bunx tsc --noEmit` — fix errors before proceeding
+4. **Watch mode**: `tmux new -d -s tsc 'tsc --watch'` for continuous feedback
+5. **Test**: `vitest run` to validate behavior matches types
+6. **Gradual adoption**: Use `allowJs: true` + `checkJs: true` when migrating JS files incrementally
 
-tmux new -d -s tsc 'tsc --watch'
-```
+## Constraints
 
-## Best Practices
-
-- Use `strict: true` in tsconfig
-- Avoid `any` - use `unknown` or specific types
-- Prefer interfaces for object shapes
-- Use branded types for primitives needing validation
-- Make invalid states unrepresentable
-- Type at boundaries (API inputs/outputs)
-
-## Tips
-
-- `tsc --noEmit` for fast type checking
-- Gradual adoption with `allowJs: true`
-- Path mapping: `"@/*": ["src/*"]`
-- Declaration files: `"declaration": true`
-- Use `// @ts-expect-error` with error messages
+- Always use `strict: true` — never weaken strictness per-file with `// @ts-ignore`; use `// @ts-expect-error` with a comment explaining why
+- Avoid `any` — use `unknown` and narrow with type guards
+- Type at boundaries (API inputs/outputs, function signatures) — let inference handle internals
+- Path aliases: use `@/*` mapped to `src/*` for imports
