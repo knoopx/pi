@@ -308,18 +308,31 @@ export function createChangesComponent(
           const workflowLines = ids
             .map(
               (id, index) =>
-                `${String(index + 1)}. Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "type(scope): <icon> short description"\``,
+                `${String(index + 1)}. Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "<type>(<scope>): <description>"\``,
             )
             .join("\n");
 
-          const task = `Describe jujutsu changes ${ids.join(", ")} using conventional commit format.
+          const task = `Describe jujutsu changes ${ids.join(", ")} using Conventional Commits format.
 
 Use the **conventional-commits** skill for type/scope rules.
 
 <format>
-\`type(scope): <icon> short description\`
+\`<type>(<scope>): <description>\`
 
-Types: feat, fix, docs, style, refactor, perf, test, chore
+Examples:
+- \`feat(auth): add passwordless login\`
+- \`fix(api): handle empty pagination cursor\`
+- \`chore(deps): bump react to 18.3.0\`
+
+Type selection:
+- Users see new behavior → \`feat\`
+- Users see corrected behavior → \`fix\`
+- Otherwise → \`chore\` or more specific type (\`refactor\`, \`build\`, \`ci\`, \`test\`, \`docs\`, \`perf\`, \`style\`)
+
+Description guidelines:
+- Use imperative mood: "add", "fix", "remove", "update"
+- No ending punctuation
+- Be specific; avoid "changes", "stuff", "update things"
 </format>
 
 <workflow>
@@ -349,16 +362,21 @@ ${workflowLines}
           const task = `Split jujutsu change ${change.changeId} into semantically logical commits.
 
 Use the **jj-hunk** skill for programmatic hunk-level splitting.
+Use the **conventional-commits** skill for commit message format.
 
 <workflow>
 1. List hunks: \`jj-hunk list -r ${change.changeId}\`
 2. Identify logical groupings by domain/purpose
 3. Split iteratively using jj-hunk:
-   \`jj-hunk split -r ${change.changeId} '{"files": {"<path>": {"action": "keep"}}, "default": "reset"}' "type(scope): description"\`
-4. Update remaining change description: \`jj desc -r ${change.changeId} -m "type(scope): description"\`
+   \`jj-hunk split -r ${change.changeId} '{"files": {"<path>": {"action": "keep"}}, "default": "reset"}' "<type>(<scope>): <description>"\`
+4. Update remaining change description: \`jj desc -r ${change.changeId} -m "<type>(<scope>): <description>"\`
 </workflow>
 
-Use the **conventional-commits** skill for commit message format.`;
+Commit message format:
+- \`<type>(<scope>): <description>\`
+- Types: feat, fix, docs, style, refactor, perf, test, chore, build, ci
+- Use imperative mood, no ending punctuation
+- Be specific; avoid "changes", "stuff", "update things"`;
           pi.sendUserMessage(task);
           return;
         }
