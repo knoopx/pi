@@ -1065,7 +1065,7 @@ export async function searchCode(
     `--limit=${limit}`,
     "--json=repository,path,sha,textMatches,url",
     "--jq",
-    '[.[] | {repo: (.repository.fullName | split("/") | .[1]), owner: (.repository.fullName | split("/") | .[0]), name: (.path | split("/") | .[-1]), path, html_url: .url, text_matches: [.textMatches[]? | {snippet: .fragment, matches: [.matches[]? | .text]}]}]',
+    '[.[] | {repo: ((.repository.nameWithOwner // "") | split("/") | .[1] // ""), owner: ((.repository.nameWithOwner // "") | split("/") | .[0] // ""), name: (.path | split("/") | .[-1]), path, html_url: .url, text_matches: [.textMatches[]? | {snippet: .fragment, matches: [.matches[]? | .text]}]}]',
   ]);
 
   if (result.exitCode !== 0) {
@@ -1997,7 +1997,7 @@ export async function searchCommits(
     `--limit=${limit}`,
     "--json=sha,commit,repository,url",
     "--jq",
-    '[.[] | {sha, message: .commit.message, repo: (.repository.fullName | split("/") | .[1]), owner: (.repository.fullName | split("/") | .[0]), url, committed_date: .commit.committer.date}]',
+    '[.[] | {sha, message: .commit.message, repo: ((.repository.fullName // "") | split("/") | .[1] // ""), owner: ((.repository.fullName // "") | split("/") | .[0] // ""), url, committed_date: .commit.committer.date}]',
   ]);
 
   if (result.exitCode !== 0) {
