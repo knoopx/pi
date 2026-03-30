@@ -1,7 +1,7 @@
 {
-  "lastChangelogVersion": "0.63.2",
+  "lastChangelogVersion": "0.64.0",
   "defaultProvider": "local",
-  "defaultModel": "unsloth/Qwen3-Coder-Next-GGUF",
+  "defaultModel": "Jackrong/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-v2-GGUF",
   "theme": "custom",
   "enabledModels": [
     "github-copilot/grok-code-fast-1",
@@ -12,7 +12,8 @@
     "zai-coding-plan/glm-4.7",
     "local/unsloth/Qwen3.5-27B-GGUF",
     "local/Jackrong/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-v2-GGUF",
-    "local/unsloth/Qwen3-Coder-Next-GGUF"
+    "local/unsloth/Qwen3-Coder-Next-GGUF",
+    "zai-coding-plan/glm-5.1"
   ],
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "medium",
