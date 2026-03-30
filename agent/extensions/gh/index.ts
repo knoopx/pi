@@ -809,13 +809,19 @@ export async function getFileContent(
 ): Promise<FileContentResult> {
   const args = ["api", `/repos/${owner}/${repo}/contents/${filePath}`];
   if (ref) {
-    args.push(`--field=ref=${ref}`);
+    args.push("--ref", ref);
   }
 
   const result = await ghCmd(args);
 
   if (result.exitCode !== 0) {
-    throw new Error(`gh api failed: ${result.stderr || result.stdout}`);
+    const errorMessage = result.stderr || result.stdout || "Unknown error";
+    if (errorMessage.includes("404") || errorMessage.includes("Not Found")) {
+      throw new Error(
+        `File not found: ${owner}/${repo}/${filePath}${ref ? ` at ref ${ref}` : ""}`,
+      );
+    }
+    throw new Error(errorMessage);
   }
 
   const data: GHFile = JSON.parse(result.stdout);
@@ -2451,10 +2457,7 @@ function formatRepoContents(
   path: string,
   contents: GHFile[],
 ): string {
-  const lines: string[] = [
-    `Repository contents: ${owner}/${repo}${path ? `/${path}` : ""}`,
-    "",
-  ];
+  const lines: string[] = [];
 
   // Sort: directories first, then files, alphabetically
   const sorted = [...contents].sort((a, b) => {
@@ -2479,26 +2482,7 @@ function formatRepoContents(
  * Format file content
  */
 function formatFileContent(result: FileContentResult): string {
-  const lines: string[] = [
-    `File: ${result.repo}/${result.path}`,
-    result.type === "file"
-      ? `Size: ${result.size?.toLocaleString() ?? "unknown"} bytes`
-      : "Type: Directory",
-    "",
-    "Content:",
-    "─".repeat(80),
-  ];
-
-  // Truncate very large files
-  const content =
-    result.content.length > 10000
-      ? result.content.substring(0, 10000) + "\n\n[...content truncated...]"
-      : result.content;
-
-  lines.push(content);
-  lines.push("─".repeat(80));
-
-  return lines.join("\n");
+  return result.content;
 }
 
 /**
@@ -3377,11 +3361,7 @@ Examples:
         const since = params.since ? new Date(params.since) : undefined;
         const gists = await listGists(params.userId, params.limit, since);
 
-        const lines: string[] = [
-          `Gists${params.userId ? ` for ${params.userId}` : " (your gists)"}`,
-          `Found ${gists.length} gists`,
-          "",
-        ];
+        const lines: string[] = [];
 
         for (const gist of gists) {
           const files = Object.keys(gist.files).join(", ");
