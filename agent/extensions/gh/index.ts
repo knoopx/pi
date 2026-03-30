@@ -813,10 +813,11 @@ export async function getFileContent(
   filePath: string,
   ref?: string,
 ): Promise<FileContentResult> {
-  const args = ["api", `/repos/${owner}/${repo}/contents/${filePath}`];
+  let endpoint = `/repos/${owner}/${repo}/contents/${filePath}`;
   if (ref) {
-    args.push("--ref", ref);
+    endpoint += `?ref=${encodeURIComponent(ref)}`;
   }
+  const args = ["api", endpoint];
 
   const result = await ghCmd(args);
 
