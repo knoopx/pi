@@ -47,6 +47,20 @@ export async function runNavigationStack<T>(
     }
 
     if (action && target) {
+      // Handle delete action
+      if (action === "delete") {
+        try {
+          await pi.exec("trash", [target], { cwd: ctx.cwd });
+          ctx.ui.notify(`Deleted: ${target}`, "info");
+        } catch (error) {
+          ctx.ui.notify(
+            `Failed to delete: ${error instanceof Error ? error.message : String(error)}`,
+            "error",
+          );
+        }
+        continue;
+      }
+
       const cmDef = CM_COMMANDS[action];
       if (cmDef) {
         stack.push({

@@ -55,7 +55,7 @@ export function createFilesComponent(
   // Action definitions: [key, label/action]
   const ACTION_DEFS: [string, CmActionType][] = [
     [Key.ctrl("t"), "inspect"],
-    [Key.ctrl("d"), "deps"],
+    [Key.ctrl("d"), "delete"],
     [Key.ctrl("u"), "used-by"],
   ];
 
