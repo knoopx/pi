@@ -39,7 +39,7 @@ Resolution behavior:
       {
         "event": "tool_result",
         "context": "file_name",
-        "pattern": "*.{ts,tsx,js,jsx}",
+        "pattern": "\\.(ts|tsx|js|jsx)$",
         "command": "bun run typecheck 2>&1 | { grep \"%file%\" || true; }",
         "timeout": 60000,
         "notify": true
