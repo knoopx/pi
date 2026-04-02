@@ -9,3 +9,13 @@ exports[`DuckDuckGo Extension > Tool Execution > should format search results co
     │ Example description
     │ https://example.com"
 `;
+
+exports[`DuckDuckGo Extension Tool Execution should format search results correctly 1`] = `
+"1 result(s)
+
+  # │ title
+────┼────────────────────
+  1 │ Example Title
+    │ Example description
+    │ https://example.com"
+`;

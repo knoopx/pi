@@ -13,10 +13,6 @@ import {
 import duckduckgoExtension from "./index";
 import { disableThrottle } from "../../shared/throttle";
 
-// Mock axios
-vi.mock("axios");
-import axios from "axios";
-
 describe("DuckDuckGo Extension", () => {
   let mockPi: MockExtensionAPI;
   let toolConfig: MockTool;
@@ -40,15 +36,8 @@ describe("DuckDuckGo Extension", () => {
 
   describe("Tool Execution", () => {
     it("should return no results message when search returns empty", async () => {
-      const mockAxiosGet = vi
-        .fn()
-        .mockRejectedValue(new Error("Network error"));
-      const mockAxiosPost = vi
-        .fn()
-        .mockRejectedValue(new Error("Network error"));
-
-      axios.get = mockAxiosGet;
-      axios.post = mockAxiosPost;
+      const originalFetch = global.fetch;
+      global.fetch = vi.fn().mockRejectedValue(new Error("Network error"));
 
       const result = await toolConfig.execute(
         "test-id",
@@ -57,6 +46,8 @@ describe("DuckDuckGo Extension", () => {
         {} as ExtensionContext,
         new AbortController().signal,
       );
+
+      global.fetch = originalFetch;
 
       expect((result.content[0] as TextContent).text).toBe("No results found.");
       expect(result.details).toEqual({ query: "test query", limit: 5 });
@@ -71,22 +62,27 @@ describe("DuckDuckGo Extension", () => {
         </div>
       `;
 
-      const mockAxiosGet = vi
-        .fn()
-        .mockResolvedValue({ data: "<html>No preload</html>" });
-
-      let postCallCount = 0;
-      const mockAxiosPost = vi.fn().mockImplementation(() => {
-        postCallCount++;
-        if (postCallCount === 1) {
-          return Promise.resolve({ data: mockHtmlWithResults });
+      const originalFetch = global.fetch;
+      let fetchCallCount = 0;
+      global.fetch = vi.fn().mockImplementation(() => {
+        fetchCallCount++;
+        if (fetchCallCount === 1) {
+          // First call - GET request for search page
+          return Promise.resolve({
+            ok: true,
+            text: () => Promise.resolve("<html>No preload</html>"),
+          });
         } else {
-          return Promise.resolve({ data: "<html></html>" });
+          // Subsequent calls - POST requests for results
+          return Promise.resolve({
+            ok: true,
+            text: () =>
+              Promise.resolve(
+                fetchCallCount === 2 ? mockHtmlWithResults : "<html></html>",
+              ),
+          });
         }
       });
-
-      axios.get = mockAxiosGet;
-      axios.post = mockAxiosPost;
 
       const result = await toolConfig.execute(
         "test-id",
@@ -95,6 +91,8 @@ describe("DuckDuckGo Extension", () => {
         {} as ExtensionContext,
         new AbortController().signal,
       );
+
+      global.fetch = originalFetch;
 
       expect((result.content[0] as TextContent).text).toMatchSnapshot();
       expect(result.details.results).toBeDefined();

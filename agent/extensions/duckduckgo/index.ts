@@ -4,7 +4,6 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type, type Static } from "@sinclair/typebox";
-import axios from "axios";
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
 import { textResult } from "../../shared/tool-utils";
@@ -94,8 +93,7 @@ async function searchDuckDuckGo(
   try {
     return await searchDuckDuckGoHtml(query, limit);
   } catch (error) {
-    const status = (error as { response?: { status?: number } })?.response
-      ?.status;
+    const status = (error as { status?: number })?.status;
     throw new Error(
       status
         ? `DuckDuckGo search failed (HTTP ${status})`
@@ -115,8 +113,9 @@ async function searchDuckDuckGoPreloadUrl(
   let offset = 0;
 
   try {
-    // Configure request options
-    const requestOptions = {
+    const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&t=h_&ia=web`;
+    await acquireSlot(DDG_HOST);
+    const response = await fetch(searchUrl, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36",
@@ -136,16 +135,17 @@ async function searchDuckDuckGoPreloadUrl(
         referer: "https://duckduckgo.com/",
         "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
       },
-    };
+    });
 
-    const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&t=h_&ia=web`;
-    await acquireSlot(DDG_HOST);
-    const response = await axios.get(searchUrl, requestOptions);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
 
+    const html = await response.text();
     let basePreloadUrl = "";
 
     // Method 1: Use cheerio to find preload links
-    const $ = cheerio.load(response.data);
+    const $ = cheerio.load(html);
     $('link[rel="preload"]').each((_, el) => {
       const href = $(el).attr("href");
       if (href?.includes("links.duckduckgo.com/d.js")) {
@@ -167,9 +167,8 @@ async function searchDuckDuckGoPreloadUrl(
 
     // Method 3: Use regex to extract from entire HTML
     if (!basePreloadUrl) {
-      const urlMatch = response.data.match(
-        /https:\/\/links\.duckduckgo\.com\/d\.js\?[^"']+/i,
-      );
+      const urlRegex = /https:\/\/links\.duckduckgo\.com\/d\.js\?[^"']+\//i;
+      const urlMatch = urlRegex.exec(html);
       if (urlMatch) {
         basePreloadUrl = urlMatch[0];
       }
@@ -195,8 +194,7 @@ async function searchDuckDuckGoPreloadUrl(
 
       // Request search results using current page URL
       await acquireSlot(DDG_HOST);
-      const dataResponse = await axios.get(currentPageUrl, {
-        ...requestOptions,
+      const dataResponse = await fetch(currentPageUrl, {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36",
@@ -215,10 +213,16 @@ async function searchDuckDuckGoPreloadUrl(
         },
       });
 
+      if (!dataResponse.ok) {
+        throw new Error(
+          `HTTP ${dataResponse.status}: ${dataResponse.statusText}`,
+        );
+      }
+
       // Extract JSON data from JSONP response
-      const jsonpMatch = dataResponse.data.match(
-        /DDG\.pageLayout\.load\('d',\s*(\[.*?\])\s*\);/s,
-      );
+      const dataHtml = await dataResponse.text();
+      const jsonpRegex = /DDG\.pageLayout\.load\('d',\s*(\[.*?\])\s*\);/s;
+      const jsonpMatch = jsonpRegex.exec(dataHtml);
 
       if (jsonpMatch?.[1]) {
         try {
@@ -326,26 +330,26 @@ async function searchDuckDuckGoHtml(
   const results: SearchResult[] = [];
   let offset = 0;
 
-  // Configure request options
-  const requestOptions = {
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": "Apifox/1.0.0 (https://apifox.com)",
-      Accept: "*/*",
-      Host: "html.duckduckgo.com",
-      Connection: "keep-alive",
-    },
-  };
-
   try {
     await acquireSlot(DDG_HOST);
-    let response = await axios.post(
-      requestUrl,
-      new URLSearchParams({ q: query }).toString(),
-      requestOptions,
-    );
+    let response = await fetch(requestUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "Apifox/1.0.0 (https://apifox.com)",
+        Accept: "*/*",
+        Host: "html.duckduckgo.com",
+        Connection: "keep-alive",
+      },
+      body: new URLSearchParams({ q: query }).toString(),
+    });
 
-    let $ = cheerio.load(response.data);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const html = await response.text();
+    let $ = cheerio.load(html);
     let items = $("div.result");
 
     if (items.length === 0) {
@@ -358,9 +362,16 @@ async function searchDuckDuckGoHtml(
       offset += items.length;
 
       await acquireSlot(DDG_HOST);
-      response = await axios.post(
-        requestUrl,
-        new URLSearchParams({
+      response = await fetch(requestUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": "Apifox/1.0.0 (https://apifox.com)",
+          Accept: "*/*",
+          Host: "html.duckduckgo.com",
+          Connection: "keep-alive",
+        },
+        body: new URLSearchParams({
           q: query,
           s: offset.toString(),
           dc: offset.toString(),
@@ -368,18 +379,22 @@ async function searchDuckDuckGoHtml(
           o: "json",
           api: "d.js",
         }).toString(),
-        requestOptions,
-      );
+      });
 
-      $ = cheerio.load(response.data);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const nextHtml = await response.text();
+      $ = cheerio.load(nextHtml);
       items = $("div.result");
 
       parseSearchResults($, items, results, maxResults);
     }
 
     return results.slice(0, maxResults);
-  } catch {
-    console.error("DuckDuckGo HTML search failed");
+  } catch (error) {
+    console.error("DuckDuckGo HTML search failed:", error);
     return [];
   }
 }
