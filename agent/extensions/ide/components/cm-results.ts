@@ -32,7 +32,8 @@ export type CmActionType =
   | "schema"
   | "inspect"
   | "deps"
-  | "used-by";
+  | "used-by"
+  | "delete";
 
 export interface CmResult {
   item: CmResultItem;
@@ -94,6 +95,11 @@ export const CM_COMMANDS: Record<CmActionType, CmCommandDef> = {
     titleFn: (f) => `Used by ${f}`,
     command: "deps",
     argsFn: (f) => ["deps", f, "--direction", "used-by"],
+  },
+  delete: {
+    titleFn: (f) => `Delete ${f}`,
+    command: "delete",
+    argsFn: (f) => ["delete", f],
   },
 };
 
