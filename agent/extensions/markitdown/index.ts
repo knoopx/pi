@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
-export default function (pi: ExtensionAPI) {
+export default function(pi: ExtensionAPI) {
   pi.registerTool({
     name: "transcribe",
     label: "Transcribe",
@@ -38,11 +38,29 @@ Supports URLs and local files.`,
         const hasValidSignal =
           signal instanceof AbortSignal &&
           typeof signal.addEventListener === "function";
-        const result = await pi.exec(
-          "markitdown",
-          [source],
-          hasValidSignal ? { signal } : undefined,
-        );
+
+        // Detect if source is a URL (remote) and fetch with proper User-Agent
+        const isRemote = /^https?:\/\//i.test(source);
+        let result;
+
+        const markitdownPath = `${process.env.HOME}/.local/bin/markitdown`;
+
+        if (isRemote) {
+          // Use curl to fetch and pipe directly to markitdown to avoid E2BIG
+          const command = `curl -s -A 'Mozilla/5.0' -o - '${source}' | ${markitdownPath}`;
+          result = await pi.exec(
+            "bash",
+            ["-c", command],
+            hasValidSignal ? { signal } : undefined,
+          );
+        } else {
+          // Local file - use markitdown directly
+          result = await pi.exec(
+            markitdownPath,
+            [source],
+            hasValidSignal ? { signal } : undefined,
+          );
+        }
 
         if (result.code === 0) {
           return {
@@ -50,14 +68,24 @@ Supports URLs and local files.`,
             details: { source, converted: true },
           };
         } else {
+          // Build error message with all available information
+          const stderr = result.stderr?.trim();
+          const stdout = result.stdout?.trim();
+          const errorMessage = [stderr, stdout, `Exit code: ${result.code}`]
+            .filter(Boolean)
+            .join("\n\n");
+
+          const errorText =
+            errorMessage || `markitdown failed with exit code ${result.code}`;
+
           return {
             content: [
               {
                 type: "text",
-                text: `Error converting source: ${result.stderr || result.stdout}`,
+                text: `Error converting source: ${errorText}`,
               },
             ],
-            details: { source, error: result.stderr || result.stdout },
+            details: { source, error: errorMessage, exitCode: result.code },
           };
         }
       } catch (error) {

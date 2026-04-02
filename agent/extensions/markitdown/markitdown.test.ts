@@ -110,8 +110,18 @@ describe("Markitdown Extension", () => {
 
     describe("given a URL to convert", () => {
       let result: AgentToolResult<Record<string, unknown>>;
+      let mockFetch: ReturnType<typeof vi.fn>;
 
       beforeEach(async () => {
+        // Mock fetch for the URL
+        mockFetch = vi.fn().mockResolvedValue({
+          ok: true,
+          text: () =>
+            Promise.resolve("<html><body><h1>Test</h1></body></html>"),
+        });
+        const originalFetch = global.fetch;
+        global.fetch = mockFetch;
+
         const mockResult = {
           code: 0,
           stdout: "# Webpage Title\n\nContent from the webpage.",
@@ -126,12 +136,25 @@ describe("Markitdown Extension", () => {
           vi.fn(), // onUpdate
           {}, // ctx
         );
+
+        global.fetch = originalFetch;
       });
 
-      it("then it should execute markitdown with the URL", () => {
+      it("then it should fetch the URL with proper User-Agent", () => {
+        expect(mockFetch).toHaveBeenCalledWith(
+          "https://example.com/page",
+          expect.objectContaining({
+            headers: expect.objectContaining({
+              "User-Agent": expect.stringContaining("Mozilla/5.0"),
+            }),
+          }),
+        );
+      });
+
+      it("then it should pipe content to markitdown", () => {
         expect(mockPi.exec).toHaveBeenCalledWith(
-          "markitdown",
-          ["https://example.com/page"],
+          "bash",
+          expect.arrayContaining(["-c", expect.stringContaining("markitdown")]),
           undefined,
         );
       });
@@ -190,14 +213,15 @@ describe("Markitdown Extension", () => {
 
       it("then it should return error in content", () => {
         expect((result.content[0] as TextContent).text).toBe(
-          "Error converting source: markitdown: file not found",
+          "Error converting source: markitdown: file not found\n\nExit code: 1",
         );
       });
 
       it("then it should mark the conversion as failed", () => {
         expect(result.details).toEqual({
           source: "/nonexistent/file.pdf",
-          error: "markitdown: file not found",
+          error: "markitdown: file not found\n\nExit code: 1",
+          exitCode: 1,
         });
       });
     });
