@@ -5,7 +5,7 @@ const uf = new uFuzzy({
   intraIns: 1,
 });
 
-export interface FuzzyResult<T> {
+interface FuzzyResult<T> {
   item: T;
   score: number;
 }

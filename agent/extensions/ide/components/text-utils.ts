@@ -1,10 +1,9 @@
 import sliceAnsi from "slice-ansi";
 import stringWidth from "string-width";
 
-// eslint-disable-next-line no-control-regex
-const OSC_FULL_PATTERN = /\x1b\][^\x07\x1b]*(?:\x07|\x1b\\|\x1b(?=\[))?/g;
-// eslint-disable-next-line no-control-regex
-const OSC_BARE_URL_PATTERN = /\]8;;[^\x07\x1b\]\s]*(?=\]8;;)/g;
+const OSC_FULL_PATTERN =
+  /\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\|\u001b(?=\[))?/g;
+const OSC_BARE_URL_PATTERN = /\]8;;[^\u0007\u001b\]\s]*(?=\]8;;)/g;
 const OSC_BARE_MARKER_PATTERN = /\]8;;/g;
 
 function stripOscSequences(text: string): string {

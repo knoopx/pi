@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { table, type Column } from "./table";
 
-// eslint-disable-next-line no-control-regex
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
 function strip(text: string): string {
   return text.replace(ANSI_RE, "");

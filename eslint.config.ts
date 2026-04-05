@@ -61,6 +61,7 @@ export default defineConfig(
       "@typescript-eslint/restrict-plus-operands": "off",
       "no-empty": "off",
       "no-useless-escape": "off",
+      "no-control-regex": "off",
     },
   },
   {

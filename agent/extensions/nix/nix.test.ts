@@ -6,7 +6,6 @@ import setupNixExtension from "./index";
 import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 
-// eslint-disable-next-line no-control-regex
 const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
 
 import { disableThrottle } from "../../shared/throttle";
