@@ -1,12 +1,8 @@
 import type {
   ExtensionAPI,
   ExtensionContext,
-  AgentStartEvent,
-  AgentEndEvent,
   TurnStartEvent,
   TurnEndEvent,
-  SessionStartEvent,
-  SessionShutdownEvent,
 } from "@mariozechner/pi-coding-agent";
 import type { AssistantMessageEvent } from "@mariozechner/pi-ai";
 
@@ -215,7 +211,7 @@ export default function (pi: ExtensionAPI) {
    * Hook into turn start event
    * Records the start time for each turn
    */
-  pi.on("turn_start", (event: TurnStartEvent, _ctx: ExtensionContext) => {
+  pi.on("turn_start", (event: TurnStartEvent) => {
     const turnKey = getTurnKey(event.turnIndex);
     turnStartTimes.set(turnKey, Date.now());
     currentTurnKey = turnKey;
@@ -235,24 +231,21 @@ export default function (pi: ExtensionAPI) {
         ) => Promise<void>,
       ): void;
     }
-  ).on(
-    "message_update",
-    async (event: MessageUpdateEvent, _ctx: ExtensionContext) => {
-      if (currentTurnKey === null) return;
+  ).on("message_update", async (event: MessageUpdateEvent) => {
+    if (currentTurnKey === null) return;
 
-      const assistantEvent = event.assistantMessageEvent;
-      // Track timing on text_delta events (actual token streaming)
-      if (assistantEvent.type === "text_delta") {
-        const now = Date.now();
-        // Record first delta time if not set
-        if (!turnFirstDeltaTimes.has(currentTurnKey)) {
-          turnFirstDeltaTimes.set(currentTurnKey, now);
-        }
-        // Always update last delta time
-        turnLastDeltaTimes.set(currentTurnKey, now);
+    const assistantEvent = event.assistantMessageEvent;
+    // Track timing on text_delta events (actual token streaming)
+    if (assistantEvent.type === "text_delta") {
+      const now = Date.now();
+      // Record first delta time if not set
+      if (!turnFirstDeltaTimes.has(currentTurnKey)) {
+        turnFirstDeltaTimes.set(currentTurnKey, now);
       }
-    },
-  );
+      // Always update last delta time
+      turnLastDeltaTimes.set(currentTurnKey, now);
+    }
+  });
 
   /**
    * Hook into turn end event
@@ -339,7 +332,7 @@ export default function (pi: ExtensionAPI) {
    * Hook into agent start event
    * Records the start time for the agent
    */
-  pi.on("agent_start", (_event: AgentStartEvent, _ctx: ExtensionContext) => {
+  pi.on("agent_start", () => {
     agentStartTime ??= Date.now();
   });
 
@@ -347,7 +340,7 @@ export default function (pi: ExtensionAPI) {
    * Hook into agent end event
    * Reports the agent end duration and token stats
    */
-  pi.on("agent_end", (_event: AgentEndEvent, ctx: ExtensionContext) => {
+  pi.on("turn_end", (_event: TurnEndEvent, ctx: ExtensionContext) => {
     if (agentStartTime !== null) {
       const endTimestamp = lastTurnEndTimestamp ?? Date.now();
       const totalDurationMs = endTimestamp - agentStartTime;
@@ -405,14 +398,14 @@ export default function (pi: ExtensionAPI) {
    * Hook into session start event
    * Resets timer tracking when a new session begins
    */
-  pi.on("session_start", (_event: SessionStartEvent) => {
+  pi.on("session_start", () => {
     resetCounters();
   });
 
   /**
    * Hook into session shutdown event
    */
-  pi.on("session_shutdown", (_event: SessionShutdownEvent) => {
+  pi.on("session_shutdown", () => {
     resetCounters();
   });
 }
