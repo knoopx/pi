@@ -529,7 +529,7 @@ describe("UsageComponent", () => {
         mockDone as () => void,
       );
 
-      const lines = emptyComponent.render(80);
+      const lines = emptyComponent.render();
 
       expect(lines.some((line) => line.includes("No usage data"))).toBe(true);
     });
@@ -537,19 +537,19 @@ describe("UsageComponent", () => {
 
   describe("render - With data", () => {
     it("then renders provider rows", () => {
-      const lines = component.render(80);
+      const lines = component.render();
 
       expect(lines.some((line) => line.includes("provider1"))).toBe(true);
     });
 
     it("then renders totals row", () => {
-      const lines = component.render(80);
+      const lines = component.render();
 
       expect(lines.some((line) => line.includes("Total"))).toBe(true);
     });
 
     it("then renders help text", () => {
-      const lines = component.render(80);
+      const lines = component.render();
 
       expect(
         lines.some(
@@ -566,7 +566,7 @@ describe("UsageComponent", () => {
       component.selectedIndex = 0;
       component.expanded.add("provider1");
 
-      const lines = component.render(80);
+      const lines = component.render();
 
       expect(lines.some((line) => line.includes("model1"))).toBe(true);
     });

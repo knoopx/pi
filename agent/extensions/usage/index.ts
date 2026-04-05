@@ -527,7 +527,7 @@ class UsageComponent {
   // Render Methods
   // -------------------------------------------------------------------------
 
-  render(_width: number): string[] {
+  render(): string[] {
     return [
       ...this.renderTitle(),
       ...this.renderTabs(),
@@ -868,7 +868,7 @@ class ToolUsageComponent {
     }
   }
 
-  render(_width: number): string[] {
+  render(): string[] {
     return [
       ...this.renderTitle(),
       ...this.renderTabs(),
@@ -1102,7 +1102,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       const data = await ctx.ui.custom<ToolStats | null>(
-        (tui, theme, _kb, done) => {
+        (tui, theme, keybindings, done) => {
           const loader = new CancellableLoader(
             tui,
             (s: string) => theme.fg("accent", s),
@@ -1135,7 +1135,8 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      await ctx.ui.custom<void>((tui, theme, _kb, done) => {
+      // fallow-ignore-next-line dupes
+      await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
         const container = new Container();
 
         container.addChild(new Spacer(1));
@@ -1158,7 +1159,7 @@ export default function (pi: ExtensionAPI) {
         return {
           render: (w: number) => {
             const borderLines = container.render(w);
-            const usageLines = toolUsage.render(w);
+            const usageLines = toolUsage.render();
             const bottomBorder = theme.fg("border", "─".repeat(w));
             return [...borderLines, ...usageLines, "", bottomBorder];
           },
@@ -1182,7 +1183,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       const data = await ctx.ui.custom<UsageData | null>(
-        (tui, theme, _kb, done) => {
+        (tui, theme, keybindings, done) => {
           const loader = new CancellableLoader(
             tui,
             (s: string) => theme.fg("accent", s),
@@ -1215,7 +1216,8 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      await ctx.ui.custom<void>((tui, theme, _kb, done) => {
+      // fallow-ignore-next-line dupes
+      await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
         const container = new Container();
 
         // Top border
@@ -1239,7 +1241,7 @@ export default function (pi: ExtensionAPI) {
         return {
           render: (w: number) => {
             const borderLines = container.render(w);
-            const usageLines = usage.render(w);
+            const usageLines = usage.render();
             const bottomBorder = theme.fg("border", "─".repeat(w));
             return [...borderLines, ...usageLines, "", bottomBorder];
           },
