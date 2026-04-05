@@ -7,8 +7,8 @@
  */
 
 import { visibleWidth } from "@mariozechner/pi-tui";
+import { wrapPlain } from "./text";
 
-// eslint-disable-next-line no-control-regex
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
 
 function padStart(text: string, width: number): string {
@@ -21,46 +21,11 @@ function padEnd(text: string, width: number): string {
   return pad > 0 ? text + " ".repeat(pad) : text;
 }
 
-export interface DetailField {
+interface DetailField {
   /** Label (left side of │) */
   label: string;
   /** Value (right side of │), may contain ANSI codes */
   value: string;
-}
-
-/**
- * Word-wrap plain text to lines of maxWidth, breaking at word boundaries.
- */
-function wrapPlain(text: string, maxWidth: number): string[] {
-  if (maxWidth <= 0) return [text];
-  const plain = text.replace(ANSI_RE, "");
-  if (plain.length <= maxWidth) return [text];
-
-  const words = plain.split(" ");
-  const lines: string[] = [];
-  let current = "";
-
-  for (const word of words) {
-    if (current.length === 0) {
-      current = word;
-    } else if (current.length + 1 + word.length <= maxWidth) {
-      current += " " + word;
-    } else {
-      lines.push(current);
-      current = word;
-    }
-  }
-  if (current.length > 0) lines.push(current);
-
-  // Hard-break any line still exceeding maxWidth
-  return lines.flatMap((line) => {
-    if (line.length <= maxWidth) return [line];
-    const chunks: string[] = [];
-    for (let i = 0; i < line.length; i += maxWidth) {
-      chunks.push(line.slice(i, i + maxWidth));
-    }
-    return chunks;
-  });
 }
 
 /**

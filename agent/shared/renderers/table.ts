@@ -7,6 +7,7 @@
  */
 
 import { visibleWidth } from "@mariozechner/pi-tui";
+import { wrapPlain } from "./text";
 
 // ── Types ────────────────────────────────────────────────
 
@@ -29,7 +30,6 @@ interface MeasuredColumn extends Column {
 
 // ── Helpers ──────────────────────────────────────────────
 
-// eslint-disable-next-line no-control-regex
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
 
 function stripAnsi(text: string): string {
@@ -49,38 +49,6 @@ function padStart(text: string, width: number): string {
 function cellStr(value: unknown): string {
   if (value === null || value === undefined) return "";
   return String(value);
-}
-
-/**
- * Wrap plain text to lines of maxWidth, breaking at word boundaries.
- */
-function wrapPlain(text: string, maxWidth: number): string[] {
-  if (maxWidth <= 0 || text.length <= maxWidth) return [text];
-
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let current = "";
-
-  for (const word of words) {
-    if (current.length === 0) {
-      current = word;
-    } else if (current.length + 1 + word.length <= maxWidth) {
-      current += " " + word;
-    } else {
-      lines.push(current);
-      current = word;
-    }
-  }
-  if (current.length > 0) lines.push(current);
-
-  return lines.flatMap((line) => {
-    if (line.length <= maxWidth) return [line];
-    const chunks: string[] = [];
-    for (let i = 0; i < line.length; i += maxWidth) {
-      chunks.push(line.slice(i, i + maxWidth));
-    }
-    return chunks;
-  });
 }
 
 // ── Table renderer ───────────────────────────────────────
