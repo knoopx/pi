@@ -16,11 +16,10 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   Theme,
-  KeybindingsManager,
 } from "@mariozechner/pi-coding-agent";
 import { DynamicBorder } from "@mariozechner/pi-coding-agent";
 import { Container, matchesKey, Text, type TUI } from "@mariozechner/pi-tui";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, type Stats } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
@@ -130,6 +129,103 @@ const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
   try {
     const sessionsDir = join(homedir(), ".pi", "agent", "sessions");
 
+    // Extract session CWD from JSONL file
+    function getSessionCwd(content: string): string | null {
+      const lines = content.trim().split("\n");
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const parsed = JSON.parse(line);
+          if (parsed.type === "session" && parsed.cwd) {
+            return parsed.cwd;
+          }
+        } catch {
+          continue;
+        }
+      }
+      return null;
+    }
+
+    // Extract timestamp from entry or message
+    function extractTimestamp(
+      entry: SessionLine,
+      message: SessionMessageLine,
+    ): number {
+      if (typeof entry.timestamp === "string") {
+        return new Date(entry.timestamp).getTime();
+      } else if (typeof entry.timestamp === "number") {
+        return entry.timestamp;
+      } else if (typeof message.timestamp === "number") {
+        return message.timestamp;
+      }
+      return Date.now();
+    }
+
+    // Process a single session file
+    function processSessionFile(fullPath: string, _stat: Stats): void {
+      try {
+        const content = readFileSync(fullPath, "utf-8");
+        const sessionCwd = getSessionCwd(content);
+
+        // Skip sessions that don't match the target cwd
+        if (!sessionCwd || !isPathMatch(sessionCwd, targetCwd)) return;
+
+        const lines = content.trim().split("\n");
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const entry = JSON.parse(line) as SessionLine;
+            if (entry.type !== "message") continue;
+
+            const message = asSessionMessage(entry.message);
+            if (!message) continue;
+
+            const timestamp = extractTimestamp(entry, message);
+            if (timestamp < cutoffTimestamp) continue;
+
+            // Add bash execution commands
+            if (
+              message.role === "bashExecution" &&
+              typeof message.command === "string"
+            ) {
+              addHistoryEntry(history, seen, {
+                content: message.command,
+                timestamp,
+                type: "command",
+              });
+            }
+
+            // Add user messages and extract commands
+            if (message.role === "user") {
+              const text = getUserTextFromContent(message.content);
+              if (!text) continue;
+
+              const firstLine = text.split("\n")[0]?.trim();
+              if (firstLine) {
+                addHistoryEntry(history, seen, {
+                  content: firstLine,
+                  timestamp,
+                  type: "message",
+                });
+              }
+
+              for (const command of extractBangCommandsFromUserText(text)) {
+                addHistoryEntry(history, seen, {
+                  content: command,
+                  timestamp,
+                  type: "command",
+                });
+              }
+            }
+          } catch {
+            continue;
+          }
+        }
+      } catch {
+        // Skip files we can't read
+      }
+    }
+
     // Walk through all subdirectories
     const walkDir = (dir: string) => {
       try {
@@ -140,91 +236,11 @@ const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
             const stat = statSync(fullPath);
             if (stat.isDirectory()) {
               walkDir(fullPath);
-            } else if (entry.endsWith(".jsonl")) {
-              if (stat.mtimeMs < cutoffTimestamp) continue;
-
-              // Parse session file
-              const content = readFileSync(fullPath, "utf-8");
-              const lines = content.trim().split("\n");
-
-              // First, check if this session matches the target cwd
-              let sessionCwd: string | null = null;
-              for (const line of lines) {
-                if (!line.trim()) continue;
-                try {
-                  const parsed = JSON.parse(line);
-                  if (parsed.type === "session" && parsed.cwd) {
-                    sessionCwd = parsed.cwd;
-                    break;
-                  }
-                } catch {
-                  // Skip invalid JSON lines
-                }
-              }
-
-              // Skip sessions that don't match the target cwd
-              if (!sessionCwd || !isPathMatch(sessionCwd, targetCwd)) continue;
-
-              for (const line of lines) {
-                if (!line.trim()) continue;
-                try {
-                  const entry = JSON.parse(line) as SessionLine;
-                  if (entry.type !== "message") continue;
-
-                  const message = asSessionMessage(entry.message);
-                  if (!message) continue;
-
-                  let timestamp: number;
-                  if (typeof entry.timestamp === "string") {
-                    timestamp = new Date(entry.timestamp).getTime();
-                  } else if (typeof entry.timestamp === "number") {
-                    timestamp = entry.timestamp;
-                  } else if (typeof message.timestamp === "number") {
-                    timestamp = message.timestamp;
-                  } else {
-                    timestamp = Date.now();
-                  }
-
-                  if (timestamp < cutoffTimestamp) continue;
-
-                  if (
-                    message.role === "bashExecution" &&
-                    typeof message.command === "string"
-                  ) {
-                    addHistoryEntry(history, seen, {
-                      content: message.command,
-                      timestamp,
-                      type: "command",
-                    });
-                  }
-
-                  if (message.role === "user") {
-                    const text = getUserTextFromContent(message.content);
-                    if (!text) continue;
-
-                    const firstLine = text.split("\n")[0]?.trim();
-                    if (firstLine) {
-                      addHistoryEntry(history, seen, {
-                        content: firstLine,
-                        timestamp,
-                        type: "message",
-                      });
-                    }
-
-                    for (const command of extractBangCommandsFromUserText(
-                      text,
-                    )) {
-                      addHistoryEntry(history, seen, {
-                        content: command,
-                        timestamp,
-                        type: "command",
-                      });
-                    }
-                  }
-                } catch {
-                  // Skip invalid JSON lines
-                }
-              }
+            } else if (
+              entry.endsWith(".jsonl") &&
+              stat.mtimeMs >= cutoffTimestamp
+            ) {
+              processSessionFile(fullPath, stat);
             }
           } catch {
             // Skip files we can't read
@@ -417,7 +433,7 @@ export default function (pi: ExtensionAPI) {
         (
           tui: TUI,
           theme: Theme,
-          _kb: KeybindingsManager,
+          keybindings,
           done: (result: HistoryEntry | null) => void,
         ) => {
           const component = new HistorySearchComponent(theme, history);
