@@ -36,7 +36,7 @@ export interface GuardrailsRule {
   reason: string;
 }
 
-export interface GuardrailsGroup {
+interface GuardrailsGroup {
   group: string;
   /**
    * File glob patterns to activate this group.
@@ -62,7 +62,7 @@ const EXTENSION_CONFIG_PATH = resolve(
 );
 const GUARDRAILS_SETTINGS_KEY = "guardrails";
 
-export interface GuardrailsSettings {
+interface GuardrailsSettings {
   enabled: boolean;
 }
 
@@ -157,7 +157,7 @@ export async function saveGuardrailsSettings(
   return next;
 }
 
-class ConfigLoader {
+class GuardrailsConfigLoader {
   private defaultsConfig: GuardrailsConfig | null = null;
   private globalConfig: GuardrailsConfig | null = null;
   private resolved: ResolvedConfig | null = null;
@@ -303,4 +303,4 @@ class ConfigLoader {
   }
 }
 
-export const configLoader = new ConfigLoader();
+export const configLoader = new GuardrailsConfigLoader();
