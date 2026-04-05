@@ -17,7 +17,21 @@ import {
 } from "../../shared/renderers";
 import type { Column } from "../../shared/renderers";
 
+// Refactored: Import search functions to eliminate duplication
+import { searchRepos, searchCode, searchIssues, searchPRs } from "./search";
+import type {
+  GHCodeSearchResult,
+  GHIssueSearchResult,
+  GHPRSearchResult,
+  GHRepoSearchResult,
+} from "./types";
+
 // Type definitions
+interface SearchResult {
+  query: string;
+  results: GHRepoSearchResult[];
+  total: number;
+}
 interface GHRepo {
   id: number;
   node_id: string;
@@ -88,10 +102,29 @@ interface Gist {
   } | null;
 }
 
-interface SearchResult {
-  query: string;
-  results: GHRepo[];
-  total: number;
+// SearchResult type replaced with generic return type from search functions
+
+import { ghCmd } from "./utils";
+
+/**
+ * Generic list handler for GitHub CLI list commands with JSON parsing
+ * Eliminates duplication across listCaches, listVariables, listWorkflows, etc.
+ */
+async function ghList<T>(args: string[], errorBase: string): Promise<T[]> {
+  const result = await ghCmd(args);
+
+  if (result.exitCode !== 0) {
+    throw new Error(`${errorBase} failed: ${result.stderr || result.stdout}`);
+  }
+
+  let items: T[] = [];
+  try {
+    items = JSON.parse(result.stdout);
+  } catch {
+    throw new Error(`Failed to parse ${errorBase} output: ${result.stdout}`);
+  }
+
+  return items;
 }
 
 interface FileContentResult {
@@ -100,42 +133,6 @@ interface FileContentResult {
   content: string;
   type: "file" | "directory";
   size?: number;
-}
-
-/**
- * Execute gh CLI command and return output
- */
-async function ghCmd(
-  args: string[],
-  options?: { stdio?: "inherit" | "pipe" },
-): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-  const { spawn } = await import("node:child_process");
-  return new Promise<{ stdout: string; stderr: string; exitCode: number }>(
-    (resolve, reject) => {
-      const proc = spawn("gh", args, {
-        stdio: options?.stdio === "inherit" ? "inherit" : "pipe",
-      });
-
-      let stdout = "";
-      let stderr = "";
-
-      proc.stdout?.on("data", (data: Buffer) => {
-        stdout += data.toString();
-      });
-
-      proc.stderr?.on("data", (data: Buffer) => {
-        stderr += data.toString();
-      });
-
-      proc.on("close", (code: number) => {
-        resolve({ stdout, stderr, exitCode: code || 0 });
-      });
-
-      proc.on("error", (err) => {
-        reject(err);
-      });
-    },
-  );
 }
 
 /**
@@ -530,29 +527,19 @@ export async function listCaches(
   repo: string,
   limit = 30,
 ): Promise<GHCache[]> {
-  const result = await ghCmd([
-    "cache",
-    "list",
-    "-R",
-    `${owner}/${repo}`,
-    `--limit=${limit}`,
-    "--json=id,key,sizeInBytes,lastAccessedAt",
-    "--jq",
-    "[.[] | {id, key, size_in_bytes: .sizeInBytes, last_accessed_at: .lastAccessedAt}]",
-  ]);
-
-  if (result.exitCode !== 0) {
-    throw new Error(`gh cache list failed: ${result.stderr || result.stdout}`);
-  }
-
-  let caches: GHCache[] = [];
-  try {
-    caches = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(`Failed to parse gh cache list output: ${result.stdout}`);
-  }
-
-  return caches;
+  return ghList<GHCache>(
+    [
+      "cache",
+      "list",
+      "-R",
+      `${owner}/${repo}`,
+      `--limit=${limit}`,
+      "--json=id,key,sizeInBytes,lastAccessedAt",
+      "--jq",
+      "[.[] | {id, key, size_in_bytes: .sizeInBytes, last_accessed_at: .lastAccessedAt}]",
+    ],
+    "gh cache list",
+  );
 }
 
 /**
@@ -573,30 +560,10 @@ export async function listVariables(
   owner: string,
   repo: string,
 ): Promise<GHVariable[]> {
-  const result = await ghCmd([
-    "variable",
-    "list",
-    "-R",
-    `${owner}/${repo}`,
-    "--json=name,value",
-  ]);
-
-  if (result.exitCode !== 0) {
-    throw new Error(
-      `gh variable list failed: ${result.stderr || result.stdout}`,
-    );
-  }
-
-  let variables: GHVariable[] = [];
-  try {
-    variables = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(
-      `Failed to parse gh variable list output: ${result.stdout}`,
-    );
-  }
-
-  return variables;
+  return ghList<GHVariable>(
+    ["variable", "list", "-R", `${owner}/${repo}`, "--json=name,value"],
+    "gh variable list",
+  );
 }
 
 /**
@@ -735,43 +702,6 @@ export async function viewProject(
   projectId: number,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return ghCmd(["api", `/projects/${projectId}`]);
-}
-
-/**
- * Search for repositories on GitHub using gh CLI
- */
-export async function searchRepos(
-  query: string,
-  limit = 20,
-): Promise<SearchResult> {
-  const result = await ghCmd([
-    "search",
-    "repos",
-    query,
-    `--limit=${limit}`,
-    "--json=name,fullName,description,url,language,stargazersCount,forksCount",
-    "--jq",
-    "[.[] | {name, full_name: .fullName, description, html_url: .url, language, stargazers_count: .stargazersCount, forks_count: .forksCount}]",
-  ]);
-
-  if (result.exitCode !== 0) {
-    throw new Error(
-      `gh search repos failed: ${result.stderr || result.stdout}`,
-    );
-  }
-
-  let repos: GHRepo[] = [];
-  try {
-    repos = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(`Failed to parse gh search repos output: ${result.stdout}`);
-  }
-
-  return {
-    query,
-    results: repos,
-    total: repos.length,
-  } as SearchResult;
 }
 
 /**
@@ -1062,115 +992,6 @@ export async function deleteGist(gistId: string): Promise<void> {
   if (result.exitCode !== 0) {
     throw new Error(`gh gist delete failed: ${result.stderr || result.stdout}`);
   }
-}
-
-/**
- * Search code in repositories using gh CLI
- */
-export async function searchCode(
-  query: string,
-  limit = 20,
-): Promise<{ query: string; results: GHCodeSearchResult[]; total: number }> {
-  const result = await ghCmd([
-    "search",
-    "code",
-    query,
-    `--limit=${limit}`,
-    "--json=repository,path,sha,textMatches,url",
-    "--jq",
-    '[.[] | {repo: ((.repository.nameWithOwner // "") | split("/") | .[1] // ""), owner: ((.repository.nameWithOwner // "") | split("/") | .[0] // ""), name: (.path | split("/") | .[-1]), path, html_url: .url, text_matches: [.textMatches[]? | {snippet: .fragment, matches: [.matches[]? | .text]}]}]',
-  ]);
-
-  if (result.exitCode !== 0) {
-    throw new Error(`gh search code failed: ${result.stderr || result.stdout}`);
-  }
-
-  let results: GHCodeSearchResult[] = [];
-  try {
-    results = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(`Failed to parse gh search code output: ${result.stdout}`);
-  }
-
-  return {
-    query,
-    results,
-    total: results.length,
-  };
-}
-
-/**
- * Search issues using gh CLI
- */
-export async function searchIssues(
-  query: string,
-  limit = 20,
-): Promise<{ query: string; results: GHIssueSearchResult[]; total: number }> {
-  const result = await ghCmd([
-    "search",
-    "issues",
-    query,
-    `--limit=${limit}`,
-    "--json=number,title,state,repository,createdAt,labels,url",
-    "--jq",
-    '[.[] | {number, title, state, repo: (.repository.name // ""), owner: (.repository.owner // ""), createdAt, labels: [.labels[:5][]? | {name}], url}]',
-  ]);
-
-  if (result.exitCode !== 0) {
-    throw new Error(
-      `gh search issues failed: ${result.stderr || result.stdout}`,
-    );
-  }
-
-  let results: GHIssueSearchResult[] = [];
-  try {
-    results = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(
-      `Failed to parse gh search issues output: ${result.stdout}`,
-    );
-  }
-
-  return {
-    query,
-    results,
-    total: results.length,
-  };
-}
-
-/**
- * Search PRs using gh CLI
- */
-export async function searchPRs(
-  query: string,
-  limit = 20,
-): Promise<{ query: string; results: GHPRSearchResult[]; total: number }> {
-  const result = await ghCmd([
-    "search",
-    "prs",
-    query,
-    `--limit=${limit}`,
-    "--json=number,title,state,repository,createdAt,updatedAt,labels,url",
-    "--jq",
-    '[.[] | {number, title, state, repo: (.repository.name // ""), owner: (.repository.owner // ""), createdAt, updatedAt, labels: [.labels[:5][]? | {name}], url, mergeable: ""}]',
-  ]);
-
-  if (result.exitCode !== 0) {
-    throw new Error(`gh search prs failed: ${result.stderr || result.stdout}`);
-  }
-
-  let results: GHPRSearchResult[] = [];
-  try {
-    results = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(`Failed to parse gh search prs output: ${result.stdout}`);
-  }
-
-  return {
-    query,
-    results,
-    total: results.length,
-  };
 }
 
 /**
@@ -1997,45 +1818,6 @@ export async function markPRReady(
 }
 
 /**
- * Search commits using gh CLI
- */
-export async function searchCommits(
-  query: string,
-  limit = 20,
-): Promise<{ query: string; results: GHCommitSearchResult[]; total: number }> {
-  const result = await ghCmd([
-    "search",
-    "commits",
-    query,
-    `--limit=${limit}`,
-    "--json=sha,commit,repository,url",
-    "--jq",
-    '[.[] | {sha, message: .commit.message, repo: ((.repository.fullName // "") | split("/") | .[1] // ""), owner: ((.repository.fullName // "") | split("/") | .[0] // ""), url, committed_date: .commit.committer.date}]',
-  ]);
-
-  if (result.exitCode !== 0) {
-    throw new Error(
-      `gh search commits failed: ${result.stderr || result.stdout}`,
-    );
-  }
-
-  let results: GHCommitSearchResult[] = [];
-  try {
-    results = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(
-      `Failed to parse gh search commits output: ${result.stdout}`,
-    );
-  }
-
-  return {
-    query,
-    results,
-    total: results.length,
-  };
-}
-
-/**
  * List workflows using gh CLI
  */
 export async function listWorkflows(
@@ -2043,33 +1825,17 @@ export async function listWorkflows(
   repo: string,
   limit = 30,
 ): Promise<GHWorkflow[]> {
-  const args = [
-    "workflow",
-    "list",
-    "-R",
-    `${owner}/${repo}`,
-    `--limit=${limit}`,
-    "--json=name,id,state,path",
-  ];
-
-  const result = await ghCmd(args);
-
-  if (result.exitCode !== 0) {
-    throw new Error(
-      `gh workflow list failed: ${result.stderr || result.stdout}`,
-    );
-  }
-
-  let workflows: GHWorkflow[] = [];
-  try {
-    workflows = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(
-      `Failed to parse gh workflow list output: ${result.stdout}`,
-    );
-  }
-
-  return workflows;
+  return ghList<GHWorkflow>(
+    [
+      "workflow",
+      "list",
+      "-R",
+      `${owner}/${repo}`,
+      `--limit=${limit}`,
+      "--json=name,id,state,path",
+    ],
+    "gh workflow list",
+  );
 }
 
 /**
@@ -2117,20 +1883,7 @@ export async function listWorkflowRuns(
     "[.[] | {workflow_name: .workflowName, status, conclusion, headBranch, headCommit: .headSha, title: .displayTitle, createdAt, url}]",
   );
 
-  const result = await ghCmd(args);
-
-  if (result.exitCode !== 0) {
-    throw new Error(`gh run list failed: ${result.stderr || result.stdout}`);
-  }
-
-  let runs: GHWorkflowRun[] = [];
-  try {
-    runs = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(`Failed to parse gh run list output: ${result.stdout}`);
-  }
-
-  return runs;
+  return ghList<GHWorkflowRun>(args, "gh run list");
 }
 
 /**
@@ -2336,15 +2089,6 @@ interface GHLabel {
   color: string;
 }
 
-interface GHCommitSearchResult {
-  sha: string;
-  message: string;
-  repo: string;
-  owner: string;
-  url: string;
-  committed_date: string;
-}
-
 interface GHWorkflow {
   name: string;
   id: number;
@@ -2361,42 +2105,6 @@ interface GHWorkflowRun {
   title: string;
   createdAt: string;
   url: string;
-}
-
-interface GHCodeSearchResult {
-  repo: string;
-  owner: string;
-  name: string;
-  path: string;
-  html_url: string;
-  text_matches?: {
-    snippet: string;
-    matches: { text: string }[];
-  }[];
-}
-
-interface GHIssueSearchResult {
-  number: number;
-  title: string;
-  state: string;
-  repo: string;
-  owner: string;
-  createdAt: string;
-  labels: { name: string }[];
-  url: string;
-}
-
-interface GHPRSearchResult {
-  number: number;
-  title: string;
-  state: string;
-  repo: string;
-  owner: string;
-  createdAt: string;
-  updatedAt: string;
-  labels: { name: string }[];
-  url: string;
-  mergeable: string;
 }
 
 /**
@@ -2633,7 +2341,7 @@ function formatIssueSearchResult(result: {
     state: issue.state,
     repo: `${issue.owner}/${issue.repo}`,
     date: new Date(issue.createdAt).toLocaleDateString(),
-    labels: issue.labels.map((l) => l.name).join(", "),
+    labels: issue.labels.map((l: { name: string }) => l.name).join(", "),
     url: issue.url,
   }));
 
@@ -2682,7 +2390,7 @@ function formatPRSearchResult(result: {
     repo: `${pr.owner}/${pr.repo}`,
     created: new Date(pr.createdAt).toLocaleDateString(),
     updated: new Date(pr.updatedAt).toLocaleDateString(),
-    labels: pr.labels.map((l) => l.name).join(", "),
+    labels: pr.labels.map((l: { name: string }) => l.name).join(", "),
     url: pr.url,
   }));
 
@@ -3029,12 +2737,22 @@ Examples:
     parameters: SearchReposParams,
 
     async execute(
-      _toolCallId,
+      _toolCallId: string,
       params: SearchReposParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
+      _onUpdate:
+        | AgentToolUpdateCallback<
+            | { query: string; results: GHRepoSearchResult[]; total: number }
+            | { error?: string }
+          >
+        | undefined,
       _ctx: ExtensionContext,
-    ) {
+    ): Promise<
+      AgentToolResult<
+        | { query: string; results: GHRepoSearchResult[]; total: number }
+        | { error?: string }
+      >
+    > {
       try {
         const result = await searchRepos(params.query, params.limit);
         const output = formatRepoSearchResult(result);
@@ -3082,10 +2800,10 @@ Examples:
     parameters: SearchCodeParams,
 
     async execute(
-      _toolCallId,
+      _toolCallId: string,
       params: SearchCodeParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -3135,10 +2853,10 @@ Examples:
     parameters: SearchIssuesParams,
 
     async execute(
-      _toolCallId,
+      _toolCallId: string,
       params: SearchIssuesParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -3188,10 +2906,10 @@ Examples:
     parameters: SearchPRsParams,
 
     async execute(
-      _toolCallId,
+      _toolCallId: string,
       params: SearchPRsParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -3240,10 +2958,10 @@ Examples:
     parameters: GetRepoContentsParams,
 
     async execute(
-      _toolCallId,
+      _toolCallId: string,
       params: GetRepoContentsParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -3302,10 +3020,10 @@ Examples:
     parameters: GetFileContentParams,
 
     async execute(
-      _toolCallId,
+      _toolCallId: string,
       params: GetFileContentParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -3358,10 +3076,10 @@ Examples:
     parameters: ListGistsParams,
 
     async execute(
-      _toolCallId,
+      _toolCallId: string,
       params: ListGistsParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -3421,10 +3139,10 @@ Examples:
     parameters: GetGistParams,
 
     async execute(
-      _toolCallId,
+      _toolCallId: string,
       params: GetGistParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -3470,10 +3188,10 @@ Examples:
     parameters: CreateGistParams,
 
     async execute(
-      _toolCallId,
+      _toolCallId: string,
       params: CreateGistParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       ctx: ExtensionContext,
     ) {
       const fileNames = Object.keys(params.files || {}).join(", ");
@@ -3533,10 +3251,10 @@ Examples:
     parameters: UpdateGistParams,
 
     async execute(
-      _toolCallId,
+      _toolCallId: string,
       params: UpdateGistParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       ctx: ExtensionContext,
     ) {
       const fileNames = params.files
@@ -3602,10 +3320,10 @@ Examples:
     parameters: ListRepoFilesParams,
 
     async execute(
-      _toolCallId,
+      _toolCallId: string,
       params: ListRepoFilesParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -3684,9 +3402,9 @@ Examples:
     async execute(
       _id,
       params: Static<typeof ListPRsParams>,
-      _signal?: AbortSignal,
-      _onUpdate?: AgentToolUpdateCallback,
-      _ctx?: ExtensionContext,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _ctx: ExtensionContext,
     ) {
       try {
         const prs = await listPRs(
@@ -3763,9 +3481,9 @@ Examples:
     async execute(
       _id,
       params: Static<typeof ViewPRParams>,
-      _signal?: AbortSignal,
-      _onUpdate?: AgentToolUpdateCallback,
-      _ctx?: ExtensionContext,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _ctx: ExtensionContext,
     ) {
       try {
         const pr = await viewPR(params.owner, params.repo, params.number);
@@ -3818,9 +3536,9 @@ Examples:
     async execute(
       _id,
       params: Static<typeof CreatePRParams>,
-      _signal?: AbortSignal,
-      _onUpdate?: AgentToolUpdateCallback,
-      ctx?: ExtensionContext,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      ctx: ExtensionContext,
     ) {
       if (!ctx) return createErrorResult("Blocked: no context");
       const denied = await dangerousOperationConfirmation(
@@ -3863,6 +3581,7 @@ Examples:
     },
   });
 
+  // fallow-ignore-next-line dupes
   // --- Issue tools ---
 
   const ListIssuesParams = Type.Object({
@@ -3892,9 +3611,9 @@ Examples:
     async execute(
       _id,
       params: Static<typeof ListIssuesParams>,
-      _signal?: AbortSignal,
-      _onUpdate?: AgentToolUpdateCallback,
-      _ctx?: ExtensionContext,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _ctx: ExtensionContext,
     ) {
       try {
         const issues = await listIssues(
@@ -3971,9 +3690,9 @@ Examples:
     async execute(
       _id,
       params: Static<typeof ViewIssueParams>,
-      _signal?: AbortSignal,
-      _onUpdate?: AgentToolUpdateCallback,
-      _ctx?: ExtensionContext,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _ctx: ExtensionContext,
     ) {
       try {
         const issue = await viewIssue(params.owner, params.repo, params.number);
@@ -4035,9 +3754,9 @@ Examples:
     async execute(
       _id,
       params: Static<typeof CreateIssueParams>,
-      _signal?: AbortSignal,
-      _onUpdate?: AgentToolUpdateCallback,
-      ctx?: ExtensionContext,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      ctx: ExtensionContext,
     ) {
       if (!ctx) return createErrorResult("Blocked: no context");
       const denied = await dangerousOperationConfirmation(
@@ -4101,9 +3820,9 @@ Examples:
     async execute(
       _id,
       params: Static<typeof ListReleasesParams>,
-      _signal?: AbortSignal,
-      _onUpdate?: AgentToolUpdateCallback,
-      _ctx?: ExtensionContext,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _ctx: ExtensionContext,
     ) {
       try {
         const releases = await listReleases(
@@ -4182,9 +3901,9 @@ Examples:
     async execute(
       _id,
       params: Static<typeof ViewReleaseParams>,
-      _signal?: AbortSignal,
-      _onUpdate?: AgentToolUpdateCallback,
-      _ctx?: ExtensionContext,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _ctx: ExtensionContext,
     ) {
       try {
         const release = await viewRelease(
@@ -4263,9 +3982,9 @@ Examples:
     async execute(
       _id,
       params: Static<typeof ListWorkflowsParams>,
-      _signal?: AbortSignal,
-      _onUpdate?: AgentToolUpdateCallback,
-      _ctx?: ExtensionContext,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _ctx: ExtensionContext,
     ) {
       try {
         const workflows = await listWorkflows(
@@ -4345,9 +4064,9 @@ Examples:
     async execute(
       _id,
       params: Static<typeof ListRunsParams>,
-      _signal?: AbortSignal,
-      _onUpdate?: AgentToolUpdateCallback,
-      _ctx?: ExtensionContext,
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _ctx: ExtensionContext,
     ) {
       try {
         const runs = await listWorkflowRuns(
