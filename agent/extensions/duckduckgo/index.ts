@@ -1,8 +1,4 @@
-import type {
-  ExtensionAPI,
-  AgentToolUpdateCallback,
-  ExtensionContext,
-} from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type, type Static } from "@sinclair/typebox";
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
@@ -413,13 +409,7 @@ Use this to:
 Returns search results with titles, URLs, and descriptions.`,
     parameters: SearchDuckDuckGoParams,
 
-    async execute(
-      _toolCallId: string,
-      params: SearchDuckDuckGoParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
-    ) {
+    async execute(_toolCallId: string, params: SearchDuckDuckGoParamsType) {
       const { query, limit = 10 } = params;
       const results = await searchDuckDuckGo(query, limit);
 

@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
-export default function(pi: ExtensionAPI) {
+export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "transcribe",
     label: "Transcribe",
@@ -20,7 +20,7 @@ Supports URLs and local files.`,
       }),
     }),
 
-    async execute(_toolCallId, params, signal, onUpdate, _ctx) {
+    async execute(_toolCallId, params, signal, onUpdate) {
       const { source } = params;
 
       try {

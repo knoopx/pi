@@ -1,8 +1,6 @@
 import type {
   ExtensionAPI,
   AgentToolResult,
-  AgentToolUpdateCallback,
-  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type, type Static } from "@sinclair/typebox";
 import { dotJoin, countLabel, table } from "../../shared/renderers";
@@ -436,13 +434,7 @@ Use this to:
 
 Returns detailed package information from nixpkgs.`,
     parameters: SearchQueryParams,
-    async execute(
-      _toolCallId: string,
-      params: SearchQueryParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
-    ) {
+    async execute(_toolCallId: string, params: SearchQueryParamsType) {
       const { query } = params;
 
       return executeSearchTool(
@@ -515,13 +507,7 @@ Use this to:
 
 Returns NixOS configuration option details.`,
     parameters: SearchQueryParams,
-    async execute(
-      _toolCallId: string,
-      params: SearchQueryParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
-    ) {
+    async execute(_toolCallId: string, params: SearchQueryParamsType) {
       const { query } = params;
 
       return executeSearchTool(
@@ -584,13 +570,7 @@ Use this to:
 
 Returns Home Manager configuration options.`,
     parameters: SearchQueryParams,
-    async execute(
-      _toolCallId: string,
-      params: SearchQueryParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
-    ) {
+    async execute(_toolCallId: string, params: SearchQueryParamsType) {
       const { query } = params;
 
       return executeSearchTool(

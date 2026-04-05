@@ -3,7 +3,7 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 
-export interface NotifyToolParams {
+interface NotifyToolParams {
   summary: string;
   body?: string;
   urgency?: "low" | "normal" | "critical";

@@ -5,11 +5,7 @@
  * Tools available: pypi-search, pypi-package-info
  */
 
-import type {
-  ExtensionAPI,
-  AgentToolUpdateCallback,
-  ExtensionContext,
-} from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, type Static } from "@sinclair/typebox";
 import { textResult } from "../../shared/tool-utils";
@@ -182,20 +178,14 @@ Use this to:
 Returns matching packages with metadata.`,
     parameters: SearchPyPIPackagesParams,
 
-    async execute(
-      _toolCallId: string,
-      params: SearchPyPIPackagesParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
-    ) {
+    async execute(_toolCallId: string, params: SearchPyPIPackagesParamsType) {
       const { query, limit = 10 } = params;
 
       try {
         // Use PyPI Simple API search endpoint
         const searchUrl = `https://pypi.org/search/?q=${encodeURIComponent(query)}&o=`;
         const response = await throttledFetch(searchUrl, {
-          signal: _signal,
+          signal: undefined,
           headers: {
             Accept: "application/vnd.pypi.simple.v1+json",
           },
@@ -203,7 +193,7 @@ Returns matching packages with metadata.`,
 
         if (!response.ok) {
           // Fallback: try to fetch the package directly if it's an exact name
-          const directResult = await tryDirectPackageLookup(query, _signal);
+          const directResult = await tryDirectPackageLookup(query, undefined);
           return (
             directResult ?? createPypiErrorResult(`No packages found.`, query)
           );
@@ -215,7 +205,7 @@ Returns matching packages with metadata.`,
 
         if (packages.length === 0) {
           // Try direct package lookup as fallback
-          const directResult = await tryDirectPackageLookup(query, _signal);
+          const directResult = await tryDirectPackageLookup(query, undefined);
           return (
             directResult ?? createPypiErrorResult(`No packages found.`, query)
           );
@@ -278,20 +268,14 @@ Use this to:
 Shows comprehensive package details from PyPI.`,
     parameters: PyPIPackageInfoParams,
 
-    async execute(
-      _toolCallId: string,
-      params: PyPIPackageInfoParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback | undefined,
-      _ctx: ExtensionContext,
-    ) {
+    async execute(_toolCallId: string, params: PyPIPackageInfoParamsType) {
       const { package: packageName } = params;
 
       try {
         // Use PyPI JSON API instead of local pip command
         const response = await throttledFetch(
           `https://pypi.org/pypi/${encodeURIComponent(packageName)}/json`,
-          { signal: _signal },
+          { signal: undefined },
         );
 
         if (!response.ok) {
