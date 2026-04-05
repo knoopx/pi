@@ -1,7 +1,7 @@
 import { Type, type Static } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 
-export const HookEventSchema = Type.Union([
+const HookEventSchema = Type.Union([
   Type.Literal("session_start"),
   Type.Literal("session_shutdown"),
   Type.Literal("tool_call"),
@@ -18,7 +18,7 @@ const HookContextSchema = Type.Union([
   Type.Literal("command"),
 ]);
 
-export const HookRuleSchema = Type.Object({
+const HookRuleSchema = Type.Object({
   event: HookEventSchema,
   context: Type.Optional(HookContextSchema),
   /**
@@ -34,13 +34,13 @@ export const HookRuleSchema = Type.Object({
   notify: Type.Optional(Type.Boolean()),
 });
 
-export const HooksGroupSchema = Type.Object({
+const HooksGroupSchema = Type.Object({
   group: Type.String(),
   pattern: Type.String(),
   hooks: Type.Array(HookRuleSchema),
 });
 
-export const HooksConfigSchema = Type.Array(HooksGroupSchema);
+const HooksConfigSchema = Type.Array(HooksGroupSchema);
 
 export type HookEvent = Static<typeof HookEventSchema>;
 type _HookContext = Static<typeof HookContextSchema>;
