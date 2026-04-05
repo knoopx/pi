@@ -16,7 +16,7 @@ import { createMarkdownTheme, formatRelativeTime } from "./formatting";
 import { notifyMutation } from "../jj";
 
 /** Pull request data from GitHub CLI */
-export interface PullRequest extends ListPickerItem {
+interface PullRequest extends ListPickerItem {
   number: number;
   title: string;
   state: string;

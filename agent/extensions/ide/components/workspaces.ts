@@ -17,8 +17,8 @@ import {
   renderFileChangeRows,
   renderChangeRows,
   calculateDiffScroll,
-  formatErrorMessage,
 } from "./split-panel";
+import { formatErrorMessage } from "./formatting";
 import { isRenderCacheValid } from "./state/factories";
 import type {
   AgentWorkspace,

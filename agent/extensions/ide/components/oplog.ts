@@ -112,7 +112,7 @@ export function createOpLogComponent(
             item.opId.toLowerCase().includes(query) ||
             item.description.toLowerCase().includes(query),
         ),
-      formatItem: (item, _width, theme, isFocused) =>
+      formatItem: (item, width, theme, isFocused) =>
         applyFocusedStyle(
           theme,
           `${getChangeIcon(item.isCurrent, false)} ${theme.fg("dim", item.opId)} ${item.description}`,

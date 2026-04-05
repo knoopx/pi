@@ -5,7 +5,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 
 /** Common TUI interface for components */
-export interface ComponentTui {
+interface ComponentTui {
   terminal: { rows: number };
   requestRender: () => void;
 }

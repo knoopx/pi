@@ -7,7 +7,7 @@
 
 import { Key, matchesKey } from "@mariozechner/pi-tui";
 
-export type KeyPattern = Parameters<typeof matchesKey>[1];
+type KeyPattern = Parameters<typeof matchesKey>[1];
 
 export interface KeyBinding<TContext = void> {
   /** Key pattern to match (e.g., Key.ctrl("d"), "escape", "enter") */
@@ -47,7 +47,7 @@ export function buildHelpFromBindings(bindings: KeyBinding[]): string {
     .join("  ");
 }
 
-export interface KeyboardHandlerConfig<TContext = void> {
+interface KeyboardHandlerConfig<TContext = void> {
   /** Custom key bindings (checked first) */
   bindings?: KeyBinding<TContext>[];
   /** Navigation state for arrow key handling */
@@ -82,6 +82,59 @@ export interface KeyboardHandlerConfig<TContext = void> {
  * });
  * ```
  */
+function handleCustomBindings<TContext>(
+  data: string,
+  bindings: KeyBinding<TContext>[],
+  ctx: TContext,
+): boolean {
+  for (const binding of bindings) {
+    if (matchesKey(data, binding.key)) {
+      if (binding.when && !binding.when(ctx)) {
+        continue;
+      }
+      const result = binding.handler(ctx);
+      if (result === true || result === undefined) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function handleNavigation(
+  data: string,
+  nav: NavigationState,
+  onNavigate: (index: number) => void,
+): boolean {
+  const pageSize = nav.pageSize ?? 10;
+
+  if (matchesKey(data, "up") && nav.index > 0) {
+    onNavigate(nav.index - 1);
+    return true;
+  }
+
+  if (matchesKey(data, "down") && nav.index < nav.maxIndex) {
+    onNavigate(nav.index + 1);
+    return true;
+  }
+
+  if (matchesKey(data, "pageUp")) {
+    onNavigate(Math.max(0, nav.index - pageSize));
+    return true;
+  }
+
+  if (matchesKey(data, "pageDown")) {
+    onNavigate(Math.min(nav.maxIndex, nav.index + pageSize));
+    return true;
+  }
+
+  return false;
+}
+
+function isPrintableChar(data: string): boolean {
+  return data.length === 1 && data >= " " && data <= "~";
+}
+
 export function createKeyboardHandler<TContext = void>(
   config: KeyboardHandlerConfig<TContext>,
 ): (data: string) => boolean {
@@ -89,18 +142,8 @@ export function createKeyboardHandler<TContext = void>(
     const ctx = config.getContext?.() as TContext;
 
     // 1. Check custom bindings first
-    if (config.bindings) {
-      for (const binding of config.bindings) {
-        if (matchesKey(data, binding.key)) {
-          if (binding.when && !binding.when(ctx)) {
-            continue;
-          }
-          const result = binding.handler(ctx);
-          if (result === true || result === undefined) {
-            return true;
-          }
-        }
-      }
+    if (config.bindings && handleCustomBindings(data, config.bindings, ctx)) {
+      return true;
     }
 
     // 2. Escape
@@ -117,27 +160,7 @@ export function createKeyboardHandler<TContext = void>(
 
     // 4. Navigation
     if (config.navigation && config.onNavigate) {
-      const nav = config.navigation();
-
-      if (matchesKey(data, "up") && nav.index > 0) {
-        config.onNavigate(nav.index - 1);
-        return true;
-      }
-
-      if (matchesKey(data, "down") && nav.index < nav.maxIndex) {
-        config.onNavigate(nav.index + 1);
-        return true;
-      }
-
-      const pageSize = nav.pageSize ?? 10;
-
-      if (matchesKey(data, "pageUp")) {
-        config.onNavigate(Math.max(0, nav.index - pageSize));
-        return true;
-      }
-
-      if (matchesKey(data, "pageDown")) {
-        config.onNavigate(Math.min(nav.maxIndex, nav.index + pageSize));
+      if (handleNavigation(data, config.navigation(), config.onNavigate)) {
         return true;
       }
     }
@@ -149,7 +172,7 @@ export function createKeyboardHandler<TContext = void>(
     }
 
     // 6. Printable characters
-    if (data.length === 1 && data >= " " && data <= "~" && config.onTextInput) {
+    if (isPrintableChar(data) && config.onTextInput) {
       config.onTextInput(data);
       return true;
     }

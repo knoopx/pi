@@ -37,7 +37,7 @@ export interface ListPickerAction<T extends ListPickerItem> {
   handler: (item: T) => Promise<void> | void;
 }
 
-export interface ListPickerConfig<T extends ListPickerItem> {
+interface ListPickerConfig<T extends ListPickerItem> {
   title: string | (() => string);
   /** Load items, optionally filtered by query */
   loadItems: (query: string) => Promise<T[]>;
@@ -59,7 +59,7 @@ export interface ListPickerConfig<T extends ListPickerItem> {
   onKey?: (key: string) => boolean;
 }
 
-export interface ListPickerTui {
+interface ListPickerTui {
   terminal: { rows: number };
   requestRender: () => void;
 }

@@ -127,6 +127,7 @@ async function findTodos(
 }
 
 function formatTodoItem(
+  _width: number,
   theme: Theme,
   item: TodoItem,
   isFocused: boolean,
@@ -164,8 +165,8 @@ export function createTodosComponent(
         );
       },
       reloadDebounceMs: 300,
-      formatItem: (item, _width, theme, isFocused) =>
-        formatTodoItem(theme, item, isFocused),
+      formatItem: (item, width, theme, isFocused) =>
+        formatTodoItem(width, theme, item, isFocused),
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
       actions: [
         {

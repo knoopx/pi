@@ -16,7 +16,7 @@ import { applyFocusedStyle } from "./style-utils";
 import { notifyMutation } from "../jj";
 import type { CmActionType } from "./cm-results";
 
-export interface FileInfo extends ListPickerItem {
+interface FileInfo extends ListPickerItem {
   path: string;
 }
 
@@ -202,7 +202,7 @@ export function createFilesComponent(
       },
       filterItems: (items, query) =>
         items.filter((item) => item.path.toLowerCase().includes(query)),
-      formatItem: (item, _width, theme, isFocused) => {
+      formatItem: (item, width, theme, isFocused) => {
         const isSelected = selectedFiles.has(item.path);
         const marker = isSelected ? theme.fg("accent", "✓ ") : "  ";
         const text = `${marker}${getFileIcon(item.path)} ${item.path}`;

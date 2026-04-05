@@ -16,7 +16,7 @@ import { loadFilePreviewWithBat } from "./file-preview";
 import { applyFocusedStyle } from "./style-utils";
 import type { CmActionType } from "./cm-results";
 
-export interface SymbolInfo extends ListPickerItem {
+interface SymbolInfo extends ListPickerItem {
   name: string;
   type: string;
   path: string;
@@ -218,7 +218,7 @@ export function createSymbolsComponent(
       filterItems: (items, query) =>
         items.filter((s) => s.name.toLowerCase().includes(query)),
       reloadDebounceMs: 300,
-      formatItem: (item, _width, theme, isFocused) =>
+      formatItem: (item, width, theme, isFocused) =>
         applyFocusedStyle(
           theme,
           formatSymbolListEntry(theme, { ...item, line: item.startLine }),

@@ -11,7 +11,7 @@ export interface GraphNode {
   isWorkingCopy: boolean;
 }
 
-export interface GraphPosition {
+interface GraphPosition {
   x: number;
   y: number;
 }

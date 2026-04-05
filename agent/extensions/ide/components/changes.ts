@@ -14,8 +14,8 @@ import {
   renderSplitPanel,
   renderDiffRows,
   renderFileChangeRows,
-  formatErrorMessage,
 } from "./split-panel";
+import { formatErrorMessage } from "./formatting";
 import {
   createComponentCache,
   createSelectionState,
@@ -51,10 +51,7 @@ import {
 type ChangeCache = ComponentCache<FileChange>;
 
 /** File cm action callback */
-export type OnFileCmAction = (
-  filePath: string,
-  action: CmActionType,
-) => Promise<void>;
+type OnFileCmAction = (filePath: string, action: CmActionType) => Promise<void>;
 
 /** Predefined revision filters */
 interface RevisionFilter {
@@ -292,27 +289,21 @@ export function createChangesComponent(
     return selectedChange ? [selectedChange] : [];
   }
 
-  async function executeAction(action: string): Promise<void> {
-    const change = selectedChange;
+  // Action handlers extracted to reduce complexity
+  async function handleDescribe(): Promise<void> {
+    const targets = getDescribeTargets();
+    if (targets.length === 0) return;
 
-    try {
-      switch (action) {
-        case "describe": {
-          const targets = getDescribeTargets();
-          if (targets.length === 0) {
-            return;
-          }
+    done();
+    const ids = targets.map((target) => target.changeId);
+    const workflowLines = ids
+      .map(
+        (id, index) =>
+          `${String(index + 1)}. Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "<type>(<scope>): <description>"\``,
+      )
+      .join("\n");
 
-          done();
-          const ids = targets.map((target) => target.changeId);
-          const workflowLines = ids
-            .map(
-              (id, index) =>
-                `${String(index + 1)}. Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "<type>(<scope>): <description>"\``,
-            )
-            .join("\n");
-
-          const task = `Describe jujutsu changes ${ids.join(", ")} using Conventional Commits format.
+    const task = `Describe jujutsu changes ${ids.join(", ")} using Conventional Commits format.
 
 Use the **conventional-commits** skill for type/scope rules.
 
@@ -338,38 +329,36 @@ Description guidelines:
 <workflow>
 ${workflowLines}
 </workflow>`;
-          pi.sendUserMessage(task);
-          return;
-        }
+    pi.sendUserMessage(task);
+  }
 
-        case "edit": {
-          if (!change) return;
-          const editResult = await pi.exec("jj", ["edit", change.changeId], {
-            cwd,
-          });
-          changeCache.clear();
-          selectionState.fileIndex = 0;
-          selectionState.diffScroll = 0;
-          await reloadChanges();
-          const msg = `Set working copy to change ${change.changeId.slice(0, 8)}`;
-          notifyMutation(pi, msg, editResult.stderr || editResult.stdout);
-          return;
-        }
+  async function handleEdit(): Promise<void> {
+    if (!selectedChange) return;
+    const editResult = await pi.exec("jj", ["edit", selectedChange.changeId], {
+      cwd,
+    });
+    await refreshAfterMutation();
+    notifyMutation(
+      pi,
+      `Set working copy to change ${selectedChange.changeId.slice(0, 8)}`,
+      editResult.stderr || editResult.stdout,
+    );
+  }
 
-        case "split": {
-          if (!change) return;
-          done();
-          const task = `Split jujutsu change ${change.changeId} into semantically logical commits.
+  async function handleSplit(): Promise<void> {
+    if (!selectedChange) return;
+    done();
+    const task = `Split jujutsu change ${selectedChange.changeId} into semantically logical commits.
 
 Use the **jj-hunk** skill for programmatic hunk-level splitting.
 Use the **conventional-commits** skill for commit message format.
 
 <workflow>
-1. List hunks: \`jj-hunk list -r ${change.changeId}\`
+1. List hunks: \`jj-hunk list -r ${selectedChange.changeId}\`
 2. Identify logical groupings by domain/purpose
 3. Split iteratively using jj-hunk:
-   \`jj-hunk split -r ${change.changeId} '{"files": {"<path>": {"action": "keep"}}, "default": "reset"}' "<type>(<scope>): <description>"\`
-4. Update remaining change description: \`jj desc -r ${change.changeId} -m "<type>(<scope>): <description>"\`
+   \`jj-hunk split -r ${selectedChange.changeId} '{"files": {"<path>": {"action": "keep"}}, "default": "reset"}' "<type>(<scope>): <description>"\`
+4. Update remaining change description: \`jj desc -r ${selectedChange.changeId} -m "<type>(<scope>): <description>"\`
 </workflow>
 
 Commit message format:
@@ -377,109 +366,125 @@ Commit message format:
 - Types: feat, fix, docs, style, refactor, perf, test, chore, build, ci
 - Use imperative mood, no ending punctuation
 - Be specific; avoid "changes", "stuff", "update things"`;
-          pi.sendUserMessage(task);
-          return;
-        }
+    pi.sendUserMessage(task);
+  }
 
-        case "squash": {
-          if (!change) return;
-          const prevIndex = selectionState.selectedIndex;
-          const squashResult = await pi.exec(
-            "jj",
-            ["squash", "-u", "-r", change.changeId],
-            { cwd },
-          );
-          changeCache.clear();
-          selectionState.fileIndex = 0;
-          selectionState.diffScroll = 0;
-          await reloadChanges();
-          if (changes.length > 0) {
-            selectionState.selectedIndex = Math.min(
-              prevIndex,
-              changes.length - 1,
-            );
-            selectedChange = changes[selectionState.selectedIndex];
-            await loadFilesAndDiff(selectedChange);
-          } else {
-            selectionState.selectedIndex = 0;
-            selectedChange = null;
-            files = [];
-            diffContent = [];
-          }
-          const parentChangeId = change.parentIds?.[0]?.slice(0, 8);
-          const msg = parentChangeId
-            ? `Squashed change ${change.changeId.slice(0, 8)} into change ${parentChangeId}`
-            : `Squashed change ${change.changeId.slice(0, 8)}`;
-          notifyMutation(pi, msg, squashResult.stderr || squashResult.stdout);
-          return;
-        }
+  async function handleSquash(): Promise<void> {
+    if (!selectedChange) return;
+    const prevIndex = selectionState.selectedIndex;
+    const squashResult = await pi.exec(
+      "jj",
+      ["squash", "-u", "-r", selectedChange.changeId],
+      { cwd },
+    );
+    await refreshAfterMutation();
+    await restoreSelection(prevIndex);
+    const parentChangeId = selectedChange.parentIds?.[0]?.slice(0, 8);
+    const msg = parentChangeId
+      ? `Squashed change ${selectedChange.changeId.slice(0, 8)} into change ${parentChangeId}`
+      : `Squashed change ${selectedChange.changeId.slice(0, 8)}`;
+    notifyMutation(pi, msg, squashResult.stderr || squashResult.stdout);
+  }
 
-        case "drop": {
-          if (!change) return;
-          const prevIndex = selectionState.selectedIndex;
-          const dropResult = await pi.exec("jj", ["abandon", change.changeId], {
-            cwd,
-          });
-          selectedChangeIds.delete(change.changeId);
-          changeCache.clear();
-          selectionState.fileIndex = 0;
-          selectionState.diffScroll = 0;
-          await reloadChanges();
-          if (changes.length > 0) {
-            selectionState.selectedIndex = Math.min(
-              prevIndex,
-              Math.max(0, changes.length - 1),
-            );
-            selectedChange = changes[selectionState.selectedIndex];
-            await loadFilesAndDiff(selectedChange);
-          } else {
-            selectionState.selectedIndex = 0;
-            selectedChange = null;
-            files = [];
-            diffContent = [];
-          }
-          const msg = `Dropped change ${change.changeId}`;
-          notifyMutation(pi, msg, dropResult.stderr || dropResult.stdout);
-          return;
-        }
+  async function handleDrop(): Promise<void> {
+    if (!selectedChange) return;
+    const prevIndex = selectionState.selectedIndex;
+    const dropResult = await pi.exec(
+      "jj",
+      ["abandon", selectedChange.changeId],
+      {
+        cwd,
+      },
+    );
+    selectedChangeIds.delete(selectedChange.changeId);
+    await refreshAfterMutation();
+    await restoreSelection(prevIndex);
+    notifyMutation(
+      pi,
+      `Dropped change ${selectedChange.changeId}`,
+      dropResult.stderr || dropResult.stdout,
+    );
+  }
 
-        case "new": {
-          if (!change) return;
-          const newResult = await pi.exec("jj", ["new", change.changeId], {
-            cwd,
-          });
-          changeCache.clear();
-          selectionState.fileIndex = 0;
-          selectionState.diffScroll = 0;
-          await reloadChanges();
-          const msg = currentChangeId
-            ? `Created change ${currentChangeId} from change ${change.changeId.slice(0, 8)}`
-            : `Started a child change from change ${change.changeId.slice(0, 8)}`;
-          notifyMutation(pi, msg, newResult.stderr || newResult.stdout);
-          return;
-        }
+  async function handleNew(): Promise<void> {
+    if (!selectedChange) return;
+    const newResult = await pi.exec("jj", ["new", selectedChange.changeId], {
+      cwd,
+    });
+    await refreshAfterMutation();
+    const msg = currentChangeId
+      ? `Created change ${currentChangeId} from change ${selectedChange.changeId.slice(0, 8)}`
+      : `Started a child change from change ${selectedChange.changeId.slice(0, 8)}`;
+    notifyMutation(pi, msg, newResult.stderr || newResult.stdout);
+  }
 
-        case "revert": {
-          if (!change) return;
-          const revertResult = await pi.exec(
-            "jj",
-            [
-              "revert",
-              "-r",
-              change.changeId,
-              "--insert-after",
-              change.changeId,
-            ],
-            { cwd },
-          );
-          changeCache.clear();
-          selectionState.fileIndex = 0;
-          selectionState.diffScroll = 0;
-          await reloadChanges();
-          const msg = `Reverted change ${change.changeId.slice(0, 8)}`;
-          notifyMutation(pi, msg, revertResult.stderr || revertResult.stdout);
-          return;
-        }
+  async function handleRevert(): Promise<void> {
+    if (!selectedChange) return;
+    const revertResult = await pi.exec(
+      "jj",
+      [
+        "revert",
+        "-r",
+        selectedChange.changeId,
+        "--insert-after",
+        selectedChange.changeId,
+      ],
+      { cwd },
+    );
+    await refreshAfterMutation();
+    notifyMutation(
+      pi,
+      `Reverted change ${selectedChange.changeId.slice(0, 8)}`,
+      revertResult.stderr || revertResult.stdout,
+    );
+  }
+
+  // Shared helper to refresh state after mutations
+  async function refreshAfterMutation(): Promise<void> {
+    changeCache.clear();
+    selectionState.fileIndex = 0;
+    selectionState.diffScroll = 0;
+    await reloadChanges();
+  }
+
+  // Shared helper to restore selection after mutations
+  async function restoreSelection(prevIndex: number): Promise<void> {
+    if (changes.length > 0) {
+      selectionState.selectedIndex = Math.min(prevIndex, changes.length - 1);
+      selectedChange = changes[selectionState.selectedIndex];
+      await loadFilesAndDiff(selectedChange);
+    } else {
+      selectionState.selectedIndex = 0;
+      selectedChange = null;
+      files = [];
+      diffContent = [];
+    }
+  }
+
+  async function executeAction(action: string): Promise<void> {
+    try {
+      switch (action) {
+        case "describe":
+          await handleDescribe();
+          break;
+        case "edit":
+          await handleEdit();
+          break;
+        case "split":
+          await handleSplit();
+          break;
+        case "squash":
+          await handleSquash();
+          break;
+        case "drop":
+          await handleDrop();
+          break;
+        case "new":
+          await handleNew();
+          break;
+        case "revert":
+          await handleRevert();
+          break;
       }
     } catch (error) {
       const msg = formatErrorMessage(error);
@@ -492,15 +497,18 @@ Commit message format:
   async function reloadBookmarks(): Promise<void> {
     const bookmarkEntries = await listBookmarksByChange(pi, cwd);
     const nextBookmarksByChange = new Map<string, string[]>();
-    for (const change of changes) {
-      const bookmarks = bookmarkEntries
-        .filter(
-          (entry) =>
-            change.changeId.startsWith(entry.changeId) ||
-            entry.changeId.startsWith(change.changeId),
-        )
-        .map((entry) => entry.bookmark);
-      nextBookmarksByChange.set(change.changeId, bookmarks);
+    if (selectedChange) {
+      const sc = selectedChange;
+      for (const _change of changes) {
+        const bookmarks = bookmarkEntries
+          .filter(
+            (entry) =>
+              sc.changeId.startsWith(entry.changeId) ||
+              entry.changeId.startsWith(sc.changeId),
+          )
+          .map((entry) => entry.bookmark);
+        nextBookmarksByChange.set(sc.changeId, bookmarks);
+      }
     }
     bookmarksByChange = nextBookmarksByChange;
   }
@@ -563,7 +571,8 @@ Commit message format:
 
   async function loadFilesAndDiff(change: Change): Promise<void> {
     try {
-      let cache = changeCache.get(change.changeId);
+      if (!selectedChange) return;
+      let cache = changeCache.get(selectedChange.changeId);
       if (cache) {
         files = cache.files;
         selectionState.fileIndex = 0;
@@ -581,7 +590,7 @@ Commit message format:
       if (!cache) {
         files = await loadChangedFiles(pi, cwd, change.changeId);
         cache = createComponentCache(files);
-        changeCache.set(change.changeId, cache);
+        changeCache.set(selectedChange.changeId, cache);
       }
 
       selectionState.fileIndex = 0;
@@ -691,7 +700,6 @@ Commit message format:
         author: change.author,
       });
 
-      // eslint-disable-next-line no-control-regex
       const rightLen = rightText.replace(/\x1b\[[0-9;]*m/g, "").length;
       const availableLeftWidth = Math.max(1, width - rightLen - graphWidth);
       const leftTruncated = truncateAnsi(leftText, availableLeftWidth);

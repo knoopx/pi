@@ -26,7 +26,7 @@ function renderPanelRow(
   );
 }
 
-export interface SplitPanelConfig {
+interface SplitPanelConfig {
   leftTitle: string;
   rightTitle: string;
   rightTopTitle?: string;
@@ -42,7 +42,7 @@ export interface SplitPanelConfig {
   rightTopRatio?: number;
 }
 
-export interface SplitPanelDimensions {
+interface SplitPanelDimensions {
   width: number;
   height: number;
   leftW: number;
@@ -54,7 +54,7 @@ export interface SplitPanelDimensions {
   rightBottomH?: number;
 }
 
-export interface SplitPanelRows {
+interface SplitPanelRows {
   left: string[];
   right?: string[];
   rightTop?: string[];
@@ -369,16 +369,6 @@ export function renderFileChangeRows(
 /**
  * Render change/commit rows with selection and icons
  */
-/**
- * Handle page scroll for diff content
- * @returns New scroll value
- */
-/**
- * Format error message for display
- */
-export function formatErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 function handlePageScroll(
   direction: "up" | "down",
