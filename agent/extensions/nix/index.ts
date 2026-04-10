@@ -433,7 +433,7 @@ Use this to:
 - Get package metadata and maintainers
 
 Returns detailed package information from nixpkgs.`,
-    parameters: SearchQueryParams,
+    parameters: SearchQueryParams as any,
     async execute(_toolCallId: string, params: SearchQueryParamsType) {
       const { query } = params;
 
@@ -506,7 +506,7 @@ Use this to:
 - Get examples for configuration
 
 Returns NixOS configuration option details.`,
-    parameters: SearchQueryParams,
+    parameters: SearchQueryParams as any,
     async execute(_toolCallId: string, params: SearchQueryParamsType) {
       const { query } = params;
 
@@ -569,7 +569,7 @@ Use this to:
 - Manage user-level services
 
 Returns Home Manager configuration options.`,
-    parameters: SearchQueryParams,
+    parameters: SearchQueryParams as any,
     async execute(_toolCallId: string, params: SearchQueryParamsType) {
       const { query } = params;
 
