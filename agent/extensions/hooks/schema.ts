@@ -23,7 +23,7 @@ const HookRuleSchema = Type.Object({
   context: Type.Optional(HookContextSchema),
   /**
    * Matcher pattern:
-   * - tool_name/file_name contexts: regular expression
+   * - tool_name/file_name contexts: glob pattern (e.g., `*.ts`, `{write,edit}`)
    * - command context: token pattern (`?` = one token, `*` = any tokens)
    */
   pattern: Type.Optional(Type.String()),

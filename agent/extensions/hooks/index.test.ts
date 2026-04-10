@@ -204,7 +204,7 @@ describe("doesRuleMatch", () => {
         event: "tool_result" as const,
         command: "echo test",
         context: "tool_name" as const,
-        pattern: "^write$",
+        pattern: "write",
       };
 
       it("then matches exact tool name", () => {
@@ -222,7 +222,7 @@ describe("doesRuleMatch", () => {
         event: "tool_result" as const,
         command: "echo test",
         context: "tool_name" as const,
-        pattern: "^(write|edit)$",
+        pattern: "{write,edit}",
       };
 
       it("then matches any of the alternatives", () => {
@@ -256,7 +256,7 @@ describe("doesRuleMatch", () => {
         event: "tool_result" as const,
         command: "prettier %file%",
         context: "file_name" as const,
-        pattern: "\\.(ts|tsx)$",
+        pattern: "*.{ts,tsx}",
       };
 
       it("then matches TypeScript files", () => {
@@ -283,7 +283,7 @@ describe("doesRuleMatch", () => {
         event: "tool_result" as const,
         command: "vitest run %file%",
         context: "file_name" as const,
-        pattern: "\\.test\\.ts$",
+        pattern: "*.test.ts",
       };
 
       it("then matches test files", () => {
@@ -307,7 +307,7 @@ describe("doesRuleMatch", () => {
         event: "tool_result" as const,
         command: "echo test",
         context: "file_name" as const,
-        pattern: "\\.ts$",
+        pattern: "*.ts",
       };
 
       it("then does not match empty input", () => {
@@ -324,7 +324,7 @@ describe("doesRuleMatch", () => {
         event: "tool_result" as const,
         command: "echo test",
         context: "file_name" as const,
-        pattern: "\\.ts$",
+        pattern: "*.ts",
       };
 
       it("then does not match null", () => {
@@ -514,7 +514,7 @@ describe("doesRuleMatch", () => {
     });
   });
 
-  describe("given rule with invalid regex pattern", () => {
+  describe("given rule with invalid glob pattern", () => {
     const rule = {
       event: "tool_result" as const,
       command: "echo test",

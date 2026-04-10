@@ -6,8 +6,8 @@ import type {
   ToolResultEvent,
   TurnEndEvent,
 } from "@mariozechner/pi-coding-agent";
-import pc from "picocolors";
-import { glob } from "tinyglobby";
+import picomatch from "picomatch";
+import { readdir } from "node:fs/promises";
 import { matchCommandPattern } from "../guardrails/command-parser";
 import { configLoader } from "./config";
 import type {
@@ -64,7 +64,7 @@ interface BlockResult {
   reason: string;
 }
 
-function containsAbortText(text: string): boolean {
+export function containsAbortText(text: string): boolean {
   const normalized = text.toLowerCase();
   return (
     normalized.includes("operation aborted") ||
@@ -74,7 +74,7 @@ function containsAbortText(text: string): boolean {
   );
 }
 
-function extractTextContent(
+export function extractTextContent(
   content: unknown[] | undefined,
   extraText?: string,
 ): string {
@@ -92,12 +92,12 @@ function extractTextContent(
   return [contentText, extraText ?? ""].filter(Boolean).join("\n");
 }
 
-function isAbortedToolResult(event: ToolResultEvent): boolean {
+export function isAbortedToolResult(event: ToolResultEvent): boolean {
   if (!event.isError) return false;
   return containsAbortText(extractTextContent(event.content));
 }
 
-function isAbortedTurnEnd(event: TurnEndEvent): boolean {
+export function isAbortedTurnEnd(event: TurnEndEvent): boolean {
   const message = (event as { message?: unknown }).message as
     | {
         role?: string;
@@ -114,7 +114,7 @@ function isAbortedTurnEnd(event: TurnEndEvent): boolean {
   return containsAbortText(message.errorMessage ?? "");
 }
 
-function isAbortedAgentEnd(event: AgentEndEvent): boolean {
+export function isAbortedAgentEnd(event: AgentEndEvent): boolean {
   const messages = (event as { messages?: unknown[] }).messages ?? [];
 
   for (let i = messages.length - 1; i >= 0; i--) {
@@ -156,13 +156,11 @@ export async function isGroupActive(
   if (pattern === "*") return true;
 
   try {
-    const matches = await glob([pattern], {
-      cwd: root,
-      absolute: false,
-      dot: true,
-      onlyDirectories: false,
-    });
-    return matches.length > 0;
+    const files = await readdir(root);
+    // Check if any file matches the glob pattern
+    return files.some((file) =>
+      picomatch.isMatch(file, pattern, { dot: true }),
+    );
   } catch {
     return false;
   }
@@ -202,21 +200,19 @@ export function doesRuleMatch(
   return matchValuePattern(targetValue, rule.pattern);
 }
 
-function matchValuePattern(value: string, pattern: string): boolean {
+export function matchValuePattern(value: string, pattern: string): boolean {
   // New token pattern syntax support for non-command contexts
   if (matchCommandPattern(value, pattern)) {
     return true;
   }
 
-  // Backward-compatible regex support
-  try {
-    return new RegExp(pattern).test(value);
-  } catch {
-    return false;
-  }
+  // Glob pattern matching (e.g., *.js, *.{ts,tsx})
+  // Check if basename matches the glob pattern
+  const basename = value.split(/[\/\\]/).pop() ?? value;
+  return picomatch.isMatch(basename, pattern);
 }
 
-function getContextValue(
+export function getContextValue(
   context: string,
   toolName?: string,
   input?: unknown,
@@ -233,7 +229,10 @@ function getContextValue(
   }
 }
 
-function getInputField(input: unknown, field: string): string | undefined {
+export function getInputField(
+  input: unknown,
+  field: string,
+): string | undefined {
   if (!input || typeof input !== "object") return undefined;
   const value = (input as Record<string, unknown>)[field];
   return value != null ? String(value) : undefined;
@@ -242,7 +241,7 @@ function getInputField(input: unknown, field: string): string | undefined {
 /**
  * Build JSON input for hook stdin (Claude Code compatible format).
  */
-function buildHookInput(
+export function buildHookInput(
   event: HookEvent,
   ctx: ExtensionContext,
   toolName?: string,
@@ -528,11 +527,10 @@ function sendHookResults(pi: ExtensionAPI, results: HookResult[]): void {
 
   const lines: string[] = [];
   for (const [group, hooks] of grouped) {
-    lines.push(pc.bold(pc.cyan(`[${group}]`)));
+    lines.push(`[${group}]`);
     for (const r of hooks) {
-      const icon = r.success ? pc.green("✓") : pc.red("✗");
-      const cmd = r.success ? r.command : pc.yellow(r.command);
-      lines.push(`${icon} ${cmd}`);
+      const icon = r.success ? "✓" : "✗";
+      lines.push(`${icon} ${r.command}`);
 
       // Show output only on failure (stderr preferred, fallback to stdout)
       if (!r.success) {
@@ -541,7 +539,7 @@ function sendHookResults(pi: ExtensionAPI, results: HookResult[]): void {
           // Don't show raw JSON output
           const isJson = displayOutput.trim().startsWith("{");
           if (!isJson) {
-            lines.push(pc.red(displayOutput));
+            lines.push(displayOutput);
           }
         }
       }
