@@ -94,6 +94,7 @@ async function searchDuckDuckGo(
       status
         ? `DuckDuckGo search failed (HTTP ${status})`
         : "DuckDuckGo search failed",
+      { cause: error },
     );
   }
 }
