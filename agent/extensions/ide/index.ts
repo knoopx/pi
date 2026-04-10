@@ -149,7 +149,7 @@ async function spawnWorkspaceAgent(
   void monitorWorkspace(pi, workspaceName, ctx);
 }
 
-export default function ideExtension(pi: ExtensionAPI) {
+export default async function ideExtension(pi: ExtensionAPI) {
   let lastContext: ExtensionContext | null = null;
   let currentVcsLabel: string | null = null;
   let currentUsage: UsageSnapshot | undefined;
@@ -604,5 +604,5 @@ export default function ideExtension(pi: ExtensionAPI) {
   }
 
   // Register all tools
-  registerAllTools(pi);
+  await registerAllTools(pi);
 }

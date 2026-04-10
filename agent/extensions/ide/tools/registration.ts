@@ -5,7 +5,9 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import piPrettyExtension from "./pretty";
 
-export function registerAllTools(_pi: ExtensionAPI): void {
-  // No code analysis tools registered
+export async function registerAllTools(pi: ExtensionAPI): Promise<void> {
+  // Register pretty tool wrappers for enhanced output
+  await piPrettyExtension(pi);
 }

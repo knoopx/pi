@@ -12,6 +12,7 @@
     "@mariozechner/pi-ai": "^0.63.1",
     "@mariozechner/pi-coding-agent": "^0.63.1",
     "@mariozechner/pi-tui": "^0.63.1",
+    "@shikijs/cli": "^4.0.2",
     "@sinclair/typebox": "^0.34.48",
     "js-yaml": "^4.1.1",
     "slice-ansi": "^8.0.0",
