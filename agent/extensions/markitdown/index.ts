@@ -18,7 +18,7 @@ Supports URLs and local files.`,
       source: Type.String({
         description: "URL or file path to transcribe into human-readable text",
       }),
-    }),
+    }) as any,
 
     async execute(_toolCallId, params, signal, onUpdate) {
       const { source } = params;
