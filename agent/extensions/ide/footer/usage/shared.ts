@@ -16,7 +16,6 @@ export async function detectAndFetchUsage(
 
   // Check for Z.AI / GLM Coding Plan
   if (provider.includes("zai-coding-plan")) {
-    // throw Error(JSON.stringify(await fetchZAIUsage(dependencies)));
     return (await fetchZAIUsage(dependencies)) ?? undefined;
   }
 
