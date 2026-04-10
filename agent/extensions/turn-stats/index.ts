@@ -221,17 +221,7 @@ export default function (pi: ExtensionAPI) {
    * Hook into message update event
    * Tracks first and last text delta times for accurate tok/s calculation
    */
-  (
-    pi as ExtensionAPI & {
-      on(
-        event: "message_update",
-        handler: (
-          event: MessageUpdateEvent,
-          ctx: ExtensionContext,
-        ) => Promise<void>,
-      ): void;
-    }
-  ).on("message_update", async (event: MessageUpdateEvent) => {
+  (pi as any).on("message_update", async (event: MessageUpdateEvent) => {
     if (currentTurnKey === null) return;
 
     const assistantEvent = event.assistantMessageEvent;
