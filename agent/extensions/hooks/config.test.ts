@@ -33,7 +33,7 @@ const projectConfig = [
 ];
 
 // Shared test setup helpers
-function createMockReadFileWithGlobalHooks(globalHooks: unknown) {
+function createMockReadFileWithGlobalHooks(globalHooks: HooksConfig) {
   return vi.fn().mockImplementation(async (path: unknown) => {
     const file = String(path);
     if (file.endsWith("defaults.json")) {
@@ -44,6 +44,53 @@ function createMockReadFileWithGlobalHooks(globalHooks: unknown) {
     }
     throw new Error("missing file");
   });
+}
+
+function createMockReadFileWithSettings(settings: Record<string, unknown>) {
+  return vi.fn().mockImplementation(async (path: unknown) => {
+    const file = String(path);
+    if (file.endsWith("defaults.json")) {
+      return JSON.stringify(defaultsConfig);
+    }
+    if (file.endsWith(".pi/agent/settings.json")) {
+      return JSON.stringify(settings);
+    }
+    throw new Error("missing file");
+  });
+}
+
+function createMockReadFile(
+  projectConfig: unknown = null,
+  settings: unknown = null,
+) {
+  return vi.fn().mockImplementation(async (path: unknown) => {
+    const file = String(path);
+    if (file.endsWith("defaults.json")) {
+      return JSON.stringify(defaultsConfig);
+    }
+    if (file.endsWith(".pi/agent/settings.json") && settings !== null) {
+      return JSON.stringify(settings);
+    }
+    if (projectConfig !== null && file.endsWith(String(projectConfig))) {
+      return JSON.stringify(projectConfig);
+    }
+    throw new Error("missing file");
+  });
+}
+
+function createMockReadFileForProject(
+  projectPath: string,
+  projectConfig: unknown,
+  globalHooks: unknown = null,
+) {
+  return createMockReadFile(
+    projectPath,
+    globalHooks !== null ? { hooks: globalHooks } : null,
+  );
+}
+
+function createMockReadFileWithGlobalOnly(globalHooks: unknown) {
+  return createMockReadFile(null, { hooks: globalHooks });
 }
 
 async function loadConfigModule() {
@@ -79,13 +126,7 @@ describe("configLoader", () => {
       it("then resolves defaults as active config", async () => {
         const { configLoader, readFile } = await loadConfigModule();
 
-        readFile.mockImplementation(async (path) => {
-          const file = String(path);
-          if (file.endsWith("defaults.json")) {
-            return JSON.stringify(defaultsConfig);
-          }
-          throw new Error("missing file");
-        });
+        readFile.mockImplementation(createMockReadFile());
 
         await configLoader.load();
 
@@ -101,7 +142,7 @@ describe("configLoader", () => {
       it("then global config fully overrides defaults", async () => {
         const { configLoader, readFile } = await loadConfigModule();
 
-        const globalHooks = [
+        const globalHooks: HooksConfig = [
           {
             group: "global-only",
             pattern: "*",
@@ -151,16 +192,12 @@ describe("configLoader", () => {
       it("then merges project hooks by group and appends new groups", async () => {
         const { configLoader, readFile } = await loadConfigModule();
 
-        readFile.mockImplementation(async (path) => {
-          const file = String(path);
-          if (file.endsWith("defaults.json")) {
-            return JSON.stringify(defaultsConfig);
-          }
-          if (file.endsWith("/workspace/.pi/hooks.json")) {
-            return JSON.stringify(projectConfig);
-          }
-          throw new Error("missing file");
-        });
+        readFile.mockImplementation(
+          createMockReadFileForProject(
+            "/workspace/.pi/hooks.json",
+            projectConfig,
+          ),
+        );
 
         await configLoader.load();
         const merged = await configLoader.getConfigForProject("/workspace");
@@ -189,16 +226,12 @@ describe("configLoader", () => {
       it("then reuses cache and avoids duplicate project file reads", async () => {
         const { configLoader, readFile } = await loadConfigModule();
 
-        readFile.mockImplementation(async (path) => {
-          const file = String(path);
-          if (file.endsWith("defaults.json")) {
-            return JSON.stringify(defaultsConfig);
-          }
-          if (file.endsWith("/workspace/.pi/hooks.json")) {
-            return JSON.stringify(projectConfig);
-          }
-          throw new Error("missing file");
-        });
+        readFile.mockImplementation(
+          createMockReadFileForProject(
+            "/workspace/.pi/hooks.json",
+            projectConfig,
+          ),
+        );
 
         await configLoader.load();
         await configLoader.getConfigForProject("/workspace");
@@ -226,19 +259,13 @@ describe("configLoader", () => {
           },
         ];
 
-        readFile.mockImplementation(async (path) => {
-          const file = String(path);
-          if (file.endsWith("defaults.json")) {
-            return JSON.stringify(defaultsConfig);
-          }
-          if (file.endsWith(".pi/agent/settings.json")) {
-            return JSON.stringify({ hooks: globalHooks });
-          }
-          if (file.endsWith("/workspace/.pi/hooks.json")) {
-            return JSON.stringify(projectConfig);
-          }
-          throw new Error("missing file");
-        });
+        readFile.mockImplementation(
+          createMockReadFileForProject(
+            "/workspace/.pi/hooks.json",
+            projectConfig,
+            globalHooks,
+          ),
+        );
 
         await configLoader.load();
         const resolved = await configLoader.getConfigForProject("/workspace");
@@ -254,16 +281,12 @@ describe("configLoader", () => {
         const { configLoader, readFile, writeFile, mkdir } =
           await loadConfigModule();
 
-        readFile.mockImplementation(async (path) => {
-          const file = String(path);
-          if (file.endsWith("defaults.json")) {
-            return JSON.stringify(defaultsConfig);
-          }
-          if (file.endsWith(".pi/agent/settings.json")) {
-            return JSON.stringify({ theme: "custom", defaultModel: "gpt-5" });
-          }
-          throw new Error("missing file");
-        });
+        readFile.mockImplementation(
+          createMockReadFileWithSettings({
+            theme: "custom",
+            defaultModel: "gpt-5",
+          }),
+        );
 
         await configLoader.load();
         const previousVersion = configLoader.getVersion();

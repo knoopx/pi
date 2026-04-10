@@ -43,7 +43,6 @@ const HooksGroupSchema = Type.Object({
 const HooksConfigSchema = Type.Array(HooksGroupSchema);
 
 export type HookEvent = Static<typeof HookEventSchema>;
-type _HookContext = Static<typeof HookContextSchema>;
 export type HookRule = Static<typeof HookRuleSchema>;
 export type HooksGroup = Static<typeof HooksGroupSchema>;
 export type HooksConfig = Static<typeof HooksConfigSchema>;

@@ -346,6 +346,79 @@ async function runHook(
 }
 
 /**
+ * Check if exit code 2 indicates a block
+ */
+function checkExitCodeBlock(
+  result: HookResult,
+): { block: boolean; reason: string } | null {
+  if (result.exitCode === 2) {
+    return {
+      block: true,
+      reason:
+        result.stderr || `Hook blocked: ${result.group}: ${result.command}`,
+    };
+  }
+  return null;
+}
+
+/**
+ * Check JSON output for blocking decisions
+ */
+function checkJsonBlock(
+  result: HookResult,
+  event: HookEvent,
+): { block: boolean; reason: string } | null {
+  if (!result.output) return null;
+  const { output } = result;
+
+  if (output.continue === false) {
+    return {
+      block: true,
+      reason: output.stopReason || "Hook stopped processing",
+    };
+  }
+
+  if (output.decision === "block" && output.reason) {
+    return { block: true, reason: output.reason };
+  }
+
+  if (event === "tool_call" && output.hookSpecificOutput) {
+    const { permissionDecision, permissionDecisionReason } =
+      output.hookSpecificOutput;
+    if (permissionDecision === "deny") {
+      return {
+        block: true,
+        reason: permissionDecisionReason || "Hook denied permission",
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Check if non-zero exit code should block for tool_call/agent_end
+ */
+function checkErrorBlock(
+  result: HookResult,
+  event: HookEvent,
+  toolName?: string,
+): { block: boolean; reason: string } | null {
+  if (
+    !result.success &&
+    (event === "tool_call" || event === "agent_end") &&
+    (!toolName || !NON_BLOCKING_TOOLS.has(toolName))
+  ) {
+    const reason = result.stderr || result.stdout || "Hook failed";
+    return {
+      block: true,
+      reason: `Hook failed: ${result.group}: ${result.command}\n${reason}`,
+    };
+  }
+  return null;
+}
+
+/**
  * Determine if a hook result should block the action.
  *
  * Blocking conditions:
@@ -358,56 +431,14 @@ function shouldBlock(
   event: HookEvent,
   toolName?: string,
 ): { block: boolean; reason: string } {
-  // Exit code 2 = blocking error (Claude Code convention)
-  if (result.exitCode === 2) {
-    const reason =
-      result.stderr || `Hook blocked: ${result.group}: ${result.command}`;
-    return { block: true, reason };
-  }
+  const exitBlock = checkExitCodeBlock(result);
+  if (exitBlock) return exitBlock;
 
-  // Check JSON output for blocking decision
-  if (result.output) {
-    const { output } = result;
+  const jsonBlock = checkJsonBlock(result, event);
+  if (jsonBlock) return jsonBlock;
 
-    // continue: false stops everything
-    if (output.continue === false) {
-      return {
-        block: true,
-        reason: output.stopReason || "Hook stopped processing",
-      };
-    }
-
-    // decision: "block" for tool_call, tool_result, agent_end
-    if (output.decision === "block" && output.reason) {
-      return { block: true, reason: output.reason };
-    }
-
-    // hookSpecificOutput.permissionDecision: "deny" for tool_call (PreToolUse)
-    if (event === "tool_call" && output.hookSpecificOutput) {
-      const { permissionDecision, permissionDecisionReason } =
-        output.hookSpecificOutput;
-      if (permissionDecision === "deny") {
-        return {
-          block: true,
-          reason: permissionDecisionReason || "Hook denied permission",
-        };
-      }
-    }
-  }
-
-  // Non-zero exit codes (other than 2) are non-blocking errors
-  // unless it's a tool_call/agent_end and not an edit/write tool
-  if (
-    !result.success &&
-    (event === "tool_call" || event === "agent_end") &&
-    (!toolName || !NON_BLOCKING_TOOLS.has(toolName))
-  ) {
-    const reason = result.stderr || result.stdout || "Hook failed";
-    return {
-      block: true,
-      reason: `Hook failed: ${result.group}: ${result.command}\n${reason}`,
-    };
-  }
+  const errorBlock = checkErrorBlock(result, event, toolName);
+  if (errorBlock) return errorBlock;
 
   return { block: false, reason: "" };
 }
@@ -419,6 +450,85 @@ function getAdditionalContext(result: HookResult): string | undefined {
   return result.output?.hookSpecificOutput?.additionalContext;
 }
 
+interface HookProcessState {
+  results: HookResult[];
+  additionalContexts: string[];
+}
+
+/**
+ * Check if a rule should be executed
+ */
+function shouldExecuteRule(
+  rule: HookRule,
+  event: HookEvent,
+  toolName?: string,
+  input?: unknown,
+): boolean {
+  if (rule.event !== event) return false;
+  if (!doesRuleMatch(rule, toolName, input)) return false;
+  return true;
+}
+
+/**
+ * Process a single hook execution
+ */
+async function processHookExecution(
+  pi: ExtensionAPI,
+  rule: HookRule,
+  group: HooksGroup,
+  ctx: ExtensionContext,
+  vars: HookVariables,
+  hookInput: HookInput,
+  event: HookEvent,
+  state: HookProcessState,
+  toolName?: string,
+): Promise<BlockResult | undefined> {
+  const result = await runHook(pi, rule, group, ctx, vars, hookInput);
+  state.results.push(result);
+
+  const blockCheck = shouldBlock(result, event, toolName);
+  if (blockCheck.block) {
+    if (event === "agent_end") {
+      pi.sendMessage(
+        {
+          customType: "hook-error",
+          content: `Hook error:\n${blockCheck.reason}`,
+          display: true,
+        },
+        { triggerTurn: true },
+      );
+      return undefined;
+    }
+    return { block: true, reason: blockCheck.reason };
+  }
+
+  const additionalContext = getAdditionalContext(result);
+  if (additionalContext) {
+    state.additionalContexts.push(additionalContext);
+  }
+
+  if (result.output?.systemMessage) {
+    pi.sendMessage(
+      {
+        customType: "hook-warning",
+        content: result.output.systemMessage,
+        display: true,
+      },
+      { triggerTurn: false },
+    );
+  }
+
+  // Collect results for notification (unless suppressed)
+  if (rule.notify !== false && !result.output?.suppressOutput) {
+    state.results.push(result);
+  }
+
+  return undefined;
+}
+
+/**
+ * Process all hooks for an event
+ */
 async function processHooks(
   pi: ExtensionAPI,
   config: HooksConfig,
@@ -431,8 +541,6 @@ async function processHooks(
 ): Promise<BlockResult | undefined> {
   const filePath = getInputField(input, "path");
   const vars: HookVariables = { file: filePath, tool: toolName, cwd: ctx.cwd };
-
-  // Build JSON input for hooks
   const hookInput = buildHookInput(
     event,
     ctx,
@@ -441,108 +549,89 @@ async function processHooks(
     toolCallId,
     toolResponse,
   );
-
-  const results: HookResult[] = [];
-  const additionalContexts: string[] = [];
+  const state: HookProcessState = { results: [], additionalContexts: [] };
 
   for (const group of config) {
     if (!(await isGroupActive(group.pattern, ctx.cwd))) continue;
 
     for (const rule of group.hooks) {
-      if (rule.event !== event) continue;
-      if (!doesRuleMatch(rule, toolName, input)) continue;
+      if (!shouldExecuteRule(rule, event, toolName, input)) continue;
 
-      const result = await runHook(pi, rule, group, ctx, vars, hookInput);
-
-      // Check for blocking
-      const blockCheck = shouldBlock(result, event, toolName);
-      if (blockCheck.block) {
-        // For agent_end, send error to agent to trigger a new turn for fixing
-        if (event === "agent_end") {
-          pi.sendMessage(
-            {
-              customType: "hook-error",
-              content: `Hook error:\n${blockCheck.reason}`,
-              display: true,
-            },
-            { triggerTurn: true },
-          );
-          return undefined;
-        }
-        return { block: true, reason: blockCheck.reason };
-      }
-
-      // Collect additional context
-      const additionalContext = getAdditionalContext(result);
-      if (additionalContext) {
-        additionalContexts.push(additionalContext);
-      }
-
-      // Show system messages
-      if (result.output?.systemMessage) {
-        pi.sendMessage(
-          {
-            customType: "hook-warning",
-            content: result.output.systemMessage,
-            display: true,
-          },
-          { triggerTurn: false },
-        );
-      }
-
-      // Collect results for notification (unless suppressed)
-      if (rule.notify !== false && !result.output?.suppressOutput) {
-        results.push(result);
-      }
+      const blockResult = await processHookExecution(
+        pi,
+        rule,
+        group,
+        ctx,
+        vars,
+        hookInput,
+        event,
+        state,
+        toolName,
+      );
+      if (blockResult !== undefined) return blockResult;
     }
   }
 
-  // Send additional context as a message to Claude
-  if (additionalContexts.length > 0) {
+  if (state.additionalContexts.length > 0) {
     pi.sendMessage(
       {
         customType: "hook-context",
-        content: additionalContexts.join("\n\n"),
+        content: state.additionalContexts.join("\n\n"),
         display: false,
       },
       { triggerTurn: false },
     );
   }
 
-  // Send hook results notification
-  if (results.length > 0) {
-    sendHookResults(pi, results);
+  if (state.results.length > 0) {
+    sendHookResults(pi, state.results);
   }
 
   return undefined;
 }
 
-function sendHookResults(pi: ExtensionAPI, results: HookResult[]): void {
+function groupHookResults(results: HookResult[]): Map<string, HookResult[]> {
   const grouped = new Map<string, HookResult[]>();
   for (const r of results) {
     const list = grouped.get(r.group) ?? [];
     list.push(r);
     grouped.set(r.group, list);
   }
+  return grouped;
+}
 
+function shouldShowOutput(r: HookResult): boolean {
+  if (r.success) return false;
+  const displayOutput = r.stderr || r.stdout;
+  if (!displayOutput || r.output?.suppressOutput) return false;
+  // Don't show raw JSON output
+  const isJson = displayOutput.trim().startsWith("{");
+  return !isJson;
+}
+
+function formatHookResult(r: HookResult): string[] {
   const lines: string[] = [];
+  const icon = r.success ? "✓" : "✗";
+  lines.push(`${icon} ${r.command}`);
+
+  if (shouldShowOutput(r)) {
+    const displayOutput = r.stderr || r.stdout;
+    if (displayOutput) {
+      lines.push(displayOutput);
+    }
+  }
+
+  return lines;
+}
+
+function sendHookResults(pi: ExtensionAPI, results: HookResult[]): void {
+  const grouped = groupHookResults(results);
+  const lines: string[] = [];
+
   for (const [group, hooks] of grouped) {
     lines.push(`[${group}]`);
     for (const r of hooks) {
-      const icon = r.success ? "✓" : "✗";
-      lines.push(`${icon} ${r.command}`);
-
-      // Show output only on failure (stderr preferred, fallback to stdout)
-      if (!r.success) {
-        const displayOutput = r.stderr || r.stdout;
-        if (displayOutput && !r.output?.suppressOutput) {
-          // Don't show raw JSON output
-          const isJson = displayOutput.trim().startsWith("{");
-          if (!isJson) {
-            lines.push(displayOutput);
-          }
-        }
-      }
+      lines.push(...formatHookResult(r));
     }
   }
 
