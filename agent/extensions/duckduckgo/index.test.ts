@@ -13,6 +13,28 @@ import {
 import duckduckgoExtension from "./index";
 import { disableThrottle } from "../../shared/throttle";
 
+/**
+ * Helper to execute the search tool with fetch mocking
+ */
+async function executeSearchTool(
+  toolConfig: MockTool,
+  mockFetch: typeof global.fetch,
+) {
+  const originalFetch = global.fetch;
+  global.fetch = mockFetch;
+  try {
+    return await toolConfig.execute(
+      "test-id",
+      { query: "test query", limit: 5 },
+      vi.fn(),
+      {} as ExtensionContext,
+      new AbortController().signal,
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+}
+
 describe("DuckDuckGo Extension", () => {
   let mockPi: MockExtensionAPI;
   let toolConfig: MockTool;
@@ -36,18 +58,10 @@ describe("DuckDuckGo Extension", () => {
 
   describe("Tool Execution", () => {
     it("should return no results message when search returns empty", async () => {
-      const originalFetch = global.fetch;
-      global.fetch = vi.fn().mockRejectedValue(new Error("Network error"));
-
-      const result = await toolConfig.execute(
-        "test-id",
-        { query: "test query", limit: 5 },
-        vi.fn(),
-        {} as ExtensionContext,
-        new AbortController().signal,
+      const result = await executeSearchTool(
+        toolConfig,
+        vi.fn().mockRejectedValue(new Error("Network error")),
       );
-
-      global.fetch = originalFetch;
 
       expect((result.content[0] as TextContent).text).toBe("No results found.");
       expect(result.details).toEqual({ query: "test query", limit: 5 });
@@ -62,9 +76,8 @@ describe("DuckDuckGo Extension", () => {
         </div>
       `;
 
-      const originalFetch = global.fetch;
       let fetchCallCount = 0;
-      global.fetch = vi.fn().mockImplementation(() => {
+      const mockFetch = vi.fn().mockImplementation(() => {
         fetchCallCount++;
         if (fetchCallCount === 1) {
           // First call - GET request for search page
@@ -84,15 +97,7 @@ describe("DuckDuckGo Extension", () => {
         }
       });
 
-      const result = await toolConfig.execute(
-        "test-id",
-        { query: "test query", limit: 5 },
-        vi.fn(),
-        {} as ExtensionContext,
-        new AbortController().signal,
-      );
-
-      global.fetch = originalFetch;
+      const result = await executeSearchTool(toolConfig, mockFetch);
 
       expect((result.content[0] as TextContent).text).toMatchSnapshot();
       expect(result.details.results).toBeDefined();
