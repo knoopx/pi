@@ -1,5 +1,5 @@
 ---
-name: csv-tsv-nushell
+name: nu-shell-tabular-data
 description: "Reads, filters, transforms, and manipulates CSV/TSV files using Nushell's structured data pipeline. Use when working with tabular data, data cleaning, CSV validation, or batch processing spreadsheet-like files."
 ---
 
