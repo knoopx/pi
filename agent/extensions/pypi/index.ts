@@ -176,7 +176,7 @@ Use this to:
 - Explore available Python packages
 
 Returns matching packages with metadata.`,
-    parameters: SearchPyPIPackagesParams,
+    parameters: SearchPyPIPackagesParams as any,
 
     async execute(_toolCallId: string, params: SearchPyPIPackagesParamsType) {
       const { query, limit = 10 } = params;
@@ -266,7 +266,7 @@ Use this to:
 - Get package author and homepage information
 
 Shows comprehensive package details from PyPI.`,
-    parameters: PyPIPackageInfoParams,
+    parameters: PyPIPackageInfoParams as any,
 
     async execute(_toolCallId: string, params: PyPIPackageInfoParamsType) {
       const { package: packageName } = params;
