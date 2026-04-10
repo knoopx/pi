@@ -422,13 +422,7 @@ Commit message format:
     if (!selectedChange) return;
     const revertResult = await pi.exec(
       "jj",
-      [
-        "revert",
-        "-r",
-        selectedChange.changeId,
-        "--insert-after",
-        selectedChange.changeId,
-      ],
+      ["revert", "-r", selectedChange.changeId, "--insert-after", "@"],
       { cwd },
     );
     await refreshAfterMutation();
