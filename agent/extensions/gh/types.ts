@@ -48,12 +48,3 @@ export interface GHPRSearchResult {
   url: string;
   mergeable: string;
 }
-
-interface _GHCommitSearchResult {
-  sha: string;
-  message: string;
-  repo: string;
-  owner: string;
-  url: string;
-  committed_date: string;
-}

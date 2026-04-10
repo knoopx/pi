@@ -1,15 +1,38 @@
 import type {
   ExtensionAPI,
   ExtensionContext,
-  AgentToolResult,
   AgentToolUpdateCallback,
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
 import { dangerousOperationConfirmation } from "../../shared/tool-utils";
-import { renderTextToolResult } from "../../shared/render-utils";
 import { detail, stateDot } from "../../shared/renderers";
-import { ghCmd } from "./utils";
+import { ghCmd, ghCmdJson, ghCmdJsonWithInput } from "./utils";
+import { createErrorResult, createTextResultRender } from "./shared";
+
+/**
+ * Create a successful result with formatted gist output
+ */
+function createGistResult(
+  output: string,
+  gist: Gist,
+): {
+  content: { type: "text"; text: string }[];
+  details: { gist: Gist };
+} {
+  return {
+    content: [{ type: "text", text: output }],
+    details: { gist },
+  };
+}
+
+/**
+ * Create an error result from an error
+ */
+function createGistErrorResult(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return createErrorResult(message);
+}
 
 export interface GistFile {
   filename: string;
@@ -43,18 +66,15 @@ export async function listGists(
 ): Promise<Gist[]> {
   if (userId && userId !== "@me") {
     const endpoint = `/users/${userId}/gists?per_page=${limit}`;
-    const result = await ghCmd([
-      "api",
-      endpoint,
-      "--jq",
-      "[.[] | {id, description, public, created_at, updated_at, html_url, files, user: (.owner // null)}]",
-    ]);
-
-    if (result.exitCode !== 0) {
-      throw new Error(`gh api gists failed: ${result.stderr || result.stdout}`);
-    }
-
-    return JSON.parse(result.stdout) as Gist[];
+    return ghCmdJson<Gist[]>(
+      [
+        "api",
+        endpoint,
+        "--jq",
+        "[.[] | {id, description, public, created_at, updated_at, html_url, files, user: (.owner // null)}]",
+      ],
+      "api gists",
+    );
   }
 
   const result = await ghCmd(["gist", "list", `--limit=${limit}`]);
@@ -80,15 +100,7 @@ export async function listGists(
 }
 
 export async function getGist(gistId: string): Promise<Gist> {
-  const result = await ghCmd(["api", `/gists/${gistId}`]);
-
-  if (result.exitCode !== 0) {
-    throw new Error(`gh api gist failed: ${result.stderr || result.stdout}`);
-  }
-
-  const gist: Gist = JSON.parse(result.stdout);
-
-  return gist;
+  return ghCmdJson<Gist>(["api", `/gists/${gistId}`], "api gist");
 }
 
 export async function createGist(
@@ -160,44 +172,11 @@ export async function updateGist(
     apiBody.files = apiFiles;
   }
 
-  const { spawn } = await import("node:child_process");
-  const apiResult = await new Promise<{
-    stdout: string;
-    stderr: string;
-    exitCode: number;
-  }>((resolve, reject) => {
-    const proc = spawn(
-      "gh",
-      ["api", `/gists/${gistId}`, "-X", "PATCH", "--input", "-"],
-      { stdio: ["pipe", "pipe", "pipe"] },
-    );
-
-    let stdout = "";
-    let stderr = "";
-
-    proc.stdout.on("data", (data: Buffer) => {
-      stdout += data.toString();
-    });
-    proc.stderr.on("data", (data: Buffer) => {
-      stderr += data.toString();
-    });
-    proc.stdin.write(JSON.stringify(apiBody));
-    proc.stdin.end();
-    proc.on("close", (code: number) => {
-      resolve({ stdout, stderr, exitCode: code || 0 });
-    });
-    proc.on("error", (err) => {
-      reject(err);
-    });
-  });
-
-  if (apiResult.exitCode !== 0) {
-    throw new Error(
-      `gh api gist update failed: ${apiResult.stderr || apiResult.stdout}`,
-    );
-  }
-
-  return JSON.parse(apiResult.stdout) as Gist;
+  return ghCmdJsonWithInput<Gist>(
+    ["api", `/gists/${gistId}`, "-X", "PATCH", "--input", "-"],
+    apiBody,
+    "api gist update",
+  );
 }
 
 function formatGist(gist: Gist): string {
@@ -240,15 +219,6 @@ function formatGistUpdate(gist: Gist): string {
   }
 
   return lines.join("\n");
-}
-
-function createErrorResult(
-  message: string,
-): AgentToolResult<{ error?: string }> {
-  return {
-    content: [{ type: "text", text: `Error: ${message}` }],
-    details: { error: message },
-  };
 }
 
 export const ListGistsParams = Type.Object({
@@ -355,14 +325,12 @@ Use this to:
 Examples:
 - gh-list-gists() - List your gists (requires GITHUB_TOKEN)
 - gh-list-gists(userId='octocat', limit=10)`,
-    parameters: ListGistsParams as any,
+    parameters: ListGistsParams,
 
     async execute(
       _toolCallId: string,
       params: ListGistsParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-      _ctx: ExtensionContext,
     ) {
       try {
         const since = params.since ? new Date(params.since) : undefined;
@@ -403,9 +371,7 @@ Examples:
       return new Text(text, 0, 0);
     },
 
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    renderResult: createTextResultRender(),
   });
 
   pi.registerTool({
@@ -421,25 +387,19 @@ Use this to:
 Examples:
 - gh-get-gist(gistId='abc123')
 - gh-get-gist(gistId='0123456789abcdef')`,
-    parameters: GetGistParams as any,
+    parameters: GetGistParams,
 
     async execute(
       _toolCallId: string,
       params: GetGistParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-      _ctx: ExtensionContext,
     ) {
       try {
         const gist = await getGist(params.gistId);
         const output = formatGist(gist);
-        return {
-          content: [{ type: "text", text: output }],
-          details: { gist },
-        };
+        return createGistResult(output, gist);
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
+        return createGistErrorResult(error);
       }
     },
 
@@ -451,9 +411,7 @@ Examples:
       return new Text(text, 0, 0);
     },
 
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    renderResult: createTextResultRender(),
   });
 
   pi.registerTool({
@@ -470,7 +428,7 @@ Use this to:
 Examples:
 - gh-create-gist(files={'test.py': {content: 'print("hello")'}, 'README.md': {content: '# Test'}})
 - gh-create-gist(files={'main.ts': {content: 'console.log("hi")'}}, description='My test gist', public=true)`,
-    parameters: CreateGistParams as any,
+    parameters: CreateGistParams,
 
     async execute(
       _toolCallId: string,
@@ -493,13 +451,9 @@ Examples:
           params.isPublic,
         );
         const output = formatGist(gist);
-        return {
-          content: [{ type: "text", text: output }],
-          details: { gist },
-        };
+        return createGistResult(output, gist);
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
+        return createGistErrorResult(error);
       }
     },
 
@@ -516,9 +470,7 @@ Examples:
       return new Text(text, 0, 0);
     },
 
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    renderResult: createTextResultRender(),
   });
 
   pi.registerTool({
@@ -534,7 +486,7 @@ Use this to:
 Examples:
 - gh-update-gist(gistId='abc123', files={'test.py': {content: 'updated code'}})
 - gh-update-gist(gistId='abc123', description='Updated description')`,
-    parameters: UpdateGistParams as any,
+    parameters: UpdateGistParams,
 
     async execute(
       _toolCallId: string,
@@ -559,13 +511,9 @@ Examples:
           params.description,
         );
         const output = formatGistUpdate(gist);
-        return {
-          content: [{ type: "text", text: output }],
-          details: { gist },
-        };
+        return createGistResult(output, gist);
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
+        return createGistErrorResult(error);
       }
     },
 
@@ -584,8 +532,6 @@ Examples:
       return new Text(text, 0, 0);
     },
 
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    renderResult: createTextResultRender(),
   });
 }

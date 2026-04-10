@@ -5,8 +5,6 @@ import type {
   AgentToolUpdateCallback,
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
-import { Text } from "@mariozechner/pi-tui";
-import { renderTextToolResult } from "../../shared/render-utils";
 import {
   dotJoin,
   table,
@@ -15,6 +13,11 @@ import {
   type Column,
 } from "../../shared/renderers";
 import { ghCmd } from "./utils";
+import {
+  createListRenderCall,
+  createTextResultRender,
+  createViewRenderCall,
+} from "./shared";
 
 export interface GHRelease {
   tagName: string;
@@ -154,7 +157,7 @@ Examples:
 - gh-list-releases(owner='facebook', repo='react')
 - gh-list-releases(owner='microsoft', repo='vscode', limit=50)
 - gh-list-releases(owner='golang', repo='go', limit=10)`,
-    parameters: ListReleasesParams as any,
+    parameters: ListReleasesParams,
     async execute(
       _id,
       params: ListReleasesParamsType,
@@ -214,15 +217,8 @@ Examples:
         );
       }
     },
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-list-releases"));
-      if (args.owner && args.repo)
-        text += theme.fg("muted", ` ${args.owner}/${args.repo}`);
-      return new Text(text, 0, 0);
-    },
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    renderCall: createListRenderCall("gh-list-releases"),
+    renderResult: createTextResultRender(),
   });
 
   pi.registerTool({
@@ -240,7 +236,7 @@ Examples:
 - gh-view-release(owner='facebook', repo='react', tag='v18.2.0')
 - gh-view-release(owner='microsoft', repo='vscode', tag='1.85.0')
 - gh-view-release(owner='golang', repo='go', tag='go1.21.0')`,
-    parameters: ViewReleaseParams as any,
+    parameters: ViewReleaseParams,
     async execute(
       _id,
       params: ViewReleaseParamsType,
@@ -291,14 +287,7 @@ Examples:
         );
       }
     },
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-view-release"));
-      if (args.owner && args.repo)
-        text += theme.fg("muted", ` ${args.owner}/${args.repo}@${args.tag}`);
-      return new Text(text, 0, 0);
-    },
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    renderCall: createViewRenderCall("gh-view-release"),
+    renderResult: createTextResultRender(),
   });
 }

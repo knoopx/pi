@@ -1,14 +1,64 @@
 import type {
   ExtensionAPI,
   ExtensionContext,
-  AgentToolResult,
   AgentToolUpdateCallback,
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
-import { renderTextToolResult } from "../../shared/render-utils";
 import { dotJoin, table, type Column } from "../../shared/renderers";
-import { ghCmd } from "./utils";
+import { ghCmd, ghCmdJson } from "./utils";
+import { createErrorResult, createTextResultRender } from "./shared";
+
+/**
+ * Create a renderCall function for repo tools with optional owner/repo/path
+ */
+function createRepoRenderCall(toolName: string) {
+  return (args: Record<string, unknown>, theme: unknown) => {
+    const t = theme as {
+      fg: (c: string, t: string) => string;
+      bold: (t: string) => string;
+    };
+    let text = t.fg("toolTitle", t.bold(toolName));
+    const owner = args.owner as string;
+    const repo = args.repo as string;
+    if (owner && repo) {
+      text += t.fg("muted", ` (${owner}/${repo})`);
+    }
+    const path = args.path as string;
+    if (path) {
+      text += t.fg("dim", `/${path}`);
+    }
+    const maxFiles = args.maxFiles as number;
+    if (maxFiles) {
+      text += t.fg("dim", ` (max=${maxFiles})`);
+    }
+    return new Text(text, 0, 0);
+  };
+}
+
+/**
+ * Create a successful result with formatted output
+ */
+function createRepoResult(
+  output: string,
+  details: Record<string, unknown>,
+): {
+  content: { type: "text"; text: string }[];
+  details: Record<string, unknown>;
+} {
+  return {
+    content: [{ type: "text", text: output }],
+    details,
+  };
+}
+
+/**
+ * Create an error result from an error
+ */
+function createRepoErrorResult(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return createErrorResult(message);
+}
 
 export interface GHFile {
   name: string;
@@ -38,25 +88,15 @@ export async function getRepoContents(
   path = "",
 ): Promise<GHFile[]> {
   const pathArg = path ? `/${path}` : "";
-  const result = await ghCmd([
+  return ghCmdJson<GHFile[]>(
+    [
+      "api",
+      `/repos/${owner}/${repo}/contents${pathArg}`,
+      "--jq",
+      "[.[] | {name, path, type, size, url, html_url, download_url: .download_url, sha}]",
+    ],
     "api",
-    `/repos/${owner}/${repo}/contents${pathArg}`,
-    "--jq",
-    "[.[] | {name, path, type, size, url, html_url, download_url: .download_url, sha}]",
-  ]);
-
-  if (result.exitCode !== 0) {
-    throw new Error(`gh api failed: ${result.stderr || result.stdout}`);
-  }
-
-  let contents: GHFile[];
-  try {
-    contents = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(`Failed to parse gh api output: ${result.stdout}`);
-  }
-
-  return contents;
+  );
 }
 
 export async function getFileContent(
@@ -191,15 +231,6 @@ function formatRepoFilesList(result: {
   return lines.join("\n");
 }
 
-function createErrorResult(
-  message: string,
-): AgentToolResult<{ error?: string }> {
-  return {
-    content: [{ type: "text", text: `Error: ${message}` }],
-    details: { error: message },
-  };
-}
-
 export const GetRepoContentsParams = Type.Object({
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
@@ -272,7 +303,7 @@ Use this to:
 Examples:
 - gh-repo-contents(owner='facebook', repo='react', path='packages')
 - gh-repo-contents(owner='microsoft', repo='vscode')`,
-    parameters: GetRepoContentsParams as any,
+    parameters: GetRepoContentsParams,
 
     async execute(
       _toolCallId: string,
@@ -293,30 +324,14 @@ Examples:
           params.path || "",
           contents,
         );
-        return {
-          content: [{ type: "text", text: output }],
-          details: { contents },
-        };
+        return createRepoResult(output, { contents });
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
+        return createRepoErrorResult(error);
       }
     },
 
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-repo-contents"));
-      if (args.owner && args.repo) {
-        text += theme.fg("muted", ` (${args.owner}/${args.repo})`);
-      }
-      if (args.path) {
-        text += theme.fg("dim", `/${args.path}`);
-      }
-      return new Text(text, 0, 0);
-    },
-
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    renderCall: createRepoRenderCall("gh-repo-contents"),
+    renderResult: createTextResultRender(),
   });
 
   pi.registerTool({
@@ -334,7 +349,7 @@ Examples:
 - gh-file-content(owner='facebook', repo='react', path='README.md')
 - gh-file-content(owner='microsoft', repo='vscode', path='package.json')
 - gh-file-content(owner='pytorch', repo='pytorch', path='setup.py', ref='main')`,
-    parameters: GetFileContentParams as any,
+    parameters: GetFileContentParams,
 
     async execute(
       _toolCallId: string,
@@ -351,13 +366,12 @@ Examples:
           params.ref,
         );
         const output = formatFileContent(result);
-        return {
-          content: [{ type: "text", text: output }],
-          details: result,
-        };
+        return createRepoResult(
+          output,
+          result as unknown as Record<string, unknown>,
+        );
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
+        return createRepoErrorResult(error);
       }
     },
 
@@ -372,9 +386,7 @@ Examples:
       return new Text(text, 0, 0);
     },
 
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    renderResult: createTextResultRender(),
   });
 
   pi.registerTool({
@@ -391,7 +403,7 @@ Use this to:
 Examples:
 - gh-list-repo-files(owner='facebook', repo='react')
 - gh-list-repo-files(owner='microsoft', repo='vscode', path='src', maxFiles=100)`,
-    parameters: ListRepoFilesParams as any,
+    parameters: ListRepoFilesParams,
 
     async execute(
       _toolCallId: string,
@@ -413,32 +425,13 @@ Examples:
           repo: params.repo,
           path: params.path || "",
         });
-        return {
-          content: [{ type: "text", text: output }],
-          details: result,
-        };
+        return createRepoResult(output, result);
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
+        return createRepoErrorResult(error);
       }
     },
 
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-list-repo-files"));
-      if (args.owner && args.repo) {
-        text += theme.fg("muted", ` (${args.owner}/${args.repo})`);
-      }
-      if (args.path) {
-        text += theme.fg("dim", `/${args.path}`);
-      }
-      if (args.maxFiles) {
-        text += theme.fg("dim", ` (max=${args.maxFiles})`);
-      }
-      return new Text(text, 0, 0);
-    },
-
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    renderCall: createRepoRenderCall("gh-list-repo-files"),
+    renderResult: createTextResultRender(),
   });
 }

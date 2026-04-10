@@ -5,10 +5,9 @@ import type {
   AgentToolUpdateCallback,
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
-import { Text } from "@mariozechner/pi-tui";
-import { renderTextToolResult } from "../../shared/render-utils";
 import { dotJoin, table, stateDot, type Column } from "../../shared/renderers";
 import { ghCmd } from "./utils";
+import { createListRenderCall, createTextResultRender } from "./shared";
 
 export interface GHWorkflow {
   name: string;
@@ -152,7 +151,7 @@ Examples:
 - gh-list-workflows(owner='facebook', repo='react')
 - gh-list-workflows(owner='microsoft', repo='vscode', limit=50)
 - gh-list-workflows(owner='golang', repo='go', limit=20)`,
-    parameters: ListWorkflowsParams as any,
+    parameters: ListWorkflowsParams,
     async execute(
       _id,
       params: ListWorkflowsParamsType,
@@ -203,15 +202,8 @@ Examples:
         );
       }
     },
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-list-workflows"));
-      if (args.owner && args.repo)
-        text += theme.fg("muted", ` ${args.owner}/${args.repo}`);
-      return new Text(text, 0, 0);
-    },
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    renderCall: createListRenderCall("gh-list-workflows"),
+    renderResult: createTextResultRender(),
   });
 
   pi.registerTool({
@@ -229,7 +221,7 @@ Examples:
 - gh-list-runs(owner='facebook', repo='react')
 - gh-list-runs(owner='microsoft', repo='vscode', workflow='ci.yml', limit=50)
 - gh-list-runs(owner='golang', repo='go', limit=20)`,
-    parameters: ListRunsParams as any,
+    parameters: ListRunsParams,
     async execute(
       _id,
       params: ListRunsParamsType,
@@ -287,15 +279,7 @@ Examples:
         );
       }
     },
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-list-runs"));
-      if (args.owner && args.repo)
-        text += theme.fg("muted", ` ${args.owner}/${args.repo}`);
-      if (args.workflow) text += theme.fg("dim", ` workflow=${args.workflow}`);
-      return new Text(text, 0, 0);
-    },
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    renderCall: createListRenderCall("gh-list-runs"),
+    renderResult: createTextResultRender(),
   });
 }

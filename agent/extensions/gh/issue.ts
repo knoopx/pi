@@ -1,15 +1,13 @@
-import type {
-  ExtensionAPI,
-  ExtensionContext,
-  AgentToolResult,
-  AgentToolUpdateCallback,
-} from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
-import { Text } from "@mariozechner/pi-tui";
-import { dangerousOperationConfirmation } from "../../shared/tool-utils";
-import { renderTextToolResult } from "../../shared/render-utils";
-import { dotJoin, table, detail, type Column } from "../../shared/renderers";
-import { ghCmd } from "./utils";
+import { type Column } from "../../shared/renderers";
+import { ghCmd, ghCmdJson } from "./utils";
+import {
+  createListParamsSchema,
+  registerListTool,
+  registerViewTool,
+  registerCreateTool,
+} from "./shared";
 
 export interface GHIssue {
   number: number;
@@ -27,10 +25,16 @@ export interface GHIssue {
 export async function listIssues(
   owner: string,
   repo: string,
-  state?: "open" | "closed" | "all",
+  state?: "open" | "closed" | "merged" | "all",
   limit = 30,
 ): Promise<GHIssue[]> {
-  const args = ["issue", "list", "-R", `${owner}/${repo}`, `--limit=${limit}`];
+  const args: string[] = [
+    "issue",
+    "list",
+    "-R",
+    `${owner}/${repo}`,
+    `--limit=${limit}`,
+  ];
   if (state && state !== "all") {
     args.push(`--state=${state}`);
   }
@@ -40,20 +44,7 @@ export async function listIssues(
     "[.[] | . + {html_url: .url}]",
   );
 
-  const result = await ghCmd(args);
-
-  if (result.exitCode !== 0) {
-    throw new Error(`gh issue list failed: ${result.stderr || result.stdout}`);
-  }
-
-  let issues: GHIssue[];
-  try {
-    issues = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(`Failed to parse gh issue list output: ${result.stdout}`);
-  }
-
-  return issues;
+  return ghCmdJson<GHIssue[]>(args, "issue list");
 }
 
 export async function viewIssue(
@@ -61,29 +52,19 @@ export async function viewIssue(
   repo: string,
   issueNumber: number,
 ): Promise<GHIssue> {
-  const result = await ghCmd([
-    "issue",
-    "view",
-    `${issueNumber}`,
-    "-R",
-    `${owner}/${repo}`,
-    "--json=number,title,state,createdAt,updatedAt,author,body,url,labels,milestone",
-    "--jq",
-    ". + {html_url: .url}",
-  ]);
-
-  if (result.exitCode !== 0) {
-    throw new Error(`gh issue view failed: ${result.stderr || result.stdout}`);
-  }
-
-  let issue: GHIssue;
-  try {
-    issue = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(`Failed to parse gh issue view output: ${result.stdout}`);
-  }
-
-  return issue;
+  return ghCmdJson<GHIssue>(
+    [
+      "issue",
+      "view",
+      `${issueNumber}`,
+      "-R",
+      `${owner}/${repo}`,
+      "--json=number,title,state,createdAt,updatedAt,author,body,url,labels,milestone",
+      "--jq",
+      ". + {html_url: .url}",
+    ],
+    "issue view",
+  );
 }
 
 export async function createIssue(
@@ -105,39 +86,11 @@ export async function createIssue(
   return ghCmd(args);
 }
 
-function createErrorResult(
-  message: string,
-): AgentToolResult<{ error?: string }> {
-  return {
-    content: [{ type: "text", text: `Error: ${message}` }],
-    details: { error: message },
-  };
-}
-
-export const ListIssuesParams = Type.Object({
-  owner: Type.String({
-    description: "Repository owner (e.g., 'facebook')",
-  }),
-  repo: Type.String({
-    description: "Repository name (e.g., 'react')",
-  }),
-  state: Type.Optional(
-    Type.Union(
-      [Type.Literal("open"), Type.Literal("closed"), Type.Literal("all")],
-      {
-        description: "Filter by state (default: open)",
-      },
-    ),
-  ),
-  limit: Type.Optional(
-    Type.Integer({
-      minimum: 1,
-      maximum: 100,
-      default: 30,
-      description: "Maximum number of issues to return (max 100)",
-    }),
-  ),
-});
+export const ListIssuesParams = createListParamsSchema(
+  "List issues in a GitHub repository",
+  ["open", "closed", "all"],
+  "issues",
+);
 
 export const ViewIssueParams = Type.Object({
   owner: Type.String({
@@ -178,10 +131,51 @@ export type ViewIssueParamsType = Static<typeof ViewIssueParams>;
 export type CreateIssueParamsType = Static<typeof CreateIssueParams>;
 
 export function registerIssueTools(pi: ExtensionAPI) {
-  pi.registerTool({
-    name: "gh-list-issues",
-    label: "List Issues",
-    description: `List issues in a GitHub repository.
+  const issueColumns: Column[] = [
+    { key: "#", align: "right", minWidth: 5 },
+    {
+      key: "title",
+      format: (_v, row) => {
+        const r = row as Record<string, string>;
+        const dot = r.state === "OPEN" ? "●" : "○";
+        const lines = [`${dot} ${r.title}`];
+        if (r.labels) lines.push(r.labels);
+        lines.push(`${r.author} · ${r.date}`, r.url);
+        return lines.join("\n");
+      },
+    },
+  ];
+
+  const issueRowMapper = (issue: GHIssue) => ({
+    "#": `#${issue.number}`,
+    title: issue.title,
+    state: issue.state,
+    author: issue.author?.login ?? "",
+    date: new Date(issue.createdAt).toLocaleDateString(),
+    labels: issue.labels?.map((l) => l.name).join(", ") ?? "",
+    url: issue.html_url,
+  });
+
+  const issueFields = (issue: GHIssue) => [
+    { label: "title", value: `#${issue.number} ${issue.title}` },
+    { label: "state", value: issue.state },
+    { label: "author", value: issue.author?.login ?? "unknown" },
+    {
+      label: "labels",
+      value: issue.labels?.map((l) => l.name).join(", ") || "none",
+    },
+    { label: "milestone", value: issue.milestone?.title || "none" },
+    {
+      label: "created",
+      value: new Date(issue.createdAt).toLocaleString(),
+    },
+    { label: "url", value: issue.html_url },
+  ];
+
+  registerListTool(pi, {
+    toolName: "gh-list-issues",
+    toolLabel: "Issues",
+    toolDescription: `List issues in a GitHub repository.
 
 Use this to:
 - View open or closed issues in a repository
@@ -193,79 +187,16 @@ Examples:
 - gh-list-issues(owner='facebook', repo='react')
 - gh-list-issues(owner='microsoft', repo='vscode', state='open', limit=50)
 - gh-list-issues(owner='torvalds', repo='linux', state='closed')`,
-    parameters: ListIssuesParams as any,
-    async execute(
-      _id,
-      params: ListIssuesParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        const issues = await listIssues(
-          params.owner,
-          params.repo,
-          params.state,
-          params.limit,
-        );
-        const cols: Column[] = [
-          { key: "#", align: "right", minWidth: 5 },
-          {
-            key: "title",
-            format: (_v, row) => {
-              const r = row as Record<string, string>;
-              const dot = r.state === "OPEN" ? "●" : "○";
-              const lines = [`${dot} ${r.title}`];
-              if (r.labels) lines.push(r.labels);
-              lines.push(`${r.author} · ${r.date}`, r.url);
-              return lines.join("\n");
-            },
-          },
-        ];
-        const rows = issues.map((issue) => ({
-          "#": `#${issue.number}`,
-          title: issue.title,
-          state: issue.state,
-          author: issue.author?.login ?? "",
-          date: new Date(issue.createdAt).toLocaleDateString(),
-          labels: issue.labels?.map((l) => l.name).join(", ") ?? "",
-          url: issue.html_url,
-        }));
-        return {
-          content: [
-            {
-              type: "text",
-              text: [
-                dotJoin(`${issues.length} issues`),
-                "",
-                table(cols, rows),
-              ].join("\n"),
-            },
-          ],
-          details: { issues },
-        };
-      } catch (error) {
-        return createErrorResult(
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-list-issues"));
-      if (args.owner && args.repo)
-        text += theme.fg("muted", ` ${args.owner}/${args.repo}`);
-      if (args.state) text += theme.fg("dim", ` --state=${args.state}`);
-      return new Text(text, 0, 0);
-    },
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    paramsSchema: ListIssuesParams,
+    listFn: listIssues,
+    columns: issueColumns,
+    rowMapper: issueRowMapper,
   });
 
-  pi.registerTool({
-    name: "gh-view-issue",
-    label: "View Issue",
-    description: `View details of a specific issue.
+  registerViewTool(pi, {
+    toolName: "gh-view-issue",
+    toolLabel: "Issue",
+    toolDescription: `View details of a specific issue.
 
 Use this to:
 - Read the full issue content and description
@@ -276,60 +207,16 @@ Use this to:
 Examples:
 - gh-view-issue(owner='facebook', repo='react', number=123)
 - gh-view-issue(owner='microsoft', repo='vscode', number=456)`,
-    parameters: ViewIssueParams as any,
-    async execute(
-      _id,
-      params: ViewIssueParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        const issue = await viewIssue(params.owner, params.repo, params.number);
-        const fields = [
-          { label: "title", value: `#${issue.number} ${issue.title}` },
-          { label: "state", value: issue.state },
-          { label: "author", value: issue.author?.login ?? "unknown" },
-          {
-            label: "labels",
-            value: issue.labels?.map((l) => l.name).join(", ") || "none",
-          },
-          { label: "milestone", value: issue.milestone?.title || "none" },
-          {
-            label: "created",
-            value: new Date(issue.createdAt).toLocaleString(),
-          },
-          { label: "url", value: issue.html_url },
-        ];
-        const output = [
-          detail(fields),
-          issue.body ? `\n${issue.body}` : "",
-        ].join("");
-        return {
-          content: [{ type: "text", text: output }],
-          details: { issue },
-        };
-      } catch (error) {
-        return createErrorResult(
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-view-issue"));
-      if (args.owner && args.repo)
-        text += theme.fg("muted", ` ${args.owner}/${args.repo}#${args.number}`);
-      return new Text(text, 0, 0);
-    },
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    paramsSchema: ViewIssueParams,
+    viewFn: viewIssue,
+    fields: issueFields,
+    includeBody: true,
   });
 
-  pi.registerTool({
-    name: "gh-create-issue",
-    label: "Create Issue",
-    description: `Create a new issue in a repository.
+  registerCreateTool(pi, {
+    toolName: "gh-create-issue",
+    toolLabel: "Create Issue",
+    toolDescription: `Create a new issue in a repository.
 
 Use this to:
 - Report bugs or problems
@@ -341,50 +228,18 @@ Examples:
 - gh-create-issue(owner='facebook', repo='react', title='Bug: Component crashes')
 - gh-create-issue(owner='microsoft', repo='vscode', title='Feature request', body='Would love to see...')
 - gh-create-issue(owner='torvalds', repo='linux', title='Kernel issue', labels=['bug', 'high-priority'])`,
-    parameters: CreateIssueParams as any,
-    async execute(
-      _id,
-      params: CreateIssueParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-      ctx: ExtensionContext,
-    ) {
-      if (!ctx) return createErrorResult("Blocked: no context");
-      const denied = await dangerousOperationConfirmation(
-        ctx,
-        "Create Issue",
-        `"${params.title}" in ${params.owner}/${params.repo}`,
-      );
-      if (denied) return denied;
-      try {
-        const result = await createIssue(
-          params.owner,
-          params.repo,
-          params.title,
-          params.body,
-          params.labels,
-        );
-        if (result.exitCode !== 0)
-          return createErrorResult(result.stderr || result.stdout);
-        return {
-          content: [
-            { type: "text", text: `✓ Issue created\n${result.stdout.trim()}` },
-          ],
-          details: { stdout: result.stdout },
-        };
-      } catch (error) {
-        return createErrorResult(
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-create-issue"));
-      if (args.title) text += theme.fg("muted", ` "${args.title}"`);
-      return new Text(text, 0, 0);
-    },
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    paramsSchema: CreateIssueParams,
+    createFn: (params: CreateIssueParamsType) =>
+      createIssue(
+        params.owner,
+        params.repo,
+        params.title,
+        params.body,
+        params.labels,
+      ),
+    confirmationTitle: "Create Issue",
+    confirmationDescription: (params) =>
+      `"${params.title}" in ${params.owner}/${params.repo}`,
+    successMessagePrefix: "✓ Issue created",
   });
 }

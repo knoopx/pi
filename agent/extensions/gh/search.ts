@@ -1,10 +1,21 @@
-import { ghCmd } from "./utils";
+import { ghCmdJson } from "./utils";
 import type {
   GHCodeSearchResult,
   GHIssueSearchResult,
   GHPRSearchResult,
   GHRepoSearchResult,
 } from "./types";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+  AgentToolResult,
+  AgentToolUpdateCallback,
+  Theme,
+  ToolRenderResultOptions,
+} from "@mariozechner/pi-coding-agent";
+import type { ToolRenderContext } from "./shared";
+import type { Static, TSchema } from "@sinclair/typebox";
+import { renderTextToolResult } from "../../shared/render-utils";
 
 /**
  * Search code using gh CLI
@@ -13,26 +24,18 @@ export async function searchCode(
   query: string,
   limit = 20,
 ): Promise<{ query: string; results: GHCodeSearchResult[]; total: number }> {
-  const result = await ghCmd([
-    "search",
-    "code",
-    query,
-    `--limit=${limit}`,
-    "--json=repository,path,sha,textMatches,url",
-    "--jq",
-    '[.[] | {repo: ((.repository.nameWithOwner // "") | split("/") | .[1] // ""), owner: ((.repository.nameWithOwner // "") | split("/") | .[0] // ""), name: (.path | split("/") | .[-1]), path, html_url: .url, text_matches: [.textMatches[]? | {snippet: .fragment, matches: [.matches[]? | .text]}]}]',
-  ]);
-
-  if (result.exitCode !== 0) {
-    throw new Error(`gh search code failed: ${result.stderr || result.stdout}`);
-  }
-
-  let results: GHCodeSearchResult[];
-  try {
-    results = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(`Failed to parse gh search code output: ${result.stdout}`);
-  }
+  const results = await ghCmdJson<GHCodeSearchResult[]>(
+    [
+      "search",
+      "code",
+      query,
+      `--limit=${limit}`,
+      "--json=repository,path,sha,textMatches,url",
+      "--jq",
+      '[.[] | {repo: ((.repository.nameWithOwner // "") | split("/") | .[1] // ""), owner: ((.repository.nameWithOwner // "") | split("/") | .[0] // ""), name: (.path | split("/") | .[-1]), path, html_url: .url, text_matches: [.textMatches[]? | {snippet: .fragment, matches: [.matches[]? | .text]}]}]',
+    ],
+    "search code",
+  );
 
   return {
     query,
@@ -48,30 +51,18 @@ export async function searchIssues(
   query: string,
   limit = 20,
 ): Promise<{ query: string; results: GHIssueSearchResult[]; total: number }> {
-  const result = await ghCmd([
-    "search",
-    "issues",
-    query,
-    `--limit=${limit}`,
-    "--json=number,title,state,repository,createdAt,labels,url",
-    "--jq",
-    '[.[] | {number, title, state, repo: (.repository.name // ""), owner: (.repository.owner // ""), createdAt, labels: [.labels[:5][]? | {name}], url}]',
-  ]);
-
-  if (result.exitCode !== 0) {
-    throw new Error(
-      `gh search issues failed: ${result.stderr || result.stdout}`,
-    );
-  }
-
-  let results: GHIssueSearchResult[];
-  try {
-    results = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(
-      `Failed to parse gh search issues output: ${result.stdout}`,
-    );
-  }
+  const results = await ghCmdJson<GHIssueSearchResult[]>(
+    [
+      "search",
+      "issues",
+      query,
+      `--limit=${limit}`,
+      "--json=number,title,state,repository,createdAt,labels,url",
+      "--jq",
+      '[.[] | {number, title, state, repo: (.repository.name // ""), owner: (.repository.owner // ""), createdAt, labels: [.labels[:5][]? | {name}], url}]',
+    ],
+    "search issues",
+  );
 
   return {
     query,
@@ -87,26 +78,18 @@ export async function searchPRs(
   query: string,
   limit = 20,
 ): Promise<{ query: string; results: GHPRSearchResult[]; total: number }> {
-  const result = await ghCmd([
-    "search",
-    "prs",
-    query,
-    `--limit=${limit}`,
-    "--json=number,title,state,repository,createdAt,updatedAt,labels,url",
-    "--jq",
-    '[.[] | {number, title, state, repo: (.repository.name // ""), owner: (.repository.owner // ""), createdAt, updatedAt, labels: [.labels[:5][]? | {name}], url, mergeable: ""}]',
-  ]);
-
-  if (result.exitCode !== 0) {
-    throw new Error(`gh search prs failed: ${result.stderr || result.stdout}`);
-  }
-
-  let results: GHPRSearchResult[];
-  try {
-    results = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(`Failed to parse gh search prs output: ${result.stdout}`);
-  }
+  const results = await ghCmdJson<GHPRSearchResult[]>(
+    [
+      "search",
+      "prs",
+      query,
+      `--limit=${limit}`,
+      "--json=number,title,state,repository,createdAt,updatedAt,labels,url",
+      "--jq",
+      '[.[] | {number, title, state, repo: (.repository.name // ""), owner: (.repository.owner // ""), createdAt, updatedAt, labels: [.labels[:5][]? | {name}], url, mergeable: ""}]',
+    ],
+    "search prs",
+  );
 
   return {
     query,
@@ -122,28 +105,18 @@ export async function searchRepos(
   query: string,
   limit = 20,
 ): Promise<{ query: string; results: GHRepoSearchResult[]; total: number }> {
-  const result = await ghCmd([
-    "search",
-    "repos",
-    query,
-    `--limit=${limit}`,
-    "--json=name,fullName,description,url,language,stargazersCount,forksCount",
-    "--jq",
-    "[.[] | {name, full_name: .fullName, description, html_url: .url, language, stargazers_count: .stargazersCount, forks_count: .forksCount}]",
-  ]);
-
-  if (result.exitCode !== 0) {
-    throw new Error(
-      `gh search repos failed: ${result.stderr || result.stdout}`,
-    );
-  }
-
-  let results: GHRepoSearchResult[];
-  try {
-    results = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(`Failed to parse gh search repos output: ${result.stdout}`);
-  }
+  const results = await ghCmdJson<GHRepoSearchResult[]>(
+    [
+      "search",
+      "repos",
+      query,
+      `--limit=${limit}`,
+      "--json=name,fullName,description,url,language,stargazersCount,forksCount",
+      "--jq",
+      "[.[] | {name, full_name: .fullName, description, html_url: .url, language, stargazers_count: .stargazersCount, forks_count: .forksCount}]",
+    ],
+    "search repos",
+  );
 
   return {
     query,
@@ -152,15 +125,8 @@ export async function searchRepos(
   };
 }
 
-import type {
-  ExtensionAPI,
-  ExtensionContext,
-  AgentToolResult,
-  AgentToolUpdateCallback,
-} from "@mariozechner/pi-coding-agent";
-import { type Static, Type } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
-import { renderTextToolResult } from "../../shared/render-utils";
 import {
   dotJoin,
   countLabel,
@@ -168,6 +134,22 @@ import {
   stateDot,
   type Column,
 } from "../../shared/renderers";
+import { createErrorResult } from "./shared";
+
+/**
+ * Format search results into a table
+ */
+function formatSearchResults<T>(
+  result: { query: string; results: T[]; total: number },
+  columns: Column[],
+  rowMapper: (item: T, index: number) => Record<string, unknown>,
+  countLabelFn: (total: number) => string,
+): string {
+  const rows = result.results.map(rowMapper);
+  return [dotJoin(countLabelFn(result.total)), "", table(columns, rows)].join(
+    "\n",
+  );
+}
 
 function formatRepoSearchResult(result: {
   query: string;
@@ -192,7 +174,7 @@ function formatRepoSearchResult(result: {
     },
   ];
 
-  const rows = result.results.map((repo) => ({
+  const rowMapper = (repo: GHRepoSearchResult) => ({
     "󰓎": repo.stargazers_count.toLocaleString(),
     "󰘬": repo.forks_count.toLocaleString(),
     repo: repo.full_name,
@@ -200,13 +182,11 @@ function formatRepoSearchResult(result: {
     lang: repo.language || "",
     url: repo.html_url,
     private: String(repo.private),
-  }));
+  });
 
-  return [
-    dotJoin(countLabel(result.total.toLocaleString(), "repo")),
-    "",
-    table(cols, rows),
-  ].join("\n");
+  return formatSearchResults(result, cols, rowMapper, (total) =>
+    countLabel(total.toLocaleString(), "repo"),
+  );
 }
 
 function formatCodeSearchResult(result: {
@@ -228,7 +208,7 @@ function formatCodeSearchResult(result: {
     },
   ];
 
-  const rows = result.results.map((item, i) => {
+  const rowMapper = (item: GHCodeSearchResult, i: number) => {
     const snippet = item.text_matches?.[0]?.snippet?.substring(0, 100) ?? "";
     return {
       "#": String(i + 1),
@@ -236,13 +216,41 @@ function formatCodeSearchResult(result: {
       snippet: snippet + (snippet.length >= 100 ? "..." : ""),
       url: item.html_url,
     };
-  });
+  };
 
-  return [
-    dotJoin(countLabel(result.total.toLocaleString(), "result")),
-    "",
-    table(cols, rows),
-  ].join("\n");
+  return formatSearchResults(result, cols, rowMapper, (total) =>
+    countLabel(total.toLocaleString(), "result"),
+  );
+}
+
+interface IssueLikeRow extends Record<string, unknown> {
+  "#": string;
+  title: string;
+  state: string;
+  repo: string;
+  labels: string;
+  url: string;
+  date?: string;
+  created?: string;
+  updated?: string;
+  mergeable?: string;
+}
+
+function formatIssueLikeSearchResult<TItem, TRow extends IssueLikeRow>(
+  result: { query: string; results: TItem[]; total: number },
+  rowMapper: (item: TItem, index: number) => TRow,
+  titleFormatter: (row: TRow) => string,
+  countLabelFn: (total: number) => string,
+): string {
+  const cols: Column[] = [
+    { key: "#", align: "right", minWidth: 5 },
+    {
+      key: "title",
+      format: (_v, row) => titleFormatter(row as TRow),
+    },
+  ];
+
+  return formatSearchResults(result, cols, rowMapper, countLabelFn);
 }
 
 function formatIssueSearchResult(result: {
@@ -250,23 +258,7 @@ function formatIssueSearchResult(result: {
   results: GHIssueSearchResult[];
   total: number;
 }): string {
-  const cols: Column[] = [
-    { key: "#", align: "right", minWidth: 5 },
-    {
-      key: "title",
-      format: (_v, row) => {
-        const r = row as Record<string, string>;
-        const dot = r.state === "open" ? stateDot("on") : stateDot("off");
-        const lines = [`${dot} ${r.title}`];
-        lines.push(`${r.repo} · ${r.date}`);
-        if (r.labels) lines.push(r.labels);
-        lines.push(r.url);
-        return lines.join("\n");
-      },
-    },
-  ];
-
-  const rows = result.results.map((issue) => ({
+  const rowMapper = (issue: GHIssueSearchResult) => ({
     "#": `#${issue.number}`,
     title: issue.title,
     state: issue.state,
@@ -274,13 +266,23 @@ function formatIssueSearchResult(result: {
     date: new Date(issue.createdAt).toLocaleDateString(),
     labels: issue.labels.map((l: { name: string }) => l.name).join(", "),
     url: issue.url,
-  }));
+  });
 
-  return [
-    dotJoin(`${result.total.toLocaleString()} issues`),
-    "",
-    table(cols, rows),
-  ].join("\n");
+  const titleFormatter = (row: IssueLikeRow) => {
+    const dot = row.state === "open" ? stateDot("on") : stateDot("off");
+    const lines = [`${dot} ${row.title}`];
+    lines.push(`${row.repo} · ${row.date}`);
+    if (row.labels) lines.push(row.labels);
+    lines.push(row.url);
+    return lines.join("\n");
+  };
+
+  return formatIssueLikeSearchResult(
+    result,
+    rowMapper,
+    titleFormatter,
+    (total) => `${total.toLocaleString()} issues`,
+  );
 }
 
 function formatPRSearchResult(result: {
@@ -288,29 +290,7 @@ function formatPRSearchResult(result: {
   results: GHPRSearchResult[];
   total: number;
 }): string {
-  const cols: Column[] = [
-    { key: "#", align: "right", minWidth: 5 },
-    {
-      key: "title",
-      format: (_v, row) => {
-        const r = row as Record<string, string>;
-        const dot = r.state === "open" ? stateDot("on") : stateDot("off");
-        const merge =
-          r.mergeable === "MERGEABLE"
-            ? "✓"
-            : r.mergeable === "CONFLICTING"
-              ? "✗"
-              : "?";
-        const lines = [`${dot} ${r.title} ${merge}`];
-        lines.push(`${r.repo} · ${r.created} – ${r.updated}`);
-        if (r.labels) lines.push(r.labels);
-        lines.push(r.url);
-        return lines.join("\n");
-      },
-    },
-  ];
-
-  const rows = result.results.map((pr) => ({
+  const rowMapper = (pr: GHPRSearchResult) => ({
     "#": `#${pr.number}`,
     title: pr.title,
     state: pr.state,
@@ -320,22 +300,116 @@ function formatPRSearchResult(result: {
     updated: new Date(pr.updatedAt).toLocaleDateString(),
     labels: pr.labels.map((l: { name: string }) => l.name).join(", "),
     url: pr.url,
-  }));
+  });
 
-  return [
-    dotJoin(`${result.total.toLocaleString()} PRs`),
-    "",
-    table(cols, rows),
-  ].join("\n");
+  const titleFormatter = (row: IssueLikeRow) => {
+    const dot = row.state === "open" ? stateDot("on") : stateDot("off");
+    const merge =
+      row.mergeable === "MERGEABLE"
+        ? "✓"
+        : row.mergeable === "CONFLICTING"
+          ? "✗"
+          : "?";
+    const lines = [`${dot} ${row.title} ${merge}`];
+    lines.push(`${row.repo} · ${row.created} – ${row.updated}`);
+    if (row.labels) lines.push(row.labels);
+    lines.push(row.url);
+    return lines.join("\n");
+  };
+
+  return formatIssueLikeSearchResult(
+    result,
+    rowMapper,
+    titleFormatter,
+    (total) => `${total.toLocaleString()} PRs`,
+  );
 }
 
-function createErrorResult(
-  message: string,
-): AgentToolResult<{ error?: string }> {
+/**
+ * Create a search tool renderer with common patterns
+ */
+function createSearchToolRenderer(toolName: string) {
   return {
-    content: [{ type: "text", text: `Error: ${message}` }],
-    details: { error: message },
+    renderCall(
+      args: unknown,
+      theme: Theme,
+      _context: ToolRenderContext<unknown, unknown>,
+    ) {
+      const typedArgs = args as { query?: string; limit?: number };
+      let text = theme.fg("toolTitle", theme.bold(toolName));
+      if (typedArgs.query) {
+        text += theme.fg("muted", ` "${typedArgs.query}"`);
+      }
+      if (typedArgs.limit) {
+        text += theme.fg("dim", ` (limit=${typedArgs.limit})`);
+      }
+      return new Text(text, 0, 0);
+    },
+    renderResult(
+      result: unknown,
+      _options: ToolRenderResultOptions,
+      theme: Theme,
+      _context: ToolRenderContext<unknown, unknown>,
+    ) {
+      return renderTextToolResult(result as AgentToolResult<unknown>, theme);
+    },
   };
+}
+
+/**
+ * Options for registering a search tool
+ */
+interface RegisterSearchToolOptions<TParams extends TSchema, TResult> {
+  toolName: string;
+  toolLabel: string;
+  toolDescription: string;
+  paramsSchema: TParams;
+  searchFn: (query: string, limit?: number) => Promise<TResult>;
+  formatFn: (result: TResult) => string;
+}
+
+/**
+ * Register a search tool with common pattern
+ */
+function registerSearchTool<TParams extends TSchema, TResult>(
+  pi: ExtensionAPI,
+  options: RegisterSearchToolOptions<TParams, TResult>,
+) {
+  const {
+    toolName,
+    toolLabel,
+    toolDescription,
+    paramsSchema,
+    searchFn,
+    formatFn,
+  } = options;
+
+  pi.registerTool({
+    name: toolName,
+    label: toolLabel,
+    description: toolDescription,
+    parameters: paramsSchema,
+    async execute(
+      _toolCallId: string,
+      params: Static<TParams> & { query: string; limit?: number },
+      _signal: AbortSignal | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _ctx: ExtensionContext,
+    ) {
+      try {
+        const result = await searchFn(params.query, params.limit);
+        const output = formatFn(result);
+        return {
+          content: [{ type: "text", text: output }],
+          details: result,
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return createErrorResult(message);
+      }
+    },
+    ...createSearchToolRenderer(toolName),
+  });
 }
 
 const SearchReposParams = Type.Object({
@@ -404,16 +478,11 @@ const SearchPRsParams = Type.Object({
   ),
 });
 
-type SearchReposParamsType = Static<typeof SearchReposParams>;
-type SearchCodeParamsType = Static<typeof SearchCodeParams>;
-type SearchIssuesParamsType = Static<typeof SearchIssuesParams>;
-type SearchPRsParamsType = Static<typeof SearchPRsParams>;
-
 export function registerSearchTools(pi: ExtensionAPI) {
-  pi.registerTool({
-    name: "gh-search-repos",
-    label: "Search Repositories",
-    description: `Search for GitHub repositories using gh CLI.
+  registerSearchTool(pi, {
+    toolName: "gh-search-repos",
+    toolLabel: "Search Repositories",
+    toolDescription: `Search for GitHub repositories using gh CLI.
 
 Use this to:
 - Find repositories by language, stars, forks
@@ -425,58 +494,15 @@ Examples:
 - gh-search-repos(query='language:typescript stars:>1000')
 - gh-search-repos(query='react framework', limit=10)
 - gh-search-repos(query='owner:microsoft')`,
-    parameters: SearchReposParams as any,
-
-    async execute(
-      _toolCallId: string,
-      params: SearchReposParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate:
-        | AgentToolUpdateCallback<
-            | { query: string; results: GHRepoSearchResult[]; total: number }
-            | { error?: string }
-          >
-        | undefined,
-      _ctx: ExtensionContext,
-    ): Promise<
-      AgentToolResult<
-        | { query: string; results: GHRepoSearchResult[]; total: number }
-        | { error?: string }
-      >
-    > {
-      try {
-        const result = await searchRepos(params.query, params.limit);
-        const output = formatRepoSearchResult(result);
-        return {
-          content: [{ type: "text", text: output }],
-          details: result,
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
-      }
-    },
-
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-search-repos"));
-      if (args.query) {
-        text += theme.fg("muted", ` "${args.query}"`);
-      }
-      if (args.limit) {
-        text += theme.fg("dim", ` (limit=${args.limit})`);
-      }
-      return new Text(text, 0, 0);
-    },
-
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    paramsSchema: SearchReposParams,
+    searchFn: searchRepos,
+    formatFn: formatRepoSearchResult,
   });
 
-  pi.registerTool({
-    name: "gh-search-code",
-    label: "Search Code",
-    description: `Search for code across GitHub repositories using gh CLI and GitHub's code search syntax.
+  registerSearchTool(pi, {
+    toolName: "gh-search-code",
+    toolLabel: "Search Code",
+    toolDescription: `Search for code across GitHub repositories using gh CLI and GitHub's code search syntax.
 
 Use this to:
 - Find code snippets and patterns across all of GitHub
@@ -505,48 +531,15 @@ Examples:
 - Search within specific repos/users:
   gh-search-code(query='owner:microsoft extension:ts')
   gh-search-code(query='repo:facebook/react extension:tsx')`,
-    parameters: SearchCodeParams as any,
-
-    async execute(
-      _toolCallId: string,
-      params: SearchCodeParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        const result = await searchCode(params.query, params.limit || 20);
-        const output = formatCodeSearchResult(result);
-        return {
-          content: [{ type: "text", text: output }],
-          details: result,
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
-      }
-    },
-
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-search-code"));
-      if (args.query) {
-        text += theme.fg("muted", ` "${args.query}"`);
-      }
-      if (args.limit) {
-        text += theme.fg("dim", ` (limit=${args.limit})`);
-      }
-      return new Text(text, 0, 0);
-    },
-
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    paramsSchema: SearchCodeParams,
+    searchFn: searchCode,
+    formatFn: formatCodeSearchResult,
   });
 
-  pi.registerTool({
-    name: "gh-search-issues",
-    label: "Search Issues",
-    description: `Search for issues across GitHub repositories using gh CLI.
+  registerSearchTool(pi, {
+    toolName: "gh-search-issues",
+    toolLabel: "Search Issues",
+    toolDescription: `Search for issues across GitHub repositories using gh CLI.
 
 Use this to:
 - Find open/closed issues
@@ -558,48 +551,15 @@ Examples:
 - gh-search-issues(query='is:open label:bug')
 - gh-search-issues(query='author:@me is:closed')
 - gh-search-issues(query='state:open assigned:@me', limit=50)`,
-    parameters: SearchIssuesParams as any,
-
-    async execute(
-      _toolCallId: string,
-      params: SearchIssuesParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        const result = await searchIssues(params.query, params.limit || 20);
-        const output = formatIssueSearchResult(result);
-        return {
-          content: [{ type: "text", text: output }],
-          details: result,
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
-      }
-    },
-
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-search-issues"));
-      if (args.query) {
-        text += theme.fg("muted", ` "${args.query}"`);
-      }
-      if (args.limit) {
-        text += theme.fg("dim", ` (limit=${args.limit})`);
-      }
-      return new Text(text, 0, 0);
-    },
-
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    paramsSchema: SearchIssuesParams,
+    searchFn: searchIssues,
+    formatFn: formatIssueSearchResult,
   });
 
-  pi.registerTool({
-    name: "gh-search-prs",
-    label: "Search PRs",
-    description: `Search for pull requests across GitHub repositories using gh CLI.
+  registerSearchTool(pi, {
+    toolName: "gh-search-prs",
+    toolLabel: "Search PRs",
+    toolDescription: `Search for pull requests across GitHub repositories using gh CLI.
 
 Use this to:
 - Find open/merged/closed PRs
@@ -611,41 +571,8 @@ Examples:
 - gh-search-prs(query='is:open review:required')
 - gh-search-prs(query='author:@me is:merged')
 - gh-search-prs(query='status:success', limit=30)`,
-    parameters: SearchPRsParams as any,
-
-    async execute(
-      _toolCallId: string,
-      params: SearchPRsParamsType,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        const result = await searchPRs(params.query, params.limit || 20);
-        const output = formatPRSearchResult(result);
-        return {
-          content: [{ type: "text", text: output }],
-          details: result,
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
-      }
-    },
-
-    renderCall(args, theme) {
-      let text = theme.fg("toolTitle", theme.bold("gh-search-prs"));
-      if (args.query) {
-        text += theme.fg("muted", ` "${args.query}"`);
-      }
-      if (args.limit) {
-        text += theme.fg("dim", ` (limit=${args.limit})`);
-      }
-      return new Text(text, 0, 0);
-    },
-
-    renderResult(result, _options, theme) {
-      return renderTextToolResult(result, theme);
-    },
+    paramsSchema: SearchPRsParams,
+    searchFn: searchPRs,
+    formatFn: formatPRSearchResult,
   });
 }
