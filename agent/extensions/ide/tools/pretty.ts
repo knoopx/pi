@@ -84,6 +84,61 @@ interface GrepState {
   _gt?: string;
 }
 
+// Extended details types for the IDE extension
+type ReadDetails =
+  | ReadToolDetails
+  | undefined
+  | {
+      _type: "readImage" | "readFile";
+      filePath: string;
+      data?: string;
+      mimeType?: string;
+      content?: string;
+      offset?: number;
+      lineCount?: number;
+    };
+
+type BashDetails =
+  | BashToolDetails
+  | undefined
+  | {
+      _type: "bashResult";
+      command?: string;
+      output?: string;
+      exitCode?: number;
+      text?: string;
+    };
+
+type LsDetails =
+  | LsToolDetails
+  | undefined
+  | {
+      _type: "lsResult";
+      path?: string;
+      text?: string;
+      entryCount?: number;
+    };
+
+type FindDetails =
+  | FindToolDetails
+  | undefined
+  | {
+      _type: "findResult";
+      text?: string;
+      pattern?: string;
+      matchCount?: number;
+    };
+
+type GrepDetails =
+  | GrepToolDetails
+  | undefined
+  | {
+      _type: "grepResult";
+      text?: string;
+      pattern?: string;
+      matchCount?: number;
+    };
+
 export default async function piPrettyExtension(
   pi: ExtensionAPI,
 ): Promise<void> {
@@ -114,10 +169,16 @@ export default async function piPrettyExtension(
       tid: string,
       params: ReadToolInput,
       sig: AbortSignal | undefined,
-      upd: AgentToolUpdateCallback<ReadToolDetails | undefined> | undefined,
+      upd: AgentToolUpdateCallback<ReadDetails> | undefined,
       ctx: ExtensionContext,
-    ) {
-      const result = await origRead.execute(tid, params, sig, upd, ctx);
+    ): Promise<AgentToolResult<ReadDetails>> {
+      const result = (await origRead.execute(
+        tid,
+        params,
+        sig,
+        upd,
+        ctx,
+      )) as AgentToolResult<ReadDetails>;
 
       const fp = params.path ?? "";
       const offset = params.offset ?? 1;
@@ -127,7 +188,7 @@ export default async function piPrettyExtension(
       );
       if (imageBlock) {
         result.details = {
-          _type: "readImage",
+          _type: "readImage" as const,
           filePath: fp,
           data: imageBlock.data,
           mimeType: imageBlock.mimeType ?? "image/png",
@@ -140,7 +201,7 @@ export default async function piPrettyExtension(
       if (textContent && fp) {
         const lineCount = textContent.split("\n").length;
         result.details = {
-          _type: "readFile",
+          _type: "readFile" as const,
           filePath: fp,
           content: textContent,
           offset,
@@ -175,7 +236,7 @@ export default async function piPrettyExtension(
     },
 
     renderResult(
-      result: AgentToolResult<ReadToolDetails | undefined>,
+      result: AgentToolResult<ReadDetails>,
       options: ToolRenderResultOptions,
       theme: Theme,
       ctx: ToolRenderContext<ReadState, ReadToolInput>,
@@ -289,10 +350,16 @@ export default async function piPrettyExtension(
         tid: string,
         params: BashToolInput,
         sig: AbortSignal | undefined,
-        upd: AgentToolUpdateCallback<BashToolDetails | undefined> | undefined,
+        upd: AgentToolUpdateCallback<BashDetails> | undefined,
         ctx: ExtensionContext,
-      ) {
-        const result = await origBash.execute(tid, params, sig, upd, ctx);
+      ): Promise<AgentToolResult<BashDetails>> {
+        const result = (await origBash.execute(
+          tid,
+          params,
+          sig,
+          upd,
+          ctx,
+        )) as AgentToolResult<BashDetails>;
 
         const textContent = extractTextContent(result.content);
 
@@ -312,7 +379,7 @@ export default async function piPrettyExtension(
         }
 
         result.details = {
-          _type: "bashResult",
+          _type: "bashResult" as const,
           text: textContent,
           exitCode,
           command: params.command ?? "",
@@ -341,7 +408,7 @@ export default async function piPrettyExtension(
       },
 
       renderResult(
-        result: AgentToolResult<BashToolDetails | undefined>,
+        result: AgentToolResult<BashDetails>,
         options: ToolRenderResultOptions,
         theme: Theme,
         ctx: ToolRenderContext<unknown, BashToolInput>,
@@ -408,10 +475,16 @@ export default async function piPrettyExtension(
         tid: string,
         params: LsToolInput,
         sig: AbortSignal | undefined,
-        upd: AgentToolUpdateCallback<LsToolDetails | undefined> | undefined,
+        upd: AgentToolUpdateCallback<LsDetails> | undefined,
         ctx: ExtensionContext,
-      ) {
-        const result = await origLs.execute(tid, params, sig, upd, ctx);
+      ): Promise<AgentToolResult<LsDetails>> {
+        const result = (await origLs.execute(
+          tid,
+          params,
+          sig,
+          upd,
+          ctx,
+        )) as AgentToolResult<LsDetails>;
 
         const textContent = extractTextContent(result.content);
 
@@ -419,7 +492,7 @@ export default async function piPrettyExtension(
         const entryCount = countLines(textContent);
 
         result.details = {
-          _type: "lsResult",
+          _type: "lsResult" as const,
           text: textContent,
           path: fp,
           entryCount,
@@ -444,7 +517,7 @@ export default async function piPrettyExtension(
       },
 
       renderResult(
-        result: AgentToolResult<LsToolDetails | undefined>,
+        result: AgentToolResult<LsDetails>,
         _options: ToolRenderResultOptions,
         theme: Theme,
         ctx: ToolRenderContext<unknown, LsToolInput>,
@@ -483,17 +556,23 @@ export default async function piPrettyExtension(
         tid: string,
         params: FindToolInput,
         sig: AbortSignal | undefined,
-        upd: AgentToolUpdateCallback<FindToolDetails | undefined> | undefined,
+        upd: AgentToolUpdateCallback<FindDetails> | undefined,
         ctx: ExtensionContext,
-      ) {
-        const result = await origFind.execute(tid, params, sig, upd, ctx);
+      ): Promise<AgentToolResult<FindDetails>> {
+        const result = (await origFind.execute(
+          tid,
+          params,
+          sig,
+          upd,
+          ctx,
+        )) as AgentToolResult<FindDetails>;
 
         const textContent = extractTextContent(result.content);
 
         const matchCount = countLines(textContent);
 
         result.details = {
-          _type: "findResult",
+          _type: "findResult" as const,
           text: textContent,
           pattern: params.pattern ?? "",
           matchCount,
@@ -522,7 +601,7 @@ export default async function piPrettyExtension(
       },
 
       renderResult(
-        result: AgentToolResult<FindToolDetails | undefined>,
+        result: AgentToolResult<FindDetails>,
         _options: ToolRenderResultOptions,
         theme: Theme,
         ctx: ToolRenderContext<unknown, FindToolInput>,
@@ -561,10 +640,16 @@ export default async function piPrettyExtension(
         tid: string,
         params: GrepToolInput,
         sig: AbortSignal | undefined,
-        upd: AgentToolUpdateCallback<GrepToolDetails | undefined> | undefined,
+        upd: AgentToolUpdateCallback<GrepDetails> | undefined,
         ctx: ExtensionContext,
-      ) {
-        const result = await origGrep.execute(tid, params, sig, upd, ctx);
+      ): Promise<AgentToolResult<GrepDetails>> {
+        const result = (await origGrep.execute(
+          tid,
+          params,
+          sig,
+          upd,
+          ctx,
+        )) as AgentToolResult<GrepDetails>;
 
         const textContent = extractTextContent(result.content);
 
@@ -581,7 +666,7 @@ export default async function piPrettyExtension(
           : 0;
 
         result.details = {
-          _type: "grepResult",
+          _type: "grepResult" as const,
           text: textContent,
           pattern: params.pattern ?? "",
           matchCount,
@@ -614,10 +699,10 @@ export default async function piPrettyExtension(
       },
 
       renderResult(
-        result: AgentToolResult<GrepToolDetails | undefined>,
+        result: AgentToolResult<GrepDetails>,
         _options: ToolRenderResultOptions,
         theme: Theme,
-        ctx: ToolRenderContext<GrepState, GrepToolInput>,
+        ctx: ToolRenderContext<unknown, GrepToolInput>,
       ): Component {
         const text = getTextComponent(ctx, Text);
 
@@ -628,22 +713,22 @@ export default async function piPrettyExtension(
         const d = result.details as unknown as Record<string, unknown>;
         if (d?._type === "grepResult" && d.text) {
           const key = "grep:" + d.pattern + ":" + d.matchCount + ":" + termW();
-          if (ctx.state._gk !== key) {
-            ctx.state._gk = key;
+          const state = ctx.state as GrepState;
+          if (state._gk !== key) {
+            state._gk = key;
             const info = theme.fg("dim", "" + d.matchCount + " matches");
-            ctx.state._gt = "  " + info;
+            state._gt = "  " + info;
 
             renderGrepResults(d.text as string, d.pattern as string, theme)
               .then((rendered: string) => {
-                if (ctx.state._gk !== key) return;
-                ctx.state._gt = "  " + info + "\n" + rendered;
+                if (state._gk !== key) return;
+                state._gt = "  " + info + "\n" + rendered;
                 ctx.invalidate();
               })
               .catch(() => {});
           }
           text.setText(
-            ctx.state._gt ??
-              "  " + theme.fg("dim", "" + d.matchCount + " matches"),
+            state._gt ?? "  " + theme.fg("dim", "" + d.matchCount + " matches"),
           );
           return text;
         }

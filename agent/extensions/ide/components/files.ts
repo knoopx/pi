@@ -182,8 +182,8 @@ export function createFilesComponent(
           .map((path) => ({ id: path, label: path, path }));
 
         return parsedFiles.sort((a, b) => {
-          let mtimeA = 0;
-          let mtimeB = 0;
+          let mtimeA: number;
+          let mtimeB: number;
 
           try {
             mtimeA = statSync(join(cwd, a.path)).mtimeMs;

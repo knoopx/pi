@@ -403,11 +403,11 @@ export default async function ideExtension(pi: ExtensionAPI) {
   });
 
   // Hook into /fork to create a jj workspace
-  pi.on("session_fork", async (event, ctx) => {
+  pi.on("session_before_fork", async (event, ctx) => {
     try {
       const parentChangeId = await getCurrentChangeId(pi, ctx.cwd);
       const workspaceName = generateWorkspaceName();
-      const description = `Fork from ${event.previousSessionFile || "session"}`;
+      const description = "Forked session";
       const workspacePath = await createWorkspace(
         pi,
         workspaceName,

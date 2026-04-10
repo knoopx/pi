@@ -168,7 +168,7 @@ export async function renderGrepResults(
   let currentFile = "";
   let count = 0;
 
-  let re: RegExp | null = null;
+  let re: RegExp | null;
   try {
     re = new RegExp(`(${pattern})`, "gi");
   } catch {
