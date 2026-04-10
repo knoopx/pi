@@ -148,7 +148,7 @@ Use this to:
 - Explore npm ecosystem
 
 Returns matching packages with metadata.`,
-    parameters: SearchNpmPackagesParams,
+    parameters: SearchNpmPackagesParams as any,
 
     async execute(_toolCallId: string, params: SearchNpmPackagesParamsType) {
       const { query, size = 10 } = params;
@@ -168,7 +168,7 @@ Use this to:
 - Evaluate package suitability
 
 Returns detailed package metadata.`,
-    parameters: GetNpmPackageInfoParams,
+    parameters: GetNpmPackageInfoParams as any,
 
     async execute(_toolCallId: string, params: GetNpmPackageInfoParamsType) {
       const { package: pkg } = params;
@@ -188,7 +188,7 @@ Use this to:
 - Plan version upgrades
 
 Returns all published package versions.`,
-    parameters: GetNpmPackageVersionsParams,
+    parameters: GetNpmPackageVersionsParams as any,
 
     async execute(
       _toolCallId: string,
