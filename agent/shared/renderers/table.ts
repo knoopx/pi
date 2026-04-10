@@ -161,9 +161,7 @@ export function table(
       const wrapSegment = (seg: string): string[] => {
         const plain = stripAnsi(seg);
         if (plain.length <= col.width) return [seg];
-        const lines = wrapPlain(plain, col.width);
-        if (lines.length <= 1) return [seg];
-        return lines;
+        return wrapPlain(plain, col.width);
       };
 
       if (segments.length === 1) {

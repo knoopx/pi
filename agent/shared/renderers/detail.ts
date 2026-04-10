@@ -16,11 +16,6 @@ function padStart(text: string, width: number): string {
   return pad > 0 ? " ".repeat(pad) + text : text;
 }
 
-function padEnd(text: string, width: number): string {
-  const pad = width - visibleWidth(text);
-  return pad > 0 ? text + " ".repeat(pad) : text;
-}
-
 interface DetailField {
   /** Label (left side of │) */
   label: string;
@@ -81,7 +76,7 @@ export function detail(
       // Multi-line: first line with label, rest with blank padding
       const continuation = wrapped
         .slice(1)
-        .map((line) => `${blankLabel}${sep}${padEnd("", 4)}${line}`);
+        .map((line) => `${blankLabel}${sep}${line}`);
       return [`${label}${sep}${wrapped[0]}`, ...continuation].join("\n");
     })
     .join("\n");
