@@ -350,22 +350,14 @@ ${workflowLines}
     done();
     const task = `Split jujutsu change ${selectedChange.changeId} into semantically logical commits.
 
-Use the **jj-hunk** skill for programmatic hunk-level splitting.
-Use the **conventional-commits** skill for commit message format.
-
 <workflow>
-1. List hunks: \`jj-hunk list -r ${selectedChange.changeId}\`
+1. Analyze: \`jj diff -r ${selectedChange.changeId} --name-only\`
 2. Identify logical groupings by domain/purpose
-3. Split iteratively using jj-hunk:
-   \`jj-hunk split -r ${selectedChange.changeId} '{"files": {"<path>": {"action": "keep"}}, "default": "reset"}' "<type>(<scope>): <description>"\`
-4. Update remaining change description: \`jj desc -r ${selectedChange.changeId} -m "<type>(<scope>): <description>"\`
+3. Split iteratively: \`jj split -r ${selectedChange.changeId} "<file-pattern>" -m "type(scope): description"\`
+4. Update remaining change description: \`jj desc -r ${selectedChange.changeId} -m "type(scope): description"\`
 </workflow>
 
-Commit message format:
-- \`<type>(<scope>): <description>\`
-- Types: feat, fix, docs, style, refactor, perf, test, chore, build, ci
-- Use imperative mood, no ending punctuation
-- Be specific; avoid "changes", "stuff", "update things"`;
+Use the **conventional-commits** skill for commit message format.`;
     pi.sendUserMessage(task);
   }
 
