@@ -497,18 +497,15 @@ Commit message format:
   async function reloadBookmarks(): Promise<void> {
     const bookmarkEntries = await listBookmarksByChange(pi, cwd);
     const nextBookmarksByChange = new Map<string, string[]>();
-    if (selectedChange) {
-      const sc = selectedChange;
-      for (const _change of changes) {
-        const bookmarks = bookmarkEntries
-          .filter(
-            (entry) =>
-              sc.changeId.startsWith(entry.changeId) ||
-              entry.changeId.startsWith(sc.changeId),
-          )
-          .map((entry) => entry.bookmark);
-        nextBookmarksByChange.set(sc.changeId, bookmarks);
-      }
+    for (const change of changes) {
+      const bookmarks = bookmarkEntries
+        .filter(
+          (entry) =>
+            change.changeId.startsWith(entry.changeId) ||
+            entry.changeId.startsWith(change.changeId),
+        )
+        .map((entry) => entry.bookmark);
+      nextBookmarksByChange.set(change.changeId, bookmarks);
     }
     bookmarksByChange = nextBookmarksByChange;
   }
