@@ -1,0 +1,7 @@
+{
+  "entry": [
+    "agent/extensions/**/index.ts",
+    "agent/extensions/**/*.test.ts",
+    "agent/shared/**/*.test.ts"
+  ]
+}

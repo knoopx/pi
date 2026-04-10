@@ -7,3 +7,4 @@ agent/settings.json
 agent/themes/custom.json
 coverage
 node_modules
+.fallow
