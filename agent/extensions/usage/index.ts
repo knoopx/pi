@@ -17,7 +17,10 @@ import type {
   ExtensionAPI,
   ExtensionCommandContext,
   Theme,
+  FileEntry,
+  SessionEntry,
 } from "@mariozechner/pi-coding-agent";
+import type { AssistantMessage } from "@mariozechner/pi-ai";
 import { DynamicBorder } from "@mariozechner/pi-coding-agent";
 import {
   CancellableLoader,
@@ -73,6 +76,33 @@ interface UsageData {
 }
 
 type TabName = "today" | "thisWeek" | "allTime";
+
+// =============================================================================
+// Input Handling Utilities
+// =============================================================================
+
+/**
+ * Creates a key matcher function for input handling
+ */
+function createKeyMatcher(data: string) {
+  const normalized = data.toLowerCase();
+  return (key: Parameters<typeof matchesKey>[1]) =>
+    matchesKey(data, key) || normalized === key;
+}
+
+/**
+ * Handles escape/q key to close the component
+ */
+function handleEscape(
+  matches: ReturnType<typeof createKeyMatcher>,
+  done: () => void,
+): boolean {
+  if (matches("escape") || matches("q")) {
+    done();
+    return true;
+  }
+  return false;
+}
 
 // =============================================================================
 // Column Configuration
@@ -172,6 +202,65 @@ interface SessionMessage {
   timestamp: number;
 }
 
+function extractSessionIdFromEntry(entry: FileEntry): string | null {
+  if (entry.type === "session" && typeof entry.id === "string") {
+    return entry.id;
+  }
+  return null;
+}
+
+function validateEntry(
+  entry: FileEntry,
+): entry is Extract<SessionEntry, { type: "message" }> {
+  return entry.type === "message";
+}
+
+function validateMessage(msg: unknown): msg is AssistantMessage {
+  if (!msg || typeof msg !== "object") return false;
+  const m = msg as Record<string, unknown>;
+  return (
+    m.role === "assistant" &&
+    typeof m.usage === "object" &&
+    m.usage !== null &&
+    typeof m.provider === "string" &&
+    typeof m.model === "string"
+  );
+}
+
+function extractMessageFromEntry(
+  entry: FileEntry,
+  seenHashes: Set<string>,
+): SessionMessage | null {
+  if (!validateEntry(entry)) return null;
+  const msg = entry.message;
+  if (!validateMessage(msg)) return null;
+
+  const usage = msg.usage;
+  const input = Number(usage.input) || 0;
+  const output = Number(usage.output) || 0;
+  const cacheRead = Number(usage.cacheRead) || 0;
+  const cacheWrite = Number(usage.cacheWrite) || 0;
+  const fallbackTs = entry.timestamp ? new Date(entry.timestamp).getTime() : 0;
+  const timestamp =
+    Number(msg.timestamp) || (Number.isNaN(fallbackTs) ? 0 : fallbackTs);
+
+  const totalTokens = input + output + cacheRead + cacheWrite;
+  const hash = `${timestamp}:${totalTokens}`;
+  if (seenHashes.has(hash)) return null;
+  seenHashes.add(hash);
+
+  return {
+    provider: msg.provider,
+    model: msg.model,
+    cost: usage.cost.total || 0,
+    input,
+    output,
+    cacheRead,
+    cacheWrite,
+    timestamp,
+  };
+}
+
 async function parseSessionFile(
   filePath: string,
   seenHashes: Set<string>,
@@ -179,67 +268,42 @@ async function parseSessionFile(
 ): Promise<{ sessionId: string; messages: SessionMessage[] } | null> {
   try {
     const content = await readFile(filePath, "utf8");
-    if (signal?.aborted) return null;
+    if (checkSignalAborted(signal)) return null;
     const lines = content.trim().split("\n");
     const messages: SessionMessage[] = [];
     let sessionId = "";
 
     for (let i = 0; i < lines.length; i++) {
-      if (signal?.aborted) return null;
+      if (checkSignalAborted(signal)) return null;
       if (i % 500 === 0) {
         await new Promise<void>((resolve) => setImmediate(resolve));
       }
-      const line = lines[i];
-      if (!line.trim()) continue;
-      try {
-        const entry = JSON.parse(line);
-
-        if (entry.type === "session") {
-          sessionId = entry.id;
-        } else if (
-          entry.type === "message" &&
-          entry.message?.role === "assistant"
-        ) {
-          const msg = entry.message;
-          if (msg.usage && msg.provider && msg.model) {
-            const input = msg.usage.input || 0;
-            const output = msg.usage.output || 0;
-            const cacheRead = msg.usage.cacheRead || 0;
-            const cacheWrite = msg.usage.cacheWrite || 0;
-            const fallbackTs = entry.timestamp
-              ? new Date(entry.timestamp).getTime()
-              : 0;
-            const timestamp =
-              msg.timestamp || (Number.isNaN(fallbackTs) ? 0 : fallbackTs);
-
-            // Deduplicate by timestamp + total tokens (same as ccusage)
-            // Session files contain many duplicate entries
-            const totalTokens = input + output + cacheRead + cacheWrite;
-            const hash = `${timestamp}:${totalTokens}`;
-            if (seenHashes.has(hash)) continue;
-            seenHashes.add(hash);
-
-            messages.push({
-              provider: msg.provider,
-              model: msg.model,
-              cost: msg.usage.cost?.total || 0,
-              input,
-              output,
-              cacheRead,
-              cacheWrite,
-              timestamp,
-            });
-          }
-        }
-      } catch {
-        // Skip malformed lines
-      }
+      const result = await parseSessionLine(lines[i], seenHashes);
+      if (result.sessionId) sessionId = result.sessionId;
+      if (result.message) messages.push(result.message);
     }
 
     return sessionId ? { sessionId, messages } : null;
   } catch {
     return null;
   }
+}
+
+async function parseSessionLine(
+  line: string,
+  seenHashes: Set<string>,
+): Promise<{ sessionId?: string; message?: SessionMessage }> {
+  if (!line.trim()) return {};
+  try {
+    const entry = JSON.parse(line);
+    const extractedSessionId = extractSessionIdFromEntry(entry);
+    if (extractedSessionId) return { sessionId: extractedSessionId };
+    const message = extractMessageFromEntry(entry, seenHashes);
+    if (message) return { message };
+  } catch {
+    // Skip malformed lines
+  }
+  return {};
 }
 
 // Helper to accumulate stats into a target
@@ -281,95 +345,140 @@ function emptyTimeFilteredStats(): TimeFilteredStats {
   };
 }
 
-async function collectUsageData(
-  signal?: AbortSignal,
-): Promise<UsageData | null> {
+function checkSignalAborted(signal?: AbortSignal): boolean {
+  return signal?.aborted === true;
+}
+
+function getTimePeriods(
+  timestamp: number,
+  todayMs: number,
+  weekStartMs: number,
+): TabName[] {
+  const periods: TabName[] = ["allTime"];
+  if (timestamp >= todayMs) periods.push("today");
+  if (timestamp >= weekStartMs) periods.push("thisWeek");
+  return periods;
+}
+
+function processMessage(
+  msg: SessionMessage,
+  sessionId: string,
+  data: UsageData,
+  todayMs: number,
+  weekStartMs: number,
+): { today: boolean; thisWeek: boolean; allTime: boolean } {
+  const periods = getTimePeriods(msg.timestamp, todayMs, weekStartMs);
+  const tokens = {
+    total: msg.input + msg.output,
+    input: msg.input,
+    output: msg.output,
+    cache: msg.cacheRead + msg.cacheWrite,
+  };
+  const sessionContributed = { today: false, thisWeek: false, allTime: false };
+
+  for (const period of periods) {
+    const stats = data[period];
+    let providerStats = stats.providers.get(msg.provider);
+    if (!providerStats) {
+      providerStats = emptyProviderStats();
+      stats.providers.set(msg.provider, providerStats);
+    }
+    let modelStats = providerStats.models.get(msg.model);
+    if (!modelStats) {
+      modelStats = emptyModelStats();
+      providerStats.models.set(msg.model, modelStats);
+    }
+    modelStats.sessions.add(sessionId);
+    accumulateStats(modelStats, msg.cost, tokens);
+    providerStats.sessions.add(sessionId);
+    accumulateStats(providerStats, msg.cost, tokens);
+    accumulateStats(stats.totals, msg.cost, tokens);
+    sessionContributed[period] = true;
+  }
+  return sessionContributed;
+}
+
+function calculateTimeBoundaries(): { todayMs: number; weekStartMs: number } {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
   const todayMs = startOfToday.getTime();
 
-  // Start of current week (Monday 00:00)
   const startOfWeek = new Date();
-  const dayOfWeek = startOfWeek.getDay(); // 0 = Sunday, 1 = Monday, ...
+  const dayOfWeek = startOfWeek.getDay();
   const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   startOfWeek.setDate(startOfWeek.getDate() - daysSinceMonday);
   startOfWeek.setHours(0, 0, 0, 0);
   const weekStartMs = startOfWeek.getTime();
 
-  const data: UsageData = {
+  return { todayMs, weekStartMs };
+}
+
+function createEmptyUsageData(): UsageData {
+  return {
     today: emptyTimeFilteredStats(),
     thisWeek: emptyTimeFilteredStats(),
     allTime: emptyTimeFilteredStats(),
   };
+}
+
+async function processSessionFile(
+  filePath: string,
+  seenHashes: Set<string>,
+  data: UsageData,
+  todayMs: number,
+  weekStartMs: number,
+  signal?: AbortSignal,
+): Promise<void> {
+  if (checkSignalAborted(signal)) return;
+  const parsed = await parseSessionFile(filePath, seenHashes, signal);
+  if (checkSignalAborted(signal)) return;
+  if (!parsed) return;
+
+  const { sessionId, messages } = parsed;
+  const sessionContributed = {
+    today: false,
+    thisWeek: false,
+    allTime: false,
+  };
+
+  for (const msg of messages) {
+    if (checkSignalAborted(signal)) return;
+    const contributed = processMessage(
+      msg,
+      sessionId,
+      data,
+      todayMs,
+      weekStartMs,
+    );
+    if (contributed.today) sessionContributed.today = true;
+    if (contributed.thisWeek) sessionContributed.thisWeek = true;
+    if (contributed.allTime) sessionContributed.allTime = true;
+  }
+
+  if (sessionContributed.today) data.today.totals.sessions++;
+  if (sessionContributed.thisWeek) data.thisWeek.totals.sessions++;
+  if (sessionContributed.allTime) data.allTime.totals.sessions++;
+}
+
+async function collectUsageData(
+  signal?: AbortSignal,
+): Promise<UsageData | null> {
+  const { todayMs, weekStartMs } = calculateTimeBoundaries();
+  const data = createEmptyUsageData();
 
   const sessionFiles = await getAllSessionFiles(signal);
-  if (signal?.aborted) return null;
-  const seenHashes = new Set<string>(); // Deduplicate across all files
+  if (checkSignalAborted(signal)) return null;
+  const seenHashes = new Set<string>();
 
   for (const filePath of sessionFiles) {
-    if (signal?.aborted) return null;
-    const parsed = await parseSessionFile(filePath, seenHashes, signal);
-    if (signal?.aborted) return null;
-    if (!parsed) continue;
-
-    const { sessionId, messages } = parsed;
-    const sessionContributed = {
-      today: false,
-      thisWeek: false,
-      allTime: false,
-    };
-
-    for (const msg of messages) {
-      if (signal?.aborted) return null;
-      const periods: TabName[] = ["allTime"];
-      if (msg.timestamp >= todayMs) periods.push("today");
-      if (msg.timestamp >= weekStartMs) periods.push("thisWeek");
-
-      const tokens = {
-        // Total = input + output only. cacheRead/cacheWrite are tracked separately.
-        // cacheRead tokens were already counted when first sent, so including them
-        // would double-count and massively inflate totals (cache hits repeat every message).
-        total: msg.input + msg.output,
-        input: msg.input,
-        output: msg.output,
-        cache: msg.cacheRead + msg.cacheWrite,
-      };
-
-      for (const period of periods) {
-        const stats = data[period];
-
-        // Get or create provider stats
-        let providerStats = stats.providers.get(msg.provider);
-        if (!providerStats) {
-          providerStats = emptyProviderStats();
-          stats.providers.set(msg.provider, providerStats);
-        }
-
-        // Get or create model stats
-        let modelStats = providerStats.models.get(msg.model);
-        if (!modelStats) {
-          modelStats = emptyModelStats();
-          providerStats.models.set(msg.model, modelStats);
-        }
-
-        // Accumulate stats at all levels
-        modelStats.sessions.add(sessionId);
-        accumulateStats(modelStats, msg.cost, tokens);
-
-        providerStats.sessions.add(sessionId);
-        accumulateStats(providerStats, msg.cost, tokens);
-
-        accumulateStats(stats.totals, msg.cost, tokens);
-
-        sessionContributed[period] = true;
-      }
-    }
-
-    // Count unique sessions per period
-    if (sessionContributed.today) data.today.totals.sessions++;
-    if (sessionContributed.thisWeek) data.thisWeek.totals.sessions++;
-    if (sessionContributed.allTime) data.allTime.totals.sessions++;
-
+    await processSessionFile(
+      filePath,
+      seenHashes,
+      data,
+      todayMs,
+      weekStartMs,
+      signal,
+    );
     await new Promise<void>((resolve) => setImmediate(resolve));
   }
 
@@ -435,6 +544,35 @@ const TAB_LABELS: Record<TabName, string> = {
 
 const TAB_ORDER: TabName[] = ["today", "thisWeek", "allTime"];
 
+/**
+ * Helper to handle common key bindings for usage components
+ */
+function handleUsageInput(
+  data: string,
+  done: () => void,
+  onTabForward: () => void,
+  onTabBackward: () => void,
+  onUp: () => void,
+  onDown: () => void,
+  onEnter?: () => void,
+): void {
+  const matches = createKeyMatcher(data);
+
+  if (handleEscape(matches, done)) return;
+
+  if (matches("tab") || matches("right")) {
+    onTabForward();
+  } else if (matches("shift+tab") || matches("left")) {
+    onTabBackward();
+  } else if (matches("up")) {
+    onUp();
+  } else if (matches("down")) {
+    onDown();
+  } else if (onEnter && (matches("enter") || matches("space"))) {
+    onEnter();
+  }
+}
+
 class UsageComponent {
   activeTab: TabName = "today";
   private data: UsageData;
@@ -480,47 +618,41 @@ class UsageComponent {
   }
 
   handleInput(data: string): void {
-    const normalized = data.toLowerCase();
-    const matches = (key: Parameters<typeof matchesKey>[1]) =>
-      matchesKey(data, key) || normalized === key;
+    handleUsageInput(
+      data,
+      this.done,
+      () => this.cycleTab(1),
+      () => this.cycleTab(-1),
+      () => this.navigateSelection(-1),
+      () => this.navigateSelection(1),
+      () => this.toggleProvider(),
+    );
+  }
 
-    if (matches("escape") || matches("q")) {
-      this.done();
-      return;
-    }
+  cycleTab(direction: number): void {
+    const idx = TAB_ORDER.indexOf(this.activeTab);
+    this.activeTab =
+      TAB_ORDER[(idx + direction + TAB_ORDER.length) % TAB_ORDER.length]!;
+    this.updateProviderOrder();
+    this.requestRender();
+  }
 
-    if (matches("tab") || matches("right")) {
-      const idx = TAB_ORDER.indexOf(this.activeTab);
-      this.activeTab = TAB_ORDER[(idx + 1) % TAB_ORDER.length]!;
-      this.updateProviderOrder();
-      this.requestRender();
-    } else if (matches("shift+tab") || matches("left")) {
-      const idx = TAB_ORDER.indexOf(this.activeTab);
-      this.activeTab =
-        TAB_ORDER[(idx - 1 + TAB_ORDER.length) % TAB_ORDER.length]!;
-      this.updateProviderOrder();
-      this.requestRender();
-    } else if (matches("up")) {
-      if (this.selectedIndex > 0) {
-        this.selectedIndex--;
-        this.requestRender();
-      }
-    } else if (matches("down")) {
-      if (this.selectedIndex < this.providerOrder.length - 1) {
-        this.selectedIndex++;
-        this.requestRender();
-      }
-    } else if (matches("enter") || matches("space")) {
-      const provider = this.providerOrder[this.selectedIndex];
-      if (provider) {
-        if (this.expanded.has(provider)) {
-          this.expanded.delete(provider);
-        } else {
-          this.expanded.add(provider);
-        }
-        this.requestRender();
-      }
+  navigateSelection(direction: number): void {
+    const newIdx = this.selectedIndex + direction;
+    if (newIdx < 0 || newIdx >= this.providerOrder.length) return;
+    this.selectedIndex = newIdx;
+    this.requestRender();
+  }
+
+  toggleProvider(): void {
+    const provider = this.providerOrder[this.selectedIndex];
+    if (!provider) return;
+    if (this.expanded.has(provider)) {
+      this.expanded.delete(provider);
+    } else {
+      this.expanded.add(provider);
     }
+    this.requestRender();
   }
 
   // -------------------------------------------------------------------------
@@ -718,6 +850,38 @@ async function findToolSessionFiles(
   return results;
 }
 
+function parseSessionEntry(
+  line: string,
+  sessionId: string | null,
+): { sessionId: string | null; toolCalls: ToolCall[] } {
+  if (!line.trim()) return { sessionId, toolCalls: [] };
+  try {
+    const entry = JSON.parse(line);
+    if (entry.type === "session" && entry.id) {
+      return { sessionId: entry.id, toolCalls: [] };
+    }
+    if (entry.type === "message" && entry.message?.content && sessionId) {
+      const contents = Array.isArray(entry.message.content)
+        ? entry.message.content
+        : [entry.message.content];
+      const toolCalls: ToolCall[] = [];
+      for (const content of contents) {
+        if (content?.type === "toolCall" && content.name) {
+          toolCalls.push({
+            name: content.name,
+            sessionId,
+            timestamp: entry.timestamp,
+          });
+        }
+      }
+      return { sessionId, toolCalls };
+    }
+  } catch {
+    // Skip malformed lines
+  }
+  return { sessionId, toolCalls: [] };
+}
+
 async function parseToolSession(
   filePath: string,
 ): Promise<{ sessionId: string | null; toolCalls: ToolCall[] }> {
@@ -727,29 +891,9 @@ async function parseToolSession(
   const toolCalls: ToolCall[] = [];
 
   for (const line of lines) {
-    if (!line.trim()) continue;
-    try {
-      const entry = JSON.parse(line);
-      if (entry.type === "session" && entry.id) {
-        sessionId = entry.id;
-      }
-      if (entry.type === "message" && entry.message?.content && sessionId) {
-        const contents = Array.isArray(entry.message.content)
-          ? entry.message.content
-          : [entry.message.content];
-        for (const content of contents) {
-          if (content?.type === "toolCall" && content.name) {
-            toolCalls.push({
-              name: content.name,
-              sessionId,
-              timestamp: entry.timestamp,
-            });
-          }
-        }
-      }
-    } catch {
-      // Skip malformed lines
-    }
+    const result = parseSessionEntry(line, sessionId);
+    sessionId = result.sessionId;
+    toolCalls.push(...result.toolCalls);
   }
   return { sessionId, toolCalls };
 }
@@ -832,40 +976,35 @@ class ToolUsageComponent {
   }
 
   handleInput(data: string): void {
-    const normalized = data.toLowerCase();
-    const matches = (key: Parameters<typeof matchesKey>[1]) =>
-      matchesKey(data, key) || normalized === key;
+    handleUsageInput(
+      data,
+      this.done,
+      () => this.cycleToolTab(1),
+      () => this.cycleToolTab(-1),
+      () => {
+        if (this.selectedIndex > 0) {
+          this.selectedIndex--;
+          this.requestRender();
+        }
+      },
+      () => {
+        const maxIdx = this.getRowCount() - 1;
+        if (this.selectedIndex < maxIdx) {
+          this.selectedIndex++;
+          this.requestRender();
+        }
+      },
+    );
+  }
 
-    if (matches("escape") || matches("q")) {
-      this.done();
-      return;
-    }
-
-    if (matches("tab") || matches("right")) {
-      const idx = TOOL_TAB_ORDER.indexOf(this.activeTab);
-      this.activeTab = TOOL_TAB_ORDER[(idx + 1) % TOOL_TAB_ORDER.length]!;
-      this.selectedIndex = 0;
-      this.requestRender();
-    } else if (matches("shift+tab") || matches("left")) {
-      const idx = TOOL_TAB_ORDER.indexOf(this.activeTab);
-      this.activeTab =
-        TOOL_TAB_ORDER[
-          (idx - 1 + TOOL_TAB_ORDER.length) % TOOL_TAB_ORDER.length
-        ]!;
-      this.selectedIndex = 0;
-      this.requestRender();
-    } else if (matches("up")) {
-      if (this.selectedIndex > 0) {
-        this.selectedIndex--;
-        this.requestRender();
-      }
-    } else if (matches("down")) {
-      const maxIdx = this.getRowCount() - 1;
-      if (this.selectedIndex < maxIdx) {
-        this.selectedIndex++;
-        this.requestRender();
-      }
-    }
+  private cycleToolTab(direction: number): void {
+    const idx = TOOL_TAB_ORDER.indexOf(this.activeTab);
+    this.activeTab =
+      TOOL_TAB_ORDER[
+        (idx + direction + TOOL_TAB_ORDER.length) % TOOL_TAB_ORDER.length
+      ]!;
+    this.selectedIndex = 0;
+    this.requestRender();
   }
 
   render(): string[] {
@@ -1053,6 +1192,51 @@ class ToolUsageComponent {
   dispose(): void {}
 }
 
+/**
+ * Create a bordered custom UI component with consistent layout
+ */
+function createBorderedCustomUI<
+  T extends {
+    render(): string[];
+    handleInput(input: string): void;
+  },
+>(
+  tui: unknown,
+  theme: {
+    fg(c: string, s: string): string;
+  },
+  done: () => void,
+  createComponent: () => T,
+): {
+  render: (w: number) => string[];
+  invalidate: () => void;
+  handleInput: (input: string) => void;
+  dispose: () => void;
+} {
+  const container = new Container();
+  container.addChild(new Spacer(1));
+  container.addChild(new DynamicBorder((s: string) => theme.fg("border", s)));
+  container.addChild(new Spacer(1));
+
+  const component = createComponent();
+
+  return {
+    render: (w: number) => {
+      const borderLines = container.render(w);
+      const componentLines = component.render();
+      const bottomBorder = theme.fg("border", "─".repeat(w));
+      return [...borderLines, ...componentLines, "", bottomBorder];
+    },
+    invalidate: () => {
+      container.invalidate();
+    },
+    handleInput: (input: string) => {
+      component.handleInput(input);
+    },
+    dispose: () => {},
+  };
+}
+
 // =============================================================================
 // Extension Entry Point
 // =============================================================================
@@ -1067,6 +1251,66 @@ export {
   padRight,
   type UsageData,
 };
+
+/**
+ * Load data with a cancellable loader and display it in a bordered UI
+ */
+async function loadAndDisplay<
+  TData,
+  TComponent extends {
+    render(): string[];
+    handleInput(input: string): void;
+  },
+>(
+  ctx: ExtensionCommandContext,
+  loaderMessage: string,
+  collectData: (signal: AbortSignal) => Promise<TData | null>,
+  createComponent: (theme: Theme, data: TData) => TComponent,
+): Promise<void> {
+  if (!ctx.hasUI) {
+    return;
+  }
+
+  const data = await ctx.ui.custom<TData | null>(
+    (tui, theme, keybindings, done) => {
+      const loader = new CancellableLoader(
+        tui,
+        (s: string) => theme.fg("accent", s),
+        (s: string) => theme.fg("muted", s),
+        loaderMessage,
+      );
+      let finished = false;
+      const finish = (value: TData | null) => {
+        if (finished) return;
+        finished = true;
+        loader.dispose();
+        done(value);
+      };
+
+      loader.onAbort = () => {
+        finish(null);
+      };
+
+      collectData(loader.signal)
+        .then(finish)
+        .catch(() => {
+          finish(null);
+        });
+
+      return loader;
+    },
+  );
+
+  if (!data) {
+    return;
+  }
+
+  await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
+    return createBorderedCustomUI(tui, theme, done, () =>
+      createComponent(theme, data),
+    );
+  });
+}
 
 async function collectToolStats(
   signal?: AbortSignal,
@@ -1097,163 +1341,36 @@ export default function (pi: ExtensionAPI) {
   pi.registerCommand("tool-usage", {
     description: "Show tool usage statistics dashboard",
     handler: async (_args: string, ctx: ExtensionCommandContext) => {
-      if (!ctx.hasUI) {
-        return;
-      }
-
-      const data = await ctx.ui.custom<ToolStats | null>(
-        (tui, theme, keybindings, done) => {
-          const loader = new CancellableLoader(
-            tui,
-            (s: string) => theme.fg("accent", s),
-            (s: string) => theme.fg("muted", s),
-            "Loading Tool Usage...",
-          );
-          let finished = false;
-          const finish = (value: ToolStats | null) => {
-            if (finished) return;
-            finished = true;
-            loader.dispose();
-            done(value);
-          };
-
-          loader.onAbort = () => {
-            finish(null);
-          };
-
-          collectToolStats(loader.signal)
-            .then(finish)
-            .catch(() => {
-              finish(null);
-            });
-
-          return loader;
-        },
+      await loadAndDisplay(
+        ctx,
+        "Loading Tool Usage...",
+        collectToolStats,
+        (theme, data) =>
+          new ToolUsageComponent(
+            theme,
+            data,
+            () => {},
+            () => {},
+          ),
       );
-
-      if (!data) {
-        return;
-      }
-
-      // fallow-ignore-next-line dupes
-      await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
-        const container = new Container();
-
-        container.addChild(new Spacer(1));
-        container.addChild(
-          new DynamicBorder((s: string) => theme.fg("border", s)),
-        );
-        container.addChild(new Spacer(1));
-
-        const toolUsage = new ToolUsageComponent(
-          theme,
-          data,
-          () => {
-            tui.requestRender();
-          },
-          () => {
-            done();
-          },
-        );
-
-        return {
-          render: (w: number) => {
-            const borderLines = container.render(w);
-            const usageLines = toolUsage.render();
-            const bottomBorder = theme.fg("border", "─".repeat(w));
-            return [...borderLines, ...usageLines, "", bottomBorder];
-          },
-          invalidate: () => {
-            container.invalidate();
-          },
-          handleInput: (input: string) => {
-            toolUsage.handleInput(input);
-          },
-          dispose: () => {},
-        };
-      });
     },
   });
 
   pi.registerCommand("usage", {
     description: "Show usage statistics dashboard",
     handler: async (_args: string, ctx: ExtensionCommandContext) => {
-      if (!ctx.hasUI) {
-        return;
-      }
-
-      const data = await ctx.ui.custom<UsageData | null>(
-        (tui, theme, keybindings, done) => {
-          const loader = new CancellableLoader(
-            tui,
-            (s: string) => theme.fg("accent", s),
-            (s: string) => theme.fg("muted", s),
-            "Loading Usage...",
-          );
-          let finished = false;
-          const finish = (value: UsageData | null) => {
-            if (finished) return;
-            finished = true;
-            loader.dispose();
-            done(value);
-          };
-
-          loader.onAbort = () => {
-            finish(null);
-          };
-
-          collectUsageData(loader.signal)
-            .then(finish)
-            .catch(() => {
-              finish(null);
-            });
-
-          return loader;
-        },
+      await loadAndDisplay(
+        ctx,
+        "Loading Usage...",
+        collectUsageData,
+        (theme, data) =>
+          new UsageComponent(
+            theme,
+            data,
+            () => {},
+            () => {},
+          ),
       );
-
-      if (!data) {
-        return;
-      }
-
-      // fallow-ignore-next-line dupes
-      await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
-        const container = new Container();
-
-        // Top border
-        container.addChild(new Spacer(1));
-        container.addChild(
-          new DynamicBorder((s: string) => theme.fg("border", s)),
-        );
-        container.addChild(new Spacer(1));
-
-        const usage = new UsageComponent(
-          theme,
-          data,
-          () => {
-            tui.requestRender();
-          },
-          () => {
-            done();
-          },
-        );
-
-        return {
-          render: (w: number) => {
-            const borderLines = container.render(w);
-            const usageLines = usage.render();
-            const bottomBorder = theme.fg("border", "─".repeat(w));
-            return [...borderLines, ...usageLines, "", bottomBorder];
-          },
-          invalidate: () => {
-            container.invalidate();
-          },
-          handleInput: (input: string) => {
-            usage.handleInput(input);
-          },
-          dispose: () => {},
-        };
-      });
     },
   });
 }
