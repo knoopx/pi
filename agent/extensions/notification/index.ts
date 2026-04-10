@@ -137,7 +137,7 @@ export default function notificationExtension(pi: ExtensionAPI) {
       "Toggle text-to-speech for notifications (usage: /tts [on|off|toggle])",
     handler: async (args, ctx) => {
       const action = args.toLowerCase().trim() || "toggle";
-      let message = "";
+      let message: string;
 
       if (action === "on") {
         isTtsEnabled = true;
