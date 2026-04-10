@@ -732,7 +732,7 @@ Use the **conventional-commits** skill for commit message format.`;
     const filter = REVISION_FILTERS[currentFilterIndex];
     const leftTitle = ` ${filter.name} (${String(changes.length)})`;
     const rightTopTitle = selectedChange
-      ? ` ${selectedChange.description || "(no description)"}`
+      ? ` ${theme.fg("dim", selectedChange.changeId.slice(0, 8))} ${selectedChange.description || "(no description)"}`
       : " Files";
     const rightBottomTitle = selectedChange
       ? ` Diff: ${files[selectionState.fileIndex]?.path ?? "all"} (${selectedChange.changeId.slice(0, 8)})`
