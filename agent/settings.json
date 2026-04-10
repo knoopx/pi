@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.66.1",
   "defaultProvider": "local",
-  "defaultModel": "Jackrong/Qwopus3.5-27B-v3-GGUF",
+  "defaultModel": "unsloth/Qwen3.5-27B-GGUF",
   "theme": "custom",
   "enabledModels": [
     "github-copilot/grok-code-fast-1",
