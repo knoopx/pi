@@ -72,8 +72,9 @@ describe("Markitdown Extension", () => {
       });
 
       it("then it should execute markitdown with the file path", () => {
+        const expectedPath = `${process.env.HOME}/.local/bin/markitdown`;
         expect(mockPi.exec).toHaveBeenCalledWith(
-          "markitdown",
+          expectedPath,
           ["/path/to/file.pdf"],
           undefined,
         );
@@ -110,18 +111,8 @@ describe("Markitdown Extension", () => {
 
     describe("given a URL to convert", () => {
       let result: AgentToolResult<Record<string, unknown>>;
-      let mockFetch: ReturnType<typeof vi.fn>;
 
       beforeEach(async () => {
-        // Mock fetch for the URL
-        mockFetch = vi.fn().mockResolvedValue({
-          ok: true,
-          text: () =>
-            Promise.resolve("<html><body><h1>Test</h1></body></html>"),
-        });
-        const originalFetch = global.fetch;
-        global.fetch = mockFetch;
-
         const mockResult = {
           code: 0,
           stdout: "# Webpage Title\n\nContent from the webpage.",
@@ -136,25 +127,18 @@ describe("Markitdown Extension", () => {
           vi.fn(), // onUpdate
           {}, // ctx
         );
-
-        global.fetch = originalFetch;
       });
 
-      it("then it should fetch the URL with proper User-Agent", () => {
-        expect(mockFetch).toHaveBeenCalledWith(
-          "https://example.com/page",
-          expect.objectContaining({
-            headers: expect.objectContaining({
-              "User-Agent": expect.stringContaining("Mozilla/5.0"),
-            }),
-          }),
-        );
-      });
-
-      it("then it should pipe content to markitdown", () => {
+      it("then it should use curl with User-Agent to fetch and pipe to markitdown", () => {
+        const expectedPath = `${process.env.HOME}/.local/bin/markitdown`;
         expect(mockPi.exec).toHaveBeenCalledWith(
           "bash",
-          expect.arrayContaining(["-c", expect.stringContaining("markitdown")]),
+          [
+            "-c",
+            expect.stringContaining(
+              `curl -s -A 'Mozilla/5.0' -o - 'https://example.com/page' | ${expectedPath}`,
+            ),
+          ],
           undefined,
         );
       });
@@ -297,8 +281,9 @@ describe("Markitdown Extension", () => {
       });
 
       it("then it should pass the signal to the exec function", () => {
+        const expectedPath = `${process.env.HOME}/.local/bin/markitdown`;
         expect(mockPi.exec).toHaveBeenCalledWith(
-          "markitdown",
+          expectedPath,
           ["/path/to/file.pdf"],
           { signal },
         );
