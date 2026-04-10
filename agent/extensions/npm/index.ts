@@ -3,8 +3,8 @@ import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, type Static } from "@sinclair/typebox";
 import { textResult } from "../../shared/tool-utils";
 import { throttledFetch } from "../../shared/throttle";
-import { dotJoin, countLabel, table, detail } from "../../shared/renderers";
-import type { Column } from "../../shared/renderers";
+import { detail, dotJoin, countLabel } from "../../shared/renderers";
+import { formatPackageSearchResults } from "../../shared/package-registry";
 
 // Parameter schemas
 const SearchNpmPackagesParams = Type.Object({
@@ -148,7 +148,7 @@ Use this to:
 - Explore npm ecosystem
 
 Returns matching packages with metadata.`,
-    parameters: SearchNpmPackagesParams as any,
+    parameters: SearchNpmPackagesParams,
 
     async execute(_toolCallId: string, params: SearchNpmPackagesParamsType) {
       const { query, size = 10 } = params;
@@ -168,7 +168,7 @@ Use this to:
 - Evaluate package suitability
 
 Returns detailed package metadata.`,
-    parameters: GetNpmPackageInfoParams as any,
+    parameters: GetNpmPackageInfoParams,
 
     async execute(_toolCallId: string, params: GetNpmPackageInfoParamsType) {
       const { package: pkg } = params;
@@ -188,7 +188,7 @@ Use this to:
 - Plan version upgrades
 
 Returns all published package versions.`,
-    parameters: GetNpmPackageVersionsParams as any,
+    parameters: GetNpmPackageVersionsParams,
 
     async execute(
       _toolCallId: string,
@@ -232,47 +232,17 @@ async function searchNpmPackages(
       name: obj.package.name,
       version: obj.package.version,
       description: obj.package.description ?? "",
-      keywords: Array.isArray(obj.package.keywords) ? obj.package.keywords : [],
-      author: obj.package.author?.name ?? "Unknown",
     }));
 
     if (packages.length === 0) {
       return textResult("No packages found.", { query, count: 0, packages });
     }
 
-    const cols: Column[] = [
-      { key: "#", align: "right", minWidth: 3 },
-      { key: "version", minWidth: 7 },
-      {
-        key: "package",
-        format: (_v, row) => {
-          const r = row as {
-            package: string;
-            description: string;
-            keywords: string;
-          };
-          const lines = [r.package];
-          if (r.description) lines.push(r.description);
-          if (r.keywords) lines.push(r.keywords);
-          return lines.join("\n");
-        },
-      },
-    ];
-
-    const rows = packages.map((pkg, i) => ({
-      "#": String(i + 1),
-      version: pkg.version,
-      package: pkg.name,
-      description: pkg.description,
-      keywords: pkg.keywords.join(", "),
-    }));
-
-    const text = [
-      dotJoin(countLabel(packages.length, "result")),
-      "",
-      table(cols, rows),
-    ].join("\n");
-
+    const text = formatPackageSearchResults(
+      packages,
+      packages.length,
+      "result",
+    );
     return textResult(text, { query, count: packages.length, packages });
   } catch (error) {
     return {
@@ -287,57 +257,81 @@ async function searchNpmPackages(
   }
 }
 
+function extractNpmAuthor(
+  author: { name?: string } | string | undefined,
+): string {
+  return extractStringOrProperty(author, "name") || "Unknown";
+}
+
+function extractNpmMaintainers(
+  maintainers: NpmMaintainer[] | undefined,
+): string {
+  if (!Array.isArray(maintainers)) return "Unknown";
+  return (
+    maintainers
+      .map((m) => m?.name)
+      .filter(Boolean)
+      .join(", ") || "Unknown"
+  );
+}
+
+function extractNpmKeywords(keywords: string[] | undefined): string {
+  return Array.isArray(keywords) ? keywords.join(", ") : "None";
+}
+
+function countDependencies(deps: Record<string, string> | undefined): number {
+  return deps ? Object.keys(deps).length : 0;
+}
+
+function extractNpmPackageInfo(
+  data: NpmPackageResponse,
+  pkg: string,
+): Record<string, unknown> {
+  const latestVersion = data?.["dist-tags"]?.latest ?? "";
+  const latestInfo = data?.versions?.[latestVersion];
+
+  return {
+    name: data?.name ?? pkg,
+    description: data?.description ?? "",
+    author: extractNpmAuthor(data?.author),
+    maintainers: extractNpmMaintainers(data?.maintainers),
+    homepage: data?.homepage ?? "",
+    repository: extractStringOrProperty(data?.repository, "url"),
+    license: latestInfo?.license ?? "Unknown",
+    latestVersion,
+    keywords: extractNpmKeywords(data?.keywords),
+    dependencies: countDependencies(latestInfo?.dependencies),
+    devDependencies: countDependencies(latestInfo?.devDependencies),
+  };
+}
+
+function buildNpmPackageFields(
+  info: Record<string, unknown>,
+): { label: string; value: string }[] {
+  return [
+    { label: "name", value: String(info.name) },
+    { label: "version", value: String(info.latestVersion) },
+    { label: "license", value: String(info.license) },
+    { label: "author", value: String(info.author) },
+    { label: "description", value: String(info.description) },
+    { label: "homepage", value: String(info.homepage) },
+    { label: "repository", value: String(info.repository) },
+    { label: "keywords", value: String(info.keywords) },
+    {
+      label: "dependencies",
+      value: `${info.dependencies} deps · ${info.devDependencies} devDeps`,
+    },
+  ].filter((f) => f.value);
+}
+
 async function getNpmPackageInfo(
   pkg: string,
 ): Promise<AgentToolResult<Record<string, unknown>>> {
   const fetchResult = await fetchNpmPackage(pkg, "get package info");
   if (!fetchResult.ok) return fetchResult.result;
 
-  const data = fetchResult.data;
-  const latestVersion = data?.["dist-tags"]?.latest ?? "";
-  const latestInfo = data?.versions?.[latestVersion];
-
-  const info = {
-    name: data?.name ?? pkg,
-    description: data?.description ?? "",
-    author: extractStringOrProperty(data?.author, "name") || "Unknown",
-    maintainers: Array.isArray(data?.maintainers)
-      ? data.maintainers
-          .map((m: NpmMaintainer) => m?.name)
-          .filter(Boolean)
-          .join(", ")
-      : "Unknown",
-    homepage: data?.homepage ?? "",
-    repository: extractStringOrProperty(data?.repository, "url"),
-    license: latestInfo?.license ?? "Unknown",
-    latestVersion,
-    keywords: Array.isArray(data?.keywords) ? data.keywords.join(", ") : "None",
-    dependencies: latestInfo?.dependencies
-      ? Object.keys(latestInfo.dependencies).length
-      : 0,
-    devDependencies: latestInfo?.devDependencies
-      ? Object.keys(latestInfo.devDependencies).length
-      : 0,
-  };
-
-  const fields = [
-    { label: "name", value: info.name },
-    { label: "version", value: info.latestVersion },
-    { label: "license", value: info.license },
-    { label: "author", value: info.author },
-    { label: "description", value: info.description },
-    { label: "homepage", value: info.homepage ? info.homepage : "" },
-    {
-      label: "repository",
-      value: info.repository ? info.repository : "",
-    },
-    { label: "keywords", value: info.keywords ? info.keywords : "" },
-    {
-      label: "dependencies",
-      value: `${info.dependencies} deps · ${info.devDependencies} devDeps`,
-    },
-  ].filter((f) => f.value);
-
+  const info = extractNpmPackageInfo(fetchResult.data, pkg);
+  const fields = buildNpmPackageFields(info);
   const sections = [detail(fields)];
 
   return textResult(sections.join("\n"), { package: pkg, info });

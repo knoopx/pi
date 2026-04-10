@@ -10,8 +10,12 @@ import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, type Static } from "@sinclair/typebox";
 import { textResult } from "../../shared/tool-utils";
 import { throttledFetch } from "../../shared/throttle";
-import { dotJoin, countLabel, table, detail } from "../../shared/renderers";
-import type { Column } from "../../shared/renderers";
+import { detail } from "../../shared/renderers";
+import {
+  formatPackageSearchResults,
+  createPackageErrorResult,
+} from "../../shared/package-registry";
+import type { PackageSearchResult } from "../../shared/package-registry";
 
 // Parameter schemas
 const SearchPyPIPackagesParams = Type.Object({
@@ -58,7 +62,7 @@ interface PyPIPackageResponse {
   info: PyPIPackageInfo;
 }
 
-interface PyPISearchResult {
+interface PyPISearchResult extends PackageSearchResult {
   name: string;
   version: string;
   description: string;
@@ -125,10 +129,7 @@ function createPypiErrorResult(
   message: string,
   packageName: string,
 ): AgentToolResult<Record<string, unknown>> {
-  return {
-    content: [{ type: "text", text: message }],
-    details: { package: packageName, total: 0, returned: 0 },
-  };
+  return createPackageErrorResult(message, packageName);
 }
 
 /**
@@ -176,7 +177,7 @@ Use this to:
 - Explore available Python packages
 
 Returns matching packages with metadata.`,
-    parameters: SearchPyPIPackagesParams as any,
+    parameters: SearchPyPIPackagesParams,
 
     async execute(_toolCallId: string, params: SearchPyPIPackagesParamsType) {
       const { query, limit = 10 } = params;
@@ -211,32 +212,11 @@ Returns matching packages with metadata.`,
           );
         }
 
-        const cols: Column[] = [
-          { key: "#", align: "right", minWidth: 3 },
-          { key: "version", minWidth: 7 },
-          {
-            key: "package",
-            format: (_v, row) => {
-              const r = row as { package: string; description: string };
-              return r.description
-                ? `${r.package}\n${r.description}`
-                : r.package;
-            },
-          },
-        ];
-
-        const rows = packages.map((p, i) => ({
-          "#": String(i + 1),
-          version: p.version,
-          package: p.name,
-          description: p.description,
-        }));
-
-        const output = [
-          dotJoin(countLabel(packages.length, "result")),
-          "",
-          table(cols, rows),
-        ].join("\n");
+        const output = formatPackageSearchResults(
+          packages,
+          packages.length,
+          "result",
+        );
 
         return textResult(output, {
           query,
@@ -266,7 +246,7 @@ Use this to:
 - Get package author and homepage information
 
 Shows comprehensive package details from PyPI.`,
-    parameters: PyPIPackageInfoParams as any,
+    parameters: PyPIPackageInfoParams,
 
     async execute(_toolCallId: string, params: PyPIPackageInfoParamsType) {
       const { package: packageName } = params;
