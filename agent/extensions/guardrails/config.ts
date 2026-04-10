@@ -96,6 +96,7 @@ async function readGlobalSettingsOrEmpty(): Promise<Record<string, unknown>> {
     }
     throw new Error(
       "Unable to read settings.json safely; refusing to overwrite existing configuration.",
+      { cause: error },
     );
   }
 }

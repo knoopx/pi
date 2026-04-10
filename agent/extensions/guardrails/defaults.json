@@ -8,6 +8,18 @@
         "pattern": "* npm *",
         "action": "block",
         "reason": "npm is forbidden. Use Bun equivalents: `bun add`, `bun remove`, `bun run`, `bun install` (see skill: bun)"
+      },
+      {
+        "context": "command",
+        "pattern": "* npx *",
+        "action": "block",
+        "reason": "npx is forbidden. Use `bunx` instead (see skill: bun)"
+      },
+      {
+        "context": "command",
+        "pattern": "bun pm trust *",
+        "action": "block",
+        "reason": "modifies trusted package authors. This is a security-sensitive operation"
       }
     ]
   },
