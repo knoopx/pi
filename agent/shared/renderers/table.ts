@@ -156,7 +156,10 @@ export function table(
     // Split on embedded newlines, then word-wrap each segment
     const wrappedCells: string[][] = cells.map((cell, ci) => {
       const col = measured[ci];
-      const segments = cell.split("\n");
+      const segments = cell.split("\n").filter((s) => s !== "");
+
+      // Handle empty cells (all newlines filtered out)
+      if (segments.length === 0) return [""];
 
       const wrapSegment = (seg: string): string[] => {
         const plain = stripAnsi(seg);
@@ -165,12 +168,16 @@ export function table(
       };
 
       if (segments.length === 1) {
-        const lines = wrapSegment(cell);
-        if (lines.length <= 1) return [cell];
+        const lines = wrapSegment(segments[0]);
+        if (lines.length <= 1) return lines;
         return [lines[0], ...lines.slice(1).map((l) => "    " + l)];
       }
-      // Multi-line cell — wrap each segment individually
-      return segments.flatMap((seg) => wrapSegment(seg));
+      // Multi-line cell — wrap each segment, join with newlines, then re-split
+      const wrappedSegments = segments.map((seg) =>
+        wrapSegment(seg).join("\n"),
+      );
+      const joined = wrappedSegments.join("\n");
+      return joined.split("\n");
     });
 
     const maxLines = Math.max(...wrappedCells.map((wc) => wc.length));

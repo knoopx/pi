@@ -6,6 +6,14 @@ function strip(text: string): string {
   return text.replace(ANSI_RE, "");
 }
 
+// Shared helper to check for blank separator lines
+function assertNoBlankSeparatorLines(output: string) {
+  const lines = strip(output).split("\n");
+  for (const line of lines) {
+    expect(line).not.toMatch(/^\s*│\s*$/);
+  }
+}
+
 describe("table", () => {
   const cols: Column[] = [{ key: "name" }, { key: "score", align: "right" }];
 
@@ -99,5 +107,89 @@ describe("table", () => {
     const headerLine = out.split("\n")[0];
     // The "#" column should still be present and right-aligned
     expect(headerLine).toMatch(/\s+#\s+│/);
+  });
+
+  it("filters out empty segments from consecutive newlines", () => {
+    const cols: Column[] = [
+      { key: "type", maxWidth: 30 },
+      { key: "desc", maxWidth: 40 },
+    ];
+    const rows = [
+      {
+        type: "attribute set of string",
+        desc: "Input configuration\n\nwritten to file.\n\nSee docs for more.",
+      },
+      {
+        type: "boolean",
+        desc: "Whether to enable.\n\ndefault: false",
+      },
+    ];
+    const out = strip(table(cols, rows));
+    // Should not have any blank lines or lines with only separators
+    assertNoBlankSeparatorLines(table(cols, rows));
+    // Content should still be present
+    expect(out).toContain("Input configuration");
+    expect(out).toContain("written to file");
+    expect(out).toContain("See docs for more");
+    expect(out).toContain("Whether to enable");
+    expect(out).toContain("default: false");
+  });
+
+  it("handles leading and trailing newlines", () => {
+    const cols: Column[] = [{ key: "col", maxWidth: 20 }];
+    const rows = [{ col: "\n\nhello\n\n" }];
+    const out = strip(table(cols, rows));
+    const lines = out.split("\n");
+    // Should not have blank lines at the start of cell content
+    const dataLines = lines.slice(2); // Skip header and separator
+    expect(dataLines[0]).toBe("hello");
+  });
+
+  it("handles many consecutive newlines", () => {
+    const cols: Column[] = [{ key: "col" }];
+    const rows = [{ col: "line1\n\n\n\n\nline2" }];
+    const out = strip(table(cols, rows));
+    // Should not have blank separator lines
+    assertNoBlankSeparatorLines(table(cols, rows));
+    expect(out).toContain("line1");
+    expect(out).toContain("line2");
+  });
+
+  it("handles empty string cells", () => {
+    const cols: Column[] = [{ key: "col" }];
+    const rows = [{ col: "" }];
+    const out = strip(table(cols, rows));
+    const lines = out.split("\n");
+    // Should render without errors, just empty cell
+    expect(lines[2]).toBe("");
+  });
+
+  it("handles cells with only newlines", () => {
+    const cols: Column[] = [{ key: "col" }];
+    const rows = [{ col: "\n\n\n\n" }];
+    // Should render without blank separator lines
+    assertNoBlankSeparatorLines(table(cols, rows));
+  });
+
+  it("handles multiple rows with varying newline patterns", () => {
+    const cols: Column[] = [
+      { key: "#", align: "right", minWidth: 3 },
+      { key: "desc", maxWidth: 30 },
+    ];
+    const rows = [
+      { "#": "1", desc: "normal text" },
+      { "#": "2", desc: "with\n\nempty lines" },
+      { "#": "3", desc: "\n\nleading newlines" },
+      { "#": "4", desc: "trailing\n\n" },
+    ];
+    const out = strip(table(cols, rows));
+    // No blank separator lines anywhere
+    assertNoBlankSeparatorLines(table(cols, rows));
+    // All content present
+    expect(out).toContain("normal text");
+    expect(out).toContain("with");
+    expect(out).toContain("empty lines");
+    expect(out).toContain("leading newlines");
+    expect(out).toContain("trailing");
   });
 });
