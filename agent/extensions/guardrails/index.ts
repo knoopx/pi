@@ -1,10 +1,13 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+} from "@mariozechner/pi-coding-agent";
 import {
   configLoader,
   loadGuardrailsSettings,
   saveGuardrailsSettings,
 } from "./config";
-import type { GuardrailsRule, ResolvedConfig } from "./config";
+import type { GuardrailsGroup, GuardrailsRule, ResolvedConfig } from "./config";
 import { matchCommandPattern } from "./command-parser";
 import { glob } from "tinyglobby";
 
@@ -138,46 +141,62 @@ function matchesPattern(
  *
  * @returns The matched target value for includes/excludes filtering, or null.
  */
+function matchCommandRule(
+  rule: GuardrailsRule,
+  toolName: string,
+  input: unknown,
+): { targetValue: string } | null {
+  if (toolName !== "bash") return null;
+  const command = getInputFieldAsString(input, "command");
+  if (!command) return null;
+  if (!matchCommandPattern(command, rule.pattern)) return null;
+  return { targetValue: command };
+}
+
+function checkFilePatternMatch(
+  filePath: string | undefined,
+  filePattern: string | undefined,
+): boolean {
+  if (!filePattern || !filePath) return true;
+  const filePatternRegex = new RegExp(filePattern);
+  return filePatternRegex.test(filePath);
+}
+
+function getFileTargetValue(
+  rule: GuardrailsRule,
+  toolName: string,
+  input: unknown,
+  filePath: string | undefined,
+): string | undefined {
+  if (rule.context === "file_name" && ["edit", "write"].includes(toolName)) {
+    return filePath;
+  }
+  if (rule.context === "file_content" && toolName === "edit") {
+    return getInputFieldAsString(input, "newText");
+  }
+  if (rule.context === "file_content" && toolName === "write") {
+    return getInputFieldAsString(input, "content");
+  }
+  return undefined;
+}
+
 function matchRule(
   rule: GuardrailsRule,
   toolName: string,
   input: unknown,
 ): { targetValue: string } | null {
   if (rule.context === "command") {
-    if (toolName !== "bash") return null;
-    const command = getInputFieldAsString(input, "command");
-    if (!command) return null;
-
-    if (!matchCommandPattern(command, rule.pattern)) return null;
-    return { targetValue: command };
+    return matchCommandRule(rule, toolName, input);
   }
 
-  // For file_name and file_content contexts, check file_pattern first
   const filePath = getInputFieldAsString(input, "path");
-  if (rule.file_pattern && filePath) {
-    const filePatternRegex = new RegExp(rule.file_pattern);
-    if (!filePatternRegex.test(filePath)) return null;
-  }
+  if (!checkFilePatternMatch(filePath, rule.file_pattern)) return null;
 
-  let targetValue: string | undefined;
-
-  if (rule.context === "file_name") {
-    if (["edit", "write"].includes(toolName)) {
-      targetValue = filePath;
-    }
-  } else if (rule.context === "file_content") {
-    if (toolName === "edit") {
-      targetValue = getInputFieldAsString(input, "newText");
-    } else if (toolName === "write") {
-      targetValue = getInputFieldAsString(input, "content");
-    }
-  }
-
+  const targetValue = getFileTargetValue(rule, toolName, input, filePath);
   if (!targetValue) return null;
 
   const rulePattern = new RegExp(rule.pattern);
   if (!rulePattern.test(targetValue)) return null;
-
   return { targetValue };
 }
 
@@ -186,86 +205,142 @@ function matchRule(
  * Uses groups config to define blocking rules based on context.
  * Groups are only active if their file pattern matches files in the project.
  */
+interface MatchedRule {
+  rule: GuardrailsRule;
+  group: GuardrailsGroup;
+  targetValue: string;
+}
+
+async function shouldIncludeRule(
+  rule: GuardrailsRule,
+  targetValue: string,
+): Promise<boolean> {
+  if (
+    rule.includes &&
+    !matchesPattern(rule.context, targetValue, rule.includes)
+  ) {
+    return false;
+  }
+
+  if (
+    rule.excludes &&
+    matchesPattern(rule.context, targetValue, rule.excludes)
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+async function processGroupRules(
+  group: GuardrailsGroup,
+  toolName: string,
+  input: unknown,
+  cwd: string,
+): Promise<MatchedRule[]> {
+  const matched: MatchedRule[] = [];
+  const isActive = await isGroupActive(
+    group.pattern,
+    cwd,
+    group.excludePattern,
+  );
+  if (!isActive) return matched;
+
+  for (const rule of group.rules) {
+    try {
+      const matchResult = matchRule(rule, toolName, input);
+      if (!matchResult) continue;
+
+      const { targetValue } = matchResult;
+      if (!(await shouldIncludeRule(rule, targetValue))) continue;
+
+      matched.push({ rule, group, targetValue });
+    } catch {
+      continue;
+    }
+  }
+
+  return matched;
+}
+
+/**
+ * Find matching rules for a tool call
+ */
+async function findMatchingRules(
+  toolName: string,
+  input: unknown,
+  config: ResolvedConfig,
+  cwd: string,
+): Promise<MatchedRule[]> {
+  const matched: MatchedRule[] = [];
+
+  for (const group of config) {
+    const groupMatches = await processGroupRules(group, toolName, input, cwd);
+    matched.push(...groupMatches);
+  }
+
+  return matched;
+}
+
+/**
+ * Handle a single matched rule
+ */
+async function handleMatchedRule(
+  matched: MatchedRule,
+  ctx: ExtensionContext,
+): Promise<{ block: true; reason: string } | undefined> {
+  const { rule, group, targetValue } = matched;
+  const { action, reason } = rule;
+
+  if (action === "block") {
+    return { block: true, reason: `Blocked [${group.group}]: ${reason}` };
+  }
+
+  if (action === "confirm") {
+    if (!ctx.hasUI) {
+      return { block: true, reason: `Blocked [${group.group}]: ${reason}` };
+    }
+
+    const proceed = await ctx.ui.confirm(
+      `⚠️ ${group.group}: ${reason}`,
+      targetValue,
+    );
+    if (!proceed) {
+      return { block: true, reason: "Blocked: User denied execution" };
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Permission gate that prompts user confirmation for blocked operations.
+ */
 function setupPermissionGateHook(
   pi: ExtensionAPI,
   config: ResolvedConfig,
   isEnabled: () => boolean,
 ) {
   pi.on("tool_call", async (event, ctx) => {
-    if (!isEnabled()) {
-      return;
-    }
+    if (!isEnabled()) return;
+
     const toolName = event.toolName;
     const input = event.input;
 
-    // Skip tools that don't modify the project
     if (toolName === "read" || toolName === "genui") return;
 
-    for (const group of config) {
-      const isActive = await isGroupActive(
-        group.pattern,
-        ctx.cwd,
-        group.excludePattern,
-      );
-      if (!isActive) {
-        continue;
-      }
+    const matchedRules = await findMatchingRules(
+      toolName,
+      input,
+      config,
+      ctx.cwd,
+    );
 
-      for (const rule of group.rules) {
-        try {
-          const matched = matchRule(rule, toolName, input);
-          if (!matched) continue;
-
-          const { targetValue } = matched;
-
-          // Check includes: if specified, must also match
-          if (
-            rule.includes &&
-            !matchesPattern(rule.context, targetValue, rule.includes)
-          ) {
-            continue;
-          }
-
-          // Check excludes: if specified and matches, skip this rule
-          if (
-            rule.excludes &&
-            matchesPattern(rule.context, targetValue, rule.excludes)
-          ) {
-            continue;
-          }
-
-          const { action, reason } = rule;
-
-          if (action === "block") {
-            return {
-              block: true,
-              reason: `Blocked [${group.group}]: ${reason}`,
-            };
-          } else if (action === "confirm") {
-            if (!ctx.hasUI) {
-              return {
-                block: true,
-                reason: `Blocked [${group.group}]: ${reason}`,
-              };
-            }
-
-            const proceed = await ctx.ui.confirm(
-              `⚠️ ${group.group}: ${reason}`,
-              targetValue,
-            );
-
-            if (!proceed) {
-              return {
-                block: true,
-                reason: "Blocked: User denied execution",
-              };
-            }
-          }
-        } catch {
-          continue;
-        }
-      }
+    for (const matched of matchedRules) {
+      const result = await handleMatchedRule(matched, ctx);
+      if (result) return result;
     }
+
     return;
   });
 }

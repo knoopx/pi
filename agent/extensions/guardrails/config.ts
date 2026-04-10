@@ -36,7 +36,7 @@ export interface GuardrailsRule {
   reason: string;
 }
 
-interface GuardrailsGroup {
+export interface GuardrailsGroup {
   group: string;
   /**
    * File glob patterns to activate this group.

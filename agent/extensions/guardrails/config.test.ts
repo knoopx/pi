@@ -18,6 +18,38 @@ vi.mock("node:fs/promises", () => ({
 const { configLoader, loadGuardrailsSettings, saveGuardrailsSettings } =
   await import("./config");
 
+// Shared test fixtures
+const defaultConfig = [
+  {
+    group: "defaults",
+    pattern: "*",
+    rules: [
+      {
+        context: "command",
+        pattern: "bun *",
+        action: "block",
+        reason: "defaults",
+      },
+    ],
+  },
+];
+
+// Shared helper to create mock readFile implementations
+function createMockReadFileImpl(
+  globalConfig: unknown | null,
+  defaultConfigValue: unknown = defaultConfig,
+) {
+  return (path: unknown) => {
+    if (String(path).includes("settings.json")) {
+      if (globalConfig !== null) {
+        return Promise.resolve(JSON.stringify({ guardrails: globalConfig }));
+      }
+      return Promise.reject(new Error("missing"));
+    }
+    return Promise.resolve(JSON.stringify(defaultConfigValue));
+  };
+}
+
 describe("guardrails configLoader", () => {
   const mockReadFile = readFile as unknown as Mock;
   const mockWriteFile = writeFile as unknown as Mock;
@@ -41,27 +73,10 @@ describe("guardrails configLoader", () => {
           ],
         },
       ];
-      const defaults = [
-        {
-          group: "defaults",
-          pattern: "*",
-          rules: [
-            {
-              context: "command",
-              pattern: "bun *",
-              action: "block",
-              reason: "defaults",
-            },
-          ],
-        },
-      ];
 
-      mockReadFile.mockImplementation((path: unknown) => {
-        if (String(path).includes("settings.json")) {
-          return Promise.resolve(JSON.stringify({ guardrails: global }));
-        }
-        return Promise.resolve(JSON.stringify(defaults));
-      });
+      mockReadFile.mockImplementation(
+        createMockReadFileImpl(global, defaultConfig),
+      );
 
       await configLoader.load();
       expect(configLoader.getConfig()).toHaveLength(1);
@@ -71,27 +86,9 @@ describe("guardrails configLoader", () => {
 
   describe("given no global config", () => {
     it("then uses defaults", async () => {
-      const defaults = [
-        {
-          group: "defaults",
-          pattern: "*",
-          rules: [
-            {
-              context: "command",
-              pattern: "bun *",
-              action: "block",
-              reason: "defaults",
-            },
-          ],
-        },
-      ];
-
-      mockReadFile.mockImplementation((path: unknown) => {
-        if (String(path).includes("settings.json")) {
-          return Promise.reject(new Error("missing"));
-        }
-        return Promise.resolve(JSON.stringify(defaults));
-      });
+      mockReadFile.mockImplementation(
+        createMockReadFileImpl(null, defaultConfig),
+      );
 
       await configLoader.load();
       expect(configLoader.getConfig()).toHaveLength(1);
