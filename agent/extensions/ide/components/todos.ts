@@ -15,7 +15,6 @@ import {
   type ListPickerComponent,
 } from "./list-picker";
 import { loadFilePreviewWithBat } from "./file-preview";
-import { applyFocusedStyle } from "./style-utils";
 
 export interface TodoItem extends ListPickerItem {
   path: string;
@@ -63,6 +62,15 @@ function extractTag(text: string): string {
     if (text.includes(tag)) return tag;
   }
   return "TODO";
+}
+
+function filterTodosByQuery(items: TodoItem[], query: string): TodoItem[] {
+  const q = query.toLowerCase();
+  return items.filter(
+    (item) =>
+      item.text.toLowerCase().includes(q) ||
+      item.path.toLowerCase().includes(q),
+  );
 }
 
 async function findTodos(
@@ -114,27 +122,13 @@ async function findTodos(
     ];
   });
 
-  if (query) {
-    const q = query.toLowerCase();
-    return items.filter(
-      (item) =>
-        item.text.toLowerCase().includes(q) ||
-        item.path.toLowerCase().includes(q),
-    );
-  }
-
-  return items;
+  return query ? filterTodosByQuery(items, query) : items;
 }
 
-function formatTodoItem(
-  _width: number,
-  theme: Theme,
-  item: TodoItem,
-  isFocused: boolean,
-): string {
+function formatTodoItem(_width: number, theme: Theme, item: TodoItem): string {
   const pathShort = item.path.replace(/^\.\//, "");
   const location = theme.fg("dim", `${pathShort}:${String(item.startLine)}`);
-  return applyFocusedStyle(theme, `${item.text} ${location}`, isFocused);
+  return `${item.text} ${location}`;
 }
 
 export function createTodosComponent(
@@ -156,19 +150,18 @@ export function createTodosComponent(
     {
       title: "TODOs",
       loadItems: (query) => findTodos(pi, cwd, query),
-      filterItems: (items, query) => {
-        const q = query.toLowerCase();
-        return items.filter(
-          (item) =>
-            item.text.toLowerCase().includes(q) ||
-            item.path.toLowerCase().includes(q),
-        );
-      },
+      filterItems: (items, query) => filterTodosByQuery(items, query),
       reloadDebounceMs: 300,
-      formatItem: (item, width, theme, isFocused) =>
-        formatTodoItem(width, theme, item, isFocused),
+      formatItem: (item, width, theme) => formatTodoItem(width, theme, item),
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
       actions: [
+        {
+          key: Key.ctrl("t"),
+          label: "inspect",
+          handler: (item) => {
+            done(item);
+          },
+        },
         {
           key: Key.ctrl("i"),
           label: "insert",

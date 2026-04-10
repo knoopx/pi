@@ -31,23 +31,16 @@ const geminiConfig: ProviderConfig = {
       }
     }
 
+    const { min: proMin, hasModel: hasProModel } = extractModelQuota(
+      quotas,
+      (m) => m.toLowerCase().includes("pro"),
+    );
+    const { min: flashMin, hasModel: hasFlashModel } = extractModelQuota(
+      quotas,
+      (m) => m.toLowerCase().includes("flash"),
+    );
+
     const windows: RateWindow[] = [];
-    let proMin = 1;
-    let flashMin = 1;
-    let hasProModel = false;
-    let hasFlashModel = false;
-
-    for (const [model, frac] of Object.entries(quotas)) {
-      if (model.toLowerCase().includes("pro")) {
-        hasProModel = true;
-        if (frac < proMin) proMin = frac;
-      }
-      if (model.toLowerCase().includes("flash")) {
-        hasFlashModel = true;
-        if (frac < flashMin) flashMin = frac;
-      }
-    }
-
     if (hasProModel) {
       windows.push({ label: "Pro", usedPercent: (1 - proMin) * 100 });
     }
@@ -58,5 +51,22 @@ const geminiConfig: ProviderConfig = {
     return windows;
   },
 };
+
+function extractModelQuota(
+  quotas: Record<string, number>,
+  matcher: (model: string) => boolean,
+): { min: number; hasModel: boolean } {
+  let min = 1;
+  let hasModel = false;
+
+  for (const [model, frac] of Object.entries(quotas)) {
+    if (matcher(model)) {
+      hasModel = true;
+      if (frac < min) min = frac;
+    }
+  }
+
+  return { min, hasModel };
+}
 
 export const fetchGeminiUsage = await createGenericProvider(geminiConfig);

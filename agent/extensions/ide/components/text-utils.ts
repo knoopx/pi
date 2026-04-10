@@ -1,5 +1,6 @@
 import sliceAnsi from "slice-ansi";
 import stringWidth from "string-width";
+import type { Theme } from "@mariozechner/pi-coding-agent";
 
 const OSC_FULL_PATTERN =
   /\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\|\u001b(?=\[))?/g;
@@ -42,4 +43,28 @@ export function buildHelpText(
   ...items: (string | false | null | undefined)[]
 ): string {
   return items.filter(Boolean).join(" • ");
+}
+
+/**
+ * Render a list row with optional selection highlighting and status styling.
+ * Handles truncation, width padding, and theme application.
+ */
+export function renderListRow(
+  text: string,
+  width: number,
+  isSelected: boolean,
+  isCurrent?: boolean,
+  theme?: Theme,
+): string {
+  const truncated = truncateAnsi(text, width);
+  const final = ensureWidth(truncated, width);
+
+  if (isSelected && theme) {
+    const styled = theme.fg("accent", theme.bold(final));
+    return theme.bg("selectedBg", styled);
+  }
+  if (isCurrent && theme) {
+    return theme.fg("warning", final);
+  }
+  return final;
 }

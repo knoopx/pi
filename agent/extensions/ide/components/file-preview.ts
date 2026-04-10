@@ -1,4 +1,22 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  Theme,
+  ThemeColor,
+} from "@mariozechner/pi-coding-agent";
+
+/**
+ * Highlight code lines with optional accent color.
+ */
+export function highlightCodeLines(
+  line: string,
+  theme: Theme,
+  accentColor?: ThemeColor,
+): string {
+  if (accentColor) {
+    return theme.fg(accentColor, line);
+  }
+  return line;
+}
 
 /**
  * Load file preview using bat with syntax highlighting.

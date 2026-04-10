@@ -1,9 +1,26 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
-import { pad, ensureWidth, truncateAnsi } from "./text-utils";
+import { pad, ensureWidth, truncateAnsi, renderListRow } from "./text-utils";
 import { getChangeIcon } from "./change-utils";
 import { getFileStatusIcon, getFileIcon, getFileIconColor } from "./file-icons";
 import { hexColor } from "./style-utils";
 import { BOX } from "./ui/frame";
+import { highlightCodeLines } from "./file-preview";
+
+/**
+ * Create a border function for a given theme and color
+ */
+function createBorderFn(
+  theme: Theme,
+): (color: "border" | "borderAccent", s: string) => string {
+  return (color, s) => theme.fg(color, s);
+}
+
+/**
+ * Get border color based on focus state
+ */
+function getBorderColor(focus: boolean | undefined): "border" | "borderAccent" {
+  return focus ? "borderAccent" : "border";
+}
 
 /**
  * Render a row in a split panel layout
@@ -104,6 +121,273 @@ export function calculateDimensions(
 }
 
 /**
+ * Create a border row renderer for split panels
+ */
+function createBorderRowRenderer(theme: Theme) {
+  const border = createBorderFn(theme);
+  return function renderBorderRow(
+    leftColor: "border" | "borderAccent",
+    leftStart: string,
+    leftContent: string,
+    middle: string,
+    rightContent: string,
+    rightColor: "border" | "borderAccent",
+    rightEnd: string,
+  ): string {
+    return (
+      border(leftColor, leftStart) +
+      border(leftColor, leftContent) +
+      border("border", middle) +
+      border(rightColor, rightContent) +
+      border(rightColor, rightEnd)
+    );
+  };
+}
+
+/**
+ * Create a row renderer with focus-based border colors
+ */
+function createFocusedRowRenderer(
+  leftFocus: boolean | undefined,
+  rightFocus: boolean | undefined,
+  theme: Theme,
+) {
+  const renderRow = createBorderRowRenderer(theme);
+  const lb = getBorderColor(leftFocus);
+  const rb = getBorderColor(rightFocus);
+  return (
+    leftStart: string,
+    leftContent: string,
+    middle: string,
+    rightContent: string,
+    rightEnd: string,
+  ) =>
+    renderRow(lb, leftStart, leftContent, middle, rightContent, rb, rightEnd);
+}
+
+/**
+ * Render top border row
+ */
+function renderTopBorder(
+  leftW: number,
+  rightW: number,
+  leftFocus: boolean | undefined,
+  rightFocus: boolean | undefined,
+  theme: Theme,
+): string {
+  const renderRow = createFocusedRowRenderer(leftFocus, rightFocus, theme);
+  return renderRow(
+    BOX.topLeft,
+    BOX.horizontal.repeat(leftW),
+    BOX.teeDown,
+    BOX.horizontal.repeat(rightW),
+    BOX.topRight,
+  );
+}
+
+/**
+ * Render title row
+ */
+function renderTitleRow(
+  leftTitle: string,
+  rightTitle: string,
+  leftW: number,
+  rightW: number,
+  leftFocus: boolean | undefined,
+  rightFocus: boolean | undefined,
+  theme: Theme,
+): string {
+  const renderRow = createFocusedRowRenderer(leftFocus, rightFocus, theme);
+  return renderRow(
+    BOX.vertical,
+    theme.fg("accent", pad(leftTitle, leftW)),
+    BOX.vertical,
+    theme.fg("accent", pad(rightTitle, rightW)),
+    BOX.vertical,
+  );
+}
+
+/**
+ * Render separator row after title
+ */
+function renderSeparatorRow(
+  leftW: number,
+  rightW: number,
+  leftFocus: boolean | undefined,
+  rightFocus: boolean | undefined,
+  theme: Theme,
+): string {
+  const renderRow = createFocusedRowRenderer(leftFocus, rightFocus, theme);
+  return renderRow(
+    BOX.teeLeft,
+    BOX.horizontal.repeat(leftW),
+    BOX.cross,
+    BOX.horizontal.repeat(rightW),
+    BOX.teeRight,
+  );
+}
+
+/**
+ * Render bottom border with help text
+ */
+function renderBottomBorder(
+  leftW: number,
+  rightW: number,
+  helpText: string,
+  leftFocus: boolean,
+  theme: Theme,
+): string[] {
+  const border = createBorderFn(theme);
+  const lb = getBorderColor(leftFocus);
+
+  const separator =
+    border(lb, BOX.teeLeft) +
+    border(lb, BOX.horizontal.repeat(leftW)) +
+    border("border", BOX.teeUp) +
+    border("border", BOX.horizontal.repeat(rightW)) +
+    border("border", BOX.teeRight);
+
+  const helpRow =
+    border("border", BOX.vertical) +
+    theme.fg("dim", pad(" " + helpText, leftW + rightW + 1)) +
+    border("border", BOX.vertical);
+
+  const bottomRow =
+    border("border", BOX.bottomLeft) +
+    border("border", BOX.horizontal.repeat(leftW + rightW + 1)) +
+    border("border", BOX.bottomRight);
+
+  return [separator, helpRow, bottomRow];
+}
+
+/**
+ * Get panel border configuration
+ */
+function getPanelBorderConfig(
+  leftFocus: boolean | undefined,
+  rightFocus: boolean | undefined,
+  theme: Theme,
+) {
+  const lb: "border" | "borderAccent" = leftFocus ? "borderAccent" : "border";
+  const rb: "border" | "borderAccent" = rightFocus ? "borderAccent" : "border";
+  const border = (color: "border" | "borderAccent", s: string) =>
+    theme.fg(color, s);
+  return { lb, rb, border };
+}
+
+/**
+ * Render split right panel content
+ */
+function renderSplitRightPanel(
+  leftRows: string[],
+  rightTopRows: string[],
+  rightBottomRows: string[],
+  leftW: number,
+  rightW: number,
+  rightTopH: number,
+  rightBottomH: number,
+  leftFocus: boolean | undefined,
+  rightFocus: boolean | undefined,
+  rightBottomTitle: string,
+  theme: Theme,
+): string[] {
+  const lines: string[] = [];
+  const { lb, rb, border } = getPanelBorderConfig(leftFocus, rightFocus, theme);
+
+  // Right top section
+  for (let i = 0; i < rightTopH; i++) {
+    lines.push(
+      renderPanelRow(
+        leftRows[i] || pad("", leftW),
+        rightTopRows[i] || pad("", rightW),
+        leftW,
+        rightW,
+        lb,
+        rb,
+        border,
+      ),
+    );
+  }
+
+  // Separator between right top and bottom
+  lines.push(
+    border(lb, BOX.vertical) +
+      ensureWidth(leftRows[rightTopH] || "", leftW) +
+      border(rb, BOX.teeLeft) +
+      border(rb, BOX.horizontal.repeat(rightW)) +
+      border(rb, BOX.teeRight),
+  );
+
+  // Right bottom title
+  lines.push(
+    border(lb, BOX.vertical) +
+      ensureWidth(leftRows[rightTopH + 1] || "", leftW) +
+      border(rb, BOX.vertical) +
+      theme.fg("accent", pad(rightBottomTitle, rightW)) +
+      border(rb, BOX.vertical),
+  );
+
+  lines.push(
+    border(lb, BOX.vertical) +
+      ensureWidth(leftRows[rightTopH + 2] || "", leftW) +
+      border(rb, BOX.teeLeft) +
+      border(rb, BOX.horizontal.repeat(rightW)) +
+      border(rb, BOX.teeRight),
+  );
+
+  // Right bottom section
+  for (let i = 0; i < rightBottomH; i++) {
+    const leftIdx = rightTopH + 3 + i;
+    lines.push(
+      renderPanelRow(
+        leftRows[leftIdx] || pad("", leftW),
+        rightBottomRows[i] || pad("", rightW),
+        leftW,
+        rightW,
+        lb,
+        rb,
+        border,
+      ),
+    );
+  }
+
+  return lines;
+}
+
+/**
+ * Render simple two-column panel content
+ */
+function renderSimplePanel(
+  leftRows: string[],
+  rightRows: string[],
+  leftW: number,
+  rightW: number,
+  contentH: number,
+  leftFocus: boolean | undefined,
+  rightFocus: boolean | undefined,
+  theme: Theme,
+): string[] {
+  const lines: string[] = [];
+  const { lb, rb, border } = getPanelBorderConfig(leftFocus, rightFocus, theme);
+
+  for (let i = 0; i < contentH; i++) {
+    lines.push(
+      renderPanelRow(
+        leftRows[i] || pad("", leftW),
+        rightRows[i] || pad("", rightW),
+        leftW,
+        rightW,
+        lb,
+        rb,
+        border,
+      ),
+    );
+  }
+
+  return lines;
+}
+
+/**
  * Render a split panel layout
  */
 export function renderSplitPanel(
@@ -115,39 +399,33 @@ export function renderSplitPanel(
   const lines: string[] = [];
   const { leftW, rightW, contentH } = dims;
 
-  const lb = config.leftFocus ? "borderAccent" : "border";
-  const rb = config.rightFocus ? "borderAccent" : "border";
-  const border = (color: "border" | "borderAccent", s: string) =>
-    theme.fg(color, s);
-
   // Top border
   lines.push(
-    border(lb, BOX.topLeft) +
-      border(lb, BOX.horizontal.repeat(leftW)) +
-      border("border", BOX.teeDown) +
-      border(rb, BOX.horizontal.repeat(rightW)) +
-      border(rb, BOX.topRight),
+    renderTopBorder(leftW, rightW, config.leftFocus, config.rightFocus, theme),
   );
 
   // Title row
   lines.push(
-    border(lb, BOX.vertical) +
-      theme.fg("accent", pad(config.leftTitle, leftW)) +
-      border("border", BOX.vertical) +
-      theme.fg(
-        "accent",
-        pad(config.rightTopTitle ?? config.rightTitle, rightW),
-      ) +
-      border(rb, BOX.vertical),
+    renderTitleRow(
+      config.leftTitle,
+      config.rightTopTitle ?? config.rightTitle,
+      leftW,
+      rightW,
+      config.leftFocus,
+      config.rightFocus,
+      theme,
+    ),
   );
 
   // Separator after title
   lines.push(
-    border(lb, BOX.teeLeft) +
-      border(lb, BOX.horizontal.repeat(leftW)) +
-      border("border", BOX.cross) +
-      border(rb, BOX.horizontal.repeat(rightW)) +
-      border(rb, BOX.teeRight),
+    renderSeparatorRow(
+      leftW,
+      rightW,
+      config.leftFocus,
+      config.rightFocus,
+      theme,
+    ),
   );
 
   if (config.rightSplit && dims.rightTopH && dims.rightBottomH) {
@@ -158,104 +436,90 @@ export function renderSplitPanel(
     const rightTopRows = rows.rightTop ?? [];
     const rightBottomRows = rows.rightBottom ?? [];
 
-    // Right top section
-    for (let i = 0; i < rightTopH; i++) {
-      lines.push(
-        renderPanelRow(
-          leftRows[i] || pad("", leftW),
-          rightTopRows[i] || pad("", rightW),
-          leftW,
-          rightW,
-          lb,
-          rb,
-          border,
-        ),
-      );
-    }
-
-    // Separator between right top and bottom
-    lines.push(
-      border(lb, BOX.vertical) +
-        ensureWidth(leftRows[rightTopH] || "", leftW) +
-        border("border", BOX.teeLeft) +
-        border("border", BOX.horizontal.repeat(rightW)) +
-        border("border", BOX.teeRight),
+    const panelRows = renderSplitRightPanel(
+      leftRows,
+      rightTopRows,
+      rightBottomRows,
+      leftW,
+      rightW,
+      rightTopH,
+      rightBottomH,
+      config.leftFocus,
+      config.rightFocus,
+      config.rightBottomTitle ?? " Preview",
+      theme,
     );
-
-    // Right bottom title
-    lines.push(
-      border(lb, BOX.vertical) +
-        ensureWidth(leftRows[rightTopH + 1] || "", leftW) +
-        border("border", BOX.vertical) +
-        theme.fg("accent", pad(config.rightBottomTitle ?? " Preview", rightW)) +
-        border("border", BOX.vertical),
-    );
-
-    lines.push(
-      border(lb, BOX.vertical) +
-        ensureWidth(leftRows[rightTopH + 2] || "", leftW) +
-        border("border", BOX.teeLeft) +
-        border("border", BOX.horizontal.repeat(rightW)) +
-        border("border", BOX.teeRight),
-    );
-
-    // Right bottom section
-    for (let i = 0; i < rightBottomH; i++) {
-      const leftIdx = rightTopH + 3 + i;
-      lines.push(
-        renderPanelRow(
-          leftRows[leftIdx] || pad("", leftW),
-          rightBottomRows[i] || pad("", rightW),
-          leftW,
-          rightW,
-          lb,
-          "border",
-          border,
-        ),
-      );
-    }
+    lines.push(...panelRows);
   } else {
     // Simple two-column layout
     const leftRows = rows.left;
     const rightRows = rows.right ?? [];
 
-    for (let i = 0; i < contentH; i++) {
-      lines.push(
-        renderPanelRow(
-          leftRows[i] || pad("", leftW),
-          rightRows[i] || pad("", rightW),
-          leftW,
-          rightW,
-          lb,
-          rb,
-          border,
-        ),
-      );
-    }
+    const panelRows = renderSimplePanel(
+      leftRows,
+      rightRows,
+      leftW,
+      rightW,
+      contentH,
+      config.leftFocus,
+      config.rightFocus,
+      theme,
+    );
+    lines.push(...panelRows);
   }
 
   // Bottom border with help
-  lines.push(
-    border(lb, BOX.teeLeft) +
-      border(lb, BOX.horizontal.repeat(leftW)) +
-      border("border", BOX.teeUp) +
-      border("border", BOX.horizontal.repeat(rightW)) +
-      border("border", BOX.teeRight),
+  const bottomRows = renderBottomBorder(
+    leftW,
+    rightW,
+    config.helpText,
+    config.leftFocus,
+    theme,
   );
-
-  lines.push(
-    border("border", BOX.vertical) +
-      theme.fg("dim", pad(" " + config.helpText, leftW + rightW + 1)) +
-      border("border", BOX.vertical),
-  );
-
-  lines.push(
-    border("border", BOX.bottomLeft) +
-      border("border", BOX.horizontal.repeat(leftW + rightW + 1)) +
-      border("border", BOX.bottomRight),
-  );
+  lines.push(...bottomRows);
 
   return lines;
+}
+
+/**
+ * Render source code rows with line highlighting
+ */
+export function renderSourceRows(
+  lines: string[],
+  width: number,
+  height: number,
+  scroll: number,
+  theme: Theme,
+  highlightRange?: { start: number; end: number },
+): string[] {
+  const rows: string[] = [];
+
+  if (lines.length === 0) {
+    rows.push(theme.fg("dim", pad(" No preview available", width)));
+    return rows;
+  }
+
+  const visible = lines.slice(scroll, scroll + height);
+
+  for (let i = 0; i < visible.length; i++) {
+    const lineNum = scroll + i + 1;
+    const isHighlighted =
+      highlightRange &&
+      lineNum >= highlightRange.start &&
+      lineNum <= highlightRange.end;
+
+    const styledLine = highlightCodeLines(
+      visible[i],
+      theme,
+      isHighlighted ? "accent" : undefined,
+    );
+    const content = " " + styledLine;
+    const truncated = truncateAnsi(content, width - 1);
+    const final = ensureWidth(truncated, width);
+    rows.push(final);
+  }
+
+  return rows;
 }
 
 /**
@@ -447,67 +711,8 @@ export function renderChangeRows(
     const shortId = change.changeId.slice(0, 8);
     const desc = truncateAnsi(change.description, width - 13);
     const text = ` ${icon} ${shortId} ${desc}`;
-    const truncated = truncateAnsi(text, width);
-    const final = ensureWidth(truncated, width);
 
-    if (isSelected) {
-      const styled = theme.fg("accent", theme.bold(final));
-      rows.push(theme.bg("selectedBg", styled));
-    } else if (isCurrent) {
-      rows.push(theme.fg("warning", final));
-    } else {
-      rows.push(final);
-    }
-  }
-
-  return rows;
-}
-
-/**
- * Generate rows for source code with line numbers
- */
-export function renderSourceRows(
-  lines: string[],
-  width: number,
-  height: number,
-  scroll: number,
-  theme: Theme,
-  highlightRange?: { start: number; end: number },
-): string[] {
-  const rows: string[] = [];
-
-  if (lines.length === 0) {
-    rows.push(theme.fg("dim", pad(" No preview available", width)));
-    return rows;
-  }
-
-  const visible = lines.slice(scroll, scroll + height);
-
-  for (let i = 0; i < visible.length; i++) {
-    const lineNum = scroll + i + 1;
-    // Expand tabs to spaces to prevent width miscalculation
-    const line = expandTabs(visible[i] || "");
-
-    const isHighlighted =
-      highlightRange &&
-      lineNum >= highlightRange.start &&
-      lineNum <= highlightRange.end;
-
-    const lineNumStr = String(lineNum).padStart(4, " ");
-    const lineNumStyled = isHighlighted
-      ? theme.fg("accent", lineNumStr)
-      : theme.fg("dim", lineNumStr);
-
-    // Use ANSI-aware truncation to preserve colors from bat
-    const content = " " + truncateAnsi(line, width - 6);
-    const fullLine = lineNumStyled + " " + content;
-    const row = ensureWidth(fullLine, width);
-
-    if (isHighlighted) {
-      rows.push(theme.bg("selectedBg", row));
-    } else {
-      rows.push(row);
-    }
+    rows.push(renderListRow(text, width, isSelected, isCurrent, theme));
   }
 
   return rows;

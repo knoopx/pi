@@ -7,9 +7,10 @@ import {
   ACTION_KEYS,
   createKeyboardHandler,
   buildHelpFromBindings,
+  filterActiveBindings,
   type KeyBinding,
 } from "../keyboard";
-import { pad, ensureWidth, truncateAnsi } from "./text-utils";
+import { pad, renderListRow } from "./text-utils";
 import {
   calculateDimensions,
   renderSplitPanel,
@@ -111,60 +112,12 @@ export function createWorkspacesComponent(
     const isDefault = ws.name === "default";
 
     try {
-      let cache = workspaceCache.get(ws.name);
+      const cache = workspaceCache.get(ws.name);
 
       if (isDefault) {
-        // For default workspace, show changes
-        if (cache) {
-          changes = cache.changes;
-          files = [];
-          fileIndex = 0;
-          const diffKey = changes[0]?.changeId ?? "";
-          const cachedDiff = cache.diffs.get(diffKey);
-          if (cachedDiff) {
-            diffContent = cachedDiff;
-            diffScroll = 0;
-            invalidate();
-            tui.requestRender();
-            return;
-          }
-        }
-
-        if (!cache) {
-          changes = await loadChanges(pi, ws.path);
-          files = [];
-          cache = { files: [], changes, diffs: new Map() };
-          workspaceCache.set(ws.name, cache);
-        }
-
-        fileIndex = 0;
-        await loadChangeDiff(ws, changes[0]?.changeId);
+        await loadDefaultWorkspace(ws, cache);
       } else {
-        // For other workspaces, show files
-        if (cache) {
-          files = cache.files;
-          changes = [];
-          fileIndex = 0;
-          const diffKey = files[0]?.path ?? "";
-          const cachedDiff = cache.diffs.get(diffKey);
-          if (cachedDiff) {
-            diffContent = cachedDiff;
-            diffScroll = 0;
-            invalidate();
-            tui.requestRender();
-            return;
-          }
-        }
-
-        if (!cache) {
-          files = await loadChangedFiles(pi, ws.path, ws.changeId);
-          changes = [];
-          cache = { files, changes: [], diffs: new Map() };
-          workspaceCache.set(ws.name, cache);
-        }
-
-        fileIndex = 0;
-        await loadDiff(ws, files[0]?.path);
+        await loadWorkspaceFiles(ws, cache);
       }
     } catch (error) {
       const msg = formatErrorMessage(error);
@@ -174,6 +127,66 @@ export function createWorkspacesComponent(
       invalidate();
       tui.requestRender();
     }
+  }
+
+  async function loadDefaultWorkspace(
+    ws: AgentWorkspace,
+    cache: WorkspaceCache | undefined,
+  ): Promise<void> {
+    if (cache) {
+      changes = cache.changes;
+      files = [];
+      fileIndex = 0;
+      const diffKey = changes[0]?.changeId ?? "";
+      const cachedDiff = cache.diffs.get(diffKey);
+      if (cachedDiff) {
+        diffContent = cachedDiff;
+        diffScroll = 0;
+        invalidate();
+        tui.requestRender();
+        return;
+      }
+    }
+
+    if (!cache) {
+      changes = await loadChanges(pi, ws.path);
+      files = [];
+      cache = { files: [], changes, diffs: new Map() };
+      workspaceCache.set(ws.name, cache);
+    }
+
+    fileIndex = 0;
+    await loadChangeDiff(ws, changes[0]?.changeId);
+  }
+
+  async function loadWorkspaceFiles(
+    ws: AgentWorkspace,
+    cache: WorkspaceCache | undefined,
+  ): Promise<void> {
+    if (cache) {
+      files = cache.files;
+      changes = [];
+      fileIndex = 0;
+      const diffKey = files[0]?.path ?? "";
+      const cachedDiff = cache.diffs.get(diffKey);
+      if (cachedDiff) {
+        diffContent = cachedDiff;
+        diffScroll = 0;
+        invalidate();
+        tui.requestRender();
+        return;
+      }
+    }
+
+    if (!cache) {
+      files = await loadChangedFiles(pi, ws.path, ws.changeId);
+      changes = [];
+      cache = { files, changes: [], diffs: new Map() };
+      workspaceCache.set(ws.name, cache);
+    }
+
+    fileIndex = 0;
+    await loadDiff(ws, files[0]?.path);
   }
 
   async function loadChangeDiff(
@@ -330,14 +343,8 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
           ? ` (${STATUS_TEXT[ws.status]})`
           : "";
       const text = ` ${ws.name} ${stats}${status}`;
-      const truncated = truncateAnsi(text, width);
-      const final = ensureWidth(truncated, width);
-      if (isSelected) {
-        const styled = theme.fg("accent", theme.bold(final));
-        rows.push(theme.bg("selectedBg", styled));
-      } else {
-        rows.push(final);
-      }
+
+      rows.push(renderListRow(text, width, isSelected, false, theme));
     }
 
     return rows;
@@ -348,8 +355,13 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
 
     if (isDefault) {
       // Show changes for default workspace
+      const changesForRender = changes.map((c) => ({
+        changeId: c.changeId,
+        description: c.description,
+        empty: c.empty,
+      }));
       return renderChangeRows(
-        changes,
+        changesForRender,
         width,
         height,
         fileIndex,
@@ -671,11 +683,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
         ? [...globalBindings, ...workspaceActionBindings, ...leftPaneBindings]
         : [...globalBindings, ...rightPaneBindings];
 
-    const activeBindings = bindings.filter((b) => {
-      if (!b.label) return false;
-      if (b.when && !b.when(undefined as never)) return false;
-      return true;
-    });
+    const activeBindings = filterActiveBindings(bindings, undefined);
     return buildHelpFromBindings(activeBindings);
   }
 
@@ -713,6 +721,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
     render,
     handleInput,
     invalidate,
+    loadWorkspaces,
     dispose,
   };
 }

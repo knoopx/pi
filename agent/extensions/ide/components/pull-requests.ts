@@ -11,9 +11,42 @@ import {
   type ListPickerAction,
 } from "./list-picker";
 import { truncateAnsi } from "./text-utils";
-import { applyFocusedStyle } from "./style-utils";
+
 import { createMarkdownTheme, formatRelativeTime } from "./formatting";
 import { notifyMutation } from "../jj";
+
+/**
+ * Execute a gh CLI command and handle the result.
+ * On success: notifies with success message and reloads picker.
+ * On failure: notifies error message.
+ */
+async function executeGhCommand(
+  pi: ExtensionAPI,
+  args: string[],
+  cwd: string,
+  successMsg: string,
+  errorMsg: string,
+  pickerRef?: ListPickerComponent | null,
+): Promise<boolean> {
+  const result = await pi.exec("gh", args, { cwd });
+  if (result.code === 0) {
+    notifyMutation(pi, successMsg, result.stderr || result.stdout);
+    await pickerRef?.reload();
+    return true;
+  } else {
+    notifyMutation(pi, "error", result.stderr || errorMsg);
+    return false;
+  }
+}
+
+async function openPrInBrowser(
+  pi: ExtensionAPI,
+  prNumber: number,
+  cwd: string,
+): Promise<void> {
+  await pi.exec("gh", ["pr", "view", String(prNumber), "--web"], { cwd });
+  notifyMutation(pi, "info", `Opened PR #${prNumber} in browser`);
+}
 
 /** Pull request data from GitHub CLI */
 interface PullRequest extends ListPickerItem {
@@ -139,63 +172,49 @@ export function createPullRequestsComponent(
       key: Key.ctrl("o"),
       label: "open",
       handler: async (item) => {
-        await pi.exec("gh", ["pr", "view", String(item.number), "--web"], {
-          cwd,
-        });
-        notify(`Opened PR #${item.number} in browser`, "info");
+        await openPrInBrowser(pi, item.number, cwd);
       },
     },
     {
       key: Key.ctrl("c"),
       label: "checkout",
       handler: async (item) => {
-        const result = await pi.exec(
-          "gh",
+        await executeGhCommand(
+          pi,
           ["pr", "checkout", String(item.number)],
-          { cwd },
+          cwd,
+          `Checked out PR #${item.number} to current workspace`,
+          "Checkout failed",
+          pickerRef,
         );
-        if (result.code === 0) {
-          const msg = `Checked out PR #${item.number} to current workspace`;
-          notifyMutation(pi, msg, result.stderr || result.stdout);
-        } else {
-          notify(result.stderr || "Checkout failed", "error");
-        }
       },
     },
     {
       key: Key.ctrl("a"),
       label: "approve",
       handler: async (item) => {
-        const result = await pi.exec(
-          "gh",
+        await executeGhCommand(
+          pi,
           ["pr", "review", String(item.number), "--approve"],
-          { cwd },
+          cwd,
+          `Approved PR #${item.number} (review submitted)`,
+          "Approve failed",
+          pickerRef,
         );
-        if (result.code === 0) {
-          const msg = `Approved PR #${item.number} (review submitted)`;
-          notifyMutation(pi, msg, result.stderr || result.stdout);
-          await pickerRef?.reload();
-        } else {
-          notify(result.stderr || "Approve failed", "error");
-        }
       },
     },
     {
       key: Key.ctrl("m"),
       label: "merge",
       handler: async (item) => {
-        const result = await pi.exec(
-          "gh",
+        await executeGhCommand(
+          pi,
           ["pr", "merge", String(item.number), "--squash", "--delete-branch"],
-          { cwd },
+          cwd,
+          `Merged PR #${item.number} (squash + delete branch)`,
+          "Merge failed",
+          pickerRef,
         );
-        if (result.code === 0) {
-          const msg = `Merged PR #${item.number} (squash + delete branch)`;
-          notifyMutation(pi, msg, result.stderr || result.stdout);
-          await pickerRef?.reload();
-        } else {
-          notify(result.stderr || "Merge failed", "error");
-        }
       },
     },
     {
@@ -214,6 +233,7 @@ export function createPullRequestsComponent(
         await pickerRef?.reload();
       },
     },
+
     {
       key: Key.ctrl("i"),
       label: "insert",
@@ -256,7 +276,7 @@ export function createPullRequestsComponent(
             item.headRefName.toLowerCase().includes(query) ||
             String(item.number).includes(query),
         ),
-      formatItem: (item, width, theme, isFocused) => {
+      formatItem: (item, width, theme) => {
         const icon = getPrIcon(item.state, item.isDraft);
         const reviewIcon = getReviewIcon(item.reviewDecision);
         const stateColor =
@@ -305,7 +325,7 @@ export function createPullRequestsComponent(
 
         const text = `${iconStyled} ${prNum} ${reviewPart}${title} ${branch} ${author} ${stats} ${time}`;
 
-        return applyFocusedStyle(theme, truncateAnsi(text, width), isFocused);
+        return truncateAnsi(text, width);
       },
       loadPreview: async (item) => {
         const mdParts: string[] = [

@@ -1,21 +1,21 @@
 import { codeToANSI } from "@shikijs/cli";
 import type { BundledLanguage, BundledTheme } from "shiki";
 
-export const THEME: BundledTheme =
+const THEME: BundledTheme =
   (process.env.PRETTY_THEME as BundledTheme | undefined) ?? "github-dark";
 
-export function envInt(name: string, fallback: number): number {
+function envInt(name: string, fallback: number): number {
   const v = Number.parseInt(process.env[name] ?? "", 10);
   return Number.isFinite(v) && v > 0 ? v : fallback;
 }
 
-export const MAX_HL_CHARS = envInt("PRETTY_MAX_HL_CHARS", 80_000);
+const MAX_HL_CHARS = envInt("PRETTY_MAX_HL_CHARS", 80_000);
 export const MAX_PREVIEW_LINES = envInt("PRETTY_MAX_PREVIEW_LINES", 80);
-export const CACHE_LIMIT = envInt("PRETTY_CACHE_LIMIT", 128);
+const CACHE_LIMIT = envInt("PRETTY_CACHE_LIMIT", 128);
 
 const ANSI_CAPTURE_RE = /\x1b\[([0-9;]*)m/g;
 
-export function isLowContrastShikiFg(params: string): boolean {
+function isLowContrastShikiFg(params: string): boolean {
   if (params === "30" || params === "90") return true;
   if (params === "38;5;0" || params === "38;5;8") return true;
   if (!params.startsWith("38;2;")) return false;
@@ -27,10 +27,7 @@ export function isLowContrastShikiFg(params: string): boolean {
   return luminance < 72;
 }
 
-export function normalizeShikiContrast(
-  ansi: string,
-  mutedColor: string,
-): string {
+function normalizeShikiContrast(ansi: string, mutedColor: string): string {
   return ansi.replace(ANSI_CAPTURE_RE, (seq, params: string) =>
     isLowContrastShikiFg(params) ? mutedColor : seq,
   );

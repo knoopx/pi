@@ -47,6 +47,18 @@ export function buildHelpFromBindings(bindings: KeyBinding[]): string {
     .join("  ");
 }
 
+/** Filter bindings to only include those with labels and passing the when condition */
+export function filterActiveBindings<TContext>(
+  bindings: KeyBinding<TContext>[],
+  ctx?: TContext,
+): KeyBinding<TContext>[] {
+  return bindings.filter((b) => {
+    if (!b.label) return false;
+    if (b.when && !b.when(ctx!)) return false;
+    return true;
+  });
+}
+
 interface KeyboardHandlerConfig<TContext = void> {
   /** Custom key bindings (checked first) */
   bindings?: KeyBinding<TContext>[];

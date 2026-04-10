@@ -10,6 +10,7 @@ import {
   type KeyBinding,
 } from "../keyboard";
 import { truncateAnsi, ensureWidth, pad } from "./text-utils";
+import { applyFocusedStyle } from "./style-utils";
 import {
   calculateDimensions,
   renderSplitPanel,
@@ -43,12 +44,7 @@ interface ListPickerConfig<T extends ListPickerItem> {
   loadItems: (query: string) => Promise<T[]>;
   /** Local filtering (used when query changes between loads) */
   filterItems: (items: T[], query: string) => T[];
-  formatItem: (
-    item: T,
-    width: number,
-    theme: Theme,
-    isFocused: boolean,
-  ) => string;
+  formatItem: (item: T, width: number, theme: Theme) => string;
   loadPreview: (item: T) => Promise<string[]>;
   previewTitle?: (item: T) => string;
   onEdit?: (item: T) => Promise<void> | void;
@@ -210,10 +206,15 @@ export function createListPicker<T extends ListPickerItem>(
       const idx = startIdx + i;
       const item = filteredItems[idx];
       const isFocused = idx === focusedIndex;
-      const formatted = config.formatItem(item, width - 2, theme, isFocused);
+      // Format without focus styling first
+      const formatted = config.formatItem(item, width - 2, theme);
       const text = " " + truncateAnsi(formatted, width - 2);
       const padded = ensureWidth(text, width);
-      rows.push(padded);
+      // Apply focus styling to full-width padded text
+      const styled = isFocused
+        ? applyFocusedStyle(theme, padded, true)
+        : padded;
+      rows.push(styled);
     }
 
     return rows;

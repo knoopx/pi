@@ -12,7 +12,6 @@ import {
 } from "./list-picker";
 import { loadFilePreviewWithBat } from "./file-preview";
 import { getFileIcon } from "./file-icons";
-import { applyFocusedStyle } from "./style-utils";
 import { notifyMutation } from "../jj";
 import type { CmActionType } from "./cm-results";
 
@@ -202,11 +201,10 @@ export function createFilesComponent(
       },
       filterItems: (items, query) =>
         items.filter((item) => item.path.toLowerCase().includes(query)),
-      formatItem: (item, width, theme, isFocused) => {
+      formatItem: (item, width, theme) => {
         const isSelected = selectedFiles.has(item.path);
         const marker = isSelected ? theme.fg("accent", "✓ ") : "  ";
-        const text = `${marker}${getFileIcon(item.path)} ${item.path}`;
-        return applyFocusedStyle(theme, text, isFocused);
+        return `${marker}${getFileIcon(item.path)} ${item.path}`;
       },
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
     },

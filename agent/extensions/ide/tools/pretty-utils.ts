@@ -2,6 +2,10 @@ import type { AgentToolResult } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import type { Component, Text } from "@mariozechner/pi-tui";
 
+interface RenderResultContext {
+  isError: boolean;
+}
+
 /**
  * Extract text content from AgentToolResult
  */
@@ -19,9 +23,7 @@ export function extractTextContent(
 /**
  * Get error text from result content for display
  */
-export function getErrorText(
-  content: AgentToolResult<unknown>["content"],
-): string {
+function getErrorText(content: AgentToolResult<unknown>["content"]): string {
   return extractTextContent(content) || "Error";
 }
 
@@ -41,7 +43,7 @@ export function renderError(
 /**
  * Get fallback text from result with length limit
  */
-export function getFallbackText(
+function getFallbackText(
   content: AgentToolResult<unknown>["content"],
   defaultText: string,
   maxLength = 120,
@@ -54,7 +56,7 @@ export function getFallbackText(
 /**
  * Render fallback result as dimmed text
  */
-export function renderFallback(
+function renderFallback(
   content: AgentToolResult<unknown>["content"],
   defaultText: string,
   theme: Theme,
@@ -86,4 +88,26 @@ export function getTextComponent(
   ) as Component & {
     setText: (s: string) => void;
   };
+}
+
+/**
+ * Handle common renderResult pattern: error check and fallback
+ */
+export function handleRenderResult<T>(
+  result: AgentToolResult<T>,
+  ctx: RenderResultContext,
+  theme: Theme,
+  text: Component & { setText: (s: string) => void },
+  renderDetails: (d: Record<string, unknown>) => Component | undefined,
+  defaultText: string,
+): Component {
+  if (ctx.isError) {
+    return renderError(result.content, theme, text);
+  }
+
+  const d = result.details as unknown as Record<string, unknown>;
+  const rendered = renderDetails(d);
+  if (rendered) return rendered;
+
+  return renderFallback(result.content, defaultText, theme, text);
 }

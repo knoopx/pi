@@ -22,8 +22,8 @@ export async function openSymbolsPicker(
   ctx: ExtensionContext,
   initialQuery: string,
 ): Promise<void> {
-  const result = await runNavigationStack(pi, ctx, async (pi, ctx) => {
-    const symbolResult = await ctx.ui.custom<SymbolResult | null>(
+  const symbolResult = await runNavigationStack(pi, ctx, async (pi, ctx) => {
+    const result = await ctx.ui.custom<SymbolResult | null>(
       (tui, theme, keybindings, done) =>
         createSymbolsComponent(
           pi,
@@ -36,16 +36,17 @@ export async function openSymbolsPicker(
         ),
       OVERLAY_OPTIONS,
     );
-    if (!symbolResult) return { result: null };
+    if (!result) return { result: null };
     return {
-      result: symbolResult.symbol,
-      action: symbolResult.action,
-      target: symbolResult.symbol.name,
+      result: result.symbol,
+      action: result.action,
+      target: result.symbol.name,
     };
   });
 
-  if (result) {
+  if (symbolResult) {
     const currentText = ctx.ui.getEditorText();
-    ctx.ui.setEditorText(currentText + `${result.path}:${result.startLine}`);
+    const textToInsert = `${symbolResult.path}:${symbolResult.startLine}`;
+    ctx.ui.setEditorText(currentText + textToInsert);
   }
 }

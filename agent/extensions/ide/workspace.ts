@@ -58,21 +58,6 @@ export async function getCurrentChangeId(
 }
 
 /**
- * Check if the current change is empty (no file changes)
- */
-export async function isCurrentChangeEmpty(
-  pi: ExtensionAPI,
-  cwd?: string,
-): Promise<boolean> {
-  const args = ["log", "-r", "@", "--no-graph", "-T", "empty"];
-  const result = await pi.exec("jj", args, cwd ? { cwd } : undefined);
-  if (result.code !== 0) {
-    return true; // Assume empty on error
-  }
-  return result.stdout.trim() === "true";
-}
-
-/**
  * Parse jj workspace list output
  */
 export function parseWorkspaceList(output: string): WorkspaceListEntry[] {

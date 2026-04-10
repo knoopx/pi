@@ -5,7 +5,30 @@ import {
   EdgeType,
   type GraphNode,
   type Edge,
+  type GraphLayout,
 } from "./graph";
+
+// Helper to render graph rows from a layout
+function renderGraphRows(nodes: GraphNode[], layout: GraphLayout): string[] {
+  return nodes.map((node, i) => {
+    const pos = layout.positions.get(node.id)!;
+    return renderGraphRow(
+      layout.edges[i],
+      pos.x,
+      node.isWorkingCopy,
+      false,
+      layout.maxX,
+    );
+  });
+}
+
+// Shared test fixtures
+const simpleMergeNodes: GraphNode[] = [
+  { id: "merge", parentIds: ["A", "B"], isWorkingCopy: false },
+  { id: "A", parentIds: ["root"], isWorkingCopy: false },
+  { id: "B", parentIds: ["root"], isWorkingCopy: false },
+  { id: "root", parentIds: [], isWorkingCopy: false },
+];
 
 describe("graph", () => {
   describe("calculateGraphLayout", () => {
@@ -83,15 +106,8 @@ describe("graph", () => {
     });
 
     describe("given simple merge commit", () => {
-      const nodes: GraphNode[] = [
-        { id: "merge", parentIds: ["A", "B"], isWorkingCopy: false },
-        { id: "A", parentIds: ["root"], isWorkingCopy: false },
-        { id: "B", parentIds: ["root"], isWorkingCopy: false },
-        { id: "root", parentIds: [], isWorkingCopy: false },
-      ];
-
       describe("when calculating layout", () => {
-        const result = calculateGraphLayout(nodes);
+        const result = calculateGraphLayout(simpleMergeNodes);
 
         it("then places merge at lane 0", () => {
           expect(result.positions.get("merge")).toEqual({ x: 0, y: 0 });
@@ -449,27 +465,11 @@ describe("graph", () => {
 
   describe("integration: calculateGraphLayout + renderGraphRow", () => {
     describe("given simple merge scenario", () => {
-      const nodes: GraphNode[] = [
-        { id: "merge", parentIds: ["A", "B"], isWorkingCopy: false },
-        { id: "A", parentIds: ["root"], isWorkingCopy: false },
-        { id: "B", parentIds: ["root"], isWorkingCopy: false },
-        { id: "root", parentIds: [], isWorkingCopy: false },
-      ];
-
       describe("when rendering complete graph", () => {
-        const layout = calculateGraphLayout(nodes);
+        const layout = calculateGraphLayout(simpleMergeNodes);
 
         it("then produces expected visual output", () => {
-          const rows = nodes.map((node, i) => {
-            const pos = layout.positions.get(node.id)!;
-            return renderGraphRow(
-              layout.edges[i],
-              pos.x,
-              node.isWorkingCopy,
-              false,
-              layout.maxX,
-            );
-          });
+          const rows = renderGraphRows(simpleMergeNodes, layout);
 
           expect(rows[0]).toBe("◆─╮"); // merge with branch
           expect(rows[1]).toBe("◆ │"); // A with lane 1 continuing
@@ -522,16 +522,7 @@ describe("graph", () => {
         });
 
         it("then renders coherent graph", () => {
-          const rows = nodes.map((node, i) => {
-            const pos = layout.positions.get(node.id)!;
-            return renderGraphRow(
-              layout.edges[i],
-              pos.x,
-              node.isWorkingCopy,
-              false,
-              layout.maxX,
-            );
-          });
+          const rows = renderGraphRows(nodes, layout);
 
           expect(rows[0]).toBe("◉"); // head (working copy)
           expect(rows[1]).toBe("◆─╮"); // m1 with branch

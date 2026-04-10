@@ -10,7 +10,7 @@ import {
   type ListPickerAction,
 } from "./list-picker";
 import { getChangeIcon } from "./change-utils";
-import { applyFocusedStyle } from "./style-utils";
+
 import {
   loadOpLog,
   getOpShow,
@@ -112,12 +112,8 @@ export function createOpLogComponent(
             item.opId.toLowerCase().includes(query) ||
             item.description.toLowerCase().includes(query),
         ),
-      formatItem: (item, width, theme, isFocused) =>
-        applyFocusedStyle(
-          theme,
-          `${getChangeIcon(item.isCurrent, false)} ${theme.fg("dim", item.opId)} ${item.description}`,
-          isFocused,
-        ),
+      formatItem: (item, width, theme) =>
+        `${getChangeIcon(item.isCurrent, false)} ${theme.fg("dim", item.opId)} ${item.description}`,
       loadPreview: (item) => getOpShow(pi, cwd, item.opId),
     },
   );

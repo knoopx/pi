@@ -48,6 +48,62 @@ export function createRateLimitProcessor(
   const getPath = (obj: unknown, path: string): unknown =>
     path.split(".").reduce((o, k) => (o as AnyRecord)?.[k], obj);
 
+  function extractUsedPercent(
+    windowData: AnyRecord,
+    window: WindowConfig,
+  ): number {
+    let usedPercent = window.usedPercentPath
+      ? (getPath(windowData, window.usedPercentPath) as number) || 0
+      : (windowData.utilization as number) ||
+        (windowData.used_percent as number) ||
+        0;
+
+    if (window.usedPercentTransform) {
+      usedPercent = window.usedPercentTransform(usedPercent);
+    }
+
+    return usedPercent;
+  }
+
+  function extractLabel(
+    data: unknown,
+    windowData: AnyRecord,
+    window: WindowConfig,
+  ): string {
+    return typeof window.label === "function"
+      ? window.label(data, windowData)
+      : window.fixedLabel || window.label;
+  }
+
+  function extractResetAt(
+    data: unknown,
+    windowData: AnyRecord,
+    window: WindowConfig,
+  ): string | number | undefined {
+    let resetAt: string | number | undefined;
+    if (window.resetPath) {
+      if (window.resetPath.startsWith("/")) {
+        // Absolute path from root data
+        resetAt = getPath(data, window.resetPath.slice(1)) as
+          | string
+          | number
+          | undefined;
+      } else {
+        // Relative path from windowData
+        resetAt = getPath(windowData, window.resetPath) as
+          | string
+          | number
+          | undefined;
+      }
+    }
+    if (!resetAt) {
+      resetAt =
+        (windowData.resets_at as string | number | undefined) ||
+        (windowData.reset_at as string | number | undefined);
+    }
+    return resetAt;
+  }
+
   return (data) => {
     const result: RateWindow[] = [];
 
@@ -55,42 +111,9 @@ export function createRateLimitProcessor(
       const windowData = getPath(data, window.path) as AnyRecord | undefined;
       if (!windowData) continue;
 
-      let usedPercent = window.usedPercentPath
-        ? (getPath(windowData, window.usedPercentPath) as number) || 0
-        : (windowData.utilization as number) ||
-          (windowData.used_percent as number) ||
-          0;
-
-      if (window.usedPercentTransform) {
-        usedPercent = window.usedPercentTransform(usedPercent);
-      }
-
-      const label =
-        typeof window.label === "function"
-          ? window.label(data, windowData)
-          : window.fixedLabel || window.label;
-
-      let resetAt: string | number | undefined;
-      if (window.resetPath) {
-        if (window.resetPath.startsWith("/")) {
-          // Absolute path from root data
-          resetAt = getPath(data, window.resetPath.slice(1)) as
-            | string
-            | number
-            | undefined;
-        } else {
-          // Relative path from windowData
-          resetAt = getPath(windowData, window.resetPath) as
-            | string
-            | number
-            | undefined;
-        }
-      }
-      if (!resetAt) {
-        resetAt =
-          (windowData.resets_at as string | number | undefined) ||
-          (windowData.reset_at as string | number | undefined);
-      }
+      const usedPercent = extractUsedPercent(windowData, window);
+      const label = extractLabel(data, windowData, window);
+      const resetAt = extractResetAt(data, windowData, window);
 
       result.push({
         label,

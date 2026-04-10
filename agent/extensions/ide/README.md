@@ -32,29 +32,31 @@ Browse files with syntax-highlighted preview. Type to filter, enter to insert pa
 | `↑/↓`    | Navigate             |
 | `Enter`  | Insert path          |
 | `Ctrl+E` | Open in VS Code      |
-| `Ctrl+I` | Inspect file symbols |
+| `Ctrl+T` | Inspect file symbols |
+| `Ctrl+I` | Insert path          |
 | `Ctrl+D` | Show dependencies    |
 | `Ctrl+U` | Show used-by         |
 | `Esc`    | Exit                 |
 
 ### `/symbols [query]`
 
-Browse code symbols (functions, classes, methods) with source preview. Enter inserts `path:line` reference.
+Browse code symbols (functions, classes, methods) with source preview. Enter inserts `path:line` reference, `Ctrl+I` inserts just the symbol name.
 
 ![Symbols](../../../screenshots/symbols.png)
 
-| Key      | Action            |
-| -------- | ----------------- |
-| `↑/↓`    | Navigate          |
-| `Ctrl+/` | Cycle type filter |
-| `Enter`  | Insert path:line  |
-| `Ctrl+E` | Open in VS Code   |
-| `Ctrl+I` | Show callers      |
-| `Ctrl+L` | Show callees      |
-| `Ctrl+T` | Show tests        |
-| `Ctrl+Y` | Show types        |
-| `Ctrl+S` | Show schema       |
-| `Esc`    | Exit              |
+| Key      | Action             |
+| -------- | ------------------ |
+| `↑/↓`    | Navigate           |
+| `Ctrl+/` | Cycle type filter  |
+| `Enter`  | Insert path:line   |
+| `Ctrl+E` | Open in VS Code    |
+| `Ctrl+T` | Show callers       |
+| `Ctrl+I` | Insert symbol name |
+| `Ctrl+L` | Show callees       |
+| `Ctrl+J` | Show tests         |
+| `Ctrl+Y` | Show types         |
+| `Ctrl+S` | Show schema        |
+| `Esc`    | Exit               |
 
 ### `/todos [query]`
 
@@ -66,6 +68,7 @@ Browse TODO, FIXME, HACK, and XXX comments across the codebase using ast-grep AS
 | -------- | ------------------------------ |
 | `↑/↓`    | Navigate                       |
 | `Enter`  | Select                         |
+| `Ctrl+T` | Inspect comment                |
 | `Ctrl+I` | Insert `path:line comment`     |
 | `Type`   | Filter by comment text or path |
 | `Esc`    | Exit                           |
@@ -126,7 +129,8 @@ Select changes with `Space`, then press `d` to generate conventional commit desc
 | `↑/↓`       | Navigate               |
 | `e`         | Open file in VS Code   |
 | `d`         | Discard file changes   |
-| `Ctrl+I`    | Inspect file symbols   |
+| `Ctrl+T`    | Inspect file symbols   |
+| `Ctrl+I`    | Insert file path       |
 | `Ctrl+D`    | Show file dependencies |
 | `Ctrl+U`    | Show file used-by      |
 | `PgUp/PgDn` | Scroll diff            |
@@ -191,21 +195,6 @@ Browse local and remote skills, preview files, install remote skills, or insert 
 | `Type`      | Filter skills                                    |
 | `Esc`       | Exit                                             |
 
-### `/commands`
-
-Open the command palette to fuzzy-search slash commands and shortcuts.
-
-![Commands](../../../screenshots/commands.png)
-
-| Key         | Action         |
-| ----------- | -------------- |
-| `↑/↓`       | Navigate       |
-| `Enter`     | Execute/select |
-| `Type`      | Filter         |
-| `Backspace` | Delete filter  |
-| `Ctrl+U`    | Clear filter   |
-| `Esc`       | Exit           |
-
 ### `/pull-requests`
 
 Browse GitHub pull requests with diff preview. Uses the `gh` CLI for GitHub API access.
@@ -221,7 +210,8 @@ Browse GitHub pull requests with diff preview. Uses the `gh` CLI for GitHub API 
 | `Ctrl+A` | Approve PR                                 |
 | `Ctrl+M` | Merge PR (squash)                          |
 | `Ctrl+S` | Cycle filter (open/closed/merged/all)      |
-| `Ctrl+I` | Insert PR number                           |
+| `Ctrl+T` | Inspect PR in browser                      |
+| `Ctrl+I` | Insert PR reference                        |
 | `Type`   | Filter by title, author, branch, or number |
 | `Esc`    | Exit                                       |
 
@@ -232,73 +222,22 @@ Browse GitHub pull requests with diff preview. Uses the `gh` CLI for GitHub API 
 - Merged - merged pull requests
 - All - all pull requests
 
-### `/linear`
-
-Browse Linear issues with markdown preview. Requires authentication via `/linear-login`.
-
-| Key      | Action                          |
-| -------- | ------------------------------- |
-| `↑/↓`    | Navigate                        |
-| `Enter`  | Select issue                    |
-| `Ctrl+N` | Create new issue (form)         |
-| `Ctrl+E` | Edit issue (form)               |
-| `Ctrl+O` | Open issue in browser           |
-| `Ctrl+S` | Cycle filter                    |
-| `Ctrl+I` | Insert issue identifier         |
-| `Type`   | Filter by title, team, or state |
-| `Esc`    | Exit                            |
-
-**Filters** (cycle with `Ctrl+S`):
-
-- My Active - assigned to me, not completed/canceled
-- My Issues - all issues assigned to me
-- Created by Me - issues I created
-- Urgent/High - priority 1-2 issues
-- Recent - updated in last 7 days
-- All - all issues
-
-**Issue Form** (create/edit):
-
-- `↑/↓` or `Tab` - Navigate fields
-- `←/→` - Change state/priority
-- `Enter` - Save issue
-- `Esc` - Cancel
-
-### `/linear-login <api-key>`
-
-Save your Linear API key. Get your key from Linear Settings > API > Personal API keys.
-
 ### `/workspace <task description>`
 
 Create a new jj workspace from the current change and spawn a pi subagent in that workspace.
 
 ## Keyboard Shortcuts
 
-| Shortcut       | Action                 |
-| -------------- | ---------------------- |
-| `Ctrl+P`       | Open file picker       |
-| `Ctrl+T`       | Open symbol picker     |
-| `Ctrl+B`       | Open bookmarks browser |
-| `Ctrl+J`       | Open workspaces        |
-| `Ctrl+K`       | Open changes           |
-| `Ctrl+O`       | Open operation log     |
-| `Ctrl+S`       | Open skill browser     |
-| `Ctrl+G`       | Open pull requests     |
-| `Ctrl+U`       | Open Linear issues     |
-| `Ctrl+Shift+P` | Open command palette   |
-
-## Linear Tools
-
-The following tools are available for the agent to interact with Linear:
-
-| Tool                  | Description                             | Confirmation |
-| --------------------- | --------------------------------------- | ------------ |
-| `linear-search`       | Search issues by query, state, assignee | No           |
-| `linear-get-issue`    | Get issue details by identifier         | No           |
-| `linear-create-issue` | Create a new issue                      | Yes          |
-| `linear-update-issue` | Update issue title, description, state  | Yes          |
-
-Write operations (create, update) require user confirmation before execution.
+| Shortcut | Action                 |
+| -------- | ---------------------- |
+| `Ctrl+P` | Open file picker       |
+| `Ctrl+T` | Open symbol picker     |
+| `Ctrl+B` | Open bookmarks browser |
+| `Ctrl+J` | Open workspaces        |
+| `Ctrl+K` | Open changes           |
+| `Ctrl+O` | Open operation log     |
+| `Ctrl+S` | Open skill browser     |
+| `Ctrl+G` | Open pull requests     |
 
 ## Automatic Change Tracking
 

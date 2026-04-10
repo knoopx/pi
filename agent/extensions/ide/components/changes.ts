@@ -4,6 +4,7 @@ import {
   ACTION_KEYS,
   createKeyboardHandler,
   buildHelpFromBindings,
+  filterActiveBindings,
   type KeyBinding,
 } from "../keyboard";
 import { ensureWidth, truncateAnsi } from "./text-utils";
@@ -633,76 +634,119 @@ Use the **conventional-commits** skill for commit message format.`;
       );
     }
 
-    const rows: string[] = [];
     const visibleCount = height;
-    let startIdx = 0;
-    if (selectionState.selectedIndex >= visibleCount) {
-      startIdx = selectionState.selectedIndex - visibleCount + 1;
-    }
+    const startIdx = Math.max(
+      0,
+      selectionState.selectedIndex - visibleCount + 1,
+    );
+    const rows: string[] = [];
 
     for (let i = 0; i < visibleCount && startIdx + i < changes.length; i++) {
       const idx = startIdx + i;
       const change = changes[idx];
-      const isCursor = idx === selectionState.selectedIndex;
-      const isMarked = selectedChangeIds.has(change.changeId);
-      const isWorkingCopy =
-        currentChangeId !== null && change.changeId === currentChangeId;
-      const isFocused = isCursor && selectionState.focus === "left";
-
-      // Render graph prefix (dynamic width per row)
-      let graphPrefix = "";
-      if (graphLayout) {
-        const pos = graphLayout.positions.get(change.changeId);
-        const edges = graphLayout.edges[idx] ?? [];
-        if (pos) {
-          graphPrefix = renderGraphRow(
-            edges,
-            pos.x,
-            isWorkingCopy,
-            change.immutable,
-            graphLayout.maxX,
-          );
-        }
-      }
-
-      // Add single space separator after graph, use actual length
-      const graphWidth = graphPrefix.length > 0 ? graphPrefix.length + 1 : 0;
-      if (graphPrefix.length > 0) {
-        graphPrefix += " ";
-      }
-
-      const bookmarks = bookmarksByChange.get(change.changeId) ?? [];
-      const isMoving = mode === "move" && isCursor;
-      const { leftText, rightText } = formatChangeRow(theme, {
-        isImmutable: change.immutable,
-        isSelected: isMarked,
-        isFocused,
-        isMoving,
-        bookmarks,
-        description: change.description,
-        author: change.author,
-      });
-
-      const rightLen = rightText.replace(/\x1b\[[0-9;]*m/g, "").length;
-      const availableLeftWidth = Math.max(1, width - rightLen - graphWidth);
-      const leftTruncated = truncateAnsi(leftText, availableLeftWidth);
-      const leftPadded = ensureWidth(leftTruncated, availableLeftWidth);
-      const styledGraph = isFocused
-        ? theme.fg("accent", graphPrefix)
-        : change.immutable
-          ? theme.fg("dim", graphPrefix)
-          : graphPrefix;
-      let line = styledGraph + leftPadded + rightText;
-
-      // Apply background color to entire line when focused in left pane
-      if (isFocused) {
-        line = theme.bg("selectedBg", line);
-      }
-
+      const rowState = getChangeRowState(idx, change);
+      const graphPrefix = renderChangeGraphPrefix(
+        change,
+        idx,
+        rowState.isWorkingCopy,
+      );
+      const { leftText, rightText } = getChangeRowText(change, rowState);
+      const line = assembleChangeRow(
+        graphPrefix,
+        leftText,
+        rightText,
+        width,
+        rowState,
+        change,
+      );
       rows.push(line);
     }
 
     return rows;
+  }
+
+  function getChangeRowState(
+    idx: number,
+    change: { changeId: string; immutable: boolean },
+  ): {
+    isCursor: boolean;
+    isMarked: boolean;
+    isWorkingCopy: boolean;
+    isFocused: boolean;
+  } {
+    const isCursor = idx === selectionState.selectedIndex;
+    const isMarked = selectedChangeIds.has(change.changeId);
+    const isWorkingCopy =
+      currentChangeId !== null && change.changeId === currentChangeId;
+    const isFocused = isCursor && selectionState.focus === "left";
+    return { isCursor, isMarked, isWorkingCopy, isFocused };
+  }
+
+  function renderChangeGraphPrefix(
+    change: { changeId: string; immutable: boolean },
+    idx: number,
+    isWorkingCopy: boolean,
+  ): string {
+    if (!graphLayout) return "";
+    const pos = graphLayout.positions.get(change.changeId);
+    const edges = graphLayout.edges[idx] ?? [];
+    if (!pos) return "";
+    return (
+      renderGraphRow(
+        edges,
+        pos.x,
+        isWorkingCopy,
+        change.immutable,
+        graphLayout.maxX,
+      ) + " "
+    );
+  }
+
+  function getChangeRowText(
+    change: {
+      changeId: string;
+      immutable: boolean;
+      description: string;
+      author?: string;
+    },
+    state: { isMarked: boolean; isFocused: boolean; isCursor: boolean },
+  ): { leftText: string; rightText: string } {
+    const bookmarks = bookmarksByChange.get(change.changeId) ?? [];
+    const isMoving = mode === "move" && state.isCursor;
+    return formatChangeRow(theme, {
+      isImmutable: change.immutable,
+      isSelected: state.isMarked,
+      isFocused: state.isFocused,
+      isMoving,
+      bookmarks,
+      description: change.description,
+      author: change.author,
+    });
+  }
+
+  function assembleChangeRow(
+    graphPrefix: string,
+    leftText: string,
+    rightText: string,
+    width: number,
+    state: { isFocused: boolean },
+    change: { immutable: boolean },
+  ): string {
+    const graphWidth = graphPrefix.length;
+    const rightLen = rightText.replace(/\x1b\[[0-9;]*m/g, "").length;
+    const availableLeftWidth = Math.max(1, width - rightLen - graphWidth);
+    const leftTruncated = truncateAnsi(leftText, availableLeftWidth);
+    const leftPadded = ensureWidth(leftTruncated, availableLeftWidth);
+    const styledGraph = state.isFocused
+      ? theme.fg("accent", graphPrefix)
+      : change.immutable
+        ? theme.fg("dim", graphPrefix)
+        : graphPrefix;
+    let line = styledGraph + leftPadded + rightText;
+    if (state.isFocused) {
+      line = theme.bg("selectedBg", line);
+    }
+    return line;
   }
 
   function getFileRows(width: number, height: number): string[] {
@@ -1124,7 +1168,7 @@ Use the **conventional-commits** skill for commit message format.`;
       },
     },
     {
-      key: Key.ctrl("i"),
+      key: Key.ctrl("t"),
       label: "inspect",
       when: () => onFileCmAction !== undefined && hasSelectedFile(),
       handler: () => {
@@ -1145,6 +1189,15 @@ Use the **conventional-commits** skill for commit message format.`;
       when: () => onFileCmAction !== undefined && hasSelectedFile(),
       handler: () => {
         void onFileCmAction!(files[selectionState.fileIndex].path, "used-by");
+      },
+    },
+    {
+      key: Key.ctrl("i"),
+      label: "insert",
+      when: () => hasSelectedFile() && onInsert !== undefined,
+      handler: () => {
+        onInsert!(files[selectionState.fileIndex].path);
+        done();
       },
     },
     {
@@ -1194,11 +1247,7 @@ Use the **conventional-commits** skill for commit message format.`;
           ? [...globalBindings, ...leftPaneBindings]
           : [...globalBindings, ...rightPaneBindings];
 
-    const activeBindings = bindings.filter((b) => {
-      if (!b.label) return false;
-      if (b.when && !b.when(undefined as never)) return false;
-      return true;
-    });
+    const activeBindings = filterActiveBindings(bindings, undefined);
     return buildHelpFromBindings(activeBindings);
   }
 

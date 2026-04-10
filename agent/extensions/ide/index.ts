@@ -14,6 +14,7 @@
 import type {
   ExtensionAPI,
   ExtensionContext,
+  Theme,
 } from "@mariozechner/pi-coding-agent";
 import {
   Key,
@@ -27,7 +28,6 @@ import {
   generateWorkspaceName,
   createWorkspace,
   getCurrentChangeId,
-  isCurrentChangeEmpty,
 } from "./workspace";
 import { createWorkspacesComponent } from "./components/workspaces";
 import { createBookmarkPromptComponent } from "./components/bookmark-prompt";
@@ -44,6 +44,43 @@ import { openChangesBrowser } from "./overlays/changes";
 import { openTodosBrowser } from "./overlays/todos";
 import { monitorWorkspace } from "./overlays/workspace-monitor";
 import { FULL_OVERLAY_OPTIONS } from "./overlays/options";
+
+/** Load IDE settings from settings.json */
+async function loadIdeSettings(
+  pi: ExtensionAPI,
+  cwd: string,
+): Promise<IdeSettings> {
+  try {
+    const settingsPath = `${cwd}/agent/settings.json`;
+    const result = await pi.exec("cat", [settingsPath], { cwd: undefined });
+    if (result.code !== 0) return {};
+    const settings = JSON.parse(result.stdout) as Settings;
+    return settings.ide ?? {};
+  } catch {
+    return {};
+  }
+}
+
+/** Save IDE settings to settings.json */
+async function saveIdeSettings(
+  pi: ExtensionAPI,
+  cwd: string,
+  ideSettings: IdeSettings,
+): Promise<void> {
+  try {
+    const settingsPath = `${cwd}/agent/settings.json`;
+    const result = await pi.exec("cat", [settingsPath], { cwd: undefined });
+    const existingSettings: Settings =
+      result.code === 0 ? (JSON.parse(result.stdout) as Settings) : {};
+    existingSettings.ide = { ...existingSettings.ide, ...ideSettings };
+    const json = JSON.stringify(existingSettings, null, 2);
+    await pi.exec("bash", ["-c", `echo '${json}' > '${settingsPath}'`], {
+      cwd: undefined,
+    });
+  } catch {
+    // Silently fail - setting won't persist but toggle still works in-memory
+  }
+}
 
 function formatTokenCount(value: number): string {
   if (value >= 1_000_000) {
@@ -71,6 +108,15 @@ function shortenHomePath(cwd: string): string {
 
 interface ThemeWithFg {
   fg(color: string, text: string): string;
+}
+
+interface IdeSettings {
+  jujutsuChangeTracking?: boolean;
+  readonlyTools?: string[];
+}
+
+interface Settings {
+  ide?: IdeSettings;
 }
 
 function colorizeUsagePercent(theme: ThemeWithFg, usedPercent: number): string {
@@ -155,6 +201,74 @@ export default async function ideExtension(pi: ExtensionAPI) {
   let currentUsage: UsageSnapshot | undefined;
   let isFooterRefreshInProgress = false;
   let requestFooterRender: (() => void) | undefined;
+  let jujutsuChangeTrackingEnabled = true; // Default: enabled
+
+  function calculateTotalCost(
+    sessionManager: ExtensionContext["sessionManager"],
+  ): number {
+    let totalCost = 0;
+    for (const entry of sessionManager.getEntries()) {
+      if (entry.type === "message" && entry.message.role === "assistant") {
+        totalCost += entry.message.usage.cost.total;
+      }
+    }
+    return totalCost;
+  }
+
+  function formatCostText(totalCost: number, ctx: ExtensionContext): string {
+    const usingSubscription = ctx.model
+      ? ctx.modelRegistry.isUsingOAuth(ctx.model)
+      : false;
+    return `$${totalCost.toFixed(3)}${usingSubscription ? " (sub)" : ""}`;
+  }
+
+  function formatContextInfo(
+    ctx: ExtensionContext,
+    theme: Theme,
+  ): { text: string } {
+    const contextUsage = ctx.getContextUsage();
+    const contextWindow =
+      contextUsage?.contextWindow ?? ctx.model?.contextWindow ?? 0;
+    const contextPercent = contextUsage?.percent;
+    const contextText =
+      contextPercent === null || contextPercent === undefined
+        ? `?/${formatTokenCount(contextWindow)} (auto)`
+        : `${contextPercent.toFixed(1)}%/${formatTokenCount(contextWindow)} (auto)`;
+
+    let coloredText = contextText;
+    if (contextPercent !== null && contextPercent !== undefined) {
+      if (contextPercent > 90) {
+        coloredText = theme.fg("error", contextText);
+      } else if (contextPercent > 70) {
+        coloredText = theme.fg("warning", contextText);
+      }
+    }
+
+    return { text: coloredText };
+  }
+
+  function formatModelInfo(
+    ctx: ExtensionContext,
+    usage: UsageSnapshot | undefined,
+    theme: Theme,
+  ): { modelText: string; quotaText: string } {
+    const thinkingLevel = pi.getThinkingLevel();
+    const quotaText = formatCompactQuota(usage, theme);
+    const modelText = ctx.model
+      ? `${ctx.model.id} • ${thinkingLevel}`
+      : "no-model";
+    return { modelText, quotaText };
+  }
+
+  function formatLeftText(
+    ctx: ExtensionContext,
+    vcsLabel: string | null,
+    theme: Theme,
+  ): string {
+    const sessionName = ctx.sessionManager.getSessionName();
+    const cwd = shortenHomePath(ctx.cwd);
+    return `${theme.fg("accent", cwd)}${vcsLabel ? ` ${theme.fg("dim", vcsLabel)}` : ""}${sessionName ? theme.fg("dim", ` ${sessionName}`) : ""}`;
+  }
 
   function installGlobalFooter(ctx: ExtensionContext): void {
     if (!ctx.hasUI) {
@@ -182,58 +296,16 @@ export default async function ideExtension(pi: ExtensionAPI) {
         },
         invalidate() {},
         render(width: number): string[] {
-          let totalCost = 0;
-
-          for (const entry of ctx.sessionManager.getEntries()) {
-            if (
-              entry.type !== "message" ||
-              entry.message.role !== "assistant"
-            ) {
-              continue;
-            }
-
-            const message = entry.message;
-            totalCost += message.usage.cost.total;
-          }
-
-          const sessionName = ctx.sessionManager.getSessionName();
-          const cwd = shortenHomePath(ctx.cwd);
-
-          const usingSubscription = ctx.model
-            ? ctx.modelRegistry.isUsingOAuth(ctx.model)
-            : false;
-          const costText = `$${totalCost.toFixed(3)}${usingSubscription ? " (sub)" : ""}`;
-
-          const contextUsage = ctx.getContextUsage();
-          const contextWindow =
-            contextUsage?.contextWindow ?? ctx.model?.contextWindow ?? 0;
-          const contextPercent = contextUsage?.percent;
-          const contextText =
-            contextPercent === null || contextPercent === undefined
-              ? `?/${formatTokenCount(contextWindow)} (auto)`
-              : `${contextPercent.toFixed(1)}%/${formatTokenCount(contextWindow)} (auto)`;
-
-          let contextColored = contextText;
-          if (contextPercent !== null && contextPercent !== undefined) {
-            if (contextPercent > 90) {
-              contextColored = theme.fg("error", contextText);
-            } else if (contextPercent > 70) {
-              contextColored = theme.fg("warning", contextText);
-            }
-          }
-
-          const thinkingLevel = pi.getThinkingLevel();
-          const quotaText = formatCompactQuota(currentUsage, theme);
-          const modelText = ctx.model
-            ? `${ctx.model.id} • ${thinkingLevel}`
-            : "no-model";
-
-          const leftText = `${theme.fg("accent", cwd)}${currentVcsLabel ? ` ${theme.fg("dim", currentVcsLabel)}` : ""}${sessionName ? theme.fg("dim", ` ${sessionName}`) : ""}`;
-          const centerText =
-            quotaText.length > 0 ? `${modelText} ${quotaText}` : modelText;
-          const rightText = `${theme.fg("dim", costText)} ${contextColored}`;
+          const totalCost = calculateTotalCost(ctx.sessionManager);
+          const costText = formatCostText(totalCost, ctx);
+          const contextInfo = formatContextInfo(ctx, theme);
+          const modelInfo = formatModelInfo(ctx, currentUsage, theme);
+          const leftText = formatLeftText(ctx, currentVcsLabel, theme);
+          const centerText = modelInfo.quotaText
+            ? `${modelInfo.modelText} ${modelInfo.quotaText}`
+            : modelInfo.modelText;
+          const rightText = `${theme.fg("dim", costText)} ${contextInfo.text}`;
           const line = padLine(leftText, centerText, rightText, width);
-
           return [truncateToWidth(line, width)];
         },
       };
@@ -264,6 +336,14 @@ export default async function ideExtension(pi: ExtensionAPI) {
     lastContext = ctx;
     installGlobalFooter(ctx);
     await refreshFooterData();
+    // Load IDE settings
+    const settings = await loadIdeSettings(pi, ctx.cwd);
+    jujutsuChangeTrackingEnabled = settings.jujutsuChangeTracking ?? true;
+    if (settings.readonlyTools && Array.isArray(settings.readonlyTools)) {
+      readonlyTools = new Set(settings.readonlyTools);
+    } else {
+      readonlyTools = new Set(DEFAULT_READONLY_TOOLS);
+    }
   });
 
   pi.on("model_select", async (_event, ctx) => {
@@ -305,7 +385,7 @@ export default async function ideExtension(pi: ExtensionAPI) {
         overlayOptions: {
           width: "56%",
           minWidth: 48,
-          maxHeight: 10,
+          maxHeight: 12,
           anchor: "center",
         },
       },
@@ -322,8 +402,8 @@ export default async function ideExtension(pi: ExtensionAPI) {
   // JJ change guardrail: track if jj new has been called in current turn
   let jjNewCalled = false;
 
-  // Reset at agent end (not turn_start, which would reset after jj new but before subsequent tools)
-  pi.on("agent_end", async (_event) => {
+  // Reset on every user input
+  pi.on("input", async (_event) => {
     jjNewCalled = false;
   });
 
@@ -365,11 +445,47 @@ export default async function ideExtension(pi: ExtensionAPI) {
     "bun",
   ]);
 
+  const DEFAULT_READONLY_TOOLS = new Set([
+    "read",
+    "ls",
+    "grep",
+    "find",
+    "transcribe",
+    "gh-search-repos",
+    "gh-search-code",
+    "gh-search-issues",
+    "gh-search-prs",
+    "gh-repo-contents",
+    "gh-file-content",
+    "gh-list-gists",
+    "gh-get-gist",
+    "gh-list-prs",
+    "gh-view-pr",
+    "gh-list-issues",
+    "gh-view-issue",
+    "gh-list-releases",
+    "gh-view-release",
+    "gh-list-workflows",
+    "gh-list-runs",
+    "gh-list-repo-files",
+    "search-npm-packages",
+    "npm-package-info",
+    "npm-package-versions",
+    "search-pypi-packages",
+    "pypi-package-info",
+    "search-nix-packages",
+    "search-nix-options",
+    "search-home-manager-options",
+  ]);
+
+  let readonlyTools: Set<string> = new Set(DEFAULT_READONLY_TOOLS);
+
   function isReadonlyToolCall(event: {
     toolName: string;
     input?: unknown;
   }): boolean {
-    if (event.toolName === "read") return true;
+    if (readonlyTools.has(event.toolName)) return true;
+
     if (event.toolName === "bash") {
       const input = event.input as { command?: string } | undefined;
       const command = input?.command?.trim() ?? "";
@@ -382,7 +498,8 @@ export default async function ideExtension(pi: ExtensionAPI) {
   function isJjNewCommand(command: string): boolean {
     const trimmed = command.trim();
     // Match: jj new, jj new -m "...", jj new --message "..."
-    return /^jj\s+new\b/.test(trimmed);
+    // Also handle chains like: cd ... && jj new ... or ... && jj new ...
+    return /(?:^|&&)\s*jj\s+new\b/.test(trimmed);
   }
 
   function getConventionalCommitGuidance(): string {
@@ -400,7 +517,12 @@ Readonly tools (read, ls, grep, find) → no jj new needed.
 edit/write → BLOCKED until jj new is run first.`;
   }
 
-  pi.on("tool_call", async (event, ctx) => {
+  pi.on("tool_call", async (event, _ctx) => {
+    // Skip guardrail if change tracking is disabled
+    if (!jujutsuChangeTrackingEnabled) {
+      return undefined; // Allow all tools
+    }
+
     // Allow jj new commands and mark that it was called
     if (event.toolName === "bash") {
       const input = event.input as { command?: string } | undefined;
@@ -411,8 +533,13 @@ edit/write → BLOCKED until jj new is run first.`;
       }
     }
 
+    // Allow readonly tools without requiring jj new
+    if (isReadonlyToolCall(event)) {
+      return undefined; // Allow
+    }
+
     // Block write/mutation tools if jj new hasn't been called
-    if (!jjNewCalled && !isReadonlyToolCall(event)) {
+    if (!jjNewCalled) {
       return {
         block: true,
         reason: getConventionalCommitGuidance().trim(),
@@ -559,6 +686,25 @@ edit/write → BLOCKED until jj new is run first.`;
     handler: async (args, ctx) => {
       if (!ctx.hasUI) return;
       await openTodosBrowser(pi, ctx, args.trim());
+    },
+  });
+
+  pi.registerCommand("toggle-jujutsu-change-tracking", {
+    description:
+      "Toggle jujutsu change tracking (requires jj new before edits)",
+    handler: async (_args, ctx) => {
+      jujutsuChangeTrackingEnabled = !jujutsuChangeTrackingEnabled;
+      const status = jujutsuChangeTrackingEnabled ? "enabled" : "disabled";
+      if (ctx.hasUI) {
+        ctx.ui.notify(
+          `Jujutsu change tracking ${status}`,
+          jujutsuChangeTrackingEnabled ? "info" : "warning",
+        );
+      }
+      // Persist the setting
+      await saveIdeSettings(pi, ctx.cwd, {
+        jujutsuChangeTracking: jujutsuChangeTrackingEnabled,
+      });
     },
   });
 

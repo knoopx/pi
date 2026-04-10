@@ -11,7 +11,7 @@ import {
   type ListPickerAction,
 } from "./list-picker";
 import { formatBookmarkReference } from "./change-utils";
-import { applyFocusedStyle } from "./style-utils";
+
 import {
   forgetBookmark,
   getDiff,
@@ -113,7 +113,6 @@ export function createBookmarksComponent(
 ): ListPickerComponent {
   // Picker reference for reload in actions
   let pickerRef: ListPickerComponent | null = null;
-  let notify: (message: string, type?: "info" | "error") => void = () => {};
   // Current filter mode (defaults to all)
   let currentFilterMode: BookmarkFilterMode = "all";
 
@@ -130,10 +129,11 @@ export function createBookmarksComponent(
           notifyMutation(pi, msg, result.stderr || result.stdout);
           done(null);
         } else {
-          notify(
+          notifyMutation(
+            pi,
+            "error",
             result.stderr ||
               `Failed to start work from change ${item.changeId.slice(0, 8)}`,
-            "error",
           );
         }
       },
@@ -160,7 +160,7 @@ export function createBookmarksComponent(
           const msg = "Fetched all bookmarks from all remotes";
           notifyMutation(pi, msg, result.stderr || result.stdout);
         } else {
-          notify(result.stderr || "Fetch failed", "error");
+          notifyMutation(pi, "error", result.stderr || "Fetch failed");
         }
         await pickerRef?.reload();
       },
@@ -174,7 +174,7 @@ export function createBookmarksComponent(
           const msg = "Pushed all local bookmarks to remote";
           notifyMutation(pi, msg, result.stderr || result.stdout);
         } else {
-          notify(result.stderr || "Push failed", "error");
+          notifyMutation(pi, "error", result.stderr || "Push failed");
         }
         await pickerRef?.reload();
       },
@@ -246,12 +246,12 @@ export function createBookmarksComponent(
                 (currentIndex + 1) % BOOKMARK_FILTER_MODES.length;
               currentFilterMode = BOOKMARK_FILTER_MODES[nextIndex];
               void picker.reload();
-              notify(`Filter: ${currentFilterMode}`, "info");
+              notifyMutation(pi, "info", `Filter: ${currentFilterMode}`);
             },
           },
         ],
       }),
-      formatItem: (item, width, theme, isFocused) => {
+      formatItem: (item, width, theme) => {
         const bookmarkLabels = item.displayNames
           .map((name) => formatBookmarkReference(theme, name))
           .join(" ");
@@ -270,25 +270,20 @@ export function createBookmarksComponent(
             ? item.description.slice(0, maxDescLen - 1) + "…"
             : item.description;
 
-        const styledSep = isFocused ? sep : theme.fg("dim", sep);
-        const styledDesc = isFocused ? desc : theme.fg("dim", desc);
+        const styledSep = theme.fg("dim", sep);
+        const styledDesc = theme.fg("dim", desc);
         const styledAuthor = author ? theme.fg("dim", author) : "";
 
         const parts = [bookmarkLabels, styledDesc, styledAuthor].filter(
           Boolean,
         );
-        return applyFocusedStyle(theme, parts.join(styledSep), isFocused);
+        return parts.join(styledSep);
       },
       loadPreview: async (item) => {
         return getDiff(pi, cwd, item.changeId);
       },
     },
   );
-
-  // Wire up notify to use the picker's internal showStatus
-  notify = (message, type) => {
-    picker.notify?.(message, type);
-  };
 
   pickerRef = picker;
   return picker;

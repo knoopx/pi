@@ -12,9 +12,8 @@ import {
 } from "./list-picker";
 import { formatSymbolListEntry } from "./symbol-utils";
 import { loadFilePreviewWithBat } from "./file-preview";
-import { applyFocusedStyle } from "./style-utils";
 
-interface CmResultItem extends ListPickerItem {
+export interface CmResultItem extends ListPickerItem {
   name: string;
   type: string;
   path: string;
@@ -112,15 +111,10 @@ const SYMBOL_ACTION_DEFS: [string, CmActionType][] = [
 ];
 
 /**
- * Parse cm output lines into structured items.
- * Extracts file path from [FILE:...] header if not in line format.
+ * Filter valid output lines
  */
-function parseCmOutput(output: string): CmResultItem[] {
-  // Extract file path from header for inspect command
-  const fileMatch = /\[FILE:([^\]]+)\]/.exec(output);
-  const headerFile = fileMatch?.[1];
-
-  const lines = output.split("\n").filter((line) => {
+function filterOutputLines(output: string): string[] {
+  return output.split("\n").filter((line) => {
     if (!line.trim()) return false;
     if (line.startsWith("[")) return false;
     if (line.startsWith("#")) return false;
@@ -129,64 +123,105 @@ function parseCmOutput(output: string): CmResultItem[] {
     if (!line.includes("|")) return false;
     return true;
   });
+}
 
+/**
+ * Extract signature and callLine from extra parts
+ */
+function extractExtraInfo(parts: string[]): {
+  signature: string | undefined;
+  callLine: number | undefined;
+} {
+  let signature: string | undefined;
+  let callLine: number | undefined;
+
+  for (let i = 3; i < parts.length; i++) {
+    const part = parts[i].trim();
+    if (part.startsWith("sig:")) {
+      signature = part.slice(4);
+    } else if (part.startsWith("call:")) {
+      callLine = parseInt(part.slice(5), 10);
+    }
+  }
+
+  return { signature, callLine };
+}
+
+/**
+ * Parse location part into path and line numbers
+ */
+function parseLocation(
+  locationPart: string,
+  headerFile: string | undefined,
+): { path: string; startLine: number; endLine: number } {
+  // Check if locationPart is a line-range (e.g., "71-172") vs path:line
+  const lineRangeMatch = /^(\d+)-(\d+)$/.exec(locationPart);
+  if (lineRangeMatch && headerFile) {
+    // Inspect format: line-range only, use header file
+    return {
+      path: headerFile,
+      startLine: parseInt(lineRangeMatch[1], 10),
+      endLine: parseInt(lineRangeMatch[2], 10),
+    };
+  } else if (locationPart.includes(":")) {
+    // Standard format: path:line
+    const colonIdx = locationPart.lastIndexOf(":");
+    const path = locationPart.slice(0, colonIdx);
+    const parsedStartLine = parseInt(locationPart.slice(colonIdx + 1), 10);
+    const startLine = Number.isNaN(parsedStartLine) ? 1 : parsedStartLine;
+    return { path, startLine, endLine: startLine };
+  } else {
+    // Fallback: treat as path
+    return { path: locationPart, startLine: 1, endLine: 1 };
+  }
+}
+
+/**
+ * Normalize name if it's a number
+ */
+function normalizeName(name: string, path: string): string {
+  if (/^\d+$/.test(name)) {
+    const basename = path.split("/").pop() ?? path;
+    return basename.replace(/\.[^.]+$/, "");
+  }
+  return name;
+}
+
+/**
+ * Parse cm output lines into structured items.
+ * Extracts file path from [FILE:...] header if not in line format.
+ */
+function parseCmOutput(output: string): CmResultItem[] {
+  // Extract file path from header for inspect command
+  const fileMatch = /\[FILE:([^\]]+)\]/.exec(output);
+  const headerFile = fileMatch?.[1];
+
+  const lines = filterOutputLines(output);
   const items: CmResultItem[] = [];
 
   for (const line of lines) {
     const parts = line.split("|");
     if (parts.length < 3) continue;
 
-    let name = parts[0].trim();
+    const name = parts[0].trim();
     const type = parts[1].trim();
     const locationPart = parts[2].trim();
-    let signature: string | undefined;
-    let callLine: number | undefined;
 
-    for (let i = 3; i < parts.length; i++) {
-      const part = parts[i].trim();
-      if (part.startsWith("sig:")) {
-        signature = part.slice(4);
-      } else if (part.startsWith("call:")) {
-        callLine = parseInt(part.slice(5), 10);
-      }
-    }
+    const { signature, callLine } = extractExtraInfo(parts);
 
     if (locationPart.includes("<external>")) continue;
 
-    let path: string;
-    let startLine: number;
-    let endLine: number;
+    const { path, startLine, endLine } = parseLocation(
+      locationPart,
+      headerFile,
+    );
 
-    // Check if locationPart is a line-range (e.g., "71-172") vs path:line
-    const lineRangeMatch = /^(\d+)-(\d+)$/.exec(locationPart);
-    if (lineRangeMatch && headerFile) {
-      // Inspect format: line-range only, use header file
-      path = headerFile;
-      startLine = parseInt(lineRangeMatch[1], 10);
-      endLine = parseInt(lineRangeMatch[2], 10);
-    } else if (locationPart.includes(":")) {
-      // Standard format: path:line
-      const colonIdx = locationPart.lastIndexOf(":");
-      path = locationPart.slice(0, colonIdx);
-      const parsedStartLine = parseInt(locationPart.slice(colonIdx + 1), 10);
-      startLine = Number.isNaN(parsedStartLine) ? 1 : parsedStartLine;
-      endLine = startLine;
-    } else {
-      // Fallback: treat as path
-      path = locationPart;
-      startLine = 1;
-      endLine = 1;
-    }
-
-    if (/^\d+$/.test(name)) {
-      const basename = path.split("/").pop() ?? path;
-      name = basename.replace(/\.[^.]+$/, "");
-    }
+    const normalized = normalizeName(name, path);
 
     items.push({
       id: `${path}:${String(startLine)}`,
-      label: name,
-      name,
+      label: normalized,
+      name: normalized,
       type,
       path,
       startLine,
@@ -273,18 +308,14 @@ export function createCmResultsComponent(
             item.name.toLowerCase().includes(query) ||
             item.path.toLowerCase().includes(query),
         ),
-      formatItem: (item, width, theme, isFocused) =>
-        applyFocusedStyle(
-          theme,
-          formatSymbolListEntry(theme, {
-            type: item.type,
-            name: item.name,
-            path: item.path,
-            line: item.callLine ?? item.startLine,
-            signature: item.signature,
-          }),
-          isFocused,
-        ),
+      formatItem: (item, width, theme) =>
+        formatSymbolListEntry(theme, {
+          type: item.type,
+          name: item.name,
+          path: item.path,
+          line: item.callLine ?? item.startLine,
+          signature: item.signature,
+        }),
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, config.cwd),
     },
   );

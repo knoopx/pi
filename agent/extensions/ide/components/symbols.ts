@@ -13,7 +13,6 @@ import {
 } from "./list-picker";
 import { formatSymbolListEntry } from "./symbol-utils";
 import { loadFilePreviewWithBat } from "./file-preview";
-import { applyFocusedStyle } from "./style-utils";
 import type { CmActionType } from "./cm-results";
 
 interface SymbolInfo extends ListPickerItem {
@@ -27,6 +26,7 @@ interface SymbolInfo extends ListPickerItem {
 export interface SymbolResult {
   symbol: SymbolInfo;
   action?: CmActionType;
+  insertType?: "name" | "path";
 }
 
 async function querySymbols(
@@ -95,6 +95,7 @@ export function createSymbolsComponent(
 ): ListPickerComponent & { invalidate: () => void } {
   // Track pending action for when an action key is pressed
   let pendingAction: CmActionType | undefined;
+  let pendingInsertType: "name" | "path" | undefined;
 
   // Current symbol type filter (defaults to class)
   let currentTypeFilter: SymbolTypeFilter = "class";
@@ -103,12 +104,15 @@ export function createSymbolsComponent(
   function doneWithAction(item: SymbolInfo | null): void {
     if (item && pendingAction) {
       done({ symbol: item, action: pendingAction });
+    } else if (item && pendingInsertType) {
+      done({ symbol: item, insertType: pendingInsertType });
     } else if (item) {
       done({ symbol: item });
     } else {
       done(null);
     }
     pendingAction = undefined;
+    pendingInsertType = undefined;
   }
 
   // Get context-sensitive action for ctrl+t based on symbol type
@@ -157,6 +161,14 @@ export function createSymbolsComponent(
   ];
 
   const actions: ListPickerAction<SymbolInfo>[] = [
+    {
+      key: Key.ctrl("i"),
+      label: "insert",
+      handler: (item: SymbolInfo) => {
+        pendingInsertType = "name";
+        doneWithAction(item);
+      },
+    },
     // Dynamic ctrl+t action based on symbol type
     {
       key: Key.ctrl("t"),
@@ -218,12 +230,8 @@ export function createSymbolsComponent(
       filterItems: (items, query) =>
         items.filter((s) => s.name.toLowerCase().includes(query)),
       reloadDebounceMs: 300,
-      formatItem: (item, width, theme, isFocused) =>
-        applyFocusedStyle(
-          theme,
-          formatSymbolListEntry(theme, { ...item, line: item.startLine }),
-          isFocused,
-        ),
+      formatItem: (item, width, theme) =>
+        formatSymbolListEntry(theme, { ...item, line: item.startLine }),
       loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
       onKey: createKeyboardHandler({
         bindings: [

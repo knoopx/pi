@@ -39,6 +39,20 @@ export async function updateStaleWorkspace(
 }
 
 /**
+ * Parse stdout lines into an array using a mapping function
+ */
+function parseStdoutLines<T>(
+  stdout: string,
+  mapper: (line: string) => T | null,
+): T[] {
+  return stdout
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .map(mapper)
+    .filter((item): item is T => item !== null);
+}
+/**
  * Load changes from the repository
  */
 export async function loadChanges(
@@ -61,34 +75,32 @@ export async function loadChanges(
 
   if (result.code !== 0) return [];
 
-  return result.stdout
-    .trim()
-    .split("\n")
-    .filter(Boolean)
-    .map((line) => {
-      const [
-        changeId,
-        commitId,
-        emptyStr,
-        immutableStr,
-        author,
-        timestamp,
-        parentIds,
-        ...descParts
-      ] = line.split("\t");
-      return {
-        changeId: changeId || "",
-        commitId: commitId || "",
-        description: sanitizeDescription(descParts.join("\t")),
-        author: author || "",
-        timestamp: timestamp || "",
-        empty: emptyStr === "empty",
-        immutable: immutableStr === "immutable",
-        parentIds: parentIds ? parentIds.split(",").filter(Boolean) : [],
-      };
-    })
-    .filter((c) => c.changeId);
+  return parseStdoutLines(result.stdout, (line) => {
+    const [
+      changeId,
+      commitId,
+      emptyStr,
+      immutableStr,
+      author,
+      timestamp,
+      parentIds,
+      ...descParts
+    ] = line.split("\t");
+    const change = {
+      changeId: changeId || "",
+      commitId: commitId || "",
+      description: sanitizeDescription(descParts.join("\t")),
+      author: author || "",
+      timestamp: timestamp || "",
+      empty: emptyStr === "empty",
+      immutable: immutableStr === "immutable",
+      parentIds: parentIds ? parentIds.split(",").filter(Boolean) : [],
+    };
+    return change.changeId ? change : null;
+  });
 }
+
+// fallow-ignore-end
 
 /**
  * Get current workspace change id as a short id
@@ -125,16 +137,10 @@ export async function loadChangedFiles(
 
   if (result.code !== 0) return [];
 
-  return result.stdout
-    .trim()
-    .split("\n")
-    .filter(Boolean)
-    .map((line) => {
-      const match = /^([AMD])\s+(.+)$/.exec(line);
-      return match ? { status: match[1], path: match[2] } : null;
-    })
-    .filter((f): f is FileChange => f !== null)
-    .sort((a, b) => a.path.localeCompare(b.path));
+  return parseStdoutLines(result.stdout, (line) => {
+    const match = /^([AMD])\s+(.+)$/.exec(line);
+    return match ? { status: match[1], path: match[2] } : null;
+  }).sort((a, b) => a.path.localeCompare(b.path));
 }
 
 /**

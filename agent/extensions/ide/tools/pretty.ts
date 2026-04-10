@@ -47,7 +47,6 @@ import type { Theme } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import type { Component } from "@mariozechner/pi-tui";
 import type { ImageContent } from "@mariozechner/pi-ai";
-import { basename } from "node:path";
 
 import {
   renderFileContent,
@@ -57,20 +56,15 @@ import {
   renderGrepResults,
 } from "./renderers";
 import { fileIconGlyph } from "./icons";
-import {
-  detectImageProtocol,
-  renderIterm2Image,
-  renderKittyImage,
-  humanSize,
-} from "./images";
+import { humanSize } from "./images";
 import { MAX_PREVIEW_LINES } from "./shiki";
 import { termW, shortPath } from "./utils";
 import {
   extractTextContent,
   renderError,
-  renderFallback,
   countLines,
   getTextComponent,
+  handleRenderResult,
 } from "./pretty-utils";
 
 // State tracking for async rendering
@@ -138,6 +132,47 @@ type GrepDetails =
       pattern?: string;
       matchCount?: number;
     };
+
+/**
+ * Render bash header with summary and line count
+ */
+function renderBashHeader(
+  text: string,
+  exitCode: number | null,
+  theme: Theme,
+): string {
+  const { summary } = renderBashOutput(text, exitCode, theme);
+  const lines = text.split("\n");
+  const lineCount = lines.length;
+  const lineInfo =
+    lineCount > 1
+      ? "  " + theme.fg("dim", "(" + lineCount + " lines)") + " "
+      : "";
+  return "  " + summary + lineInfo;
+}
+
+/**
+ * Render bash body with content preview
+ */
+function renderBashBody(
+  text: string,
+  lineCount: number,
+  maxShow: number,
+  theme: Theme,
+): string {
+  const lines = text.split("\n");
+  const show = lines.slice(0, maxShow);
+  const tw = termW();
+  const out: string[] = [theme.fg("border", "─".repeat(tw))];
+  for (const line of show) {
+    out.push("  " + line);
+  }
+  out.push(theme.fg("border", "─".repeat(tw)));
+  if (lineCount > maxShow) {
+    out.push(theme.fg("dim", "  … " + (lineCount - maxShow) + " more lines"));
+  }
+  return out.join("\n");
+}
 
 export default async function piPrettyExtension(
   pi: ExtensionAPI,
@@ -252,7 +287,6 @@ export default async function piPrettyExtension(
       if (d?._type === "readImage") {
         const tw = termW();
         const out: string[] = [];
-        const fname = basename(d.filePath as string);
         const byteSize = Math.ceil(((d.data as string).length * 3) / 4);
         const sizeStr = humanSize(byteSize);
         const mimeStr = (d.mimeType as string) ?? "image";
@@ -263,27 +297,6 @@ export default async function piPrettyExtension(
             theme.fg("dim", mimeStr + " · " + sizeStr),
         );
         out.push(theme.fg("border", "─".repeat(tw)));
-
-        const protocol = detectImageProtocol();
-        if (protocol === "kitty") {
-          const imgCols = Math.min(tw - 4, 80);
-          out.push(renderKittyImage(d.data as string, { cols: imgCols }));
-        } else if (protocol === "iterm2") {
-          const imgWidth = Math.min(tw - 4, 80);
-          out.push(
-            renderIterm2Image(d.data as string, {
-              width: "" + imgWidth,
-              name: fname,
-            }),
-          );
-        } else {
-          out.push(
-            theme.fg(
-              "dim",
-              "  (Inline image preview requires Ghostty, iTerm2, WezTerm, or Kitty)",
-            ),
-          );
-        }
 
         out.push(theme.fg("border", "─".repeat(tw)));
         text.setText(out.join("\n"));
@@ -415,47 +428,39 @@ export default async function piPrettyExtension(
       ): Component {
         const text = getTextComponent(ctx, Text);
 
-        if (ctx.isError) {
-          return renderError(result.content, theme, text);
-        }
+        return handleRenderResult(
+          result,
+          ctx,
+          theme,
+          text,
+          (d) => {
+            if (d?._type === "bashResult") {
+              const bashText = d.text as string;
+              const exitCode = d.exitCode as number | null;
+              const header = renderBashHeader(bashText, exitCode, theme);
 
-        const d = result.details as unknown as Record<string, unknown>;
-        if (d?._type === "bashResult") {
-          const { summary } = renderBashOutput(
-            d.text as string,
-            d.exitCode as number | null,
-            theme,
-          );
-          const lines = (d.text as string).split("\n");
-          const lineCount = lines.length;
-          const lineInfo =
-            lineCount > 1
-              ? "  " + theme.fg("dim", "(" + lineCount + " lines)") + " "
-              : "";
-          const header = "  " + summary + lineInfo;
-
-          if ((d.text as string).trim()) {
-            const maxShow = options.expanded ? lineCount : MAX_PREVIEW_LINES;
-            const show = lines.slice(0, maxShow);
-            const tw = termW();
-            const out: string[] = [header, theme.fg("border", "─".repeat(tw))];
-            for (const line of show) {
-              out.push("  " + line);
+              if (bashText.trim()) {
+                const lines = bashText.split("\n");
+                const lineCount = lines.length;
+                const maxShow = options.expanded
+                  ? lineCount
+                  : MAX_PREVIEW_LINES;
+                const body = renderBashBody(
+                  bashText,
+                  lineCount,
+                  maxShow,
+                  theme,
+                );
+                text.setText(header + "\n" + body);
+              } else {
+                text.setText(header);
+              }
+              return text;
             }
-            out.push(theme.fg("border", "─".repeat(tw)));
-            if (lineCount > maxShow) {
-              out.push(
-                theme.fg("dim", "  … " + (lineCount - maxShow) + " more lines"),
-              );
-            }
-            text.setText(out.join("\n"));
-          } else {
-            text.setText(header);
-          }
-          return text;
-        }
-
-        return renderFallback(result.content, "done", theme, text);
+            return undefined;
+          },
+          "done",
+        );
       },
     });
   }
@@ -524,19 +529,22 @@ export default async function piPrettyExtension(
       ): Component {
         const text = getTextComponent(ctx, Text);
 
-        if (ctx.isError) {
-          return renderError(result.content, theme, text);
-        }
-
-        const d = result.details as unknown as Record<string, unknown>;
-        if (d?._type === "lsResult" && d.text) {
-          const tree = renderTree(d.text as string, theme);
-          const info = theme.fg("dim", "" + d.entryCount + " entries");
-          text.setText("  " + info + "\n" + tree);
-          return text;
-        }
-
-        return renderFallback(result.content, "listed", theme, text);
+        return handleRenderResult(
+          result,
+          ctx,
+          theme,
+          text,
+          (d) => {
+            if (d?._type === "lsResult" && d.text) {
+              const tree = renderTree(d.text as string, theme);
+              const info = theme.fg("dim", "" + d.entryCount + " entries");
+              text.setText("  " + info + "\n" + tree);
+              return text;
+            }
+            return undefined;
+          },
+          "listed",
+        );
       },
     });
   }
@@ -608,19 +616,22 @@ export default async function piPrettyExtension(
       ): Component {
         const text = getTextComponent(ctx, Text);
 
-        if (ctx.isError) {
-          return renderError(result.content, theme, text);
-        }
-
-        const d = result.details as unknown as Record<string, unknown>;
-        if (d?._type === "findResult" && d.text) {
-          const rendered = renderFindResults(d.text as string, theme);
-          const info = theme.fg("dim", "" + d.matchCount + " files");
-          text.setText("  " + info + "\n" + rendered);
-          return text;
-        }
-
-        return renderFallback(result.content, "found", theme, text);
+        return handleRenderResult(
+          result,
+          ctx,
+          theme,
+          text,
+          (d) => {
+            if (d?._type === "findResult" && d.text) {
+              const rendered = renderFindResults(d.text as string, theme);
+              const info = theme.fg("dim", "" + d.matchCount + " files");
+              text.setText("  " + info + "\n" + rendered);
+              return text;
+            }
+            return undefined;
+          },
+          "found",
+        );
       },
     });
   }
@@ -706,34 +717,39 @@ export default async function piPrettyExtension(
       ): Component {
         const text = getTextComponent(ctx, Text);
 
-        if (ctx.isError) {
-          return renderError(result.content, theme, text);
-        }
+        return handleRenderResult(
+          result,
+          ctx,
+          theme,
+          text,
+          (d) => {
+            if (d?._type === "grepResult" && d.text) {
+              const key =
+                "grep:" + d.pattern + ":" + d.matchCount + ":" + termW();
+              const state = ctx.state as GrepState;
+              if (state._gk !== key) {
+                state._gk = key;
+                const info = theme.fg("dim", "" + d.matchCount + " matches");
+                state._gt = "  " + info;
 
-        const d = result.details as unknown as Record<string, unknown>;
-        if (d?._type === "grepResult" && d.text) {
-          const key = "grep:" + d.pattern + ":" + d.matchCount + ":" + termW();
-          const state = ctx.state as GrepState;
-          if (state._gk !== key) {
-            state._gk = key;
-            const info = theme.fg("dim", "" + d.matchCount + " matches");
-            state._gt = "  " + info;
-
-            renderGrepResults(d.text as string, d.pattern as string, theme)
-              .then((rendered: string) => {
-                if (state._gk !== key) return;
-                state._gt = "  " + info + "\n" + rendered;
-                ctx.invalidate();
-              })
-              .catch(() => {});
-          }
-          text.setText(
-            state._gt ?? "  " + theme.fg("dim", "" + d.matchCount + " matches"),
-          );
-          return text;
-        }
-
-        return renderFallback(result.content, "searched", theme, text);
+                renderGrepResults(d.text as string, d.pattern as string, theme)
+                  .then((rendered: string) => {
+                    if (state._gk !== key) return;
+                    state._gt = "  " + info + "\n" + rendered;
+                    ctx.invalidate();
+                  })
+                  .catch(() => {});
+              }
+              text.setText(
+                state._gt ??
+                  "  " + theme.fg("dim", "" + d.matchCount + " matches"),
+              );
+              return text;
+            }
+            return undefined;
+          },
+          "searched",
+        );
       },
     });
   }
