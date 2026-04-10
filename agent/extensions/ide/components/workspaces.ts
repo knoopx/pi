@@ -332,8 +332,12 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
       const text = ` ${ws.name} ${stats}${status}`;
       const truncated = truncateAnsi(text, width);
       const final = ensureWidth(truncated, width);
-      const styled = isSelected ? theme.fg("accent", theme.bold(final)) : final;
-      rows.push(styled);
+      if (isSelected) {
+        const styled = theme.fg("accent", theme.bold(final));
+        rows.push(theme.bg("selectedBg", styled));
+      } else {
+        rows.push(final);
+      }
     }
 
     return rows;

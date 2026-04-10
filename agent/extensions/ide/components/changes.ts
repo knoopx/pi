@@ -692,7 +692,13 @@ Use the **conventional-commits** skill for commit message format.`;
         : change.immutable
           ? theme.fg("dim", graphPrefix)
           : graphPrefix;
-      const line = styledGraph + leftPadded + rightText;
+      let line = styledGraph + leftPadded + rightText;
+
+      // Apply background color to entire line when focused in left pane
+      if (isFocused) {
+        line = theme.bg("selectedBg", line);
+      }
+
       rows.push(line);
     }
 

@@ -19,5 +19,9 @@ export function applyFocusedStyle(
   text: string,
   isFocused: boolean,
 ): string {
-  return isFocused ? theme.fg("accent", theme.bold(text)) : text;
+  if (isFocused) {
+    const styled = theme.fg("accent", theme.bold(text));
+    return theme.bg("selectedBg", styled);
+  }
+  return text;
 }

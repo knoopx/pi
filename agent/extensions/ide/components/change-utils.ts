@@ -59,7 +59,11 @@ export function formatChangeRow(
       : opts.isImmutable
         ? theme.fg("dim", opts.description)
         : opts.description;
-  const leftText = `${selectMarker}${moveIndicator}${bookmarkLabel}${description}`;
+  let leftText = `${selectMarker}${moveIndicator}${bookmarkLabel}${description}`;
+
+  if (opts.isSelected) {
+    leftText = theme.bg("selectedBg", leftText);
+  }
 
   const rightText = opts.author ? theme.fg("dim", ` ${opts.author}`) : "";
 

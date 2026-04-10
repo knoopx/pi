@@ -357,7 +357,8 @@ export function renderFileChangeRows(
       const plainText = ` ${statusIcon} ${fileIcon} ${file.path}`;
       const truncatedPlain = truncateAnsi(plainText, width);
       const paddedPlain = pad(truncatedPlain, width);
-      rows.push(theme.fg("accent", theme.bold(paddedPlain)));
+      const styled = theme.fg("accent", theme.bold(paddedPlain));
+      rows.push(theme.bg("selectedBg", styled));
     } else {
       rows.push(padded);
     }
@@ -450,7 +451,8 @@ export function renderChangeRows(
     const final = ensureWidth(truncated, width);
 
     if (isSelected) {
-      rows.push(theme.fg("accent", theme.bold(final)));
+      const styled = theme.fg("accent", theme.bold(final));
+      rows.push(theme.bg("selectedBg", styled));
     } else if (isCurrent) {
       rows.push(theme.fg("warning", final));
     } else {
@@ -499,7 +501,13 @@ export function renderSourceRows(
     // Use ANSI-aware truncation to preserve colors from bat
     const content = " " + truncateAnsi(line, width - 6);
     const fullLine = lineNumStyled + " " + content;
-    rows.push(ensureWidth(fullLine, width));
+    const row = ensureWidth(fullLine, width);
+
+    if (isHighlighted) {
+      rows.push(theme.bg("selectedBg", row));
+    } else {
+      rows.push(row);
+    }
   }
 
   return rows;
