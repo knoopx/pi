@@ -89,5 +89,19 @@
         "notify": false
       }
     ]
+  },
+  {
+    "group": "python",
+    "pattern": "*",
+    "hooks": [
+      {
+        "event": "tool_result",
+        "context": "file_name",
+        "pattern": "*.py",
+        "command": "ruff format \"%file%\"",
+        "timeout": 5000,
+        "notify": false
+      }
+    ]
   }
 ]

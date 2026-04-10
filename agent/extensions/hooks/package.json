@@ -13,10 +13,10 @@
   },
   "dependencies": {
     "@mariozechner/pi-coding-agent": "^0.63.1",
-    "@sinclair/typebox": "^0.34.48",
     "picomatch": "^4.0.4"
   },
   "devDependencies": {
-    "@types/picomatch": "^4.0.3"
+    "@types/picomatch": "^4.0.3",
+    "vitest": "^3.2.4"
   }
 }
