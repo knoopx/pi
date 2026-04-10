@@ -10,25 +10,20 @@ Local audio transcription using [whisper-cpp](https://github.com/ggerganov/whisp
 ## Quick Start
 
 ```bash
-# Transcribe with a small model (fast, ~75MB)
-nix run nixpkgs#whisper-cpp -- -m models/ggml-tiny.en.bin -f audio.mp3
+# Transcribe with distil-large-v3 (fast, high quality)
+nix run nixpkgs#whisper-cpp -- -m models/ggml-distil-large-v3.bin -f audio.mp3
 ```
 
-## Available Models
+## Model
 
-| Model                | Size   | Speed      | Quality |
-| -------------------- | ------ | ---------- | ------- |
-| `ggml-tiny.en.bin`   | 75 MB  | ⚡ Fastest | Basic   |
-| `ggml-base.en.bin`   | 142 MB | ⚡ Fast    | Good    |
-| `ggml-small.en.bin`  | 468 MB | 🐌 Medium  | Better  |
-| `ggml-medium.en.bin` | 1.4 GB | 🐌 Slower  | Good    |
-| `ggml-large-v3.bin`  | 3.1 GB | 🐌🐌 Slow  | Best    |
+| Model                      | Size   | Speed   | Quality |
+| -------------------------- | ------ | ------- | ------- |
+| `ggml-distil-large-v3.bin` | 1.5 GB | ⚡ Fast | Best    |
 
-### Download a Model
+### Download the Model
 
 ```bash
-# Example: download base model
-curl -L https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin -o ggml-base.en.bin
+curl -L https://huggingface.co/distil-whisper/distil-large-v3-ggml/resolve/main/ggml-distil-large-v3.bin -o ggml-distil-large-v3.bin
 ```
 
 ## Common Options
@@ -53,54 +48,63 @@ curl -L https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.b
 ### Transcribe with Timestamps (Default)
 
 ```bash
-nix run nixpkgs#whisper-cpp -- -m ggml-base.en.bin -f recording.mp3
+nix run nixpkgs#whisper-cpp -- -m ggml-distil-large-v3.bin -f recording.mp3
 ```
 
 ### Save to Text File
 
 ```bash
-nix run nixpkgs#whisper-cpp -- -m ggml-base.en.bin -f recording.mp3 -otxt -of transcript
+nix run nixpkgs#whisper-cpp -- -m ggml-distil-large-v3.bin -f recording.mp3 -otxt -of transcript
 ```
 
 ### Generate Subtitles
 
 ```bash
-nix run nixpkgs#whisper-cpp -- -m ggml-base.en.bin -f video.mp4 -osrt -of captions
+# First extract audio from video
+ffmpeg -i video.mp4 -vn -acodec libmp3lame -ab 128k video.mp3
+# Then transcribe
+nix run nixpkgs#whisper-cpp -- -m ggml-distil-large-v3.bin -f video.mp3 -osrt -of captions
 ```
 
 ### JSON Output with Confidence
 
 ```bash
-nix run nixpkgs#whisper-cpp -- -m ggml-base.en.bin -f audio.wav -oj -of result --print-confidence
+nix run nixpkgs#whisper-cpp -- -m ggml-distil-large-v3.bin -f audio.wav -oj -of result --print-confidence
 ```
 
 ### Auto-Detect Language
 
 ```bash
-nix run nixpkgs#whisper-cpp -- -m ggml-base.bin -f audio.mp3 -l auto
+nix run nixpkgs#whisper-cpp -- -m ggml-distil-large-v3.bin -f audio.mp3 -l auto
 ```
 
 ### Process Multiple Files
 
 ```bash
-nix run nixpkgs#whisper-cpp -- -m ggml-base.en.bin -f file1.mp3 file2.mp3 file3.mp3
+nix run nixpkgs#whisper-cpp -- -m ggml-distil-large-v3.bin -f file1.mp3 file2.mp3 file3.mp3
 ```
 
 ### Offset and Duration
 
 ```bash
 # Start at 30s, process 60 seconds
-nix run nixpkgs#whisper-cpp -- -m ggml-base.en.bin -f audio.mp3 -ot 30000 -d 60000
+nix run nixpkgs#whisper-cpp -- -m ggml-distil-large-v3.bin -f audio.mp3 -ot 30000 -d 60000
 ```
 
 ## Supported Formats
 
-`flac`, `mp3`, `ogg`, `wav`
+**Audio:** `flac`, `mp3`, `ogg`, `wav`
+
+**Video:** Extract audio first:
+
+```bash
+ffmpeg -i video.mp4 -vn -acodec libmp3lame -ab 128k audio.mp3
+```
 
 ## GPU Acceleration
 
 For GPU support, use `whisper-cpp-vulkan`:
 
 ```bash
-nix run nixpkgs#whisper-cpp-vulkan -- -m ggml-base.en.bin -f audio.mp3
+nix run nixpkgs#whisper-cpp-vulkan -- -m ggml-distil-large-v3.bin -f audio.mp3
 ```
