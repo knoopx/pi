@@ -319,17 +319,12 @@ export default async function ideExtension(pi: ExtensionAPI) {
     return bookmarkName;
   }
 
-  // Automatic jj change creation on first write tool
-  let pendingChangeDescription: string | null = null;
+  // JJ change guardrail: track if jj new has been called in current turn
+  let jjNewCalled = false;
 
-  pi.on("input", async (event) => {
-    if (event.source !== "interactive") {
-      return;
-    }
-    if (pendingChangeDescription) {
-      return;
-    }
-    pendingChangeDescription = event.text.split("\n")[0]?.trim() || null;
+  // Reset at agent end (not turn_start, which would reset after jj new but before subsequent tools)
+  pi.on("agent_end", async (_event) => {
+    jjNewCalled = false;
   });
 
   const READONLY_BASH_COMMANDS = new Set([
@@ -367,6 +362,7 @@ export default async function ideExtension(pi: ExtensionAPI) {
     "bat",
     "less",
     "more",
+    "bun",
   ]);
 
   function isReadonlyToolCall(event: {
@@ -383,23 +379,47 @@ export default async function ideExtension(pi: ExtensionAPI) {
     return false;
   }
 
-  pi.on("tool_call", async (event, ctx) => {
-    if (!pendingChangeDescription) return;
-    if (isReadonlyToolCall(event)) return;
+  function isJjNewCommand(command: string): boolean {
+    const trimmed = command.trim();
+    // Match: jj new, jj new -m "...", jj new --message "..."
+    return /^jj\s+new\b/.test(trimmed);
+  }
 
-    try {
-      if (await isCurrentChangeEmpty(pi, ctx.cwd)) {
-        // Reuse empty change as-is, no description update needed
-      } else {
-        await pi.exec("jj", ["new", "-m", pendingChangeDescription], {
-          cwd: ctx.cwd,
-        });
+  function getConventionalCommitGuidance(): string {
+    return `THE RULE:
+
+Before using edit or write → run: jj new -m 'type(scope): description'
+
+Types: feat, fix, refactor, docs, test, chore, perf, build, ci, style
+
+Examples:
+- jj new -m 'fix(auth): resolve login issue'
+- jj new -m 'feat(api): add user endpoint'
+
+Readonly tools (read, ls, grep, find) → no jj new needed.
+edit/write → BLOCKED until jj new is run first.`;
+  }
+
+  pi.on("tool_call", async (event, ctx) => {
+    // Allow jj new commands and mark that it was called
+    if (event.toolName === "bash") {
+      const input = event.input as { command?: string } | undefined;
+      const command = input?.command?.trim() ?? "";
+      if (isJjNewCommand(command)) {
+        jjNewCalled = true;
+        return undefined; // Allow
       }
-    } catch {
-      // Silently fail if jj commands fail
-    } finally {
-      pendingChangeDescription = null;
     }
+
+    // Block write/mutation tools if jj new hasn't been called
+    if (!jjNewCalled && !isReadonlyToolCall(event)) {
+      return {
+        block: true,
+        reason: getConventionalCommitGuidance().trim(),
+      };
+    }
+
+    return undefined; // Allow
   });
 
   // Hook into /fork to create a jj workspace
