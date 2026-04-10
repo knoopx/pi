@@ -211,6 +211,16 @@ describe("defaults.json", () => {
       expect(groupMatches("jj", "jj commit -m 'msg'")).toBe(false);
     });
 
+    it("then allows non-interactive restore with --file", () => {
+      expect(
+        groupMatches("jj", "jj restore --file Records/Bookmarks.csv"),
+      ).toBe(false);
+      expect(groupMatches("jj", "jj restore --file src/test.ts")).toBe(false);
+      // but blocks restore without --file
+      expect(groupMatches("jj", "jj restore")).toBe(true);
+      expect(groupMatches("jj", "jj restore src/")).toBe(true);
+    });
+
     it("then blocks interactive flags", () => {
       expect(groupMatches("jj", "jj squash -i")).toBe(true);
       expect(groupMatches("jj", "jj split --interactive")).toBe(true);

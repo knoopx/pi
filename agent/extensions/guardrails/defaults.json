@@ -205,7 +205,7 @@
       {
         "context": "command",
         "pattern": "jj {revert,restore,diffedit,simplify,forget,undo,recover} *",
-        "excludes": "* --help *",
+        "excludes": "* {--help,--file} *",
         "action": "block",
         "reason": "interactive or destructive jj command. Inspect with `jj st`/`jj diff`/`jj log` first (see skill: jujutsu)"
       },
