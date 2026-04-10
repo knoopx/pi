@@ -1,13 +1,13 @@
 [
   {
-    "group": "bun",
-    "pattern": "bun.lock",
+    "group": "no-npm",
+    "pattern": "*",
     "rules": [
       {
         "context": "command",
-        "pattern": "npm *",
+        "pattern": "* npm *",
         "action": "block",
-        "reason": "this project uses Bun, not npm. Use Bun equivalents: `bun add`, `bun remove`, `bun run`, `bun install` (see skill: bun)"
+        "reason": "npm is forbidden. Use Bun equivalents: `bun add`, `bun remove`, `bun run`, `bun install` (see skill: bun)"
       }
     ]
   },

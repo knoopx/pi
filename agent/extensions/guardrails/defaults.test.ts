@@ -67,10 +67,13 @@ describe("defaults.json", () => {
     });
   });
 
-  describe("given bun group", () => {
-    it("then blocks npm, allows bun", () => {
-      expect(groupMatches("bun", "npm install")).toBe(true);
-      expect(groupMatches("bun", "bun install")).toBe(false);
+  describe("given no-npm group", () => {
+    it("then blocks npm commands globally", () => {
+      expect(groupMatches("no-npm", "npm install")).toBe(true);
+      expect(groupMatches("no-npm", "npm run")).toBe(true);
+      expect(groupMatches("no-npm", "npm")).toBe(true);
+      // bun commands are not blocked by this rule
+      expect(groupMatches("no-npm", "bun install")).toBe(false);
     });
   });
 
