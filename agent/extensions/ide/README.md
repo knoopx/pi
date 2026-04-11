@@ -288,9 +288,15 @@ This enables parallel development workflows with isolated version control.
 
 - `jj` - Jujutsu version control
 - `gh` - GitHub CLI for pull requests
-- `bat` - Syntax-highlighted file preview
 - `rg` - Fast file search
 - `cm` - Codemapper for symbol indexing
-- `delta` - Beautiful diff formatting with syntax highlighting
 - `tmux` - Session management for subagents
 - `code` - VS Code CLI for opening files from overlays
+
+## Syntax Highlighting
+
+All syntax highlighting is performed using **Shiki**, providing consistent, theme-aware code previews across all components including:
+
+- File previews
+- Diff rendering with syntax-colored additions/deletions
+- Grep results

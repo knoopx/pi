@@ -33,49 +33,45 @@ const projectConfig = [
 ];
 
 // Shared test setup helpers
-function createMockReadFileWithGlobalHooks(globalHooks: HooksConfig) {
-  return vi.fn().mockImplementation(async (path: unknown) => {
-    const file = String(path);
-    if (file.endsWith("defaults.json")) {
-      return JSON.stringify(defaultsConfig);
-    }
-    if (file.endsWith(".pi/agent/settings.json")) {
-      return JSON.stringify({ hooks: globalHooks });
-    }
-    throw new Error("missing file");
-  });
+interface MockReadFileOptions {
+  defaults?: unknown;
+  settings?: unknown;
+  projectConfig?: unknown;
+  projectPath?: string;
 }
 
-function createMockReadFileWithSettings(settings: Record<string, unknown>) {
-  return vi.fn().mockImplementation(async (path: unknown) => {
-    const file = String(path);
-    if (file.endsWith("defaults.json")) {
-      return JSON.stringify(defaultsConfig);
-    }
-    if (file.endsWith(".pi/agent/settings.json")) {
-      return JSON.stringify(settings);
-    }
-    throw new Error("missing file");
-  });
-}
+function createMockReadFile(options: MockReadFileOptions = {}) {
+  const {
+    defaults = defaultsConfig,
+    settings = null,
+    projectConfig = null,
+    projectPath,
+  } = options;
 
-function createMockReadFile(
-  projectConfig: unknown = null,
-  settings: unknown = null,
-) {
   return vi.fn().mockImplementation(async (path: unknown) => {
     const file = String(path);
     if (file.endsWith("defaults.json")) {
-      return JSON.stringify(defaultsConfig);
+      return JSON.stringify(defaults);
     }
     if (file.endsWith(".pi/agent/settings.json") && settings !== null) {
       return JSON.stringify(settings);
     }
-    if (projectConfig !== null && file.endsWith(String(projectConfig))) {
-      return JSON.stringify(projectConfig);
+    if (projectConfig !== null) {
+      const targetPath = projectPath ?? String(projectConfig);
+      if (file.endsWith(targetPath)) {
+        return JSON.stringify(projectConfig);
+      }
     }
     throw new Error("missing file");
   });
+}
+
+function createMockReadFileWithGlobalHooks(globalHooks: HooksConfig) {
+  return createMockReadFile({ settings: { hooks: globalHooks } });
+}
+
+function createMockReadFileWithSettings(settings: Record<string, unknown>) {
+  return createMockReadFile({ settings });
 }
 
 function createMockReadFileForProject(
@@ -83,14 +79,15 @@ function createMockReadFileForProject(
   projectConfig: unknown,
   globalHooks: unknown = null,
 ) {
-  return createMockReadFile(
+  return createMockReadFile({
     projectPath,
-    globalHooks !== null ? { hooks: globalHooks } : null,
-  );
+    projectConfig,
+    settings: globalHooks !== null ? { hooks: globalHooks } : null,
+  });
 }
 
 function createMockReadFileWithGlobalOnly(globalHooks: unknown) {
-  return createMockReadFile(null, { hooks: globalHooks });
+  return createMockReadFile({ settings: { hooks: globalHooks } });
 }
 
 async function loadConfigModule() {

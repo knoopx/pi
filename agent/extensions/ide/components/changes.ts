@@ -36,12 +36,13 @@ import type { FileChange, Change } from "../types";
 import {
   loadChanges,
   loadChangedFiles,
-  getDiff,
+  getRawDiff,
   restoreFile,
   listBookmarksByChange,
   getCurrentChangeIdShort,
   notifyMutation,
 } from "../jj";
+import { getTheme, renderDiffWithShiki } from "../tools/diff";
 import type { CmActionType } from "./cm-results";
 import {
   calculateGraphLayout,
@@ -604,7 +605,9 @@ Use the **conventional-commits** skill for commit message format.`;
     }
 
     try {
-      diffContent = await getDiff(pi, cwd, change.changeId, filePath);
+      const { diff } = await getRawDiff(pi, cwd, change.changeId, filePath);
+      const theme = await getTheme(pi, cwd);
+      diffContent = await renderDiffWithShiki(diff, theme);
       selectionState.diffScroll = 0;
 
       if (cache) {

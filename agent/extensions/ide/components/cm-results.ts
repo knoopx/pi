@@ -11,7 +11,7 @@ import {
   type ListPickerAction,
 } from "./list-picker";
 import { formatSymbolListEntry } from "./symbol-utils";
-import { loadFilePreviewWithBat } from "./file-preview";
+import { loadFilePreviewWithShiki } from "./file-preview";
 
 export interface CmResultItem extends ListPickerItem {
   name: string;
@@ -316,7 +316,13 @@ export function createCmResultsComponent(
           line: item.callLine ?? item.startLine,
           signature: item.signature,
         }),
-      loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, config.cwd),
+      loadPreview: async (item) => {
+        const result = await pi.exec("cat", [item.path], { cwd: config.cwd });
+        if (result.code !== 0) {
+          return [`Error reading file: ${result.stderr}`];
+        }
+        return loadFilePreviewWithShiki(item.path, result.stdout, theme);
+      },
     },
   );
 

@@ -14,7 +14,7 @@ import {
   type ListPickerItem,
   type ListPickerComponent,
 } from "./list-picker";
-import { loadFilePreviewWithBat } from "./file-preview";
+import { createFilePreviewLoader } from "./preview-utils";
 
 export interface TodoItem extends ListPickerItem {
   path: string;
@@ -153,7 +153,7 @@ export function createTodosComponent(
       filterItems: (items, query) => filterTodosByQuery(items, query),
       reloadDebounceMs: 300,
       formatItem: (item, width, theme) => formatTodoItem(width, theme, item),
-      loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
+      loadPreview: createFilePreviewLoader(pi, cwd, theme),
       actions: [
         {
           key: Key.ctrl("t"),

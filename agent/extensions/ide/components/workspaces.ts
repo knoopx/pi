@@ -37,7 +37,13 @@ import {
   createWorkspace,
   generateWorkspaceName,
 } from "../workspace";
-import { loadChanges, getDiff, loadChangedFiles, notifyMutation } from "../jj";
+import {
+  loadChanges,
+  loadChangedFiles,
+  notifyMutation,
+  getRawDiff,
+} from "../jj";
+import { getTheme, renderDiffWithShiki } from "../tools/diff";
 
 const STATUS_TEXT: Record<WorkspaceStatus, string> = {
   running: "running",
@@ -206,7 +212,9 @@ export function createWorkspacesComponent(
     }
 
     try {
-      const content = await getDiff(pi, ws.path, changeId);
+      const { diff } = await getRawDiff(pi, ws.path, changeId);
+      const theme = await getTheme(pi, ws.path);
+      const content = await renderDiffWithShiki(diff, theme);
       cache?.diffs.set(changeId, content);
       setDiffContent(content);
     } catch (error) {
@@ -227,7 +235,9 @@ export function createWorkspacesComponent(
     }
 
     try {
-      const content = await getDiff(pi, ws.path, "@", filePath);
+      const { diff } = await getRawDiff(pi, ws.path, "@", filePath);
+      const theme = await getTheme(pi, ws.path);
+      const content = await renderDiffWithShiki(diff, theme);
       cache?.diffs.set(diffKey, content);
       setDiffContent(content);
     } catch (error) {

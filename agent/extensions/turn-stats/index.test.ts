@@ -34,6 +34,44 @@ function createUsage(partial: Partial<Usage>): Usage {
   };
 }
 
+/**
+ * Helper to test formatCost with expected output
+ */
+function testFormatCost(costTotal: number, expected: string) {
+  expect(
+    formatCost({
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      cost: {
+        total: costTotal,
+        input: 0,
+        output: 0,
+        cacheRead: 0,
+        cacheWrite: 0,
+      },
+    }),
+  ).toBe(expected);
+}
+
+/**
+ * Helper to test formatCost with cost components
+ */
+function testFormatCostWithComponents(cost: Usage["cost"], expected: string) {
+  expect(
+    formatCost({
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      cost,
+    }),
+  ).toBe(expected);
+}
+
 describe("formatDuration", () => {
   describe("given durations less than 1 second", () => {
     describe("when formatting 0.36 seconds", () => {
@@ -248,64 +286,19 @@ describe("formatCost", () => {
   describe("given a Usage object with cost.total", () => {
     describe("when formatting total cost of $0.01", () => {
       it("then it should return '$0.01'", () => {
-        expect(
-          formatCost({
-            input: 0,
-            output: 0,
-            cacheRead: 0,
-            cacheWrite: 0,
-            totalTokens: 0,
-            cost: {
-              total: 0.01,
-              input: 0,
-              output: 0,
-              cacheRead: 0,
-              cacheWrite: 0,
-            },
-          }),
-        ).toBe("$0.01");
+        testFormatCost(0.01, "$0.01");
       });
     });
 
     describe("when formatting total cost of $1.99", () => {
       it("then it should return '$1.99'", () => {
-        expect(
-          formatCost({
-            input: 0,
-            output: 0,
-            cacheRead: 0,
-            cacheWrite: 0,
-            totalTokens: 0,
-            cost: {
-              total: 1.99,
-              input: 0,
-              output: 0,
-              cacheRead: 0,
-              cacheWrite: 0,
-            },
-          }),
-        ).toBe("$1.99");
+        testFormatCost(1.99, "$1.99");
       });
     });
 
     describe("when formatting total cost of $0", () => {
       it("then it should return empty string (cost not included when 0)", () => {
-        expect(
-          formatCost({
-            input: 0,
-            output: 0,
-            cacheRead: 0,
-            cacheWrite: 0,
-            totalTokens: 0,
-            cost: {
-              total: 0,
-              input: 0,
-              output: 0,
-              cacheRead: 0,
-              cacheWrite: 0,
-            },
-          }),
-        ).toBe("");
+        testFormatCost(0, "");
       });
     });
   });
@@ -313,64 +306,46 @@ describe("formatCost", () => {
   describe("given a Usage object with cost components", () => {
     describe("when formatting input: $0.01, output: $0.02, no cache", () => {
       it("then it should return '$0.03' (from cost.total)", () => {
-        expect(
-          formatCost({
-            input: 0,
-            output: 0,
+        testFormatCostWithComponents(
+          {
+            total: 0.03,
+            input: 0.01,
+            output: 0.02,
             cacheRead: 0,
             cacheWrite: 0,
-            totalTokens: 0,
-            cost: {
-              total: 0.03,
-              input: 0.01,
-              output: 0.02,
-              cacheRead: 0,
-              cacheWrite: 0,
-            },
-          }),
-        ).toBe("$0.03");
+          },
+          "$0.03",
+        );
       });
     });
 
     describe("when formatting input: $0.01, output: $0.02, cacheRead: $0.005, cacheWrite: $0.003", () => {
       it("then it should return '$0.04' (from cost.total, rounded)", () => {
-        expect(
-          formatCost({
-            input: 0,
-            output: 0,
-            cacheRead: 0,
-            cacheWrite: 0,
-            totalTokens: 0,
-            cost: {
-              total: 0.038,
-              input: 0.01,
-              output: 0.02,
-              cacheRead: 0.005,
-              cacheWrite: 0.003,
-            },
-          }),
-        ).toBe("$0.04");
+        testFormatCostWithComponents(
+          {
+            total: 0.038,
+            input: 0.01,
+            output: 0.02,
+            cacheRead: 0.005,
+            cacheWrite: 0.003,
+          },
+          "$0.04",
+        );
       });
     });
 
     describe("when formatting all individual costs as $0", () => {
       it("then it should return empty string (cost not included when 0)", () => {
-        expect(
-          formatCost({
+        testFormatCostWithComponents(
+          {
+            total: 0,
             input: 0,
             output: 0,
             cacheRead: 0,
             cacheWrite: 0,
-            totalTokens: 0,
-            cost: {
-              total: 0,
-              input: 0,
-              output: 0,
-              cacheRead: 0,
-              cacheWrite: 0,
-            },
-          }),
-        ).toBe("");
+          },
+          "",
+        );
       });
     });
   });

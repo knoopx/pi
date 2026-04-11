@@ -15,5 +15,5 @@
     "noImplicitOverride": false
   },
   "include": ["*.ts", "renderers/**/*.ts"],
-  "exclude": ["node_modules", "../extensions"]
+  "exclude": ["node_modules"]
 }

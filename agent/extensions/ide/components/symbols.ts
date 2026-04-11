@@ -12,7 +12,7 @@ import {
   type ListPickerAction,
 } from "./list-picker";
 import { formatSymbolListEntry } from "./symbol-utils";
-import { loadFilePreviewWithBat } from "./file-preview";
+import { createFilePreviewLoader } from "./preview-utils";
 import type { CmActionType } from "./cm-results";
 
 interface SymbolInfo extends ListPickerItem {
@@ -232,7 +232,7 @@ export function createSymbolsComponent(
       reloadDebounceMs: 300,
       formatItem: (item, width, theme) =>
         formatSymbolListEntry(theme, { ...item, line: item.startLine }),
-      loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
+      loadPreview: createFilePreviewLoader(pi, cwd, theme),
       onKey: createKeyboardHandler({
         bindings: [
           {

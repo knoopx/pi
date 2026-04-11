@@ -113,6 +113,7 @@ interface ThemeWithFg {
 interface IdeSettings {
   jujutsuChangeTracking?: boolean;
   readonlyTools?: string[];
+  shikiTheme?: string;
 }
 
 interface Settings {
@@ -439,7 +440,6 @@ export default async function ideExtension(pi: ExtensionAPI) {
     "htop",
     "jj",
     "git",
-    "bat",
     "less",
     "more",
     "bun",

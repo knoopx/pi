@@ -10,7 +10,7 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { loadFilePreviewWithBat } from "./file-preview";
+import { createFilePreviewLoader } from "./preview-utils";
 import { getFileIcon } from "./file-icons";
 import { notifyMutation } from "../jj";
 import type { CmActionType } from "./cm-results";
@@ -206,7 +206,7 @@ export function createFilesComponent(
         const marker = isSelected ? theme.fg("accent", "✓ ") : "  ";
         return `${marker}${getFileIcon(item.path)} ${item.path}`;
       },
-      loadPreview: (item) => loadFilePreviewWithBat(pi, item.path, cwd),
+      loadPreview: createFilePreviewLoader(pi, cwd, theme),
     },
   );
 

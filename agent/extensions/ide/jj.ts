@@ -100,8 +100,6 @@ export async function loadChanges(
   });
 }
 
-// fallow-ignore-end
-
 /**
  * Get current workspace change id as a short id
  */
@@ -144,14 +142,14 @@ export async function loadChangedFiles(
 }
 
 /**
- * Get diff output with delta formatting
+ * Get raw git diff output
  */
-export async function getDiff(
+export async function getRawDiff(
   pi: ExtensionAPI,
   cwd: string,
   changeId: string,
   filePath?: string,
-): Promise<string[]> {
+): Promise<{ diff: string; files: string[] }> {
   await updateStaleWorkspace(pi, cwd);
 
   const jjArgs = ["diff", "--git", "-r", changeId];
@@ -159,17 +157,28 @@ export async function getDiff(
     jjArgs.push(filePath);
   }
 
-  const escapeArg = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`;
-  const result = await pi.exec(
-    "bash",
-    ["-c", `jj ${jjArgs.map(escapeArg).join(" ")} | delta --paging=never`],
-    { cwd },
-  );
+  const result = await pi.exec("jj", jjArgs, { cwd });
 
   if (result.code === 0) {
-    return result.stdout.split("\n");
+    const diff = result.stdout;
+    const files = diff
+      .split("\n")
+      .filter(
+        (line) => line.startsWith("diff --git") || line.startsWith("index "),
+      )
+      .map((line) => {
+        if (line.startsWith("diff --git")) {
+          const parts = line.split(" ");
+          if (parts.length >= 4) {
+            return parts[3].replace(/^a\//, "").replace(/^b\//, "");
+          }
+        }
+        return "";
+      })
+      .filter(Boolean);
+    return { diff, files };
   }
-  return [`Failed to get diff: ${result.stderr}`];
+  throw new Error(`Failed to get diff: ${result.stderr}`);
 }
 
 /**

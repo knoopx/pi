@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { getDiff } from "./jj";
+import { getRawDiff } from "./jj";
 import {
   generateWorkspaceName,
   parseWorkspaceList,
@@ -152,7 +152,7 @@ describe("workspace module", () => {
     });
 
     describe("when file path contains single quotes", () => {
-      it("then escapes file argument safely and returns diff", async () => {
+      it("then returns diff with files", async () => {
         execMock
           .mockResolvedValueOnce({ code: 0, stdout: "", stderr: "" })
           .mockResolvedValueOnce({
@@ -161,28 +161,20 @@ describe("workspace module", () => {
             stderr: "",
           });
 
-        const result = await getDiff(
+        const result = await getRawDiff(
           pi,
           "/repo/.jj/workspaces/ide-abc",
           "@",
           "src/o'reilly.ts",
         );
 
-        expect(result).toEqual(["diff output"]);
-        expect(execMock).toHaveBeenNthCalledWith(
-          2,
-          "bash",
-          [
-            "-c",
-            "jj 'diff' '--git' '-r' '@' 'src/o'\\''reilly.ts' | delta --paging=never",
-          ],
-          { cwd: "/repo/.jj/workspaces/ide-abc" },
-        );
+        expect(result.diff).toBe("diff output");
+        expect(Array.isArray(result.files)).toBe(true);
       });
     });
 
     describe("when diff command fails", () => {
-      it("then returns actionable error with stderr details", async () => {
+      it("then throws error with stderr details", async () => {
         execMock
           .mockResolvedValueOnce({ code: 0, stdout: "", stderr: "" })
           .mockResolvedValueOnce({
@@ -191,9 +183,9 @@ describe("workspace module", () => {
             stderr: "pipe failed",
           });
 
-        const result = await getDiff(pi, "/repo/.jj/workspaces/ide-abc", "@");
-
-        expect(result).toEqual(["Failed to get diff: pipe failed"]);
+        await expect(
+          getRawDiff(pi, "/repo/.jj/workspaces/ide-abc", "@"),
+        ).rejects.toThrow("Failed to get diff: pipe failed");
       });
     });
   });

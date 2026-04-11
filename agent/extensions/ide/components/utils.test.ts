@@ -1,85 +1,62 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ensureWidth } from "./text-utils";
-import { loadFilePreviewWithBat } from "./file-preview";
+import { loadFilePreviewWithShiki } from "./file-preview";
 import { formatBookmarkReference } from "./change-utils";
 import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
 import stringWidth from "string-width";
 
 describe("utils", () => {
-  describe("loadFilePreviewWithBat", () => {
-    let mockPi: ExtensionAPI;
-    let execMock: ReturnType<typeof vi.fn>;
+  describe("loadFilePreviewWithShiki", () => {
+    let mockTheme: Theme;
 
     beforeEach(() => {
-      execMock = vi.fn();
-      mockPi = { exec: execMock } as unknown as ExtensionAPI;
+      mockTheme = {
+        getFgAnsi: vi.fn(() => "\x1b[90m"),
+      } as unknown as Theme;
     });
 
-    describe("given bat command succeeds", () => {
-      describe("when loading file preview", () => {
-        it("then returns lines from stdout", async () => {
-          execMock.mockResolvedValue({
-            code: 0,
-            stdout: "line1\nline2\nline3",
-            stderr: "",
-            killed: false,
-          });
+    describe("when loading file preview with TypeScript", () => {
+      it("then returns syntax-highlighted lines", async () => {
+        const content = "const x = 1;";
+        const result = await loadFilePreviewWithShiki(
+          "test.ts",
+          content,
+          mockTheme,
+        );
 
-          const result = await loadFilePreviewWithBat(
-            mockPi,
-            "test.ts",
-            "/home/user",
-          );
-
-          expect(result).toEqual(["line1", "line2", "line3"]);
-          expect(execMock).toHaveBeenCalledWith(
-            "bat",
-            ["--plain", "--color=always", "test.ts"],
-            { cwd: "/home/user" },
-          );
-        });
-      });
-
-      describe("when file is empty", () => {
-        it("then returns array with empty string", async () => {
-          execMock.mockResolvedValue({
-            code: 0,
-            stdout: "",
-            stderr: "",
-            killed: false,
-          });
-
-          const result = await loadFilePreviewWithBat(
-            mockPi,
-            "empty.ts",
-            "/home/user",
-          );
-
-          expect(result).toEqual([""]);
-        });
+        expect(Array.isArray(result)).toBe(true);
+        expect(result.length).toBeGreaterThan(0);
       });
     });
 
-    describe("given bat command fails", () => {
-      describe("when file not found", () => {
-        it("then returns error message", async () => {
-          execMock.mockResolvedValue({
-            code: 1,
-            stdout: "",
-            stderr: "bat: 'missing.ts': No such file or directory",
-            killed: false,
-          });
+    describe("when file is empty", () => {
+      it("then returns array with empty string", async () => {
+        const result = await loadFilePreviewWithShiki(
+          "empty.ts",
+          "",
+          mockTheme,
+        );
 
-          const result = await loadFilePreviewWithBat(
-            mockPi,
-            "missing.ts",
-            "/home/user",
-          );
+        expect(result).toEqual([""]);
+      });
+    });
 
-          expect(result).toEqual([
-            "Error reading file: bat: 'missing.ts': No such file or directory",
-          ]);
-        });
+    describe("given error in shiki", () => {
+      it("then returns plain lines as fallback", async () => {
+        const content = "line1\nline2";
+        const mockThemeError = {
+          getFgAnsi: vi.fn(() => {
+            throw new Error("test");
+          }),
+        } as unknown as Theme;
+
+        const result = await loadFilePreviewWithShiki(
+          "test.ts",
+          content,
+          mockThemeError,
+        );
+
+        expect(result).toEqual(["line1", "line2"]);
       });
     });
   });

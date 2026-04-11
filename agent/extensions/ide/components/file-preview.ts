@@ -1,8 +1,6 @@
-import type {
-  ExtensionAPI,
-  Theme,
-  ThemeColor,
-} from "@mariozechner/pi-coding-agent";
+import type { Theme, ThemeColor } from "@mariozechner/pi-coding-agent";
+import { hlBlock } from "../tools/shiki";
+import { lang } from "../tools/language";
 
 /**
  * Highlight code lines with optional accent color.
@@ -19,19 +17,19 @@ export function highlightCodeLines(
 }
 
 /**
- * Load file preview using bat with syntax highlighting.
+ * Load file preview using Shiki for syntax highlighting.
  * Shared across files and symbols components.
  */
-export async function loadFilePreviewWithBat(
-  pi: ExtensionAPI,
+export async function loadFilePreviewWithShiki(
   filePath: string,
-  cwd: string,
+  content: string,
+  theme: Theme,
 ): Promise<string[]> {
-  const result = await pi.exec("bat", ["--plain", "--color=always", filePath], {
-    cwd,
-  });
-  if (result.code === 0) {
-    return result.stdout.split("\n");
+  try {
+    const mutedColor = theme.getFgAnsi("muted");
+    const language = lang(filePath);
+    return hlBlock(content, language, mutedColor);
+  } catch {
+    return content.split("\n");
   }
-  return [`Error reading file: ${result.stderr}`];
 }

@@ -1,5 +1,6 @@
 import { codeToANSI } from "@shikijs/cli";
 import type { BundledLanguage, BundledTheme } from "shiki";
+import { createLRUCache } from "../../../shared/cache";
 
 const THEME: BundledTheme =
   (process.env.PRETTY_THEME as BundledTheme | undefined) ?? "github-dark";
@@ -12,6 +13,7 @@ function envInt(name: string, fallback: number): number {
 const MAX_HL_CHARS = envInt("PRETTY_MAX_HL_CHARS", 80_000);
 export const MAX_PREVIEW_LINES = envInt("PRETTY_MAX_PREVIEW_LINES", 80);
 const CACHE_LIMIT = envInt("PRETTY_CACHE_LIMIT", 128);
+const _cache = createLRUCache<string, string[]>(CACHE_LIMIT);
 
 const ANSI_CAPTURE_RE = /\x1b\[([0-9;]*)m/g;
 
@@ -36,19 +38,6 @@ function normalizeShikiContrast(ansi: string, mutedColor: string): string {
 // Pre-warm Shiki
 codeToANSI("", "typescript", THEME).catch(() => {});
 
-const _cache = new Map<string, string[]>();
-
-function _touch(k: string, v: string[]): string[] {
-  _cache.delete(k);
-  _cache.set(k, v);
-  while (_cache.size > CACHE_LIMIT) {
-    const first = _cache.keys().next().value;
-    if (first === undefined) break;
-    _cache.delete(first);
-  }
-  return v;
-}
-
 export async function hlBlock(
   code: string,
   language: BundledLanguage | undefined,
@@ -59,7 +48,7 @@ export async function hlBlock(
 
   const k = `${THEME}\0${language}\0${code}`;
   const hit = _cache.get(k);
-  if (hit) return _touch(k, hit);
+  if (hit) return _cache.touch(k, hit);
 
   try {
     const ansi = normalizeShikiContrast(
@@ -67,7 +56,7 @@ export async function hlBlock(
       mutedColor,
     );
     const out = (ansi.endsWith("\n") ? ansi.slice(0, -1) : ansi).split("\n");
-    return _touch(k, out);
+    return _cache.touch(k, out);
   } catch {
     return code.split("\n");
   }

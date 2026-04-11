@@ -14,10 +14,11 @@ import { formatBookmarkReference } from "./change-utils";
 
 import {
   forgetBookmark,
-  getDiff,
+  getRawDiff,
   listBookmarksByChange,
   notifyMutation,
 } from "../jj";
+import { getTheme, renderDiffWithShiki } from "../tools/diff";
 
 interface BookmarkEntry extends ListPickerItem {
   bookmarks: string[];
@@ -280,7 +281,9 @@ export function createBookmarksComponent(
         return parts.join(styledSep);
       },
       loadPreview: async (item) => {
-        return getDiff(pi, cwd, item.changeId);
+        const { diff } = await getRawDiff(pi, cwd, item.changeId);
+        const theme = await getTheme(pi, cwd);
+        return renderDiffWithShiki(diff, theme);
       },
     },
   );
