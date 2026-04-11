@@ -12,5 +12,5 @@ Wait+Screen /\[Extensions\]/
 Type "/changes"
 Enter
 Wait+Screen /Stack/
-Down
+Sleep 100ms
 Screenshot changes.png
