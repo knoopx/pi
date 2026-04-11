@@ -134,6 +134,7 @@ Hard constraints. Violations fail. No exceptions./
 - Obvious next steps need no confirmation
 - ACT, don't narrate
 - Progress via notifications, not questions
+- If a relevant skill exists, read it regardless of your pre-existing knowledge
 
 ## Version Control (Jujutsu)
 
