@@ -45,22 +45,6 @@ import { openTodosBrowser } from "./overlays/todos";
 import { monitorWorkspace } from "./overlays/workspace-monitor";
 import { FULL_OVERLAY_OPTIONS } from "./overlays/options";
 
-/** Load IDE settings from settings.json */
-async function loadIdeSettings(
-  pi: ExtensionAPI,
-  cwd: string,
-): Promise<IdeSettings> {
-  try {
-    const settingsPath = `${cwd}/agent/settings.json`;
-    const result = await pi.exec("cat", [settingsPath], { cwd: undefined });
-    if (result.code !== 0) return {};
-    const settings = JSON.parse(result.stdout) as Settings;
-    return settings.ide ?? {};
-  } catch {
-    return {};
-  }
-}
-
 function formatTokenCount(value: number): string {
   if (value >= 1_000_000) {
     return `${(value / 1_000_000).toFixed(1)}m`;
@@ -87,15 +71,6 @@ function shortenHomePath(cwd: string): string {
 
 interface ThemeWithFg {
   fg(color: string, text: string): string;
-}
-
-interface IdeSettings {
-  readonlyTools?: string[];
-  shikiTheme?: string;
-}
-
-interface Settings {
-  ide?: IdeSettings;
 }
 
 function colorizeUsagePercent(theme: ThemeWithFg, usedPercent: number): string {
@@ -314,14 +289,6 @@ export default async function ideExtension(pi: ExtensionAPI) {
     lastContext = ctx;
     installGlobalFooter(ctx);
     await refreshFooterData();
-    // Load IDE settings
-    const settings = await loadIdeSettings(pi, ctx.cwd);
-
-    if (settings.readonlyTools && Array.isArray(settings.readonlyTools)) {
-      readonlyTools = new Set(settings.readonlyTools);
-    } else {
-      readonlyTools = new Set(DEFAULT_READONLY_TOOLS);
-    }
   });
 
   pi.on("model_select", async (_event, ctx) => {
@@ -376,39 +343,6 @@ export default async function ideExtension(pi: ExtensionAPI) {
     await setBookmarkToChange(pi, ctx.cwd, bookmarkName, changeId);
     return bookmarkName;
   }
-
-  const DEFAULT_READONLY_TOOLS = new Set([
-    "read",
-    "ls",
-    "grep",
-    "find",
-    "transcribe",
-    "gh-search-repos",
-    "gh-search-code",
-    "gh-search-issues",
-    "gh-search-prs",
-    "gh-repo-contents",
-    "gh-file-content",
-    "gh-list-gists",
-    "gh-get-gist",
-    "gh-list-prs",
-    "gh-view-pr",
-    "gh-list-issues",
-    "gh-view-issue",
-    "gh-list-releases",
-    "gh-view-release",
-    "gh-list-workflows",
-    "gh-list-runs",
-    "gh-list-repo-files",
-    "search-npm-packages",
-    "npm-package-info",
-    "npm-package-versions",
-    "search-pypi-packages",
-    "pypi-package-info",
-    "search-nix-packages",
-    "search-nix-options",
-    "search-home-manager-options",
-  ]);
 
   // Hook into /fork to create a jj workspace
   pi.on("session_before_fork", async (event, ctx) => {
