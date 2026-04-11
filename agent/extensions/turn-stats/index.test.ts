@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import type { Usage } from "@mariozechner/pi-ai";
 import {
   formatDuration,
   formatTokens,
@@ -12,6 +13,26 @@ import {
   formatSimpleOutput,
   formatTokensPerSecond,
 } from "./index";
+
+/**
+ * Helper to create a Usage object for tests
+ */
+function createUsage(partial: Partial<Usage>): Usage {
+  return {
+    input: partial.input ?? 0,
+    output: partial.output ?? 0,
+    cacheRead: partial.cacheRead ?? 0,
+    cacheWrite: partial.cacheWrite ?? 0,
+    totalTokens: partial.totalTokens ?? 0,
+    cost: {
+      input: partial.cost?.input ?? 0,
+      output: partial.cost?.output ?? 0,
+      cacheRead: partial.cost?.cacheRead ?? 0,
+      cacheWrite: partial.cost?.cacheWrite ?? 0,
+      total: partial.cost?.total ?? 0,
+    },
+  };
+}
 
 describe("formatDuration", () => {
   describe("given durations less than 1 second", () => {
@@ -224,41 +245,109 @@ describe("formatInputOutputTokens", () => {
 });
 
 describe("formatCost", () => {
-  describe("given a cost object with total cost", () => {
+  describe("given a Usage object with cost.total", () => {
     describe("when formatting total cost of $0.01", () => {
       it("then it should return '$0.01'", () => {
-        expect(formatCost({ total: 0.01 })).toBe("$0.01");
+        expect(
+          formatCost({
+            input: 0,
+            output: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+            totalTokens: 0,
+            cost: {
+              total: 0.01,
+              input: 0,
+              output: 0,
+              cacheRead: 0,
+              cacheWrite: 0,
+            },
+          }),
+        ).toBe("$0.01");
       });
     });
 
     describe("when formatting total cost of $1.99", () => {
       it("then it should return '$1.99'", () => {
-        expect(formatCost({ total: 1.99 })).toBe("$1.99");
+        expect(
+          formatCost({
+            input: 0,
+            output: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+            totalTokens: 0,
+            cost: {
+              total: 1.99,
+              input: 0,
+              output: 0,
+              cacheRead: 0,
+              cacheWrite: 0,
+            },
+          }),
+        ).toBe("$1.99");
       });
     });
 
     describe("when formatting total cost of $0", () => {
       it("then it should return empty string (cost not included when 0)", () => {
-        expect(formatCost({ total: 0 })).toBe("");
+        expect(
+          formatCost({
+            input: 0,
+            output: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+            totalTokens: 0,
+            cost: {
+              total: 0,
+              input: 0,
+              output: 0,
+              cacheRead: 0,
+              cacheWrite: 0,
+            },
+          }),
+        ).toBe("");
       });
     });
   });
 
-  describe("given a cost object with individual cost components", () => {
+  describe("given a Usage object with cost components", () => {
     describe("when formatting input: $0.01, output: $0.02, no cache", () => {
-      it("then it should return '$0.03' (sum of components)", () => {
-        expect(formatCost({ input: 0.01, output: 0.02 })).toBe("$0.03");
+      it("then it should return '$0.03' (from cost.total)", () => {
+        expect(
+          formatCost({
+            input: 0,
+            output: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+            totalTokens: 0,
+            cost: {
+              total: 0.03,
+              input: 0.01,
+              output: 0.02,
+              cacheRead: 0,
+              cacheWrite: 0,
+            },
+          }),
+        ).toBe("$0.03");
       });
     });
 
     describe("when formatting input: $0.01, output: $0.02, cacheRead: $0.005, cacheWrite: $0.003", () => {
-      it("then it should return '$0.04' (sum of components, rounded)", () => {
+      it("then it should return '$0.04' (from cost.total, rounded)", () => {
         expect(
           formatCost({
-            input: 0.01,
-            output: 0.02,
-            cacheRead: 0.005,
-            cacheWrite: 0.003,
+            input: 0,
+            output: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+            totalTokens: 0,
+            cost: {
+              total: 0.038,
+              input: 0.01,
+              output: 0.02,
+              cacheRead: 0.005,
+              cacheWrite: 0.003,
+            },
           }),
         ).toBe("$0.04");
       });
@@ -267,7 +356,20 @@ describe("formatCost", () => {
     describe("when formatting all individual costs as $0", () => {
       it("then it should return empty string (cost not included when 0)", () => {
         expect(
-          formatCost({ input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }),
+          formatCost({
+            input: 0,
+            output: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+            totalTokens: 0,
+            cost: {
+              total: 0,
+              input: 0,
+              output: 0,
+              cacheRead: 0,
+              cacheWrite: 0,
+            },
+          }),
         ).toBe("");
       });
     });
@@ -372,9 +474,27 @@ describe("formatSimpleOutput", () => {
   describe("given output tokens, duration, generation time, and cost", () => {
     describe("when formatting output: 1900, duration: 36000ms, generation: 30000ms, total cost: $0.01", () => {
       it("then it should return '↓1.9K | 36s | 63.3 tok/s | $0.01'", () => {
-        expect(formatSimpleOutput(1900, 36000, { total: 0.01 }, 30000)).toBe(
-          "↓1.9K | 36s | 63.3 tok/s | $0.01",
-        );
+        expect(
+          formatSimpleOutput(
+            1900,
+            36000,
+            {
+              input: 0,
+              output: 0,
+              cacheRead: 0,
+              cacheWrite: 0,
+              totalTokens: 0,
+              cost: {
+                total: 0.01,
+                input: 0,
+                output: 0,
+                cacheRead: 0,
+                cacheWrite: 0,
+              },
+            },
+            30000,
+          ),
+        ).toBe("↓1.9K | 36s | 63.3 tok/s | $0.01");
       });
     });
 
@@ -384,7 +504,20 @@ describe("formatSimpleOutput", () => {
           formatSimpleOutput(
             500,
             92000,
-            { input: 0.005, output: 0.005 },
+            createUsage({
+              input: 0,
+              output: 500,
+              cacheRead: 0,
+              cacheWrite: 0,
+              totalTokens: 500,
+              cost: {
+                input: 0.005,
+                output: 0.005,
+                cacheRead: 0,
+                cacheWrite: 0,
+                total: 0.01,
+              },
+            }),
             80000,
           ),
         ).toBe("↓500 | 1m 32s | 6.3 tok/s | $0.01");
@@ -393,9 +526,27 @@ describe("formatSimpleOutput", () => {
 
     describe("when formatting output: 1234, duration: 5000ms, generation: 4000ms, total cost: $0", () => {
       it("then it should return '↓1.2K | 5s | 308.5 tok/s' (cost not included when 0)", () => {
-        expect(formatSimpleOutput(1234, 5000, { total: 0 }, 4000)).toBe(
-          "↓1.2K | 5s | 308.5 tok/s",
-        );
+        expect(
+          formatSimpleOutput(
+            1234,
+            5000,
+            createUsage({
+              input: 0,
+              output: 1234,
+              cacheRead: 0,
+              cacheWrite: 0,
+              totalTokens: 1234,
+              cost: {
+                input: 0,
+                output: 0,
+                cacheRead: 0,
+                cacheWrite: 0,
+                total: 0,
+              },
+            }),
+            4000,
+          ),
+        ).toBe("↓1.2K | 5s | 308.5 tok/s");
       });
     });
   });
@@ -407,10 +558,20 @@ describe("formatSimpleOutput", () => {
           formatSimpleOutput(
             500,
             10000,
-            {
-              cacheRead: 0.001,
-              cacheWrite: 0.002,
-            },
+            createUsage({
+              input: 0,
+              output: 500,
+              cacheRead: 0,
+              cacheWrite: 0,
+              totalTokens: 500,
+              cost: {
+                input: 0,
+                output: 0,
+                cacheRead: 0.001,
+                cacheWrite: 0.002,
+                total: 0.003,
+              },
+            }),
             8000,
           ),
         ).toBe("↓500 | 10s | 62.5 tok/s");
@@ -423,10 +584,20 @@ describe("formatSimpleOutput", () => {
           formatSimpleOutput(
             500,
             10000,
-            {
-              cacheRead: 0.003,
-              cacheWrite: 0.003,
-            },
+            createUsage({
+              input: 0,
+              output: 500,
+              cacheRead: 0,
+              cacheWrite: 0,
+              totalTokens: 500,
+              cost: {
+                input: 0,
+                output: 0,
+                cacheRead: 0.003,
+                cacheWrite: 0.003,
+                total: 0.006,
+              },
+            }),
             8000,
           ),
         ).toBe("↓500 | 10s | 62.5 tok/s | $0.01");
@@ -437,9 +608,26 @@ describe("formatSimpleOutput", () => {
   describe("given undefined output tokens", () => {
     describe("when formatting undefined output, duration: 36000ms, cost: $0.01", () => {
       it("then it should return '↓N/A | 36s | $0.01'", () => {
-        expect(formatSimpleOutput(undefined, 36000, { total: 0.01 })).toBe(
-          "↓N/A | 36s | $0.01",
-        );
+        expect(
+          formatSimpleOutput(
+            undefined,
+            36000,
+            createUsage({
+              input: 0,
+              output: 0,
+              cacheRead: 0,
+              cacheWrite: 0,
+              totalTokens: 0,
+              cost: {
+                input: 0,
+                output: 0,
+                cacheRead: 0,
+                cacheWrite: 0,
+                total: 0.01,
+              },
+            }),
+          ),
+        ).toBe("↓N/A | 36s | $0.01");
       });
     });
   });
@@ -453,14 +641,27 @@ describe("Turn Stats Extension Integration", () => {
     const outputTokens = 1900;
     const durationMs = 36000;
     const generationMs = 30000; // Actual generation time (excludes TTFT)
-    const cost = { input: 0.005, output: 0.005 };
+    const usage = createUsage({
+      input: 0,
+      output: outputTokens,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: outputTokens,
+      cost: {
+        input: 0.005,
+        output: 0.005,
+        cacheRead: 0,
+        cacheWrite: 0,
+        total: 0.01,
+      },
+    });
 
     describe("when formatting the complete turn output", () => {
       it("then it should show tokens, duration, tok/s, and cost", () => {
         const result = formatSimpleOutput(
           outputTokens,
           durationMs,
-          cost,
+          usage,
           generationMs,
         );
         expect(result).toBe("↓1.9K | 36s | 63.3 tok/s | $0.01");
@@ -511,19 +712,19 @@ describe("Turn Stats Extension Integration", () => {
       output: 500,
       duration: 10000,
       generation: 8000,
-      cost: { total: 0.001 },
+      cost: 0.001,
     };
     const turn2 = {
       output: 1000,
       duration: 15000,
       generation: 12000,
-      cost: { total: 0.002 },
+      cost: 0.002,
     };
     const turn3 = {
       output: 1500,
       duration: 20000,
       generation: 16000,
-      cost: { total: 0.003 },
+      cost: 0.003,
     };
 
     describe("when calculating accumulated metrics", () => {
@@ -553,8 +754,7 @@ describe("Turn Stats Extension Integration", () => {
       });
 
       it("then total cost should be $0.006", () => {
-        const totalCost =
-          turn1.cost.total + turn2.cost.total + turn3.cost.total;
+        const totalCost = turn1.cost + turn2.cost + turn3.cost;
         expect(totalCost).toBe(0.006);
       });
     });
@@ -566,21 +766,30 @@ describe("Turn Stats Extension Integration", () => {
   describe("given a very short duration (milliseconds)", () => {
     const durationMs = 123;
     const outputTokens = 10;
-    const cost = { total: 0.000001 };
+    const cost = 0.000001;
 
     describe("when formatting the output without generation time", () => {
+      const usage = createUsage({
+        input: 0,
+        output: outputTokens,
+        cacheRead: 0,
+        cacheWrite: 0,
+        totalTokens: outputTokens,
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: cost },
+      });
+
       it("then duration should show 2 decimal places", () => {
-        const result = formatSimpleOutput(outputTokens, durationMs, cost);
+        const result = formatSimpleOutput(outputTokens, durationMs, usage);
         expect(result).toContain("0.12s");
       });
 
       it("then tok/s should not be shown (no generation time)", () => {
-        const result = formatSimpleOutput(outputTokens, durationMs, cost);
+        const result = formatSimpleOutput(outputTokens, durationMs, usage);
         expect(result).not.toContain("tok/s");
       });
 
       it("then cost should be excluded when it rounds to $0.00", () => {
-        const result = formatSimpleOutput(outputTokens, durationMs, cost);
+        const result = formatSimpleOutput(outputTokens, durationMs, usage);
         expect(result).not.toContain("$");
       });
     });
@@ -593,14 +802,23 @@ describe("Turn Stats Extension Integration", () => {
     const outputTokens = 1500000; // 1.5M
     const durationMs = 3600000; // 1 hour
     const generationMs = 3000000; // 50 minutes generation time
-    const cost = { total: 0.15 };
+    const cost = 0.15;
 
     describe("when formatting the output", () => {
+      const usage = createUsage({
+        input: 0,
+        output: outputTokens,
+        cacheRead: 0,
+        cacheWrite: 0,
+        totalTokens: outputTokens,
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: cost },
+      });
+
       it("then output tokens should be formatted as '1.5M'", () => {
         const result = formatSimpleOutput(
           outputTokens,
           durationMs,
-          cost,
+          usage,
           generationMs,
         );
         expect(result).toContain("↓1.5M");
@@ -610,7 +828,7 @@ describe("Turn Stats Extension Integration", () => {
         const result = formatSimpleOutput(
           outputTokens,
           durationMs,
-          cost,
+          usage,
           generationMs,
         );
         expect(result).toContain("1h 0m 0s");
@@ -621,7 +839,7 @@ describe("Turn Stats Extension Integration", () => {
         const result = formatSimpleOutput(
           outputTokens,
           durationMs,
-          cost,
+          usage,
           generationMs,
         );
         expect(result).toContain("500.0 tok/s");
@@ -631,7 +849,7 @@ describe("Turn Stats Extension Integration", () => {
         const result = formatSimpleOutput(
           outputTokens,
           durationMs,
-          cost,
+          usage,
           generationMs,
         );
         expect(result).toContain("$0.15");

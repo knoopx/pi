@@ -3,14 +3,9 @@ import type {
   ExtensionContext,
   TurnStartEvent,
   TurnEndEvent,
+  AgentEndEvent,
 } from "@mariozechner/pi-coding-agent";
-import type { AssistantMessageEvent } from "@mariozechner/pi-ai";
-
-/** Local type for message_update event (not exported from pi-coding-agent) */
-interface MessageUpdateEvent {
-  type: "message_update";
-  assistantMessageEvent: AssistantMessageEvent;
-}
+import type { Usage } from "@mariozechner/pi-ai";
 
 /**
  * Turn Stats Extension for Pi coding agent.
@@ -85,30 +80,14 @@ export function formatInputOutputTokens(
   return directionStr;
 }
 
-export function formatCost(
-  cost:
-    | {
-        input?: number;
-        output?: number;
-        cacheRead?: number;
-        cacheWrite?: number;
-        total?: number;
-      }
-    | undefined
-    | null,
-): string {
-  // If cost is undefined or null, return empty string
-  if (!cost) {
+export function formatCost(usage: Usage | undefined | null): string {
+  // If usage is undefined or null, return empty string
+  if (!usage) {
     return "";
   }
 
-  // Calculate total from cost.total or sum of components
-  const total =
-    cost.total ??
-    (cost.input ?? 0) +
-      (cost.output ?? 0) +
-      (cost.cacheRead ?? 0) +
-      (cost.cacheWrite ?? 0);
+  // Use cost.total from the Usage type
+  const total = usage.cost.total;
 
   // Don't show cost if it rounds to $0.00
   if (total < 0.005) {
@@ -142,21 +121,13 @@ export function formatTokensPerSecond(
 export function formatSimpleOutput(
   output: number | undefined,
   durationMs: number,
-  cost:
-    | {
-        input?: number;
-        output?: number;
-        cacheRead?: number;
-        cacheWrite?: number;
-        total?: number;
-      }
-    | undefined,
+  usage: Usage | undefined,
   generationMs?: number,
 ): string {
   const outputStr = formatTokens(output);
   const durationStr = formatDuration(durationMs);
   const tokPerSecStr = formatTokensPerSecond(output, generationMs);
-  const costStr = formatCost(cost);
+  const costStr = formatCost(usage);
 
   // Build the output string with separators between metrics
   let result = `↓${outputStr} | ${durationStr}`;
@@ -169,37 +140,18 @@ export function formatSimpleOutput(
   return result;
 }
 
-function getTurnKey(turnIndex: unknown): string {
-  if (typeof turnIndex === "number" || typeof turnIndex === "bigint") {
-    return String(turnIndex);
-  }
-  if (typeof turnIndex === "string") {
-    return turnIndex;
-  }
-  return "unknown";
-}
-
 /**
  * Main extension function
  */
 export default function (pi: ExtensionAPI) {
   // Track turn start time for per-turn duration
-  const turnStartTimes = new Map<string, number>();
-  // Track first text delta time per turn (for accurate tok/s calculation)
-  const turnFirstDeltaTimes = new Map<string, number>();
-  // Track last text delta time per turn
-  const turnLastDeltaTimes = new Map<string, number>();
-  // Current turn key (set by turn_start, used by message_update)
-  let currentTurnKey: string | null = null;
+  const turnStartTimes = new Map<number, number>();
   // Track agent start time for total agent duration
   let agentStartTime: number | null = null;
   // Track last turn end timestamp for total agent duration
   let lastTurnEndTimestamp: number | null = null;
   // Accumulate all token usage stats for the agent
   let totalOutputTokens = 0;
-  // Accumulate total generation time for accurate agent-level tok/s
-  let totalGenerationMs = 0;
-
   // Accumulate cost breakdown for the agent
   let totalCostInput = 0;
   let totalCostOutput = 0;
@@ -212,29 +164,7 @@ export default function (pi: ExtensionAPI) {
    * Records the start time for each turn
    */
   pi.on("turn_start", (event: TurnStartEvent) => {
-    const turnKey = getTurnKey(event.turnIndex);
-    turnStartTimes.set(turnKey, Date.now());
-    currentTurnKey = turnKey;
-  });
-
-  /**
-   * Hook into message update event
-   * Tracks first and last text delta times for accurate tok/s calculation
-   */
-  (pi as any).on("message_update", async (event: MessageUpdateEvent) => {
-    if (currentTurnKey === null) return;
-
-    const assistantEvent = event.assistantMessageEvent;
-    // Track timing on text_delta events (actual token streaming)
-    if (assistantEvent.type === "text_delta") {
-      const now = Date.now();
-      // Record first delta time if not set
-      if (!turnFirstDeltaTimes.has(currentTurnKey)) {
-        turnFirstDeltaTimes.set(currentTurnKey, now);
-      }
-      // Always update last delta time
-      turnLastDeltaTimes.set(currentTurnKey, now);
-    }
+    turnStartTimes.set(event.turnIndex, Date.now());
   });
 
   /**
@@ -242,20 +172,12 @@ export default function (pi: ExtensionAPI) {
    * Reports the per-turn duration and token usage
    */
   pi.on("turn_end", (event: TurnEndEvent, ctx: ExtensionContext) => {
-    const eventTurnKey = getTurnKey(event.turnIndex);
-    const turnKey = turnStartTimes.has(eventTurnKey)
-      ? eventTurnKey
-      : (currentTurnKey ?? eventTurnKey);
+    const turnIndex = event.turnIndex;
 
-    const startTime = turnStartTimes.get(turnKey);
-    const firstDeltaTime = turnFirstDeltaTimes.get(turnKey);
-    const lastDeltaTime = turnLastDeltaTimes.get(turnKey);
+    const startTime = turnStartTimes.get(turnIndex);
 
     // Clean up turn tracking
-    turnStartTimes.delete(turnKey);
-    turnFirstDeltaTimes.delete(turnKey);
-    turnLastDeltaTimes.delete(turnKey);
-    currentTurnKey = null;
+    turnStartTimes.delete(turnIndex);
 
     // Only track assistant messages
     const message = event.message;
@@ -263,56 +185,29 @@ export default function (pi: ExtensionAPI) {
       return;
     }
 
-    const usage = message.usage;
+    const usage = message.usage as Usage;
 
     const turnEndTimestamp = Date.now();
     const durationMs =
       startTime !== undefined ? Math.max(0, turnEndTimestamp - startTime) : 0;
     lastTurnEndTimestamp = turnEndTimestamp;
 
-    // Calculate generation time (prefer text streaming window, fallback to full turn duration)
-    const generationMsFromStream =
-      firstDeltaTime !== undefined && lastDeltaTime !== undefined
-        ? Math.max(0, lastDeltaTime - firstDeltaTime)
-        : undefined;
-    const generationMs =
-      generationMsFromStream !== undefined && generationMsFromStream > 0
-        ? generationMsFromStream
-        : durationMs > 0
-          ? durationMs
-          : undefined;
-
     // Get token information from the message
     const outputTokens = usage.output;
     const cost = usage.cost;
-    const costInput = cost.input;
-    const costOutput = cost.output;
-    const costCacheRead = cost.cacheRead;
-    const costCacheWrite = cost.cacheWrite;
-    const costTotal = cost.total;
 
     // Accumulate all token stats
     totalOutputTokens += outputTokens;
 
-    // Accumulate generation time for agent-level tok/s
-    if (generationMs !== undefined) {
-      totalGenerationMs += generationMs;
-    }
-
     // Accumulate cost breakdown
-    totalCostInput += costInput;
-    totalCostOutput += costOutput;
-    totalCostCacheRead += costCacheRead;
-    totalCostCacheWrite += costCacheWrite;
-    totalCost += costTotal;
+    totalCostInput += cost.input;
+    totalCostOutput += cost.output;
+    totalCostCacheRead += cost.cacheRead;
+    totalCostCacheWrite += cost.cacheWrite;
+    totalCost += cost.total;
 
-    // Format simple output: ↓<output_tokens> | <duration> | <tok/s> | <cost>
-    const notificationStr = formatSimpleOutput(
-      outputTokens,
-      durationMs,
-      cost,
-      generationMs,
-    );
+    // Format simple output: ↓<output_tokens> | <duration> | <cost>
+    const notificationStr = formatSimpleOutput(outputTokens, durationMs, usage);
 
     // Notify user if UI is available
     ctx.ui.notify(notificationStr, "info");
@@ -330,23 +225,29 @@ export default function (pi: ExtensionAPI) {
    * Hook into agent end event
    * Reports the agent end duration and token stats
    */
-  pi.on("turn_end", (_event: TurnEndEvent, ctx: ExtensionContext) => {
+  pi.on("agent_end", (_event: AgentEndEvent, ctx: ExtensionContext) => {
     if (agentStartTime !== null) {
       const endTimestamp = lastTurnEndTimestamp ?? Date.now();
       const totalDurationMs = endTimestamp - agentStartTime;
 
-      // Format simple output: ↓<output_tokens> | <duration> | <tok/s> | <cost>
+      // Format simple output: ↓<output_tokens> | <duration> | <cost>
       const notificationStr = formatSimpleOutput(
         totalOutputTokens,
         totalDurationMs,
         {
-          input: totalCostInput,
-          output: totalCostOutput,
-          cacheRead: totalCostCacheRead,
-          cacheWrite: totalCostCacheWrite,
-          total: totalCost,
+          input: 0,
+          output: totalOutputTokens,
+          cacheRead: 0,
+          cacheWrite: 0,
+          totalTokens: totalOutputTokens,
+          cost: {
+            input: totalCostInput,
+            output: totalCostOutput,
+            cacheRead: totalCostCacheRead,
+            cacheWrite: totalCostCacheWrite,
+            total: totalCost,
+          },
         },
-        totalGenerationMs > 0 ? totalGenerationMs : undefined,
       );
 
       // Notify user if UI is available
@@ -356,7 +257,6 @@ export default function (pi: ExtensionAPI) {
 
       // Reset for next agent run
       totalOutputTokens = 0;
-      totalGenerationMs = 0;
       totalCostInput = 0;
       totalCostOutput = 0;
       totalCostCacheRead = 0;
@@ -370,13 +270,9 @@ export default function (pi: ExtensionAPI) {
    */
   function resetCounters(): void {
     turnStartTimes.clear();
-    turnFirstDeltaTimes.clear();
-    turnLastDeltaTimes.clear();
-    currentTurnKey = null;
     agentStartTime = null;
     lastTurnEndTimestamp = null;
     totalOutputTokens = 0;
-    totalGenerationMs = 0;
     totalCostInput = 0;
     totalCostOutput = 0;
     totalCostCacheRead = 0;
