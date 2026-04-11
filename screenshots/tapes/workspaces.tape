@@ -7,6 +7,8 @@ Set Theme { "name": "custom", "black": "#101033", "red": "#ff628c", "green": "#a
 
 Type "cd /tmp/pi-demo && pi -ne --no-tools --no-session --no-skills --no-prompt-templates -e ~/.pi/agent/extensions/ide"
 Enter
+Wait+Screen /Model scope:/
+Enter
 Wait+Screen /\[Extensions\]/
 
 Ctrl+j

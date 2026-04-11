@@ -40,18 +40,31 @@ export interface User {
   createdAt: Date;
 }
 
-export async function fetchUsers(): Promise<User[]> {
-  const response = await fetch("/api/users");
-  return response.json();
+export class UserService {
+  private baseUrl: string;
+
+  constructor(baseUrl: string = "/api") {
+    this.baseUrl = baseUrl;
+  }
+
+  async fetchUsers(): Promise<User[]> {
+    const response = await fetch(`${this.baseUrl}/users`);
+    return response.json();
+  }
+
+  // HACK hardcoded API endpoint
+  async createUser(name: string, email: string): Promise<User> {
+    const response = await fetch(`${this.baseUrl}/users`, {
+      method: "POST",
+      body: JSON.stringify({ name, email, createdAt: formatDate(new Date()) }),
+    });
+    return response.json();
+  }
 }
 
-// HACK hardcoded API endpoint
-export async function createUser(name: string, email: string): Promise<User> {
-  const response = await fetch("/api/users", {
-    method: "POST",
-    body: JSON.stringify({ name, email, createdAt: formatDate(new Date()) }),
-  });
-  return response.json();
+export async function fetchUsers(): Promise<User[]> {
+  const service = new UserService();
+  return service.fetchUsers();
 }
 EOF
 
