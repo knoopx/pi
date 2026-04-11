@@ -1,4 +1,5 @@
 import path from "node:path";
+import fs from "node:fs";
 import { Key } from "@mariozechner/pi-tui";
 import {
   ACTION_KEYS,
@@ -85,6 +86,11 @@ export function createChangesComponent(
   const changeCache = new Map<string, ChangeCache>();
   let graphLayout: GraphLayout | null = null;
 
+  // File watcher for auto-reload on active file changes
+  let activeFileWatcher: fs.FSWatcher | null = null;
+  let watchedFilePath: string | null = null;
+  let watcherDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
   // Filter state
   let currentFilterIndex = 0;
 
@@ -102,6 +108,44 @@ export function createChangesComponent(
     invalidateCache(loadingState);
     tui.requestRender();
   });
+
+  function updateFileWatcher(): void {
+    const currentFilePath =
+      selectedChange && files.length > 0 && files[selectionState.fileIndex]
+        ? path.join(cwd, files[selectionState.fileIndex].path)
+        : null;
+
+    if (currentFilePath === watchedFilePath && activeFileWatcher) return;
+
+    watchedFilePath = currentFilePath;
+    if (activeFileWatcher) {
+      activeFileWatcher.close();
+      activeFileWatcher = null;
+    }
+
+    if (!currentFilePath) return;
+
+    try {
+      activeFileWatcher = fs.watch(
+        currentFilePath,
+        { persistent: false },
+        () => {
+          if (watcherDebounceTimer) clearTimeout(watcherDebounceTimer);
+          watcherDebounceTimer = setTimeout(() => {
+            const file = files[selectionState.fileIndex];
+            if (!file || !selectedChange) return;
+            const cache = changeCache.get(selectedChange.changeId);
+            if (cache) cache.diffs.delete(file.path);
+            void loadDiff(selectedChange, file.path, {
+              preserveScroll: true,
+            });
+          }, 150);
+        },
+      );
+    } catch {
+      // File may not exist or be inaccessible
+    }
+  }
 
   // Navigation handlers - defined inline to access current array values
   function navigateChanges(direction: "up" | "down"): void {
@@ -139,6 +183,7 @@ export function createChangesComponent(
       selectionState.fileIndex = newIndex;
       const file = files[newIndex];
       void loadDiff(selectedChange, file.path);
+      updateFileWatcher();
       invalidateCache(loadingState);
       tui.requestRender();
     }
@@ -568,6 +613,7 @@ Use the **conventional-commits** skill for commit message format.`;
           selectionState.diffScroll = 0;
           invalidateCache(loadingState);
           tui.requestRender();
+          updateFileWatcher();
           return;
         }
       }
@@ -580,6 +626,7 @@ Use the **conventional-commits** skill for commit message format.`;
 
       selectionState.fileIndex = 0;
       await loadDiff(change, files[0]?.path);
+      updateFileWatcher();
     } catch (error) {
       const msg = formatErrorMessage(error);
       files = [];
@@ -589,7 +636,11 @@ Use the **conventional-commits** skill for commit message format.`;
     }
   }
 
-  async function loadDiff(change: Change, filePath?: string): Promise<void> {
+  async function loadDiff(
+    change: Change,
+    filePath?: string,
+    options?: { preserveScroll?: boolean },
+  ): Promise<void> {
     const diffKey = filePath ?? "";
 
     const cache = changeCache.get(change.changeId);
@@ -597,7 +648,7 @@ Use the **conventional-commits** skill for commit message format.`;
       const cachedDiff = cache.diffs.get(diffKey);
       if (cachedDiff) {
         diffContent = cachedDiff;
-        selectionState.diffScroll = 0;
+        if (!options?.preserveScroll) selectionState.diffScroll = 0;
         invalidateCache(loadingState);
         tui.requestRender();
         return;
@@ -608,7 +659,7 @@ Use the **conventional-commits** skill for commit message format.`;
       const { diff } = await getRawDiff(pi, cwd, change.changeId, filePath);
       const theme = await getTheme(pi, cwd);
       diffContent = await renderDiffWithShiki(diff, theme);
-      selectionState.diffScroll = 0;
+      if (!options?.preserveScroll) selectionState.diffScroll = 0;
 
       if (cache) {
         cache.diffs.set(diffKey, diffContent);
@@ -1277,7 +1328,8 @@ Use the **conventional-commits** skill for commit message format.`;
   }
 
   function dispose(): void {
-    // Cleanup if needed
+    if (watcherDebounceTimer) clearTimeout(watcherDebounceTimer);
+    if (activeFileWatcher) activeFileWatcher.close();
   }
 
   void reloadChanges();
