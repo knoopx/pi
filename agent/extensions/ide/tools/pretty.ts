@@ -1,11 +1,9 @@
 import {
   createReadToolDefinition as createReadToolDef,
-  createBashToolDefinition as createBashToolDef,
   createLsToolDefinition as createLsToolDef,
   createFindToolDefinition as createFindToolDef,
   createGrepToolDefinition as createGrepToolDef,
   createReadTool,
-  createBashTool,
   createLsTool,
   createFindTool,
   createGrepTool,
@@ -13,8 +11,6 @@ import {
 import type {
   AgentToolResult,
   AgentToolUpdateCallback,
-  BashToolDetails,
-  BashToolInput,
   ExtensionAPI,
   ExtensionContext,
   FindToolDetails,
@@ -50,7 +46,6 @@ import type { ImageContent } from "@mariozechner/pi-ai";
 
 import {
   renderFileContent,
-  renderBashOutput,
   renderTree,
   renderFindResults,
   renderGrepResults,
@@ -92,17 +87,6 @@ type ReadDetails =
       lineCount?: number;
     };
 
-type BashDetails =
-  | BashToolDetails
-  | undefined
-  | {
-      _type: "bashResult";
-      command?: string;
-      output?: string;
-      exitCode?: number;
-      text?: string;
-    };
-
 type LsDetails =
   | LsToolDetails
   | undefined
@@ -133,53 +117,11 @@ type GrepDetails =
       matchCount?: number;
     };
 
-/**
- * Render bash header with summary and line count
- */
-function renderBashHeader(
-  text: string,
-  exitCode: number | null,
-  theme: Theme,
-): string {
-  const { summary } = renderBashOutput(text, exitCode, theme);
-  const lines = text.split("\n");
-  const lineCount = lines.length;
-  const lineInfo =
-    lineCount > 1
-      ? "  " + theme.fg("dim", "(" + lineCount + " lines)") + " "
-      : "";
-  return "  " + summary + lineInfo;
-}
-
-/**
- * Render bash body with content preview
- */
-function renderBashBody(
-  text: string,
-  lineCount: number,
-  maxShow: number,
-  theme: Theme,
-): string {
-  const lines = text.split("\n");
-  const show = lines.slice(0, maxShow);
-  const tw = termW();
-  const out: string[] = [theme.fg("border", "─".repeat(tw))];
-  for (const line of show) {
-    out.push("  " + line);
-  }
-  out.push(theme.fg("border", "─".repeat(tw)));
-  if (lineCount > maxShow) {
-    out.push(theme.fg("dim", "  … " + (lineCount - maxShow) + " more lines"));
-  }
-  return out.join("\n");
-}
-
 export default async function piPrettyExtension(
   pi: ExtensionAPI,
 ): Promise<void> {
   // Resolve to preferred export (new name falls back to old)
   const createReadToolFn = createReadToolDef ?? createReadTool;
-  const createBashToolFn = createBashToolDef ?? createBashTool;
   const createLsToolFn = createLsToolDef ?? createLsTool;
   const createFindToolFn = createFindToolDef ?? createFindTool;
   const createGrepToolFn = createGrepToolDef ?? createGrepTool;
@@ -347,123 +289,6 @@ export default async function piPrettyExtension(
       return text;
     },
   });
-
-  // ===================================================================
-  // bash — colored exit status
-  // ===================================================================
-
-  if (createBashToolFn) {
-    const origBash = createBashToolFn(cwd);
-
-    pi.registerTool({
-      ...origBash,
-      name: "bash",
-
-      async execute(
-        tid: string,
-        params: BashToolInput,
-        sig: AbortSignal | undefined,
-        upd: AgentToolUpdateCallback<BashDetails> | undefined,
-        ctx: ExtensionContext,
-      ): Promise<AgentToolResult<BashDetails>> {
-        const result = (await origBash.execute(
-          tid,
-          params,
-          sig,
-          upd,
-          ctx,
-        )) as AgentToolResult<BashDetails>;
-
-        const textContent = extractTextContent(result.content);
-
-        let exitCode: number | null = 0;
-        if (textContent) {
-          const exitMatch =
-            /(?:exit code|exited with|exit status)[:\s]*(\d+)/i.exec(
-              textContent,
-            );
-          if (exitMatch) exitCode = Number(exitMatch[1]);
-          if (
-            textContent.includes("command not found") ||
-            textContent.includes("No such file")
-          ) {
-            exitCode = 1;
-          }
-        }
-
-        result.details = {
-          _type: "bashResult" as const,
-          text: textContent,
-          exitCode,
-          command: params.command ?? "",
-        };
-
-        return result;
-      },
-
-      renderCall(
-        args: BashToolInput,
-        theme: Theme,
-        ctx: ToolRenderContext<unknown, BashToolInput>,
-      ): Component {
-        const cmd = args?.command ?? "";
-        const text = getTextComponent(ctx, Text);
-        const timeout = args?.timeout
-          ? ` ${theme.fg("muted", `(${args.timeout}s timeout)`)}`
-          : "";
-        text.setText(
-          theme.fg("toolTitle", theme.bold("bash")) +
-            " " +
-            theme.fg("accent", cmd.length > 80 ? cmd.slice(0, 77) + "…" : cmd) +
-            timeout,
-        );
-        return text;
-      },
-
-      renderResult(
-        result: AgentToolResult<BashDetails>,
-        options: ToolRenderResultOptions,
-        theme: Theme,
-        ctx: ToolRenderContext<unknown, BashToolInput>,
-      ): Component {
-        const text = getTextComponent(ctx, Text);
-
-        return handleRenderResult(
-          result,
-          ctx,
-          theme,
-          text,
-          (d) => {
-            if (d?._type === "bashResult") {
-              const bashText = d.text as string;
-              const exitCode = d.exitCode as number | null;
-              const header = renderBashHeader(bashText, exitCode, theme);
-
-              if (bashText.trim()) {
-                const lines = bashText.split("\n");
-                const lineCount = lines.length;
-                const maxShow = options.expanded
-                  ? lineCount
-                  : MAX_PREVIEW_LINES;
-                const body = renderBashBody(
-                  bashText,
-                  lineCount,
-                  maxShow,
-                  theme,
-                );
-                text.setText(header + "\n" + body);
-              } else {
-                text.setText(header);
-              }
-              return text;
-            }
-            return undefined;
-          },
-          "done",
-        );
-      },
-    });
-  }
 
   // ===================================================================
   // ls — tree view with icons
