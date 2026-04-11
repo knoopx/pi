@@ -301,20 +301,19 @@ export function createListPicker<T extends ListPickerItem>(
     }
   };
 
-  const navigatePage = (direction: "up" | "down") => {
+  const scrollPreview = (direction: "up" | "down") => {
+    if (sourceLines.length === 0) return;
     const dims = calculateDimensions(tui.terminal.rows, 100, {
       leftTitle: "",
       rightTitle: "",
       helpText: "",
       leftFocus: true,
     });
-    focusedIndex =
-      direction === "up"
-        ? Math.max(0, focusedIndex - dims.contentH)
-        : Math.min(filteredItems.length - 1, focusedIndex + dims.contentH);
-    const item = getFocusedItem();
-    if (item !== null) {
-      void loadPreview(item);
+    const maxScroll = Math.max(0, sourceLines.length - dims.contentH);
+    if (direction === "down") {
+      sourceScroll = Math.min(maxScroll, sourceScroll + dims.contentH);
+    } else {
+      sourceScroll = Math.max(0, sourceScroll - dims.contentH);
     }
     invalidate();
     tui.requestRender();
@@ -380,13 +379,13 @@ export function createListPicker<T extends ListPickerItem>(
     {
       key: "pageUp",
       handler: () => {
-        navigatePage("up");
+        scrollPreview("up");
       },
     },
     {
       key: "pageDown",
       handler: () => {
-        navigatePage("down");
+        scrollPreview("down");
       },
     },
   ];
