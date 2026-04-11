@@ -35,6 +35,7 @@ const EXT_LANG: Record<string, BundledLanguage> = {
   sh: "bash",
   bash: "bash",
   zsh: "bash",
+  fish: "bash",
   lua: "lua",
   php: "php",
   dart: "dart",
@@ -48,6 +49,7 @@ const EXT_LANG: Record<string, BundledLanguage> = {
   nim: "nim",
   elixir: "elixir",
   ex: "elixir",
+  nix: "nix",
   erb: "erb",
   hbs: "handlebars",
 };
@@ -55,6 +57,7 @@ const EXT_LANG: Record<string, BundledLanguage> = {
 export function lang(fp: string): BundledLanguage | undefined {
   const base = basename(fp).toLowerCase();
   if (base === "dockerfile") return "dockerfile";
+  if (base === "flake.lock") return "json";
   if (base === "makefile" || base === "gnumakefile") return "make";
   if (base === ".envrc" || base === ".env") return "bash";
   return EXT_LANG[extname(fp).slice(1).toLowerCase()];
