@@ -10,6 +10,18 @@ const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
 
 import { disableThrottle } from "../../shared/throttle";
 
+/**
+ * Helper to assert formatted option results
+ */
+function assertFormattedOptionResults(
+  result: AgentToolResult<Record<string, unknown>>,
+  query: string,
+) {
+  expect(stripAnsi((result.content[0] as TextContent).text)).toMatchSnapshot();
+  expect(result.details.query).toBe(query);
+  expect(result.details.totalFound).toBe(1);
+}
+
 // ============================================
 // Extension Registration
 // ============================================
@@ -211,11 +223,7 @@ describe("Nix Extension", () => {
       });
 
       it("then it should return formatted option results", () => {
-        expect(
-          stripAnsi((result.content[0] as TextContent).text),
-        ).toMatchSnapshot();
-        expect(result.details.query).toBe("httpd");
-        expect(result.details.totalFound).toBe(1);
+        assertFormattedOptionResults(result, "httpd");
       });
     });
   });
@@ -289,11 +297,7 @@ describe("Nix Extension", () => {
       });
 
       it("then it should return formatted option results", () => {
-        expect(
-          stripAnsi((result.content[0] as TextContent).text),
-        ).toMatchSnapshot();
-        expect(result.details.query).toBe("git");
-        expect(result.details.totalFound).toBe(1);
+        assertFormattedOptionResults(result, "git");
       });
     });
   });

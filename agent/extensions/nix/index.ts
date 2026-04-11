@@ -139,6 +139,50 @@ function buildSearchResult<T>(
 }
 
 /**
+ * Builds a table renderer for option-like results with common columns
+ */
+function buildOptionTableRenderer(
+  includeDeclarations: boolean = false,
+): (res: Record<string, string>[]) => string {
+  return (res) => {
+    const cols: Column[] = [
+      { key: "#", align: "right", minWidth: 3 },
+      { key: "type", minWidth: 11 },
+      {
+        key: "option",
+        format: (_v, row) => {
+          const r = row as Record<string, string>;
+          const lines = [r.option];
+          if (r.description) lines.push(r.description);
+          if (r.default) lines.push(`default: ${r.default}`);
+          if (r.example) lines.push(`example: ${r.example}`);
+          if (includeDeclarations && r.declarations) {
+            lines.push(r.declarations);
+          }
+          return lines.join("\n");
+        },
+      },
+    ];
+
+    const rows = res.map((item, i) => ({
+      "#": String(i + 1),
+      type: item.type || "",
+      option: item.option || "",
+      description: item.description || "",
+      default: item.default || "",
+      example: item.example || "",
+      declarations: item.declarations ?? "",
+    }));
+
+    return [
+      dotJoin(countLabel(res.length, "result")),
+      "",
+      table(cols, rows),
+    ].join("\n");
+  };
+}
+
+/**
  * Helper to build aggregation terms (reused at top-level and inside 'all')
  */
 function buildAggregationTerms(): Record<string, unknown> {
@@ -433,7 +477,7 @@ Use this to:
 - Get package metadata and maintainers
 
 Returns detailed package information from nixpkgs.`,
-    parameters: SearchQueryParams as any,
+    parameters: SearchQueryParams,
     async execute(_toolCallId: string, params: SearchQueryParamsType) {
       const { query } = params;
 
@@ -506,7 +550,7 @@ Use this to:
 - Get examples for configuration
 
 Returns NixOS configuration option details.`,
-    parameters: SearchQueryParams as any,
+    parameters: SearchQueryParams,
     async execute(_toolCallId: string, params: SearchQueryParamsType) {
       const { query } = params;
 
@@ -521,36 +565,7 @@ Returns NixOS configuration option details.`,
             example: opt.option_example,
             source: opt.option_source,
           }),
-        (res) => {
-          const cols: Column[] = [
-            { key: "#", align: "right", minWidth: 3 },
-            { key: "type", minWidth: 11 },
-            {
-              key: "option",
-              format: (_v, row) => {
-                const r = row as Record<string, string>;
-                const lines = [r.option];
-                if (r.description) lines.push(r.description);
-                if (r.default) lines.push(`default: ${r.default}`);
-                if (r.example) lines.push(`example: ${r.example}`);
-                return lines.join("\n");
-              },
-            },
-          ];
-          const rows = res.map((opt, i) => ({
-            "#": String(i + 1),
-            type: opt.type || "",
-            option: opt.name || "",
-            description: opt.description || "",
-            default: opt.default || "",
-            example: opt.example || "",
-          }));
-          return [
-            dotJoin(countLabel(res.length, "result")),
-            "",
-            table(cols, rows),
-          ].join("\n");
-        },
+        buildOptionTableRenderer(false),
         query,
       );
     },
@@ -569,7 +584,7 @@ Use this to:
 - Manage user-level services
 
 Returns Home Manager configuration options.`,
-    parameters: SearchQueryParams as any,
+    parameters: SearchQueryParams,
     async execute(_toolCallId: string, params: SearchQueryParamsType) {
       const { query } = params;
 
@@ -584,38 +599,7 @@ Returns Home Manager configuration options.`,
             example: opt.example,
             declarations: opt.declarations.map((d) => d.url).join(", "),
           }),
-        (res) => {
-          const cols: Column[] = [
-            { key: "#", align: "right", minWidth: 3 },
-            { key: "type", minWidth: 11 },
-            {
-              key: "option",
-              format: (_v, row) => {
-                const r = row as Record<string, string>;
-                const lines = [r.option];
-                if (r.description) lines.push(r.description);
-                if (r.default) lines.push(`default: ${r.default}`);
-                if (r.example) lines.push(`example: ${r.example}`);
-                if (r.declarations) lines.push(r.declarations);
-                return lines.join("\n");
-              },
-            },
-          ];
-          const rows = res.map((opt, i) => ({
-            "#": String(i + 1),
-            type: opt.type || "",
-            option: opt.title || "",
-            description: opt.description || "",
-            default: opt.default || "",
-            example: opt.example || "",
-            declarations: opt.declarations ?? "",
-          }));
-          return [
-            dotJoin(countLabel(res.length, "result")),
-            "",
-            table(cols, rows),
-          ].join("\n");
-        },
+        buildOptionTableRenderer(true),
         query,
       );
     },
