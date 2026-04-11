@@ -1,12 +1,12 @@
 # kPI
 
-Personal [Pi Coding Agent](https://buildwithpi.ai/) configuration with 13 extensions and 18 skills.
+Personal [Pi Coding Agent](https://buildwithpi.ai/) configuration with 13 extensions and 20 skills.
 
 ## Features
 
 ### IDE — TUI Development Environment
 
-Full terminal IDE built as a pi extension: file/symbol browsing, jujutsu version control, workspace management, Linear/GitHub integration, and command palette.
+Full terminal IDE built as a pi extension: file/symbol browsing, jujutsu version control, workspace management, GitHub integration, and command palette.
 
 **File Browser** — syntax-highlighted preview, dependency inspection, VS Code integration.
 
@@ -48,15 +48,9 @@ Security hooks that intercept dangerous operations (destructive shell commands, 
 
 Run shell commands at specific lifecycle points (session start/stop, tool calls, model switches). Inspired by Claude Code hooks.
 
-### Watch
-
-File watcher that monitors the filesystem and triggers actions on changes. Debounced, configurable patterns.
-
 ### Reverse History Search
 
 `Ctrl+R` fuzzy search through user messages and commands across all pi sessions.
-
-![Reverse History Search](screenshots/reverse-history-search.png)
 
 ### Other Tools
 
@@ -71,11 +65,11 @@ File watcher that monitors the filesystem and triggers actions on changes. Debou
 - **PyPI** — search and inspect Python packages
 - **Reverse History Search** — `Ctrl+R` fuzzy search through user messages and commands
 - **Turn Stats** — per-turn statistics
-- **Usage** — track API usage, session costs, context consumption
+- **Usage** — track API usage and session costs
 
-### Skills (18)
+### Skills (20)
 
-Reusable instruction sets: conventional-commits, gtkx, jscpd, jujutsu, knip, nh, nix, nix-flakes, nu-shell, podman, retype, skill-authoring, tmux, typescript, uv, vhs, vicinae, vitest.
+Reusable instruction sets: conventional-commits, gtkx, jj-hunk, jujutsu, nh, nix, nix-flakes, nu-shell, nu-shell-tabular-data, pi-logs, podman, retype, skill-authoring, tmux, transcribe-audio, typescript, uv, vhs, vicinae, vitest.
 
 ## Credits
 
