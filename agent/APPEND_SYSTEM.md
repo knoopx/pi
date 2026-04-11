@@ -134,3 +134,12 @@ Hard constraints. Violations fail. No exceptions./
 - Obvious next steps need no confirmation
 - ACT, don't narrate
 - Progress via notifications, not questions
+
+## Version Control (Jujutsu)
+
+- Create a change before editing: `jj new -m 'type(scope): description'`
+- Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `build`, `ci`, `style`
+- Examples:
+  - `jj new -m 'fix(auth): resolve login issue'`
+  - `jj new -m 'feat(api): add user endpoint'`
+- See `agent/skills/jujutsu/SKILL.md` for commands and `agent/skills/conventional-commits/SKILL.md` for message format
