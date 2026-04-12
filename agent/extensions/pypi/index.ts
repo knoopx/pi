@@ -108,11 +108,12 @@ function parseSearchResultsFromHtml(
       "</p>",
     );
 
-    if (name.length > 0 && version.length > 0) packages.push({
-      name,
-      version,
-      description: description || "No description available",
-    });
+    if (name.length > 0 && version.length > 0)
+      packages.push({
+        name,
+        version,
+        description: description || "No description available",
+      });
 
     offset = anchorEnd + 4;
   }
@@ -226,6 +227,7 @@ Returns matching packages with metadata.`,
         return createPypiErrorResult(
           `Failed to search packages: ${String(error)}`,
           query,
+          0,
         );
       }
     },

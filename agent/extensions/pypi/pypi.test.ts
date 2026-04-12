@@ -142,7 +142,9 @@ describe("PyPI Extension", () => {
     });
 
     describe("given search returns no results", () => {
-      it("then it should return empty result message", async () => {
+      let result: AgentToolResult<Record<string, unknown>>;
+
+      beforeEach(async () => {
         const mockFetch = vi
           .fn()
           .mockImplementation(
@@ -164,14 +166,15 @@ describe("PyPI Extension", () => {
           });
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        const result = await registeredTool.execute("tool1", {
+        result = await registeredTool.execute("tool1", {
           query: "nonexistent-pkg-xyz-123",
         });
+      });
 
-        expect((result.content[0] as TextContent).text).toBe(
-          "No packages found.",
-        );
-        expect(result.details.total).toBe(0);
+      it("then it should return empty result message", () => {
+        expect(
+          stripAnsi((result.content[0] as TextContent).text),
+        ).toMatchSnapshot();
       });
     });
   });

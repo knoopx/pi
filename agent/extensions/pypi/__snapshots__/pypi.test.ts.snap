@@ -35,3 +35,5 @@ exports[`PyPI Extension > search-pypi-packages > given search fails and fallback
   1 │ 2.31.0  │ requests
     │         │ Python HTTP for Humans."
 `;
+
+exports[`PyPI Extension > search-pypi-packages > given search returns no results > then it should return empty result message 1`] = `"No packages found."`;

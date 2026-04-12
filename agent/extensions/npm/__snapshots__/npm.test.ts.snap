@@ -27,5 +27,6 @@ exports[`NPM Extension > search-npm-packages > given a valid search query > then
 ────┼─────────┼──────────────────────────────────────────
   1 │ 4.17.21 │ lodash
     │         │ A modern JavaScript utility library
-    │         │ util, functional, server, client, browser"
+    │         │ util, functional, server, client, browser
+    │         │ John-David Dalton"
 `;

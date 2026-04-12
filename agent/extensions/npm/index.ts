@@ -230,6 +230,8 @@ async function searchNpmPackages(
       name: obj.package.name,
       version: obj.package.version,
       description: obj.package.description ?? "",
+      keywords: obj.package.keywords ?? [],
+      author: obj.package.author?.name ?? "",
     }));
 
     if (packages.length === 0)
