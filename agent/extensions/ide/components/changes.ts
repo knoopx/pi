@@ -556,25 +556,25 @@ Use the **conventional-commits** skill for commit message format.`;
           if (matchedIndex >= 0) {
             selectionState.selectedIndex = matchedIndex;
             selectedChange = changes[matchedIndex];
-            // Load files but preserve file index and diff scroll
-            const cached = changeCache.get(selectedChange.changeId);
-            if (cached && cached.files.length > 0) {
-              files = cached.files;
-              // Keep fileIndex within bounds
-              selectionState.fileIndex = Math.min(
-                selectionState.fileIndex,
-                files.length - 1,
+            // Always reload files to get fresh stats on auto-refresh
+            files = await loadChangedFiles(pi, cwd, selectedChange.changeId);
+            // Update cache with fresh files
+            const cache = createComponentCache(files);
+            changeCache.set(selectedChange.changeId, cache);
+            // Keep fileIndex within bounds
+            selectionState.fileIndex = Math.min(
+              selectionState.fileIndex,
+              files.length - 1,
+            );
+            // Reload diff for current file if needed
+            if (files[selectionState.fileIndex]) {
+              await loadDiff(
+                selectedChange,
+                files[selectionState.fileIndex].path,
+                {
+                  preserveScroll: true,
+                },
               );
-              // Reload diff for current file if needed
-              if (files[selectionState.fileIndex]) {
-                await loadDiff(
-                  selectedChange,
-                  files[selectionState.fileIndex].path,
-                  {
-                    preserveScroll: true,
-                  },
-                );
-              }
             }
           } else {
             // Selected change no longer exists, fall back to first
