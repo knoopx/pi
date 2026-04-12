@@ -1,0 +1,15 @@
+{
+  "name": "reverse-history-search",
+  "version": "1.0.0",
+  "description": "Reverse history search integration",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "^0.66.1",
+    "@mariozechner/pi-tui": "^0.66.1"
+  }
+}

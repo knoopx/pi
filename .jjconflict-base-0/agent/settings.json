@@ -1,0 +1,55 @@
+{
+  "lastChangelogVersion": "0.66.1",
+  "defaultProvider": "local",
+  "defaultModel": "unsloth/Qwen3.5-27B-GGUF",
+  "theme": "custom",
+  "enabledModels": [
+    "github-copilot/grok-code-fast-1",
+    "github-copilot/gpt-5.4",
+    "github-copilot/claude-opus-4.6",
+    "local/unsloth/Qwen3.5-27B-GGUF",
+    "local/unsloth/Qwen3-Coder-Next-GGUF",
+    "zai-coding-plan/glm-5.1",
+    "local/unsloth/gemma-4-31B-it-GGUF",
+    "local/Jackrong/Qwopus3.5-27B-v3-GGUF",
+    "zai-coding-plan/glm-5-turbo",
+    "local/unsloth/gemma-4-26B-A4B-it-GGUF",
+    "local/unsloth/Qwen3.5-35B-A3B-GGUF"
+  ],
+  "hideThinkingBlock": false,
+  "defaultThinkingLevel": "medium",
+  "branchSummary": {
+    "skipPrompt": true
+  },
+  "ide": {
+    "jujutsuChangeTracking": false,
+    "readonlyTools": [
+      "transcribe",
+      "gh-search-repos",
+      "gh-search-code",
+      "gh-search-issues",
+      "gh-search-prs",
+      "gh-repo-contents",
+      "gh-file-content",
+      "gh-list-gists",
+      "gh-get-gist",
+      "gh-list-prs",
+      "gh-view-pr",
+      "gh-list-issues",
+      "gh-view-issue",
+      "gh-list-releases",
+      "gh-view-release",
+      "gh-list-workflows",
+      "gh-list-runs",
+      "gh-list-repo-files",
+      "search-npm-packages",
+      "npm-package-info",
+      "npm-package-versions",
+      "search-pypi-packages",
+      "pypi-package-info",
+      "search-nix-packages",
+      "search-nix-options",
+      "search-home-manager-options"
+    ]
+  }
+}

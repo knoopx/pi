@@ -1,0 +1,12 @@
+{
+  "threshold": 0.1,
+  "minLines": 15,
+  "minTokens": 100,
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.jj/**",
+    "**/*.test.ts",
+    "**/*.test.js"
+  ]
+}

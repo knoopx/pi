@@ -1,0 +1,353 @@
+import type {
+  ExtensionAPI,
+  KeybindingsManager,
+} from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@mariozechner/pi-coding-agent";
+import { Key } from "@mariozechner/pi-tui";
+import {
+  createListPicker,
+  type ListPickerItem,
+  type ListPickerComponent,
+  type ListPickerAction,
+} from "./list-picker";
+import { formatSymbolListEntry } from "./symbol-utils";
+import { loadFilePreviewWithShiki } from "./file-preview";
+
+export interface SymbolReferenceItem extends ListPickerItem {
+  name: string;
+  type: string;
+  path: string;
+  startLine: number;
+  endLine: number;
+  signature?: string;
+  callLine?: number;
+}
+
+export type SymbolReferenceActionType =
+  | "callers"
+  | "callees"
+  | "tests"
+  | "types"
+  | "schema"
+  | "inspect"
+  | "deps"
+  | "used-by"
+  | "delete";
+
+export interface SymbolReferenceResult {
+  item: SymbolReferenceItem;
+  action?: SymbolReferenceActionType;
+  insertType?: "name" | "path";
+}
+
+interface SymbolReferenceConfig {
+  title: string;
+  command: string;
+  args: string[];
+  cwd: string;
+}
+
+/** Symbol reference command configurations */
+interface SymbolReferenceCommandDef {
+  titleFn: (target: string) => string;
+  command: string;
+  argsFn: (target: string) => string[];
+}
+
+/** All symbol reference commands */
+export const SYMBOL_REFERENCE_COMMANDS: Record<
+  SymbolReferenceActionType,
+  SymbolReferenceCommandDef
+> = {
+  callers: {
+    titleFn: (s) => `Callers of ${s}`,
+    command: "callers",
+    argsFn: (s) => ["callers", s, "--limit", "100"],
+  },
+  callees: {
+    titleFn: (s) => `Callees of ${s}`,
+    command: "callees",
+    argsFn: (s) => ["callees", s, "--limit", "100"],
+  },
+  tests: {
+    titleFn: (s) => `Tests for ${s}`,
+    command: "tests",
+    argsFn: (s) => ["tests", s],
+  },
+  types: {
+    titleFn: (s) => `Types for ${s}`,
+    command: "types",
+    argsFn: (s) => ["types", s],
+  },
+  schema: {
+    titleFn: (s) => `Schema for ${s}`,
+    command: "schema",
+    argsFn: (s) => ["schema", s],
+  },
+  inspect: {
+    titleFn: (f) => `Symbols in ${f}`,
+    command: "inspect",
+    argsFn: (f) => ["inspect", f],
+  },
+  deps: {
+    titleFn: (f) => `Dependencies of ${f}`,
+    command: "deps",
+    argsFn: (f) => ["deps", f],
+  },
+  "used-by": {
+    titleFn: (f) => `Used by ${f}`,
+    command: "deps",
+    argsFn: (f) => ["deps", f, "--direction", "used-by"],
+  },
+  delete: {
+    titleFn: (f) => `Delete ${f}`,
+    command: "delete",
+    argsFn: (f) => ["delete", f],
+  },
+};
+
+// Symbol-based actions available in symbol references
+const SYMBOL_ACTION_DEFS: [string, SymbolReferenceActionType][] = [
+  [Key.ctrl("t"), "callers"],
+  [Key.ctrl("j"), "callees"],
+  [Key.ctrl("y"), "types"],
+  [Key.ctrl("k"), "schema"],
+];
+
+/**
+ * Filter valid output lines
+ */
+function filterOutputLines(output: string): string[] {
+  return output.split("\n").filter((line) => {
+    if (!line.trim()) return false;
+    if (line.startsWith("[")) return false;
+    if (line.startsWith("#")) return false;
+    if (line.startsWith("-")) return false;
+    if (line.startsWith("(")) return false;
+    if (!line.includes("|")) return false;
+    return true;
+  });
+}
+
+/**
+ * Extract signature and callLine from extra parts
+ */
+function extractExtraInfo(parts: string[]): {
+  signature: string | undefined;
+  callLine: number | undefined;
+} {
+  let signature: string | undefined;
+  let callLine: number | undefined;
+
+  for (let i = 3; i < parts.length; i++) {
+    const part = parts[i].trim();
+    if (part.startsWith("sig:")) {
+      signature = part.slice(4);
+    } else if (part.startsWith("call:")) {
+      callLine = parseInt(part.slice(5), 10);
+    }
+  }
+
+  return { signature, callLine };
+}
+
+/**
+ * Parse location part into path and line numbers
+ */
+function parseLocation(
+  locationPart: string,
+  headerFile: string | undefined,
+): { path: string; startLine: number; endLine: number } {
+  // Check if locationPart is a line-range (e.g., "71-172") vs path:line
+  const lineRangeMatch = /^(\d+)-(\d+)$/.exec(locationPart);
+  if (lineRangeMatch && headerFile) {
+    // Inspect format: line-range only, use header file
+    return {
+      path: headerFile,
+      startLine: parseInt(lineRangeMatch[1], 10),
+      endLine: parseInt(lineRangeMatch[2], 10),
+    };
+  } else if (locationPart.includes(":")) {
+    // Standard format: path:line
+    const colonIdx = locationPart.lastIndexOf(":");
+    const path = locationPart.slice(0, colonIdx);
+    const parsedStartLine = parseInt(locationPart.slice(colonIdx + 1), 10);
+    const startLine = Number.isNaN(parsedStartLine) ? 1 : parsedStartLine;
+    return { path, startLine, endLine: startLine };
+  } else {
+    // Fallback: treat as path
+    return { path: locationPart, startLine: 1, endLine: 1 };
+  }
+}
+
+/**
+ * Normalize name if it's a number
+ */
+function normalizeName(name: string, path: string): string {
+  if (/^\d+$/.test(name)) {
+    const basename = path.split("/").pop() ?? path;
+    return basename.replace(/\.[^.]+$/, "");
+  }
+  return name;
+}
+
+/**
+ * Parse symbol reference output lines into structured items.
+ * Extracts file path from [FILE:...] header if not in line format.
+ */
+function parseSymbolReferenceOutput(output: string): SymbolReferenceItem[] {
+  // Extract file path from header for inspect command
+  const fileMatch = /\[FILE:([^\]]+)\]/.exec(output);
+  const headerFile = fileMatch?.[1];
+
+  const lines = filterOutputLines(output);
+  const items: SymbolReferenceItem[] = [];
+
+  for (const line of lines) {
+    const parts = line.split("|");
+    if (parts.length < 3) continue;
+
+    const name = parts[0].trim();
+    const type = parts[1].trim();
+    const locationPart = parts[2].trim();
+
+    const { signature, callLine } = extractExtraInfo(parts);
+
+    if (locationPart.includes("<external>")) continue;
+
+    const { path, startLine, endLine } = parseLocation(
+      locationPart,
+      headerFile,
+    );
+
+    const normalized = normalizeName(name, path);
+
+    items.push({
+      id: `${path}:${String(startLine)}`,
+      label: normalized,
+      name: normalized,
+      type,
+      path,
+      startLine,
+      endLine,
+      signature,
+      callLine,
+    });
+  }
+
+  return items;
+}
+
+export function createSymbolReferenceComponent(
+  pi: ExtensionAPI,
+  tui: { terminal: { rows: number }; requestRender: () => void },
+  theme: Theme,
+  keybindings: KeybindingsManager,
+  done: (result: SymbolReferenceResult | null) => void,
+  config: SymbolReferenceConfig,
+): ListPickerComponent & { invalidate: () => void } {
+  let pendingAction: SymbolReferenceActionType | undefined;
+  let pendingInsertType: "name" | "path" | undefined;
+
+  function doneWithAction(item: SymbolReferenceItem | null): void {
+    if (item && pendingAction) {
+      done({ item, action: pendingAction });
+    } else if (item && pendingInsertType) {
+      done({ item, insertType: pendingInsertType });
+    } else if (item) {
+      done({ item });
+    } else {
+      done(null);
+    }
+    pendingAction = undefined;
+    pendingInsertType = undefined;
+  }
+
+  const actions: ListPickerAction<SymbolReferenceItem>[] = [
+    {
+      key: Key.ctrl("i"),
+      label: "insert",
+      handler: (item: SymbolReferenceItem) => {
+        pendingInsertType = "name";
+        doneWithAction(item);
+      },
+    },
+    ...SYMBOL_ACTION_DEFS.map(([key, action]) => ({
+      key,
+      label: action,
+      handler: (item: SymbolReferenceItem) => {
+        pendingAction = action;
+        doneWithAction(item);
+      },
+    })),
+  ];
+
+  const internalDone = (item: SymbolReferenceItem | null) => {
+    if (item) {
+      done({ item });
+    } else {
+      done(null);
+    }
+  };
+
+  const picker = createListPicker<SymbolReferenceItem>(
+    pi,
+    tui,
+    theme,
+    keybindings,
+    internalDone,
+    "",
+    {
+      title: config.title,
+      actions,
+      onEdit: async (item) => {
+        const { join } = await import("node:path");
+        const line = item.callLine ?? item.startLine;
+        await pi.exec("editor", [
+          `${join(config.cwd, item.path)}:${String(line)}`,
+        ]);
+      },
+      loadItems: async (_query) => {
+        const result = await pi.exec("cm", [...config.args, "--format", "ai"], {
+          cwd: config.cwd,
+        });
+
+        if (result.code !== 0) {
+          throw new Error(`cm ${config.command} failed: ${result.stderr}`);
+        }
+
+        return parseSymbolReferenceOutput(result.stdout);
+      },
+      filterItems: (items, query) =>
+        items.filter(
+          (item) =>
+            item.name.toLowerCase().includes(query) ||
+            item.path.toLowerCase().includes(query),
+        ),
+      formatItem: (item, width, theme) =>
+        formatSymbolListEntry(theme, {
+          type: item.type,
+          name: item.name,
+          path: item.path,
+          line: item.callLine ?? item.startLine,
+          signature: item.signature,
+        }),
+      loadPreview: async (item) => {
+        const result = await pi.exec("cat", [item.path], {
+          cwd: config.cwd,
+        });
+        if (result.code !== 0) {
+          return [`Error reading file: ${result.stderr}`];
+        }
+        return loadFilePreviewWithShiki(item.path, result.stdout, theme);
+      },
+    },
+  );
+
+  return {
+    ...picker,
+    invalidate: () => {
+      return;
+    },
+  };
+}

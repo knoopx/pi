@@ -1,0 +1,16 @@
+{
+  "name": "duckduckgo",
+  "version": "1.0.0",
+  "description": "DuckDuckGo search integration",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-ai": "^0.63.1",
+    "@mariozechner/pi-coding-agent": "^0.63.1",
+    "cheerio": "^1.2.0"
+  }
+}

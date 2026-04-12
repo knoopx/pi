@@ -1,0 +1,19 @@
+{
+  "name": "nix",
+  "version": "1.0.0",
+  "description": "Nix/NixOS integration",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-ai": "^0.66.1",
+    "@mariozechner/pi-agent-core": "^0.66.1",
+    "@mariozechner/pi-coding-agent": "^0.66.1"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  }
+}

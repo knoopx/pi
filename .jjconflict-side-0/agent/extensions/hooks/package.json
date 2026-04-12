@@ -1,0 +1,22 @@
+{
+  "name": "hooks",
+  "version": "1.0.0",
+  "description": "Run shell commands after pi events based on patterns",
+  "type": "module",
+  "scripts": {
+    "test": "bun vitest run *.test.ts"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "^0.63.1",
+    "picomatch": "^4.0.4"
+  },
+  "devDependencies": {
+    "@types/picomatch": "^4.0.3",
+    "vitest": "^3.2.4"
+  }
+}
