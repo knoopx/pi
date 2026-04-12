@@ -137,9 +137,7 @@ export function highlightCodeLines(
   theme: Theme,
   accentColor?: ThemeColor,
 ): string {
-  if (accentColor) {
-    return theme.fg(accentColor, line);
-  }
+  if (accentColor) return theme.fg(accentColor, line);
   return line;
 }
 
@@ -154,9 +152,7 @@ export async function loadFilePreviewWithShiki(
   theme: Theme,
 ): Promise<string[]> {
   // Only render supported file types
-  if (!isSupportedFile(filePath)) {
-    return [];
-  }
+  if (!isSupportedFile(filePath)) return [];
 
   try {
     const mutedColor = theme.getFgAnsi("muted");

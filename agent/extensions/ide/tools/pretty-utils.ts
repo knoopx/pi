@@ -36,7 +36,7 @@ export function renderError(
   text: Component & { setText: (s: string) => void },
 ): Component {
   const errorText = getErrorText(content);
-  text.setText("\n" + theme.fg("error", errorText));
+  text.setText(`\n${theme.fg("error", errorText)}`);
   return text;
 }
 
@@ -63,7 +63,7 @@ function renderFallback(
   text: Component & { setText: (s: string) => void },
 ): Component {
   const fallback = getFallbackText(content, defaultText);
-  text.setText("  " + theme.fg("dim", fallback));
+  text.setText(`  ${theme.fg("dim", fallback)}`);
   return text;
 }
 
@@ -101,9 +101,7 @@ export function handleRenderResult<T>(
   renderDetails: (d: Record<string, unknown>) => Component | undefined,
   defaultText: string,
 ): Component {
-  if (ctx.isError) {
-    return renderError(result.content, theme, text);
-  }
+  if (ctx.isError) return renderError(result.content, theme, text);
 
   const d = result.details as unknown as Record<string, unknown>;
   const rendered = renderDetails(d);

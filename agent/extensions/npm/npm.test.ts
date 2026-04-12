@@ -73,9 +73,7 @@ function testErrorCases(toolName: string, registeredTool: MockTool) {
       expect((result.content[0] as TextContent).text).toBe(
         'Package "nonexistent-pkg-xyz-123" not found.',
       );
-      if (toolName === "npm-package-info") {
-        expect(result.details.status).toBe(404);
-      }
+      if (toolName === "npm-package-info") expect(result.details.status).toBe(404);
     });
   });
 
@@ -92,9 +90,7 @@ function testErrorCases(toolName: string, registeredTool: MockTool) {
           ? "Failed to get package info: Internal Server Error"
           : "Failed to get package versions: Internal Server Error";
       expect((result.content[0] as TextContent).text).toBe(expectedMessage);
-      if (toolName === "npm-package-info") {
-        expect(result.details.status).toBe(500);
-      }
+      if (toolName === "npm-package-info") expect(result.details.status).toBe(500);
     });
   });
 

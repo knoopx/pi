@@ -38,8 +38,6 @@ export function formatRelativeTime(dateStr: string): string {
 
 /** Generic error message formatter */
 export function formatErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
+  if (error instanceof Error) return error.message;
   return String(error);
 }

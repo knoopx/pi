@@ -41,9 +41,8 @@ function createMockReadFileImpl(
 ) {
   return (path: unknown) => {
     if (String(path).includes("settings.json")) {
-      if (globalConfig !== null) {
+      if (globalConfig !== null)
         return Promise.resolve(JSON.stringify({ guardrails: globalConfig }));
-      }
       return Promise.reject(new Error("missing"));
     }
     return Promise.resolve(JSON.stringify(defaultConfigValue));
@@ -198,9 +197,8 @@ describe("guardrails configLoader", () => {
       ];
 
       mockReadFile.mockImplementation((path: unknown) => {
-        if (String(path).includes("settings.json")) {
+        if (String(path).includes("settings.json"))
           return Promise.resolve(JSON.stringify({ guardrails: cfg }));
-        }
         return Promise.resolve(JSON.stringify([]));
       });
 

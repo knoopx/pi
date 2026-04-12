@@ -52,11 +52,10 @@ export async function listReleases(
 
   const result = await ghCmd(args);
 
-  if (result.exitCode !== 0) {
+  if (result.exitCode !== 0)
     throw new Error(
       `gh release list failed: ${result.stderr || result.stdout}`,
     );
-  }
 
   let releases: GHRelease[];
   try {
@@ -84,11 +83,10 @@ export async function viewRelease(
     "{tagName, name, publishedAt, url, draft: .isDraft, isPrerelease, assets}",
   ]);
 
-  if (result.exitCode !== 0) {
+  if (result.exitCode !== 0)
     throw new Error(
       `gh release view failed: ${result.stderr || result.stdout}`,
     );
-  }
 
   let release: GHRelease;
   try {
@@ -175,7 +173,7 @@ Examples:
           { key: "tag", minWidth: 15 },
           {
             key: "info",
-            format: (_v, row) => {
+            format(_v, row) {
               const r = row as Record<string, string>;
               const flags = [
                 r.draft === "true" ? "draft" : "",

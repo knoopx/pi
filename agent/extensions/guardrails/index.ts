@@ -31,7 +31,7 @@ export default async function (pi: ExtensionAPI) {
 
   pi.registerCommand("guardrails", {
     description: "Enable or disable guardrails (usage: /guardrails on|off)",
-    handler: async (args, ctx) => {
+    async handler(args, ctx) {
       const action = args.trim().toLowerCase();
 
       if (action === "on") {
@@ -106,14 +106,10 @@ function getInputFieldAsString(
   input: unknown,
   field: string,
 ): string | undefined {
-  if (!input || typeof input !== "object") {
-    return undefined;
-  }
+  if (!input || typeof input !== "object") return undefined;
 
   const value = (input as Record<string, unknown>)[field];
-  if (value === undefined || value === null) {
-    return undefined;
-  }
+  if (value === undefined || value === null) return undefined;
 
   return String(value);
 }
@@ -123,9 +119,7 @@ function matchesPattern(
   targetValue: string,
   pattern: string,
 ): boolean {
-  if (context === "command") {
-    return matchCommandPattern(targetValue, pattern);
-  }
+  if (context === "command") return matchCommandPattern(targetValue, pattern);
 
   return new RegExp(pattern).test(targetValue);
 }
@@ -168,15 +162,12 @@ function getFileTargetValue(
   input: unknown,
   filePath: string | undefined,
 ): string | undefined {
-  if (rule.context === "file_name" && ["edit", "write"].includes(toolName)) {
+  if (rule.context === "file_name" && ["edit", "write"].includes(toolName))
     return filePath;
-  }
-  if (rule.context === "file_content" && toolName === "edit") {
+  if (rule.context === "file_content" && toolName === "edit")
     return getInputFieldAsString(input, "newText");
-  }
-  if (rule.context === "file_content" && toolName === "write") {
+  if (rule.context === "file_content" && toolName === "write")
     return getInputFieldAsString(input, "content");
-  }
   return undefined;
 }
 
@@ -185,9 +176,8 @@ function matchRule(
   toolName: string,
   input: unknown,
 ): { targetValue: string } | null {
-  if (rule.context === "command") {
+  if (rule.context === "command")
     return matchCommandRule(rule, toolName, input);
-  }
 
   const filePath = getInputFieldAsString(input, "path");
   if (!checkFilePatternMatch(filePath, rule.file_pattern)) return null;
@@ -218,16 +208,11 @@ async function shouldIncludeRule(
   if (
     rule.includes &&
     !matchesPattern(rule.context, targetValue, rule.includes)
-  ) {
+  )
     return false;
-  }
 
-  if (
-    rule.excludes &&
-    matchesPattern(rule.context, targetValue, rule.excludes)
-  ) {
+  if (rule.excludes && matchesPattern(rule.context, targetValue, rule.excludes))
     return false;
-  }
 
   return true;
 }
@@ -292,22 +277,19 @@ async function handleMatchedRule(
   const { rule, group, targetValue } = matched;
   const { action, reason } = rule;
 
-  if (action === "block") {
+  if (action === "block")
     return { block: true, reason: `Blocked [${group.group}]: ${reason}` };
-  }
 
   if (action === "confirm") {
-    if (!ctx.hasUI) {
+    if (!ctx.hasUI)
       return { block: true, reason: `Blocked [${group.group}]: ${reason}` };
-    }
 
     const proceed = await ctx.ui.confirm(
       `⚠️ ${group.group}: ${reason}`,
       targetValue,
     );
-    if (!proceed) {
+    if (!proceed)
       return { block: true, reason: "Blocked: User denied execution" };
-    }
   }
 
   return undefined;

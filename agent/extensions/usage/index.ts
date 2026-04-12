@@ -84,7 +84,9 @@ type TabName = "today" | "thisWeek" | "allTime";
 /**
  * Creates a key matcher function for input handling
  */
-function createKeyMatcher(data: string) {
+function createKeyMatcher(
+  data: string,
+): (key: Parameters<typeof matchesKey>[1]) => boolean {
   const normalized = data.toLowerCase();
   return (key: Parameters<typeof matchesKey>[1]) =>
     matchesKey(data, key) || normalized === key;
@@ -176,9 +178,7 @@ async function getAllSessionFiles(signal?: AbortSignal): Promise<string[]> {
       try {
         const sessionFiles = await readdir(cwdPath);
         for (const file of sessionFiles) {
-          if (file.endsWith(".jsonl")) {
-            files.push(join(cwdPath, file));
-          }
+          if (file.endsWith(".jsonl")) files.push(join(cwdPath, file));
         }
       } catch {
         // Skip directories we can't read
@@ -203,9 +203,7 @@ interface SessionMessage {
 }
 
 function extractSessionIdFromEntry(entry: FileEntry): string | null {
-  if (entry.type === "session" && typeof entry.id === "string") {
-    return entry.id;
-  }
+  if (entry.type === "session" && typeof entry.id === "string") return entry.id;
   return null;
 }
 
@@ -235,7 +233,7 @@ function extractMessageFromEntry(
   const msg = entry.message;
   if (!validateMessage(msg)) return null;
 
-  const usage = msg.usage;
+  const { usage } = msg;
   const input = Number(usage.input) || 0;
   const output = Number(usage.output) || 0;
   const cacheRead = Number(usage.cacheRead) || 0;
@@ -275,9 +273,7 @@ async function parseSessionFile(
 
     for (let i = 0; i < lines.length; i++) {
       if (checkSignalAborted(signal)) return null;
-      if (i % 500 === 0) {
-        await new Promise<void>((resolve) => setImmediate(resolve));
-      }
+      if (i % 500 === 0) await new Promise<void>((resolve) => setImmediate(resolve));
       const result = await parseSessionLine(lines[i], seenHashes);
       if (result.sessionId) sessionId = result.sessionId;
       if (result.message) messages.push(result.message);
@@ -560,17 +556,7 @@ function handleUsageInput(
 
   if (handleEscape(matches, done)) return;
 
-  if (matches("tab") || matches("right")) {
-    onTabForward();
-  } else if (matches("shift+tab") || matches("left")) {
-    onTabBackward();
-  } else if (matches("up")) {
-    onUp();
-  } else if (matches("down")) {
-    onDown();
-  } else if (onEnter && (matches("enter") || matches("space"))) {
-    onEnter();
-  }
+  if (matches("tab") || matches("right")) onTabForward(); else if (matches("shift+tab") || matches("left")) onTabBackward(); else if (matches("up")) onUp(); else if (matches("down")) onDown(); else if (onEnter && (matches("enter") || matches("space"))) onEnter();
 }
 
 class UsageComponent {
@@ -597,16 +583,20 @@ class UsageComponent {
   }
 
   private updateProviderOrder(): void {
-    const stats = this.data[this.activeTab];
+    const statsData = this.data[this.activeTab];
     // Filter out providers with zero usage data (all sessions, messages, and tokens must be > 0)
-    const providersWithUsage = Array.from(stats.providers.entries())
-      .filter(([_, stats]) => {
+    const providersWithUsage = Array.from(statsData.providers.entries())
+      .filter(([_, providerStats]) => {
         const sessionCount =
-          typeof stats.sessions === "number"
-            ? stats.sessions
-            : stats.sessions.size;
+          typeof providerStats.sessions === "number"
+            ? providerStats.sessions
+            : providerStats.sessions.size;
         // A provider is only shown if it has genuine usage data across all metrics
-        return sessionCount > 0 && stats.messages > 0 && stats.tokens.total > 0;
+        return (
+          sessionCount > 0 &&
+          providerStats.messages > 0 &&
+          providerStats.tokens.total > 0
+        );
       })
       .sort((a, b) => b[1].cost - a[1].cost)
       .map(([name]) => name);
@@ -621,11 +611,21 @@ class UsageComponent {
     handleUsageInput(
       data,
       this.done,
-      () => this.cycleTab(1),
-      () => this.cycleTab(-1),
-      () => this.navigateSelection(-1),
-      () => this.navigateSelection(1),
-      () => this.toggleProvider(),
+      () => {
+        this.cycleTab(1);
+      },
+      () => {
+        this.cycleTab(-1);
+      },
+      () => {
+        this.navigateSelection(-1);
+      },
+      () => {
+        this.navigateSelection(1);
+      },
+      () => {
+        this.toggleProvider();
+      },
     );
   }
 
@@ -647,9 +647,7 @@ class UsageComponent {
   toggleProvider(): void {
     const provider = this.providerOrder[this.selectedIndex];
     if (!provider) return;
-    if (this.expanded.has(provider)) {
-      this.expanded.delete(provider);
-    } else {
+    if (this.expanded.has(provider)) this.expanded.delete(provider); else {
       this.expanded.add(provider);
     }
     this.requestRender();
@@ -750,8 +748,8 @@ class UsageComponent {
       // Provider row with expand/collapse arrow
       const arrow = isExpanded ? "▾" : "▸";
       const prefix = isSelected
-        ? th.fg("accent", arrow + " ")
-        : th.fg("dim", arrow + " ");
+        ? th.fg("accent", `${arrow} `)
+        : th.fg("dim", `${arrow} `);
       const dataRow = this.renderDataRow(providerName, providerStats, {
         indent: 2,
         selected: isSelected,
@@ -836,9 +834,7 @@ async function findToolSessionFiles(
       try {
         const files = await readdir(dirPath);
         for (const file of files) {
-          if (file.endsWith(".jsonl")) {
-            results.push({ dir, file: join(dirPath, file) });
-          }
+          if (file.endsWith(".jsonl")) results.push({ dir, file: join(dirPath, file) });
         }
       } catch {
         // Skip non-directories
@@ -857,22 +853,19 @@ function parseSessionEntry(
   if (!line.trim()) return { sessionId, toolCalls: [] };
   try {
     const entry = JSON.parse(line);
-    if (entry.type === "session" && entry.id) {
+    if (entry.type === "session" && entry.id)
       return { sessionId: entry.id, toolCalls: [] };
-    }
     if (entry.type === "message" && entry.message?.content && sessionId) {
       const contents = Array.isArray(entry.message.content)
         ? entry.message.content
         : [entry.message.content];
       const toolCalls: ToolCall[] = [];
       for (const content of contents) {
-        if (content?.type === "toolCall" && content.name) {
-          toolCalls.push({
-            name: content.name,
-            sessionId,
-            timestamp: entry.timestamp,
-          });
-        }
+        if (content?.type === "toolCall" && content.name) toolCalls.push({
+          name: content.name,
+          sessionId,
+          timestamp: entry.timestamp,
+        });
       }
       return { sessionId, toolCalls };
     }
@@ -913,17 +906,13 @@ function aggregateToolStats(
   for (const call of allToolCalls) {
     stats.byTool[call.name] = (stats.byTool[call.name] || 0) + 1;
 
-    if (!stats.bySession[call.sessionId]) {
-      stats.bySession[call.sessionId] = { count: 0, tools: {} };
-    }
+    if (!stats.bySession[call.sessionId]) stats.bySession[call.sessionId] = { count: 0, tools: {} };
     stats.bySession[call.sessionId].count++;
     stats.bySession[call.sessionId].tools[call.name] =
       (stats.bySession[call.sessionId].tools[call.name] || 0) + 1;
 
     const date = call.timestamp?.split("T")[0] || "unknown";
-    if (!stats.byDate[date]) {
-      stats.byDate[date] = { count: 0, tools: {} };
-    }
+    if (!stats.byDate[date]) stats.byDate[date] = { count: 0, tools: {} };
     stats.byDate[date].count++;
     stats.byDate[date].tools[call.name] =
       (stats.byDate[date].tools[call.name] || 0) + 1;
@@ -979,8 +968,12 @@ class ToolUsageComponent {
     handleUsageInput(
       data,
       this.done,
-      () => this.cycleToolTab(1),
-      () => this.cycleToolTab(-1),
+      () => {
+        this.cycleToolTab(1);
+      },
+      () => {
+        this.cycleToolTab(-1);
+      },
       () => {
         if (this.selectedIndex > 0) {
           this.selectedIndex--;
@@ -1221,19 +1214,19 @@ function createBorderedCustomUI<
   const component = createComponent();
 
   return {
-    render: (w: number) => {
+    render(w: number) {
       const borderLines = container.render(w);
       const componentLines = component.render();
       const bottomBorder = theme.fg("border", "─".repeat(w));
       return [...borderLines, ...componentLines, "", bottomBorder];
     },
-    invalidate: () => {
+    invalidate() {
       container.invalidate();
     },
-    handleInput: (input: string) => {
+    handleInput(input: string) {
       component.handleInput(input);
     },
-    dispose: () => {},
+    dispose() {},
   };
 }
 
@@ -1267,9 +1260,7 @@ async function loadAndDisplay<
   collectData: (signal: AbortSignal) => Promise<TData | null>,
   createComponent: (theme: Theme, data: TData) => TComponent,
 ): Promise<void> {
-  if (!ctx.hasUI) {
-    return;
-  }
+  if (!ctx.hasUI) return;
 
   const data = await ctx.ui.custom<TData | null>(
     (tui, theme, keybindings, done) => {
@@ -1301,9 +1292,7 @@ async function loadAndDisplay<
     },
   );
 
-  if (!data) {
-    return;
-  }
+  if (!data) return;
 
   await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
     return createBorderedCustomUI(tui, theme, done, () =>
@@ -1340,7 +1329,7 @@ async function collectToolStats(
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("tool-usage", {
     description: "Show tool usage statistics dashboard",
-    handler: async (_args: string, ctx: ExtensionCommandContext) => {
+    async handler(_args: string, ctx: ExtensionCommandContext) {
       await loadAndDisplay(
         ctx,
         "Loading Tool Usage...",
@@ -1358,7 +1347,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("usage", {
     description: "Show usage statistics dashboard",
-    handler: async (_args: string, ctx: ExtensionCommandContext) => {
+    async handler(_args: string, ctx: ExtensionCommandContext) {
       await loadAndDisplay(
         ctx,
         "Loading Usage...",

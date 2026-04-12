@@ -82,12 +82,11 @@ async function setupHandler(
     ctx: unknown,
   ) => Promise<unknown>;
 
-  if (options.primeTree ?? true) {
+  if (options.primeTree ?? true)
     await handler(
       { toolName: "bash", input: { command: "tree ." } },
       makeCtx(),
     );
-  }
 
   return handler;
 }

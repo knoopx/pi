@@ -33,29 +33,18 @@ export function formatDuration(ms: number): string {
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
-  if (hours > 0) {
+  if (hours > 0)
     return `${String(hours)}h ${String(minutes)}m ${String(Math.floor(seconds))}s`;
-  }
-  if (minutes > 0) {
-    return `${String(minutes)}m ${String(Math.floor(seconds))}s`;
-  }
+  if (minutes > 0) return `${String(minutes)}m ${String(Math.floor(seconds))}s`;
   // If seconds is less than 1, show decimal places
-  if (seconds < 1) {
-    return `${seconds.toFixed(2)}s`;
-  }
+  if (seconds < 1) return `${seconds.toFixed(2)}s`;
   return `${String(Math.floor(seconds))}s`;
 }
 
 export function formatTokens(tokens: number | undefined | null): string {
-  if (tokens === undefined || tokens === null) {
-    return "N/A";
-  }
-  if (tokens >= 1000000) {
-    return `${(tokens / 1000000).toFixed(1)}M`;
-  }
-  if (tokens >= 1000) {
-    return `${(tokens / 1000).toFixed(1)}K`;
-  }
+  if (tokens === undefined || tokens === null) return "N/A";
+  if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M`;
+  if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}K`;
   return tokens.toString();
 }
 
@@ -73,26 +62,20 @@ export function formatInputOutputTokens(
   const directionStr = `↑${inputStr} ↓${outputStr}`;
 
   // If both input and output are undefined or N/A, return empty string
-  if (inputStr === "N/A" && outputStr === "N/A") {
-    return "";
-  }
+  if (inputStr === "N/A" && outputStr === "N/A") return "";
 
   return directionStr;
 }
 
 export function formatCost(usage: Usage | undefined | null): string {
   // If usage is undefined or null, return empty string
-  if (!usage) {
-    return "";
-  }
+  if (!usage) return "";
 
   // Use cost.total from the Usage type
-  const total = usage.cost.total;
+  const { total } = usage.cost;
 
   // Don't show cost if it rounds to $0.00
-  if (total < 0.005) {
-    return "";
-  }
+  if (total < 0.005) return "";
   return `$${total.toFixed(2)}`;
 }
 
@@ -106,9 +89,8 @@ export function formatTokensPerSecond(
   tokens: number | undefined,
   generationMs: number | undefined,
 ): string {
-  if (tokens === undefined || generationMs === undefined || generationMs <= 0) {
+  if (tokens === undefined || generationMs === undefined || generationMs <= 0)
     return "";
-  }
   const tokensPerSecond = tokens / (generationMs / 1000);
   return `${tokensPerSecond.toFixed(1)} tok/s`;
 }
@@ -131,19 +113,15 @@ export function formatSimpleOutput(
 
   // Build the output string with separators between metrics
   let result = `↓${outputStr} | ${durationStr}`;
-  if (tokPerSecStr) {
-    result += ` | ${tokPerSecStr}`;
-  }
-  if (costStr) {
-    result += ` | ${costStr}`;
-  }
+  if (tokPerSecStr) result += ` | ${tokPerSecStr}`;
+  if (costStr) result += ` | ${costStr}`;
   return result;
 }
 
 /**
  * Main extension function
  */
-export default function (pi: ExtensionAPI) {
+export default function (pi: ExtensionAPI): void {
   // Track turn start time for per-turn duration
   const turnStartTimes = new Map<number, number>();
   // Track agent start time for total agent duration
@@ -172,7 +150,7 @@ export default function (pi: ExtensionAPI) {
    * Reports the per-turn duration and token usage
    */
   pi.on("turn_end", (event: TurnEndEvent, ctx: ExtensionContext) => {
-    const turnIndex = event.turnIndex;
+    const { turnIndex } = event;
 
     const startTime = turnStartTimes.get(turnIndex);
 
@@ -180,12 +158,10 @@ export default function (pi: ExtensionAPI) {
     turnStartTimes.delete(turnIndex);
 
     // Only track assistant messages
-    const message = event.message;
-    if (message.role !== "assistant") {
-      return;
-    }
+    const { message } = event;
+    if (message.role !== "assistant") return;
 
-    const usage = message.usage as Usage;
+    const { usage } = message;
 
     const turnEndTimestamp = Date.now();
     const durationMs =
@@ -194,7 +170,7 @@ export default function (pi: ExtensionAPI) {
 
     // Get token information from the message
     const outputTokens = usage.output;
-    const cost = usage.cost;
+    const { cost } = usage;
 
     // Accumulate all token stats
     totalOutputTokens += outputTokens;
@@ -251,9 +227,7 @@ export default function (pi: ExtensionAPI) {
       );
 
       // Notify user if UI is available
-      if (ctx.hasUI) {
-        ctx.ui.notify(notificationStr, "info");
-      }
+      if (ctx.hasUI) ctx.ui.notify(notificationStr, "info");
 
       // Reset for next agent run
       totalOutputTokens = 0;

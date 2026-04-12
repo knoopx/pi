@@ -252,42 +252,37 @@ describe("workspace module", () => {
               cmd === "jj" &&
               argList[0] === "workspace" &&
               argList[1] === "list"
-            ) {
+            )
               return {
                 code: 0,
                 stdout:
                   "ide-abc: znvxvkwopwql feat: ✨ add\nother: qwerty not ide\n",
                 stderr: "",
               };
-            }
 
             if (
               cmd === "jj" &&
               argList[0] === "workspace" &&
               argList[1] === "root"
-            ) {
+            )
               return { code: 0, stdout: "/repo\n", stderr: "" };
-            }
 
-            if (cmd === "tmux" && argList[0] === "has") {
+            if (cmd === "tmux" && argList[0] === "has")
               return { code: 0, stdout: "", stderr: "" };
-            }
 
-            if (cmd === "tmux" && argList[0] === "list-panes") {
+            if (cmd === "tmux" && argList[0] === "list-panes")
               return { code: 0, stdout: "pi\n", stderr: "" };
-            }
 
             if (
               cmd === "jj" &&
               argList[0] === "diff" &&
               argList[1] === "--stat"
-            ) {
+            )
               return {
                 code: 0,
                 stdout: " a.ts | 2 ++\n b.ts | 1 -\n",
                 stderr: "",
               };
-            }
 
             return { code: 1, stdout: "", stderr: "unexpected call" };
           },

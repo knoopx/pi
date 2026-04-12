@@ -79,9 +79,8 @@ export async function listGists(
 
   const result = await ghCmd(["gist", "list", `--limit=${limit}`]);
 
-  if (result.exitCode !== 0) {
+  if (result.exitCode !== 0)
     throw new Error(`gh gist list failed: ${result.stderr || result.stdout}`);
-  }
 
   const lines = result.stdout.trim().split("\n").filter(Boolean);
   const gistIds = lines.map((line) => line.split(/\s+/)[0]);
@@ -122,12 +121,8 @@ export async function createGist(
   }
 
   const args = ["gist", "create", ...fileArgs];
-  if (description) {
-    args.push("--desc", description);
-  }
-  if (isPublic) {
-    args.push("--public");
-  }
+  if (description) args.push("--desc", description);
+  if (isPublic) args.push("--public");
 
   const result = await ghCmd(args);
 
@@ -139,15 +134,13 @@ export async function createGist(
     }
   }
 
-  if (result.exitCode !== 0) {
+  if (result.exitCode !== 0)
     throw new Error(`gh gist create failed: ${result.stderr || result.stdout}`);
-  }
 
   const gistUrl = result.stdout.trim();
   const gistId = gistUrl.split("/").pop();
-  if (!gistId) {
+  if (!gistId)
     throw new Error(`Failed to extract gist ID from output: ${gistUrl}`);
-  }
 
   return getGist(gistId);
 }
@@ -158,16 +151,12 @@ export async function updateGist(
   description?: string,
 ): Promise<Gist> {
   const apiBody: Record<string, unknown> = {};
-  if (description !== undefined) {
-    apiBody.description = description;
-  }
+  if (description !== undefined) apiBody.description = description;
   if (files) {
     const apiFiles: Record<string, { content: string; filename?: string }> = {};
     for (const [filename, fileData] of Object.entries(files)) {
       apiFiles[filename] = { content: fileData.content };
-      if (fileData.filename) {
-        apiFiles[filename].filename = fileData.filename;
-      }
+      if (fileData.filename) apiFiles[filename].filename = fileData.filename;
     }
     apiBody.files = apiFiles;
   }
@@ -362,12 +351,7 @@ Examples:
 
     renderCall(args, theme) {
       let text = theme.fg("toolTitle", theme.bold("gh-list-gists"));
-      if ((args as ListGistsParamsType).userId) {
-        text += theme.fg(
-          "muted",
-          ` user=${(args as ListGistsParamsType).userId}`,
-        );
-      }
+      if (args.userId) text += theme.fg("muted", ` user=${args.userId}`);
       return new Text(text, 0, 0);
     },
 
@@ -405,9 +389,7 @@ Examples:
 
     renderCall(args, theme) {
       let text = theme.fg("toolTitle", theme.bold("gh-get-gist"));
-      if ((args as GetGistParamsType).gistId) {
-        text += theme.fg("muted", ` ${(args as GetGistParamsType).gistId}`);
-      }
+      if (args.gistId) text += theme.fg("muted", ` ${args.gistId}`);
       return new Text(text, 0, 0);
     },
 
@@ -458,15 +440,11 @@ Examples:
     },
 
     renderCall(args, theme) {
-      const a = args as CreateGistParamsType;
+      const a = args;
       let text = theme.fg("toolTitle", theme.bold("gh-create-gist"));
       const fileCount = Object.keys(a.files || {}).length;
-      if (fileCount > 0) {
-        text += theme.fg("muted", ` ${fileCount} file(s)`);
-      }
-      if (a.description) {
-        text += theme.fg("dim", ` "${a.description}"`);
-      }
+      if (fileCount > 0) text += theme.fg("muted", ` ${fileCount} file(s)`);
+      if (a.description) text += theme.fg("dim", ` "${a.description}"`);
       return new Text(text, 0, 0);
     },
 
@@ -519,16 +497,13 @@ Examples:
 
     renderCall(args, theme) {
       let text = theme.fg("toolTitle", theme.bold("gh-update-gist"));
-      if (args.gistId) {
-        text += theme.fg("muted", ` ${args.gistId}`);
-      }
+      if (args.gistId) text += theme.fg("muted", ` ${args.gistId}`);
       if (args.files) {
         const fileCount = Object.keys(args.files).length;
         text += theme.fg("dim", ` ${fileCount} file(s) updated`);
       }
-      if (args.description) {
+      if (args.description)
         text += theme.fg("dim", ` desc="${args.description}"`);
-      }
       return new Text(text, 0, 0);
     },
 

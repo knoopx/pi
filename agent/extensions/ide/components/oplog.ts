@@ -39,7 +39,7 @@ export function createOpLogComponent(
     {
       key: "r",
       label: "restore",
-      handler: async (item) => {
+      async handler(item) {
         if (item.isCurrent) {
           notify("Already at this operation", "info");
           return;
@@ -64,7 +64,7 @@ export function createOpLogComponent(
     {
       key: "u",
       label: "undo",
-      handler: async () => {
+      async handler() {
         const entriesBeforeUndo = await loadOpLog(pi, cwd);
         const currentOpId = entriesBeforeUndo[0]?.opId;
         const targetOpId = entriesBeforeUndo[1]?.opId;
@@ -97,7 +97,7 @@ export function createOpLogComponent(
       title: "Op Log",
       previewTitle: (item) => item.opId.slice(0, 12),
       actions,
-      loadItems: async (_query) => {
+      async loadItems(_query) {
         const entries = await loadOpLog(pi, cwd);
         return entries.map((entry, index) => ({
           ...entry,

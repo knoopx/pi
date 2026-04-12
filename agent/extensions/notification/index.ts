@@ -11,13 +11,11 @@ import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
 import { buildNotifySendArgs, normalizeToolExecuteArgs } from "./notify-send";
 
-const buildSpeechText = (summary: string, body?: string) =>
+const buildSpeechText = (summary: string, body?: string): string =>
   body ? `${summary}. ${body}` : summary;
 
-const runTts = (pi: ExtensionAPI, text: string) => {
-  if (!text.trim()) {
-    return;
-  }
+const runTts = (pi: ExtensionAPI, text: string): void => {
+  if (!text.trim()) return;
 
   const escaped = text.replace(/'/g, "'\\''");
   void pi.exec("sh", [
@@ -31,7 +29,7 @@ for player in $playing; do playerctl -p "$player" play 2>/dev/null; done
   ]);
 };
 
-export default function notificationExtension(pi: ExtensionAPI) {
+export default function notificationExtension(pi: ExtensionAPI): void {
   let isTtsEnabled = false;
 
   pi.registerTool({
@@ -97,9 +95,7 @@ export default function notificationExtension(pi: ExtensionAPI) {
         };
       }
 
-      if (isTtsEnabled) {
-        runTts(pi, buildSpeechText(params.summary, params.body));
-      }
+      if (isTtsEnabled) runTts(pi, buildSpeechText(params.summary, params.body));
 
       return {
         content: [{ type: "text", text: "Notification sent successfully" }],
@@ -135,7 +131,7 @@ export default function notificationExtension(pi: ExtensionAPI) {
   pi.registerCommand("tts", {
     description:
       "Toggle text-to-speech for notifications (usage: /tts [on|off|toggle])",
-    handler: async (args, ctx) => {
+    async handler(args, ctx) {
       const action = args.toLowerCase().trim() || "toggle";
       let message: string;
 
@@ -154,9 +150,7 @@ export default function notificationExtension(pi: ExtensionAPI) {
         message = `TTS is ${isTtsEnabled ? "on" : "off"}. Use /tts [on|off|toggle].`;
       }
 
-      if (ctx.hasUI) {
-        ctx.ui.notify(message, "info");
-      }
+      if (ctx.hasUI) ctx.ui.notify(message, "info");
     },
   });
 }

@@ -20,28 +20,22 @@ export async function monitorWorkspace(
   const startTime = Date.now();
 
   const check = async (): Promise<void> => {
-    if (Date.now() - startTime > MAX_WAIT) {
-      return;
-    }
+    if (Date.now() - startTime > MAX_WAIT) return;
 
     try {
       const workspaces = await loadAgentWorkspaces(pi);
       const ws = workspaces.find((w) => w.name === workspaceName);
 
-      if (!ws) {
-        return;
-      }
+      if (!ws) return;
 
       if (ws.status !== "running") {
         const stats = formatFileStats(ws);
         const statusText = ws.status === "completed" ? "completed" : ws.status;
 
-        if (ctx.hasUI) {
-          ctx.ui.notify(
-            `Agent ${workspaceName} ${statusText} ${stats}`,
-            ws.status === "completed" ? "info" : "warning",
-          );
-        }
+        if (ctx.hasUI) ctx.ui.notify(
+          `Agent ${workspaceName} ${statusText} ${stats}`,
+          ws.status === "completed" ? "info" : "warning",
+        );
 
         await pi.exec("notify-send", [
           "-a",

@@ -113,9 +113,7 @@ export async function getCurrentChangeIdShort(
     { cwd },
   );
 
-  if (result.code !== 0) {
-    return null;
-  }
+  if (result.code !== 0) return null;
 
   const changeId = result.stdout.trim();
   return changeId || null;
@@ -153,9 +151,7 @@ export async function getRawDiff(
   await updateStaleWorkspace(pi, cwd);
 
   const jjArgs = ["diff", "--git", "-r", changeId];
-  if (filePath) {
-    jjArgs.push(filePath);
-  }
+  if (filePath) jjArgs.push(filePath);
 
   const result = await pi.exec("jj", jjArgs, { cwd });
 
@@ -169,9 +165,8 @@ export async function getRawDiff(
       .map((line) => {
         if (line.startsWith("diff --git")) {
           const parts = line.split(" ");
-          if (parts.length >= 4) {
+          if (parts.length >= 4)
             return parts[3].replace(/^a\//, "").replace(/^b\//, "");
-          }
         }
         return "";
       })
@@ -213,9 +208,7 @@ export async function setBookmarkToChange(
   changeId: string,
 ): Promise<void> {
   const normalizedBookmarkName = bookmarkName.split("@")[0]?.trim();
-  if (!normalizedBookmarkName) {
-    throw new Error("Bookmark name is required");
-  }
+  if (!normalizedBookmarkName) throw new Error("Bookmark name is required");
 
   const result = await pi.exec(
     "jj",
@@ -232,9 +225,7 @@ export async function setBookmarkToChange(
     },
   );
 
-  if (result.code !== 0) {
-    throw new Error(result.stderr || "Failed to set bookmark");
-  }
+  if (result.code !== 0) throw new Error(result.stderr || "Failed to set bookmark");
 }
 
 /**
@@ -257,9 +248,7 @@ export async function listBookmarksByChange(
     { cwd },
   );
 
-  if (result.code !== 0) {
-    return [];
-  }
+  if (result.code !== 0) return [];
 
   const seen = new Set<string>();
   const entries: {
@@ -271,9 +260,7 @@ export async function listBookmarksByChange(
 
   for (const line of result.stdout.split("\n")) {
     const [name, changeId, description, author] = line.split("\t");
-    if (!name || !changeId || seen.has(name)) {
-      continue;
-    }
+    if (!name || !changeId || seen.has(name)) continue;
 
     seen.add(name);
     entries.push({
@@ -296,9 +283,7 @@ export async function forgetBookmark(
   bookmarkRef: string,
 ): Promise<string> {
   const bookmarkName = bookmarkRef.split("@")[0]?.trim();
-  if (!bookmarkName) {
-    return "";
-  }
+  if (!bookmarkName) return "";
 
   const result = await pi.exec(
     "jj",
@@ -362,9 +347,7 @@ export async function getOpShow(
   const result = await pi.exec("jj", ["op", "show", "--color=always", opId], {
     cwd,
   });
-  if (result.code === 0) {
-    return result.stdout.split("\n");
-  }
+  if (result.code === 0) return result.stdout.split("\n");
   return [`Error: ${result.stderr}`];
 }
 
@@ -377,9 +360,8 @@ export async function restoreOp(
   opId: string,
 ): Promise<{ success: boolean; output?: string; error?: string }> {
   const result = await pi.exec("jj", ["op", "restore", opId], { cwd });
-  if (result.code === 0) {
+  if (result.code === 0)
     return { success: true, output: result.stderr || result.stdout };
-  }
   return { success: false, error: result.stderr };
 }
 
@@ -391,9 +373,8 @@ export async function undoOp(
   cwd: string,
 ): Promise<{ success: boolean; output?: string; error?: string }> {
   const result = await pi.exec("jj", ["undo"], { cwd });
-  if (result.code === 0) {
+  if (result.code === 0)
     return { success: true, output: result.stderr || result.stdout };
-  }
   return { success: false, error: result.stderr };
 }
 
@@ -423,9 +404,7 @@ export async function getVcsLabel(
   if (result.code !== 0) return null;
 
   const bookmarks = result.stdout.trim();
-  if (bookmarks) {
-    return `󰃀 ${bookmarks}`;
-  }
+  if (bookmarks) return `󰃀 ${bookmarks}`;
 
   // Fall back to change ID
   const changeResult = await pi.exec(

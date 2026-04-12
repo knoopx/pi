@@ -108,13 +108,11 @@ function parseSearchResultsFromHtml(
       "</p>",
     );
 
-    if (name.length > 0 && version.length > 0) {
-      packages.push({
-        name,
-        version,
-        description: description || "No description available",
-      });
-    }
+    if (name.length > 0 && version.length > 0) packages.push({
+      name,
+      version,
+      description: description || "No description available",
+    });
 
     offset = anchorEnd + 4;
   }
@@ -149,7 +147,7 @@ async function tryDirectPackageLookup(
 
     const text = await response.text();
     const data = JSON.parse(text) as PyPIPackageResponse;
-    const info = data.info;
+    const { info } = data;
     const summary = info.summary || "-";
 
     return textResult(`${info.name} ${info.version}: ${summary}`.trim(), {
@@ -163,7 +161,7 @@ async function tryDirectPackageLookup(
   }
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (pi: ExtensionAPI): void {
   // Tool to search for packages
   pi.registerTool({
     name: "search-pypi-packages",
@@ -259,12 +257,11 @@ Shows comprehensive package details from PyPI.`,
         );
 
         if (!response.ok) {
-          if (response.status === 404) {
+          if (response.status === 404)
             return createPypiErrorResult(
               `Package "${packageName}" not found on PyPI.`,
               packageName,
             );
-          }
           return createPypiErrorResult(
             `Error fetching package info: HTTP ${response.status}`,
             packageName,
@@ -272,7 +269,7 @@ Shows comprehensive package details from PyPI.`,
         }
 
         const data = (await response.json()) as PyPIPackageResponse;
-        const info = data.info;
+        const { info } = data;
 
         const author = info.author || info.maintainer || "-";
         const license = info.license || "-";

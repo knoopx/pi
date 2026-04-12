@@ -7,17 +7,7 @@ import { registerIssueTools } from "./issue";
 import { registerReleaseTools } from "./release";
 import { registerWorkflowTools } from "./workflow";
 
-export * from "./search";
-export * from "./repo";
-export * from "./gist";
-export * from "./pr";
-export * from "./issue";
-export * from "./release";
-export * from "./workflow";
-export * from "./types";
-export * from "./utils";
-
-export default function ghExtension(pi: ExtensionAPI) {
+export default function ghExtension(pi: ExtensionAPI): void {
   registerSearchTools(pi);
   registerRepoTools(pi);
   registerGistTools(pi);

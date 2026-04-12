@@ -9,11 +9,9 @@ export function formatBookmarkReference(
 
 function formatBookmarkLabels(theme: Theme, bookmarks: string[]): string {
   if (bookmarks.length === 0) return "";
-  return (
-    bookmarks
-      .map((bookmark) => formatBookmarkReference(theme, bookmark))
-      .join(" ") + " "
-  );
+  return `${bookmarks
+    .map((bookmark) => formatBookmarkReference(theme, bookmark))
+    .join(" ")} `;
 }
 
 /**
@@ -27,9 +25,7 @@ export function getChangeIcon(
   isWorkingCopy: boolean,
   isEmpty: boolean,
 ): string {
-  if (isWorkingCopy) {
-    return isEmpty ? "◎" : "◉";
-  }
+  if (isWorkingCopy) return isEmpty ? "◎" : "◉";
   return isEmpty ? "○" : "◆";
 }
 
@@ -61,9 +57,7 @@ export function formatChangeRow(
         : opts.description;
   let leftText = `${selectMarker}${moveIndicator}${bookmarkLabel}${description}`;
 
-  if (opts.isSelected) {
-    leftText = theme.bg("selectedBg", leftText);
-  }
+  if (opts.isSelected) leftText = theme.bg("selectedBg", leftText);
 
   const rightText = opts.author ? theme.fg("dim", ` ${opts.author}`) : "";
 

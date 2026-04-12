@@ -101,13 +101,9 @@ function handleCustomBindings<TContext>(
 ): boolean {
   for (const binding of bindings) {
     if (matchesKey(data, binding.key)) {
-      if (binding.when && !binding.when(ctx)) {
-        continue;
-      }
+      if (binding.when && !binding.when(ctx)) continue;
       const result = binding.handler(ctx);
-      if (result === true || result === undefined) {
-        return true;
-      }
+      if (result === true || result === undefined) return true;
     }
   }
   return false;
@@ -154,9 +150,8 @@ export function createKeyboardHandler<TContext = void>(
     const ctx = config.getContext?.() as TContext;
 
     // 1. Check custom bindings first
-    if (config.bindings && handleCustomBindings(data, config.bindings, ctx)) {
+    if (config.bindings && handleCustomBindings(data, config.bindings, ctx))
       return true;
-    }
 
     // 2. Escape
     if (matchesKey(data, "escape") && config.onEscape) {
@@ -172,9 +167,8 @@ export function createKeyboardHandler<TContext = void>(
 
     // 4. Navigation
     if (config.navigation && config.onNavigate) {
-      if (handleNavigation(data, config.navigation(), config.onNavigate)) {
+      if (handleNavigation(data, config.navigation(), config.onNavigate))
         return true;
-      }
     }
 
     // 5. Backspace

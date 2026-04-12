@@ -29,11 +29,10 @@ export function formatHelpWithStatus(
   statusMessage: { text: string; type: "info" | "error" } | null,
   helpText: string,
 ): string {
-  if (statusMessage) {
+  if (statusMessage)
     return theme.fg(
       statusMessage.type === "error" ? "error" : "accent",
       statusMessage.text,
     );
-  }
   return helpText;
 }

@@ -78,7 +78,7 @@ const searchCols: Column[] = [
   { key: "#", align: "right", minWidth: 3 },
   {
     key: "title",
-    format: (_v, row) => {
+    format(_v, row) {
       const r = row as { title: string; url: string; description: string };
       const lines = [r.title];
       if (r.description) lines.push(r.description);
@@ -130,7 +130,7 @@ function extractPreloadUrl(html: string): string {
   });
 
   // Method 2: If preload link not found, try script tag
-  if (!basePreloadUrl) {
+  if (!basePreloadUrl)
     $("#deep_preload_script").each((_, el) => {
       const src = $(el).attr("src");
       if (src?.includes("links.duckduckgo.com/d.js")) {
@@ -138,15 +138,12 @@ function extractPreloadUrl(html: string): string {
         return false;
       }
     });
-  }
 
   // Method 3: Use regex to extract from entire HTML
   if (!basePreloadUrl) {
     const urlRegex = /https:\/\/links\.duckduckgo\.com\/d\.js\?[^"']+\//i;
     const urlMatch = urlRegex.exec(html);
-    if (urlMatch) {
-      basePreloadUrl = urlMatch[0];
-    }
+    if (urlMatch) basePreloadUrl = urlMatch[0];
   }
 
   return basePreloadUrl;
@@ -162,9 +159,7 @@ function parseJsonpData(
   const jsonpRegex = /DDG\.pageLayout\.load\('d',\s*(\[.*?\])\s*\);/s;
   const jsonpMatch = jsonpRegex.exec(dataHtml);
 
-  if (!jsonpMatch?.[1]) {
-    return { results: [], validCount: 0 };
-  }
+  if (!jsonpMatch?.[1]) return { results: [], validCount: 0 };
 
   try {
     const jsonData = JSON.parse(jsonpMatch[1]) as JsonpDataItem[];
@@ -209,9 +204,8 @@ async function fetchPreloadPage(
     headers: DDG_DATA_HEADERS,
   });
 
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
 
   const dataHtml = await response.text();
   const { results, validCount } = parseJsonpData(dataHtml, maxResults);
@@ -237,17 +231,13 @@ async function searchDuckDuckGoPreloadUrl(
     await acquireSlot(DDG_HOST);
     const response = await fetch(searchUrl, { headers: DDG_HEADERS });
 
-    if (!response.ok) {
+    if (!response.ok)
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
 
     const html = await response.text();
     const basePreloadUrl = extractPreloadUrl(html);
 
-    if (!basePreloadUrl) {
-      console.warn("Unable to find preloaded d.js URL");
-      return [];
-    }
+    if (!basePreloadUrl) return [];
 
     const preloadUrlObj = new URL(basePreloadUrl);
     let offset = 0;
@@ -270,8 +260,7 @@ async function searchDuckDuckGoPreloadUrl(
     }
 
     return results.slice(0, maxResults);
-  } catch (error) {
-    console.error("DuckDuckGo preload URL search failed:", error);
+  } catch {
     return [];
   }
 }
@@ -296,7 +285,7 @@ function parseSearchResults(
     const sourceEl = $(el).find(".result__url");
     const source = sourceEl.text().trim();
 
-    if (title && url && !$(el).hasClass("result--ad")) {
+    if (title && url && !$(el).hasClass("result--ad"))
       results.push({
         title,
         url,
@@ -304,7 +293,6 @@ function parseSearchResults(
         source,
         engine: "duckduckgo",
       });
-    }
   });
 }
 
@@ -333,17 +321,14 @@ async function searchDuckDuckGoHtml(
       body: new URLSearchParams({ q: query }).toString(),
     });
 
-    if (!response.ok) {
+    if (!response.ok)
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
 
     const html = await response.text();
     let $ = cheerio.load(html);
     let items = $("div.result");
 
-    if (items.length === 0) {
-      return results;
-    }
+    if (items.length === 0) return results;
 
     parseSearchResults($, items, results, maxResults);
 
@@ -370,9 +355,8 @@ async function searchDuckDuckGoHtml(
         }).toString(),
       });
 
-      if (!response.ok) {
+      if (!response.ok)
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
 
       const nextHtml = await response.text();
       $ = cheerio.load(nextHtml);
@@ -382,8 +366,7 @@ async function searchDuckDuckGoHtml(
     }
 
     return results.slice(0, maxResults);
-  } catch (error) {
-    console.error("DuckDuckGo HTML search failed:", error);
+  } catch {
     return [];
   }
 }
@@ -401,9 +384,7 @@ async function searchDuckDuckGo(
   // Try using the preloaded URL method
   try {
     const results = await searchDuckDuckGoPreloadUrl(query, limit);
-    if (results.length > 0) {
-      return results;
-    }
+    if (results.length > 0) return results;
   } catch {
     // fall through to HTML method
   }
@@ -439,9 +420,8 @@ Returns search results with titles, URLs, and descriptions.`,
       const { query, limit = 10 } = params;
       const results = await searchDuckDuckGo(query, limit);
 
-      if (results.length === 0) {
+      if (results.length === 0)
         return textResult("No results found.", { query, limit });
-      }
 
       const text = formatSearchOutput(query, results);
       return textResult(text, { query, limit, results });

@@ -30,9 +30,8 @@ export interface GHWorkflowRun {
 async function ghList<T>(args: string[], errorBase: string): Promise<T[]> {
   const result = await ghCmd(args);
 
-  if (result.exitCode !== 0) {
+  if (result.exitCode !== 0)
     throw new Error(`${errorBase} failed: ${result.stderr || result.stdout}`);
-  }
 
   let items: T[];
   try {
@@ -70,9 +69,7 @@ export async function listWorkflowRuns(
 ): Promise<GHWorkflowRun[]> {
   const args = ["run", "list", "-R", `${owner}/${repo}`, `--limit=${limit}`];
 
-  if (workflowId) {
-    args.push(`--workflow=${workflowId}`);
-  }
+  if (workflowId) args.push(`--workflow=${workflowId}`);
 
   args.push(
     "--json=workflowName,status,conclusion,headBranch,headSha,displayTitle,createdAt,url",
@@ -169,7 +166,7 @@ Examples:
           { key: "id", align: "right", minWidth: 8 },
           {
             key: "info",
-            format: (_v, row) => {
+            format(_v, row) {
               const r = row as Record<string, string>;
               const dot =
                 r.state === "active" ? stateDot("on") : stateDot("off");
@@ -240,7 +237,7 @@ Examples:
           { key: "status", minWidth: 3 },
           {
             key: "info",
-            format: (_v, row) => {
+            format(_v, row) {
               const r = row as Record<string, string>;
               return [r.title, `${r.workflow} · ${r.branch} · ${r.date}`].join(
                 "\n",

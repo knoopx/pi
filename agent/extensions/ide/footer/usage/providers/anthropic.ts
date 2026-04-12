@@ -17,7 +17,7 @@ const anthropicConfig: ProviderConfig = {
     Authorization: `Bearer ${token}`,
     "anthropic-beta": "oauth-2025-04-20",
   }),
-  customProcessor: (rawData) => {
+  customProcessor(rawData) {
     interface WindowData {
       utilization?: number;
       used_percent?: number;

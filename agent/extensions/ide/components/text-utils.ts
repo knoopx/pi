@@ -63,8 +63,6 @@ export function renderListRow(
     const styled = theme.fg("accent", theme.bold(final));
     return theme.bg("selectedBg", styled);
   }
-  if (isCurrent && theme) {
-    return theme.fg("warning", final);
-  }
+  if (isCurrent && theme) return theme.fg("warning", final);
   return final;
 }

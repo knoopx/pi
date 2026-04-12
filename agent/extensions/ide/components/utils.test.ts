@@ -132,12 +132,8 @@ describe("utils", () => {
               const result = ensureWidth(input, 100);
               expect(stringWidth(result)).toBe(100);
 
-              if (shouldNotContain) {
-                expect(result).not.toContain(shouldNotContain);
-              }
-              if (shouldContain) {
-                expect(result).toContain(shouldContain);
-              }
+              if (shouldNotContain) expect(result).not.toContain(shouldNotContain);
+              if (shouldContain) expect(result).toContain(shouldContain);
             });
           });
         },

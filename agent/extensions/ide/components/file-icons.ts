@@ -184,16 +184,12 @@ export function getFileIconColor(filePath: string): string | null {
   if (filePath.endsWith("/")) return "#90a4ae";
   const filename = getFilename(filePath);
 
-  if (FILENAME_COLORS[filename]) {
-    return FILENAME_COLORS[filename];
-  }
+  if (FILENAME_COLORS[filename]) return FILENAME_COLORS[filename];
 
   const dotIndex = filename.lastIndexOf(".");
   if (dotIndex > 0) {
     const ext = filename.slice(dotIndex).toLowerCase();
-    if (FILE_ICON_COLORS[ext]) {
-      return FILE_ICON_COLORS[ext];
-    }
+    if (FILE_ICON_COLORS[ext]) return FILE_ICON_COLORS[ext];
   }
 
   return null;
@@ -203,16 +199,12 @@ export function getFileIcon(filePath: string): string {
   if (filePath.endsWith("/")) return "󰉋";
   const filename = getFilename(filePath);
 
-  if (FILENAME_ICONS[filename]) {
-    return FILENAME_ICONS[filename];
-  }
+  if (FILENAME_ICONS[filename]) return FILENAME_ICONS[filename];
 
   const dotIndex = filename.lastIndexOf(".");
   if (dotIndex > 0) {
     const ext = filename.slice(dotIndex).toLowerCase();
-    if (FILE_ICONS[ext]) {
-      return FILE_ICONS[ext];
-    }
+    if (FILE_ICONS[ext]) return FILE_ICONS[ext];
   }
 
   return "󰈙";

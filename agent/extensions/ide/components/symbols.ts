@@ -36,13 +36,9 @@ async function querySymbols(
   typeFilter?: SymbolTypeFilter,
 ): Promise<SymbolInfo[]> {
   const args = ["query", query, "--format", "ai"];
-  if (typeFilter && typeFilter !== "all") {
-    args.push("--type", typeFilter);
-  }
+  if (typeFilter && typeFilter !== "all") args.push("--type", typeFilter);
   const result = await pi.exec("cm", args, { cwd });
-  if (result.code !== 0) {
-    return [];
-  }
+  if (result.code !== 0) return [];
 
   const lines = result.stdout
     .split("\n")
@@ -102,13 +98,7 @@ export function createSymbolsComponent(
 
   // Wrapper to close picker with action metadata
   function doneWithAction(item: SymbolInfo | null): void {
-    if (item && pendingAction) {
-      done({ symbol: item, action: pendingAction });
-    } else if (item && pendingInsertType) {
-      done({ symbol: item, insertType: pendingInsertType });
-    } else if (item) {
-      done({ symbol: item });
-    } else {
+    if (item && pendingAction) done({ symbol: item, action: pendingAction }); else if (item && pendingInsertType) done({ symbol: item, insertType: pendingInsertType }); else if (item) done({ symbol: item }); else {
       done(null);
     }
     pendingAction = undefined;
@@ -123,9 +113,8 @@ export function createSymbolsComponent(
       type === "m" ||
       type === "function" ||
       type === "method"
-    ) {
+    )
       return "callers";
-    }
     // Classes, interfaces, types, enums → show usages
     return "used-by";
   }
@@ -164,7 +153,7 @@ export function createSymbolsComponent(
     {
       key: Key.ctrl("i"),
       label: "insert",
-      handler: (item: SymbolInfo) => {
+      handler(item: SymbolInfo) {
         pendingInsertType = "name";
         doneWithAction(item);
       },
@@ -173,7 +162,7 @@ export function createSymbolsComponent(
     {
       key: Key.ctrl("t"),
       label: "callers",
-      handler: (item: SymbolInfo) => {
+      handler(item: SymbolInfo) {
         pendingAction = getInspectAction(item.type);
         doneWithAction(item);
       },
@@ -182,7 +171,7 @@ export function createSymbolsComponent(
     {
       key: Key.ctrl("y"),
       label: "types",
-      handler: (item: SymbolInfo) => {
+      handler(item: SymbolInfo) {
         void goToFirstResult("types", [item.name]);
       },
     },
@@ -190,7 +179,7 @@ export function createSymbolsComponent(
     ...PICKER_ACTIONS.map(([key, action]) => ({
       key,
       label: action,
-      handler: (item: SymbolInfo) => {
+      handler(item: SymbolInfo) {
         pendingAction = action;
         doneWithAction(item);
       },
@@ -199,9 +188,7 @@ export function createSymbolsComponent(
 
   // Internal done handler that wraps results
   const internalDone = (item: SymbolInfo | null) => {
-    if (item) {
-      done({ symbol: item });
-    } else {
+    if (item) done({ symbol: item }); else {
       done(null);
     }
   };
@@ -220,7 +207,7 @@ export function createSymbolsComponent(
     {
       title: getTitle,
       actions,
-      onEdit: async (item) => {
+      async onEdit(item) {
         const { join } = await import("node:path");
         await pi.exec("editor", [
           `${join(cwd, item.path)}:${String(item.startLine)}`,
@@ -237,7 +224,7 @@ export function createSymbolsComponent(
         bindings: [
           {
             key: Key.ctrl("/"),
-            handler: () => {
+            handler() {
               const currentIndex = SYMBOL_TYPES.indexOf(currentTypeFilter);
               const nextIndex = (currentIndex + 1) % SYMBOL_TYPES.length;
               currentTypeFilter = SYMBOL_TYPES[nextIndex];
@@ -251,7 +238,7 @@ export function createSymbolsComponent(
 
   return {
     ...picker,
-    invalidate: () => {
+    invalidate() {
       // Trigger re-render
     },
   };

@@ -81,7 +81,7 @@ async function fetchNpmPackage(
     );
 
     if (!response.ok) {
-      if (response.status === 404) {
+      if (response.status === 404)
         return {
           ok: false,
           result: {
@@ -89,7 +89,6 @@ async function fetchNpmPackage(
             details: { package: pkg, status: 404 },
           },
         };
-      }
       return {
         ok: false,
         result: {
@@ -135,7 +134,7 @@ function extractStringOrProperty(
   return "";
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (pi: ExtensionAPI): void {
   pi.registerTool({
     name: "search-npm-packages",
     label: "Search NPM Packages",
@@ -211,7 +210,7 @@ async function searchNpmPackages(
       )}&size=${Math.min(size, 100)}`,
     );
 
-    if (!response.ok) {
+    if (!response.ok)
       return {
         content: [
           {
@@ -225,7 +224,6 @@ async function searchNpmPackages(
           statusText: response.statusText,
         },
       };
-    }
 
     const data = (await response.json()) as NpmSearchResponse;
     const packages = (data.objects ?? []).map((obj: NpmSearchObject) => ({
@@ -234,9 +232,8 @@ async function searchNpmPackages(
       description: obj.package.description ?? "",
     }));
 
-    if (packages.length === 0) {
+    if (packages.length === 0)
       return textResult("No packages found.", { query, count: 0, packages });
-    }
 
     const text = formatPackageSearchResults(
       packages,
@@ -343,7 +340,7 @@ async function getNpmPackageVersions(
   const fetchResult = await fetchNpmPackage(pkg, "get package versions");
   if (!fetchResult.ok) return fetchResult.result;
 
-  const data = fetchResult.data;
+  const { data } = fetchResult;
   const versions = Object.keys(data?.versions ?? {});
   const distTags = data?.["dist-tags"] ?? {};
 

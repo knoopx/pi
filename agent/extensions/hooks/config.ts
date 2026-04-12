@@ -39,7 +39,7 @@ class ConfigLoader {
     try {
       const content = await readFile(GLOBAL_CONFIG_PATH, "utf-8");
       const parsed = JSON.parse(content);
-      const hooks = parsed.hooks;
+      const { hooks } = parsed;
       return isValidConfig(hooks) ? hooks : null;
     } catch {
       return null;
@@ -62,9 +62,8 @@ class ConfigLoader {
     if (this.globalConfig) return this.globalConfig;
 
     // Project config extends defaults
-    if (projectConfig && this.defaultsConfig) {
+    if (projectConfig && this.defaultsConfig)
       return this.mergeGroupConfigs(this.defaultsConfig, projectConfig);
-    }
 
     return projectConfig ?? this.defaultsConfig ?? [];
   }
@@ -94,9 +93,7 @@ class ConfigLoader {
   }
 
   getConfig(): HooksConfig {
-    if (!this.resolved) {
-      throw new Error("Config not loaded. Call load() first.");
-    }
+    if (!this.resolved) throw new Error("Config not loaded. Call load() first.");
     return this.resolved;
   }
 

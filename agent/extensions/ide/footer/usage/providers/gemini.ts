@@ -15,7 +15,7 @@ const geminiConfig: ProviderConfig = {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
   }),
-  customProcessor: (data) => {
+  customProcessor(data) {
     const d = data as {
       buckets?: {
         modelId?: string;
@@ -26,9 +26,7 @@ const geminiConfig: ProviderConfig = {
     for (const bucket of d.buckets || []) {
       const model = bucket.modelId || "unknown";
       const frac = bucket.remainingFraction ?? 1;
-      if (!quotas[model] || frac < quotas[model]) {
-        quotas[model] = frac;
-      }
+      if (!quotas[model] || frac < quotas[model]) quotas[model] = frac;
     }
 
     const { min: proMin, hasModel: hasProModel } = extractModelQuota(
@@ -41,12 +39,8 @@ const geminiConfig: ProviderConfig = {
     );
 
     const windows: RateWindow[] = [];
-    if (hasProModel) {
-      windows.push({ label: "Pro", usedPercent: (1 - proMin) * 100 });
-    }
-    if (hasFlashModel) {
-      windows.push({ label: "Flash", usedPercent: (1 - flashMin) * 100 });
-    }
+    if (hasProModel) windows.push({ label: "Pro", usedPercent: (1 - proMin) * 100 });
+    if (hasFlashModel) windows.push({ label: "Flash", usedPercent: (1 - flashMin) * 100 });
 
     return windows;
   },

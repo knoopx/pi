@@ -70,11 +70,9 @@ export async function renderFileContent(
   }
 
   out.push(theme.fg("border", "─".repeat(tw)));
-  if (total > maxLines) {
-    out.push(
-      theme.fg("dim", `  … ${total - maxLines} more lines (${total} total)`),
-    );
-  }
+  if (total > maxLines) out.push(
+    theme.fg("dim", `  … ${total - maxLines} more lines (${total} total)`),
+  );
   return out.join("\n");
 }
 
@@ -100,11 +98,9 @@ export function renderTree(text: string, theme: Theme): string {
     out.push(`${connector}${fg}`);
   }
 
-  if (total > MAX_PREVIEW_LINES) {
-    out.push(
-      `${theme.fg("border", "└── ")}${theme.fg("dim", `… ${total - MAX_PREVIEW_LINES} more entries`)}`,
-    );
-  }
+  if (total > MAX_PREVIEW_LINES) out.push(
+    `${theme.fg("border", "└── ")}${theme.fg("dim", `… ${total - MAX_PREVIEW_LINES} more entries`)}`,
+  );
 
   return out.join("\n");
 }
@@ -159,7 +155,7 @@ export function renderFindResults(text: string, theme: Theme): string {
 
   for (const [dir, files] of groups) {
     if (count > 0) out.push("");
-    out.push(`${dirIconGlyph()}${theme.bold(theme.fg("accent", dir + "/"))}`);
+    out.push(`${dirIconGlyph()}${theme.bold(theme.fg("accent", `${dir}/`))}`);
     const { lines: dirLines } = renderDirectoryFiles(
       dir,
       files,
@@ -208,18 +204,9 @@ function renderGrepMatch(
 ): string {
   const nw = Math.max(3, lineNo.length);
   let display = content;
-  if (highlighter) {
-    display = highlighter(content);
-  }
+  if (highlighter) display = highlighter(content);
   const lnStr = " ".repeat(Math.max(0, nw - lineNo.length)) + lineNo;
-  return (
-    "  " +
-    theme.fg("muted", lnStr) +
-    " " +
-    theme.fg("border", "│") +
-    " " +
-    display
-  );
+  return `  ${theme.fg("muted", lnStr)} ${theme.fg("border", "│")} ${display}`;
 }
 
 function processGrepLine(
@@ -239,15 +226,14 @@ function processGrepLine(
     }
     out.push(renderGrepMatch(lineNo, content, highlighter, theme));
     return { output: out, newFile: file, count: 1 };
-  } else if (line.trim() === "--") {
+  } else if (line.trim() === "--")
     return {
       output: [theme.fg("dim", "  ···")],
       newFile: currentFile,
       count: 0,
     };
-  } else if (line.trim()) {
+  else if (line.trim())
     return { output: [line], newFile: currentFile, count: 1 };
-  }
   return { output: [], newFile: currentFile, count: 0 };
 }
 

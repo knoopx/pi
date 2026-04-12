@@ -16,31 +16,19 @@ interface NotifyToolParams {
 export function buildNotifySendArgs(params: NotifyToolParams): string[] {
   const args: string[] = [];
 
-  if (params.urgency) {
-    args.push("-u", params.urgency);
-  }
+  if (params.urgency) args.push("-u", params.urgency);
 
-  if (params.expireTime !== undefined) {
-    args.push("-t", String(params.expireTime));
-  }
+  if (params.expireTime !== undefined) args.push("-t", String(params.expireTime));
 
-  if (params.appName) {
-    args.push("-a", params.appName);
-  }
+  if (params.appName) args.push("-a", params.appName);
 
-  if (params.icon) {
-    args.push("-i", params.icon);
-  }
+  if (params.icon) args.push("-i", params.icon);
 
-  if (params.category) {
-    args.push("-c", params.category);
-  }
+  if (params.category) args.push("-c", params.category);
 
   args.push(params.summary);
 
-  if (params.body) {
-    args.push(params.body);
-  }
+  if (params.body) args.push(params.body);
 
   return args;
 }
@@ -74,9 +62,7 @@ export function normalizeToolExecuteArgs(
   const values = [arg1, arg2, arg3];
 
   const ctx = values.find(isExtensionContext);
-  if (!ctx) {
-    throw new Error("Notification tool: extension context not provided");
-  }
+  if (!ctx) throw new Error("Notification tool: extension context not provided");
 
   const signal = values.find(isAbortSignal);
   const onUpdate = values.find((value) => typeof value === "function") as

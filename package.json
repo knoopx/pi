@@ -1,5 +1,10 @@
 {
   "type": "module",
+  "scripts": {
+    "lint": "eslint agent/extensions",
+    "lint:fix": "eslint agent/extensions --fix",
+    "lint:check": "eslint agent/extensions --max-warnings 0"
+  },
   "dependencies": {},
   "devDependencies": {
     "eslint": "^10.2.0",

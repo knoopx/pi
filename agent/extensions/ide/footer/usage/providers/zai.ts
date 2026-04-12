@@ -14,7 +14,7 @@ const zaiConfig: ProviderConfig = {
   headers: (token) => ({
     Authorization: token,
   }),
-  customProcessor: (rawData) => {
+  customProcessor(rawData) {
     interface LimitItem {
       type: string;
       percentage: number;
@@ -33,9 +33,7 @@ const zaiConfig: ProviderConfig = {
     const response = rawData as DataType;
     const limits = response.data?.limits;
 
-    if (!limits || limits.length === 0) {
-      return [];
-    }
+    if (!limits || limits.length === 0) return [];
 
     const windows: RateWindow[] = [];
 

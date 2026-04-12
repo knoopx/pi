@@ -111,14 +111,10 @@ function removeEmptyProperties<T extends Record<string, unknown>>(
 ): Partial<T> {
   const result: Partial<T> = {};
   for (const [key, value] of Object.entries(obj)) {
-    if (
-      value !== undefined &&
-      value !== null &&
-      value !== "" &&
-      !(Array.isArray(value) && value.length === 0)
-    ) {
-      result[key as keyof T] = value as T[keyof T];
-    }
+    if (value !== undefined &&
+    value !== null &&
+    value !== "" &&
+    !(Array.isArray(value) && value.length === 0)) result[key as keyof T] = value as T[keyof T];
   }
   return result;
 }
@@ -142,7 +138,7 @@ function buildSearchResult<T>(
  * Builds a table renderer for option-like results with common columns
  */
 function buildOptionTableRenderer(
-  includeDeclarations: boolean = false,
+  includeDeclarations = false,
 ): (res: Record<string, string>[]) => string {
   return (res) => {
     const cols: Column[] = [
@@ -150,15 +146,13 @@ function buildOptionTableRenderer(
       { key: "type", minWidth: 11 },
       {
         key: "option",
-        format: (_v, row) => {
+        format(_v, row) {
           const r = row as Record<string, string>;
           const lines = [r.option];
           if (r.description) lines.push(r.description);
           if (r.default) lines.push(`default: ${r.default}`);
           if (r.example) lines.push(`example: ${r.example}`);
-          if (includeDeclarations && r.declarations) {
-            lines.push(r.declarations);
-          }
+          if (includeDeclarations && r.declarations) lines.push(r.declarations);
           return lines.join("\n");
         },
       },
@@ -222,7 +216,7 @@ function buildDisMaxQuery(
         {
           multi_match: {
             type: "cross_fields",
-            query: query,
+            query,
             analyzer: "whitespace",
             auto_generate_synonyms_phrase_query: false,
             operator: "and",
@@ -284,15 +278,16 @@ async function postNixSearch<T>(
     body: JSON.stringify(queryPayload),
   });
 
-  if (!response.ok) {
-    throw new Error(`Search request failed: ${response.status}`);
-  }
+  if (!response.ok) throw new Error(`Search request failed: ${response.status}`);
 
   const data = (await response.json()) as NixSearchResponse<T>;
   return data.hits.hits.map((hit) => hit._source);
 }
 
-function createPackageQueryPayload(query: string, sourceFields: string[]) {
+function createPackageQueryPayload(
+  query: string,
+  sourceFields: string[],
+): Record<string, unknown> {
   return {
     from: 0,
     size: 50,
@@ -448,9 +443,7 @@ async function searchHomeManagerOptions(
     headers,
   });
 
-  if (!response.ok) {
-    throw new Error(`Home-Manager options request failed: ${response.status}`);
-  }
+  if (!response.ok) throw new Error(`Home-Manager options request failed: ${response.status}`);
 
   const data = (await response.json()) as HomeManagerOptionResponse;
 
@@ -463,7 +456,7 @@ async function searchHomeManagerOptions(
   );
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (pi: ExtensionAPI): void {
   // Search Nix packages
   pi.registerTool({
     name: "search-nix-packages",
@@ -502,7 +495,7 @@ Returns detailed package information from nixpkgs.`,
             { key: "version", minWidth: 7 },
             {
               key: "package",
-              format: (_v, row) => {
+              format(_v, row) {
                 const r = row as Record<string, string>;
                 const lines = [r.package];
                 if (r.description) lines.push(r.description);

@@ -1,8 +1,0 @@
-{
-  "type": "module",
-  "dependencies": {},
-  "devDependencies": {
-    "eslint": "^10.2.0",
-    "typescript-eslint": "^8.58.1"
-  }
-}

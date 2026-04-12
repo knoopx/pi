@@ -170,7 +170,7 @@ export function table(
       if (segments.length === 1) {
         const lines = wrapSegment(segments[0]);
         if (lines.length <= 1) return lines;
-        return [lines[0], ...lines.slice(1).map((l) => "    " + l)];
+        return [lines[0], ...lines.slice(1).map((l) => `    ${  l}`)];
       }
       // Multi-line cell — wrap each segment, join with newlines, then re-split
       const wrappedSegments = segments.map((seg) =>

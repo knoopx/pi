@@ -44,9 +44,7 @@ interface SessionLine {
 }
 
 function asSessionMessage(message: unknown): SessionMessageLine | null {
-  if (typeof message !== "object" || message === null) {
-    return null;
-  }
+  if (typeof message !== "object" || message === null) return null;
 
   return message as SessionMessageLine;
 }
@@ -74,24 +72,18 @@ const extractBangCommandsFromUserText = (text: string): string[] => {
     if (!line.startsWith("!")) continue;
 
     const command = line.replace(/^!+/, "").trim();
-    if (command) {
-      commands.push(command);
-    }
+    if (command) commands.push(command);
   }
 
   return commands;
 };
 
 const getUserTextFromContent = (content: unknown): string => {
-  if (!Array.isArray(content)) {
-    return "";
-  }
+  if (!Array.isArray(content)) return "";
 
   const parts = content
     .map((block) => {
-      if (typeof block !== "object" || block === null) {
-        return "";
-      }
+      if (typeof block !== "object" || block === null) return "";
 
       const typedBlock = block as { type?: unknown; text?: unknown };
       return typedBlock.type === "text" && typeof typedBlock.text === "string"
@@ -129,9 +121,7 @@ function getSessionCwd(content: string): string | null {
     if (!line.trim()) continue;
     try {
       const parsed = JSON.parse(line);
-      if (parsed.type === "session" && parsed.cwd) {
-        return parsed.cwd as string;
-      }
+      if (parsed.type === "session" && parsed.cwd) return parsed.cwd as string;
     } catch {
       continue;
     }
@@ -146,13 +136,10 @@ function extractTimestamp(
   entry: SessionLine,
   message: SessionMessageLine,
 ): number {
-  if (typeof entry.timestamp === "string") {
+  if (typeof entry.timestamp === "string")
     return new Date(entry.timestamp).getTime();
-  } else if (typeof entry.timestamp === "number") {
-    return entry.timestamp;
-  } else if (typeof message.timestamp === "number") {
-    return message.timestamp;
-  }
+  else if (typeof entry.timestamp === "number") return entry.timestamp;
+  else if (typeof message.timestamp === "number") return message.timestamp;
   return Date.now();
 }
 
@@ -220,13 +207,11 @@ function processMessageEntry(
     if (!text) return;
 
     const firstLine = text.split("\n")[0]?.trim();
-    if (firstLine) {
-      addHistoryEntry(history, seen, {
-        content: firstLine,
-        timestamp,
-        type: "message",
-      });
-    }
+    if (firstLine) addHistoryEntry(history, seen, {
+      content: firstLine,
+      timestamp,
+      type: "message",
+    });
 
     for (const command of extractBangCommandsFromUserText(text)) {
       addHistoryEntry(history, seen, {
@@ -254,20 +239,14 @@ function walkDir(
       const fullPath = join(dir, entry);
       try {
         const stat = statSync(fullPath);
-        if (stat.isDirectory()) {
-          walkDir(fullPath, targetCwd, cutoffTimestamp, history, seen);
-        } else if (
-          entry.endsWith(".jsonl") &&
-          stat.mtimeMs >= cutoffTimestamp
-        ) {
-          processSessionFile(
-            fullPath,
-            targetCwd,
-            cutoffTimestamp,
-            history,
-            seen,
-          );
-        }
+        if (stat.isDirectory()) walkDir(fullPath, targetCwd, cutoffTimestamp, history, seen); else if (entry.endsWith(".jsonl") &&
+        stat.mtimeMs >= cutoffTimestamp) processSessionFile(
+          fullPath,
+          targetCwd,
+          cutoffTimestamp,
+          history,
+          seen,
+        );
       } catch {
         // Skip files we can't read
       }
@@ -340,9 +319,7 @@ class HistorySearchComponent {
     }
 
     // Regular character input
-    if (data.length === 1 && data.charCodeAt(0) >= 32) {
-      this.handleCharacter(data);
-    }
+    if (data.length === 1 && data.charCodeAt(0) >= 32) this.handleCharacter(data);
   }
 
   private handleEscape(): void {
@@ -350,9 +327,7 @@ class HistorySearchComponent {
   }
 
   private handleEnter(): void {
-    if (this.filteredHistory.length > 0) {
-      this.onSelect?.(this.filteredHistory[this.selectedIndex]);
-    }
+    if (this.filteredHistory.length > 0) this.onSelect?.(this.filteredHistory[this.selectedIndex]);
   }
 
   private handleUp(): void {
@@ -387,17 +362,13 @@ class HistorySearchComponent {
     );
 
     // Reset selection if out of bounds
-    if (this.selectedIndex >= this.filteredHistory.length) {
-      this.selectedIndex = Math.max(0, this.filteredHistory.length - 1);
-    }
+    if (this.selectedIndex >= this.filteredHistory.length) this.selectedIndex = Math.max(0, this.filteredHistory.length - 1);
 
     this.invalidate();
   }
 
   render(width: number): string[] {
-    if (this.cachedLines && this.cachedWidth === width) {
-      return this.cachedLines;
-    }
+    if (this.cachedLines && this.cachedWidth === width) return this.cachedLines;
 
     const lines: string[] = [];
     const borderChar = this.theme.fg("accent", "─");
@@ -429,7 +400,7 @@ class HistorySearchComponent {
       const typeColor = entry.type === "command" ? "success" : "accent";
 
       const displayContent = truncateSingleLine(entry.content, width - 2);
-      const content = typeIndicator + " " + displayContent;
+      const content = `${typeIndicator} ${displayContent}`;
       const padded = ensureWidth(content, width);
 
       let line: string;
@@ -438,7 +409,7 @@ class HistorySearchComponent {
         line = this.theme.bg("selectedBg", colored);
       } else {
         const coloredIndicator = this.theme.fg(typeColor, typeIndicator);
-        line = coloredIndicator + " " + displayContent;
+        line = `${coloredIndicator} ${displayContent}`;
       }
 
       lines.push(line);
@@ -458,11 +429,11 @@ class HistorySearchComponent {
   }
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (pi: ExtensionAPI): void {
   pi.registerShortcut("ctrl+r", {
     description:
       "Reverse history search (user messages and commands from sessions in current directory)",
-    handler: async (ctx: ExtensionContext) => {
+    async handler(ctx: ExtensionContext) {
       if (!ctx.hasUI) return;
 
       // Load history (messages and commands) from sessions matching current cwd
@@ -491,10 +462,10 @@ export default function (pi: ExtensionAPI) {
 
           return {
             render: (w) => component.render(w),
-            invalidate: () => {
+            invalidate() {
               component.invalidate();
             },
-            handleInput: (data: string) => {
+            handleInput(data: string) {
               component.handleInput(data);
               tui.requestRender();
             },
@@ -504,9 +475,7 @@ export default function (pi: ExtensionAPI) {
 
       if (result) {
         // Insert selected content into editor
-        if (result.type === "command") {
-          ctx.ui.setEditorText("!" + result.content.trim().replace(/\n+$/, ""));
-        } else {
+        if (result.type === "command") ctx.ui.setEditorText(`!${result.content.trim().replace(/\n+$/, "")}`); else {
           ctx.ui.setEditorText(result.content.trim().replace(/\n+$/, ""));
         }
       }

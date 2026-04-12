@@ -35,9 +35,7 @@ export async function listIssues(
     `${owner}/${repo}`,
     `--limit=${limit}`,
   ];
-  if (state && state !== "all") {
-    args.push(`--state=${state}`);
-  }
+  if (state && state !== "all") args.push(`--state=${state}`);
   args.push(
     "--json=number,title,state,createdAt,updatedAt,author,body,url,labels,milestone",
     "--jq",
@@ -76,12 +74,8 @@ export async function createIssue(
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   const args = ["issue", "create", "-R", `${owner}/${repo}`, "--title", title];
 
-  if (body) {
-    args.push("--body", body);
-  }
-  if (labels && labels.length > 0) {
-    args.push("--label", labels.join(","));
-  }
+  if (body) args.push("--body", body);
+  if (labels && labels.length > 0) args.push("--label", labels.join(","));
 
   return ghCmd(args);
 }
@@ -135,7 +129,7 @@ export function registerIssueTools(pi: ExtensionAPI) {
     { key: "#", align: "right", minWidth: 5 },
     {
       key: "title",
-      format: (_v, row) => {
+      format(_v, row) {
         const r = row as Record<string, string>;
         const dot = r.state === "OPEN" ? "●" : "○";
         const lines = [`${dot} ${r.title}`];

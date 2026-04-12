@@ -80,9 +80,8 @@ function isMissingFileError(error: unknown): boolean {
 }
 
 function toSettingsRecord(parsed: unknown): Record<string, unknown> {
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
     throw new Error("settings.json must contain a JSON object");
-  }
   return parsed as Record<string, unknown>;
 }
 
@@ -91,9 +90,7 @@ async function readGlobalSettingsOrEmpty(): Promise<Record<string, unknown>> {
     const content = await readFile(GLOBAL_CONFIG_PATH, "utf-8");
     return toSettingsRecord(JSON.parse(content));
   } catch (error) {
-    if (isMissingFileError(error)) {
-      return {};
-    }
+    if (isMissingFileError(error)) return {};
     throw new Error(
       "Unable to read settings.json safely; refusing to overwrite existing configuration.",
       { cause: error },
@@ -110,9 +107,8 @@ export async function loadGuardrailsSettings(): Promise<GuardrailsSettings> {
     return { ...DEFAULT_GUARDRAILS_SETTINGS };
   }
 
-  if (typeof raw !== "object" || raw === null) {
+  if (typeof raw !== "object" || raw === null)
     throw new Error("Invalid guardrails settings format in settings.json");
-  }
 
   const rawRecord = raw as Record<string, unknown>;
 
@@ -183,21 +179,18 @@ class GuardrailsConfigLoader {
     try {
       const content = await readFile(GLOBAL_CONFIG_PATH, "utf-8");
       const parsed = JSON.parse(content) as Record<string, unknown>;
-      const guardrails = parsed.guardrails;
+      const { guardrails } = parsed;
 
       // Legacy format: guardrails is an array of groups.
-      if (Array.isArray(guardrails)) {
-        return guardrails as GuardrailsConfig;
-      }
+      if (Array.isArray(guardrails)) return guardrails as GuardrailsConfig;
 
       // Current format: guardrails is an object with a `rules` array.
       if (
         typeof guardrails === "object" &&
         guardrails !== null &&
         Array.isArray((guardrails as Record<string, unknown>).rules)
-      ) {
+      )
         return (guardrails as { rules: GuardrailsConfig }).rules;
-      }
 
       return null;
     } catch {
@@ -239,9 +232,8 @@ class GuardrailsConfigLoader {
   }
 
   getConfig(): ResolvedConfig {
-    if (!this.resolved) {
+    if (!this.resolved)
       throw new Error("Config not loaded. Call load() first.");
-    }
     return this.resolved;
   }
 

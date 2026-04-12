@@ -1,5 +1,4 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
-import type { Pi } from "@mariozechner/pi-agent-core";
+import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
 import { loadFilePreviewWithShiki } from "./file-preview";
 
 /**
@@ -14,15 +13,13 @@ import { loadFilePreviewWithShiki } from "./file-preview";
  * ```
  */
 export function createFilePreviewLoader(
-  pi: Pi,
+  pi: ExtensionAPI,
   cwd: string,
   theme: Theme,
 ): (item: { path: string }) => Promise<string[]> {
   return async (item) => {
     const result = await pi.exec("cat", [item.path], { cwd });
-    if (result.code !== 0) {
-      return [`Error reading file: ${result.stderr}`];
-    }
+    if (result.code !== 0) return [`Error reading file: ${result.stderr}`];
     return loadFilePreviewWithShiki(item.path, result.stdout, theme);
   };
 }

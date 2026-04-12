@@ -63,7 +63,7 @@ export function createWorkspacesComponent(
   tui: { terminal: { rows: number }; requestRender: () => void },
   theme: Theme,
   _keybindings: KeybindingsManager,
-  done: () => void,
+  done: (result?: void) => void,
 ) {
   let workspaces: AgentWorkspace[] = [];
   let selectedIndex = 0;
@@ -120,9 +120,8 @@ export function createWorkspacesComponent(
     try {
       const cache = workspaceCache.get(ws.name);
 
-      if (isDefault) {
-        await loadDefaultWorkspace(ws, cache);
-      } else {
+      if (isDefault) await loadDefaultWorkspace(ws, cache);
+      else {
         await loadWorkspaceFiles(ws, cache);
       }
     } catch (error) {
@@ -268,9 +267,8 @@ export function createWorkspacesComponent(
             ws.name,
           ]);
 
-          if (terminalResult.code !== 0) {
+          if (terminalResult.code !== 0)
             await pi.exec("tmux", ["attach", "-t", ws.name]);
-          }
           break;
         }
 
@@ -379,23 +377,20 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
         theme,
         " No changes",
       );
-    } else {
-      // Show files for other workspaces
-      return renderFileChangeRows(
-        files,
-        width,
-        height,
-        fileIndex,
-        focus === "files",
-        theme,
-      );
     }
+    // Show files for other workspaces
+    return renderFileChangeRows(
+      files,
+      width,
+      height,
+      fileIndex,
+      focus === "files",
+      theme,
+    );
   }
 
   function render(width: number): string[] {
-    if (isRenderCacheValid(width, cachedWidth, cachedLines)) {
-      return cachedLines;
-    }
+    if (isRenderCacheValid(width, cachedWidth, cachedLines)) return cachedLines;
 
     const dims = calculateDimensions(tui.terminal.rows, width, {
       leftTitle: "",
@@ -483,9 +478,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
   // Delete workspace (kill + forget)
   const deleteWorkspace = async () => {
     if (!selectedWorkspace || isDefaultWs()) return;
-    if (isRunningWs()) {
-      await killTmuxSession(pi, selectedWorkspace.name);
-    }
+    if (isRunningWs()) await killTmuxSession(pi, selectedWorkspace.name);
     await executeAction("forget");
   };
 
@@ -528,9 +521,9 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
         : Math.min(maxIndex, fileIndex + 1);
     if (newIndex !== fileIndex) {
       fileIndex = newIndex;
-      if (isDefault) {
+      if (isDefault)
         void loadChangeDiff(selectedWorkspace, changes[fileIndex]?.changeId);
-      } else {
+      else {
         void loadDiff(selectedWorkspace, files[fileIndex]?.path);
       }
       invalidate();
@@ -543,7 +536,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
     {
       key: "tab",
       label: "nav",
-      handler: () => {
+      handler() {
         focus = focus === "workspaces" ? "files" : "workspaces";
         invalidate();
         tui.requestRender();
@@ -551,20 +544,20 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
     },
     {
       key: "escape",
-      handler: () => {
+      handler() {
         done();
       },
     },
     {
       key: "q",
-      handler: () => {
+      handler() {
         done();
       },
     },
     {
       key: "n",
       label: "new",
-      handler: () => {
+      handler() {
         void createNewWorkspace();
       },
     },
@@ -576,7 +569,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
       key: "a",
       label: "attach",
       when: () => hasWorkspace() && !isDefaultWs() && isRunningWs(),
-      handler: () => {
+      handler() {
         void executeAction("attach");
       },
     },
@@ -587,7 +580,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
         hasWorkspace() &&
         !isDefaultWs() &&
         selectedWorkspace?.fileStats !== undefined,
-      handler: () => {
+      handler() {
         void executeAction("rebase");
       },
     },
@@ -595,7 +588,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
       key: "e",
       label: "edit",
       when: hasWorkspace,
-      handler: () => {
+      handler() {
         void executeAction("edit");
       },
     },
@@ -603,7 +596,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
       key: "t",
       label: "term",
       when: hasWorkspace,
-      handler: () => {
+      handler() {
         void executeAction("terminal");
       },
     },
@@ -611,7 +604,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
       key: ACTION_KEYS.delete,
       label: "delete",
       when: () => hasWorkspace() && !isDefaultWs(),
-      handler: () => {
+      handler() {
         void deleteWorkspace();
       },
     },
@@ -621,13 +614,13 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
   const leftPaneBindings: KeyBinding[] = [
     {
       key: "up",
-      handler: () => {
+      handler() {
         navigateWorkspace("up");
       },
     },
     {
       key: "down",
-      handler: () => {
+      handler() {
         navigateWorkspace("down");
       },
     },
@@ -639,26 +632,26 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
       key: "d",
       label: "discard",
       when: () => hasWorkspace() && !isDefaultWs() && hasFile(),
-      handler: () => {
+      handler() {
         void discardFile();
       },
     },
     {
       key: "up",
-      handler: () => {
+      handler() {
         navigateFile("up");
       },
     },
     {
       key: "down",
-      handler: () => {
+      handler() {
         navigateFile("down");
       },
     },
     {
       key: "pageUp",
       label: "scroll",
-      handler: () => {
+      handler() {
         diffScroll = calculateDiffScroll(
           "up",
           diffScroll,
@@ -672,7 +665,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
     },
     {
       key: "pageDown",
-      handler: () => {
+      handler() {
         diffScroll = calculateDiffScroll(
           "down",
           diffScroll,
@@ -714,16 +707,13 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
   });
 
   function handleInput(data: string): void {
-    if (isLeftFocus()) {
-      leftHandler(data);
-    } else {
+    if (isLeftFocus()) leftHandler(data);
+    else {
       rightHandler(data);
     }
   }
 
-  function dispose(): void {
-    return;
-  }
+  function dispose(): void {}
 
   void loadWorkspaces();
 

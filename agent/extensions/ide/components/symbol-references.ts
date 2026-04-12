@@ -141,11 +141,7 @@ function extractExtraInfo(parts: string[]): {
 
   for (let i = 3; i < parts.length; i++) {
     const part = parts[i].trim();
-    if (part.startsWith("sig:")) {
-      signature = part.slice(4);
-    } else if (part.startsWith("call:")) {
-      callLine = parseInt(part.slice(5), 10);
-    }
+    if (part.startsWith("sig:")) signature = part.slice(4); else if (part.startsWith("call:")) callLine = parseInt(part.slice(5), 10);
   }
 
   return { signature, callLine };
@@ -174,10 +170,9 @@ function parseLocation(
     const parsedStartLine = parseInt(locationPart.slice(colonIdx + 1), 10);
     const startLine = Number.isNaN(parsedStartLine) ? 1 : parsedStartLine;
     return { path, startLine, endLine: startLine };
-  } else {
-    // Fallback: treat as path
-    return { path: locationPart, startLine: 1, endLine: 1 };
   }
+  // Fallback: treat as path
+  return { path: locationPart, startLine: 1, endLine: 1 };
 }
 
 /**
@@ -250,13 +245,7 @@ export function createSymbolReferenceComponent(
   let pendingInsertType: "name" | "path" | undefined;
 
   function doneWithAction(item: SymbolReferenceItem | null): void {
-    if (item && pendingAction) {
-      done({ item, action: pendingAction });
-    } else if (item && pendingInsertType) {
-      done({ item, insertType: pendingInsertType });
-    } else if (item) {
-      done({ item });
-    } else {
+    if (item && pendingAction) done({ item, action: pendingAction }); else if (item && pendingInsertType) done({ item, insertType: pendingInsertType }); else if (item) done({ item }); else {
       done(null);
     }
     pendingAction = undefined;
@@ -267,7 +256,7 @@ export function createSymbolReferenceComponent(
     {
       key: Key.ctrl("i"),
       label: "insert",
-      handler: (item: SymbolReferenceItem) => {
+      handler(item: SymbolReferenceItem) {
         pendingInsertType = "name";
         doneWithAction(item);
       },
@@ -275,7 +264,7 @@ export function createSymbolReferenceComponent(
     ...SYMBOL_ACTION_DEFS.map(([key, action]) => ({
       key,
       label: action,
-      handler: (item: SymbolReferenceItem) => {
+      handler(item: SymbolReferenceItem) {
         pendingAction = action;
         doneWithAction(item);
       },
@@ -283,9 +272,7 @@ export function createSymbolReferenceComponent(
   ];
 
   const internalDone = (item: SymbolReferenceItem | null) => {
-    if (item) {
-      done({ item });
-    } else {
+    if (item) done({ item }); else {
       done(null);
     }
   };
@@ -300,21 +287,19 @@ export function createSymbolReferenceComponent(
     {
       title: config.title,
       actions,
-      onEdit: async (item) => {
+      async onEdit(item) {
         const { join } = await import("node:path");
         const line = item.callLine ?? item.startLine;
         await pi.exec("editor", [
           `${join(config.cwd, item.path)}:${String(line)}`,
         ]);
       },
-      loadItems: async (_query) => {
+      async loadItems(_query) {
         const result = await pi.exec("cm", [...config.args, "--format", "ai"], {
           cwd: config.cwd,
         });
 
-        if (result.code !== 0) {
-          throw new Error(`cm ${config.command} failed: ${result.stderr}`);
-        }
+        if (result.code !== 0) throw new Error(`cm ${config.command} failed: ${result.stderr}`);
 
         return parseSymbolReferenceOutput(result.stdout);
       },
@@ -332,13 +317,11 @@ export function createSymbolReferenceComponent(
           line: item.callLine ?? item.startLine,
           signature: item.signature,
         }),
-      loadPreview: async (item) => {
+      async loadPreview(item) {
         const result = await pi.exec("cat", [item.path], {
           cwd: config.cwd,
         });
-        if (result.code !== 0) {
-          return [`Error reading file: ${result.stderr}`];
-        }
+        if (result.code !== 0) return [`Error reading file: ${result.stderr}`];
         return loadFilePreviewWithShiki(item.path, result.stdout, theme);
       },
     },
@@ -346,8 +329,6 @@ export function createSymbolReferenceComponent(
 
   return {
     ...picker,
-    invalidate: () => {
-      return;
-    },
+    invalidate() {},
   };
 }

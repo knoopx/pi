@@ -249,7 +249,7 @@ function renderBottomBorder(
 
   const helpRow =
     border("border", BOX.vertical) +
-    theme.fg("dim", pad(" " + helpText, leftW + rightW + 1)) +
+    theme.fg("dim", pad(` ${helpText}`, leftW + rightW + 1)) +
     border("border", BOX.vertical);
 
   const bottomRow =
@@ -430,8 +430,8 @@ export function renderSplitPanel(
 
   if (config.rightSplit && dims.rightTopH && dims.rightBottomH) {
     // Split right panel layout
-    const rightTopH = dims.rightTopH;
-    const rightBottomH = dims.rightBottomH;
+    const { rightTopH } = dims;
+    const { rightBottomH } = dims;
     const leftRows = rows.left;
     const rightTopRows = rows.rightTop ?? [];
     const rightBottomRows = rows.rightBottom ?? [];
@@ -513,7 +513,7 @@ export function renderSourceRows(
       theme,
       isHighlighted ? "accent" : undefined,
     );
-    const content = " " + styledLine;
+    const content = ` ${styledLine}`;
     const truncated = truncateAnsi(content, width - 1);
     const final = ensureWidth(truncated, width);
     rows.push(final);
@@ -549,7 +549,7 @@ export function renderDiffRows(
     const styledLine = hunkDividerPattern.test(expanded)
       ? theme.fg("muted", expanded)
       : expanded;
-    const content = " " + styledLine;
+    const content = ` ${styledLine}`;
     const truncated = truncateAnsi(content, width - 1);
     const final = ensureWidth(truncated, width);
     rows.push(final);
@@ -586,9 +586,7 @@ export function renderFileChangeRows(
 
   const visibleCount = height;
   let startIdx = 0;
-  if (fileIndex >= visibleCount) {
-    startIdx = fileIndex - visibleCount + 1;
-  }
+  if (fileIndex >= visibleCount) startIdx = fileIndex - visibleCount + 1;
 
   const getStatusColor = (
     status: string,
@@ -645,9 +643,8 @@ function handlePageScroll(
   if (direction === "down") {
     const maxScroll = Math.max(0, contentLength - viewportHeight);
     return Math.min(maxScroll, currentScroll + scrollAmount);
-  } else {
-    return Math.max(0, currentScroll - scrollAmount);
   }
+  return Math.max(0, currentScroll - scrollAmount);
 }
 
 /**
@@ -697,9 +694,7 @@ export function renderChangeRows(
 
   const visibleCount = height;
   let startIdx = 0;
-  if (selectedIndex >= visibleCount) {
-    startIdx = selectedIndex - visibleCount + 1;
-  }
+  if (selectedIndex >= visibleCount) startIdx = selectedIndex - visibleCount + 1;
 
   for (let i = 0; i < visibleCount && startIdx + i < changes.length; i++) {
     const idx = startIdx + i;

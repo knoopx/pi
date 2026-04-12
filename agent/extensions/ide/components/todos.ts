@@ -158,14 +158,14 @@ export function createTodosComponent(
         {
           key: Key.ctrl("t"),
           label: "inspect",
-          handler: (item) => {
+          handler(item) {
             done(item);
           },
         },
         {
           key: Key.ctrl("i"),
           label: "insert",
-          handler: (item) => {
+          handler(item) {
             done(item);
           },
         },

@@ -45,9 +45,7 @@ export interface GraphLayout {
 function findChildLanes(nodeId: string, lanes: (string | null)[]): number[] {
   const result: number[] = [];
   for (let i = 0; i < lanes.length; i++) {
-    if (lanes[i] === nodeId) {
-      result.push(i);
-    }
+    if (lanes[i] === nodeId) result.push(i);
   }
   return result;
 }
@@ -122,13 +120,11 @@ function addVerticalEdges(
   rowEdges: Edge[],
 ) {
   for (let laneX = 0; laneX < lanes.length; laneX++) {
-    if (lanes[laneX] !== null && laneX !== commitX) {
-      rowEdges.push({
-        type: EdgeType.Vertical,
-        posX: laneX,
-        colorIndex: laneX % 8,
-      });
-    }
+    if (lanes[laneX] !== null && laneX !== commitX) rowEdges.push({
+      type: EdgeType.Vertical,
+      posX: laneX,
+      colorIndex: laneX % 8,
+    });
   }
 }
 
@@ -215,11 +211,7 @@ function processMergeEdges(
       const parentLane = findOrCreateParentLane(parentId, lanes);
       maxX = Math.max(maxX, parentLane);
 
-      if (parentLane > commitX) {
-        addBranchRight(commitX, parentLane, rowEdges);
-      } else if (parentLane < commitX) {
-        addBranchLeft(commitX, parentLane, rowEdges);
-      }
+      if (parentLane > commitX) addBranchRight(commitX, parentLane, rowEdges); else if (parentLane < commitX) addBranchLeft(commitX, parentLane, rowEdges);
     }
   }
   return maxX;
@@ -239,9 +231,7 @@ export function calculateGraphLayout(nodes: GraphNode[]): GraphLayout {
     const rowEdges: Edge[] = [];
 
     let x: number;
-    if (findChildLanes(node.id, lanes).length > 0) {
-      x = processChildLanes(node, lanes, rowEdges);
-    } else {
+    if (findChildLanes(node.id, lanes).length > 0) x = processChildLanes(node, lanes, rowEdges); else {
       x = findOrCreateLane(node.id, lanes);
     }
 
@@ -259,7 +249,7 @@ export function calculateGraphLayout(nodes: GraphNode[]): GraphLayout {
 
     maxX = Math.max(maxX, processMergeEdges(node, x, lanes, rowEdges));
 
-    lanes[x] = node.parentIds.length > 0 ? node.parentIds[0]! : null;
+    lanes[x] = node.parentIds.length > 0 ? node.parentIds[0] : null;
     edges.push(rowEdges);
   }
 
@@ -356,15 +346,11 @@ export function renderGraphRow(
 
     if (posX === commitX) {
       chars[pos] = getChangeIcon(isWorkingCopy, isEmpty);
-      if (branchRight && pos + 1 < width) {
-        chars[pos + 1] = GRAPH_CHARS.horizontal;
-      }
+      if (branchRight && pos + 1 < width) chars[pos + 1] = GRAPH_CHARS.horizontal;
     } else {
       const flags = getEdgeFlags(posEdges);
       chars[pos] = getEdgeChar(flags);
-      if (flags.hasHorizontal && pos + 1 < width) {
-        chars[pos + 1] = GRAPH_CHARS.horizontal;
-      }
+      if (flags.hasHorizontal && pos + 1 < width) chars[pos + 1] = GRAPH_CHARS.horizontal;
     }
   }
 

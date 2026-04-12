@@ -50,17 +50,12 @@ function createMockReadFile(options: MockReadFileOptions = {}) {
 
   return vi.fn().mockImplementation(async (path: unknown) => {
     const file = String(path);
-    if (file.endsWith("defaults.json")) {
-      return JSON.stringify(defaults);
-    }
-    if (file.endsWith(".pi/agent/settings.json") && settings !== null) {
+    if (file.endsWith("defaults.json")) return JSON.stringify(defaults);
+    if (file.endsWith(".pi/agent/settings.json") && settings !== null)
       return JSON.stringify(settings);
-    }
     if (projectConfig !== null) {
       const targetPath = projectPath ?? String(projectConfig);
-      if (file.endsWith(targetPath)) {
-        return JSON.stringify(projectConfig);
-      }
+      if (file.endsWith(targetPath)) return JSON.stringify(projectConfig);
     }
     throw new Error("missing file");
   });
@@ -167,12 +162,10 @@ describe("configLoader", () => {
 
         readFile.mockImplementation(async (path) => {
           const file = String(path);
-          if (file.endsWith("defaults.json")) {
+          if (file.endsWith("defaults.json"))
             return JSON.stringify(defaultsConfig);
-          }
-          if (file.endsWith(".pi/agent/settings.json")) {
+          if (file.endsWith(".pi/agent/settings.json"))
             return JSON.stringify({ hooks: { invalid: true } });
-          }
           throw new Error("missing file");
         });
 

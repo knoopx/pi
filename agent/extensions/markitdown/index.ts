@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
-export default function (pi: ExtensionAPI) {
+export default function (pi: ExtensionAPI): void {
   pi.registerTool({
     name: "transcribe",
     label: "Transcribe",
@@ -62,32 +62,30 @@ Supports URLs and local files.`,
           );
         }
 
-        if (result.code === 0) {
+        if (result.code === 0)
           return {
             content: [{ type: "text", text: result.stdout }],
             details: { source, converted: true },
           };
-        } else {
-          // Build error message with all available information
-          const stderr = result.stderr?.trim();
-          const stdout = result.stdout?.trim();
-          const errorMessage = [stderr, stdout, `Exit code: ${result.code}`]
-            .filter(Boolean)
-            .join("\n\n");
+        // Build error message with all available information
+        const stderr = result.stderr?.trim();
+        const stdout = result.stdout?.trim();
+        const errorMessage = [stderr, stdout, `Exit code: ${result.code}`]
+          .filter(Boolean)
+          .join("\n\n");
 
-          const errorText =
-            errorMessage || `markitdown failed with exit code ${result.code}`;
+        const errorText =
+          errorMessage || `markitdown failed with exit code ${result.code}`;
 
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Error converting source: ${errorText}`,
-              },
-            ],
-            details: { source, error: errorMessage, exitCode: result.code },
-          };
-        }
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error converting source: ${errorText}`,
+            },
+          ],
+          details: { source, error: errorMessage, exitCode: result.code },
+        };
       } catch (error) {
         return {
           content: [{ type: "text", text: `Unexpected error: ${error}` }],

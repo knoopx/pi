@@ -18,7 +18,7 @@ export function createLRUCache<K, V>(limit: number) {
     get: (key: K) => cache.get(key),
     set: (key: K, value: V) => cache.set(key, value),
     touch,
-    clear: () => cache.clear(),
+    clear: () => { cache.clear(); },
     size: () => cache.size,
   };
 }

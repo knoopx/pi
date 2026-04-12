@@ -60,11 +60,10 @@ function parseGhJsonOutput<T>(
   result: { stdout: string; stderr: string; exitCode: number },
   commandName: string,
 ): T {
-  if (result.exitCode !== 0) {
+  if (result.exitCode !== 0)
     throw new Error(
       `gh ${commandName} failed: ${result.stderr || result.stdout}`,
     );
-  }
 
   try {
     return JSON.parse(result.stdout) as T;

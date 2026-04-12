@@ -37,9 +37,7 @@ export async function listPRs(
     `${owner}/${repo}`,
     `--limit=${limit}`,
   ];
-  if (state && state !== "all") {
-    args.push(`--state=${state}`);
-  }
+  if (state && state !== "all") args.push(`--state=${state}`);
   args.push(
     "--json=number,title,state,createdAt,updatedAt,baseRefName,headRefName,author,url,mergeable,reviewDecision",
     "--jq",
@@ -80,18 +78,10 @@ export async function createPR(
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   const args = ["pr", "create", "-R", `${owner}/${repo}`, "--title", title];
 
-  if (body) {
-    args.push("--body", body);
-  }
-  if (head) {
-    args.push("--head", head);
-  }
-  if (base) {
-    args.push("--base", base);
-  }
-  if (draft) {
-    args.push("--draft");
-  }
+  if (body) args.push("--body", body);
+  if (head) args.push("--head", head);
+  if (base) args.push("--base", base);
+  if (draft) args.push("--draft");
 
   return ghCmd(args);
 }
@@ -157,7 +147,7 @@ export function registerPRTools(pi: ExtensionAPI) {
     { key: "#", align: "right", minWidth: 5 },
     {
       key: "title",
-      format: (_v, row) => {
+      format(_v, row) {
         const r = row as Record<string, string>;
         const dot = r.state === "OPEN" ? "●" : "○";
         return [

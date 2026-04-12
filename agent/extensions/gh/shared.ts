@@ -224,9 +224,8 @@ export function registerViewTool<TItem>(
       params.repo as string,
       params.number as number,
     );
-    if (!item || typeof item !== "object") {
+    if (!item || typeof item !== "object")
       throw new Error(`Invalid response from ${toolName}`);
-    }
     const itemFields = fields(item);
     const output = [
       detail(itemFields),
@@ -300,9 +299,7 @@ function createCreateRenderCall(toolName: string) {
   ) {
     const typedArgs = args as { title?: string };
     let text = theme.fg("toolTitle", theme.bold(toolName));
-    if (typedArgs.title) {
-      text += theme.fg("muted", ` "${typedArgs.title}"`);
-    }
+    if (typedArgs.title) text += theme.fg("muted", ` "${typedArgs.title}"`);
     return new Text(text, 0, 0);
   };
 }

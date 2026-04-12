@@ -13,7 +13,7 @@ import { createErrorResult, createTextResultRender } from "./shared";
  * Create a renderCall function for repo tools with optional owner/repo/path
  */
 function createRepoRenderCall(toolName: string) {
-  return (args: Record<string, unknown>, theme: unknown) => {
+  return (args: Record<string, unknown>, theme: unknown): Text => {
     const t = theme as {
       fg: (c: string, t: string) => string;
       bold: (t: string) => string;
@@ -21,17 +21,11 @@ function createRepoRenderCall(toolName: string) {
     let text = t.fg("toolTitle", t.bold(toolName));
     const owner = args.owner as string;
     const repo = args.repo as string;
-    if (owner && repo) {
-      text += t.fg("muted", ` (${owner}/${repo})`);
-    }
+    if (owner && repo) text += t.fg("muted", ` (${owner}/${repo})`);
     const path = args.path as string;
-    if (path) {
-      text += t.fg("dim", `/${path}`);
-    }
+    if (path) text += t.fg("dim", `/${path}`);
     const maxFiles = args.maxFiles as number;
-    if (maxFiles) {
-      text += t.fg("dim", ` (max=${maxFiles})`);
-    }
+    if (maxFiles) text += t.fg("dim", ` (max=${maxFiles})`);
     return new Text(text, 0, 0);
   };
 }
@@ -103,33 +97,30 @@ export async function getFileContent(
   owner: string,
   repo: string,
   filePath: string,
-  ref?: string,
+  ref: string | undefined,
 ): Promise<FileContentResult> {
   let endpoint = `/repos/${owner}/${repo}/contents/${filePath}`;
-  if (ref) {
+  if (ref != null && ref.length > 0)
     endpoint += `?ref=${encodeURIComponent(ref)}`;
-  }
   const args = ["api", endpoint];
 
   const result = await ghCmd(args);
 
   if (result.exitCode !== 0) {
     const errorMessage = result.stderr || result.stdout || "Unknown error";
-    if (errorMessage.includes("404") || errorMessage.includes("Not Found")) {
+    if (errorMessage.includes("404") || errorMessage.includes("Not Found"))
       throw new Error(
         `File not found: ${owner}/${repo}/${filePath}${ref ? ` at ref ${ref}` : ""}`,
       );
-    }
     throw new Error(errorMessage);
   }
 
   const data: GHFile = JSON.parse(result.stdout);
 
-  if (!data.content || !data.encoding) {
+  if (!data.content || !data.encoding)
     throw new Error(
       `File is binary or too large to display. File size: ${data.size} bytes`,
     );
-  }
 
   return {
     repo: `${owner}/${repo}`,
@@ -152,9 +143,8 @@ export async function listRepoFiles(
   for (const item of contents) {
     if (files.length >= maxFiles) break;
 
-    if (item.type === "file") {
-      files.push(item);
-    } else if (item.type === "dir") {
+    if (item.type === "file") files.push(item);
+    else if (item.type === "dir") {
       try {
         const subContents = await getRepoContents(owner, repo, item.path);
         const subFiles = subContents
@@ -182,9 +172,7 @@ function formatRepoContents(
   const lines: string[] = [];
 
   const sorted = [...contents].sort((a, b) => {
-    if (a.type === b.type) {
-      return a.name.localeCompare(b.name);
-    }
+    if (a.type === b.type) return a.name.localeCompare(b.name);
     return a.type === "dir" ? -1 : 1;
   });
 
@@ -288,7 +276,7 @@ export type GetRepoContentsParamsType = Static<typeof GetRepoContentsParams>;
 export type GetFileContentParamsType = Static<typeof GetFileContentParams>;
 export type ListRepoFilesParamsType = Static<typeof ListRepoFilesParams>;
 
-export function registerRepoTools(pi: ExtensionAPI) {
+export function registerRepoTools(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "gh-repo-contents",
     label: "Repository Contents",
@@ -316,12 +304,12 @@ Examples:
         const contents = await getRepoContents(
           params.owner,
           params.repo,
-          params.path || "",
+          params.path ?? "",
         );
         const output = formatRepoContents(
           params.owner,
           params.repo,
-          params.path || "",
+          params.path ?? "",
           contents,
         );
         return createRepoResult(output, { contents });
@@ -363,7 +351,7 @@ Examples:
           params.owner,
           params.repo,
           params.path,
-          params.ref,
+          params.ref ?? undefined,
         );
         const output = formatFileContent(result);
         return createRepoResult(
@@ -377,12 +365,9 @@ Examples:
 
     renderCall(args, theme) {
       let text = theme.fg("toolTitle", theme.bold("gh-file-content"));
-      if (args.owner && args.repo && args.path) {
+      if (args.owner && args.repo && args.path)
         text += theme.fg("muted", ` (${args.owner}/${args.repo}/${args.path})`);
-      }
-      if (args.ref) {
-        text += theme.fg("dim", ` @${args.ref}`);
-      }
+      if (args.ref) text += theme.fg("dim", ` @${args.ref}`);
       return new Text(text, 0, 0);
     },
 
@@ -416,14 +401,14 @@ Examples:
         const result = await listRepoFiles(
           params.owner,
           params.repo,
-          params.path || "",
-          params.maxFiles || 50,
+          params.path ?? "",
+          params.maxFiles ?? 50,
         );
         const output = formatRepoFilesList({
           ...result,
           owner: params.owner,
           repo: params.repo,
-          path: params.path || "",
+          path: params.path ?? "",
         });
         return createRepoResult(output, result);
       } catch (error) {

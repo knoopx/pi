@@ -41,11 +41,7 @@ export function createFilesComponent(
 
   // Wrapper to close picker with action metadata
   function doneWithAction(item: FileInfo | null): void {
-    if (item && pendingAction) {
-      done({ file: item, action: pendingAction });
-    } else if (item) {
-      done({ file: item });
-    } else {
+    if (item && pendingAction) done({ file: item, action: pendingAction }); else if (item) done({ file: item }); else {
       done(null);
     }
     pendingAction = undefined;
@@ -60,9 +56,7 @@ export function createFilesComponent(
 
   // Internal done handler that wraps results
   const internalDone = (item: FileInfo | null) => {
-    if (item) {
-      done({ file: item });
-    } else {
+    if (item) done({ file: item }); else {
       done(null);
     }
   };
@@ -106,14 +100,14 @@ export function createFilesComponent(
     {
       key: Key.ctrl("i"),
       label: "insert",
-      handler: (item: FileInfo) => {
+      handler(item: FileInfo) {
         internalDone(item);
       },
     },
     ...ACTION_DEFS.map(([key, action]) => ({
       key,
       label: action,
-      handler: (item: FileInfo) => {
+      handler(item: FileInfo) {
         pendingAction = action;
         doneWithAction(item);
       },
@@ -139,10 +133,8 @@ export function createFilesComponent(
         {
           key: "space",
           label: "select",
-          handler: (item: FileInfo) => {
-            if (selectedFiles.has(item.path)) {
-              selectedFiles.delete(item.path);
-            } else {
+          handler(item: FileInfo) {
+            if (selectedFiles.has(item.path)) selectedFiles.delete(item.path); else {
               selectedFiles.add(item.path);
             }
             picker.invalidate();
@@ -152,24 +144,22 @@ export function createFilesComponent(
         {
           key: Key.ctrl("s"),
           label: "split",
-          handler: (item: FileInfo) => {
+          handler(item: FileInfo) {
             void splitFiles(item, pickerInstance?.notify);
           },
         },
       ],
-      onEdit: async (item) => {
+      async onEdit(item) {
         await pi.exec("editor", [item.path], { cwd });
       },
-      loadItems: async (_query) => {
+      async loadItems(_query) {
         const result = await pi.exec(
           "rg",
           ["--files", "--hidden", "-g", "!node_modules", "-g", "!.git"],
           { cwd },
         );
 
-        if (result.code !== 0) {
-          throw new Error(`Failed to load files: ${result.stderr}`);
-        }
+        if (result.code !== 0) throw new Error(`Failed to load files: ${result.stderr}`);
 
         const { statSync } = await import("node:fs");
         const { join } = await import("node:path");
@@ -201,7 +191,7 @@ export function createFilesComponent(
       },
       filterItems: (items, query) =>
         items.filter((item) => item.path.toLowerCase().includes(query)),
-      formatItem: (item, width, theme) => {
+      formatItem(item, width, theme) {
         const isSelected = selectedFiles.has(item.path);
         const marker = isSelected ? theme.fg("accent", "✓ ") : "  ";
         return `${marker}${getFileIcon(item.path)} ${item.path}`;
@@ -214,7 +204,7 @@ export function createFilesComponent(
 
   return {
     ...picker,
-    invalidate: () => {
+    invalidate() {
       picker.invalidate();
     },
   };

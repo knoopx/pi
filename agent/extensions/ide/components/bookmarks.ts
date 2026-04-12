@@ -56,9 +56,7 @@ function groupBookmarksByChange(
 
   for (const entry of entries) {
     const existing = byChange.get(entry.changeId);
-    if (existing) {
-      existing.bookmarks.push(entry.bookmark);
-    } else {
+    if (existing) existing.bookmarks.push(entry.bookmark); else {
       byChange.set(entry.changeId, {
         bookmarks: [entry.bookmark],
         description: entry.description,
@@ -121,7 +119,7 @@ export function createBookmarksComponent(
     {
       key: Key.ctrl("n"),
       label: "new",
-      handler: async (item) => {
+      async handler(item) {
         const result = await pi.exec("jj", ["new", "-r", item.changeId], {
           cwd,
         });
@@ -142,7 +140,7 @@ export function createBookmarksComponent(
     {
       key: ACTION_KEYS.delete,
       label: "delete",
-      handler: async (item) => {
+      async handler(item) {
         const forgetOutputs: string[] = [];
         for (const bookmark of item.bookmarks) {
           forgetOutputs.push(await forgetBookmark(pi, cwd, bookmark));
@@ -155,7 +153,7 @@ export function createBookmarksComponent(
     {
       key: Key.ctrl("g"),
       label: "fetch",
-      handler: async () => {
+      async handler() {
         const result = await pi.exec("jj", ["git", "fetch"], { cwd });
         if (result.code === 0) {
           const msg = "Fetched all bookmarks from all remotes";
@@ -169,7 +167,7 @@ export function createBookmarksComponent(
     {
       key: Key.ctrl("p"),
       label: "push",
-      handler: async () => {
+      async handler() {
         const result = await pi.exec("jj", ["git", "push", "--all"], { cwd });
         if (result.code === 0) {
           const msg = "Pushed all local bookmarks to remote";
@@ -183,7 +181,7 @@ export function createBookmarksComponent(
     {
       key: Key.ctrl("i"),
       label: "insert",
-      handler: (item) => {
+      handler(item) {
         if (onInsert) {
           onInsert(item.bookmarks[0] || item.changeId);
           done(null);
@@ -204,11 +202,11 @@ export function createBookmarksComponent(
       previewTitle: (item) =>
         item.displayNames[0] ?? item.changeId.slice(0, 12),
       actions,
-      loadItems: async (_query) => {
+      async loadItems(_query) {
         const entries = await listBookmarksByChange(pi, cwd);
         return groupBookmarksByChange(entries);
       },
-      filterItems: (items, query) => {
+      filterItems(items, query) {
         const lowerQuery = query.toLowerCase();
         switch (currentFilterMode) {
           case "all":
@@ -240,7 +238,7 @@ export function createBookmarksComponent(
         bindings: [
           {
             key: Key.ctrl("/"),
-            handler: () => {
+            handler() {
               const currentIndex =
                 BOOKMARK_FILTER_MODES.indexOf(currentFilterMode);
               const nextIndex =
@@ -252,7 +250,7 @@ export function createBookmarksComponent(
           },
         ],
       }),
-      formatItem: (item, width, theme) => {
+      formatItem(item, width, theme) {
         const bookmarkLabels = item.displayNames
           .map((name) => formatBookmarkReference(theme, name))
           .join(" ");
@@ -268,7 +266,7 @@ export function createBookmarksComponent(
         const maxDescLen = Math.max(10, width - fixedLen);
         const desc =
           item.description.length > maxDescLen
-            ? item.description.slice(0, maxDescLen - 1) + "…"
+            ? `${item.description.slice(0, maxDescLen - 1)}…`
             : item.description;
 
         const styledSep = theme.fg("dim", sep);
@@ -280,7 +278,7 @@ export function createBookmarksComponent(
         );
         return parts.join(styledSep);
       },
-      loadPreview: async (item) => {
+      async loadPreview(item) {
         const { diff } = await getRawDiff(pi, cwd, item.changeId);
         const theme = await getTheme(pi, cwd);
         return renderDiffWithShiki(diff, theme);

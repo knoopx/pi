@@ -39,14 +39,10 @@ export function tokenizeCommand(command: string): string[][] {
         segments.push(normalizeSegment(current));
         current = [];
       }
-    } else if (typeof token === "string") {
-      current.push(token);
-    }
+    } else if (typeof token === "string") current.push(token);
   }
 
-  if (current.length > 0) {
-    segments.push(normalizeSegment(current));
-  }
+  if (current.length > 0) segments.push(normalizeSegment(current));
 
   return segments;
 }
@@ -54,8 +50,12 @@ export function tokenizeCommand(command: string): string[][] {
 /** Strip env vars and command wrappers from the front of a token list. */
 function normalizeSegment(tokens: string[]): string[] {
   let i = 0;
-  while (i < tokens.length && ENV_VAR_ASSIGNMENT.test(tokens[i])) i++;
-  while (i < tokens.length && COMMAND_WRAPPERS.has(tokens[i])) i++;
+  while (i < tokens.length && ENV_VAR_ASSIGNMENT.test(tokens[i])) {
+    i++;
+  }
+  while (i < tokens.length && COMMAND_WRAPPERS.has(tokens[i])) {
+    i++;
+  }
   return i < tokens.length ? tokens.slice(i) : tokens;
 }
 
@@ -120,9 +120,8 @@ export function parsePattern(pattern: string): PatternToken[] {
     const orOptions = parseOrToken(part);
     if (orOptions) {
       // A group with a single token option evaluates to that literal
-      if (orOptions.length === 1 && orOptions[0].length === 1) {
+      if (orOptions.length === 1 && orOptions[0].length === 1)
         return { kind: "literal", value: orOptions[0][0] };
-      }
       return { kind: "or", options: orOptions };
     }
 
@@ -159,32 +158,32 @@ function matchTokens(
   // Need at least one token remaining
   if (ti >= tokens.length) return false;
 
-  if (pat.kind === "single") {
+  if (pat.kind === "single")
     return matchTokens(pattern, tokens, pi + 1, ti + 1);
-  }
 
   const actual = getComparableToken(tokens, ti);
 
-  if (pat.kind === "or") {
+  if (pat.kind === "or")
     return pat.options.some((optionTokens) => {
       // Check if all tokens in this option match consecutively
-      if (ti + optionTokens.length > tokens.length) return false;
+      if (ti + optionTokens.length > tokens.length) {
+        return false;
+      }
       for (let j = 0; j < optionTokens.length; j++) {
         const tokenActual = getComparableToken(tokens, ti + j);
-        if (!matchLiteralToken(tokenActual, optionTokens[j])) return false;
+        if (!matchLiteralToken(tokenActual, optionTokens[j])) {
+          return false;
+        }
       }
       return matchTokens(pattern, tokens, pi + 1, ti + optionTokens.length);
     });
-  }
 
   if (!matchLiteralToken(actual, pat.value)) return false;
   return matchTokens(pattern, tokens, pi + 1, ti + 1);
 }
 
 function parseOrToken(token: string): string[][] | null {
-  if (!token.startsWith("{") || !token.endsWith("}")) {
-    return null;
-  }
+  if (!token.startsWith("{") || !token.endsWith("}")) return null;
 
   const body = token.slice(1, -1);
 
@@ -193,25 +192,20 @@ function parseOrToken(token: string): string[][] | null {
     .map((option) => option.trim().split(/\s+/).filter(Boolean))
     .filter((tokens) => tokens.length > 0);
 
-  if (options.length === 0) {
-    return null;
-  }
+  if (options.length === 0) return null;
 
   return options;
 }
 
 function getComparableToken(tokens: string[], tokenIndex: number): string {
-  if (tokenIndex === 0) {
+  if (tokenIndex === 0)
     return tokens[tokenIndex].split("/").pop() || tokens[tokenIndex];
-  }
 
   return tokens[tokenIndex];
 }
 
 function matchLiteralToken(actual: string, expected: string): boolean {
-  if (!expected.includes("*")) {
-    return actual === expected;
-  }
+  if (!expected.includes("*")) return actual === expected;
 
   const escaped = expected
     .split("*")

@@ -77,9 +77,7 @@ async function nodeFetch(
       reject(new Error("Request timeout"));
     });
 
-    if (options.body) {
-      req.write(options.body);
-    }
+    if (options.body) req.write(options.body);
     req.end();
   });
 }

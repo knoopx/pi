@@ -100,11 +100,9 @@ export async function runNavigationStack<T>(
       }
 
       const cmDef = SYMBOL_REFERENCE_COMMANDS[action];
-      if (cmDef) {
-        stack.push({
-          factory: createSymbolReferenceCommandScreen(cmDef, target, ctx),
-        });
-      }
+      if (cmDef) stack.push({
+        factory: createSymbolReferenceCommandScreen(cmDef, target, ctx),
+      });
       continue;
     }
 

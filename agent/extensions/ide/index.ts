@@ -23,7 +23,7 @@ import {
   type KeyId,
 } from "@mariozechner/pi-tui";
 
-import { fetchUsageForModel, type UsageSnapshot } from "./footer/usage";
+import { detectAndFetchUsage, type UsageSnapshot } from "./footer/usage/shared";
 import {
   generateWorkspaceName,
   createWorkspace,
@@ -46,26 +46,16 @@ import { monitorWorkspace } from "./overlays/workspace-monitor";
 import { FULL_OVERLAY_OPTIONS } from "./overlays/options";
 
 function formatTokenCount(value: number): string {
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)}m`;
-  }
-  if (value >= 1_000) {
-    return `${Math.round(value / 1_000)}k`;
-  }
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}m`;
+  if (value >= 1_000) return `${Math.round(value / 1_000)}k`;
   return String(value);
 }
 
 function shortenHomePath(cwd: string): string {
-  const home = process.env.HOME;
-  if (!home) {
-    return cwd;
-  }
-  if (cwd === home) {
-    return "~";
-  }
-  if (cwd.startsWith(`${home}/`)) {
-    return `~${cwd.slice(home.length)}`;
-  }
+  const home = process.env.HOME ?? undefined;
+  if (home === undefined) return cwd;
+  if (cwd === home) return "~";
+  if (cwd.startsWith(`${home}/`)) return `~${cwd.slice(home.length)}`;
   return cwd;
 }
 
@@ -84,9 +74,7 @@ function formatCompactQuota(
   usage: UsageSnapshot | undefined,
   theme: ThemeWithFg,
 ): string {
-  if (!usage || usage.error || usage.windows.length === 0) {
-    return "";
-  }
+  if (!usage || usage.error != null || usage.windows.length === 0) return "";
 
   return usage.windows
     .map((window) => {
@@ -111,9 +99,7 @@ function padLine(
   const rightWidth = visibleWidth(right);
 
   const totalContent = leftWidth + centerWidth + rightWidth;
-  if (totalContent >= width) {
-    return left + " " + center + " " + right;
-  }
+  if (totalContent >= width) return `${left} ${center} ${right}`;
 
   const availableSpace = width - totalContent;
   const leftPad = Math.floor(availableSpace / 2);
@@ -142,18 +128,16 @@ async function spawnWorkspaceAgent(
     newSessionFile,
   );
 
-  if (ctx.hasUI) {
+  if (ctx.hasUI)
     ctx.ui.notify(`Spawned agent in workspace ${workspaceName}`, "info");
-  }
 
   void monitorWorkspace(pi, workspaceName, ctx);
 }
 
-export default async function ideExtension(pi: ExtensionAPI) {
+export default async function ideExtension(pi: ExtensionAPI): Promise<void> {
   let lastContext: ExtensionContext | null = null;
   let currentVcsLabel: string | null = null;
   let currentUsage: UsageSnapshot | undefined;
-  let isFooterRefreshInProgress = false;
   let requestFooterRender: (() => void) | undefined;
 
   function calculateTotalCost(
@@ -161,9 +145,8 @@ export default async function ideExtension(pi: ExtensionAPI) {
   ): number {
     let totalCost = 0;
     for (const entry of sessionManager.getEntries()) {
-      if (entry.type === "message" && entry.message.role === "assistant") {
+      if (entry.type === "message" && entry.message.role === "assistant")
         totalCost += entry.message.usage.cost.total;
-      }
     }
     return totalCost;
   }
@@ -190,11 +173,9 @@ export default async function ideExtension(pi: ExtensionAPI) {
 
     let coloredText = contextText;
     if (contextPercent !== null && contextPercent !== undefined) {
-      if (contextPercent > 90) {
-        coloredText = theme.fg("error", contextText);
-      } else if (contextPercent > 70) {
+      if (contextPercent > 90) coloredText = theme.fg("error", contextText);
+      else if (contextPercent > 70)
         coloredText = theme.fg("warning", contextText);
-      }
     }
 
     return { text: coloredText };
@@ -220,13 +201,11 @@ export default async function ideExtension(pi: ExtensionAPI) {
   ): string {
     const sessionName = ctx.sessionManager.getSessionName();
     const cwd = shortenHomePath(ctx.cwd);
-    return `${theme.fg("accent", cwd)}${vcsLabel ? ` ${theme.fg("dim", vcsLabel)}` : ""}${sessionName ? theme.fg("dim", ` ${sessionName}`) : ""}`;
+    return `${theme.fg("accent", cwd)}${vcsLabel != null && vcsLabel.length > 0 ? ` ${theme.fg("dim", vcsLabel)}` : ""}${sessionName != null && sessionName.length > 0 ? theme.fg("dim", ` ${sessionName}`) : ""}`;
   }
 
   function installGlobalFooter(ctx: ExtensionContext): void {
-    if (!ctx.hasUI) {
-      return;
-    }
+    if (!ctx.hasUI) return;
 
     ctx.ui.setFooter((tui, theme, footerData) => {
       requestFooterRender = () => {
@@ -243,11 +222,11 @@ export default async function ideExtension(pi: ExtensionAPI) {
         dispose() {
           unsubscribe();
           clearInterval(refreshTimer);
-          if (requestFooterRender) {
-            requestFooterRender = undefined;
-          }
+          if (requestFooterRender) requestFooterRender = undefined;
         },
-        invalidate() {},
+        invalidate(): void {
+          // No cleanup needed for invalidate
+        },
         render(width: number): string[] {
           const totalCost = calculateTotalCost(ctx.sessionManager);
           const costText = formatCostText(totalCost, ctx);
@@ -266,21 +245,18 @@ export default async function ideExtension(pi: ExtensionAPI) {
   }
 
   async function refreshFooterData(): Promise<void> {
-    if (!lastContext || isFooterRefreshInProgress) {
-      return;
-    }
+    if (!lastContext) return;
 
-    isFooterRefreshInProgress = true;
     try {
       const [vcsLabel, usage] = await Promise.all([
         getVcsLabel(pi, lastContext.cwd),
-        lastContext.model ? fetchUsageForModel(lastContext.model) : undefined,
+        lastContext.model ? detectAndFetchUsage(lastContext.model) : undefined,
       ]);
       currentVcsLabel = vcsLabel;
       currentUsage = usage;
       requestFooterRender?.();
-    } finally {
-      isFooterRefreshInProgress = false;
+    } catch {
+      // Ignore errors during footer refresh
     }
   }
 
@@ -309,9 +285,7 @@ export default async function ideExtension(pi: ExtensionAPI) {
     ctx: ExtensionContext,
     changeId: string,
   ): Promise<string | null> {
-    if (!ctx.hasUI) {
-      return null;
-    }
+    if (!ctx.hasUI) return null;
 
     const bookmarkName = await ctx.ui.custom<string | null>(
       (tui, theme, keybindings, done) => {
@@ -336,9 +310,7 @@ export default async function ideExtension(pi: ExtensionAPI) {
       },
     );
 
-    if (!bookmarkName) {
-      return null;
-    }
+    if (bookmarkName === null) return null;
 
     await setBookmarkToChange(pi, ctx.cwd, bookmarkName, changeId);
     return bookmarkName;
@@ -358,7 +330,7 @@ export default async function ideExtension(pi: ExtensionAPI) {
       );
 
       const newSessionFile = ctx.sessionManager.getSessionFile();
-      if (!newSessionFile) throw new Error("No session file available");
+      if (!newSessionFile) return;
 
       await spawnWorkspaceAgent(
         pi,
@@ -370,9 +342,8 @@ export default async function ideExtension(pi: ExtensionAPI) {
       );
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      if (ctx.hasUI) {
+      if (ctx.hasUI)
         ctx.ui.notify(`Failed to create workspace on fork: ${msg}`, "error");
-      }
     }
   });
 
@@ -380,9 +351,9 @@ export default async function ideExtension(pi: ExtensionAPI) {
   pi.registerCommand("workspace", {
     description:
       "Create a jujutsu workspace and spawn a pi subagent (usage: /workspace <task description>)",
-    handler: async (args, ctx) => {
+    async handler(args, ctx): Promise<void> {
       const description = args.trim();
-      if (!description) {
+      if (description.length === 0) {
         if (ctx.hasUI)
           ctx.ui.notify("Usage: /workspace <task description>", "warning");
         return;
@@ -399,7 +370,7 @@ export default async function ideExtension(pi: ExtensionAPI) {
         );
 
         const currentSessionFile = ctx.sessionManager.getSessionFile();
-        if (!currentSessionFile) throw new Error("No session file available");
+        if (!currentSessionFile) return;
 
         await spawnWorkspaceAgent(
           pi,
@@ -419,9 +390,9 @@ export default async function ideExtension(pi: ExtensionAPI) {
 
   pi.registerCommand("workspaces", {
     description: "Review ide workspaces and their diffs",
-    handler: async (_args, ctx) => {
+    async handler(_args, ctx): Promise<void> {
       if (!ctx.hasUI) return;
-      await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
+      await ctx.ui.custom((tui, theme, keybindings, done) => {
         return createWorkspacesComponent(pi, tui, theme, keybindings, done);
       }, FULL_OVERLAY_OPTIONS);
     },
@@ -430,23 +401,23 @@ export default async function ideExtension(pi: ExtensionAPI) {
   pi.registerCommand("symbols", {
     description:
       "Browse and pick symbols from the codebase with source preview",
-    handler: async (args, ctx) => {
+    async handler(args, ctx): Promise<void> {
       if (!ctx.hasUI) return;
-      await openSymbolsPicker(pi, ctx, args.trim());
+      await openSymbolsPicker(pi, ctx, args);
     },
   });
 
   pi.registerCommand("files", {
     description: "Browse and pick files from the codebase with source preview",
-    handler: async (args, ctx) => {
+    async handler(args, ctx): Promise<void> {
       if (!ctx.hasUI) return;
-      await openFilesPicker(pi, ctx, args.trim());
+      await openFilesPicker(pi, ctx, args);
     },
   });
 
   pi.registerCommand("bookmarks", {
     description: "Browse bookmarks (name@remote), insert, refresh, and forget",
-    handler: async (_args, ctx) => {
+    async handler(_args, ctx): Promise<void> {
       if (!ctx.hasUI) return;
       await openBookmarksBrowser(pi, ctx);
     },
@@ -454,7 +425,7 @@ export default async function ideExtension(pi: ExtensionAPI) {
 
   pi.registerCommand("changes", {
     description: "Browse jujutsu changes on current branch with diff preview",
-    handler: async (_args, ctx) => {
+    async handler(_args, ctx): Promise<void> {
       if (!ctx.hasUI) return;
       await openChangesBrowser(pi, ctx, promptAndSetBookmark);
     },
@@ -462,7 +433,7 @@ export default async function ideExtension(pi: ExtensionAPI) {
 
   pi.registerCommand("oplog", {
     description: "Browse jujutsu operation log with restore capability",
-    handler: async (_args, ctx) => {
+    async handler(_args, ctx): Promise<void> {
       if (!ctx.hasUI) return;
       await openOpLogBrowser(pi, ctx);
     },
@@ -470,7 +441,7 @@ export default async function ideExtension(pi: ExtensionAPI) {
 
   pi.registerCommand("pull-requests", {
     description: "Browse GitHub pull requests with diff preview",
-    handler: async (_args, ctx) => {
+    async handler(_args, ctx): Promise<void> {
       if (!ctx.hasUI) return;
       await openPullRequestsBrowser(pi, ctx);
     },
@@ -478,9 +449,9 @@ export default async function ideExtension(pi: ExtensionAPI) {
 
   pi.registerCommand("todos", {
     description: "Browse TODO/FIXME/HACK/XXX comments with source preview",
-    handler: async (args, ctx) => {
+    async handler(args, ctx): Promise<void> {
       if (!ctx.hasUI) return;
-      await openTodosBrowser(pi, ctx, args.trim());
+      await openTodosBrowser(pi, ctx, args);
     },
   });
 
@@ -495,42 +466,44 @@ export default async function ideExtension(pi: ExtensionAPI) {
     {
       key: Key.ctrl("t"),
       description: "Open symbol picker",
-      handler: async (ctx) => openSymbolsPicker(pi, ctx, ""),
+      handler: async (ctx): Promise<void> => openSymbolsPicker(pi, ctx, ""),
     },
     {
       key: Key.ctrl("p"),
       description: "Open file picker",
-      handler: async (ctx) => openFilesPicker(pi, ctx, ""),
+      handler: async (ctx): Promise<void> => openFilesPicker(pi, ctx, ""),
     },
     {
       key: Key.ctrl("b"),
       description: "Open bookmarks browser",
-      handler: async (ctx) => openBookmarksBrowser(pi, ctx),
+      handler: async (ctx): Promise<void> => openBookmarksBrowser(pi, ctx),
     },
     {
       key: Key.ctrl("j"),
       description: "Open workspaces review",
-      handler: async (ctx) =>
-        ctx.ui.custom<void>(
+      handler: async (ctx): Promise<void> => {
+        await ctx.ui.custom(
           (tui, theme, keybindings, done) =>
             createWorkspacesComponent(pi, tui, theme, keybindings, done),
           FULL_OVERLAY_OPTIONS,
-        ),
+        );
+      },
     },
     {
       key: Key.ctrl("k"),
       description: "Open changes browser",
-      handler: async (ctx) => openChangesBrowser(pi, ctx, promptAndSetBookmark),
+      handler: async (ctx): Promise<void> =>
+        openChangesBrowser(pi, ctx, promptAndSetBookmark),
     },
     {
       key: Key.ctrl("o"),
       description: "Open operation log browser",
-      handler: async (ctx) => openOpLogBrowser(pi, ctx),
+      handler: async (ctx): Promise<void> => openOpLogBrowser(pi, ctx),
     },
     {
       key: Key.ctrl("g"),
       description: "Open pull requests browser",
-      handler: async (ctx) => openPullRequestsBrowser(pi, ctx),
+      handler: async (ctx): Promise<void> => openPullRequestsBrowser(pi, ctx),
     },
   ];
 
@@ -538,7 +511,7 @@ export default async function ideExtension(pi: ExtensionAPI) {
   for (const shortcut of shortcuts) {
     pi.registerShortcut(shortcut.key, {
       description: shortcut.description,
-      handler: async (ctx) => {
+      async handler(ctx): Promise<void> {
         if (!ctx.hasUI) return;
         await shortcut.handler(ctx);
       },

@@ -152,9 +152,7 @@ export function createChangesComponent(
 
   // Navigation handlers - defined inline to access current array values
   function navigateChanges(direction: "up" | "down"): void {
-    if (changes.length === 0) {
-      return;
-    }
+    if (changes.length === 0) return;
 
     const maxIndex = changes.length - 1;
     const newIndex =
@@ -172,9 +170,7 @@ export function createChangesComponent(
   }
 
   function navigateFiles(direction: "up" | "down"): void {
-    if (files.length === 0 || selectedChange === null) {
-      return;
-    }
+    if (files.length === 0 || selectedChange === null) return;
 
     const maxIndex = files.length - 1;
     const newIndex =
@@ -229,16 +225,12 @@ export function createChangesComponent(
     const targetIndex =
       direction === "up" ? currentIndex - 1 : currentIndex + 1;
 
-    if (targetIndex < 0 || targetIndex >= changes.length) {
-      return;
-    }
+    if (targetIndex < 0 || targetIndex >= changes.length) return;
 
     const changeToMove = changes[currentIndex];
     const isWorkingCopy =
       currentChangeId !== null && changeToMove?.changeId === currentChangeId;
-    if (isWorkingCopy) {
-      return;
-    }
+    if (isWorkingCopy) return;
 
     [changes[currentIndex], changes[targetIndex]] = [
       changes[targetIndex],
@@ -333,9 +325,8 @@ export function createChangesComponent(
   }
 
   function getDescribeTargets(): Change[] {
-    if (selectedChangeIds.size > 0) {
+    if (selectedChangeIds.size > 0)
       return changes.filter((change) => selectedChangeIds.has(change.changeId));
-    }
     return selectedChange ? [selectedChange] : [];
   }
 
@@ -346,19 +337,22 @@ export function createChangesComponent(
 
     done();
     const ids = targets.map((target) => target.changeId);
+
     const workflowLines = ids
-      .map(
-        (id, index) =>
-          `${String(index + 1)}. Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "<type>(<scope>): <description>"\``,
-      )
+      .map((id, index) => {
+        return `${String(index + 1)}. Get git hash: \`jj log -r ${id} -T 'commit_id' --no-graph\`\n   Check semantic changes: \`sem diff --commit <hash-from-step-1>\` (use the hash, NOT parent!)\n   Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "<type>(<scope>): <description>"\``;
+      })
       .join("\n");
 
     const task = `Describe jujutsu changes ${ids.join(", ")} using Conventional Commits format.
 
 Use the **conventional-commits** skill for type/scope rules.
+Use the **sem** skill to understand actual code changes vs cosmetic modifications.
 
 <format>
 \`<type>(<scope>): <description>\`
+
+**Scope is required** - always include a scope in parentheses.
 
 Examples:
 - \`feat(auth): add passwordless login\`
@@ -370,11 +364,32 @@ Type selection:
 - Users see corrected behavior → \`fix\`
 - Otherwise → \`chore\` or more specific type (\`refactor\`, \`build\`, \`ci\`, \`test\`, \`docs\`, \`perf\`, \`style\`)
 
+Scope guidelines:
+- Use a short noun: \`api\`, \`auth\`, \`ui\`, \`db\`, \`cli\`, \`deps\`, \`docs\`, \`agent\`, \`lint\`, \`build\`
+- Use repo/module/package name when working in a monorepo
+- If unsure, use a generic scope like \`core\`, \`general\`, or \`misc\`
+
 Description guidelines:
 - Use imperative mood: "add", "fix", "remove", "update"
 - No ending punctuation
 - Be specific; avoid "changes", "stuff", "update things"
+- Describe actual content, not generic categories. Name what was added/changed, not that "rules" or "principles" were added.
+
+Bad examples (vague, generic):
+- "add behavioral guidelines and core principles"
+- "add agent operating principles"
+- "add behavior rules"
+
+Good examples (specific, concrete):
+- "add rules for dead code removal, build verification, security, debugging, architecture, and tool usage"
 </format>
+
+<sem-guidance>
+- If sem shows all changes are \`~\` (cosmetic) → use \`style:\` or \`format:\`
+- If sem shows \`∆\` (modified) → describe the actual behavior change
+- If sem shows \`+\` or \`-\` → describe additions/removals
+- Large file counts don't always mean large changes — sem reveals the truth
+</sem-guidance>
 
 <workflow>
 ${workflowLines}
@@ -568,9 +583,7 @@ Use the **conventional-commits** skill for commit message format.`;
 
       const existingIds = new Set(changes.map((change) => change.changeId));
       for (const changeId of selectedChangeIds) {
-        if (!existingIds.has(changeId)) {
-          selectedChangeIds.delete(changeId);
-        }
+        if (!existingIds.has(changeId)) selectedChangeIds.delete(changeId);
       }
 
       loadingState.loading = false;
@@ -664,9 +677,7 @@ Use the **conventional-commits** skill for commit message format.`;
       diffContent = await renderDiffWithShiki(diff, theme);
       if (!options?.preserveScroll) selectionState.diffScroll = 0;
 
-      if (cache) {
-        cache.diffs.set(diffKey, diffContent);
-      }
+      if (cache) cache.diffs.set(diffKey, diffContent);
 
       invalidateCache(loadingState);
       tui.requestRender();
@@ -679,17 +690,14 @@ Use the **conventional-commits** skill for commit message format.`;
   }
 
   function getChangeRows(width: number, height: number): string[] {
-    if (loadingState.loading) {
-      return [renderLoadingRow(width)];
-    }
+    if (loadingState.loading) return [renderLoadingRow(width)];
 
-    if (changes.length === 0) {
+    if (changes.length === 0)
       return renderEmptyState(
         width,
         "No changes on branch",
         "All changes are immutable",
       );
-    }
 
     const visibleCount = height;
     const startIdx = Math.max(
@@ -748,15 +756,13 @@ Use the **conventional-commits** skill for commit message format.`;
     const pos = graphLayout.positions.get(change.changeId);
     const edges = graphLayout.edges[idx] ?? [];
     if (!pos) return "";
-    return (
-      renderGraphRow(
-        edges,
-        pos.x,
-        isWorkingCopy,
-        change.immutable,
-        graphLayout.maxX,
-      ) + " "
-    );
+    return `${renderGraphRow(
+      edges,
+      pos.x,
+      isWorkingCopy,
+      change.immutable,
+      graphLayout.maxX,
+    )} `;
   }
 
   function getChangeRowText(
@@ -800,9 +806,7 @@ Use the **conventional-commits** skill for commit message format.`;
         ? theme.fg("dim", graphPrefix)
         : graphPrefix;
     let line = styledGraph + leftPadded + rightText;
-    if (state.isFocused) {
-      line = theme.bg("selectedBg", line);
-    }
+    if (state.isFocused) line = theme.bg("selectedBg", line);
     return line;
   }
 
@@ -821,9 +825,8 @@ Use the **conventional-commits** skill for commit message format.`;
     if (
       loadingState.cachedWidth === width &&
       loadingState.cachedLines.length > 0
-    ) {
+    )
       return loadingState.cachedLines;
-    }
 
     const dims = calculateDimensions(tui.terminal.rows, width, {
       leftTitle: "",
@@ -1029,27 +1032,27 @@ Use the **conventional-commits** skill for commit message format.`;
     {
       key: "up",
       label: "move",
-      handler: () => {
+      handler() {
         moveChange("up");
       },
     },
     {
       key: "down",
-      handler: () => {
+      handler() {
         moveChange("down");
       },
     },
     {
       key: "enter",
       label: "apply",
-      handler: () => {
+      handler() {
         void applyMoveMode();
       },
     },
     {
       key: "escape",
       label: "cancel",
-      handler: () => {
+      handler() {
         cancelMoveMode();
       },
     },
@@ -1060,20 +1063,20 @@ Use the **conventional-commits** skill for commit message format.`;
     {
       key: "up",
       label: "nav",
-      handler: () => {
+      handler() {
         navigateChanges("up");
       },
     },
     {
       key: "down",
-      handler: () => {
+      handler() {
         navigateChanges("down");
       },
     },
     {
       key: Key.ctrl("/"),
       label: "filter",
-      handler: () => {
+      handler() {
         cycleFilter(1);
       },
     },
@@ -1081,11 +1084,11 @@ Use the **conventional-commits** skill for commit message format.`;
       key: "space",
       label: "select",
       when: hasSelectedChange,
-      handler: () => {
+      handler() {
         if (selectedChange) {
-          if (selectedChangeIds.has(selectedChange.changeId)) {
+          if (selectedChangeIds.has(selectedChange.changeId))
             selectedChangeIds.delete(selectedChange.changeId);
-          } else {
+          else {
             selectedChangeIds.add(selectedChange.changeId);
           }
           invalidateCache(loadingState);
@@ -1097,7 +1100,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: "n",
       label: "new",
       when: hasSelectedChange,
-      handler: () => {
+      handler() {
         void executeAction("new");
       },
     },
@@ -1105,7 +1108,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: "e",
       label: "edit",
       when: hasSelectedChange,
-      handler: () => {
+      handler() {
         void executeAction("edit");
       },
     },
@@ -1113,7 +1116,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: "r",
       label: "revert",
       when: hasSelectedChange,
-      handler: () => {
+      handler() {
         void executeAction("revert");
       },
     },
@@ -1121,7 +1124,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: "d",
       label: "describe",
       when: () => hasSelectedChange() || selectedChangeIds.size > 0,
-      handler: () => {
+      handler() {
         void executeAction("describe");
       },
     },
@@ -1129,7 +1132,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: "s",
       label: "split",
       when: hasSelectedChange,
-      handler: () => {
+      handler() {
         void executeAction("split");
       },
     },
@@ -1137,7 +1140,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: "f",
       label: "fixup",
       when: canSquash,
-      handler: () => {
+      handler() {
         void executeAction("squash");
       },
     },
@@ -1145,7 +1148,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: Key.ctrl("m"),
       label: "move",
       when: canMove,
-      handler: () => {
+      handler() {
         enterMoveMode();
       },
     },
@@ -1153,7 +1156,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: Key.ctrl("i"),
       label: "insert",
       when: () => hasSelectedChange() && onInsert !== undefined,
-      handler: () => {
+      handler() {
         onInsert!(selectedChange!.changeId);
         done();
       },
@@ -1162,7 +1165,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: "b",
       label: "bookmark",
       when: () => hasSelectedChange() && onBookmark !== undefined,
-      handler: () => {
+      handler() {
         void setBookmark();
       },
     },
@@ -1170,7 +1173,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: Key.ctrl("p"),
       label: "push",
       when: hasBookmarks,
-      handler: () => {
+      handler() {
         void pushBookmarks();
       },
     },
@@ -1178,7 +1181,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: ACTION_KEYS.delete,
       label: "drop",
       when: hasSelectedChange,
-      handler: () => {
+      handler() {
         void executeAction("drop");
       },
     },
@@ -1189,13 +1192,13 @@ Use the **conventional-commits** skill for commit message format.`;
     {
       key: "up",
       label: "nav",
-      handler: () => {
+      handler() {
         navigateFiles("up");
       },
     },
     {
       key: "down",
-      handler: () => {
+      handler() {
         navigateFiles("down");
       },
     },
@@ -1203,7 +1206,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: "e",
       label: "edit",
       when: hasSelectedFile,
-      handler: () => {
+      handler() {
         const file = files[selectionState.fileIndex];
         void pi.exec("editor", [path.join(cwd, file.path)]);
       },
@@ -1212,7 +1215,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: "s",
       label: "split",
       when: () => hasSelectedChange() && hasSelectedFile(),
-      handler: () => {
+      handler() {
         void splitFile();
       },
     },
@@ -1220,7 +1223,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: "d",
       label: "discard",
       when: () => hasSelectedChange() && hasSelectedFile(),
-      handler: () => {
+      handler() {
         void discardFile();
       },
     },
@@ -1228,7 +1231,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: Key.ctrl("t"),
       label: "inspect",
       when: () => onFileCmAction !== undefined && hasSelectedFile(),
-      handler: () => {
+      handler() {
         void onFileCmAction!(files[selectionState.fileIndex].path, "inspect");
       },
     },
@@ -1236,7 +1239,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: Key.ctrl("d"),
       label: "deps",
       when: () => onFileCmAction !== undefined && hasSelectedFile(),
-      handler: () => {
+      handler() {
         void onFileCmAction!(files[selectionState.fileIndex].path, "deps");
       },
     },
@@ -1244,7 +1247,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: Key.ctrl("u"),
       label: "used-by",
       when: () => onFileCmAction !== undefined && hasSelectedFile(),
-      handler: () => {
+      handler() {
         void onFileCmAction!(files[selectionState.fileIndex].path, "used-by");
       },
     },
@@ -1252,7 +1255,7 @@ Use the **conventional-commits** skill for commit message format.`;
       key: Key.ctrl("i"),
       label: "insert",
       when: () => hasSelectedFile() && onInsert !== undefined,
-      handler: () => {
+      handler() {
         onInsert!(files[selectionState.fileIndex].path);
         done();
       },
@@ -1260,13 +1263,13 @@ Use the **conventional-commits** skill for commit message format.`;
     {
       key: "pageUp",
       label: "scroll",
-      handler: () => {
+      handler() {
         scrollDiff("up");
       },
     },
     {
       key: "pageDown",
-      handler: () => {
+      handler() {
         scrollDiff("down");
       },
     },
@@ -1277,19 +1280,19 @@ Use the **conventional-commits** skill for commit message format.`;
     {
       key: "tab",
       label: "pane",
-      handler: () => {
+      handler() {
         switchFocus();
       },
     },
     {
       key: "escape",
-      handler: () => {
+      handler() {
         done();
       },
     },
     {
       key: "q",
-      handler: () => {
+      handler() {
         done();
       },
     },
@@ -1323,9 +1326,8 @@ Use the **conventional-commits** skill for commit message format.`;
       return;
     }
 
-    if (isLeftFocus()) {
-      leftPaneHandler(data);
-    } else {
+    if (isLeftFocus()) leftPaneHandler(data);
+    else {
       rightPaneHandler(data);
     }
   }
@@ -1340,7 +1342,7 @@ Use the **conventional-commits** skill for commit message format.`;
   return {
     render,
     handleInput,
-    invalidate: () => {
+    invalidate() {
       invalidateCache(loadingState);
     },
     dispose,

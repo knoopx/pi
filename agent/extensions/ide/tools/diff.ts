@@ -48,16 +48,12 @@ let currentTheme: BundledTheme | null = null;
 function readTerminalResponse(): Buffer {
   let response = Buffer.alloc(0);
   for (;;) {
-    const chunk = Buffer.alloc(1);
-    const n = process.stdin.read(chunk);
-    if (n === null || n === 0) break;
-    response = Buffer.concat([response, chunk.slice(0, n)]);
-    if (
-      response.endsWith(Buffer.from([0x1b, 0x5c])) ||
-      response.endsWith(Buffer.from([0x07]))
-    ) {
-      break;
-    }
+    const result = process.stdin.read(1);
+    if (result === null) break;
+    if (result.length === 0) break;
+    response = Buffer.concat([response, result]);
+    const respStr = response.toString("hex");
+    if (respStr.endsWith("1b5c") || respStr.endsWith("07")) break;
     if (response.length > 256) break;
   }
   return response;
@@ -111,7 +107,7 @@ async function initShiki(theme: BundledTheme): Promise<void> {
   if (addBg && removeBg && currentTheme === theme) return;
 
   // Load theme directly without initializing full highlighter
-  const themeModule = await import(`@shikijs/themes/${theme}` as string);
+  const themeModule = await import(`@shikijs/themes/${theme}`);
   const themeData = themeModule.default;
   const colors = themeData.colors || {};
 
@@ -124,17 +120,17 @@ async function initShiki(theme: BundledTheme): Promise<void> {
     const clean = hex.startsWith("#") ? hex.slice(1) : hex;
     // Handle 8-digit hex (with alpha)
     if (clean.length === 8) {
-      const r = parseInt(clean.slice(0, 2), 16);
-      const g = parseInt(clean.slice(2, 4), 16);
-      const b = parseInt(clean.slice(4, 6), 16);
-      const a = parseInt(clean.slice(6, 8), 16) / 255;
-      return [r, g, b, a];
+      const hexR = parseInt(clean.slice(0, 2), 16);
+      const hexG = parseInt(clean.slice(2, 4), 16);
+      const hexB = parseInt(clean.slice(4, 6), 16);
+      const hexA = parseInt(clean.slice(6, 8), 16) / 255;
+      return [hexR, hexG, hexB, hexA];
     }
     // Handle 6-digit hex (no alpha)
-    const r = parseInt(clean.slice(0, 2), 16);
-    const g = parseInt(clean.slice(2, 4), 16);
-    const b = parseInt(clean.slice(4, 6), 16);
-    return [r, g, b, 1];
+    const hexR2 = parseInt(clean.slice(0, 2), 16);
+    const hexG2 = parseInt(clean.slice(2, 4), 16);
+    const hexB2 = parseInt(clean.slice(4, 6), 16);
+    return [hexR2, hexG2, hexB2, 1];
   };
 
   // Blend semi-transparent diff color over solid background
@@ -144,27 +140,33 @@ async function initShiki(theme: BundledTheme): Promise<void> {
     fg: [number, number, number, number],
     bg: [number, number, number],
   ): [number, number, number] => {
-    const [fr, fg_, fb, fa] = fg;
-    const [br, bg__, bb] = bg;
-    const oneMinusAlpha = 1 - fa;
+    const [fgR, fgG, fgB, fgAlpha] = fg;
+    const [bgR, bgG, bgB] = bg;
+    const oneMinusAlpha = 1 - fgAlpha;
     return [
-      Math.round(fr * fa + br * oneMinusAlpha),
-      Math.round(fg_ * fa + bg__ * oneMinusAlpha),
-      Math.round(fb * fa + bb * oneMinusAlpha),
+      Math.round(fgR * fgAlpha + bgR * oneMinusAlpha),
+      Math.round(fgG * fgAlpha + bgG * oneMinusAlpha),
+      Math.round(fgB * fgAlpha + bgB * oneMinusAlpha),
     ];
   };
 
-  const [gr, gg, gb, ga] = hexToRGBA(green);
-  const [rr, rg, rb, ra] = hexToRGBA(red);
+  const [greenR, greenG, greenB, greenAlpha] = hexToRGBA(green);
+  const [redR, redG, redB, redAlpha] = hexToRGBA(red);
 
   // Query terminal for actual background color, fallback to black
   const terminalBg = getTerminalBgColor() ?? [0, 0, 0];
-  const [blr, blg_, blb] = blend([gr, gg, gb, ga], terminalBg);
-  const [blr_, blg__, blb_] = blend([rr, rg, rb, ra], terminalBg);
+  const [addBgR, addBgG, addBgB] = blend(
+    [greenR, greenG, greenB, greenAlpha],
+    terminalBg,
+  );
+  const [removeBgR, removeBgG, removeBgB] = blend(
+    [redR, redG, redB, redAlpha],
+    terminalBg,
+  );
 
   // Use blended colors as backgrounds
-  addBg = `\x1b[48;2;${blr};${blg_};${blb}m`;
-  removeBg = `\x1b[48;2;${blr_};${blg__};${blb_}m`;
+  addBg = `\x1b[48;2;${addBgR};${addBgG};${addBgB}m`;
+  removeBg = `\x1b[48;2;${removeBgR};${removeBgG};${removeBgB}m`;
   currentTheme = theme;
 }
 
@@ -220,7 +222,7 @@ function parseAddedLine(
   line: string,
   addLineNo: number | null,
 ): { line: DiffLine; addLineNo: number | null } | null {
-  if (line.startsWith("+") && !line.startsWith("+++")) {
+  if (line.startsWith("+") && !line.startsWith("+++"))
     return {
       line: {
         type: "add",
@@ -229,7 +231,6 @@ function parseAddedLine(
       },
       addLineNo: addLineNo !== null ? addLineNo + 1 : null,
     };
-  }
   return null;
 }
 
@@ -240,7 +241,7 @@ function parseRemovedLine(
   line: string,
   removeLineNo: number | null,
 ): { line: DiffLine; removeLineNo: number | null } | null {
-  if (line.startsWith("-") && !line.startsWith("---")) {
+  if (line.startsWith("-") && !line.startsWith("---"))
     return {
       line: {
         type: "remove",
@@ -249,7 +250,6 @@ function parseRemovedLine(
       },
       removeLineNo: removeLineNo !== null ? removeLineNo + 1 : null,
     };
-  }
   return null;
 }
 
@@ -265,7 +265,7 @@ function parseContextLine(
   addLineNo: number | null;
   removeLineNo: number | null;
 } | null {
-  if (line.startsWith(" ")) {
+  if (line.startsWith(" "))
     return {
       line: {
         type: "context",
@@ -275,7 +275,6 @@ function parseContextLine(
       addLineNo: addLineNo !== null ? addLineNo + 1 : null,
       removeLineNo: removeLineNo !== null ? removeLineNo + 1 : null,
     };
-  }
   return null;
 }
 
@@ -300,26 +299,22 @@ function parseDiffLine(
 } | null {
   // Try parsing as added line
   const added = parseAddedLine(line, addLineNo);
-  if (added) {
-    return { ...added, removeLineNo };
-  }
+  if (added) return { ...added, removeLineNo };
 
   // Try parsing as removed line
   const removed = parseRemovedLine(line, removeLineNo);
-  if (removed) {
-    return { ...removed, addLineNo };
-  }
+  if (removed) return { ...removed, addLineNo };
 
   // Try parsing as context line
   const context = parseContextLine(line, addLineNo, removeLineNo);
-  if (context) {
-    return context;
-  }
+  if (context) return context;
 
   // Try parsing as empty line
   if (line === "") {
     const empty = parseEmptyLine();
-    return { ...empty, addLineNo, removeLineNo };
+    if (empty) {
+      return { ...empty, addLineNo, removeLineNo };
+    }
   }
 
   return null;
@@ -383,8 +378,8 @@ function handleHunkHeader(
 } {
   const parsedHeader = parseHunkHeader(line);
   if (parsedHeader && currentFile) {
-    const removeLineNo = parsedHeader.removeLineNo;
-    const addLineNo = parsedHeader.addLineNo;
+    const { removeLineNo } = parsedHeader;
+    const { addLineNo } = parsedHeader;
     const currentHunk = { header: line, lines: [] };
     currentFile.hunks.push(currentHunk);
     return { currentHunk, addLineNo, removeLineNo };
@@ -476,12 +471,10 @@ async function highlightLine(
  * Color diff line with Shiki theme background colors
  */
 function colorDiffLine(line: DiffLine, highlightedContent: string): string {
-  if (line.type === "add" && addBg) {
-    return addBg + highlightedContent + "\x1b[0m";
-  }
-  if (line.type === "remove" && removeBg) {
-    return removeBg + highlightedContent + "\x1b[0m";
-  }
+  if (line.type === "add" && addBg)
+    return `${addBg + highlightedContent}\x1b[0m`;
+  if (line.type === "remove" && removeBg)
+    return `${removeBg + highlightedContent}\x1b[0m`;
   return highlightedContent;
 }
 

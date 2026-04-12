@@ -31,13 +31,9 @@ export function formatRemainingDuration(
   );
   const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
 
-  if (days > 0) {
-    return `${days}d ${hours}h`;
-  } else if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  } else {
-    return `${minutes}m`;
-  }
+  if (days > 0) return `${days}d ${hours}h`;
+  else if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
 }
 
 // Generic processData helper for rate limit windows
@@ -58,9 +54,7 @@ export function createRateLimitProcessor(
         (windowData.used_percent as number) ||
         0;
 
-    if (window.usedPercentTransform) {
-      usedPercent = window.usedPercentTransform(usedPercent);
-    }
+    if (window.usedPercentTransform) usedPercent = window.usedPercentTransform(usedPercent);
 
     return usedPercent;
   }
@@ -96,11 +90,9 @@ export function createRateLimitProcessor(
           | undefined;
       }
     }
-    if (!resetAt) {
-      resetAt =
-        (windowData.resets_at as string | number | undefined) ||
-        (windowData.reset_at as string | number | undefined);
-    }
+    if (!resetAt) resetAt =
+      (windowData.resets_at as string | number | undefined) ||
+      (windowData.reset_at as string | number | undefined);
     return resetAt;
   }
 
@@ -133,9 +125,8 @@ export async function createGenericProvider(config: ProviderConfig) {
     deps: BaseDependencies,
   ): Promise<UsageSnapshot | null> {
     const token = config.tokenLoader(deps);
-    if (!token) {
+    if (!token)
       return createAuthErrorSnapshot(config.provider, config.displayName);
-    }
 
     try {
       const res = (await deps.fetch(config.apiUrl, {
@@ -144,22 +135,17 @@ export async function createGenericProvider(config: ProviderConfig) {
         body: config.body,
       })) as { ok: boolean; status: number; json: () => Promise<unknown> };
 
-      if (!res.ok) {
+      if (!res.ok)
         return createHttpErrorSnapshot(
           config.provider,
           config.displayName,
           res.status,
         );
-      }
 
       const data = await res.json();
 
       let windows: RateWindow[] = [];
-      if (config.customProcessor) {
-        windows = config.customProcessor(data);
-      } else if (config.windows) {
-        windows = createRateLimitProcessor(config.windows)(data);
-      }
+      if (config.customProcessor) windows = config.customProcessor(data); else if (config.windows) windows = createRateLimitProcessor(config.windows)(data);
 
       return {
         provider: config.provider,

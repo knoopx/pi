@@ -130,7 +130,7 @@ export default async function piPrettyExtension(
 
   const cwd = process.cwd();
   const home = process.env.HOME ?? "";
-  const sp = (p: string) => shortPath(cwd, home, p);
+  const sp = (p: string): string => shortPath(cwd, home, p);
 
   // ===================================================================
   // read — syntax-highlighted file content
@@ -203,11 +203,10 @@ export default async function piPrettyExtension(
         ? ` ${theme.fg("muted", `(${args.limit} lines)`)}`
         : "";
       text.setText(
-        theme.fg("toolTitle", theme.bold("read")) +
-          " " +
-          theme.fg("accent", sp(fp)) +
-          offset +
-          limit,
+        `${theme.fg("toolTitle", theme.bold("read"))} ${theme.fg(
+          "accent",
+          sp(fp),
+        )}${offset}${limit}`,
       );
       return text;
     },
@@ -220,9 +219,7 @@ export default async function piPrettyExtension(
     ): Component {
       const text = getTextComponent(ctx, Text);
 
-      if (ctx.isError) {
-        return renderError(result.content, theme, text);
-      }
+      if (ctx.isError) return renderError(result.content, theme, text);
 
       const d = result.details as unknown as Record<string, unknown>;
 
@@ -234,9 +231,9 @@ export default async function piPrettyExtension(
         const mimeStr = (d.mimeType as string) ?? "image";
 
         out.push(
-          "  " +
-            fileIconGlyph(d.filePath as string) +
-            theme.fg("dim", mimeStr + " · " + sizeStr),
+          `  ${fileIconGlyph(
+            d.filePath as string,
+          )}${theme.fg("dim", `${mimeStr} · ${sizeStr}`)}`,
         );
         out.push(theme.fg("border", "─".repeat(tw)));
 
@@ -246,19 +243,11 @@ export default async function piPrettyExtension(
       }
 
       if (d?._type === "readFile" && d.content) {
-        const key =
-          "read:" +
-          d.filePath +
-          ":" +
-          d.offset +
-          ":" +
-          d.lineCount +
-          ":" +
-          termW();
+        const key = `read:${d.filePath}:${d.offset}:${d.lineCount}:${termW()}`;
         if (ctx.state._rk !== key) {
           ctx.state._rk = key;
-          const info = theme.fg("dim", "" + d.lineCount + " lines");
-          ctx.state._rt = "  " + info;
+          const info = theme.fg("dim", `${d.lineCount} lines`);
+          ctx.state._rt = `  ${info}`;
 
           const maxShow = options.expanded
             ? (d.lineCount as number)
@@ -272,20 +261,20 @@ export default async function piPrettyExtension(
           )
             .then((rendered: string) => {
               if (ctx.state._rk !== key) return;
-              ctx.state._rt = "  " + info + "\n" + rendered;
+              ctx.state._rt = `  ${info}\n${rendered}`;
               ctx.invalidate();
             })
             .catch(() => {});
         }
         text.setText(
-          ctx.state._rt ?? "  " + theme.fg("dim", "" + d.lineCount + " lines"),
+          ctx.state._rt ?? `  ${theme.fg("dim", `${d.lineCount} lines`)}`,
         );
         return text;
       }
 
       const fallback = result.content?.[0] as { text?: string } | undefined;
       const fallbackText = fallback?.text ?? "read";
-      text.setText("  " + theme.fg("dim", fallbackText.slice(0, 120)));
+      text.setText(`  ${theme.fg("dim", fallbackText.slice(0, 120))}`);
       return text;
     },
   });
@@ -339,9 +328,10 @@ export default async function piPrettyExtension(
         const fp = args?.path ?? ".";
         const text = getTextComponent(ctx, Text);
         text.setText(
-          theme.fg("toolTitle", theme.bold("ls")) +
-            " " +
-            theme.fg("accent", sp(fp)),
+          `${theme.fg("toolTitle", theme.bold("ls"))} ${theme.fg(
+            "accent",
+            sp(fp),
+          )}`,
         );
         return text;
       },
@@ -362,8 +352,8 @@ export default async function piPrettyExtension(
           (d) => {
             if (d?._type === "lsResult" && d.text) {
               const tree = renderTree(d.text as string, theme);
-              const info = theme.fg("dim", "" + d.entryCount + " entries");
-              text.setText("  " + info + "\n" + tree);
+              const info = theme.fg("dim", `${d.entryCount} entries`);
+              text.setText(`  ${info}\n${tree}`);
               return text;
             }
             return undefined;
@@ -425,10 +415,10 @@ export default async function piPrettyExtension(
           : "";
         const text = getTextComponent(ctx, Text);
         text.setText(
-          theme.fg("toolTitle", theme.bold("find")) +
-            " " +
-            theme.fg("accent", pattern) +
-            path,
+          `${theme.fg("toolTitle", theme.bold("find"))} ${theme.fg(
+            "accent",
+            pattern,
+          )}${path}`,
         );
         return text;
       },
@@ -449,8 +439,8 @@ export default async function piPrettyExtension(
           (d) => {
             if (d?._type === "findResult" && d.text) {
               const rendered = renderFindResults(d.text as string, theme);
-              const info = theme.fg("dim", "" + d.matchCount + " files");
-              text.setText("  " + info + "\n" + rendered);
+              const info = theme.fg("dim", `${d.matchCount} files`);
+              text.setText(`  ${info}\n${rendered}`);
               return text;
             }
             return undefined;
@@ -525,11 +515,10 @@ export default async function piPrettyExtension(
           : "";
         const text = getTextComponent(ctx, Text);
         text.setText(
-          theme.fg("toolTitle", theme.bold("grep")) +
-            " " +
-            theme.fg("accent", pattern) +
-            path +
-            glob,
+          `${theme.fg("toolTitle", theme.bold("grep"))} ${theme.fg(
+            "accent",
+            pattern,
+          )}${path}${glob}`,
         );
         return text;
       },
@@ -549,25 +538,23 @@ export default async function piPrettyExtension(
           text,
           (d) => {
             if (d?._type === "grepResult" && d.text) {
-              const key =
-                "grep:" + d.pattern + ":" + d.matchCount + ":" + termW();
+              const key = `grep:${d.pattern}:${d.matchCount}:${termW()}`;
               const state = ctx.state as GrepState;
               if (state._gk !== key) {
                 state._gk = key;
-                const info = theme.fg("dim", "" + d.matchCount + " matches");
-                state._gt = "  " + info;
+                const info = theme.fg("dim", `${d.matchCount} matches`);
+                state._gt = `  ${info}`;
 
                 renderGrepResults(d.text as string, d.pattern as string, theme)
                   .then((rendered: string) => {
                     if (state._gk !== key) return;
-                    state._gt = "  " + info + "\n" + rendered;
+                    state._gt = `  ${info}\n${rendered}`;
                     ctx.invalidate();
                   })
                   .catch(() => {});
               }
               text.setText(
-                state._gt ??
-                  "  " + theme.fg("dim", "" + d.matchCount + " matches"),
+                state._gt ?? `  ${theme.fg("dim", `${d.matchCount} matches`)}`,
               );
               return text;
             }

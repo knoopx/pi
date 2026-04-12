@@ -15,8 +15,6 @@ export function renderEmptyState(
   hint?: string,
 ): string[] {
   const rows = [pad(` ${message}`, width)];
-  if (hint) {
-    rows.push(pad(` ${hint}`, width));
-  }
+  if (hint) rows.push(pad(` ${hint}`, width));
   return rows;
 }

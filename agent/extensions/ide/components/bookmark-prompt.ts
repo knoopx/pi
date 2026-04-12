@@ -58,9 +58,7 @@ export function createBookmarkPromptComponent(
 
       for (const line of result.stdout.split("\n")) {
         const name = line.trim();
-        if (!name || seen.has(name)) {
-          continue;
-        }
+        if (!name || seen.has(name)) continue;
         seen.add(name);
         loaded.push(name);
       }
@@ -79,13 +77,9 @@ export function createBookmarkPromptComponent(
     const query = input.getValue().trim();
     const filtered = filterBookmarks(bookmarks, query);
 
-    if (filtered.length > 0) {
-      return filtered;
-    }
+    if (filtered.length > 0) return filtered;
 
-    if (query.length > 0) {
-      return [query];
-    }
+    if (query.length > 0) return [query];
 
     return [];
   }
@@ -166,9 +160,7 @@ export function createBookmarkPromptComponent(
     // Render candidates list (max 5 visible)
     const maxVisible = 5;
     let startIdx = 0;
-    if (selectedIndex >= maxVisible) {
-      startIdx = selectedIndex - maxVisible + 1;
-    }
+    if (selectedIndex >= maxVisible) startIdx = selectedIndex - maxVisible + 1;
 
     const visibleCount = Math.min(maxVisible, candidates.length - startIdx);
 
@@ -234,14 +226,14 @@ export function createBookmarkPromptComponent(
       index: selectedIndex,
       maxIndex: Math.max(0, getCandidates().length - 1),
     }),
-    onNavigate: (newIndex) => {
+    onNavigate(newIndex) {
       selectedIndex = newIndex;
       tui.requestRender();
     },
-    onEscape: () => {
+    onEscape() {
       done(null);
     },
-    onEnter: () => {
+    onEnter() {
       const candidates = getCandidates();
       if (candidates.length === 0) {
         done(null);
@@ -252,17 +244,13 @@ export function createBookmarkPromptComponent(
   });
 
   function handleInput(data: string): void {
-    if (handleKeyboard(data)) {
-      return;
-    }
+    if (handleKeyboard(data)) return;
 
     // Forward remaining input to text field
     const before = input.getValue();
     input.handleInput(data);
     const after = input.getValue();
-    if (before !== after) {
-      selectedIndex = 0;
-    }
+    if (before !== after) selectedIndex = 0;
     tui.requestRender();
   }
 
@@ -274,8 +262,6 @@ export function createBookmarkPromptComponent(
     invalidate() {
       input.invalidate();
     },
-    dispose() {
-      return;
-    },
+    dispose() {},
   };
 }

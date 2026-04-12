@@ -33,10 +33,9 @@ async function executeGhCommand(
     notifyMutation(pi, successMsg, result.stderr || result.stdout);
     await pickerRef?.reload();
     return true;
-  } else {
-    notifyMutation(pi, "error", result.stderr || errorMsg);
-    return false;
   }
+  notifyMutation(pi, "error", result.stderr || errorMsg);
+  return false;
 }
 
 async function openPrInBrowser(
@@ -109,9 +108,7 @@ async function fetchPullRequests(
 
   const result = await pi.exec("gh", args, { cwd });
 
-  if (result.code !== 0) {
-    throw new Error(result.stderr || "Failed to fetch pull requests");
-  }
+  if (result.code !== 0) throw new Error(result.stderr || "Failed to fetch pull requests");
 
   try {
     const data = JSON.parse(result.stdout) as {
@@ -171,14 +168,14 @@ export function createPullRequestsComponent(
     {
       key: Key.ctrl("o"),
       label: "open",
-      handler: async (item) => {
+      async handler(item) {
         await openPrInBrowser(pi, item.number, cwd);
       },
     },
     {
       key: Key.ctrl("c"),
       label: "checkout",
-      handler: async (item) => {
+      async handler(item) {
         await executeGhCommand(
           pi,
           ["pr", "checkout", String(item.number)],
@@ -192,7 +189,7 @@ export function createPullRequestsComponent(
     {
       key: Key.ctrl("a"),
       label: "approve",
-      handler: async (item) => {
+      async handler(item) {
         await executeGhCommand(
           pi,
           ["pr", "review", String(item.number), "--approve"],
@@ -206,7 +203,7 @@ export function createPullRequestsComponent(
     {
       key: Key.ctrl("m"),
       label: "merge",
-      handler: async (item) => {
+      async handler(item) {
         await executeGhCommand(
           pi,
           ["pr", "merge", String(item.number), "--squash", "--delete-branch"],
@@ -220,7 +217,7 @@ export function createPullRequestsComponent(
     {
       key: Key.ctrl("s"),
       label: "state",
-      handler: async () => {
+      async handler() {
         const states: ("open" | "closed" | "merged" | "all")[] = [
           "open",
           "closed",
@@ -237,7 +234,7 @@ export function createPullRequestsComponent(
     {
       key: Key.ctrl("i"),
       label: "insert",
-      handler: (item) => {
+      handler(item) {
         if (onInsert) {
           const parts = [
             `#${item.number}: ${item.title}`,
@@ -265,7 +262,7 @@ export function createPullRequestsComponent(
       title: "Pull Requests",
       previewTitle: (item) => `#${item.number}`,
       actions,
-      loadItems: async () => {
+      async loadItems() {
         return fetchPullRequests(pi, cwd, currentState);
       },
       filterItems: (items, query) =>
@@ -276,7 +273,7 @@ export function createPullRequestsComponent(
             item.headRefName.toLowerCase().includes(query) ||
             String(item.number).includes(query),
         ),
-      formatItem: (item, width, theme) => {
+      formatItem(item, width, theme) {
         const icon = getPrIcon(item.state, item.isDraft);
         const reviewIcon = getReviewIcon(item.reviewDecision);
         const stateColor =
@@ -313,21 +310,21 @@ export function createPullRequestsComponent(
         const titleWidth = Math.max(20, width - fixedParts.length - 4);
         const title =
           item.title.length > titleWidth
-            ? item.title.slice(0, titleWidth - 1) + "…"
+            ? `${item.title.slice(0, titleWidth - 1)}…`
             : item.title;
 
         const reviewPart = reviewIcon
-          ? theme.fg(
+          ? `${theme.fg(
               item.reviewDecision === "APPROVED" ? "success" : "warning",
               reviewIcon,
-            ) + " "
+            )} `
           : "";
 
         const text = `${iconStyled} ${prNum} ${reviewPart}${title} ${branch} ${author} ${stats} ${time}`;
 
         return truncateAnsi(text, width);
       },
-      loadPreview: async (item) => {
+      async loadPreview(item) {
         const mdParts: string[] = [
           `| Field | Value |`,
           `|-------|-------|`,
@@ -340,9 +337,7 @@ export function createPullRequestsComponent(
           ``,
         ];
 
-        if (item.body) {
-          mdParts.push(item.body);
-        }
+        if (item.body) mdParts.push(item.body);
 
         const mdTheme = createMarkdownTheme(theme);
         const md = new Markdown(mdParts.join("\n"), 0, 0, mdTheme);

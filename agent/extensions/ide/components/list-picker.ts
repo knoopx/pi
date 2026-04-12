@@ -106,9 +106,7 @@ export function createListPicker<T extends ListPickerItem>(
       filterItems();
       loading = false;
 
-      if (filteredItems.length > 0) {
-        void loadPreview(filteredItems[0]);
-      }
+      if (filteredItems.length > 0) void loadPreview(filteredItems[0]);
 
       invalidate();
       tui.requestRender();
@@ -129,9 +127,7 @@ export function createListPicker<T extends ListPickerItem>(
   }
 
   function filterItems(): void {
-    if (!searchQuery) {
-      filteredItems = items;
-    } else {
+    if (!searchQuery) filteredItems = items; else {
       const lower = searchQuery.toLowerCase();
       filteredItems = config.filterItems(items, lower);
     }
@@ -142,9 +138,7 @@ export function createListPicker<T extends ListPickerItem>(
   }
 
   function getFocusedItem(): T | null {
-    if (filteredItems.length === 0) {
-      return null;
-    }
+    if (filteredItems.length === 0) return null;
 
     return filteredItems[focusedIndex];
   }
@@ -198,9 +192,7 @@ export function createListPicker<T extends ListPickerItem>(
     }
 
     let startIdx = 0;
-    if (focusedIndex >= height) {
-      startIdx = focusedIndex - height + 1;
-    }
+    if (focusedIndex >= height) startIdx = focusedIndex - height + 1;
 
     for (let i = 0; i < height && startIdx + i < filteredItems.length; i++) {
       const idx = startIdx + i;
@@ -208,7 +200,7 @@ export function createListPicker<T extends ListPickerItem>(
       const isFocused = idx === focusedIndex;
       // Format without focus styling first
       const formatted = config.formatItem(item, width - 2, theme);
-      const text = " " + truncateAnsi(formatted, width - 2);
+      const text = ` ${truncateAnsi(formatted, width - 2)}`;
       const padded = ensureWidth(text, width);
       // Apply focus styling to full-width padded text
       const styled = isFocused
@@ -221,9 +213,7 @@ export function createListPicker<T extends ListPickerItem>(
   }
 
   function render(width: number): string[] {
-    if (isRenderCacheValid(width, cachedWidth, cachedLines)) {
-      return cachedLines;
-    }
+    if (isRenderCacheValid(width, cachedWidth, cachedLines)) return cachedLines;
 
     const dims = calculateDimensions(
       tui.terminal.rows,
@@ -293,9 +283,7 @@ export function createListPicker<T extends ListPickerItem>(
     if (newIndex !== focusedIndex) {
       focusedIndex = newIndex;
       const item = getFocusedItem();
-      if (item !== null) {
-        void loadPreview(item);
-      }
+      if (item !== null) void loadPreview(item);
       invalidate();
       tui.requestRender();
     }
@@ -310,9 +298,7 @@ export function createListPicker<T extends ListPickerItem>(
       leftFocus: true,
     });
     const maxScroll = Math.max(0, sourceLines.length - dims.contentH);
-    if (direction === "down") {
-      sourceScroll = Math.min(maxScroll, sourceScroll + dims.contentH);
-    } else {
+    if (direction === "down") sourceScroll = Math.min(maxScroll, sourceScroll + dims.contentH); else {
       sourceScroll = Math.max(0, sourceScroll - dims.contentH);
     }
     invalidate();
@@ -323,9 +309,7 @@ export function createListPicker<T extends ListPickerItem>(
     filterItems();
     scheduleReload(searchQuery);
     const item = getFocusedItem();
-    if (item !== null) {
-      void loadPreview(item);
-    }
+    if (item !== null) void loadPreview(item);
     invalidate();
     tui.requestRender();
   };
@@ -335,11 +319,9 @@ export function createListPicker<T extends ListPickerItem>(
     key: action.key as KeyBinding["key"],
     label: action.label,
     when: () => filteredItems.length > 0,
-    handler: () => {
+    handler() {
       const item = getFocusedItem();
-      if (item !== null) {
-        void Promise.resolve(action.handler(item));
-      }
+      if (item !== null) void Promise.resolve(action.handler(item));
     },
   }));
 
@@ -348,20 +330,20 @@ export function createListPicker<T extends ListPickerItem>(
     {
       key: "up",
       label: "nav",
-      handler: () => {
+      handler() {
         navigate("up");
       },
     },
     {
       key: "down",
-      handler: () => {
+      handler() {
         navigate("down");
       },
     },
 
     {
       key: "escape",
-      handler: () => {
+      handler() {
         done(null);
       },
     },
@@ -369,22 +351,20 @@ export function createListPicker<T extends ListPickerItem>(
       key: Key.ctrl("e"),
       label: "edit",
       when: () => config.onEdit !== undefined,
-      handler: () => {
+      handler() {
         const item = getFocusedItem();
-        if (item !== null && config.onEdit) {
-          void Promise.resolve(config.onEdit(item));
-        }
+        if (item !== null && config.onEdit) void Promise.resolve(config.onEdit(item));
       },
     },
     {
       key: "pageUp",
-      handler: () => {
+      handler() {
         scrollPreview("up");
       },
     },
     {
       key: "pageDown",
-      handler: () => {
+      handler() {
         scrollPreview("down");
       },
     },
@@ -405,13 +385,13 @@ export function createListPicker<T extends ListPickerItem>(
   // Create handler with custom onKey support
   const keyboardHandler = createKeyboardHandler({
     bindings: [...coreBindings, ...actionBindings],
-    onBackspace: () => {
+    onBackspace() {
       if (searchQuery.length > 0) {
         searchQuery = searchQuery.slice(0, -1);
         updateSearch();
       }
     },
-    onTextInput: (char) => {
+    onTextInput(char) {
       searchQuery += char;
       updateSearch();
     },
@@ -419,9 +399,7 @@ export function createListPicker<T extends ListPickerItem>(
 
   function handleInput(data: string): void {
     // Custom key handler takes precedence
-    if (config.onKey?.(data)) {
-      return;
-    }
+    if (config.onKey?.(data)) return;
     keyboardHandler(data);
   }
 
@@ -455,7 +433,7 @@ export function createListPicker<T extends ListPickerItem>(
     reload,
     notify: showStatus,
     getSearchQuery: () => searchQuery,
-    clearSearchQuery: () => {
+    clearSearchQuery() {
       searchQuery = "";
       filterItems();
       invalidate();

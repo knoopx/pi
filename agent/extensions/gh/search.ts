@@ -161,7 +161,7 @@ function formatRepoSearchResult(result: {
     { key: "󰘬", align: "right", minWidth: 5 },
     {
       key: "repo",
-      format: (_v, row) => {
+      format(_v, row) {
         const r = row as Record<string, string>;
         const lines = [`${r.repo}${r.private === "true" ? "" : ""}`];
         if (r.description) lines.push(r.description);
@@ -198,7 +198,7 @@ function formatCodeSearchResult(result: {
     { key: "#", align: "right", minWidth: 3 },
     {
       key: "path",
-      format: (_v, row) => {
+      format(_v, row) {
         const r = row as Record<string, string>;
         const lines = [r.path];
         if (r.snippet) lines.push(r.snippet);
@@ -337,12 +337,9 @@ function createSearchToolRenderer(toolName: string) {
     ) {
       const typedArgs = args as { query?: string; limit?: number };
       let text = theme.fg("toolTitle", theme.bold(toolName));
-      if (typedArgs.query) {
-        text += theme.fg("muted", ` "${typedArgs.query}"`);
-      }
-      if (typedArgs.limit) {
+      if (typedArgs.query) text += theme.fg("muted", ` "${typedArgs.query}"`);
+      if (typedArgs.limit)
         text += theme.fg("dim", ` (limit=${typedArgs.limit})`);
-      }
       return new Text(text, 0, 0);
     },
     renderResult(

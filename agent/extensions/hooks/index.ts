@@ -107,9 +107,8 @@ export function isAbortedTurnEnd(event: TurnEndEvent): boolean {
     | undefined;
 
   if (!message) return false;
-  if (message.role === "assistant" && message.stopReason === "aborted") {
+  if (message.role === "assistant" && message.stopReason === "aborted")
     return true;
-  }
 
   return containsAbortText(message.errorMessage ?? "");
 }
@@ -139,9 +138,7 @@ export default async function hooksExtension(pi: ExtensionAPI): Promise<void> {
 
   const getConfig = async (cwd: string): Promise<HooksConfig> => {
     const newVersion = configLoader.getVersion();
-    if (newVersion !== currentVersion) {
-      currentVersion = newVersion;
-    }
+    if (newVersion !== currentVersion) currentVersion = newVersion;
     return configLoader.getConfigForProject(cwd);
   };
 
@@ -202,9 +199,7 @@ export function doesRuleMatch(
 
 export function matchValuePattern(value: string, pattern: string): boolean {
   // New token pattern syntax support for non-command contexts
-  if (matchCommandPattern(value, pattern)) {
-    return true;
-  }
+  if (matchCommandPattern(value, pattern)) return true;
 
   // Glob pattern matching (e.g., *.js, *.{ts,tsx})
   // Check if basename matches the glob pattern
@@ -254,25 +249,19 @@ export function buildHookInput(
     hook_event_name: event,
   };
 
-  if (toolName) {
-    hookInput.tool_name = toolName;
-  }
+  if (toolName) hookInput.tool_name = toolName;
 
-  if (input && typeof input === "object") {
+  if (input && typeof input === "object")
     hookInput.tool_input = input as Record<string, unknown>;
-  }
 
-  if (toolCallId) {
-    hookInput.tool_call_id = toolCallId;
-  }
+  if (toolCallId) hookInput.tool_call_id = toolCallId;
 
-  if (toolResponse) {
+  if (toolResponse)
     hookInput.tool_response = {
       content: toolResponse.content,
       details: toolResponse.details as Record<string, unknown> | undefined,
       isError: toolResponse.isError,
     };
-  }
 
   return hookInput;
 }
@@ -288,7 +277,7 @@ async function runHook(
   const command = substituteVariables(rule.command, vars);
 
   // Skip if placeholders weren't substituted
-  if (/%[A-Za-z_][A-Za-z0-9_]*%/.test(command)) {
+  if (/%[A-Za-z_][A-Za-z0-9_]*%/.test(command))
     return {
       success: true,
       exitCode: 0,
@@ -298,7 +287,6 @@ async function runHook(
       group: group.group,
       command,
     };
-  }
 
   const timeout = rule.timeout ?? 30000;
   const cwd = rule.cwd ?? ctx.cwd;
@@ -351,13 +339,12 @@ async function runHook(
 function checkExitCodeBlock(
   result: HookResult,
 ): { block: boolean; reason: string } | null {
-  if (result.exitCode === 2) {
+  if (result.exitCode === 2)
     return {
       block: true,
       reason:
         result.stderr || `Hook blocked: ${result.group}: ${result.command}`,
     };
-  }
   return null;
 }
 
@@ -371,26 +358,23 @@ function checkJsonBlock(
   if (!result.output) return null;
   const { output } = result;
 
-  if (output.continue === false) {
+  if (output.continue === false)
     return {
       block: true,
       reason: output.stopReason || "Hook stopped processing",
     };
-  }
 
-  if (output.decision === "block" && output.reason) {
+  if (output.decision === "block" && output.reason)
     return { block: true, reason: output.reason };
-  }
 
   if (event === "tool_call" && output.hookSpecificOutput) {
     const { permissionDecision, permissionDecisionReason } =
       output.hookSpecificOutput;
-    if (permissionDecision === "deny") {
+    if (permissionDecision === "deny")
       return {
         block: true,
         reason: permissionDecisionReason || "Hook denied permission",
       };
-    }
   }
 
   return null;
@@ -503,11 +487,9 @@ async function processHookExecution(
   }
 
   const additionalContext = getAdditionalContext(result);
-  if (additionalContext) {
-    state.additionalContexts.push(additionalContext);
-  }
+  if (additionalContext) state.additionalContexts.push(additionalContext);
 
-  if (result.output?.systemMessage) {
+  if (result.output?.systemMessage)
     pi.sendMessage(
       {
         customType: "hook-warning",
@@ -516,12 +498,6 @@ async function processHookExecution(
       },
       { triggerTurn: false },
     );
-  }
-
-  // Collect results for notification (unless suppressed)
-  if (rule.notify !== false && !result.output?.suppressOutput) {
-    state.results.push(result);
-  }
 
   return undefined;
 }
@@ -572,7 +548,7 @@ async function processHooks(
     }
   }
 
-  if (state.additionalContexts.length > 0) {
+  if (state.additionalContexts.length > 0)
     pi.sendMessage(
       {
         customType: "hook-context",
@@ -581,11 +557,8 @@ async function processHooks(
       },
       { triggerTurn: false },
     );
-  }
 
-  if (state.results.length > 0) {
-    sendHookResults(pi, state.results);
-  }
+  if (state.results.length > 0) sendHookResults(pi, state.results);
 
   return undefined;
 }
@@ -616,9 +589,7 @@ function formatHookResult(r: HookResult): string[] {
 
   if (shouldShowOutput(r)) {
     const displayOutput = r.stderr || r.stdout;
-    if (displayOutput) {
-      lines.push(displayOutput);
-    }
+    if (displayOutput) lines.push(displayOutput);
   }
 
   return lines;
@@ -723,7 +694,7 @@ function registerEventHandlers(
 function registerCommands(pi: ExtensionAPI): void {
   pi.registerCommand("hooks-reload", {
     description: "Reload hooks configuration from disk",
-    handler: async (_args, ctx) => {
+    async handler(_args, ctx) {
       if (!ctx.hasUI) return;
       try {
         await configLoader.load();
@@ -737,7 +708,7 @@ function registerCommands(pi: ExtensionAPI): void {
 
   pi.registerCommand("hooks-list", {
     description: "List all configured hooks with their active status",
-    handler: async (_args, ctx) => {
+    async handler(_args, ctx) {
       if (!ctx.hasUI) return;
       const config = configLoader.getConfig();
 

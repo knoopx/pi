@@ -12,7 +12,7 @@ export function wrapPlain(text: string, maxWidth: number): string[] {
     if (current.length === 0) {
       current = word;
     } else if (current.length + 1 + word.length <= maxWidth) {
-      current += " " + word;
+      current += ` ${  word}`;
     } else {
       lines.push(current);
       current = word;
