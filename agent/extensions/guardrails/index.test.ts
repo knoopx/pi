@@ -600,4 +600,174 @@ describe("guardrails extension", () => {
       expect(result).toBeUndefined();
     });
   });
+
+  describe("given scope option", () => {
+    it("then applies project scope to project files only", async () => {
+      const handler = await setupHandler([
+        {
+          group: "project-only",
+          pattern: "*",
+          rules: [
+            {
+              context: "file_name",
+              pattern: "secret",
+              scope: "project",
+              action: "block",
+              reason: "project files only",
+            },
+          ],
+        },
+      ]);
+
+      const ctx = makeCtx({ cwd: "/test/project" });
+
+      // Should block project file
+      const projectResult = await handler(
+        {
+          toolName: "edit",
+          input: { path: "src/secret.ts", oldText: "", newText: "" },
+        },
+        ctx,
+      );
+      expect(projectResult).toEqual({
+        block: true,
+        reason: "Blocked [project-only]: project files only",
+      });
+
+      // Should allow external file
+      const externalResult = await handler(
+        {
+          toolName: "edit",
+          input: { path: "/home/user/secret.ts", oldText: "", newText: "" },
+        },
+        ctx,
+      );
+      expect(externalResult).toBeUndefined();
+    });
+
+    it("then applies external scope to external files only", async () => {
+      const handler = await setupHandler([
+        {
+          group: "external-only",
+          pattern: "*",
+          rules: [
+            {
+              context: "file_name",
+              pattern: "config",
+              scope: "external",
+              action: "block",
+              reason: "external files only",
+            },
+          ],
+        },
+      ]);
+
+      const ctx = makeCtx({ cwd: "/test/project" });
+
+      // Should allow project file
+      const projectResult = await handler(
+        {
+          toolName: "edit",
+          input: { path: "src/config.ts", oldText: "", newText: "" },
+        },
+        ctx,
+      );
+      expect(projectResult).toBeUndefined();
+
+      // Should block external file
+      const externalResult = await handler(
+        {
+          toolName: "edit",
+          input: { path: "/etc/config.json", oldText: "", newText: "" },
+        },
+        ctx,
+      );
+      expect(externalResult).toEqual({
+        block: true,
+        reason: "Blocked [external-only]: external files only",
+      });
+    });
+
+    it("then applies to all files when scope is not specified", async () => {
+      const handler = await setupHandler([
+        {
+          group: "all-files",
+          pattern: "*",
+          rules: [
+            {
+              context: "file_name",
+              pattern: "dangerous",
+              action: "block",
+              reason: "no scope specified",
+            },
+          ],
+        },
+      ]);
+
+      const ctx = makeCtx({ cwd: "/test/project" });
+
+      // Should block project file
+      const projectResult = await handler(
+        {
+          toolName: "edit",
+          input: { path: "src/dangerous.ts", oldText: "", newText: "" },
+        },
+        ctx,
+      );
+      expect(projectResult).toEqual({
+        block: true,
+        reason: "Blocked [all-files]: no scope specified",
+      });
+
+      // Should block external file
+      const externalResult = await handler(
+        {
+          toolName: "edit",
+          input: { path: "/tmp/dangerous.sh", oldText: "", newText: "" },
+        },
+        ctx,
+      );
+      expect(externalResult).toEqual({
+        block: true,
+        reason: "Blocked [all-files]: no scope specified",
+      });
+    });
+
+    it("then handles absolute paths within project correctly", async () => {
+      const handler = await setupHandler([
+        {
+          group: "project-scope",
+          pattern: "*",
+          rules: [
+            {
+              context: "file_name",
+              pattern: "test",
+              scope: "project",
+              action: "block",
+              reason: "project scope",
+            },
+          ],
+        },
+      ]);
+
+      const ctx = makeCtx({ cwd: "/test/project" });
+
+      // Should block absolute path within project
+      const absoluteResult = await handler(
+        {
+          toolName: "edit",
+          input: {
+            path: "/test/project/src/test.ts",
+            oldText: "",
+            newText: "",
+          },
+        },
+        ctx,
+      );
+      expect(absoluteResult).toEqual({
+        block: true,
+        reason: "Blocked [project-scope]: project scope",
+      });
+    });
+  });
 });

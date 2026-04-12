@@ -208,4 +208,90 @@ describe("guardrails configLoader", () => {
       expect(loaded[0].group).toBe("good");
     });
   });
+
+  describe("given scope option", () => {
+    it("then accepts valid scope values", async () => {
+      const cfg = [
+        {
+          group: "project-scope",
+          pattern: "*",
+          rules: [
+            {
+              context: "file_name",
+              pattern: "test",
+              scope: "project",
+              action: "block",
+              reason: "project only",
+            },
+          ],
+        },
+        {
+          group: "external-scope",
+          pattern: "*",
+          rules: [
+            {
+              context: "file_name",
+              pattern: "config",
+              scope: "external",
+              action: "block",
+              reason: "external only",
+            },
+          ],
+        },
+      ];
+
+      mockReadFile.mockImplementation((path: unknown) => {
+        if (String(path).includes("settings.json"))
+          return Promise.resolve(JSON.stringify({ guardrails: cfg }));
+        return Promise.resolve(JSON.stringify([]));
+      });
+
+      await configLoader.load();
+      const loaded = configLoader.getConfig();
+      expect(loaded).toHaveLength(2);
+      expect(loaded[0].group).toBe("project-scope");
+      expect(loaded[1].group).toBe("external-scope");
+    });
+
+    it("then filters out rules with invalid scope values", async () => {
+      const cfg = [
+        {
+          group: "bad-scope",
+          pattern: "*",
+          rules: [
+            {
+              context: "file_name",
+              pattern: "test",
+              scope: "invalid" as unknown as "project" | "external",
+              action: "block",
+              reason: "bad scope",
+            },
+          ],
+        },
+        {
+          group: "good",
+          pattern: "*",
+          rules: [
+            {
+              context: "file_name",
+              pattern: "test",
+              action: "block",
+              reason: "no scope",
+            },
+          ],
+        },
+      ];
+
+      mockReadFile.mockImplementation((path: unknown) => {
+        if (String(path).includes("settings.json"))
+          return Promise.resolve(JSON.stringify({ guardrails: cfg }));
+        return Promise.resolve(JSON.stringify([]));
+      });
+
+      await configLoader.load();
+      const loaded = configLoader.getConfig();
+      expect(loaded).toHaveLength(1);
+      expect(loaded[0].group).toBe("good");
+    });
+  });
 });

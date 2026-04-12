@@ -156,6 +156,19 @@ function checkFilePatternMatch(
   return filePatternRegex.test(filePath);
 }
 
+function isPathWithinProject(
+  filePath: string | undefined,
+  projectRoot: string,
+): boolean {
+  if (!filePath) return true;
+  const absolutePath = filePath.startsWith("/")
+    ? filePath
+    : `${projectRoot}/${filePath}`;
+  const normalizedPath = absolutePath.replace(/\/+/g, "/");
+  const normalizedRoot = projectRoot.replace(/\/+/g, "/");
+  return normalizedPath.startsWith(`${normalizedRoot}/`);
+}
+
 function getFileTargetValue(
   rule: GuardrailsRule,
   toolName: string,
@@ -175,12 +188,20 @@ function matchRule(
   rule: GuardrailsRule,
   toolName: string,
   input: unknown,
+  cwd: string,
 ): { targetValue: string } | null {
   if (rule.context === "command")
     return matchCommandRule(rule, toolName, input);
 
   const filePath = getInputFieldAsString(input, "path");
   if (!checkFilePatternMatch(filePath, rule.file_pattern)) return null;
+
+  // Check scope restriction
+  if (rule.scope) {
+    const withinProject = isPathWithinProject(filePath, cwd);
+    if (rule.scope === "project" && !withinProject) return null;
+    if (rule.scope === "external" && withinProject) return null;
+  }
 
   const targetValue = getFileTargetValue(rule, toolName, input, filePath);
   if (!targetValue) return null;
@@ -233,7 +254,7 @@ async function processGroupRules(
 
   for (const rule of group.rules) {
     try {
-      const matchResult = matchRule(rule, toolName, input);
+      const matchResult = matchRule(rule, toolName, input, cwd);
       if (!matchResult) continue;
 
       const { targetValue } = matchResult;

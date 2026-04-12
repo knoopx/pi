@@ -32,6 +32,13 @@ export interface GuardrailsRule {
    * If this pattern matches, the rule is skipped (even if `pattern` matches).
    */
   excludes?: string;
+  /**
+   * Optional scope to restrict rule application:
+   * - "project": rule only applies to files within the project directory
+   * - "external": rule only applies to files outside the project directory
+   * If not specified, the rule applies to all files regardless of location.
+   */
+  scope?: "project" | "external";
   action: "block" | "confirm";
   reason: string;
 }
@@ -224,6 +231,9 @@ class GuardrailsConfigLoader {
             typeof r.file_pattern === "string") &&
           (r.includes === undefined || typeof r.includes === "string") &&
           (r.excludes === undefined || typeof r.excludes === "string") &&
+          (r.scope === undefined ||
+            r.scope === "project" ||
+            r.scope === "external") &&
           (r.action === "block" || r.action === "confirm") &&
           typeof r.reason === "string"
         );

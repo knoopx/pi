@@ -86,8 +86,9 @@
       {
         "context": "command",
         "pattern": "rm *",
+        "scope": "external",
         "action": "block",
-        "reason": "permanent file deletion. Use `trash` instead for recoverable removal"
+        "reason": "permanent file deletion on external files. Use `trash` instead for recoverable removal"
       },
       {
         "context": "command",
@@ -208,6 +209,12 @@
     "group": "jj",
     "pattern": "*",
     "rules": [
+      {
+        "context": "command",
+        "pattern": "jj * -r @*",
+        "action": "block",
+        "reason": "git-style parent syntax is deprecated. Use jj's revision syntax (read skill: jujutsu)"
+      },
       {
         "context": "command",
         "pattern": "jj {revert,restore,diffedit,simplify,forget,undo,recover} *",
