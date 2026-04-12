@@ -27,19 +27,58 @@ Rules:
 
 The spec allows any type, but these are common and widely supported by tooling:
 
-- `feat`: introduce a new feature (user-facing)
-- `fix`: bug fix (user-facing)
-- `docs`: documentation-only changes
-- `refactor`: refactor that neither fixes a bug nor adds a feature
-- `perf`: performance improvement
-- `test`: add or adjust tests
-- `build`: build system/dependencies
-- `ci`: CI configuration/scripts
-- `chore`: maintenance tasks
-- `style`: formatting (whitespace, missing semicolons, etc.)
-- `revert`: revert a previous commit
+### User-facing types
 
-Default choice when unsure:
+- `feat`: introduce a new feature (user-facing)
+  - **Use when**: Users see new behavior, capabilities, or options
+  - **Examples**: new CLI flags, new UI components, new API endpoints, new configuration options
+
+- `fix`: bug fix (user-facing)
+  - **Use when**: Users see corrected behavior; something broken now works
+  - **Examples**: fixing crashes, handling edge cases, correcting incorrect output
+
+### Documentation types
+
+- `docs`: documentation-only changes (`.md` files, comments in dedicated docs files)
+  - **Use when**: changing `.md`, `.txt`, or dedicated documentation files
+  - **When NOT to use**: Code files (`.ts`, `.js`, `.py`, etc.) containing comments, inline docs, or workflow instructions → use `feat`, `fix`, `refactor`, etc. based on the actual code change
+  - **Example**: updating workflow instructions in a TypeScript component is `feat` or `fix`, not `docs`
+
+### Maintenance types
+
+- `refactor`: refactor that neither fixes a bug nor adds a feature
+  - **Use when**: code structure changes but behavior is identical
+  - **Examples**: renaming variables/functions, extracting utilities, reorganizing imports
+
+- `perf`: performance improvement
+  - **Use when**: code runs faster or uses less memory
+  - **Examples**: optimizing algorithms, reducing allocations, caching results
+
+- `test`: add or adjust tests
+  - **Use when**: only test files change (`.test.ts`, `.spec.ts`, `test/` directory)
+  - **When NOT to use**: if production code also changes, use the type that matches the production change
+
+- `build`: build system/dependencies
+  - **Use when**: build configuration, bundlers, compilers, or dependency management
+  - **Examples**: `package.json` changes, `Cargo.toml`, `Makefile`, bundler config
+
+- `ci`: CI configuration/scripts
+  - **Use when**: CI/CD pipelines, GitHub Actions, deployment scripts
+  - **Examples**: `.github/workflows/`, `Jenkinsfile`, deployment scripts
+
+- `chore`: maintenance tasks
+  - **Use when**: general maintenance that doesn't fit other categories
+  - **Examples**: updating lint rules, cleaning up dead code, updating tooling configs
+
+- `style`: formatting (whitespace, missing semicolons, etc.)
+  - **Use when**: only formatting changes, no logic changes
+  - **When NOT to use**: if any logic changes, use the appropriate type
+
+- `revert`: revert a previous commit
+  - **Use when**: undoing a previous commit entirely
+  - **Format**: `revert: <original-commit-message>`
+
+### Default choice when unsure
 
 - If users see new behavior → `feat`
 - If users see corrected behavior → `fix`
