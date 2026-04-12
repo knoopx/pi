@@ -111,10 +111,13 @@ function removeEmptyProperties<T extends Record<string, unknown>>(
 ): Partial<T> {
   const result: Partial<T> = {};
   for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined &&
-    value !== null &&
-    value !== "" &&
-    !(Array.isArray(value) && value.length === 0)) result[key as keyof T] = value as T[keyof T];
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== "" &&
+      !(Array.isArray(value) && value.length === 0)
+    )
+      result[key as keyof T] = value as T[keyof T];
   }
   return result;
 }
@@ -148,7 +151,8 @@ function buildOptionTableRenderer(
         key: "option",
         format(_v, row) {
           const r = row as Record<string, string>;
-          const lines = [r.option];
+          const lines: string[] = [];
+          if (r.option) lines.push(r.option);
           if (r.description) lines.push(r.description);
           if (r.default) lines.push(`default: ${r.default}`);
           if (r.example) lines.push(`example: ${r.example}`);
@@ -278,7 +282,8 @@ async function postNixSearch<T>(
     body: JSON.stringify(queryPayload),
   });
 
-  if (!response.ok) throw new Error(`Search request failed: ${response.status}`);
+  if (!response.ok)
+    throw new Error(`Search request failed: ${response.status}`);
 
   const data = (await response.json()) as NixSearchResponse<T>;
   return data.hits.hits.map((hit) => hit._source);
@@ -443,7 +448,8 @@ async function searchHomeManagerOptions(
     headers,
   });
 
-  if (!response.ok) throw new Error(`Home-Manager options request failed: ${response.status}`);
+  if (!response.ok)
+    throw new Error(`Home-Manager options request failed: ${response.status}`);
 
   const data = (await response.json()) as HomeManagerOptionResponse;
 
@@ -551,7 +557,7 @@ Returns NixOS configuration option details.`,
         searchNixOptions,
         (opt: NixOption) =>
           removeEmptyProperties({
-            name: opt.option_name,
+            option: opt.option_name,
             description: cleanText(opt.option_description),
             type: opt.option_type,
             default: opt.option_default,
@@ -585,7 +591,7 @@ Returns Home Manager configuration options.`,
         searchHomeManagerOptions,
         (opt: HomeManagerOption) =>
           removeEmptyProperties({
-            title: opt.title,
+            option: opt.title,
             description: cleanText(opt.description),
             type: opt.type,
             default: opt.default,
