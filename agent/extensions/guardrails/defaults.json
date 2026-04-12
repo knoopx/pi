@@ -7,13 +7,13 @@
         "context": "command",
         "pattern": "* npm *",
         "action": "block",
-        "reason": "npm is forbidden. Use Bun equivalents: `bun add`, `bun remove`, `bun run`, `bun install` (see skill: bun)"
+        "reason": "npm is forbidden. Use Bun equivalents: `bun add`, `bun remove`, `bun run`, `bun install` (read skill: bun)"
       },
       {
         "context": "command",
         "pattern": "* npx *",
         "action": "block",
-        "reason": "npx is forbidden. Use `bunx` instead (see skill: bun)"
+        "reason": "npx is forbidden. Use `bunx` instead (read skill: bun)"
       },
       {
         "context": "command",
@@ -31,7 +31,7 @@
         "context": "command",
         "pattern": "bun test *",
         "action": "block",
-        "reason": "`bun test` invokes Bun's built-in test runner, not Vitest. Use `bun vitest run` instead (see skill: vitest)"
+        "reason": "`bun test` invokes Bun's built-in test runner, not Vitest. Use `bun vitest run` instead (read skill: vitest)"
       }
     ]
   },
@@ -43,7 +43,7 @@
         "context": "command",
         "pattern": "{python,python3,pip,pip3} *",
         "action": "block",
-        "reason": "this project uses uv. Use uv equivalents: `uv run`, `uv add`, `uv remove`, `uv sync` (see skill: uv)"
+        "reason": "this project uses uv. Use uv equivalents: `uv run`, `uv add`, `uv remove`, `uv sync` (read skill: uv)"
       }
     ]
   },
@@ -56,7 +56,7 @@
         "context": "command",
         "pattern": "nix ? . *",
         "action": "block",
-        "reason": "`.` without `path:` prefix only includes tracked files. Use `path:.` instead (see skill: nix-flakes)"
+        "reason": "`.` without `path:` prefix only includes tracked files. Use `path:.` instead (read skill: nix-flakes)"
       }
     ]
   },
@@ -136,7 +136,7 @@
         "file_pattern": "\\.(js|jsx|ts|tsx|mjs|cjs)$",
         "pattern": "\\.skip\\(|describe\\.skip|xdescribe|xit\\(",
         "action": "block",
-        "reason": "skipped tests create blind spots. Fix, delete, or use `it.todo()` instead (see skill: vitest)"
+        "reason": "skipped tests create blind spots. Fix, delete, or use `it.todo()` instead (read skill: vitest)"
       }
     ]
   },
@@ -149,7 +149,7 @@
         "file_pattern": "\\.(js|jsx|ts|tsx|mjs|cjs)$",
         "pattern": "eslint-disable",
         "action": "block",
-        "reason": "disabling lint rules hides issues. Fix the code or use inline `eslint-disable-next-line` with justification (see skill: eslint)"
+        "reason": "disabling lint rules hides issues. Fix the code or use inline `eslint-disable-next-line` with justification (read skill: eslint)"
       }
     ]
   },
@@ -161,27 +161,27 @@
         "context": "command",
         "pattern": "bun run dev *",
         "action": "block",
-        "reason": "long-running server that blocks the terminal. Run in tmux instead (see skill: tmux)"
+        "reason": "long-running server that blocks the terminal. Run in tmux instead (read skill: tmux)"
       },
       {
         "context": "command",
         "pattern": "vitest *",
         "excludes": "* run *",
         "action": "block",
-        "reason": "`vitest` without `run` starts watch mode. Use `bun vitest run` (see skill: vitest)"
+        "reason": "`vitest` without `run` starts watch mode. Use `bun vitest run` (read skill: vitest)"
       },
       {
         "context": "command",
         "pattern": "bun vitest *",
         "excludes": "* run *",
         "action": "block",
-        "reason": "`vitest` without `run` starts watch mode. Use `bun vitest run` (see skill: vitest)"
+        "reason": "`vitest` without `run` starts watch mode. Use `bun vitest run` (read skill: vitest)"
       },
       {
         "context": "command",
         "pattern": "tsc * {--watch,-w} *",
         "action": "block",
-        "reason": "watch mode blocks the terminal. Use `tsc --noEmit` or run in tmux (see skill: tmux)"
+        "reason": "watch mode blocks the terminal. Use `tsc --noEmit` or run in tmux (read skill: tmux)"
       },
       {
         "context": "command",
@@ -200,7 +200,7 @@
         "pattern": "git *",
         "excludes": "* {log,diff} *",
         "action": "block",
-        "reason": "this project uses Jujutsu, not Git. Use jj equivalents (see skill: jujutsu)"
+        "reason": "this project uses Jujutsu, not Git. Use jj equivalents (read skill: jujutsu)"
       }
     ]
   },
@@ -220,14 +220,14 @@
         "pattern": "jj {squash,split,describe,commit} *",
         "excludes": "* -m *",
         "action": "block",
-        "reason": "opens an editor without `-m`. Use non-interactive form with `-m 'message'` (see skill: jujutsu)"
+        "reason": "opens an editor without `-m`. Use non-interactive form with `-m 'message'` (read skill: jujutsu)"
       },
       {
         "context": "command",
         "pattern": "jj * {-i,--interactive,--tool} *",
         "excludes": "* --help *",
         "action": "block",
-        "reason": "interactive flags open editors/TUIs. Use non-interactive alternatives (see skill: jujutsu)"
+        "reason": "interactive flags open editors/TUIs. Use non-interactive alternatives (read skill: jujutsu)"
       },
       {
         "context": "command",
@@ -257,7 +257,7 @@
         "context": "command",
         "pattern": "{docker,docker-compose} *",
         "action": "block",
-        "reason": "use Podman instead of Docker (see skill: podman)"
+        "reason": "use Podman instead of Docker (read skill: podman)"
       }
     ]
   },
