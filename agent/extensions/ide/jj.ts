@@ -219,7 +219,14 @@ export async function setBookmarkToChange(
 
   const result = await pi.exec(
     "jj",
-    ["bookmark", "set", normalizedBookmarkName, "-r", changeId],
+    [
+      "bookmark",
+      "set",
+      "--allow-backwards",
+      normalizedBookmarkName,
+      "-r",
+      changeId,
+    ],
     {
       cwd,
     },
