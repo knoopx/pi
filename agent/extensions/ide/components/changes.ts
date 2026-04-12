@@ -956,6 +956,7 @@ Use the **conventional-commits** skill for commit message format.`;
       );
       const prevChangeId = selectedChange.changeId;
       const prevFileIndex = selectionState.fileIndex;
+      const prevFileCount = files.length;
       changeCache.clear();
       await reloadChanges();
       // Restore selection to the original change, not the new working copy
@@ -965,10 +966,18 @@ Use the **conventional-commits** skill for commit message format.`;
       if (restoredIndex >= 0) {
         selectionState.selectedIndex = restoredIndex;
         selectedChange = changes[restoredIndex];
-        selectionState.fileIndex = Math.min(
-          prevFileIndex,
-          (files.length || 1) - 1,
-        );
+        // Adjust file index: if we split the current file, move to previous file
+        // If we were on the last file, stay on the new last file
+        let newFileIndex = prevFileIndex;
+        if (prevFileIndex >= prevFileCount - 1) {
+          // We were on the last file, adjust to new last file
+          newFileIndex = Math.max(0, prevFileCount - 2);
+        } else if (prevFileIndex > 0) {
+          // We split a middle file, move to previous file
+          newFileIndex = prevFileIndex - 1;
+        }
+        selectionState.fileIndex = newFileIndex;
+        selectionState.diffScroll = 0;
         await loadFilesAndDiff(selectedChange);
         invalidateCache(loadingState);
         tui.requestRender();
