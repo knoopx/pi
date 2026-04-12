@@ -78,32 +78,6 @@ export async function renderFileContent(
   return out.join("\n");
 }
 
-export function renderBashOutput(
-  text: string,
-  exitCode: number | null,
-  theme: Theme,
-): { summary: string; body: string } {
-  const isOk = exitCode === 0;
-  const statusColor = isOk ? "success" : "error";
-  const statusIcon = isOk ? "✓" : "✗";
-  const codeStr =
-    exitCode !== null
-      ? theme.fg(statusColor, statusIcon) + " exit " + exitCode
-      : theme.fg("warning", "⚡ killed");
-
-  const lines = text.split("\n");
-  const maxShow = MAX_PREVIEW_LINES;
-  const show = lines.slice(0, maxShow);
-  const remaining = lines.length - maxShow;
-
-  let body = show.join("\n");
-  if (remaining > 0) {
-    body += `\n${theme.fg("dim", `  … ${remaining} more lines`)}`;
-  }
-
-  return { summary: codeStr, body };
-}
-
 export function renderTree(text: string, theme: Theme): string {
   const lines = text.trim().split("\n").filter(Boolean);
   if (!lines.length) return theme.fg("dim", "(empty directory)");
