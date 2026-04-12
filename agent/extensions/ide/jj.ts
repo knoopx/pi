@@ -127,15 +127,34 @@ export async function loadChangedFiles(
   cwd: string,
   changeId: string,
 ): Promise<FileChange[]> {
-  const result = await pi.exec("jj", ["diff", "-r", changeId, "--summary"], {
-    cwd,
-  });
+  const result = await pi.exec(
+    "jj",
+    [
+      "log",
+      "-r",
+      changeId,
+      "-n1",
+      "--no-graph",
+      "-T",
+      'self.diff().stat().files().map(|f| f.status_char() ++ " " ++ f.path() ++ " " ++ f.lines_added() ++ " " ++ f.lines_removed()).join("\\n")',
+    ],
+    { cwd },
+  );
 
   if (result.code !== 0) return [];
 
   return parseStdoutLines(result.stdout, (line) => {
-    const match = /^([AMD])\s+(.+)$/.exec(line);
-    return match ? { status: match[1], path: match[2] } : null;
+    // Parse output: "M path 27 4" (status, path, insertions, deletions)
+    const match = /^([AMD])\s+(.+)\s+(\d+)\s+(\d+)$/.exec(line);
+    if (match) {
+      return {
+        status: match[1],
+        path: match[2],
+        insertions: parseInt(match[3], 10),
+        deletions: parseInt(match[4], 10),
+      };
+    }
+    return null;
   }).sort((a, b) => a.path.localeCompare(b.path));
 }
 
@@ -225,7 +244,8 @@ export async function setBookmarkToChange(
     },
   );
 
-  if (result.code !== 0) throw new Error(result.stderr || "Failed to set bookmark");
+  if (result.code !== 0)
+    throw new Error(result.stderr || "Failed to set bookmark");
 }
 
 /**

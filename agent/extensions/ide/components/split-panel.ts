@@ -1,4 +1,5 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
+import stringWidth from "string-width";
 import { pad, ensureWidth, truncateAnsi, renderListRow } from "./text-utils";
 import { getChangeIcon } from "./change-utils";
 import { getFileStatusIcon, getFileIcon, getFileIconColor } from "./file-icons";
@@ -566,10 +567,30 @@ function expandTabs(text: string, tabWidth = 2): string {
 }
 
 /**
+ * Format file stats for display (net changes: insertions minus deletions)
+ */
+function formatFileStats(
+  insertions: number | undefined,
+  deletions: number | undefined,
+): { text: string; isPositive: boolean } {
+  const ins = insertions ?? 0;
+  const del = deletions ?? 0;
+  const net = ins - del;
+  if (net === 0) return { text: "", isPositive: true };
+  const sign = net > 0 ? "+" : "-";
+  return { text: `${sign} ${Math.abs(net)}`, isPositive: net > 0 };
+}
+
+/**
  * Render file change rows with status colors
  */
 export function renderFileChangeRows(
-  files: { status: string; path: string }[],
+  files: {
+    status: string;
+    path: string;
+    insertions?: number;
+    deletions?: number;
+  }[],
   width: number,
   height: number,
   fileIndex: number,
@@ -605,20 +626,50 @@ export function renderFileChangeRows(
     const fileIconColor = getFileIconColor(file.path);
     const statusColor = getStatusColor(file.status);
 
-    const styledStatus = theme.fg(statusColor, statusIcon);
-    const styledFileIcon = fileIconColor
+    const _styledStatus = theme.fg(statusColor, statusIcon);
+    const _styledFileIcon = fileIconColor
       ? hexColor(fileIconColor, fileIcon)
       : theme.fg(statusColor, fileIcon);
     const styledPath = theme.fg(statusColor, file.path);
 
-    const line = ` ${styledStatus} ${styledFileIcon} ${styledPath}`;
-    const truncated = truncateAnsi(line, width);
-    const padded = ensureWidth(truncated, width);
+    // Format stats (net changes)
+    const stats = formatFileStats(file.insertions, file.deletions);
+    const statsColor = stats.isPositive ? "toolDiffAdded" : "toolDiffRemoved";
+    const styledStats = stats.text
+      ? theme.fg(statsColor, ` ${stats.text}`)
+      : "";
+
+    // Calculate widths for right-alignment using stringWidth for ANSI-aware measurement
+    const prefix = ` ${statusIcon} ${fileIcon} `; // status + file icon + spaces
+    const prefixWidth = stringWidth(prefix);
+    const statsWidth = styledStats ? stringWidth(styledStats) : 0;
+    const rightPadding = 1; // one char padding from right edge
+    const availablePathWidth = Math.max(
+      1,
+      width - prefixWidth - statsWidth - rightPadding,
+    );
+
+    const truncatedPath = truncateAnsi(styledPath, availablePathWidth);
+    const pathWidth = stringWidth(truncatedPath);
+    const paddingSpaces = Math.max(0, availablePathWidth - pathWidth);
+    const padding = " ".repeat(paddingSpaces);
+
+    const rightPaddingStr = " ".repeat(rightPadding);
+    const line = `${prefix}${truncatedPath}${padding}${styledStats}${rightPaddingStr}`;
+    const padded = ensureWidth(line, width);
 
     if (isSelected) {
-      const plainText = ` ${statusIcon} ${fileIcon} ${file.path}`;
-      const truncatedPlain = truncateAnsi(plainText, width);
-      const paddedPlain = pad(truncatedPlain, width);
+      const statsPlain = stats.text ? ` ${stats.text}` : "";
+      const plainPrefix = ` ${statusIcon} ${fileIcon} `;
+      const plainPath = truncateAnsi(file.path, availablePathWidth);
+      const plainPathWidth = stringWidth(plainPath);
+      const plainPaddingSpaces = Math.max(
+        0,
+        availablePathWidth - plainPathWidth,
+      );
+      const plainPadding = " ".repeat(plainPaddingSpaces);
+      const plainText = `${plainPrefix}${plainPath}${plainPadding}${statsPlain}${rightPaddingStr}`;
+      const paddedPlain = ensureWidth(plainText, width);
       const styled = theme.fg("accent", theme.bold(paddedPlain));
       rows.push(theme.bg("selectedBg", styled));
     } else {
@@ -694,7 +745,8 @@ export function renderChangeRows(
 
   const visibleCount = height;
   let startIdx = 0;
-  if (selectedIndex >= visibleCount) startIdx = selectedIndex - visibleCount + 1;
+  if (selectedIndex >= visibleCount)
+    startIdx = selectedIndex - visibleCount + 1;
 
   for (let i = 0; i < visibleCount && startIdx + i < changes.length; i++) {
     const idx = startIdx + i;

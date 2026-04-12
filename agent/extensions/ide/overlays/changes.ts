@@ -52,15 +52,16 @@ export async function openChangesBrowser(
     if (!cmAction) break;
 
     const cmDef = SYMBOL_REFERENCE_COMMANDS[cmAction.action];
-    if (cmDef) await ctx.ui.custom<SymbolReferenceResult | null>(
-      (tui, theme, keybindings, done) =>
-        createSymbolReferenceComponent(pi, tui, theme, keybindings, done, {
-          title: cmDef.titleFn(cmAction.filePath),
-          command: cmDef.command,
-          args: cmDef.argsFn(cmAction.filePath),
-          cwd: ctx.cwd,
-        }),
-      FULL_OVERLAY_OPTIONS,
-    );
+    if (cmDef)
+      await ctx.ui.custom<SymbolReferenceResult | null>(
+        (tui, theme, keybindings, done) =>
+          createSymbolReferenceComponent(pi, tui, theme, keybindings, done, {
+            title: cmDef.titleFn(cmAction.filePath),
+            command: cmDef.command,
+            args: cmDef.argsFn(cmAction.filePath),
+            cwd: ctx.cwd,
+          }),
+        FULL_OVERLAY_OPTIONS,
+      );
   }
 }

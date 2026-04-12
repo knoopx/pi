@@ -1,5 +1,4 @@
 import path from "node:path";
-import fs from "node:fs";
 import { Key } from "@mariozechner/pi-tui";
 import {
   ACTION_KEYS,
@@ -89,11 +88,6 @@ export function createChangesComponent(
   const changeCache = new Map<string, ChangeCache>();
   let graphLayout: GraphLayout | null = null;
 
-  // File watcher for auto-reload on active file changes
-  let activeFileWatcher: fs.FSWatcher | null = null;
-  let watchedFilePath: string | null = null;
-  let watcherDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-
   // Filter state
   let currentFilterIndex = 0;
 
@@ -107,48 +101,14 @@ export function createChangesComponent(
   let moveOriginalIndex = -1;
   let moveOriginalChanges: Change[] = [];
 
+  // Auto-refresh state
+  let refreshInterval: ReturnType<typeof setInterval> | null = null;
+  const REFRESH_INTERVAL_MS = 2000; // 2 seconds
+
   const notify = createStatusNotifier(statusState, () => {
     invalidateCache(loadingState);
     tui.requestRender();
   });
-
-  function updateFileWatcher(): void {
-    const currentFilePath =
-      selectedChange && files.length > 0 && files[selectionState.fileIndex]
-        ? path.join(cwd, files[selectionState.fileIndex].path)
-        : null;
-
-    if (currentFilePath === watchedFilePath && activeFileWatcher) return;
-
-    watchedFilePath = currentFilePath;
-    if (activeFileWatcher) {
-      activeFileWatcher.close();
-      activeFileWatcher = null;
-    }
-
-    if (!currentFilePath) return;
-
-    try {
-      activeFileWatcher = fs.watch(
-        currentFilePath,
-        { persistent: false },
-        () => {
-          if (watcherDebounceTimer) clearTimeout(watcherDebounceTimer);
-          watcherDebounceTimer = setTimeout(() => {
-            const file = files[selectionState.fileIndex];
-            if (!file || !selectedChange) return;
-            const cache = changeCache.get(selectedChange.changeId);
-            if (cache) cache.diffs.delete(file.path);
-            void loadDiff(selectedChange, file.path, {
-              preserveScroll: true,
-            });
-          }, 150);
-        },
-      );
-    } catch {
-      // File may not exist or be inaccessible
-    }
-  }
 
   // Navigation handlers - defined inline to access current array values
   function navigateChanges(direction: "up" | "down"): void {
@@ -182,7 +142,6 @@ export function createChangesComponent(
       selectionState.fileIndex = newIndex;
       const file = files[newIndex];
       void loadDiff(selectedChange, file.path);
-      updateFileWatcher();
       invalidateCache(loadingState);
       tui.requestRender();
     }
@@ -493,8 +452,6 @@ Use the **conventional-commits** skill for commit message format.`;
   // Shared helper to refresh state after mutations
   async function refreshAfterMutation(): Promise<void> {
     changeCache.clear();
-    selectionState.fileIndex = 0;
-    selectionState.diffScroll = 0;
     await reloadChanges();
   }
 
@@ -589,13 +546,54 @@ Use the **conventional-commits** skill for commit message format.`;
       loadingState.loading = false;
 
       if (changes.length > 0) {
-        const preferredChangeId = currentChangeId ?? previousSelectedChangeId;
-        const matchedIndex = preferredChangeId
-          ? changes.findIndex((change) => change.changeId === preferredChangeId)
-          : -1;
-        selectionState.selectedIndex = matchedIndex >= 0 ? matchedIndex : 0;
-        selectedChange = changes[selectionState.selectedIndex];
-        await loadFilesAndDiff(selectedChange);
+        // Always preserve current selection state
+        // Keep the same selected change if it still exists
+        const currentSelectedChangeId = selectedChange?.changeId;
+        if (currentSelectedChangeId) {
+          const matchedIndex = changes.findIndex(
+            (change) => change.changeId === currentSelectedChangeId,
+          );
+          if (matchedIndex >= 0) {
+            selectionState.selectedIndex = matchedIndex;
+            selectedChange = changes[matchedIndex];
+            // Load files but preserve file index and diff scroll
+            const cached = changeCache.get(selectedChange.changeId);
+            if (cached && cached.files.length > 0) {
+              files = cached.files;
+              // Keep fileIndex within bounds
+              selectionState.fileIndex = Math.min(
+                selectionState.fileIndex,
+                files.length - 1,
+              );
+              // Reload diff for current file if needed
+              if (files[selectionState.fileIndex]) {
+                await loadDiff(
+                  selectedChange,
+                  files[selectionState.fileIndex].path,
+                  {
+                    preserveScroll: true,
+                  },
+                );
+              }
+            }
+          } else {
+            // Selected change no longer exists, fall back to first
+            selectionState.selectedIndex = 0;
+            selectedChange = changes[0];
+            await loadFilesAndDiff(selectedChange);
+          }
+        } else {
+          // No current selection, use working copy or first change
+          const preferredChangeId = currentChangeId ?? previousSelectedChangeId;
+          const matchedIndex = preferredChangeId
+            ? changes.findIndex(
+                (change) => change.changeId === preferredChangeId,
+              )
+            : -1;
+          selectionState.selectedIndex = matchedIndex >= 0 ? matchedIndex : 0;
+          selectedChange = changes[selectionState.selectedIndex];
+          await loadFilesAndDiff(selectedChange);
+        }
       } else {
         selectionState.selectedIndex = 0;
         selectedChange = null;
@@ -629,7 +627,6 @@ Use the **conventional-commits** skill for commit message format.`;
           selectionState.diffScroll = 0;
           invalidateCache(loadingState);
           tui.requestRender();
-          updateFileWatcher();
           return;
         }
       }
@@ -642,7 +639,6 @@ Use the **conventional-commits** skill for commit message format.`;
 
       selectionState.fileIndex = 0;
       await loadDiff(change, files[0]?.path);
-      updateFileWatcher();
     } catch (error) {
       const msg = formatErrorMessage(error);
       files = [];
@@ -1332,12 +1328,30 @@ Use the **conventional-commits** skill for commit message format.`;
     }
   }
 
+  function startAutoRefresh(): void {
+    refreshInterval = setInterval(() => {
+      // Only refresh if we're not in move mode
+      if (mode === "normal") {
+        // Invalidate cache to force re-render even if dimensions haven't changed
+        invalidateCache(loadingState);
+        void reloadChanges();
+      }
+    }, REFRESH_INTERVAL_MS);
+  }
+
+  function stopAutoRefresh(): void {
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+    }
+  }
+
   function dispose(): void {
-    if (watcherDebounceTimer) clearTimeout(watcherDebounceTimer);
-    if (activeFileWatcher) activeFileWatcher.close();
+    stopAutoRefresh();
   }
 
   void reloadChanges();
+  startAutoRefresh();
 
   return {
     render,

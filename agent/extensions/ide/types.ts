@@ -62,6 +62,8 @@ export interface DiffStats {
 export interface FileChange {
   status: string;
   path: string;
+  insertions?: number;
+  deletions?: number;
 }
 
 /**
