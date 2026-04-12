@@ -2,7 +2,7 @@
  * Shared constants and types for overlay components.
  */
 
-import type { CmActionType } from "../components/cm-results";
+import type { SymbolReferenceActionType } from "../components/symbol-references";
 
 export const FULL_OVERLAY_OPTIONS = {
   overlay: true,
@@ -12,7 +12,7 @@ export const FULL_OVERLAY_OPTIONS = {
   },
 };
 
-export interface CmActionResult {
+export interface SymbolReferenceActionResult {
   filePath: string;
-  action: CmActionType;
+  action: SymbolReferenceActionType;
 }

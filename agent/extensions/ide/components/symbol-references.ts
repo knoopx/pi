@@ -13,7 +13,7 @@ import {
 import { formatSymbolListEntry } from "./symbol-utils";
 import { loadFilePreviewWithShiki } from "./file-preview";
 
-export interface CmResultItem extends ListPickerItem {
+export interface SymbolReferenceItem extends ListPickerItem {
   name: string;
   type: string;
   path: string;
@@ -23,7 +23,7 @@ export interface CmResultItem extends ListPickerItem {
   callLine?: number;
 }
 
-export type CmActionType =
+export type SymbolReferenceActionType =
   | "callers"
   | "callees"
   | "tests"
@@ -34,27 +34,31 @@ export type CmActionType =
   | "used-by"
   | "delete";
 
-export interface CmResult {
-  item: CmResultItem;
-  action?: CmActionType;
+export interface SymbolReferenceResult {
+  item: SymbolReferenceItem;
+  action?: SymbolReferenceActionType;
+  insertType?: "name" | "path";
 }
 
-interface CmResultsConfig {
+interface SymbolReferenceConfig {
   title: string;
   command: string;
   args: string[];
   cwd: string;
 }
 
-/** Codemapper command configurations */
-interface CmCommandDef {
+/** Symbol reference command configurations */
+interface SymbolReferenceCommandDef {
   titleFn: (target: string) => string;
   command: string;
   argsFn: (target: string) => string[];
 }
 
-/** All cm commands */
-export const CM_COMMANDS: Record<CmActionType, CmCommandDef> = {
+/** All symbol reference commands */
+export const SYMBOL_REFERENCE_COMMANDS: Record<
+  SymbolReferenceActionType,
+  SymbolReferenceCommandDef
+> = {
   callers: {
     titleFn: (s) => `Callers of ${s}`,
     command: "callers",
@@ -102,8 +106,8 @@ export const CM_COMMANDS: Record<CmActionType, CmCommandDef> = {
   },
 };
 
-// Symbol-based actions available in cm results
-const SYMBOL_ACTION_DEFS: [string, CmActionType][] = [
+// Symbol-based actions available in symbol references
+const SYMBOL_ACTION_DEFS: [string, SymbolReferenceActionType][] = [
   [Key.ctrl("t"), "callers"],
   [Key.ctrl("j"), "callees"],
   [Key.ctrl("y"), "types"],
@@ -188,16 +192,16 @@ function normalizeName(name: string, path: string): string {
 }
 
 /**
- * Parse cm output lines into structured items.
+ * Parse symbol reference output lines into structured items.
  * Extracts file path from [FILE:...] header if not in line format.
  */
-function parseCmOutput(output: string): CmResultItem[] {
+function parseSymbolReferenceOutput(output: string): SymbolReferenceItem[] {
   // Extract file path from header for inspect command
   const fileMatch = /\[FILE:([^\]]+)\]/.exec(output);
   const headerFile = fileMatch?.[1];
 
   const lines = filterOutputLines(output);
-  const items: CmResultItem[] = [];
+  const items: SymbolReferenceItem[] = [];
 
   for (const line of lines) {
     const parts = line.split("|");
@@ -234,39 +238,51 @@ function parseCmOutput(output: string): CmResultItem[] {
   return items;
 }
 
-export function createCmResultsComponent(
+export function createSymbolReferenceComponent(
   pi: ExtensionAPI,
   tui: { terminal: { rows: number }; requestRender: () => void },
   theme: Theme,
   keybindings: KeybindingsManager,
-  done: (result: CmResult | null) => void,
-  config: CmResultsConfig,
+  done: (result: SymbolReferenceResult | null) => void,
+  config: SymbolReferenceConfig,
 ): ListPickerComponent & { invalidate: () => void } {
-  let pendingAction: CmActionType | undefined;
+  let pendingAction: SymbolReferenceActionType | undefined;
+  let pendingInsertType: "name" | "path" | undefined;
 
-  function doneWithAction(item: CmResultItem | null): void {
+  function doneWithAction(item: SymbolReferenceItem | null): void {
     if (item && pendingAction) {
       done({ item, action: pendingAction });
+    } else if (item && pendingInsertType) {
+      done({ item, insertType: pendingInsertType });
     } else if (item) {
       done({ item });
     } else {
       done(null);
     }
     pendingAction = undefined;
+    pendingInsertType = undefined;
   }
 
-  const actions: ListPickerAction<CmResultItem>[] = SYMBOL_ACTION_DEFS.map(
-    ([key, action]) => ({
+  const actions: ListPickerAction<SymbolReferenceItem>[] = [
+    {
+      key: Key.ctrl("i"),
+      label: "insert",
+      handler: (item: SymbolReferenceItem) => {
+        pendingInsertType = "name";
+        doneWithAction(item);
+      },
+    },
+    ...SYMBOL_ACTION_DEFS.map(([key, action]) => ({
       key,
       label: action,
-      handler: (item: CmResultItem) => {
+      handler: (item: SymbolReferenceItem) => {
         pendingAction = action;
         doneWithAction(item);
       },
-    }),
-  );
+    })),
+  ];
 
-  const internalDone = (item: CmResultItem | null) => {
+  const internalDone = (item: SymbolReferenceItem | null) => {
     if (item) {
       done({ item });
     } else {
@@ -274,7 +290,7 @@ export function createCmResultsComponent(
     }
   };
 
-  const picker = createListPicker<CmResultItem>(
+  const picker = createListPicker<SymbolReferenceItem>(
     pi,
     tui,
     theme,
@@ -300,7 +316,7 @@ export function createCmResultsComponent(
           throw new Error(`cm ${config.command} failed: ${result.stderr}`);
         }
 
-        return parseCmOutput(result.stdout);
+        return parseSymbolReferenceOutput(result.stdout);
       },
       filterItems: (items, query) =>
         items.filter(
@@ -317,7 +333,9 @@ export function createCmResultsComponent(
           signature: item.signature,
         }),
       loadPreview: async (item) => {
-        const result = await pi.exec("cat", [item.path], { cwd: config.cwd });
+        const result = await pi.exec("cat", [item.path], {
+          cwd: config.cwd,
+        });
         if (result.code !== 0) {
           return [`Error reading file: ${result.stderr}`];
         }

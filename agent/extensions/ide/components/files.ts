@@ -13,7 +13,7 @@ import {
 import { createFilePreviewLoader } from "./preview-utils";
 import { getFileIcon } from "./file-icons";
 import { notifyMutation } from "../jj";
-import type { CmActionType } from "./cm-results";
+import type { SymbolReferenceActionType } from "./symbol-references";
 
 interface FileInfo extends ListPickerItem {
   path: string;
@@ -21,7 +21,7 @@ interface FileInfo extends ListPickerItem {
 
 export interface FileResult {
   file: FileInfo;
-  action?: CmActionType;
+  action?: SymbolReferenceActionType;
 }
 
 export function createFilesComponent(
@@ -34,7 +34,7 @@ export function createFilesComponent(
   cwd: string,
 ): ListPickerComponent & { invalidate: () => void } {
   // Track pending action for when an action key is pressed
-  let pendingAction: CmActionType | undefined;
+  let pendingAction: SymbolReferenceActionType | undefined;
 
   // Multi-selection state
   const selectedFiles = new Set<string>();
@@ -52,7 +52,7 @@ export function createFilesComponent(
   }
 
   // Action definitions: [key, label/action]
-  const ACTION_DEFS: [string, CmActionType][] = [
+  const ACTION_DEFS: [string, SymbolReferenceActionType][] = [
     [Key.ctrl("t"), "inspect"],
     [Key.ctrl("d"), "delete"],
     [Key.ctrl("u"), "used-by"],

@@ -13,7 +13,7 @@ import {
 } from "./list-picker";
 import { formatSymbolListEntry } from "./symbol-utils";
 import { createFilePreviewLoader } from "./preview-utils";
-import type { CmActionType } from "./cm-results";
+import type { SymbolReferenceActionType } from "./symbol-references";
 
 interface SymbolInfo extends ListPickerItem {
   name: string;
@@ -25,7 +25,7 @@ interface SymbolInfo extends ListPickerItem {
 
 export interface SymbolResult {
   symbol: SymbolInfo;
-  action?: CmActionType;
+  action?: SymbolReferenceActionType;
   insertType?: "name" | "path";
 }
 
@@ -94,7 +94,7 @@ export function createSymbolsComponent(
   cwd: string,
 ): ListPickerComponent & { invalidate: () => void } {
   // Track pending action for when an action key is pressed
-  let pendingAction: CmActionType | undefined;
+  let pendingAction: SymbolReferenceActionType | undefined;
   let pendingInsertType: "name" | "path" | undefined;
 
   // Current symbol type filter (defaults to class)
@@ -116,7 +116,7 @@ export function createSymbolsComponent(
   }
 
   // Get context-sensitive action for ctrl+t based on symbol type
-  function getInspectAction(type: string): CmActionType {
+  function getInspectAction(type: string): SymbolReferenceActionType {
     // Functions and methods → show callers
     if (
       type === "f" ||
@@ -155,7 +155,7 @@ export function createSymbolsComponent(
   }
 
   // Actions that show results in picker
-  const PICKER_ACTIONS: [string, CmActionType][] = [
+  const PICKER_ACTIONS: [string, SymbolReferenceActionType][] = [
     [Key.ctrl("j"), "callees"],
     [Key.ctrl("k"), "schema"],
   ];

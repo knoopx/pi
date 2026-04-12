@@ -8,12 +8,12 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import {
-  createCmResultsComponent,
-  CM_COMMANDS,
-  type CmResult,
-  type CmActionType,
-  type CmResultItem,
-} from "../components/cm-results";
+  createSymbolReferenceComponent,
+  SYMBOL_REFERENCE_COMMANDS,
+  type SymbolReferenceResult,
+  type SymbolReferenceActionType,
+  type SymbolReferenceItem,
+} from "../components/symbol-references";
 
 const OVERLAY_OPTIONS = {
   overlay: true,
@@ -23,7 +23,11 @@ const OVERLAY_OPTIONS = {
 type ScreenFactory<T> = (
   pi: ExtensionAPI,
   _ctx: ExtensionContext,
-) => Promise<{ result: T | null; action?: CmActionType; target?: string }>;
+) => Promise<{
+  result: T | null;
+  action?: SymbolReferenceActionType;
+  target?: string;
+}>;
 
 interface NavScreen {
   factory: ScreenFactory<unknown>;
@@ -45,15 +49,15 @@ async function handleDeleteAction(
   }
 }
 
-function createCmCommandScreen(
-  cmDef: (typeof CM_COMMANDS)[CmActionType],
+function createSymbolReferenceCommandScreen(
+  cmDef: (typeof SYMBOL_REFERENCE_COMMANDS)[SymbolReferenceActionType],
   target: string,
   ctx: ExtensionContext,
-): ScreenFactory<CmResultItem | null> {
+): ScreenFactory<SymbolReferenceItem | null> {
   return async (pi) => {
-    const cmResult = await ctx.ui.custom<CmResult | null>(
+    const cmResult = await ctx.ui.custom<SymbolReferenceResult | null>(
       (tui, theme, keybindings, done) =>
-        createCmResultsComponent(pi, tui, theme, keybindings, done, {
+        createSymbolReferenceComponent(pi, tui, theme, keybindings, done, {
           title: cmDef.titleFn(target),
           command: cmDef.command,
           args: cmDef.argsFn(target),
@@ -95,10 +99,10 @@ export async function runNavigationStack<T>(
         continue;
       }
 
-      const cmDef = CM_COMMANDS[action];
+      const cmDef = SYMBOL_REFERENCE_COMMANDS[action];
       if (cmDef) {
         stack.push({
-          factory: createCmCommandScreen(cmDef, target, ctx),
+          factory: createSymbolReferenceCommandScreen(cmDef, target, ctx),
         });
       }
       continue;

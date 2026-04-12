@@ -8,11 +8,14 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { createChangesComponent } from "../components/changes";
 import {
-  createCmResultsComponent,
-  CM_COMMANDS,
-  type CmResult,
-} from "../components/cm-results";
-import { FULL_OVERLAY_OPTIONS, type CmActionResult } from "./options";
+  createSymbolReferenceComponent,
+  SYMBOL_REFERENCE_COMMANDS,
+  type SymbolReferenceResult,
+} from "../components/symbol-references";
+import {
+  FULL_OVERLAY_OPTIONS,
+  type SymbolReferenceActionResult,
+} from "./options";
 
 export async function openChangesBrowser(
   pi: ExtensionAPI,
@@ -22,8 +25,8 @@ export async function openChangesBrowser(
     changeId: string,
   ) => Promise<string | null>,
 ): Promise<void> {
-  const showChanges = async (): Promise<CmActionResult | null> => {
-    let pendingCmAction: CmActionResult | null = null;
+  const showChanges = async (): Promise<SymbolReferenceActionResult | null> => {
+    let pendingCmAction: SymbolReferenceActionResult | null = null;
 
     await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
       return createChangesComponent(
@@ -48,11 +51,11 @@ export async function openChangesBrowser(
 
     if (!cmAction) break;
 
-    const cmDef = CM_COMMANDS[cmAction.action];
+    const cmDef = SYMBOL_REFERENCE_COMMANDS[cmAction.action];
     if (cmDef) {
-      await ctx.ui.custom<CmResult | null>(
+      await ctx.ui.custom<SymbolReferenceResult | null>(
         (tui, theme, keybindings, done) =>
-          createCmResultsComponent(pi, tui, theme, keybindings, done, {
+          createSymbolReferenceComponent(pi, tui, theme, keybindings, done, {
             title: cmDef.titleFn(cmAction.filePath),
             command: cmDef.command,
             args: cmDef.argsFn(cmAction.filePath),

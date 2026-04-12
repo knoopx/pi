@@ -44,7 +44,7 @@ import {
   notifyMutation,
 } from "../jj";
 import { getTheme, renderDiffWithShiki } from "../tools/diff";
-import type { CmActionType } from "./cm-results";
+import type { SymbolReferenceActionType } from "./symbol-references";
 import {
   calculateGraphLayout,
   renderGraphRow,
@@ -54,7 +54,10 @@ import {
 type ChangeCache = ComponentCache<FileChange>;
 
 /** File cm action callback */
-type OnFileCmAction = (filePath: string, action: CmActionType) => Promise<void>;
+type OnFileCmAction = (
+  filePath: string,
+  action: SymbolReferenceActionType,
+) => Promise<void>;
 
 /** Predefined revision filters */
 interface RevisionFilter {
