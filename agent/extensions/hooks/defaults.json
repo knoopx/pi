@@ -32,14 +32,6 @@
     "pattern": "eslint.config.{js,mjs,cjs,ts,mts,cts}",
     "hooks": [
       {
-        "event": "tool_result",
-        "context": "file_name",
-        "pattern": "*.{ts,tsx,js,jsx}",
-        "command": "bunx eslint \"%file%\"",
-        "timeout": 60000,
-        "notify": true
-      },
-      {
         "event": "agent_end",
         "command": "bunx eslint .",
         "timeout": 120000,
