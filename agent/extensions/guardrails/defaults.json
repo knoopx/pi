@@ -210,16 +210,10 @@
     "rules": [
       {
         "context": "command",
-        "pattern": "jj * {*@~*,*@^*} *",
-        "action": "block",
-        "reason": "Jujutsu uses `-` for parent syntax, not `~` or `^`. Use `@-`, `@--` (see skill: jujutsu)"
-      },
-      {
-        "context": "command",
         "pattern": "jj {revert,restore,diffedit,simplify,forget,undo,recover} *",
         "excludes": "* {--help,--file} *",
         "action": "block",
-        "reason": "interactive or destructive jj command. Inspect with `jj st`/`jj diff`/`jj log` first (see skill: jujutsu)"
+        "reason": "you are not allowed to manage jujutsu repositories"
       },
       {
         "context": "command",
@@ -227,13 +221,6 @@
         "excludes": "* -m *",
         "action": "block",
         "reason": "opens an editor without `-m`. Use non-interactive form with `-m 'message'` (see skill: jujutsu)"
-      },
-      {
-        "context": "command",
-        "pattern": "jj resolve *",
-        "excludes": "* --list *",
-        "action": "block",
-        "reason": "opens a merge tool UI. Use `jj resolve --list` first, then edit files directly (see skill: jujutsu)"
       },
       {
         "context": "command",
@@ -294,7 +281,7 @@
         "context": "command",
         "pattern": "gh {repo delete,repo archive,repo rename,release delete,issue delete,gist delete,run delete,label delete,secret delete,variable delete} *",
         "action": "block",
-        "reason": "destructive GitHub operation. Use the GitHub web UI or pi's built-in gh tools"
+        "reason": "you are not allowed to manage github resources"
       }
     ]
   },
