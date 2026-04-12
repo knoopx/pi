@@ -14,6 +14,6 @@
     "noUncheckedIndexedAccess": false,
     "noImplicitOverride": false
   },
-  "include": ["*.ts"],
-  "exclude": ["node_modules", "../../shared"]
+  "include": ["index.ts", "**/*.ts"],
+  "exclude": ["node_modules", "../../shared", "eslint.config.js"]
 }
