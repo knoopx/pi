@@ -5,11 +5,27 @@
  * Supports urgency levels, expiration time, app name, icon, and category.
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type {
+  AgentToolResult,
+  AgentToolUpdateCallback,
+  ExtensionAPI,
+  ExtensionCommandContext,
+  ExtensionContext,
+} from "@mariozechner/pi-coding-agent";
 import { StringEnum } from "@mariozechner/pi-ai";
 import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
-import { buildNotifySendArgs, normalizeToolExecuteArgs } from "./notify-send";
+import { buildNotifySendArgs } from "./notify-send";
+
+type NotifyToolParams = {
+  summary: string;
+  body?: string;
+  urgency?: "low" | "normal" | "critical";
+  expireTime?: number;
+  appName?: string;
+  icon?: string;
+  category?: string;
+};
 
 const buildSpeechText = (summary: string, body?: string): string =>
   body ? `${summary}. ${body}` : summary;
@@ -29,10 +45,108 @@ for player in $playing; do playerctl -p "$player" play 2>/dev/null; done
   ]);
 };
 
-export default function notificationExtension(pi: ExtensionAPI): void {
-  let isTtsEnabled = false;
+function buildErrorResult(
+  message: string,
+  result: { code: number; stdout: string; stderr: string },
+): AgentToolResult<{
+  exitCode: number;
+  output: string;
+}> {
+  return {
+    content: [
+      {
+        type: "text" as const,
+        text: `Failed to send notification: ${message}`,
+      },
+    ],
+    details: {
+      exitCode: result.code,
+      output: result.stdout || result.stderr,
+    },
+  };
+}
 
-  pi.registerTool({
+function runTtsIfNeeded(
+  isTtsEnabled: boolean,
+  pi: ExtensionAPI,
+  params: { summary: string; body?: string },
+): void {
+  if (!isTtsEnabled) return;
+  runTts(pi, buildSpeechText(params.summary, params.body));
+}
+
+function renderCall(
+  args: { summary: string },
+  theme: Parameters<
+    NonNullable<Parameters<ExtensionAPI["registerTool"]>[0]["renderCall"]>
+  >[1],
+  _context: unknown,
+) {
+  const summary =
+    args.summary.length > 50
+      ? `"${args.summary.substring(0, 50)}..."`
+      : `"${args.summary}"`;
+  return new Text(
+    theme.fg("toolTitle", theme.bold("notify")) +
+      theme.fg("muted", ` ${summary}`),
+    0,
+    0,
+  );
+}
+
+function renderResult(
+  result: { content: Array<{ type: string; text?: string }> },
+  _options: unknown,
+  theme: Parameters<
+    NonNullable<Parameters<ExtensionAPI["registerTool"]>[0]["renderResult"]>
+  >[2],
+  _context: unknown,
+) {
+  const text = result.content[0]?.type === "text" ? result.content[0].text : "";
+  return new Text(theme.fg("success", text ?? ""), 0, 0);
+}
+
+function createExecuteNotify(
+  isTtsEnabledRef: { value: boolean },
+  pi: ExtensionAPI,
+) {
+  return async function executeNotify(
+    _toolCallId: string,
+    params: NotifyToolParams,
+    signal: AbortSignal | undefined,
+    _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+    _ctx: ExtensionContext,
+  ): Promise<AgentToolResult<Record<string, unknown>>> {
+    const options = signal ? { signal } : undefined;
+
+    const args = buildNotifySendArgs(params);
+    const result = await pi.exec("notify-send", args, options);
+
+    if (result.code !== 0) {
+      const message =
+        result.stderr ||
+        result.stdout ||
+        "notify-send failed. Is notify-send installed and available in PATH?";
+      return buildErrorResult(message, result);
+    }
+
+    runTtsIfNeeded(isTtsEnabledRef.value, pi, params);
+
+    return {
+      content: [
+        { type: "text" as const, text: "Notification sent successfully" },
+      ],
+      details: {
+        exitCode: result.code,
+        stdout: result.stdout,
+        stderr: result.stderr,
+      } as Record<string, unknown>,
+    };
+  };
+}
+
+function makeNotifyTool(isTtsEnabledRef: { value: boolean }, pi: ExtensionAPI) {
+  return {
     name: "notify",
     label: "Send Notification",
     description:
@@ -64,93 +178,51 @@ export default function notificationExtension(pi: ExtensionAPI): void {
       ),
     }),
 
-    async execute(_toolCallId, params, onUpdate, ctx, signal) {
-      const normalized = normalizeToolExecuteArgs(onUpdate, ctx, signal);
-      const options = normalized.signal
-        ? { signal: normalized.signal }
-        : undefined;
+    execute: createExecuteNotify(isTtsEnabledRef, pi),
+  };
+}
 
-      const args = buildNotifySendArgs(params);
-      const result = await pi.exec("notify-send", args, options);
+const ttsDescription =
+  "Toggle text-to-speech for notifications (usage: /tts [on|off|toggle])";
 
-      if (result.code !== 0) {
-        const message =
-          result.stderr ||
-          result.stdout ||
-          "notify-send failed. Is notify-send installed and available in PATH?";
+function createTtsHandler(isTtsEnabledRef: { value: boolean }) {
+  return async function handler(
+    _args: string,
+    ctx: ExtensionCommandContext,
+  ): Promise<void> {
+    const action = _args.toLowerCase().trim() || "toggle";
+    let message: string;
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Failed to send notification: ${message}`,
-            },
-          ],
-          isError: true,
-          details: {
-            exitCode: result.code,
-            stdout: result.stdout,
-            stderr: result.stderr,
-          },
-        };
-      }
-
-      if (isTtsEnabled) runTts(pi, buildSpeechText(params.summary, params.body));
-
-      return {
-        content: [{ type: "text", text: "Notification sent successfully" }],
-        details: {
-          exitCode: result.code,
-          stdout: result.stdout,
-          stderr: result.stderr,
-        },
-      };
-    },
-
-    renderCall(args, theme) {
-      const summary = args.summary
-        ? args.summary.length > 50
-          ? `"${args.summary.substring(0, 50)}..."`
-          : `"${args.summary}"`
-        : "";
-      return new Text(
-        theme.fg("toolTitle", theme.bold("notify")) +
-          (summary ? theme.fg("muted", ` ${summary}`) : ""),
-        0,
-        0,
-      );
-    },
-
-    renderResult(result, _options, theme) {
-      const text =
-        result.content[0]?.type === "text" ? result.content[0].text : "";
-      return new Text(theme.fg("success", text), 0, 0);
-    },
-  });
-
-  pi.registerCommand("tts", {
-    description:
-      "Toggle text-to-speech for notifications (usage: /tts [on|off|toggle])",
-    async handler(args, ctx) {
-      const action = args.toLowerCase().trim() || "toggle";
-      let message: string;
-
-      if (action === "on") {
-        isTtsEnabled = true;
+    switch (action) {
+      case "on":
+        isTtsEnabledRef.value = true;
         message = "TTS enabled for notifications";
-      } else if (action === "off") {
-        isTtsEnabled = false;
+        break;
+      case "off":
+        isTtsEnabledRef.value = false;
         message = "TTS disabled for notifications";
-      } else if (action === "toggle") {
-        isTtsEnabled = !isTtsEnabled;
-        message = isTtsEnabled
+        break;
+      case "toggle":
+        isTtsEnabledRef.value = !isTtsEnabledRef.value;
+        message = isTtsEnabledRef.value
           ? "TTS enabled for notifications"
           : "TTS disabled for notifications";
-      } else {
-        message = `TTS is ${isTtsEnabled ? "on" : "off"}. Use /tts [on|off|toggle].`;
-      }
+        break;
+      default:
+        message = `TTS is ${isTtsEnabledRef.value ? "on" : "off"}. Use /tts [on|off|toggle].`;
+    }
 
-      if (ctx.hasUI) ctx.ui.notify(message, "info");
-    },
+    if (ctx.hasUI) ctx.ui?.notify(message, "info");
+  };
+}
+
+export default function notificationExtension(pi: ExtensionAPI): void {
+  const isTtsEnabledRef = { value: false };
+
+  pi.registerTool(makeNotifyTool(isTtsEnabledRef, pi));
+
+  pi.registerCommand("tts", {
+    description: ttsDescription,
+    handler: createTtsHandler(isTtsEnabledRef),
   });
 }
