@@ -121,9 +121,6 @@ function parseSearchResultsFromHtml(
   return packages;
 }
 
-/**
- * Helper function to create an error result
- */
 function createPypiErrorResult(
   message: string,
   packageName: string,
@@ -131,17 +128,12 @@ function createPypiErrorResult(
   return createPackageErrorResult(message, packageName);
 }
 
-/**
- * Try to fetch a package directly by name from PyPI JSON API
- */
 async function tryDirectPackageLookup(
   query: string,
-  signal?: AbortSignal,
 ): Promise<AgentToolResult<Record<string, unknown>> | null> {
   try {
     const response = await throttledFetch(
       `https://pypi.org/pypi/${encodeURIComponent(query)}/json`,
-      { signal },
     );
 
     if (!response.ok) return null;
@@ -162,9 +154,111 @@ async function tryDirectPackageLookup(
   }
 }
 
-export default function (pi: ExtensionAPI): void {
-  // Tool to search for packages
-  pi.registerTool({
+async function executeSearchPackages(
+  _toolCallId: string,
+  params: SearchPyPIPackagesParamsType,
+): Promise<AgentToolResult<Record<string, unknown>>> {
+  const { query, limit = 10 } = params;
+
+  try {
+    const searchUrl = `https://pypi.org/search/?q=${encodeURIComponent(query)}&o=`;
+    const response = await throttledFetch(searchUrl, {
+      signal: undefined,
+      headers: { Accept: "application/vnd.pypi.simple.v1+json" },
+    });
+
+    if (!response.ok) {
+      const directResult = await tryDirectPackageLookup(query);
+      return directResult ?? createPypiErrorResult(`No packages found.`, query);
+    }
+
+    const html = await response.text();
+    const packages = parseSearchResultsFromHtml(html, limit);
+
+    if (packages.length === 0) {
+      const directResult = await tryDirectPackageLookup(query);
+      return directResult ?? createPypiErrorResult(`No packages found.`, query);
+    }
+
+    const output = formatPackageSearchResults(
+      packages,
+      packages.length,
+      "result",
+    );
+    return textResult(output, {
+      query,
+      total: packages.length,
+      returned: packages.length,
+      packages,
+    });
+  } catch (error) {
+    return createPypiErrorResult(
+      `Failed to search packages: ${String(error)}`,
+      query,
+    );
+  }
+}
+
+function buildPackageInfoFields(
+  info: PyPIPackageInfo,
+): Array<{ label: string; value: string }> {
+  const author = info.author || info.maintainer || "-";
+  const license = info.license || "-";
+  const homePage = info.home_page || info.project_url || "-";
+  const summary = info.summary || "-";
+
+  return [
+    { label: "name", value: info.name },
+    { label: "version", value: info.version },
+    { label: "license", value: license },
+    { label: "author", value: author },
+    { label: "description", value: summary },
+    { label: "homepage", value: homePage !== "-" ? homePage : "-" },
+    ...(Array.isArray(info.requires_dist) && info.requires_dist.length > 0
+      ? [{ label: "dependencies", value: info.requires_dist.join(", ") }]
+      : []),
+  ].filter((f) => f.value && f.value !== "-");
+}
+
+async function executePackageInfo(
+  _toolCallId: string,
+  params: PyPIPackageInfoParamsType,
+): Promise<AgentToolResult<Record<string, unknown>>> {
+  const { package: packageName } = params;
+
+  try {
+    const response = await throttledFetch(
+      `https://pypi.org/pypi/${encodeURIComponent(packageName)}/json`,
+    );
+
+    if (!response.ok) {
+      if (response.status === 404)
+        return createPypiErrorResult(
+          `Package "${packageName}" not found on PyPI.`,
+          packageName,
+        );
+      return createPypiErrorResult(
+        `Error fetching package info: HTTP ${response.status}`,
+        packageName,
+      );
+    }
+
+    const data = (await response.json()) as PyPIPackageResponse;
+    const { info } = data;
+    const fields = buildPackageInfoFields(info);
+    const output = detail(fields);
+
+    return textResult(output, { package: packageName, info });
+  } catch (error) {
+    return createPypiErrorResult(
+      `Failed to show package info: ${String(error)}`,
+      packageName,
+    );
+  }
+}
+
+function createSearchTool() {
+  return {
     name: "search-pypi-packages",
     label: "Search PyPI Packages",
     description: `Search for Python packages available on PyPI.
@@ -177,63 +271,12 @@ Use this to:
 
 Returns matching packages with metadata.`,
     parameters: SearchPyPIPackagesParams,
+    execute: executeSearchPackages,
+  };
+}
 
-    async execute(_toolCallId: string, params: SearchPyPIPackagesParamsType) {
-      const { query, limit = 10 } = params;
-
-      try {
-        // Use PyPI Simple API search endpoint
-        const searchUrl = `https://pypi.org/search/?q=${encodeURIComponent(query)}&o=`;
-        const response = await throttledFetch(searchUrl, {
-          signal: undefined,
-          headers: {
-            Accept: "application/vnd.pypi.simple.v1+json",
-          },
-        });
-
-        if (!response.ok) {
-          // Fallback: try to fetch the package directly if it's an exact name
-          const directResult = await tryDirectPackageLookup(query, undefined);
-          return (
-            directResult ?? createPypiErrorResult(`No packages found.`, query)
-          );
-        }
-
-        // Parse HTML response to extract package info (PyPI doesn't have a JSON search API)
-        const html = await response.text();
-        const packages = parseSearchResultsFromHtml(html, limit);
-
-        if (packages.length === 0) {
-          // Try direct package lookup as fallback
-          const directResult = await tryDirectPackageLookup(query, undefined);
-          return (
-            directResult ?? createPypiErrorResult(`No packages found.`, query)
-          );
-        }
-
-        const output = formatPackageSearchResults(
-          packages,
-          packages.length,
-          "result",
-        );
-
-        return textResult(output, {
-          query,
-          total: packages.length,
-          returned: packages.length,
-          packages,
-        });
-      } catch (error) {
-        return createPypiErrorResult(
-          `Failed to search packages: ${String(error)}`,
-          query,
-        );
-      }
-    },
-  });
-
-  // Tool to show package information
-  pi.registerTool({
+function createPackageInfoTool() {
+  return {
     name: "pypi-package-info",
     label: "PyPI Package Info",
     description: `Get detailed information about a Python package from PyPI.
@@ -246,61 +289,11 @@ Use this to:
 
 Shows comprehensive package details from PyPI.`,
     parameters: PyPIPackageInfoParams,
+    execute: executePackageInfo,
+  };
+}
 
-    async execute(_toolCallId: string, params: PyPIPackageInfoParamsType) {
-      const { package: packageName } = params;
-
-      try {
-        // Use PyPI JSON API instead of local pip command
-        const response = await throttledFetch(
-          `https://pypi.org/pypi/${encodeURIComponent(packageName)}/json`,
-          { signal: undefined },
-        );
-
-        if (!response.ok) {
-          if (response.status === 404)
-            return createPypiErrorResult(
-              `Package "${packageName}" not found on PyPI.`,
-              packageName,
-            );
-          return createPypiErrorResult(
-            `Error fetching package info: HTTP ${response.status}`,
-            packageName,
-          );
-        }
-
-        const data = (await response.json()) as PyPIPackageResponse;
-        const { info } = data;
-
-        const author = info.author || info.maintainer || "-";
-        const license = info.license || "-";
-        const homePage = info.home_page || info.project_url || "-";
-        const summary = info.summary || "-";
-
-        const fields = [
-          { label: "name", value: info.name },
-          { label: "version", value: info.version },
-          { label: "license", value: license },
-          { label: "author", value: author },
-          { label: "description", value: summary },
-          { label: "homepage", value: homePage !== "-" ? homePage : "-" },
-          ...(Array.isArray(info.requires_dist) && info.requires_dist.length > 0
-            ? [{ label: "dependencies", value: info.requires_dist.join(", ") }]
-            : []),
-        ].filter((f) => f.value && f.value !== "-");
-
-        const output = detail(fields);
-
-        return textResult(output, {
-          package: packageName,
-          info,
-        });
-      } catch (error) {
-        return createPypiErrorResult(
-          `Failed to show package info: ${String(error)}`,
-          packageName,
-        );
-      }
-    },
-  });
+export default function (pi: ExtensionAPI): void {
+  pi.registerTool(createSearchTool());
+  pi.registerTool(createPackageInfoTool());
 }
