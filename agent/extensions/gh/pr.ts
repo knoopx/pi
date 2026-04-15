@@ -142,8 +142,8 @@ export type ListPRsParamsType = Static<typeof ListPRsParams>;
 export type ViewPRParamsType = Static<typeof ViewPRParams>;
 export type CreatePRParamsType = Static<typeof CreatePRParams>;
 
-export function registerPRTools(pi: ExtensionAPI) {
-  const prColumns: Column[] = [
+function createPrColumns(): Column[] {
+  return [
     { key: "#", align: "right", minWidth: 5 },
     {
       key: "title",
@@ -158,8 +158,10 @@ export function registerPRTools(pi: ExtensionAPI) {
       },
     },
   ];
+}
 
-  const prRowMapper = (pr: GHPR) => ({
+function createPrRowMapper() {
+  return (pr: GHPR) => ({
     "#": `#${pr.number}`,
     title: pr.title,
     state: pr.state,
@@ -169,8 +171,10 @@ export function registerPRTools(pi: ExtensionAPI) {
     date: new Date(pr.createdAt).toLocaleDateString(),
     url: pr.html_url,
   });
+}
 
-  const prFields = (pr: GHPR) => [
+function createPrFields() {
+  return (pr: GHPR) => [
     { label: "title", value: `#${pr.number} ${pr.title}` },
     { label: "state", value: pr.state },
     { label: "author", value: pr.author?.login ?? "unknown" },
@@ -180,8 +184,10 @@ export function registerPRTools(pi: ExtensionAPI) {
     { label: "created", value: new Date(pr.createdAt).toLocaleString() },
     { label: "url", value: pr.html_url },
   ];
+}
 
-  registerListTool(pi, {
+function createListPRsTool() {
+  return {
     toolName: "gh-list-prs",
     toolLabel: "PRs",
     toolDescription: `List pull requests in a GitHub repository.
@@ -198,11 +204,13 @@ Examples:
 - gh-list-prs(owner='torvalds', repo='linux', state='merged')`,
     paramsSchema: ListPRsParams,
     listFn: listPRs,
-    columns: prColumns,
-    rowMapper: prRowMapper,
-  });
+    columns: createPrColumns(),
+    rowMapper: createPrRowMapper(),
+  };
+}
 
-  registerViewTool(pi, {
+function createViewPRTool() {
+  return {
     toolName: "gh-view-pr",
     toolLabel: "Pull Request",
     toolDescription: `View details of a specific pull request.
@@ -218,11 +226,13 @@ Examples:
 - gh-view-pr(owner='microsoft', repo='vscode', number=456)`,
     paramsSchema: ViewPRParams,
     viewFn: viewPR,
-    fields: prFields,
+    fields: createPrFields(),
     includeBody: true,
-  });
+  };
+}
 
-  registerCreateTool(pi, {
+function createCreatePRTool() {
+  return {
     toolName: "gh-create-pr",
     toolLabel: "Create Pull Request",
     toolDescription: `Create a new pull request.
@@ -238,7 +248,13 @@ Examples:
 - gh-create-pr(owner='microsoft', repo='vscode', title='New feature', body='Description...', draft=true)
 - gh-create-pr(owner='torvalds', repo='linux', title='Kernel patch', head='feature')`,
     paramsSchema: CreatePRParams,
-    createFn: (params: CreatePRParamsType) =>
+    createFn: (
+      params: CreatePRParamsType,
+    ): Promise<{
+      stdout: string;
+      stderr: string;
+      exitCode: number;
+    }> =>
       createPR(
         params.owner,
         params.repo,
@@ -249,8 +265,17 @@ Examples:
         params.draft,
       ),
     confirmationTitle: "Create PR",
-    confirmationDescription: (params) =>
-      `"${params.title}" in ${params.owner}/${params.repo}`,
+    confirmationDescription: (params: {
+      owner: string;
+      repo: string;
+      title: string;
+    }) => `"${params.title}" in ${params.owner}/${params.repo}`,
     successMessagePrefix: "✓ PR created",
-  });
+  };
+}
+
+export function registerPRTools(pi: ExtensionAPI) {
+  registerListTool(pi, createListPRsTool());
+  registerViewTool(pi, createViewPRTool());
+  registerCreateTool(pi, createCreatePRTool());
 }

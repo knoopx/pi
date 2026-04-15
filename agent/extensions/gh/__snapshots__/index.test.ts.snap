@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`GH Extension > gh-search-code > given successful code search > then it should return formatted results 1`] = `
+exports[`GH Extension > gh-search-code > then it should return formatted results 1`] = `
 "1 result(s)
 
   # │ path
@@ -10,7 +10,7 @@ exports[`GH Extension > gh-search-code > given successful code search > then it 
     │ https://github.com/owner/repo/blob/main/src/index.ts"
 `;
 
-exports[`GH Extension > gh-search-repos > given successful search results > then it should return formatted repo list 1`] = `
+exports[`GH Extension > gh-search-repos > then it should return formatted repo list 1`] = `
 "1 repo(s)
 
       󰓎 │      󰘬 │ repo

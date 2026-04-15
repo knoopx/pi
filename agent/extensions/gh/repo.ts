@@ -2,6 +2,8 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   AgentToolUpdateCallback,
+  AgentToolResult,
+  Theme,
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
@@ -13,7 +15,7 @@ import { createErrorResult, createTextResultRender } from "./shared";
  * Create a renderCall function for repo tools with optional owner/repo/path
  */
 function createRepoRenderCall(toolName: string) {
-  return (args: Record<string, unknown>, theme: unknown): Text => {
+  return (args: Record<string, unknown>, theme: Theme): Text => {
     const t = theme as {
       fg: (c: string, t: string) => string;
       bold: (t: string) => string;
@@ -33,13 +35,10 @@ function createRepoRenderCall(toolName: string) {
 /**
  * Create a successful result with formatted output
  */
-function createRepoResult(
+function createRepoResult<Details extends Record<string, unknown>>(
   output: string,
-  details: Record<string, unknown>,
-): {
-  content: { type: "text"; text: string }[];
-  details: Record<string, unknown>;
-} {
+  details: Details,
+): AgentToolResult<Details> {
   return {
     content: [{ type: "text", text: output }],
     details,
@@ -68,7 +67,7 @@ export interface GHFile {
   encoding?: string;
 }
 
-export interface FileContentResult {
+export interface FileContentResult extends Record<string, unknown> {
   repo: string;
   path: string;
   content: string;
@@ -131,6 +130,32 @@ export async function getFileContent(
   };
 }
 
+async function processRepoItem(
+  item: GHFile,
+  owner: string,
+  repo: string,
+  files: GHFile[],
+  maxFiles: number,
+): Promise<void> {
+  if (item.type === "file") {
+    files.push(item);
+    return;
+  }
+
+  if (item.type === "dir") {
+    try {
+      const subContents = await getRepoContents(owner, repo, item.path);
+      const subFiles = subContents.filter((c) => c.type === "file").slice(0, 5);
+      files.push({
+        ...item,
+        name: `${item.name}/ (${subFiles.length} files)`,
+      });
+    } catch {
+      files.push(item);
+    }
+  }
+}
+
 export async function listRepoFiles(
   owner: string,
   repo: string,
@@ -142,22 +167,7 @@ export async function listRepoFiles(
 
   for (const item of contents) {
     if (files.length >= maxFiles) break;
-
-    if (item.type === "file") files.push(item);
-    else if (item.type === "dir") {
-      try {
-        const subContents = await getRepoContents(owner, repo, item.path);
-        const subFiles = subContents
-          .filter((c) => c.type === "file")
-          .slice(0, 5);
-        files.push({
-          ...item,
-          name: `${item.name}/ (${subFiles.length} files)`,
-        });
-      } catch {
-        files.push(item);
-      }
-    }
+    await processRepoItem(item, owner, repo, files, maxFiles);
   }
 
   return { files, count: files.length };
@@ -276,8 +286,54 @@ export type GetRepoContentsParamsType = Static<typeof GetRepoContentsParams>;
 export type GetFileContentParamsType = Static<typeof GetFileContentParams>;
 export type ListRepoFilesParamsType = Static<typeof ListRepoFilesParams>;
 
-export function registerRepoTools(pi: ExtensionAPI): void {
-  pi.registerTool({
+async function executeGetRepoContents(
+  params: GetRepoContentsParamsType,
+): Promise<AgentToolResult<{ contents: GHFile[] }>> {
+  const owner = params.owner as string;
+  const repo = params.repo as string;
+  const path = params.path as string | undefined;
+  const contents = await getRepoContents(owner, repo, path ?? "");
+  const output = formatRepoContents(owner, repo, path ?? "", contents);
+  return createRepoResult(output, { contents });
+}
+
+async function executeGetFileContent(
+  params: GetFileContentParamsType,
+): Promise<AgentToolResult<FileContentResult>> {
+  const owner = params.owner as string;
+  const repo = params.repo as string;
+  const filePath = params.path as string;
+  const ref = params.ref as string | undefined;
+  const result = await getFileContent(owner, repo, filePath, ref ?? undefined);
+  const output = formatFileContent(result);
+  return createRepoResult<FileContentResult>(output, {
+    repo: result.repo,
+    path: result.path,
+    content: result.content,
+    type: result.type,
+    size: result.size,
+  });
+}
+
+async function executeListRepoFiles(
+  params: ListRepoFilesParamsType,
+): Promise<AgentToolResult<{ files: GHFile[]; count: number }>> {
+  const owner = params.owner as string;
+  const repo = params.repo as string;
+  const path = params.path as string | undefined;
+  const maxFiles = params.maxFiles as number | undefined;
+  const result = await listRepoFiles(owner, repo, path ?? "", maxFiles ?? 50);
+  const output = formatRepoFilesList({
+    ...result,
+    owner,
+    repo,
+    path: path ?? "",
+  });
+  return createRepoResult(output, result);
+}
+
+function createRepoContentsTool() {
+  return {
     name: "gh-repo-contents",
     label: "Repository Contents",
     description: `Browse the contents of a GitHub repository.
@@ -301,18 +357,7 @@ Examples:
       _ctx: ExtensionContext,
     ) {
       try {
-        const contents = await getRepoContents(
-          params.owner,
-          params.repo,
-          params.path ?? "",
-        );
-        const output = formatRepoContents(
-          params.owner,
-          params.repo,
-          params.path ?? "",
-          contents,
-        );
-        return createRepoResult(output, { contents });
+        return await executeGetRepoContents(params);
       } catch (error) {
         return createRepoErrorResult(error);
       }
@@ -320,9 +365,11 @@ Examples:
 
     renderCall: createRepoRenderCall("gh-repo-contents"),
     renderResult: createTextResultRender(),
-  });
+  };
+}
 
-  pi.registerTool({
+function createFileContentTool() {
+  return {
     name: "gh-file-content",
     label: "File Content",
     description: `Get the content of a specific file from a GitHub repository.
@@ -347,23 +394,13 @@ Examples:
       _ctx: ExtensionContext,
     ) {
       try {
-        const result = await getFileContent(
-          params.owner,
-          params.repo,
-          params.path,
-          params.ref ?? undefined,
-        );
-        const output = formatFileContent(result);
-        return createRepoResult(
-          output,
-          result as unknown as Record<string, unknown>,
-        );
+        return await executeGetFileContent(params);
       } catch (error) {
         return createRepoErrorResult(error);
       }
     },
 
-    renderCall(args, theme) {
+    renderCall(args: Record<string, unknown>, theme: Theme) {
       let text = theme.fg("toolTitle", theme.bold("gh-file-content"));
       if (args.owner && args.repo && args.path)
         text += theme.fg("muted", ` (${args.owner}/${args.repo}/${args.path})`);
@@ -372,9 +409,11 @@ Examples:
     },
 
     renderResult: createTextResultRender(),
-  });
+  };
+}
 
-  pi.registerTool({
+function createListRepoFilesTool() {
+  return {
     name: "gh-list-repo-files",
     label: "List Repository Files",
     description: `List files in a GitHub repository with a preview of directory contents.
@@ -398,19 +437,7 @@ Examples:
       _ctx: ExtensionContext,
     ) {
       try {
-        const result = await listRepoFiles(
-          params.owner,
-          params.repo,
-          params.path ?? "",
-          params.maxFiles ?? 50,
-        );
-        const output = formatRepoFilesList({
-          ...result,
-          owner: params.owner,
-          repo: params.repo,
-          path: params.path ?? "",
-        });
-        return createRepoResult(output, result);
+        return await executeListRepoFiles(params);
       } catch (error) {
         return createRepoErrorResult(error);
       }
@@ -418,5 +445,11 @@ Examples:
 
     renderCall: createRepoRenderCall("gh-list-repo-files"),
     renderResult: createTextResultRender(),
-  });
+  };
+}
+
+export function registerRepoTools(pi: ExtensionAPI): void {
+  pi.registerTool(createRepoContentsTool());
+  pi.registerTool(createFileContentTool());
+  pi.registerTool(createListRepoFilesTool());
 }

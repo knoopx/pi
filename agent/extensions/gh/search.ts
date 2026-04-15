@@ -1,4 +1,5 @@
 import { ghCmdJson } from "./utils";
+import { createErrorResult } from "./shared";
 import type {
   GHCodeSearchResult,
   GHIssueSearchResult,
@@ -134,7 +135,6 @@ import {
   stateDot,
   type Column,
 } from "../../shared/renderers";
-import { createErrorResult } from "./shared";
 
 /**
  * Format search results into a table
@@ -393,20 +393,36 @@ function registerSearchTool<TParams extends TSchema, TResult>(
       _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       _ctx: ExtensionContext,
     ) {
-      try {
-        const result = await searchFn(params.query, params.limit);
-        const output = formatFn(result);
-        return {
-          content: [{ type: "text", text: output }],
-          details: result,
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return createErrorResult(message);
-      }
+      return await executeSearchTool(
+        searchFn,
+        formatFn,
+        params as unknown as Static<TParams> & {
+          query: string;
+          limit?: number;
+        },
+      );
     },
     ...createSearchToolRenderer(toolName),
   });
+}
+
+async function executeSearchTool<TParams extends TSchema, TResult>(
+  searchFn: (query: string, limit?: number) => Promise<TResult>,
+  formatFn: (result: TResult) => string,
+  params: Static<TParams> & { query: string; limit?: number },
+): Promise<AgentToolResult<unknown>> {
+  try {
+    const result = await searchFn(params.query, params.limit);
+    const output = formatFn(result);
+    return {
+      content: [{ type: "text", text: output }],
+      details: result,
+    };
+  } catch (error) {
+    return createErrorResult(
+      error instanceof Error ? error.message : String(error),
+    );
+  }
 }
 
 const SearchReposParams = Type.Object({
@@ -475,8 +491,8 @@ const SearchPRsParams = Type.Object({
   ),
 });
 
-export function registerSearchTools(pi: ExtensionAPI) {
-  registerSearchTool(pi, {
+function createSearchReposTool() {
+  return {
     toolName: "gh-search-repos",
     toolLabel: "Search Repositories",
     toolDescription: `Search for GitHub repositories using gh CLI.
@@ -494,9 +510,11 @@ Examples:
     paramsSchema: SearchReposParams,
     searchFn: searchRepos,
     formatFn: formatRepoSearchResult,
-  });
+  };
+}
 
-  registerSearchTool(pi, {
+function createSearchCodeTool() {
+  return {
     toolName: "gh-search-code",
     toolLabel: "Search Code",
     toolDescription: `Search for code across GitHub repositories using gh CLI and GitHub's code search syntax.
@@ -531,9 +549,11 @@ Examples:
     paramsSchema: SearchCodeParams,
     searchFn: searchCode,
     formatFn: formatCodeSearchResult,
-  });
+  };
+}
 
-  registerSearchTool(pi, {
+function createSearchIssuesTool() {
+  return {
     toolName: "gh-search-issues",
     toolLabel: "Search Issues",
     toolDescription: `Search for issues across GitHub repositories using gh CLI.
@@ -551,9 +571,11 @@ Examples:
     paramsSchema: SearchIssuesParams,
     searchFn: searchIssues,
     formatFn: formatIssueSearchResult,
-  });
+  };
+}
 
-  registerSearchTool(pi, {
+function createSearchPRsTool() {
+  return {
     toolName: "gh-search-prs",
     toolLabel: "Search PRs",
     toolDescription: `Search for pull requests across GitHub repositories using gh CLI.
@@ -571,5 +593,12 @@ Examples:
     paramsSchema: SearchPRsParams,
     searchFn: searchPRs,
     formatFn: formatPRSearchResult,
-  });
+  };
+}
+
+export function registerSearchTools(pi: ExtensionAPI) {
+  registerSearchTool(pi, createSearchReposTool());
+  registerSearchTool(pi, createSearchCodeTool());
+  registerSearchTool(pi, createSearchIssuesTool());
+  registerSearchTool(pi, createSearchPRsTool());
 }

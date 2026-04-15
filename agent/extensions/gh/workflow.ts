@@ -132,8 +132,8 @@ export const ListRunsParams = Type.Object({
 export type ListWorkflowsParamsType = Static<typeof ListWorkflowsParams>;
 export type ListRunsParamsType = Static<typeof ListRunsParams>;
 
-export function registerWorkflowTools(pi: ExtensionAPI) {
-  pi.registerTool({
+function createListWorkflowsTool() {
+  return {
     name: "gh-list-workflows",
     label: "List Workflows",
     description: `List GitHub Actions workflows in a repository.
@@ -150,49 +150,14 @@ Examples:
 - gh-list-workflows(owner='golang', repo='go', limit=20)`,
     parameters: ListWorkflowsParams,
     async execute(
-      _id,
+      _id: string,
       params: ListWorkflowsParamsType,
       _signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
-        const workflows = await listWorkflows(
-          params.owner,
-          params.repo,
-          params.limit,
-        );
-        const cols: Column[] = [
-          { key: "id", align: "right", minWidth: 8 },
-          {
-            key: "info",
-            format(_v, row) {
-              const r = row as Record<string, string>;
-              const dot =
-                r.state === "active" ? stateDot("on") : stateDot("off");
-              return [`${dot} ${r.name}`, r.path].join("\n");
-            },
-          },
-        ];
-        const rows = workflows.map((w) => ({
-          id: String(w.id),
-          name: w.name,
-          state: w.state,
-          path: w.path,
-        }));
-        return {
-          content: [
-            {
-              type: "text",
-              text: [
-                dotJoin(`${workflows.length} workflows`),
-                "",
-                table(cols, rows),
-              ].join("\n"),
-            },
-          ],
-          details: { workflows },
-        };
+        return await executeListWorkflows(params);
       } catch (error) {
         return createErrorResult(
           error instanceof Error ? error.message : String(error),
@@ -201,9 +166,51 @@ Examples:
     },
     renderCall: createListRenderCall("gh-list-workflows"),
     renderResult: createTextResultRender(),
-  });
+  };
+}
 
-  pi.registerTool({
+async function executeListWorkflows(
+  params: ListWorkflowsParamsType,
+): Promise<AgentToolResult<{ workflows: GHWorkflow[] }>> {
+  const workflows = await listWorkflows(
+    params.owner,
+    params.repo,
+    params.limit,
+  );
+  const cols: Column[] = [
+    { key: "id", align: "right", minWidth: 8 },
+    {
+      key: "info",
+      format(_v, row) {
+        const r = row as Record<string, string>;
+        const dot = r.state === "active" ? stateDot("on") : stateDot("off");
+        return [`${dot} ${r.name}`, r.path].join("\n");
+      },
+    },
+  ];
+  const rows = workflows.map((w) => ({
+    id: String(w.id),
+    name: w.name,
+    state: w.state,
+    path: w.path,
+  }));
+  return {
+    content: [
+      {
+        type: "text",
+        text: [
+          dotJoin(`${workflows.length} workflows`),
+          "",
+          table(cols, rows),
+        ].join("\n"),
+      },
+    ],
+    details: { workflows },
+  };
+}
+
+function createListRunsTool() {
+  return {
     name: "gh-list-runs",
     label: "List Workflow Runs",
     description: `List recent GitHub Actions workflow runs.
@@ -220,56 +227,14 @@ Examples:
 - gh-list-runs(owner='golang', repo='go', limit=20)`,
     parameters: ListRunsParams,
     async execute(
-      _id,
+      _id: string,
       params: ListRunsParamsType,
       _signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
-        const runs = await listWorkflowRuns(
-          params.owner,
-          params.repo,
-          params.workflow,
-          params.limit,
-        );
-        const cols: Column[] = [
-          { key: "status", minWidth: 3 },
-          {
-            key: "info",
-            format(_v, row) {
-              const r = row as Record<string, string>;
-              return [r.title, `${r.workflow} · ${r.branch} · ${r.date}`].join(
-                "\n",
-              );
-            },
-          },
-        ];
-        const rows = runs.map((r) => ({
-          status:
-            r.conclusion === "success"
-              ? "✓"
-              : r.conclusion === "failure"
-                ? "✗"
-                : "●",
-          title: r.title,
-          workflow: r.workflow_name,
-          branch: r.headBranch,
-          date: new Date(r.createdAt).toLocaleDateString(),
-        }));
-        return {
-          content: [
-            {
-              type: "text",
-              text: [
-                dotJoin(`${runs.length} runs`),
-                "",
-                table(cols, rows),
-              ].join("\n"),
-            },
-          ],
-          details: { runs },
-        };
+        return await executeListRuns(params);
       } catch (error) {
         return createErrorResult(
           error instanceof Error ? error.message : String(error),
@@ -278,5 +243,50 @@ Examples:
     },
     renderCall: createListRenderCall("gh-list-runs"),
     renderResult: createTextResultRender(),
-  });
+  };
+}
+
+async function executeListRuns(
+  params: ListRunsParamsType,
+): Promise<AgentToolResult<{ runs: GHWorkflowRun[] }>> {
+  const runs = await listWorkflowRuns(
+    params.owner,
+    params.repo,
+    params.workflow,
+    params.limit,
+  );
+  const cols: Column[] = [
+    { key: "status", minWidth: 3 },
+    {
+      key: "info",
+      format(_v, row) {
+        const r = row as Record<string, string>;
+        return [r.title, `${r.workflow} · ${r.branch} · ${r.date}`].join("\n");
+      },
+    },
+  ];
+  const rows = runs.map((r) => ({
+    status:
+      r.conclusion === "success" ? "✓" : r.conclusion === "failure" ? "✗" : "●",
+    title: r.title,
+    workflow: r.workflow_name,
+    branch: r.headBranch,
+    date: new Date(r.createdAt).toLocaleDateString(),
+  }));
+  return {
+    content: [
+      {
+        type: "text",
+        text: [dotJoin(`${runs.length} runs`), "", table(cols, rows)].join(
+          "\n",
+        ),
+      },
+    ],
+    details: { runs },
+  };
+}
+
+export function registerWorkflowTools(pi: ExtensionAPI) {
+  pi.registerTool(createListWorkflowsTool());
+  pi.registerTool(createListRunsTool());
 }

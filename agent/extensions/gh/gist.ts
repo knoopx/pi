@@ -2,6 +2,8 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   AgentToolUpdateCallback,
+  AgentToolResult,
+  Theme,
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
@@ -129,8 +131,9 @@ export async function createGist(
   for (const tempFile of fileArgs) {
     try {
       fs.unlinkSync(tempFile);
-    } catch {
+    } catch (err) {
       // Ignore cleanup errors
+      void err;
     }
   }
 
@@ -300,8 +303,8 @@ export type GetGistParamsType = Static<typeof GetGistParams>;
 export type CreateGistParamsType = Static<typeof CreateGistParams>;
 export type UpdateGistParamsType = Static<typeof UpdateGistParams>;
 
-export function registerGistTools(pi: ExtensionAPI) {
-  pi.registerTool({
+function createListGistsTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
+  return {
     name: "gh-list-gists",
     label: "List Gists",
     description: `List GitHub gists.
@@ -322,43 +325,26 @@ Examples:
       _signal: AbortSignal | undefined,
     ) {
       try {
-        const since = params.since ? new Date(params.since) : undefined;
-        const gists = await listGists(params.userId, params.limit, since);
-
-        const lines: string[] = [];
-
-        for (const gist of gists) {
-          const files = Object.keys(gist.files).join(", ");
-          const date = new Date(gist.created_at).toLocaleDateString();
-          lines.push(
-            `• **${gist.id}** ${stateDot(gist.public)} public`,
-            gist.description || "No description",
-            `Files: ${files} | Created: ${date}`,
-            gist.html_url,
-            "",
-          );
-        }
-
-        return {
-          content: [{ type: "text", text: lines.join("\n") }],
-          details: { gists },
-        };
+        return await executeListGists(params);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return createErrorResult(message);
       }
     },
 
-    renderCall(args, theme) {
+    renderCall(args: unknown, theme: Theme, _context: unknown) {
+      const a = args as Record<string, unknown>;
       let text = theme.fg("toolTitle", theme.bold("gh-list-gists"));
-      if (args.userId) text += theme.fg("muted", ` user=${args.userId}`);
+      if (a.userId) text += theme.fg("muted", ` user=${a.userId}`);
       return new Text(text, 0, 0);
     },
 
     renderResult: createTextResultRender(),
-  });
+  };
+}
 
-  pi.registerTool({
+function createGetGistTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
+  return {
     name: "gh-get-gist",
     label: "Get Gist",
     description: `Get details of a specific GitHub gist.
@@ -387,16 +373,19 @@ Examples:
       }
     },
 
-    renderCall(args, theme) {
+    renderCall(args: unknown, theme: Theme, _context: unknown) {
+      const a = args as Record<string, unknown>;
       let text = theme.fg("toolTitle", theme.bold("gh-get-gist"));
-      if (args.gistId) text += theme.fg("muted", ` ${args.gistId}`);
+      if (a.gistId) text += theme.fg("muted", ` ${a.gistId}`);
       return new Text(text, 0, 0);
     },
 
     renderResult: createTextResultRender(),
-  });
+  };
+}
 
-  pi.registerTool({
+function createCreateGistTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
+  return {
     name: "gh-create-gist",
     label: "Create Gist",
     description: `Create a new GitHub gist.
@@ -409,7 +398,7 @@ Use this to:
 
 Examples:
 - gh-create-gist(files={'test.py': {content: 'print("hello")'}, 'README.md': {content: '# Test'}})
-- gh-create-gist(files={'main.ts': {content: 'console.log("hi")'}}, description='My test gist', public=true)`,
+- gh-create-gist(files={'main.ts': {content: 'consoleLog("hi")'}}, description='My test gist', public=true)`,
     parameters: CreateGistParams,
 
     async execute(
@@ -426,21 +415,11 @@ Examples:
         `Files: ${fileNames}${params.description ? `\n${params.description}` : ""}`,
       );
       if (denied) return denied;
-      try {
-        const gist = await createGist(
-          params.files,
-          params.description,
-          params.isPublic,
-        );
-        const output = formatGist(gist);
-        return createGistResult(output, gist);
-      } catch (error) {
-        return createGistErrorResult(error);
-      }
+      return await executeCreateGist(params);
     },
 
-    renderCall(args, theme) {
-      const a = args;
+    renderCall(args: unknown, theme: Theme, _context: unknown) {
+      const a = args as Record<string, unknown>;
       let text = theme.fg("toolTitle", theme.bold("gh-create-gist"));
       const fileCount = Object.keys(a.files || {}).length;
       if (fileCount > 0) text += theme.fg("muted", ` ${fileCount} file(s)`);
@@ -449,9 +428,64 @@ Examples:
     },
 
     renderResult: createTextResultRender(),
-  });
+  };
+}
 
-  pi.registerTool({
+async function executeListGists(
+  params: ListGistsParamsType,
+): Promise<AgentToolResult<{ gists: Gist[] }>> {
+  const since = params.since ? new Date(params.since) : undefined;
+  const userId = params.userId as string | undefined;
+  const limit = params.limit as number | undefined;
+  const gists = await listGists(userId, limit, since);
+
+  const lines = gists
+    .map((gist) => [
+      `• **${gist.id}** ${stateDot(gist.public)} public`,
+      gist.description || "No description",
+      `Files: ${Object.keys(gist.files).join(", ")} | Created: ${new Date(
+        gist.created_at,
+      ).toLocaleDateString()}`,
+      gist.html_url,
+      "",
+    ])
+    .flat();
+
+  return {
+    content: [{ type: "text", text: lines.join("\n") }],
+    details: { gists },
+  };
+}
+
+async function executeCreateGist(
+  params: CreateGistParamsType,
+): Promise<AgentToolResult<{ gist: Gist }>> {
+  const files = params.files as Record<
+    string,
+    { content: string; filename?: string }
+  >;
+  const description = params.description as string | undefined;
+  const isPublic = params.isPublic as boolean | undefined;
+  const gist = await createGist(files, description, isPublic);
+  const output = formatGist(gist);
+  return createGistResult(output, gist);
+}
+
+async function executeUpdateGist(
+  params: UpdateGistParamsType,
+): Promise<AgentToolResult<{ gist: Gist }>> {
+  const gistId = params.gistId as string;
+  const files = params.files as
+    | Record<string, { content: string; filename?: string }>
+    | undefined;
+  const description = params.description as string | undefined;
+  const gist = await updateGist(gistId, files, description);
+  const output = formatGistUpdate(gist);
+  return createGistResult(output, gist);
+}
+
+function createUpdateGistTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
+  return {
     name: "gh-update-gist",
     label: "Update Gist",
     description: `Update an existing GitHub gist.
@@ -479,34 +513,34 @@ Examples:
       const denied = await dangerousOperationConfirmation(
         ctx,
         "Update Gist",
-        `Update gist ${params.gistId}${fileNames ? `\nFiles: ${fileNames}` : ""}`,
+        "Update gist " +
+          params.gistId +
+          (fileNames ? "\nFiles: " + fileNames : ""),
       );
       if (denied) return denied;
-      try {
-        const gist = await updateGist(
-          params.gistId,
-          params.files,
-          params.description,
-        );
-        const output = formatGistUpdate(gist);
-        return createGistResult(output, gist);
-      } catch (error) {
-        return createGistErrorResult(error);
-      }
+      return await executeUpdateGist(params);
     },
 
-    renderCall(args, theme) {
+    renderCall(args: unknown, theme: Theme, _context: unknown) {
+      const a = args as Record<string, unknown>;
       let text = theme.fg("toolTitle", theme.bold("gh-update-gist"));
-      if (args.gistId) text += theme.fg("muted", ` ${args.gistId}`);
-      if (args.files) {
-        const fileCount = Object.keys(args.files).length;
+      if (a.gistId) text += theme.fg("muted", ` ${a.gistId}`);
+      if (a.files) {
+        const fileCount = Object.keys(a.files).length;
         text += theme.fg("dim", ` ${fileCount} file(s) updated`);
       }
-      if (args.description)
-        text += theme.fg("dim", ` desc="${args.description}"`);
+      if (a.description)
+        text += theme.fg("dim", ` desc="${a.description}"`);
       return new Text(text, 0, 0);
     },
 
     renderResult: createTextResultRender(),
-  });
+  };
+}
+
+export function registerGistTools(pi: ExtensionAPI) {
+  pi.registerTool(createListGistsTool());
+  pi.registerTool(createGetGistTool());
+  pi.registerTool(createCreateGistTool());
+  pi.registerTool(createUpdateGistTool());
 }

@@ -124,8 +124,8 @@ export type ListIssuesParamsType = Static<typeof ListIssuesParams>;
 export type ViewIssueParamsType = Static<typeof ViewIssueParams>;
 export type CreateIssueParamsType = Static<typeof CreateIssueParams>;
 
-export function registerIssueTools(pi: ExtensionAPI) {
-  const issueColumns: Column[] = [
+function createIssueColumns(): Column[] {
+  return [
     { key: "#", align: "right", minWidth: 5 },
     {
       key: "title",
@@ -139,8 +139,10 @@ export function registerIssueTools(pi: ExtensionAPI) {
       },
     },
   ];
+}
 
-  const issueRowMapper = (issue: GHIssue) => ({
+function createIssueRowMapper() {
+  return (issue: GHIssue) => ({
     "#": `#${issue.number}`,
     title: issue.title,
     state: issue.state,
@@ -149,8 +151,10 @@ export function registerIssueTools(pi: ExtensionAPI) {
     labels: issue.labels?.map((l) => l.name).join(", ") ?? "",
     url: issue.html_url,
   });
+}
 
-  const issueFields = (issue: GHIssue) => [
+function createIssueFields() {
+  return (issue: GHIssue) => [
     { label: "title", value: `#${issue.number} ${issue.title}` },
     { label: "state", value: issue.state },
     { label: "author", value: issue.author?.login ?? "unknown" },
@@ -165,8 +169,10 @@ export function registerIssueTools(pi: ExtensionAPI) {
     },
     { label: "url", value: issue.html_url },
   ];
+}
 
-  registerListTool(pi, {
+function createListIssuesTool() {
+  return {
     toolName: "gh-list-issues",
     toolLabel: "Issues",
     toolDescription: `List issues in a GitHub repository.
@@ -183,11 +189,13 @@ Examples:
 - gh-list-issues(owner='torvalds', repo='linux', state='closed')`,
     paramsSchema: ListIssuesParams,
     listFn: listIssues,
-    columns: issueColumns,
-    rowMapper: issueRowMapper,
-  });
+    columns: createIssueColumns(),
+    rowMapper: createIssueRowMapper(),
+  };
+}
 
-  registerViewTool(pi, {
+function createViewIssueTool() {
+  return {
     toolName: "gh-view-issue",
     toolLabel: "Issue",
     toolDescription: `View details of a specific issue.
@@ -203,11 +211,13 @@ Examples:
 - gh-view-issue(owner='microsoft', repo='vscode', number=456)`,
     paramsSchema: ViewIssueParams,
     viewFn: viewIssue,
-    fields: issueFields,
+    fields: createIssueFields(),
     includeBody: true,
-  });
+  };
+}
 
-  registerCreateTool(pi, {
+function createCreateIssueTool() {
+  return {
     toolName: "gh-create-issue",
     toolLabel: "Create Issue",
     toolDescription: `Create a new issue in a repository.
@@ -223,7 +233,13 @@ Examples:
 - gh-create-issue(owner='microsoft', repo='vscode', title='Feature request', body='Would love to see...')
 - gh-create-issue(owner='torvalds', repo='linux', title='Kernel issue', labels=['bug', 'high-priority'])`,
     paramsSchema: CreateIssueParams,
-    createFn: (params: CreateIssueParamsType) =>
+    createFn: (
+      params: CreateIssueParamsType,
+    ): Promise<{
+      stdout: string;
+      stderr: string;
+      exitCode: number;
+    }> =>
       createIssue(
         params.owner,
         params.repo,
@@ -232,8 +248,17 @@ Examples:
         params.labels,
       ),
     confirmationTitle: "Create Issue",
-    confirmationDescription: (params) =>
-      `"${params.title}" in ${params.owner}/${params.repo}`,
+    confirmationDescription: (params: {
+      owner: string;
+      repo: string;
+      title: string;
+    }) => `"${params.title}" in ${params.owner}/${params.repo}`,
     successMessagePrefix: "✓ Issue created",
-  });
+  };
+}
+
+export function registerIssueTools(pi: ExtensionAPI) {
+  registerListTool(pi, createListIssuesTool());
+  registerViewTool(pi, createViewIssueTool());
+  registerCreateTool(pi, createCreateIssueTool());
 }

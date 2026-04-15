@@ -139,8 +139,8 @@ export const ViewReleaseParams = Type.Object({
 export type ListReleasesParamsType = Static<typeof ListReleasesParams>;
 export type ViewReleaseParamsType = Static<typeof ViewReleaseParams>;
 
-export function registerReleaseTools(pi: ExtensionAPI) {
-  pi.registerTool({
+function createListReleasesTool() {
+  return {
     name: "gh-list-releases",
     label: "List Releases",
     description: `List releases in a GitHub repository.
@@ -157,58 +157,14 @@ Examples:
 - gh-list-releases(owner='golang', repo='go', limit=10)`,
     parameters: ListReleasesParams,
     async execute(
-      _id,
+      _id: string,
       params: ListReleasesParamsType,
       _signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
-        const releases = await listReleases(
-          params.owner,
-          params.repo,
-          params.limit,
-        );
-        const cols: Column[] = [
-          { key: "tag", minWidth: 15 },
-          {
-            key: "info",
-            format(_v, row) {
-              const r = row as Record<string, string>;
-              const flags = [
-                r.draft === "true" ? "draft" : "",
-                r.prerelease === "true" ? "pre-release" : "",
-              ]
-                .filter(Boolean)
-                .join(", ");
-              return [r.name, flags ? `[${flags}]` : "", r.date]
-                .filter(Boolean)
-                .join(" · ");
-            },
-          },
-        ];
-        const rows = releases.map((r) => ({
-          tag: r.tagName,
-          name: r.name || r.tagName,
-          draft: String(r.draft),
-          prerelease: String(r.isPrerelease),
-          date: r.publishedAt
-            ? new Date(r.publishedAt).toLocaleDateString()
-            : "",
-        }));
-        return {
-          content: [
-            {
-              type: "text",
-              text: [
-                dotJoin(`${releases.length} releases`),
-                "",
-                table(cols, rows),
-              ].join("\n"),
-            },
-          ],
-          details: { releases },
-        };
+        return await executeListReleases(params);
       } catch (error) {
         return createErrorResult(
           error instanceof Error ? error.message : String(error),
@@ -217,9 +173,89 @@ Examples:
     },
     renderCall: createListRenderCall("gh-list-releases"),
     renderResult: createTextResultRender(),
-  });
+  };
+}
 
-  pi.registerTool({
+async function executeListReleases(
+  params: ListReleasesParamsType,
+): Promise<AgentToolResult<{ releases: GHRelease[] }>> {
+  const releases = await listReleases(params.owner, params.repo, params.limit);
+  const cols: Column[] = [
+    { key: "tag", minWidth: 15 },
+    {
+      key: "info",
+      format(_v, row) {
+        const r = row as Record<string, string>;
+        const flags = [
+          r.draft === "true" ? "draft" : "",
+          r.prerelease === "true" ? "pre-release" : "",
+        ]
+          .filter(Boolean)
+          .join(", ");
+        return [r.name, flags ? `[${flags}]` : "", r.date]
+          .filter(Boolean)
+          .join(" · ");
+      },
+    },
+  ];
+  const rows = releases.map((r) => ({
+    tag: r.tagName,
+    name: r.name || r.tagName,
+    draft: String(r.draft),
+    prerelease: String(r.isPrerelease),
+    date: r.publishedAt ? new Date(r.publishedAt).toLocaleDateString() : "",
+  }));
+  return {
+    content: [
+      {
+        type: "text",
+        text: [
+          dotJoin(`${releases.length} releases`),
+          "",
+          table(cols, rows),
+        ].join("\n"),
+      },
+    ],
+    details: { releases },
+  };
+}
+
+async function executeViewRelease(
+  params: ViewReleaseParamsType,
+): Promise<AgentToolResult<{ release: GHRelease }>> {
+  const release = await viewRelease(params.owner, params.repo, params.tag);
+  const fields = [
+    { label: "tag", value: release.tagName },
+    { label: "name", value: release.name || release.tagName },
+    {
+      label: "published",
+      value: release.publishedAt
+        ? new Date(release.publishedAt).toLocaleString()
+        : "unpublished",
+    },
+    { label: "draft", value: `${stateDot(release.draft)} draft` },
+    {
+      label: "prerelease",
+      value: `${stateDot(release.isPrerelease)} prerelease`,
+    },
+    { label: "url", value: release.url ? release.url : "" },
+    {
+      label: "assets",
+      value: release.assets?.length
+        ? release.assets
+            .map((a) => `${a.name} (${(a.size / 1024).toFixed(1)} KB)`)
+            .join(", ")
+        : "none",
+    },
+  ];
+  return {
+    content: [{ type: "text", text: detail(fields) }],
+    details: { release },
+  };
+}
+
+function createViewReleaseTool() {
+  return {
     name: "gh-view-release",
     label: "View Release",
     description: `View details of a specific release.
@@ -236,49 +272,14 @@ Examples:
 - gh-view-release(owner='golang', repo='go', tag='go1.21.0')`,
     parameters: ViewReleaseParams,
     async execute(
-      _id,
+      _id: string,
       params: ViewReleaseParamsType,
       _signal: AbortSignal | undefined,
       _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
-        const release = await viewRelease(
-          params.owner,
-          params.repo,
-          params.tag,
-        );
-        const fields = [
-          { label: "tag", value: release.tagName },
-          { label: "name", value: release.name || release.tagName },
-          {
-            label: "published",
-            value: release.publishedAt
-              ? new Date(release.publishedAt).toLocaleString()
-              : "unpublished",
-          },
-          {
-            label: "draft",
-            value: `${stateDot(release.draft)} draft`,
-          },
-          {
-            label: "prerelease",
-            value: `${stateDot(release.isPrerelease)} prerelease`,
-          },
-          { label: "url", value: release.url ? release.url : "" },
-          {
-            label: "assets",
-            value: release.assets?.length
-              ? release.assets
-                  .map((a) => `${a.name} (${(a.size / 1024).toFixed(1)} KB)`)
-                  .join(", ")
-              : "none",
-          },
-        ];
-        return {
-          content: [{ type: "text", text: detail(fields) }],
-          details: { release },
-        };
+        return await executeViewRelease(params);
       } catch (error) {
         return createErrorResult(
           error instanceof Error ? error.message : String(error),
@@ -287,5 +288,10 @@ Examples:
     },
     renderCall: createViewRenderCall("gh-view-release"),
     renderResult: createTextResultRender(),
-  });
+  };
+}
+
+export function registerReleaseTools(pi: ExtensionAPI) {
+  pi.registerTool(createListReleasesTool());
+  pi.registerTool(createViewReleaseTool());
 }

@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { EventEmitter } from "node:events";
+import type { Readable } from "node:stream";
 import type { TextContent } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
@@ -8,33 +10,92 @@ const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
 
 let spawnResult = { stdout: "", stderr: "", exitCode: 0 };
 
-vi.mock("node:child_process", async () => {
+function createSpawnResult(data: unknown) {
+  return {
+    stdout: JSON.stringify(data),
+    stderr: "",
+    exitCode: 0,
+  };
+}
+
+const repoData = [
+  {
+    name: "react",
+    full_name: "facebook/react",
+    description: "A JavaScript library for building UIs",
+    html_url: "https://github.com/facebook/react",
+    language: "JavaScript",
+    stargazers_count: 220000,
+    forks_count: 45000,
+  },
+];
+
+const codeData = [
+  {
+    repo: "repo",
+    owner: "owner",
+    name: "index.ts",
+    path: "src/index.ts",
+    html_url: "https://github.com/owner/repo/blob/main/src/index.ts",
+    text_matches: [
+      {
+        snippet: "function main() {",
+        matches: [{ text: "function main" }],
+      },
+    ],
+  },
+];
+
+const expectedDetails = {
+  query: "react",
+  results: repoData,
+  total: 1,
+};
+
+const errorSpawnResult = {
+  stdout: "",
+  stderr: "gh: not authenticated",
+  exitCode: 1,
+};
+
+interface SpawnProc extends EventEmitter {
+  stdout: Readable;
+  stderr: Readable;
+}
+
+function createProc(
+  EventEmitter: typeof import("node:events").EventEmitter,
+  Readable: typeof import("node:stream").Readable,
+): SpawnProc {
+  const proc = new EventEmitter() as unknown as SpawnProc;
+  proc.stdout = new Readable({ read() {} });
+  proc.stderr = new Readable({ read() {} });
+
+  setTimeout(() => {
+    proc.stdout.push(spawnResult.stdout);
+    proc.stdout.push(null);
+    proc.stderr.push(spawnResult.stderr);
+    proc.stderr.push(null);
+    (proc as unknown as EventEmitter).emit("close", spawnResult.exitCode);
+  }, 0);
+
+  return proc;
+}
+
+async function getSpawnMock() {
   const { EventEmitter } = await import("node:events");
   const { Readable } = await import("node:stream");
 
-  return {
-    spawn: () => {
-      const proc = new EventEmitter() as InstanceType<typeof EventEmitter> & {
-        stdout: InstanceType<typeof Readable>;
-        stderr: InstanceType<typeof Readable>;
-      };
-      const stdoutStream = new Readable({ read() {} });
-      const stderrStream = new Readable({ read() {} });
-      proc.stdout = stdoutStream;
-      proc.stderr = stderrStream;
+  return { spawn: () => createProc(EventEmitter, Readable) };
+}
 
-      setTimeout(() => {
-        stdoutStream.push(spawnResult.stdout);
-        stdoutStream.push(null);
-        stderrStream.push(spawnResult.stderr);
-        stderrStream.push(null);
-        proc.emit("close", spawnResult.exitCode);
-      }, 0);
+function getToolByName(mockPi: MockExtensionAPI, name: string): MockTool {
+  return mockPi.registerTool.mock.calls.find(
+    (call) => (call[0] as MockTool).name === name,
+  )![0] as MockTool;
+}
 
-      return proc;
-    },
-  };
-});
+vi.mock("node:child_process", async () => getSpawnMock());
 
 import setupGhExtension from "./index";
 
@@ -78,127 +139,58 @@ describe("GH Extension", () => {
   });
 
   describe("gh-search-repos", () => {
-    let tool: MockTool;
+    it("then it should return formatted repo list", async () => {
+      const tool = getToolByName(mockPi, "gh-search-repos");
+      spawnResult = createSpawnResult(repoData);
 
-    beforeEach(() => {
-      tool = mockPi.registerTool.mock.calls.find(
-        (call) => (call[0] as MockTool).name === "gh-search-repos",
-      )![0] as MockTool;
+      const result = await tool.execute(
+        "tool1",
+        { query: "react", limit: 1 },
+        undefined,
+        undefined,
+        {},
+      );
+
+      expect(
+        stripAnsi((result.content[0] as TextContent).text),
+      ).toMatchSnapshot();
+      expect(result.details).toEqual(expectedDetails);
     });
 
-    describe("given successful search results", () => {
-      it("then it should return formatted repo list", async () => {
-        spawnResult = {
-          stdout: JSON.stringify([
-            {
-              name: "react",
-              full_name: "facebook/react",
-              description: "A JavaScript library for building UIs",
-              html_url: "https://github.com/facebook/react",
-              language: "JavaScript",
-              stargazers_count: 220000,
-              forks_count: 45000,
-            },
-          ]),
-          stderr: "",
-          exitCode: 0,
-        };
+    it("then it should return error result", async () => {
+      const tool = getToolByName(mockPi, "gh-search-repos");
+      spawnResult = errorSpawnResult;
 
-        const result = await tool.execute(
-          "tool1",
-          { query: "react", limit: 1 },
-          undefined,
-          undefined,
-          {},
-        );
+      const result = await tool.execute(
+        "tool1",
+        { query: "react" },
+        undefined,
+        undefined,
+        {},
+      );
 
-        expect(
-          stripAnsi((result.content[0] as TextContent).text),
-        ).toMatchSnapshot();
-        expect(result.details).toEqual({
-          query: "react",
-          results: [
-            {
-              name: "react",
-              full_name: "facebook/react",
-              description: "A JavaScript library for building UIs",
-              html_url: "https://github.com/facebook/react",
-              language: "JavaScript",
-              stargazers_count: 220000,
-              forks_count: 45000,
-            },
-          ],
-          total: 1,
-        });
-      });
-    });
-
-    describe("given gh CLI fails", () => {
-      it("then it should return error result", async () => {
-        spawnResult = {
-          stdout: "",
-          stderr: "gh: not authenticated",
-          exitCode: 1,
-        };
-
-        const result = await tool.execute(
-          "tool1",
-          { query: "react" },
-          undefined,
-          undefined,
-          {},
-        );
-
-        expect((result.content[0] as TextContent).text).toBe(
-          "Error: gh search repos failed: gh: not authenticated",
-        );
-      });
+      expect((result.content[0] as TextContent).text).toBe(
+        "Error: gh search repos failed: gh: not authenticated",
+      );
     });
   });
 
   describe("gh-search-code", () => {
-    let tool: MockTool;
+    it("then it should return formatted results", async () => {
+      const tool = getToolByName(mockPi, "gh-search-code");
+      spawnResult = createSpawnResult(codeData);
 
-    beforeEach(() => {
-      tool = mockPi.registerTool.mock.calls.find(
-        (call) => (call[0] as MockTool).name === "gh-search-code",
-      )![0] as MockTool;
-    });
+      const result = await tool.execute(
+        "tool1",
+        { query: "function main repo:owner/repo" },
+        undefined,
+        undefined,
+        {},
+      );
 
-    describe("given successful code search", () => {
-      it("then it should return formatted results", async () => {
-        spawnResult = {
-          stdout: JSON.stringify([
-            {
-              repo: "repo",
-              owner: "owner",
-              name: "index.ts",
-              path: "src/index.ts",
-              html_url: "https://github.com/owner/repo/blob/main/src/index.ts",
-              text_matches: [
-                {
-                  snippet: "function main() {",
-                  matches: [{ text: "function main" }],
-                },
-              ],
-            },
-          ]),
-          stderr: "",
-          exitCode: 0,
-        };
-
-        const result = await tool.execute(
-          "tool1",
-          { query: "function main repo:owner/repo" },
-          undefined,
-          undefined,
-          {},
-        );
-
-        expect(
-          stripAnsi((result.content[0] as TextContent).text),
-        ).toMatchSnapshot();
-      });
+      expect(
+        stripAnsi((result.content[0] as TextContent).text),
+      ).toMatchSnapshot();
     });
   });
 });

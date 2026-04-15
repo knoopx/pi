@@ -101,11 +101,11 @@ function createToolExecute<T extends Record<string, unknown>>(
   _ctx: ExtensionContext,
 ) => Promise<AgentToolResult<T>> {
   return async (
-    _id,
-    params,
-    _signal,
-    _onUpdate,
-    _ctx,
+    _id: string,
+    params: Record<string, unknown>,
+    _signal: AbortSignal | undefined,
+    _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+    _ctx: ExtensionContext,
   ): Promise<AgentToolResult<T>> => {
     try {
       return await handler(params);
@@ -323,6 +323,48 @@ interface RegisterCreateToolOptions<TParams extends TSchema> {
 }
 
 /**
+ * Execute a create tool with confirmation
+ */
+async function executeCreateTool<TParams extends TSchema>(
+  ctx: ExtensionContext,
+  params: Static<TParams>,
+  options: RegisterCreateToolOptions<TParams>,
+): Promise<AgentToolResult<Record<string, unknown>>> {
+  const {
+    confirmationTitle,
+    confirmationDescription,
+    createFn,
+    successMessagePrefix,
+  } = options;
+
+  if (!ctx) return createErrorResult("Blocked: no context");
+  const denied = await dangerousOperationConfirmation(
+    ctx,
+    confirmationTitle,
+    confirmationDescription(params),
+  );
+  if (denied) return denied;
+  try {
+    const result = await createFn(params);
+    if (result.exitCode !== 0)
+      return createErrorResult(result.stderr || result.stdout);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `${successMessagePrefix}\n${result.stdout.trim()}`,
+        },
+      ],
+      details: { stdout: result.stdout },
+    };
+  } catch (error) {
+    return createErrorResult(
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+/**
  * Register a create tool with common pattern
  */
 export function registerCreateTool<TParams extends TSchema>(
@@ -352,31 +394,7 @@ export function registerCreateTool<TParams extends TSchema>(
       _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       ctx: ExtensionContext,
     ) {
-      if (!ctx) return createErrorResult("Blocked: no context");
-      const denied = await dangerousOperationConfirmation(
-        ctx,
-        confirmationTitle,
-        confirmationDescription(params),
-      );
-      if (denied) return denied;
-      try {
-        const result = await createFn(params);
-        if (result.exitCode !== 0)
-          return createErrorResult(result.stderr || result.stdout);
-        return {
-          content: [
-            {
-              type: "text",
-              text: `${successMessagePrefix}\n${result.stdout.trim()}`,
-            },
-          ],
-          details: { stdout: result.stdout },
-        };
-      } catch (error) {
-        return createErrorResult(
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return await executeCreateTool(ctx, params, options);
     },
     renderCall: createCreateRenderCall(toolName),
     renderResult: createTextResultRender(),
