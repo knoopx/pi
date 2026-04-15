@@ -144,7 +144,6 @@ export async function loadChangedFiles(
   if (result.code !== 0) return [];
 
   return parseStdoutLines(result.stdout, (line) => {
-    // Parse output: "M path 27 4" (status, path, insertions, deletions)
     const match = /^([AMD])\s+(.+)\s+(\d+)\s+(\d+)$/.exec(line);
     if (match) {
       return {
@@ -400,13 +399,69 @@ export async function undoOp(
 
 /** Blame info for a line */
 /**
- * Get current branch/bookmark label for status display
+ * Check whether the current change has file modifications
  */
+export async function hasFileChanges(
+  pi: ExtensionAPI,
+  cwd: string,
+): Promise<boolean> {
+  const result = await pi.exec(
+    "jj",
+    [
+      "log",
+      "-r",
+      "@",
+      "--no-graph",
+      "-T",
+      'if(empty, "empty", "changed") ++ "\n"',
+    ],
+    { cwd },
+  );
+  if (result.code !== 0) return false;
+  return result.stdout.trim() === "changed";
+}
+
+/**
+ * Create a new jj change (for session start hook)
+ */
+export async function createNewChange(
+  pi: ExtensionAPI,
+  cwd: string,
+): Promise<{
+  success: boolean;
+  changeId?: string;
+  created: boolean;
+  error?: string;
+}> {
+  // Check if current change has file modifications
+  const hasChanges = await hasFileChanges(pi, cwd);
+  if (!hasChanges) {
+    return { success: true, created: false };
+  }
+  const result = await pi.exec("jj", ["new"], { cwd });
+  if (result.code === 0) {
+    // Get the new change id
+    const changeResult = await pi.exec(
+      "jj",
+      ["log", "-r", "@", "--no-graph", "-T", 'change_id.short() ++ "\n"'],
+      { cwd },
+    );
+    if (changeResult.code === 0) {
+      return {
+        success: true,
+        changeId: changeResult.stdout.trim(),
+        created: true,
+      };
+    }
+    return { success: true, created: true };
+  }
+  return { success: false, error: result.stderr, created: false };
+}
+
 export async function getVcsLabel(
   pi: ExtensionAPI,
   cwd: string,
 ): Promise<string | null> {
-  // Find bookmarks in ancestry of current change (like git branch name)
   const result = await pi.exec(
     "jj",
     [

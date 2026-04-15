@@ -33,41 +33,36 @@ function isIdeWorkspace(name: string): boolean {
  */
 export async function getRepoRoot(pi: ExtensionAPI): Promise<string> {
   const result = await pi.exec("jj", ["workspace", "root"]);
-  if (result.code !== 0) throw new Error(`Failed to get repo root: ${result.stderr}`);
+  if (result.code !== 0)
+    throw new Error(`Failed to get repo root: ${result.stderr}`);
   return result.stdout.trim();
 }
 
-/**
- * Get the current change ID
- */
 export async function getCurrentChangeId(
   pi: ExtensionAPI,
   cwd?: string,
 ): Promise<string> {
-  // Update stale working copy first to avoid errors
   await updateStaleWorkspace(pi, cwd);
 
   const args = ["log", "-r", "@", "--no-graph", "-T", "change_id"];
   const result = await pi.exec("jj", args, cwd ? { cwd } : undefined);
-  if (result.code !== 0) throw new Error(`Failed to get current change ID: ${result.stderr}`);
+  if (result.code !== 0)
+    throw new Error(`Failed to get current change ID: ${result.stderr}`);
   return result.stdout.trim();
 }
 
-/**
- * Parse jj workspace list output
- */
 export function parseWorkspaceList(output: string): WorkspaceListEntry[] {
   const entries: WorkspaceListEntry[] = [];
   const lines = output.trim().split("\n").filter(Boolean);
 
   for (const line of lines) {
-    // Format: "name: changeId description"
     const match = /^(\S+):\s+(\w+)\s*(.*)?$/.exec(line);
-    if (match) entries.push({
-      name: match[1],
-      changeId: match[2],
-      description: sanitizeDescription(match[3]?.trim() || ""),
-    });
+    if (match)
+      entries.push({
+        name: match[1],
+        changeId: match[2],
+        description: sanitizeDescription(match[3]?.trim() || ""),
+      });
   }
 
   return entries;
@@ -78,7 +73,8 @@ export function parseWorkspaceList(output: string): WorkspaceListEntry[] {
  */
 async function listWorkspaces(pi: ExtensionAPI): Promise<WorkspaceListEntry[]> {
   const result = await pi.exec("jj", ["workspace", "list"]);
-  if (result.code !== 0) throw new Error(`Failed to list workspaces: ${result.stderr}`);
+  if (result.code !== 0)
+    throw new Error(`Failed to list workspaces: ${result.stderr}`);
   return parseWorkspaceList(result.stdout);
 }
 
@@ -94,11 +90,7 @@ export async function createWorkspace(
   const repoRoot = await getRepoRoot(pi);
   const workspacesDir = `${repoRoot}/.jj/workspaces`;
   const workspacePath = `${workspacesDir}/${name}`;
-
-  // Ensure workspaces directory exists
   await pi.exec("mkdir", ["-p", workspacesDir]);
-
-  // Create workspace from current change
   const result = await pi.exec("jj", [
     "workspace",
     "add",
@@ -111,7 +103,8 @@ export async function createWorkspace(
     description,
   ]);
 
-  if (result.code !== 0) throw new Error(`Failed to create workspace: ${result.stderr}`);
+  if (result.code !== 0)
+    throw new Error(`Failed to create workspace: ${result.stderr}`);
 
   return workspacePath;
 }
@@ -183,8 +176,6 @@ export async function getTmuxSessionStatus(
 ): Promise<WorkspaceStatus> {
   const exists = await tmuxSessionExists(pi, sessionName);
   if (!exists) return "completed";
-
-  // Check if the pi process is still running in the session
   const result = await pi.exec("tmux", [
     "list-panes",
     "-t",
@@ -255,15 +246,11 @@ export async function spawnAgent(
   task: string,
   forkedSessionPath?: string,
 ): Promise<void> {
-  // Build pi command with optional session
   let piCmd = "pi";
   if (forkedSessionPath) piCmd += ` --session "${forkedSessionPath}"`;
 
-  // Pass the task as a command line argument to make it non-interactive
   const escapedTask = task.replace(/"/g, '\\"');
   piCmd += ` "${escapedTask}"`;
-
-  // Create tmux session and run pi with the task as argument
   const result = await pi.exec("tmux", [
     "new-session",
     "-d",
@@ -276,7 +263,8 @@ export async function spawnAgent(
     piCmd,
   ]);
 
-  if (result.code !== 0) throw new Error(`Failed to spawn agent: ${result.stderr}`);
+  if (result.code !== 0)
+    throw new Error(`Failed to spawn agent: ${result.stderr}`);
 }
 
 /**
@@ -347,10 +335,9 @@ export async function forgetWorkspace(
   // Kill tmux session if running
   await killTmuxSession(pi, workspaceName);
 
-  // Forget the workspace in jj
   const result = await pi.exec("jj", ["workspace", "forget", workspaceName]);
-  if (result.code !== 0) throw new Error(`Failed to forget workspace: ${result.stderr}`);
+  if (result.code !== 0)
+    throw new Error(`Failed to forget workspace: ${result.stderr}`);
 
-  // Remove the workspace directory
   await cleanupWorkspaceDir(pi, workspaceName);
 }

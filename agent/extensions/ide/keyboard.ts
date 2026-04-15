@@ -6,8 +6,7 @@
  */
 
 import { Key, matchesKey } from "@mariozechner/pi-tui";
-
-type KeyPattern = Parameters<typeof matchesKey>[1];
+import type { KeyPattern } from "./types";
 
 export interface KeyBinding<TContext = void> {
   /** Key pattern to match (e.g., Key.ctrl("d"), "escape", "enter") */
@@ -29,7 +28,6 @@ interface NavigationState {
 /** Format a key pattern for display in help text */
 function formatKeyForHelp(key: KeyPattern): string {
   if (typeof key !== "string") return "";
-  // Convert key patterns to display format
   return key
     .replace("ctrl+", "ctrl+")
     .replace("up", "↑")
@@ -100,10 +98,17 @@ function handleCustomBindings<TContext>(
   ctx: TContext,
 ): boolean {
   for (const binding of bindings) {
-    if (matchesKey(data, binding.key)) {
-      if (binding.when && !binding.when(ctx)) continue;
-      const result = binding.handler(ctx);
-      if (result === true || result === undefined) return true;
+    if (typeof binding.key === "string") {
+      if (
+        (matchesKey as (data: string, key: KeyPattern) => boolean)(
+          data,
+          binding.key,
+        )
+      ) {
+        if (binding.when && !binding.when(ctx)) continue;
+        const result = binding.handler(ctx);
+        if (result === true || result === undefined) return true;
+      }
     }
   }
   return false;
@@ -116,22 +121,22 @@ function handleNavigation(
 ): boolean {
   const pageSize = nav.pageSize ?? 10;
 
-  if (matchesKey(data, "up") && nav.index > 0) {
+  if (matchesKey(data, Key.up) && nav.index > 0) {
     onNavigate(nav.index - 1);
     return true;
   }
 
-  if (matchesKey(data, "down") && nav.index < nav.maxIndex) {
+  if (matchesKey(data, Key.down) && nav.index < nav.maxIndex) {
     onNavigate(nav.index + 1);
     return true;
   }
 
-  if (matchesKey(data, "pageUp")) {
+  if (matchesKey(data, Key.pageUp)) {
     onNavigate(Math.max(0, nav.index - pageSize));
     return true;
   }
 
-  if (matchesKey(data, "pageDown")) {
+  if (matchesKey(data, Key.pageDown)) {
     onNavigate(Math.min(nav.maxIndex, nav.index + pageSize));
     return true;
   }

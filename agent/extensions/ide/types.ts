@@ -81,6 +81,18 @@ export interface Change {
 }
 
 /**
+ * Bookmark filter modes
+ */
+export const BOOKMARK_FILTER_MODES = [
+  "all",
+  "bookmarks",
+  "descriptions",
+  "authors",
+] as const;
+
+export type BookmarkFilterMode = (typeof BOOKMARK_FILTER_MODES)[number];
+
+/**
  * Format file stats for display
  */
 export function formatFileStats(ws: AgentWorkspace): string {
@@ -92,3 +104,8 @@ export function formatFileStats(ws: AgentWorkspace): string {
   if (deleted > 0) parts.push(`-${deleted}`);
   return parts.length > 0 ? `[${parts.join(" ")}]` : "";
 }
+
+/**
+ * Key pattern type for keyboard bindings
+ */
+export type KeyPattern = string | (string & {});
