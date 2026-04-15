@@ -196,11 +196,7 @@ describe("guardrails configLoader", () => {
         },
       ];
 
-      mockReadFile.mockImplementation((path: unknown) => {
-        if (String(path).includes("settings.json"))
-          return Promise.resolve(JSON.stringify({ guardrails: cfg }));
-        return Promise.resolve(JSON.stringify([]));
-      });
+      mockReadFile.mockImplementation(createMockReadFileImpl(cfg, []));
 
       await configLoader.load();
       const loaded = configLoader.getConfig();
@@ -240,11 +236,7 @@ describe("guardrails configLoader", () => {
         },
       ];
 
-      mockReadFile.mockImplementation((path: unknown) => {
-        if (String(path).includes("settings.json"))
-          return Promise.resolve(JSON.stringify({ guardrails: cfg }));
-        return Promise.resolve(JSON.stringify([]));
-      });
+      mockReadFile.mockImplementation(createMockReadFileImpl(cfg, []));
 
       await configLoader.load();
       const loaded = configLoader.getConfig();
@@ -282,11 +274,7 @@ describe("guardrails configLoader", () => {
         },
       ];
 
-      mockReadFile.mockImplementation((path: unknown) => {
-        if (String(path).includes("settings.json"))
-          return Promise.resolve(JSON.stringify({ guardrails: cfg }));
-        return Promise.resolve(JSON.stringify([]));
-      });
+      mockReadFile.mockImplementation(createMockReadFileImpl(cfg, []));
 
       await configLoader.load();
       const loaded = configLoader.getConfig();
