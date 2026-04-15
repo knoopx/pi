@@ -97,7 +97,9 @@ interface NixSearchResponse<T> {
 
 const SEARCH_URL =
   "https://search.nixos.org/backend/latest-44-nixos-unstable/_search";
-const AUTH_TOKEN = "YVdWU0FMWHBadjpYOGdQSG56TDUyd0ZFZWt1eHNmUTljU2g=";
+const AUTH_TOKEN =
+  process.env.NIX_SEARCH_TOKEN ??
+  "YVdWU0FMWHBadjpYOGdQSG56TDUyd0ZFZWt1eHNmUTljU2g=";
 const HOME_MANAGER_OPTIONS_URL =
   "https://home-manager-options.extranix.com/data/options-master.json";
 
@@ -206,6 +208,43 @@ function buildCommonAggregations(): Record<string, unknown> {
 }
 
 /**
+ * Helper to build multi_match query
+ */
+function buildMultiMatchQuery(
+  query: string,
+  fields: string[],
+): Record<string, unknown> {
+  return {
+    multi_match: {
+      type: "cross_fields",
+      query,
+      analyzer: "whitespace",
+      auto_generate_synonyms_phrase_query: false,
+      operator: "and",
+      _name: `multi_match_${query}`,
+      fields,
+    },
+  };
+}
+
+/**
+ * Helper to build wildcard query
+ */
+function buildWildcardQuery(
+  wildcardField: string,
+  query: string,
+): Record<string, unknown> {
+  return {
+    wildcard: {
+      [wildcardField]: {
+        value: `*${query}*`,
+        case_insensitive: true,
+      },
+    },
+  };
+}
+
+/**
  * Helper to build dis_max query with multi_match and wildcard
  */
 function buildDisMaxQuery(
@@ -213,31 +252,19 @@ function buildDisMaxQuery(
   fields: string[],
   wildcardField: string,
 ): Record<string, unknown> {
+  const queries = [
+    buildMultiMatchQuery(query, fields),
+    buildWildcardQuery(wildcardField, query),
+  ];
+  return { dis_max: { tie_breaker: 0.7, queries } };
+}
+
+function buildSearchError(
+  error: unknown,
+): AgentToolResult<Record<string, unknown>> {
   return {
-    dis_max: {
-      tie_breaker: 0.7,
-      queries: [
-        {
-          multi_match: {
-            type: "cross_fields",
-            query,
-            analyzer: "whitespace",
-            auto_generate_synonyms_phrase_query: false,
-            operator: "and",
-            _name: `multi_match_${query}`,
-            fields,
-          },
-        },
-        {
-          wildcard: {
-            [wildcardField]: {
-              value: `*${query}*`,
-              case_insensitive: true,
-            },
-          },
-        },
-      ],
-    },
+    content: [{ type: "text", text: `Error: ${(error as Error).message}` }],
+    details: {},
   };
 }
 
@@ -252,15 +279,7 @@ async function executeSearchTool<T, U>(
     const results = items.slice(0, 20).map(mapper);
     return buildSearchResult(results, query, contentBuilder);
   } catch (error) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error: ${(error as Error).message}`,
-        },
-      ],
-      details: {},
-    };
+    return buildSearchError(error);
   }
 }
 
@@ -289,10 +308,47 @@ async function postNixSearch<T>(
   return data.hits.hits.map((hit) => hit._source);
 }
 
-function createPackageQueryPayload(
-  query: string,
-  sourceFields: string[],
-): Record<string, unknown> {
+const PACKAGE_SOURCE_FIELDS = [
+  "type",
+  "package_attr_name",
+  "package_attr_set",
+  "package_pname",
+  "package_pversion",
+  "package_platforms",
+  "package_outputs",
+  "package_default_output",
+  "package_programs",
+  "package_mainProgram",
+  "package_license",
+  "package_license_set",
+  "package_maintainers",
+  "package_maintainers_set",
+  "package_teams",
+  "package_teams_set",
+  "package_description",
+  "package_longDescription",
+  "package_hydra",
+  "package_system",
+  "package_homepage",
+  "package_position",
+];
+
+const PACKAGE_MUST_FIELDS = [
+  "package_attr_name^9",
+  "package_attr_name.*^5.3999999999999995",
+  "package_programs^9",
+  "package_programs.*^5.3999999999999995",
+  "package_pname^6",
+  "package_pname.*^3.5999999999999996",
+  "package_description^1.3",
+  "package_description.*^0.78",
+  "package_longDescription^1",
+  "package_longDescription.*^0.6",
+  "flake_name^0.5",
+  "flake_name.*^0.3",
+];
+
+function buildPackageQuery(query: string): Record<string, unknown> {
   return {
     from: 0,
     size: 50,
@@ -303,77 +359,78 @@ function createPackageQueryPayload(
       ...buildAggregationTerms(),
       all: buildCommonAggregations(),
     },
-    query: {
-      bool: {
-        filter: [
-          { term: { type: { value: "package", _name: "filter_packages" } } },
-          {
-            bool: {
-              must: [
-                { bool: { should: [] } },
-                { bool: { should: [] } },
-                { bool: { should: [] } },
-                { bool: { should: [] } },
-                { bool: { should: [] } },
-              ],
-            },
-          },
-        ],
-        must_not: [],
-        must: [
-          buildDisMaxQuery(
-            query,
-            [
-              "package_attr_name^9",
-              "package_attr_name.*^5.3999999999999995",
-              "package_programs^9",
-              "package_programs.*^5.3999999999999995",
-              "package_pname^6",
-              "package_pname.*^3.5999999999999996",
-              "package_description^1.3",
-              "package_description.*^0.78",
-              "package_longDescription^1",
-              "package_longDescription.*^0.6",
-              "flake_name^0.5",
-              "flake_name.*^0.3",
-            ],
-            "package_attr_name",
-          ),
-        ],
-      },
-    },
-    _source: sourceFields,
+    query: buildPackageQueryClause(query),
+    _source: PACKAGE_SOURCE_FIELDS,
     track_total_hits: true,
   };
 }
 
-async function searchNixPackages(query: string): Promise<NixPackage[]> {
-  const queryPayload = createPackageQueryPayload(query, [
-    "type",
-    "package_attr_name",
-    "package_attr_set",
-    "package_pname",
-    "package_pversion",
-    "package_platforms",
-    "package_outputs",
-    "package_default_output",
-    "package_programs",
-    "package_mainProgram",
-    "package_license",
-    "package_license_set",
-    "package_maintainers",
-    "package_maintainers_set",
-    "package_teams",
-    "package_teams_set",
-    "package_description",
-    "package_longDescription",
-    "package_hydra",
-    "package_system",
-    "package_homepage",
-    "package_position",
-  ]);
+function buildPackageFilterItem(): Record<string, unknown> {
+  return { term: { type: { value: "package", _name: "filter_packages" } } };
+}
 
-  return postNixSearch<NixPackage>(queryPayload);
+function buildEmptyBoolMustArray(): Record<string, unknown>[] {
+  return Array(5).fill({ bool: { should: [] } });
+}
+
+function buildPackageQueryClause(query: string): Record<string, unknown> {
+  const filter = [
+    buildPackageFilterItem(),
+    { bool: { must: buildEmptyBoolMustArray() } },
+  ];
+  return {
+    bool: {
+      filter,
+      must_not: [],
+      must: [buildDisMaxQuery(query, PACKAGE_MUST_FIELDS, "package_attr_name")],
+    },
+  };
+}
+
+async function searchNixPackages(query: string): Promise<NixPackage[]> {
+  return postNixSearch<NixPackage>(buildPackageQuery(query));
+}
+
+function buildOptionFilterItem(): Record<string, unknown> {
+  return { term: { type: { value: "option", _name: "filter_options" } } };
+}
+
+function buildOptionMustFields(): string[] {
+  return [
+    "option_name^6",
+    "option_name.*^3.5999999999999996",
+    "option_description^1",
+    "option_description.*^0.6",
+    "flake_name^0.5",
+    "flake_name.*^0.3",
+  ];
+}
+
+function buildOptionQuery(query: string): Record<string, unknown> {
+  const OPTION_SOURCE_FIELDS = [
+    "option_name",
+    "option_description",
+    "flake_name",
+    "option_type",
+    "option_default",
+    "option_example",
+    "option_source",
+  ];
+
+  return {
+    from: 0,
+    size: 50,
+    sort: [{ _score: "desc", option_name: "desc" }],
+    aggs: buildPackageAggregations(),
+    query: {
+      bool: {
+        filter: [buildOptionFilterItem()],
+        must_not: [],
+        must: [buildDisMaxQuery(query, buildOptionMustFields(), "option_name")],
+      },
+    },
+    _source: OPTION_SOURCE_FIELDS,
+  };
 }
 
 function buildPackageAggregations(): Record<string, unknown> {
@@ -384,45 +441,7 @@ function buildPackageAggregations(): Record<string, unknown> {
 }
 
 async function searchNixOptions(query: string): Promise<NixOption[]> {
-  const queryPayload = {
-    from: 0,
-    size: 50,
-    sort: [{ _score: "desc", option_name: "desc" }],
-    aggs: buildPackageAggregations(),
-    query: {
-      bool: {
-        filter: [
-          { term: { type: { value: "option", _name: "filter_options" } } },
-        ],
-        must_not: [],
-        must: [
-          buildDisMaxQuery(
-            query,
-            [
-              "option_name^6",
-              "option_name.*^3.5999999999999996",
-              "option_description^1",
-              "option_description.*^0.6",
-              "flake_name^0.5",
-              "flake_name.*^0.3",
-            ],
-            "option_name",
-          ),
-        ],
-      },
-    },
-    _source: [
-      "option_name",
-      "option_description",
-      "flake_name",
-      "option_type",
-      "option_default",
-      "option_example",
-      "option_source",
-    ],
-  };
-
-  return postNixSearch<NixOption>(queryPayload);
+  return postNixSearch<NixOption>(buildOptionQuery(query));
 }
 
 async function searchHomeManagerOptions(
@@ -462,12 +481,117 @@ async function searchHomeManagerOptions(
   );
 }
 
+function mapPackage(item: NixPackage): Record<string, string> {
+  return removeEmptyProperties({
+    attr_name: item.package_attr_name,
+    pname: item.package_pname,
+    version: item.package_pversion,
+    description: cleanText(item.package_description),
+    longDescription: cleanText(item.package_longDescription),
+    homepage: Array.isArray(item.package_homepage)
+      ? item.package_homepage.join(", ")
+      : String(item.package_homepage || ""),
+    maintainers: item.package_maintainers
+      .map((m) => m.name || m.github)
+      .join(", "),
+    license: item.package_license_set.join(", "),
+  });
+}
+
+function formatPackageTable(res: Record<string, string>[]): string {
+  const cols: Column[] = [
+    { key: "#", align: "right", minWidth: 3 },
+    { key: "version", minWidth: 7 },
+    {
+      key: "package",
+      format(_v, row) {
+        const r = row as Record<string, string>;
+        const lines = [r.package];
+        if (r.description) lines.push(r.description);
+        const meta: string[] = [];
+        if (r.attr_name) meta.push(`attr: ${r.attr_name}`);
+        if (r.license) meta.push(r.license);
+        if (meta.length > 0) lines.push(meta.join(" · "));
+        if (r.maintainers) lines.push(r.maintainers);
+        if (r.homepage) lines.push(r.homepage);
+        return lines.join("\n");
+      },
+    },
+  ];
+
+  const rows = res.map((pkg, i) => ({
+    "#": String(i + 1),
+    version: pkg.version || "",
+    package: pkg.pname || pkg.attr_name || "",
+    description: pkg.description || "",
+    attr_name: pkg.attr_name || "",
+    license: pkg.license || "",
+    maintainers: pkg.maintainers || "",
+    homepage: Array.isArray(pkg.homepage) ? pkg.homepage[0] || "" : "",
+  }));
+
+  return [
+    dotJoin(countLabel(res.length, "result")),
+    "",
+    table(cols, rows),
+  ].join("\n");
+}
+
+function mapNixOption(opt: NixOption): Record<string, string> {
+  return removeEmptyProperties({
+    option: opt.option_name,
+    description: cleanText(opt.option_description),
+    type: opt.option_type,
+    default: opt.option_default,
+    example: opt.option_example,
+    source: opt.option_source,
+  });
+}
+
+function mapHomeManagerOption(opt: HomeManagerOption): Record<string, string> {
+  return removeEmptyProperties({
+    option: opt.title,
+    description: cleanText(opt.description),
+    type: opt.type,
+    default: opt.default,
+    example: opt.example,
+    declarations: opt.declarations.map((d) => d.url).join(", "),
+  });
+}
+
+function createTool<T>(
+  name: string,
+  label: string,
+  description: string,
+  searchFn: (q: string) => Promise<T[]>,
+  mapper: (item: T) => Record<string, string>,
+  contentBuilder: (res: Record<string, string>[]) => string,
+) {
+  return {
+    name,
+    label,
+    description,
+    parameters: SearchQueryParams,
+    async execute(
+      _toolCallId: string,
+      params: SearchQueryParamsType,
+    ): Promise<AgentToolResult<Record<string, unknown>>> {
+      return executeSearchTool(
+        searchFn as never,
+        mapper,
+        contentBuilder,
+        params.query,
+      );
+    },
+  };
+}
+
 export default function (pi: ExtensionAPI): void {
-  // Search Nix packages
-  pi.registerTool({
-    name: "search-nix-packages",
-    label: "Search Nix Packages",
-    description: `Find packages available in the NixOS package repository.
+  pi.registerTool(
+    createTool(
+      "search-nix-packages",
+      "Search Nix Packages",
+      `Find packages available in the NixOS package repository.
 
 Use this to:
 - Discover software packages for installation
@@ -476,71 +600,17 @@ Use this to:
 - Get package metadata and maintainers
 
 Returns detailed package information from nixpkgs.`,
-    parameters: SearchQueryParams,
-    async execute(_toolCallId: string, params: SearchQueryParamsType) {
-      const { query } = params;
+      searchNixPackages,
+      mapPackage,
+      formatPackageTable,
+    ),
+  );
 
-      return executeSearchTool(
-        searchNixPackages,
-        (item: NixPackage) =>
-          removeEmptyProperties({
-            attr_name: item.package_attr_name,
-            pname: item.package_pname,
-            version: item.package_pversion,
-            description: cleanText(item.package_description),
-            longDescription: cleanText(item.package_longDescription),
-            homepage: item.package_homepage,
-            maintainers: item.package_maintainers
-              .map((m) => m.name || m.github)
-              .join(", "),
-            license: item.package_license_set.join(", "),
-          }),
-        (res) => {
-          const cols: Column[] = [
-            { key: "#", align: "right", minWidth: 3 },
-            { key: "version", minWidth: 7 },
-            {
-              key: "package",
-              format(_v, row) {
-                const r = row as Record<string, string>;
-                const lines = [r.package];
-                if (r.description) lines.push(r.description);
-                const meta: string[] = [];
-                if (r.attr_name) meta.push(`attr: ${r.attr_name}`);
-                if (r.license) meta.push(r.license);
-                if (meta.length > 0) lines.push(meta.join(" · "));
-                if (r.maintainers) lines.push(r.maintainers);
-                if (r.homepage) lines.push(r.homepage);
-                return lines.join("\n");
-              },
-            },
-          ];
-          const rows = res.map((pkg, i) => ({
-            "#": String(i + 1),
-            version: pkg.version || "",
-            package: pkg.pname || pkg.attr_name || "",
-            description: pkg.description || "",
-            attr_name: pkg.attr_name || "",
-            license: pkg.license || "",
-            maintainers: pkg.maintainers || "",
-            homepage: Array.isArray(pkg.homepage) ? pkg.homepage[0] || "" : "",
-          }));
-          return [
-            dotJoin(countLabel(res.length, "result")),
-            "",
-            table(cols, rows),
-          ].join("\n");
-        },
-        query,
-      );
-    },
-  });
-
-  // Search Nix options
-  pi.registerTool({
-    name: "search-nix-options",
-    label: "Search Nix Options",
-    description: `Find configuration options available in NixOS.
+  pi.registerTool(
+    createTool(
+      "search-nix-options",
+      "Search Nix Options",
+      `Find configuration options available in NixOS.
 
 Use this to:
 - Discover system configuration settings
@@ -549,32 +619,17 @@ Use this to:
 - Get examples for configuration
 
 Returns NixOS configuration option details.`,
-    parameters: SearchQueryParams,
-    async execute(_toolCallId: string, params: SearchQueryParamsType) {
-      const { query } = params;
+      searchNixOptions,
+      mapNixOption,
+      buildOptionTableRenderer(false),
+    ),
+  );
 
-      return executeSearchTool(
-        searchNixOptions,
-        (opt: NixOption) =>
-          removeEmptyProperties({
-            option: opt.option_name,
-            description: cleanText(opt.option_description),
-            type: opt.option_type,
-            default: opt.option_default,
-            example: opt.option_example,
-            source: opt.option_source,
-          }),
-        buildOptionTableRenderer(false),
-        query,
-      );
-    },
-  });
-
-  // Search Home-Manager options
-  pi.registerTool({
-    name: "search-home-manager-options",
-    label: "Search Home-Manager Options",
-    description: `Find configuration options for Home Manager.
+  pi.registerTool(
+    createTool(
+      "search-home-manager-options",
+      "Search Home-Manager Options",
+      `Find configuration options for Home Manager.
 
 Use this to:
 - Configure user-specific settings
@@ -583,24 +638,9 @@ Use this to:
 - Manage user-level services
 
 Returns Home Manager configuration options.`,
-    parameters: SearchQueryParams,
-    async execute(_toolCallId: string, params: SearchQueryParamsType) {
-      const { query } = params;
-
-      return executeSearchTool(
-        searchHomeManagerOptions,
-        (opt: HomeManagerOption) =>
-          removeEmptyProperties({
-            option: opt.title,
-            description: cleanText(opt.description),
-            type: opt.type,
-            default: opt.default,
-            example: opt.example,
-            declarations: opt.declarations.map((d) => d.url).join(", "),
-          }),
-        buildOptionTableRenderer(true),
-        query,
-      );
-    },
-  });
+      searchHomeManagerOptions,
+      mapHomeManagerOption,
+      buildOptionTableRenderer(true),
+    ),
+  );
 }
