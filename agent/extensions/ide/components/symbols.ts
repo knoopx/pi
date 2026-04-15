@@ -93,21 +93,33 @@ export function createSymbolsComponent(
   let pendingAction: SymbolReferenceActionType | undefined;
   let pendingInsertType: "name" | "path" | undefined;
 
-  // Current symbol type filter (defaults to class)
-  let currentTypeFilter: SymbolTypeFilter = "class";
+  const currentTypeRef = { value: "class" as SymbolTypeFilter };
+
+  function createToggleSymbolTypeBinding(ref: { value: SymbolTypeFilter }) {
+    return {
+      key: Key.ctrl("/"),
+      handler() {
+        const currentIndex = SYMBOL_TYPES.indexOf(ref.value);
+        const nextIndex = (currentIndex + 1) % SYMBOL_TYPES.length;
+        ref.value = SYMBOL_TYPES[nextIndex];
+      },
+    };
+  }
 
   // Wrapper to close picker with action metadata
   function doneWithAction(item: SymbolInfo | null): void {
-    if (item && pendingAction) done({ symbol: item, action: pendingAction }); else if (item && pendingInsertType) done({ symbol: item, insertType: pendingInsertType }); else if (item) done({ symbol: item }); else {
+    if (item && pendingAction) done({ symbol: item, action: pendingAction });
+    else if (item && pendingInsertType)
+      done({ symbol: item, insertType: pendingInsertType });
+    else if (item) done({ symbol: item });
+    else {
       done(null);
     }
     pendingAction = undefined;
     pendingInsertType = undefined;
   }
 
-  // Get context-sensitive action for ctrl+t based on symbol type
   function getInspectAction(type: string): SymbolReferenceActionType {
-    // Functions and methods → show callers
     if (
       type === "f" ||
       type === "m" ||
@@ -115,11 +127,9 @@ export function createSymbolsComponent(
       type === "method"
     )
       return "callers";
-    // Classes, interfaces, types, enums → show usages
     return "used-by";
   }
 
-  // Navigate directly to first result from cm command
   async function goToFirstResult(
     command: string,
     args: string[],
@@ -129,7 +139,6 @@ export function createSymbolsComponent(
     });
     if (result.code !== 0 || !result.stdout.trim()) return;
 
-    // Parse first result line: name|type|path|line-range
     const firstLine = result.stdout
       .split("\n")
       .find((l) => l.includes("|") && !l.startsWith("["));
@@ -188,14 +197,15 @@ export function createSymbolsComponent(
 
   // Internal done handler that wraps results
   const internalDone = (item: SymbolInfo | null) => {
-    if (item) done({ symbol: item }); else {
+    if (item) done({ symbol: item });
+    else {
       done(null);
     }
   };
 
   // Helper to get the dynamic title
   const getTitle = () =>
-    `Symbols [${currentTypeFilter === "all" ? "*" : currentTypeFilter}]`;
+    `Symbols [${currentTypeRef.value === "all" ? "*" : currentTypeRef.value}]`;
 
   const picker = createListPicker<SymbolInfo>(
     pi,
@@ -213,26 +223,14 @@ export function createSymbolsComponent(
           `${join(cwd, item.path)}:${String(item.startLine)}`,
         ]);
       },
-      loadItems: (query) => querySymbols(pi, cwd, query, currentTypeFilter),
+      loadItems: (query) => querySymbols(pi, cwd, query, currentTypeRef.value),
       filterItems: (items, query) =>
         items.filter((s) => s.name.toLowerCase().includes(query)),
       reloadDebounceMs: 300,
       formatItem: (item, width, theme) =>
         formatSymbolListEntry(theme, { ...item, line: item.startLine }),
       loadPreview: createFilePreviewLoader(pi, cwd, theme),
-      onKey: createKeyboardHandler({
-        bindings: [
-          {
-            key: Key.ctrl("/"),
-            handler() {
-              const currentIndex = SYMBOL_TYPES.indexOf(currentTypeFilter);
-              const nextIndex = (currentIndex + 1) % SYMBOL_TYPES.length;
-              currentTypeFilter = SYMBOL_TYPES[nextIndex];
-              void picker.reload();
-            },
-          },
-        ],
-      }),
+      onKey: createKeyboardHandler({ bindings: [createToggleSymbolTypeBinding(currentTypeRef)] }),
     },
   );
 

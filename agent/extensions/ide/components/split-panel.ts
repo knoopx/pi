@@ -92,12 +92,9 @@ export function calculateDimensions(
 ): SplitPanelDimensions {
   const leftRatio = config.leftRatio ?? 0.35;
   const leftW = Math.floor(width * leftRatio);
-  const rightW = width - leftW - 3; // 3 for border chars │ │ │
+  const rightW = width - leftW - 3; // 3 for border chars
 
-  // Calculate overlay height (100% of terminal)
   const overlayHeight = terminalRows;
-  // Content height = overlay height - borders (top, title, separator, help, bottom = 5 lines min)
-  // For split right: add 3 more lines for separator
   const borderLines = config.rightSplit ? 8 : 5;
   const contentH = overlayHeight - borderLines;
 
@@ -400,12 +397,10 @@ export function renderSplitPanel(
   const lines: string[] = [];
   const { leftW, rightW, contentH } = dims;
 
-  // Top border
   lines.push(
     renderTopBorder(leftW, rightW, config.leftFocus, config.rightFocus, theme),
   );
 
-  // Title row
   lines.push(
     renderTitleRow(
       config.leftTitle,
@@ -418,7 +413,6 @@ export function renderSplitPanel(
     ),
   );
 
-  // Separator after title
   lines.push(
     renderSeparatorRow(
       leftW,
@@ -430,7 +424,6 @@ export function renderSplitPanel(
   );
 
   if (config.rightSplit && dims.rightTopH && dims.rightBottomH) {
-    // Split right panel layout
     const { rightTopH } = dims;
     const { rightBottomH } = dims;
     const leftRows = rows.left;
@@ -452,7 +445,6 @@ export function renderSplitPanel(
     );
     lines.push(...panelRows);
   } else {
-    // Simple two-column layout
     const leftRows = rows.left;
     const rightRows = rows.right ?? [];
 
@@ -469,7 +461,6 @@ export function renderSplitPanel(
     lines.push(...panelRows);
   }
 
-  // Bottom border with help
   const bottomRows = renderBottomBorder(
     leftW,
     rightW,
@@ -632,14 +623,12 @@ export function renderFileChangeRows(
       : theme.fg(statusColor, fileIcon);
     const styledPath = theme.fg(statusColor, file.path);
 
-    // Format stats (net changes)
     const stats = formatFileStats(file.insertions, file.deletions);
     const statsColor = stats.isPositive ? "toolDiffAdded" : "toolDiffRemoved";
     const styledStats = stats.text
       ? theme.fg(statsColor, ` ${stats.text}`)
       : "";
 
-    // Calculate widths for right-alignment using stringWidth for ANSI-aware measurement
     const prefix = ` ${statusIcon} ${fileIcon} `; // status + file icon + spaces
     const prefixWidth = stringWidth(prefix);
     const statsWidth = styledStats ? stringWidth(styledStats) : 0;

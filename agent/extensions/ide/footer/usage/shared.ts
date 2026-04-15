@@ -14,7 +14,6 @@ export async function detectAndFetchUsage(
 ): Promise<UsageSnapshot | undefined> {
   const provider = model?.provider?.toLowerCase() ?? "";
 
-  // Check for Z.AI / GLM Coding Plan
   if (provider.includes("zai-coding-plan"))
     return (await fetchZAIUsage(dependencies)) ?? undefined;
 

@@ -54,56 +54,43 @@ interface SymbolReferenceCommandDef {
   argsFn: (target: string) => string[];
 }
 
+function makeCommandDef(
+  title: string,
+  command: string,
+  argsFn: (target: string) => string[],
+): SymbolReferenceCommandDef {
+  return { titleFn: (t) => title.replace("{}", t), command, argsFn };
+}
+
 /** All symbol reference commands */
 export const SYMBOL_REFERENCE_COMMANDS: Record<
   SymbolReferenceActionType,
   SymbolReferenceCommandDef
 > = {
-  callers: {
-    titleFn: (s) => `Callers of ${s}`,
-    command: "callers",
-    argsFn: (s) => ["callers", s, "--limit", "100"],
-  },
-  callees: {
-    titleFn: (s) => `Callees of ${s}`,
-    command: "callees",
-    argsFn: (s) => ["callees", s, "--limit", "100"],
-  },
-  tests: {
-    titleFn: (s) => `Tests for ${s}`,
-    command: "tests",
-    argsFn: (s) => ["tests", s],
-  },
-  types: {
-    titleFn: (s) => `Types for ${s}`,
-    command: "types",
-    argsFn: (s) => ["types", s],
-  },
-  schema: {
-    titleFn: (s) => `Schema for ${s}`,
-    command: "schema",
-    argsFn: (s) => ["schema", s],
-  },
-  inspect: {
-    titleFn: (f) => `Symbols in ${f}`,
-    command: "inspect",
-    argsFn: (f) => ["inspect", f],
-  },
-  deps: {
-    titleFn: (f) => `Dependencies of ${f}`,
-    command: "deps",
-    argsFn: (f) => ["deps", f],
-  },
-  "used-by": {
-    titleFn: (f) => `Used by ${f}`,
-    command: "deps",
-    argsFn: (f) => ["deps", f, "--direction", "used-by"],
-  },
-  delete: {
-    titleFn: (f) => `Delete ${f}`,
-    command: "delete",
-    argsFn: (f) => ["delete", f],
-  },
+  callers: makeCommandDef("Callers of {}", "callers", (s) => [
+    "callers",
+    s,
+    "--limit",
+    "100",
+  ]),
+  callees: makeCommandDef("Callees of {}", "callees", (s) => [
+    "callees",
+    s,
+    "--limit",
+    "100",
+  ]),
+  tests: makeCommandDef("Tests for {}", "tests", (s) => ["tests", s]),
+  types: makeCommandDef("Types for {}", "types", (s) => ["types", s]),
+  schema: makeCommandDef("Schema for {}", "schema", (s) => ["schema", s]),
+  inspect: makeCommandDef("Symbols in {}", "inspect", (f) => ["inspect", f]),
+  deps: makeCommandDef("Dependencies of {}", "deps", (f) => ["deps", f]),
+  "used-by": makeCommandDef("Used by {}", "deps", (f) => [
+    "deps",
+    f,
+    "--direction",
+    "used-by",
+  ]),
+  delete: makeCommandDef("Delete {}", "delete", (f) => ["delete", f]),
 };
 
 // Symbol-based actions available in symbol references
@@ -141,37 +128,31 @@ function extractExtraInfo(parts: string[]): {
 
   for (let i = 3; i < parts.length; i++) {
     const part = parts[i].trim();
-    if (part.startsWith("sig:")) signature = part.slice(4); else if (part.startsWith("call:")) callLine = parseInt(part.slice(5), 10);
+    if (part.startsWith("sig:")) signature = part.slice(4);
+    else if (part.startsWith("call:")) callLine = parseInt(part.slice(5), 10);
   }
 
   return { signature, callLine };
 }
 
-/**
- * Parse location part into path and line numbers
- */
 function parseLocation(
   locationPart: string,
   headerFile: string | undefined,
 ): { path: string; startLine: number; endLine: number } {
-  // Check if locationPart is a line-range (e.g., "71-172") vs path:line
   const lineRangeMatch = /^(\d+)-(\d+)$/.exec(locationPart);
   if (lineRangeMatch && headerFile) {
-    // Inspect format: line-range only, use header file
     return {
       path: headerFile,
       startLine: parseInt(lineRangeMatch[1], 10),
       endLine: parseInt(lineRangeMatch[2], 10),
     };
   } else if (locationPart.includes(":")) {
-    // Standard format: path:line
     const colonIdx = locationPart.lastIndexOf(":");
     const path = locationPart.slice(0, colonIdx);
     const parsedStartLine = parseInt(locationPart.slice(colonIdx + 1), 10);
     const startLine = Number.isNaN(parsedStartLine) ? 1 : parsedStartLine;
     return { path, startLine, endLine: startLine };
   }
-  // Fallback: treat as path
   return { path: locationPart, startLine: 1, endLine: 1 };
 }
 
@@ -186,12 +167,7 @@ function normalizeName(name: string, path: string): string {
   return name;
 }
 
-/**
- * Parse symbol reference output lines into structured items.
- * Extracts file path from [FILE:...] header if not in line format.
- */
 function parseSymbolReferenceOutput(output: string): SymbolReferenceItem[] {
-  // Extract file path from header for inspect command
   const fileMatch = /\[FILE:([^\]]+)\]/.exec(output);
   const headerFile = fileMatch?.[1];
 
@@ -245,7 +221,11 @@ export function createSymbolReferenceComponent(
   let pendingInsertType: "name" | "path" | undefined;
 
   function doneWithAction(item: SymbolReferenceItem | null): void {
-    if (item && pendingAction) done({ item, action: pendingAction }); else if (item && pendingInsertType) done({ item, insertType: pendingInsertType }); else if (item) done({ item }); else {
+    if (item && pendingAction) done({ item, action: pendingAction });
+    else if (item && pendingInsertType)
+      done({ item, insertType: pendingInsertType });
+    else if (item) done({ item });
+    else {
       done(null);
     }
     pendingAction = undefined;
@@ -272,7 +252,8 @@ export function createSymbolReferenceComponent(
   ];
 
   const internalDone = (item: SymbolReferenceItem | null) => {
-    if (item) done({ item }); else {
+    if (item) done({ item });
+    else {
       done(null);
     }
   };
@@ -299,7 +280,8 @@ export function createSymbolReferenceComponent(
           cwd: config.cwd,
         });
 
-        if (result.code !== 0) throw new Error(`cm ${config.command} failed: ${result.stderr}`);
+        if (result.code !== 0)
+          throw new Error(`cm ${config.command} failed: ${result.stderr}`);
 
         return parseSymbolReferenceOutput(result.stdout);
       },

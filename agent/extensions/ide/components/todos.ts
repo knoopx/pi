@@ -1,6 +1,6 @@
 /**
- * TODO comment picker component.
- * Uses ast-grep to find comment AST nodes matching TODO/FIXME/HACK/XXX.
+ * Picker component for browsing deferred work markers in code.
+ * Uses ast-grep to find comment AST nodes matching marker patterns.
  */
 
 import type {

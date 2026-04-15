@@ -1,5 +1,4 @@
 import type { Theme, ThemeColor } from "@mariozechner/pi-coding-agent";
-import type { BundledLanguage } from "shiki";
 import { hlBlock } from "../tools/shiki";
 import { lang } from "../tools/language";
 /** Text file extensions that we can preview */

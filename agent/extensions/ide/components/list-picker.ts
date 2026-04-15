@@ -200,11 +200,9 @@ export function createListPicker<T extends ListPickerItem>(
       const idx = startIdx + i;
       const item = filteredItems[idx];
       const isFocused = idx === focusedIndex;
-      // Format without focus styling first
       const formatted = config.formatItem(item, width - 2, theme);
       const text = ` ${truncateAnsi(formatted, width - 2)}`;
       const padded = ensureWidth(text, width);
-      // Apply focus styling to full-width padded text
       const styled = isFocused
         ? applyFocusedStyle(theme, padded, true)
         : padded;
@@ -325,7 +323,6 @@ export function createListPicker<T extends ListPickerItem>(
     tui.requestRender();
   };
 
-  // Build action bindings from config (actions already have labels)
   const actionBindings: KeyBinding[] = (config.actions ?? []).map((action) => ({
     key: action.key as KeyBinding["key"],
     label: action.label,
@@ -336,7 +333,6 @@ export function createListPicker<T extends ListPickerItem>(
     },
   }));
 
-  // Core bindings with labels for help text generation
   const coreBindings: KeyBinding[] = [
     {
       key: "up",
@@ -395,8 +391,6 @@ export function createListPicker<T extends ListPickerItem>(
   ];
 
   const allBindings = [...coreBindings, ...actionBindings];
-
-  // Generate help text dynamically based on current state
   function getHelpText(): string {
     const activeBindings = allBindings.filter((b) => {
       if (!b.label) return false;
@@ -405,8 +399,6 @@ export function createListPicker<T extends ListPickerItem>(
     });
     return buildHelpFromBindings(activeBindings);
   }
-
-  // Create handler with custom onKey support
   const keyboardHandler = createKeyboardHandler({
     bindings: [...coreBindings, ...actionBindings],
     onBackspace() {

@@ -1,6 +1,5 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import type { MarkdownTheme } from "@mariozechner/pi-tui";
-import { formatRelativeTime, formatErrorMessage } from "./formatting-utils";
 
 export function createMarkdownTheme(theme: Theme): MarkdownTheme {
   return {

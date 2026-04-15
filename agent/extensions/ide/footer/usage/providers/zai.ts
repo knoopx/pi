@@ -75,7 +75,6 @@ function calculateResetDescription(
   } else {
     nextReset.setHours(next5hHour, 0, 0, 0);
   }
-  // Convert ms to seconds for formatRemainingDuration
   return formatRemainingDuration(nextReset.getTime() / 1000);
 }
 

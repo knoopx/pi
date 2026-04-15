@@ -260,7 +260,7 @@ export function createPullRequestsComponent(
       formatItem(item, width, theme) {
         const icon = getPrIcon(item.state, item.isDraft);
         const reviewIcon = getReviewIcon(item.reviewDecision);
-        let stateColor: "success" | "error" | "accent" | "dim" | string;
+        let stateColor: "success" | "error" | "accent" | "dim";
         if (item.state === "MERGED") {
           stateColor = "accent";
         } else if (item.state === "CLOSED") {
@@ -270,8 +270,8 @@ export function createPullRequestsComponent(
         } else {
           stateColor = "success";
         }
-        const prNum = theme.fg(stateColor as any, `#${item.number}`);
-        const iconStyled = theme.fg(stateColor as any, icon);
+        const prNum = theme.fg(stateColor, `#${item.number}`);
+        const iconStyled = theme.fg(stateColor, icon);
         const additions = theme.fg("success", `+${item.additions}`);
         const deletions = theme.fg("error", `-${item.deletions}`);
         const stats = `${additions}/${deletions}`;

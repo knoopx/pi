@@ -51,6 +51,35 @@ function findChildLanes(nodeId: string, lanes: (string | null)[]): number[] {
 }
 
 /**
+ * Add edges for merging from a non-target lane
+ */
+function addMergeLaneEdges(
+  lane: number,
+  targetX: number,
+  rowEdges: Edge[],
+): void {
+  if (lane > targetX) {
+    rowEdges.push({ type: EdgeType.RightUp, posX: lane, colorIndex: lane % 8 });
+    for (let mx = targetX + 1; mx < lane; mx++) {
+      rowEdges.push({
+        type: EdgeType.Horizontal,
+        posX: mx,
+        colorIndex: lane % 8,
+      });
+    }
+  } else {
+    rowEdges.push({ type: EdgeType.LeftUp, posX: lane, colorIndex: lane % 8 });
+    for (let mx = lane + 1; mx < targetX; mx++) {
+      rowEdges.push({
+        type: EdgeType.Horizontal,
+        posX: mx,
+        colorIndex: lane % 8,
+      });
+    }
+  }
+}
+
+/**
  * Process child lanes when a commit merges from multiple branches
  */
 function processChildLanes(
@@ -62,36 +91,9 @@ function processChildLanes(
   const x = Math.min(...childLanes);
 
   for (const lane of childLanes) {
-    if (lane !== x) {
-      if (lane > x) {
-        rowEdges.push({
-          type: EdgeType.RightUp,
-          posX: lane,
-          colorIndex: lane % 8,
-        });
-        for (let mx = x + 1; mx < lane; mx++) {
-          rowEdges.push({
-            type: EdgeType.Horizontal,
-            posX: mx,
-            colorIndex: lane % 8,
-          });
-        }
-      } else {
-        rowEdges.push({
-          type: EdgeType.LeftUp,
-          posX: lane,
-          colorIndex: lane % 8,
-        });
-        for (let mx = lane + 1; mx < x; mx++) {
-          rowEdges.push({
-            type: EdgeType.Horizontal,
-            posX: mx,
-            colorIndex: lane % 8,
-          });
-        }
-      }
-      lanes[lane] = null;
-    }
+    if (lane === x) continue;
+    addMergeLaneEdges(lane, x, rowEdges);
+    lanes[lane] = null;
   }
   lanes[x] = node.id;
   return x;
@@ -101,14 +103,13 @@ function processChildLanes(
  * Find or create a lane for a new commit
  */
 function findOrCreateLane(nodeId: string, lanes: (string | null)[]): number {
-  let x = lanes.findIndex((l) => l === null);
-  if (x === -1) {
-    x = lanes.length;
-    lanes.push(nodeId);
-  } else {
-    lanes[x] = nodeId;
+  const existingNull = lanes.findIndex((l) => l === null);
+  if (existingNull !== -1) {
+    lanes[existingNull] = nodeId;
+    return existingNull;
   }
-  return x;
+  lanes.push(nodeId);
+  return lanes.length - 1;
 }
 
 /**
@@ -120,11 +121,12 @@ function addVerticalEdges(
   rowEdges: Edge[],
 ) {
   for (let laneX = 0; laneX < lanes.length; laneX++) {
-    if (lanes[laneX] !== null && laneX !== commitX) rowEdges.push({
-      type: EdgeType.Vertical,
-      posX: laneX,
-      colorIndex: laneX % 8,
-    });
+    if (lanes[laneX] !== null && laneX !== commitX)
+      rowEdges.push({
+        type: EdgeType.Vertical,
+        posX: laneX,
+        colorIndex: laneX % 8,
+      });
   }
 }
 
@@ -135,17 +137,16 @@ function findOrCreateParentLane(
   parentId: string,
   lanes: (string | null)[],
 ): number {
-  let parentLane = lanes.findIndex((l) => l === parentId);
-  if (parentLane === -1) {
-    parentLane = lanes.findIndex((l) => l === null);
-    if (parentLane === -1) {
-      parentLane = lanes.length;
-      lanes.push(parentId);
-    } else {
-      lanes[parentLane] = parentId;
-    }
+  const existingId = lanes.findIndex((l) => l === parentId);
+  if (existingId !== -1) return existingId;
+
+  const existingNull = lanes.findIndex((l) => l === null);
+  if (existingNull !== -1) {
+    lanes[existingNull] = parentId;
+    return existingNull;
   }
-  return parentLane;
+  lanes.push(parentId);
+  return lanes.length - 1;
 }
 
 /**
@@ -205,14 +206,13 @@ function processMergeEdges(
 ): number {
   let maxX = commitX;
 
-  if (node.parentIds.length > 1) {
-    for (let i = 1; i < node.parentIds.length; i++) {
-      const parentId = node.parentIds[i];
-      const parentLane = findOrCreateParentLane(parentId, lanes);
-      maxX = Math.max(maxX, parentLane);
+  for (let i = 1; i < node.parentIds.length; i++) {
+    const parentId = node.parentIds[i];
+    const parentLane = findOrCreateParentLane(parentId, lanes);
+    maxX = Math.max(maxX, parentLane);
 
-      if (parentLane > commitX) addBranchRight(commitX, parentLane, rowEdges); else if (parentLane < commitX) addBranchLeft(commitX, parentLane, rowEdges);
-    }
+    if (parentLane > commitX) addBranchRight(commitX, parentLane, rowEdges);
+    else if (parentLane < commitX) addBranchLeft(commitX, parentLane, rowEdges);
   }
   return maxX;
 }
@@ -230,10 +230,10 @@ export function calculateGraphLayout(nodes: GraphNode[]): GraphLayout {
   for (const node of nodes) {
     const rowEdges: Edge[] = [];
 
-    let x: number;
-    if (findChildLanes(node.id, lanes).length > 0) x = processChildLanes(node, lanes, rowEdges); else {
-      x = findOrCreateLane(node.id, lanes);
-    }
+    const hasChildren = findChildLanes(node.id, lanes).length > 0;
+    const x = hasChildren
+      ? processChildLanes(node, lanes, rowEdges)
+      : findOrCreateLane(node.id, lanes);
 
     positions.set(node.id, { x, y: edges.length });
     maxX = Math.max(maxX, x);
@@ -346,11 +346,13 @@ export function renderGraphRow(
 
     if (posX === commitX) {
       chars[pos] = getChangeIcon(isWorkingCopy, isEmpty);
-      if (branchRight && pos + 1 < width) chars[pos + 1] = GRAPH_CHARS.horizontal;
+      if (branchRight && pos + 1 < width)
+        chars[pos + 1] = GRAPH_CHARS.horizontal;
     } else {
       const flags = getEdgeFlags(posEdges);
       chars[pos] = getEdgeChar(flags);
-      if (flags.hasHorizontal && pos + 1 < width) chars[pos + 1] = GRAPH_CHARS.horizontal;
+      if (flags.hasHorizontal && pos + 1 < width)
+        chars[pos + 1] = GRAPH_CHARS.horizontal;
     }
   }
 

@@ -93,25 +93,14 @@ export function createBookmarkPromptComponent(
     ];
   }
 
-  function render(width: number): string[] {
+  function renderEmptyState(
+    innerWidth: number,
+    state: "loading" | "error" | "empty",
+    detail?: string,
+    footerHelp?: string[],
+  ): string[] {
     const lines: string[] = [];
-    const innerWidth = width - 2;
-    const query = input.getValue().trim();
-
-    // Top border with title
-    lines.push(topBorderWithTitle(theme, " Set Bookmark ", innerWidth));
-
-    // Input row with icon
-    const inputIcon = "󰃀";
-    const inputValue = input.getValue();
-    const cursor = theme.fg("accent", "▏");
-    const inputContent = ` ${inputIcon}  ${inputValue}${cursor}`;
-    lines.push(borderedLine(theme, inputContent, innerWidth));
-
-    // Separator
-    lines.push(horizontalSeparator(theme, innerWidth));
-
-    if (loading) {
+    if (state === "loading") {
       lines.push(
         borderedLine(
           theme,
@@ -121,43 +110,42 @@ export function createBookmarkPromptComponent(
       );
       lines.push(borderedLine(theme, "", innerWidth));
       lines.push(
-        ...renderFooter(innerWidth, ["enter set", "↑↓ nav", "esc cancel"]),
+        ...renderFooter(
+          innerWidth,
+          footerHelp ?? ["enter set", "↑↓ nav", "esc cancel"],
+        ),
       );
-      return lines;
-    }
-
-    if (error) {
+    } else if (state === "error") {
       lines.push(
-        borderedLine(theme, theme.fg("error", ` Error: ${error}`), innerWidth),
+        borderedLine(theme, theme.fg("error", ` Error: ${detail}`), innerWidth),
       );
       lines.push(borderedLine(theme, "", innerWidth));
       lines.push(...renderFooter(innerWidth, ["esc cancel"]));
-      return lines;
-    }
-
-    const candidates = getCandidates();
-    selectedIndex = Math.min(selectedIndex, Math.max(0, candidates.length - 1));
-
-    if (candidates.length === 0) {
+    } else {
       lines.push(
         borderedLine(
           theme,
-          theme.fg("dim", " No bookmarks yet. Type to create one."),
+          theme.fg("dim", detail ?? " No bookmarks yet. Type to create one."),
           innerWidth,
         ),
       );
       lines.push(borderedLine(theme, "", innerWidth));
       lines.push(
-        ...renderFooter(innerWidth, [
-          "type bookmark",
-          "enter set",
-          "esc cancel",
-        ]),
+        ...renderFooter(
+          innerWidth,
+          footerHelp ?? ["type bookmark", "enter set", "esc cancel"],
+        ),
       );
-      return lines;
     }
+    return lines;
+  }
 
-    // Render candidates list (max 5 visible)
+  function renderCandidateRows(
+    candidates: string[],
+    innerWidth: number,
+    query: string,
+  ): string[] {
+    const lines: string[] = [];
     const maxVisible = 5;
     let startIdx = 0;
     if (selectedIndex >= maxVisible) startIdx = selectedIndex - maxVisible + 1;
@@ -197,12 +185,10 @@ export function createBookmarkPromptComponent(
       }
     }
 
-    // Fill remaining slots if less than maxVisible
     for (let i = visibleCount; i < maxVisible; i++) {
       lines.push(borderedLine(theme, "", innerWidth));
     }
 
-    // Scroll indicator
     if (candidates.length > maxVisible) {
       const countText = theme.fg(
         "dim",
@@ -211,6 +197,36 @@ export function createBookmarkPromptComponent(
       lines.push(borderedLine(theme, countText, innerWidth));
     }
 
+    return lines;
+  }
+
+  function render(width: number): string[] {
+    const lines: string[] = [];
+    const innerWidth = width - 2;
+    const query = input.getValue().trim();
+
+    lines.push(topBorderWithTitle(theme, " Set Bookmark ", innerWidth));
+
+    const inputValue = input.getValue();
+    const cursor = theme.fg("accent", "▏");
+    lines.push(borderedLine(theme, ` 󰃀  ${inputValue}${cursor}`, innerWidth));
+    lines.push(horizontalSeparator(theme, innerWidth));
+
+    if (loading) {
+      return [...lines, ...renderEmptyState(innerWidth, "loading")];
+    }
+    if (error) {
+      return [...lines, ...renderEmptyState(innerWidth, "error", error)];
+    }
+
+    const candidates = getCandidates();
+    selectedIndex = Math.min(selectedIndex, Math.max(0, candidates.length - 1));
+
+    if (candidates.length === 0) {
+      return [...lines, ...renderEmptyState(innerWidth, "empty")];
+    }
+
+    lines.push(...renderCandidateRows(candidates, innerWidth, query));
     lines.push(
       ...renderFooter(innerWidth, [
         "↑↓ nav",

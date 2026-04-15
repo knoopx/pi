@@ -10,10 +10,33 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
+import type { SymbolReferenceActionType } from "./symbol-references";
 import { createFilePreviewLoader } from "./preview-utils";
 import { getFileIcon } from "./file-icons";
 import { notifyMutation } from "../jj";
-import type { SymbolReferenceActionType } from "./symbol-references";
+import type { StatSyncFn } from "node:fs";
+
+function getMtimeSorter(
+  cwd: string,
+  statSync: StatSyncFn,
+  join: (a: string, b: string) => string,
+) {
+  return (a: FileInfo, b: FileInfo) => {
+    let mtimeA = 0;
+    let mtimeB = 0;
+    try {
+      mtimeA = statSync(join(cwd, a.path)).mtimeMs;
+    } catch {
+      /* use default */
+    }
+    try {
+      mtimeB = statSync(join(cwd, b.path)).mtimeMs;
+    } catch {
+      /* use default */
+    }
+    return mtimeB - mtimeA;
+  };
+}
 
 interface FileInfo extends ListPickerItem {
   path: string;
@@ -41,7 +64,9 @@ export function createFilesComponent(
 
   // Wrapper to close picker with action metadata
   function doneWithAction(item: FileInfo | null): void {
-    if (item && pendingAction) done({ file: item, action: pendingAction }); else if (item) done({ file: item }); else {
+    if (item && pendingAction) done({ file: item, action: pendingAction });
+    else if (item) done({ file: item });
+    else {
       done(null);
     }
     pendingAction = undefined;
@@ -53,15 +78,12 @@ export function createFilesComponent(
     [Key.ctrl("d"), "delete"],
     [Key.ctrl("u"), "used-by"],
   ];
-
-  // Internal done handler that wraps results
   const internalDone = (item: FileInfo | null) => {
-    if (item) done({ file: item }); else {
+    if (item) done({ file: item });
+    else {
       done(null);
     }
   };
-
-  // Split selected files into new change
   const splitFiles = async (
     focusedItem: FileInfo | null,
     notify?: (msg: string, type?: "info" | "error") => void,
@@ -116,6 +138,32 @@ export function createFilesComponent(
 
   let pickerInstance: ListPickerComponent | null = null;
 
+  const handleSelect = (item: FileInfo) => {
+    if (selectedFiles.has(item.path)) selectedFiles.delete(item.path);
+    else selectedFiles.add(item.path);
+  };
+
+  const loadItemsWithMtime = async (_query: string): Promise<FileInfo[]> => {
+    const result = await pi.exec(
+      "rg",
+      ["--files", "--hidden", "-g", "!node_modules", "-g", "!.git"],
+      { cwd },
+    );
+
+    if (result.code !== 0)
+      throw new Error(`Failed to load files: ${result.stderr}`);
+
+    const { statSync } = await import("node:fs");
+    const { join } = await import("node:path");
+
+    return result.stdout
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((path) => ({ id: path, label: path, path }))
+      .sort(getMtimeSorter(cwd, statSync, join));
+  };
+
   const picker = createListPicker<FileInfo>(
     pi,
     tui,
@@ -133,10 +181,8 @@ export function createFilesComponent(
         {
           key: "space",
           label: "select",
-          handler(item: FileInfo) {
-            if (selectedFiles.has(item.path)) selectedFiles.delete(item.path); else {
-              selectedFiles.add(item.path);
-            }
+          handler(item) {
+            handleSelect(item);
             picker.invalidate();
             tui.requestRender();
           },
@@ -144,7 +190,7 @@ export function createFilesComponent(
         {
           key: Key.ctrl("s"),
           label: "split",
-          handler(item: FileInfo) {
+          handler(item) {
             void splitFiles(item, pickerInstance?.notify);
           },
         },
@@ -152,43 +198,7 @@ export function createFilesComponent(
       async onEdit(item) {
         await pi.exec("editor", [item.path], { cwd });
       },
-      async loadItems(_query) {
-        const result = await pi.exec(
-          "rg",
-          ["--files", "--hidden", "-g", "!node_modules", "-g", "!.git"],
-          { cwd },
-        );
-
-        if (result.code !== 0) throw new Error(`Failed to load files: ${result.stderr}`);
-
-        const { statSync } = await import("node:fs");
-        const { join } = await import("node:path");
-
-        const parsedFiles = result.stdout
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean)
-          .map((path) => ({ id: path, label: path, path }));
-
-        return parsedFiles.sort((a, b) => {
-          let mtimeA: number;
-          let mtimeB: number;
-
-          try {
-            mtimeA = statSync(join(cwd, a.path)).mtimeMs;
-          } catch {
-            mtimeA = 0;
-          }
-
-          try {
-            mtimeB = statSync(join(cwd, b.path)).mtimeMs;
-          } catch {
-            mtimeB = 0;
-          }
-
-          return mtimeB - mtimeA;
-        });
-      },
+      loadItems: loadItemsWithMtime,
       filterItems: (items, query) =>
         items.filter((item) => item.path.toLowerCase().includes(query)),
       formatItem(item, width, theme) {

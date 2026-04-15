@@ -225,62 +225,83 @@ export function createWorkspacesComponent(
   }
   async function executeAction(action: string): Promise<void> {
     if (!selectedWorkspace) return;
-    const ws = selectedWorkspace;
+
     try {
-      switch (action) {
-        case "attach": {
-          done();
-          if (process.env.TMUX) {
-            await pi.exec("tmux", ["switch-client", "-t", ws.name]);
-            break;
-          }
-          const terminalResult = await pi.exec("wezterm", [
-            "start",
-            "--",
-            "tmux",
-            "attach",
-            "-t",
-            ws.name,
-          ]);
-          if (terminalResult.code !== 0)
-            await pi.exec("tmux", ["attach", "-t", ws.name]);
-          break;
-        }
-        case "rebase": {
-          done();
-          const task = `Integrate changes from workspace "${ws.name}":
-1. List changed files: \`jj diff --summary -r ${ws.name}@\`
-2. Review specific files if needed: \`jj diff -r ${ws.name}@ <file>\`
-3. Rebase onto current: \`jj rebase -s ${ws.name}@ -d @\`
-4. Squash into parent: \`jj squash -r ${ws.name}@\`
-5. Set description: \`jj desc -m "type(scope): description"\`
-Types: feat, fix, docs, style, refactor, perf, test, chore`;
-          pi.sendUserMessage(task);
-          return;
-        }
-        case "edit":
-          await pi.exec("editor", [ws.path]);
-          break;
-        case "terminal":
-          await pi.exec("terminal", [ws.path]);
-          break;
-        case "kill":
-          await killTmuxSession(pi, ws.name);
-          workspaceCache.delete(ws.name);
-          await loadWorkspaces();
-          break;
-        case "forget":
-          await forgetWorkspace(pi, ws.name);
-          workspaceCache.delete(ws.name);
-          await loadWorkspaces();
-          break;
-      }
+      await handleWorkspaceAction(action, selectedWorkspace);
     } catch (error) {
       const msg = formatErrorMessage(error);
       diffContent = [`Error: ${msg}`];
     }
     invalidate();
     tui.requestRender();
+  }
+
+  async function handleWorkspaceAction(
+    action: string,
+    ws: AgentWorkspace,
+  ): Promise<void> {
+    switch (action) {
+      case "attach":
+        await handleAttach(ws);
+        break;
+      case "rebase":
+        handleRebase(ws);
+        break;
+      case "edit":
+        await pi.exec("editor", [ws.path]);
+        break;
+      case "terminal":
+        await pi.exec("terminal", [ws.path]);
+        break;
+      case "kill":
+        await handleKill(ws);
+        break;
+      case "forget":
+        await handleForget(ws);
+        break;
+    }
+  }
+
+  async function handleAttach(ws: AgentWorkspace): Promise<void> {
+    done();
+    if (process.env.TMUX) {
+      await pi.exec("tmux", ["switch-client", "-t", ws.name]);
+      return;
+    }
+    const terminalResult = await pi.exec("wezterm", [
+      "start",
+      "--",
+      "tmux",
+      "attach",
+      "-t",
+      ws.name,
+    ]);
+    if (terminalResult.code !== 0)
+      await pi.exec("tmux", ["attach", "-t", ws.name]);
+  }
+
+  function handleRebase(ws: AgentWorkspace): void {
+    done();
+    const task = `Integrate changes from workspace "${ws.name}":
+1. List changed files: \`jj diff --summary -r ${ws.name}@\`
+2. Review specific files if needed: \`jj diff -r ${ws.name}@ <file>\`
+3. Rebase onto current: \`jj rebase -s ${ws.name}@ -d @\`
+4. Squash into parent: \`jj squash -r ${ws.name}@\`
+5. Set description: \`jj desc -m "type(scope): description"\`
+Types: feat, fix, docs, style, refactor, perf, test, chore`;
+    pi.sendUserMessage(task);
+  }
+
+  async function handleKill(ws: AgentWorkspace): Promise<void> {
+    await killTmuxSession(pi, ws.name);
+    workspaceCache.delete(ws.name);
+    await loadWorkspaces();
+  }
+
+  async function handleForget(ws: AgentWorkspace): Promise<void> {
+    await forgetWorkspace(pi, ws.name);
+    workspaceCache.delete(ws.name);
+    await loadWorkspaces();
   }
   function invalidate(): void {
     cachedLines = [];
@@ -444,7 +465,6 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
     const msg = `Restored file ${file.path} in workspace ${selectedWorkspace.name}`;
     notifyMutation(pi, msg, restoreResult.stderr || restoreResult.stdout);
   };
-  // Navigate workspaces
   const navigateWorkspace = (
     direction: "up" | "down" | "pageUp" | "pageDown",
   ) => {
@@ -465,8 +485,6 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
       tui.requestRender();
     }
   };
-
-  // Navigate files
   const navigateFile = (direction: "up" | "down" | "pageUp" | "pageDown") => {
     if (!selectedWorkspace) return;
     const isDefault = isDefaultWs();
@@ -656,26 +674,26 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
     },
   ];
   function getHelpText(): string {
-    const bindings =
+    const bindings: KeyBinding[] =
       focus === "workspaces"
         ? [...globalBindings, ...workspaceActionBindings, ...leftPaneBindings]
         : [...globalBindings, ...rightPaneBindings];
-    const activeBindings = filterActiveBindings(bindings as any, undefined);
-    return buildHelpFromBindings(activeBindings as any);
+    const activeBindings = filterActiveBindings(bindings);
+    return buildHelpFromBindings(activeBindings);
   }
   const leftHandler = createKeyboardHandler({
     bindings: [
-      ...(globalBindings as any),
-      ...(workspaceActionBindings as any),
-      ...(leftPaneBindings as any),
-    ],
+      ...globalBindings,
+      ...workspaceActionBindings,
+      ...leftPaneBindings,
+    ] as KeyBinding[],
   });
   const rightHandler = createKeyboardHandler({
     bindings: [
-      ...(globalBindings as any),
-      ...(workspaceActionBindings as any),
-      ...(rightPaneBindings as any),
-    ],
+      ...globalBindings,
+      ...workspaceActionBindings,
+      ...rightPaneBindings,
+    ] as KeyBinding[],
   });
   function handleInput(data: string): void {
     if (isLeftFocus()) leftHandler(data);

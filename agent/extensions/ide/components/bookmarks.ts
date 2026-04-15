@@ -56,7 +56,8 @@ function groupBookmarksByChange(
 
   for (const entry of entries) {
     const existing = byChange.get(entry.changeId);
-    if (existing) existing.bookmarks.push(entry.bookmark); else {
+    if (existing) existing.bookmarks.push(entry.bookmark);
+    else {
       byChange.set(entry.changeId, {
         bookmarks: [entry.bookmark],
         description: entry.description,
@@ -91,15 +92,79 @@ function groupBookmarksByChange(
 }
 
 import { ACTION_KEYS, createKeyboardHandler } from "../keyboard";
+import type { BookmarkFilterMode } from "../types";
 
-// Filter modes for bookmarks (cycle order)
 const BOOKMARK_FILTER_MODES = [
   "all",
   "bookmarks",
   "descriptions",
   "authors",
 ] as const;
-type BookmarkFilterMode = (typeof BOOKMARK_FILTER_MODES)[number];
+
+function filterBookmarks(
+  items: BookmarkEntry[],
+  query: string,
+  mode: BookmarkFilterMode,
+): BookmarkEntry[] {
+  const lowerQuery = query.toLowerCase();
+  if (mode === "bookmarks")
+    return items.filter((item) =>
+      item.bookmarks.some((b) => b.toLowerCase().includes(lowerQuery)),
+    );
+  if (mode === "descriptions")
+    return items.filter((item) =>
+      item.description.toLowerCase().includes(lowerQuery),
+    );
+  if (mode === "authors")
+    return items.filter((item) =>
+      item.author.toLowerCase().includes(lowerQuery),
+    );
+  return items.filter(
+    (item) =>
+      item.bookmarks.some((b) => b.toLowerCase().includes(lowerQuery)) ||
+      item.description.toLowerCase().includes(lowerQuery) ||
+      item.author.toLowerCase().includes(lowerQuery),
+  );
+}
+
+function createToggleFilterBinding(filterRef: { value: BookmarkFilterMode }) {
+  return {
+    key: Key.ctrl("/"),
+    handler() {
+      const currentIndex = BOOKMARK_FILTER_MODES.indexOf(filterRef.value);
+      const nextIndex = (currentIndex + 1) % BOOKMARK_FILTER_MODES.length;
+      filterRef.value = BOOKMARK_FILTER_MODES[nextIndex];
+    },
+  };
+}
+
+function formatBookmarkLine(
+  item: BookmarkEntry,
+  width: number,
+  theme: Theme,
+): string {
+  const bookmarkLabels = item.displayNames
+    .map((name) => formatBookmarkReference(theme, name))
+    .join(" ");
+  const sep = " · ";
+  const author = item.author || "";
+  const bookmarkLen = item.displayNames.reduce(
+    (sum, n) => sum + n.length + 5,
+    0,
+  );
+  const fixedLen = bookmarkLen + sep.length + author.length + sep.length;
+  const maxDescLen = Math.max(10, width - fixedLen);
+  const desc =
+    item.description.length > maxDescLen
+      ? `${item.description.slice(0, maxDescLen - 1)}…`
+      : item.description;
+
+  const styledSep = theme.fg("dim", sep);
+  const styledDesc = theme.fg("dim", desc);
+  const styledAuthor = author ? theme.fg("dim", author) : "";
+  const parts = [bookmarkLabels, styledDesc, styledAuthor].filter(Boolean);
+  return parts.join(styledSep);
+}
 
 export function createBookmarksComponent(
   pi: ExtensionAPI,
@@ -113,7 +178,7 @@ export function createBookmarksComponent(
   // Picker reference for reload in actions
   let pickerRef: ListPickerComponent | null = null;
   // Current filter mode (defaults to all)
-  let currentFilterMode: BookmarkFilterMode = "all";
+  const filterModeRef = { value: "all" as BookmarkFilterMode };
 
   const actions: ListPickerAction<BookmarkEntry>[] = [
     {
@@ -202,83 +267,15 @@ export function createBookmarksComponent(
       previewTitle: (item) =>
         item.displayNames[0] ?? item.changeId.slice(0, 12),
       actions,
-      async loadItems(_query) {
-        const entries = await listBookmarksByChange(pi, cwd);
-        return groupBookmarksByChange(entries);
-      },
-      filterItems(items, query) {
-        const lowerQuery = query.toLowerCase();
-        switch (currentFilterMode) {
-          case "all":
-            return items.filter(
-              (item) =>
-                item.bookmarks.some((b) =>
-                  b.toLowerCase().includes(lowerQuery),
-                ) ||
-                item.description.toLowerCase().includes(lowerQuery) ||
-                item.author.toLowerCase().includes(lowerQuery),
-            );
-          case "bookmarks":
-            return items.filter((item) =>
-              item.bookmarks.some((b) => b.toLowerCase().includes(lowerQuery)),
-            );
-          case "descriptions":
-            return items.filter((item) =>
-              item.description.toLowerCase().includes(lowerQuery),
-            );
-          case "authors":
-            return items.filter((item) =>
-              item.author.toLowerCase().includes(lowerQuery),
-            );
-          default:
-            return items;
-        }
-      },
+      loadItems: async () =>
+        groupBookmarksByChange(await listBookmarksByChange(pi, cwd)),
+      filterItems: (items, query) =>
+        filterBookmarks(items, query, filterModeRef.value),
       onKey: createKeyboardHandler({
-        bindings: [
-          {
-            key: Key.ctrl("/"),
-            handler() {
-              const currentIndex =
-                BOOKMARK_FILTER_MODES.indexOf(currentFilterMode);
-              const nextIndex =
-                (currentIndex + 1) % BOOKMARK_FILTER_MODES.length;
-              currentFilterMode = BOOKMARK_FILTER_MODES[nextIndex];
-              void picker.reload();
-              notifyMutation(pi, "info", `Filter: ${currentFilterMode}`);
-            },
-          },
-        ],
+        bindings: [createToggleFilterBinding(filterModeRef)],
       }),
-      formatItem(item, width, theme) {
-        const bookmarkLabels = item.displayNames
-          .map((name) => formatBookmarkReference(theme, name))
-          .join(" ");
-        const sep = " · ";
-        const author = item.author || "";
-
-        // Calculate available space for description
-        const bookmarkLen = item.displayNames.reduce(
-          (sum, n) => sum + n.length + 5,
-          0,
-        );
-        const fixedLen = bookmarkLen + sep.length + author.length + sep.length;
-        const maxDescLen = Math.max(10, width - fixedLen);
-        const desc =
-          item.description.length > maxDescLen
-            ? `${item.description.slice(0, maxDescLen - 1)}…`
-            : item.description;
-
-        const styledSep = theme.fg("dim", sep);
-        const styledDesc = theme.fg("dim", desc);
-        const styledAuthor = author ? theme.fg("dim", author) : "";
-
-        const parts = [bookmarkLabels, styledDesc, styledAuthor].filter(
-          Boolean,
-        );
-        return parts.join(styledSep);
-      },
-      async loadPreview(item) {
+      formatItem: (item, width, t) => formatBookmarkLine(item, width, t),
+      loadPreview: async (item) => {
         const { diff } = await getRawDiff(pi, cwd, item.changeId);
         const theme = await getTheme(pi, cwd);
         return renderDiffWithShiki(diff, theme);

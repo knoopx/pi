@@ -93,7 +93,6 @@ export function createChangesComponent(
   let leftListHeight = 0;
   let rightListHeight = 0;
 
-  // Move mode state
   let mode: "normal" | "move" = "normal";
   let moveOriginalIndex = -1;
   let moveOriginalChanges: Change[] = [];
@@ -609,25 +608,24 @@ Use the **sem** skill to understand actual code changes vs cosmetic modification
     const matchedIndex = changes.findIndex(
       (change) => change.changeId === selectedChange?.changeId,
     );
-    if (matchedIndex >= 0) {
-      selectionState.selectedIndex = matchedIndex;
-      selectedChange = changes[matchedIndex];
-      files = await loadChangedFiles(pi, cwd, selectedChange.changeId);
-      const cache = createComponentCache(files);
-      changeCache.set(selectedChange.changeId, cache);
-      selectionState.fileIndex = Math.min(
-        selectionState.fileIndex,
-        files.length - 1,
-      );
-      if (files[selectionState.fileIndex]) {
-        await loadDiff(selectedChange, files[selectionState.fileIndex].path, {
-          preserveScroll: true,
-        });
-      }
-    } else {
+    if (matchedIndex < 0) {
       selectionState.selectedIndex = 0;
       selectedChange = changes[0];
       await loadFilesAndDiff(selectedChange);
+      return;
+    }
+    selectionState.selectedIndex = matchedIndex;
+    selectedChange = changes[matchedIndex];
+    files = await loadChangedFiles(pi, cwd, selectedChange.changeId);
+    const cache = createComponentCache(files);
+    changeCache.set(selectedChange.changeId, cache);
+    selectionState.fileIndex = Math.min(
+      selectionState.fileIndex,
+      files.length - 1,
+    );
+    const file = files[selectionState.fileIndex];
+    if (file) {
+      await loadDiff(selectedChange, file.path, { preserveScroll: true });
     }
   }
 
@@ -642,30 +640,20 @@ Use the **sem** skill to understand actual code changes vs cosmetic modification
   }
 
   async function loadFilesAndDiff(change: Change): Promise<void> {
+    if (!selectedChange) return;
+
     try {
-      if (!selectedChange) return;
-      let cache = changeCache.get(selectedChange.changeId);
-      if (cache) {
-        files = cache.files;
+      const cacheResult = getCachedFileCache(selectedChange.changeId);
+      if (cacheResult.hit && cacheResult.files) {
+        files = cacheResult.files;
         selectionState.fileIndex = 0;
-        const diffKey = files[0]?.path ?? "";
-        const cachedDiff = cache.diffs.get(diffKey);
-        if (cachedDiff) {
-          diffContent = cachedDiff;
-          selectionState.diffScroll = 0;
-          invalidateCache(loadingState);
-          tui.requestRender();
-          return;
-        }
+        await applyCachedDiff(cacheResult.cachedDiff);
+      } else {
+        const newCache = await loadAndCacheFiles(change.changeId);
+        files = newCache.files;
+        selectionState.fileIndex = 0;
       }
 
-      if (!cache) {
-        files = await loadChangedFiles(pi, cwd, change.changeId);
-        cache = createComponentCache(files);
-        changeCache.set(selectedChange.changeId, cache);
-      }
-
-      selectionState.fileIndex = 0;
       await loadDiff(change, files[0]?.path);
     } catch (error) {
       const msg = formatErrorMessage(error);
@@ -674,6 +662,36 @@ Use the **sem** skill to understand actual code changes vs cosmetic modification
       invalidateCache(loadingState);
       tui.requestRender();
     }
+  }
+
+  function applyCachedDiff(cachedDiff?: string[]): void {
+    if (!cachedDiff) return;
+    diffContent = cachedDiff;
+    selectionState.diffScroll = 0;
+    invalidateCache(loadingState);
+    tui.requestRender();
+  }
+
+  function getCachedFileCache(changeId: string): {
+    hit: boolean;
+    files?: FileChange[];
+    cachedDiff?: string[] | undefined;
+  } {
+    const cache = changeCache.get(changeId);
+    if (!cache) return { hit: false };
+    const files = cache.files;
+    const diffKey = files[0]?.path ?? "";
+    return { hit: true, files, cachedDiff: cache.diffs.get(diffKey) };
+  }
+
+  async function loadAndCacheFiles(changeId: string): Promise<{
+    files: FileChange[];
+    cache: ReturnType<typeof createComponentCache>;
+  }> {
+    const loaded = await loadChangedFiles(pi, cwd, changeId);
+    const cache = createComponentCache(loaded);
+    changeCache.set(changeId, cache);
+    return { files: loaded, cache };
   }
 
   async function loadDiff(
@@ -1010,14 +1028,9 @@ Use the **sem** skill to understand actual code changes vs cosmetic modification
     if (!selectedChange) return;
     const bookmarks = bookmarksByChange.get(selectedChange.changeId) ?? [];
     if (bookmarks.length === 0) return;
+
     try {
-      const pushOutputs: string[] = [];
-      for (const bookmark of bookmarks) {
-        const r = await pi.exec("jj", ["git", "push", "-b", bookmark], {
-          cwd,
-        });
-        pushOutputs.push(r.stderr || r.stdout);
-      }
+      const pushOutputs = await pushBookmarkList(bookmarks);
       await reloadChanges();
       invalidateCache(loadingState);
       tui.requestRender();
@@ -1026,6 +1039,15 @@ Use the **sem** skill to understand actual code changes vs cosmetic modification
     } catch (error) {
       notify(`Failed to push: ${formatErrorMessage(error)}`, "error");
     }
+  }
+
+  async function pushBookmarkList(bookmarks: string[]): Promise<string[]> {
+    const outputs: string[] = [];
+    for (const bookmark of bookmarks) {
+      const r = await pi.exec("jj", ["git", "push", "-b", bookmark], { cwd });
+      outputs.push(r.stderr || r.stdout);
+    }
+    return outputs;
   }
 
   async function setBookmark(): Promise<void> {
@@ -1132,15 +1154,13 @@ Use the **sem** skill to understand actual code changes vs cosmetic modification
       label: "select",
       when: hasSelectedChange,
       handler() {
-        if (selectedChange) {
-          if (selectedChangeIds.has(selectedChange.changeId))
-            selectedChangeIds.delete(selectedChange.changeId);
-          else {
-            selectedChangeIds.add(selectedChange.changeId);
-          }
-          invalidateCache(loadingState);
-          tui.requestRender();
-        }
+        if (!selectedChange) return;
+        const id = selectedChange.changeId;
+        selectedChangeIds.has(id)
+          ? selectedChangeIds.delete(id)
+          : selectedChangeIds.add(id);
+        invalidateCache(loadingState);
+        tui.requestRender();
       },
     },
     {
@@ -1368,26 +1388,23 @@ Use the **sem** skill to understand actual code changes vs cosmetic modification
 
   function getHelpText(): string {
     const bindings = getBindingsForModeOrPane();
-    const activeBindings = filterActiveBindings(
-      bindings as KeyBinding<undefined>[],
-      undefined as any,
-    );
-    return buildHelpFromBindings(activeBindings as any);
+    const activeBindings = filterActiveBindings(bindings);
+    return buildHelpFromBindings(activeBindings);
   }
 
   function getBindingsForModeOrPane(): KeyBinding[] {
     if (mode === "move") return moveModeBindings;
     if (selectionState.focus === "left")
-      return [...(globalBindings as any), ...(leftPaneBindings as any)];
-    return [...(globalBindings as any), ...(rightPaneBindings as any)];
+      return [...globalBindings, ...leftPaneBindings];
+    return [...globalBindings, ...rightPaneBindings];
   }
 
   const moveModeHandler = createKeyboardHandler({ bindings: moveModeBindings });
   const leftPaneHandler = createKeyboardHandler({
-    bindings: [...(globalBindings as any), ...(leftPaneBindings as any)],
+    bindings: [...globalBindings, ...leftPaneBindings] as KeyBinding[],
   });
   const rightPaneHandler = createKeyboardHandler({
-    bindings: [...(globalBindings as any), ...(rightPaneBindings as any)],
+    bindings: [...globalBindings, ...rightPaneBindings] as KeyBinding[],
   });
 
   function handleInput(data: string): void {

@@ -24,6 +24,22 @@ function safeFsOperation<T>(operation: () => T, fallback: T): T {
   }
 }
 
+function handleResponse(
+  res: http.IncomingMessage,
+  data: string,
+  resolve: (value: HttpResponse) => void,
+): void {
+  const ok = Boolean(
+    res.statusCode && res.statusCode >= 200 && res.statusCode < 300,
+  );
+  try {
+    const jsonData = data ? JSON.parse(data) : {};
+    resolve({ ok, status: res.statusCode, json: async () => jsonData });
+  } catch {
+    resolve({ ok, status: res.statusCode, json: async () => ({}) });
+  }
+}
+
 async function nodeFetch(
   url: string,
   options: FetchOptions = {},
@@ -47,26 +63,7 @@ async function nodeFetch(
         data += chunk;
       });
 
-      res.on("end", () => {
-        try {
-          const jsonData = data ? JSON.parse(data) : {};
-          resolve({
-            ok: Boolean(
-              res.statusCode && res.statusCode >= 200 && res.statusCode < 300,
-            ),
-            status: res.statusCode,
-            json: async () => jsonData,
-          });
-        } catch {
-          resolve({
-            ok: Boolean(
-              res.statusCode && res.statusCode >= 200 && res.statusCode < 300,
-            ),
-            status: res.statusCode,
-            json: async () => ({}),
-          });
-        }
-      });
+      res.on("end", () => handleResponse(res, data, resolve));
     });
 
     req.on("error", (error) => {

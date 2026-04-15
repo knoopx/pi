@@ -129,7 +129,7 @@ describe("graph", () => {
           expect(result.maxX).toBe(1);
         });
 
-        it("then adds branch-out edges on merge row", () => {
+        it("adds branch-out edges on merge row", () => {
           const mergeEdges = result.edges[0];
           const hasRightDown = mergeEdges.some(
             (e) => e.type === EdgeType.RightDown,
@@ -471,10 +471,10 @@ describe("graph", () => {
         it("then produces expected visual output", () => {
           const rows = renderGraphRows(simpleMergeNodes, layout);
 
-          expect(rows[0]).toBe("◆─╮"); // merge with branch
-          expect(rows[1]).toBe("◆ │"); // A with lane 1 continuing
-          expect(rows[2]).toBe("│ ◆"); // B at lane 1
-          expect(rows[3]).toBe("◆ ╯"); // root with merge-in
+          expect(rows[0]).toBe("◆─╮");
+          expect(rows[1]).toBe("◆ │");
+          expect(rows[2]).toBe("│ ◆");
+          expect(rows[3]).toBe("◆ ╯");
         });
       });
     });
@@ -524,11 +524,11 @@ describe("graph", () => {
         it("then renders coherent graph", () => {
           const rows = renderGraphRows(nodes, layout);
 
-          expect(rows[0]).toBe("◉"); // head (working copy)
-          expect(rows[1]).toBe("◆─╮"); // m1 with branch
-          expect(rows[2]).toBe("◆ │"); // a with lane 1
-          expect(rows[3]).toBe("│ ◆"); // b at lane 1
-          expect(rows[4]).toBe("◆ ╯"); // base with merge-in
+          expect(rows[0]).toBe("◉");
+          expect(rows[1]).toBe("◆─╮");
+          expect(rows[2]).toBe("◆ │");
+          expect(rows[3]).toBe("│ ◆");
+          expect(rows[4]).toBe("◆ ╯");
         });
       });
     });
