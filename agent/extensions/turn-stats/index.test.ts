@@ -12,7 +12,9 @@ import {
   formatCost,
   formatSimpleOutput,
   formatTokensPerSecond,
+  formatAggregateOutput,
 } from "./index";
+import type { AggregateStats } from "./index";
 
 /**
  * Helper to create a Usage object for tests
@@ -416,31 +418,35 @@ describe("formatTokensPerSecond", () => {
 describe("formatSimpleOutput", () => {
   describe("given only output tokens and duration (no generation time)", () => {
     describe("when formatting output: 1900, duration: 36000ms (36s)", () => {
-      it("then it should return '↓1.9K | 36s' (no tok/s without generation time)", () => {
-        expect(formatSimpleOutput(1900, 36000, undefined)).toBe("↓1.9K | 36s");
+      it("then it should return '↓1.9K |  36s' (no tok/s without generation time)", () => {
+        expect(formatSimpleOutput(1900, 36000, undefined)).toBe(
+          "↓1.9K |  36s",
+        );
       });
     });
 
     describe("when formatting output: 500, duration: 92000ms (1m 32s)", () => {
-      it("then it should return '↓500 | 1m 32s' (no tok/s without generation time)", () => {
-        expect(formatSimpleOutput(500, 92000, undefined)).toBe("↓500 | 1m 32s");
+      it("then it should return '↓500 |  1m 32s' (no tok/s without generation time)", () => {
+        expect(formatSimpleOutput(500, 92000, undefined)).toBe(
+          "↓500 |  1m 32s",
+        );
       });
     });
   });
 
   describe("given output tokens, duration, and generation time", () => {
     describe("when formatting output: 1900, duration: 36000ms, generation: 30000ms", () => {
-      it("then it should return '↓1.9K | 36s | 63.3 tok/s'", () => {
+      it("then it should return '↓1.9K |  36s |  63.3 tok/s'", () => {
         expect(formatSimpleOutput(1900, 36000, undefined, 30000)).toBe(
-          "↓1.9K | 36s | 63.3 tok/s",
+          "↓1.9K |  36s |  63.3 tok/s",
         );
       });
     });
 
     describe("when formatting output: 500, duration: 92000ms, generation: 80000ms", () => {
-      it("then it should return '↓500 | 1m 32s | 6.3 tok/s'", () => {
+      it("then it should return '↓500 |  1m 32s |  6.3 tok/s'", () => {
         expect(formatSimpleOutput(500, 92000, undefined, 80000)).toBe(
-          "↓500 | 1m 32s | 6.3 tok/s",
+          "↓500 |  1m 32s |  6.3 tok/s",
         );
       });
     });
@@ -448,7 +454,7 @@ describe("formatSimpleOutput", () => {
 
   describe("given output tokens, duration, generation time, and cost", () => {
     describe("when formatting output: 1900, duration: 36000ms, generation: 30000ms, total cost: $0.01", () => {
-      it("then it should return '↓1.9K | 36s | 63.3 tok/s | $0.01'", () => {
+      it("then it should return '↓1.9K |  36s |  63.3 tok/s | $0.01'", () => {
         expect(
           formatSimpleOutput(
             1900,
@@ -469,7 +475,7 @@ describe("formatSimpleOutput", () => {
             },
             30000,
           ),
-        ).toBe("↓1.9K | 36s | 63.3 tok/s | $0.01");
+        ).toBe("↓1.9K |  36s |  63.3 tok/s | $0.01");
       });
     });
 
@@ -495,7 +501,7 @@ describe("formatSimpleOutput", () => {
             }),
             80000,
           ),
-        ).toBe("↓500 | 1m 32s | 6.3 tok/s | $0.01");
+        ).toBe("↓500 |  1m 32s |  6.3 tok/s | $0.01");
       });
     });
 
@@ -521,7 +527,7 @@ describe("formatSimpleOutput", () => {
             }),
             4000,
           ),
-        ).toBe("↓1.2K | 5s | 308.5 tok/s");
+        ).toBe("↓1.2K |  5s |  308.5 tok/s");
       });
     });
   });
@@ -549,7 +555,7 @@ describe("formatSimpleOutput", () => {
             }),
             8000,
           ),
-        ).toBe("↓500 | 10s | 62.5 tok/s");
+        ).toBe("↓500 |  10s |  62.5 tok/s");
       });
     });
 
@@ -575,14 +581,14 @@ describe("formatSimpleOutput", () => {
             }),
             8000,
           ),
-        ).toBe("↓500 | 10s | 62.5 tok/s | $0.01");
+        ).toBe("↓500 |  10s |  62.5 tok/s | $0.01");
       });
     });
   });
 
   describe("given undefined output tokens", () => {
     describe("when formatting undefined output, duration: 36000ms, cost: $0.01", () => {
-      it("then it should return '↓N/A | 36s | $0.01'", () => {
+      it("then it should return '↓N/A |  36s | $0.01'", () => {
         expect(
           formatSimpleOutput(
             undefined,
@@ -602,7 +608,7 @@ describe("formatSimpleOutput", () => {
               },
             }),
           ),
-        ).toBe("↓N/A | 36s | $0.01");
+        ).toBe("↓N/A |  36s | $0.01");
       });
     });
   });
@@ -639,7 +645,7 @@ describe("Turn Stats Extension Integration", () => {
           usage,
           generationMs,
         );
-        expect(result).toBe("↓1.9K | 36s | 63.3 tok/s | $0.01");
+        expect(result).toBe("↓1.9K |  36s |  63.3 tok/s | $0.01");
       });
     });
 
@@ -649,7 +655,7 @@ describe("Turn Stats Extension Integration", () => {
           const match = /↓([^|]+)/.exec(result);
           return match ? match[1].trim() : null;
         };
-        expect(tokensPart("↓1.9K | 36s | 63.3 tok/s | $0.01")).toBe("1.9K");
+        expect(tokensPart("↓1.9K |  36s |  63.3 tok/s | $0.01")).toBe("1.9K");
       });
 
       it("then duration should be formatted as '36s'", () => {
@@ -657,7 +663,9 @@ describe("Turn Stats Extension Integration", () => {
           const match = /36s/.exec(result);
           return match ? match[0] : null;
         };
-        expect(durationPart("↓1.9K | 36s | 63.3 tok/s | $0.01")).toBe("36s");
+        expect(durationPart("↓1.9K |  36s |  63.3 tok/s | $0.01")).toBe(
+          "36s",
+        );
       });
 
       it("then tok/s should be based on generation time, not duration", () => {
@@ -666,7 +674,9 @@ describe("Turn Stats Extension Integration", () => {
           const match = /(\d+\.\d+) tok\/s/.exec(result);
           return match ? match[1] : null;
         };
-        expect(tokPerSecPart("↓1.9K | 36s | 63.3 tok/s | $0.01")).toBe("63.3");
+        expect(tokPerSecPart("↓1.9K |  36s |  63.3 tok/s | $0.01")).toBe(
+          "63.3",
+        );
       });
 
       it("then cost should be formatted as '$0.01'", () => {
@@ -674,7 +684,7 @@ describe("Turn Stats Extension Integration", () => {
           const match = /\$[0-9.]+$/.exec(result);
           return match ? match[0] : null;
         };
-        expect(costPart("↓1.9K | 36s | 63.3 tok/s | $0.01")).toBe("$0.01");
+        expect(costPart("↓1.9K |  36s |  63.3 tok/s | $0.01")).toBe("$0.01");
       });
     });
   });
@@ -829,6 +839,100 @@ describe("Turn Stats Extension Integration", () => {
         );
         expect(result).toContain("$0.15");
       });
+    });
+  });
+
+  function makeAggregateStats(
+    overrides: Partial<AggregateStats> = {},
+  ): AggregateStats {
+    return {
+      turns: 1,
+      totalOutputTokens: 500,
+      totalInputTokens: 1000,
+      totalCacheReadTokens: 0,
+      totalCacheWriteTokens: 0,
+      totalTokens: 1500,
+      totalCost: {
+        input: 0.01,
+        output: 0.02,
+        cacheRead: 0,
+        cacheWrite: 0,
+        total: 0.03,
+      },
+      ...overrides,
+    };
+  }
+
+  const noCost: AggregateStats["totalCost"] = {
+    input: 0,
+    output: 0,
+    cacheRead: 0,
+    cacheWrite: 0,
+    total: 0,
+  };
+
+  describe("formatAggregateOutput", () => {
+    it("should format a single turn with cost", () => {
+      expect(
+        formatAggregateOutput(makeAggregateStats({ turns: 1 }), 36000),
+      ).toBe("󰍩 1 turn · ↑1.0K ↓500 ·  36s · $0.03");
+    });
+
+    it("should use plural 'turns' for multiple turns", () => {
+      expect(
+        formatAggregateOutput(
+          makeAggregateStats({
+            turns: 5,
+            totalOutputTokens: 1900,
+            totalInputTokens: 12300,
+            totalCost: { ...makeAggregateStats().totalCost, total: 0.05 },
+          }),
+          135000,
+        ),
+      ).toBe("󰍩 5 turns · ↑12.3K ↓1.9K ·  2m 15s · $0.05");
+    });
+
+    it("should omit cost when total is 0", () => {
+      expect(
+        formatAggregateOutput(makeAggregateStats({ totalCost: noCost }), 36000),
+      ).toBe("󰍩 1 turn · ↑1.0K ↓500 ·  36s");
+    });
+
+    it("should omit cost when total is below threshold", () => {
+      expect(
+        formatAggregateOutput(
+          makeAggregateStats({ totalCost: { ...noCost, total: 0.003 } }),
+          36000,
+        ),
+      ).toBe("󰍩 1 turn · ↑1.0K ↓500 ·  36s");
+    });
+
+    it("should format millions for large token counts", () => {
+      expect(
+        formatAggregateOutput(
+          makeAggregateStats({
+            turns: 10,
+            totalOutputTokens: 1500000,
+            totalInputTokens: 2500000,
+            totalCost: { ...makeAggregateStats().totalCost, total: 0.15 },
+          }),
+          8130000,
+        ),
+      ).toBe("󰍩 10 turns · ↑2.5M ↓1.5M ·  2h 15m 30s · $0.15");
+    });
+
+    it("should show decimal seconds for very short durations", () => {
+      expect(
+        formatAggregateOutput(
+          makeAggregateStats({
+            turns: 1,
+            totalOutputTokens: 10,
+            totalInputTokens: 20,
+            totalCost: { ...makeAggregateStats().totalCost, total: 0 },
+          }),
+          123,
+        ),
+      ).toBe("󰍩 1 turn · ↑20 ↓10 ·  0.12s");
     });
   });
 });
