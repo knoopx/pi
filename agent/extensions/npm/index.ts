@@ -80,49 +80,73 @@ async function fetchNpmPackage(
       `https://registry.npmjs.org/${encodeURIComponent(pkg)}`,
     );
 
-    if (!response.ok) {
-      if (response.status === 404)
-        return {
-          ok: false,
-          result: {
-            content: [{ type: "text", text: `Package "${pkg}" not found.` }],
-            details: { package: pkg, status: 404 },
-          },
-        };
-      return {
-        ok: false,
-        result: {
-          content: [
-            {
-              type: "text",
-              text: `Failed to ${errorContext}: ${response.statusText}`,
-            },
-          ],
-          details: {
-            package: pkg,
-            status: response.status,
-            statusText: response.statusText,
-          },
-        },
-      };
-    }
+    if (!response.ok)
+      return response.status === 404
+        ? buildNotFoundResult(pkg, errorContext)
+        : buildHttpErrorResult(pkg, errorContext, response);
 
     const data = (await response.json()) as NpmPackageResponse;
     return { ok: true, data };
   } catch (error) {
-    return {
-      ok: false,
-      result: {
-        content: [
-          {
-            type: "text",
-            text: `Error ${errorContext}: ${error instanceof Error ? error.message : String(error)}`,
-          },
-        ],
-        details: { package: pkg },
-      },
-    };
+    return buildFetchErrorResult(pkg, errorContext, error);
   }
+}
+
+function buildNotFoundResult(
+  pkg: string,
+  errorContext: string,
+): {
+  ok: false;
+  result: AgentToolResult<Record<string, unknown>>;
+} {
+  return {
+    ok: false as const,
+    result: {
+      content: [{ type: "text" as const, text: `Package "${pkg}" not found.` }],
+      details: { package: pkg, status: 404 },
+    } as AgentToolResult<Record<string, unknown>>,
+  };
+}
+
+function buildHttpErrorResult(
+  pkg: string,
+  errorContext: string,
+  response: Response,
+): {
+  ok: false;
+  result: AgentToolResult<Record<string, unknown>>;
+} {
+  const text = `Failed to ${errorContext}: ${response.statusText}`;
+  return {
+    ok: false as const,
+    result: buildTextContent(text, {
+      package: pkg,
+      status: response.status,
+      statusText: response.statusText,
+    }),
+  };
+}
+
+function buildTextContent(
+  text: string,
+  details: Record<string, unknown>,
+): AgentToolResult<Record<string, unknown>> {
+  return {
+    content: [{ type: "text" as const, text }],
+    details,
+  } as AgentToolResult<Record<string, unknown>>;
+}
+
+function buildFetchErrorResult(
+  pkg: string,
+  errorContext: string,
+  error: unknown,
+) {
+  const text = `Error ${errorContext}: ${error instanceof Error ? error.message : String(error)}`;
+  return {
+    ok: false as const,
+    result: buildTextContent(text, { package: pkg }),
+  };
 }
 
 function extractStringOrProperty(
@@ -210,20 +234,14 @@ async function searchNpmPackages(
       )}&size=${Math.min(size, 100)}`,
     );
 
-    if (!response.ok)
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Failed to search packages: ${response.statusText}`,
-          },
-        ],
-        details: {
-          query,
-          status: response.status,
-          statusText: response.statusText,
-        },
-      };
+    if (!response.ok) {
+      const text = `Failed to search packages: ${response.statusText}`;
+      return buildTextContent(text, {
+        query,
+        status: response.status,
+        statusText: response.statusText,
+      });
+    }
 
     const data = (await response.json()) as NpmSearchResponse;
     const packages = (data.objects ?? []).map((obj: NpmSearchObject) => ({
@@ -244,15 +262,8 @@ async function searchNpmPackages(
     );
     return textResult(text, { query, count: packages.length, packages });
   } catch (error) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error searching packages: ${error instanceof Error ? error.message : String(error)}`,
-        },
-      ],
-      details: { query },
-    };
+    const text = `Error searching packages: ${error instanceof Error ? error.message : String(error)}`;
+    return buildTextContent(text, { query });
   }
 }
 
