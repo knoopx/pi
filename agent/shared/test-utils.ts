@@ -87,3 +87,56 @@ export function createMockExtensionAPI(): MockExtensionAPI {
     events: {},
   };
 }
+
+/**
+ * Create a mock fetch that returns a resolved HTTP response.
+ */
+export function mockFetchResponse({
+  ok,
+  status,
+  statusText,
+  json,
+}: {
+  ok: boolean;
+  status?: number;
+  statusText?: string;
+  json?: () => Promise<unknown>;
+}): Response {
+  const init: ResponseInit = {
+    status: status ?? (ok ? 200 : 400),
+    statusText: statusText ?? "",
+  };
+  if (json) {
+    return new Response(JSON.stringify(json()), {
+      ...init,
+      headers: { "content-type": "application/json" },
+    });
+  }
+  return new Response(null, init);
+}
+
+/**
+ * Replace globalThis.fetch with a mock that resolves to the given response.
+ */
+export function setupMockFetch(
+  responses: Array<{
+    url?: string | RegExp;
+    response: Response;
+  }>,
+): void {
+  const original = globalThis.fetch;
+  globalThis.fetch = vi.fn(async (input: string | URL, _init?: RequestInit) => {
+    const url = typeof input === "string" ? input : String(input);
+    for (const { url: expectedUrl, response } of responses) {
+      if (
+        !expectedUrl ||
+        (expectedUrl instanceof RegExp
+          ? expectedUrl.test(url)
+          : url.includes(expectedUrl))
+      ) {
+        return response;
+      }
+    }
+    return original(url, _init);
+  }) as unknown as typeof globalThis.fetch;
+}
