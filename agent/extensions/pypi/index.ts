@@ -227,7 +227,6 @@ Returns matching packages with metadata.`,
         return createPypiErrorResult(
           `Failed to search packages: ${String(error)}`,
           query,
-          0,
         );
       }
     },

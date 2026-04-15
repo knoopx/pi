@@ -51,7 +51,9 @@ describe("throttledFetch", () => {
     originalFetch = globalThis.fetch;
     globalThis.fetch = vi
       .fn()
-      .mockResolvedValue(new Response("ok", { status: 200 }));
+      .mockResolvedValue(
+        new Response("ok", { status: 200 }),
+      ) as unknown as typeof fetch;
   });
 
   afterEach(() => {
