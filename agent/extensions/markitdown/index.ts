@@ -1,8 +1,119 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  AgentToolResult,
+  AgentToolUpdateCallback,
+  ExtensionContext,
+} from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
-export default function (pi: ExtensionAPI): void {
-  pi.registerTool({
+const MARKITDOWN_PATH = `${process.env.HOME}/.local/bin/markitdown`;
+
+function hasValidSignal(signal: unknown): signal is AbortSignal {
+  return (
+    signal instanceof AbortSignal &&
+    typeof (signal as AbortSignal).addEventListener === "function"
+  );
+}
+
+async function executeMarkitdown(
+  pi: ExtensionAPI,
+  source: string,
+  signal: AbortSignal | undefined,
+): Promise<ExecResult> {
+  const isRemote = /^https?:\/\//i.test(source);
+
+  if (isRemote) {
+    const command = `curl -s -A 'Mozilla/5.0' -o - '${source}' | ${MARKITDOWN_PATH}`;
+    return pi.exec(
+      "bash",
+      ["-c", command],
+      hasValidSignal(signal) ? { signal } : undefined,
+    ) as Promise<ExecResult>;
+  }
+
+  return pi.exec(
+    MARKITDOWN_PATH,
+    [source],
+    hasValidSignal(signal) ? { signal } : undefined,
+  ) as Promise<ExecResult>;
+}
+
+interface ExecResult {
+  code: number;
+  stdout: string;
+  stderr: string;
+}
+
+function buildSuccessResult(
+  source: string,
+  stdout: string,
+): AgentToolResult<Record<string, unknown>> {
+  return {
+    content: [{ type: "text" as const, text: stdout }],
+    details: { source, converted: true },
+  };
+}
+
+function buildErrorResult(
+  source: string,
+  result: { code: number; stdout?: string; stderr?: string },
+): AgentToolResult<{ source: string }> {
+  const stderr = result.stderr?.trim();
+  const stdout = result.stdout?.trim();
+  const errorMessage = [stderr, stdout, `Exit code: ${result.code}`]
+    .filter(Boolean)
+    .join("\n\n");
+
+  return {
+    content: [
+      {
+        type: "text" as const,
+        text: errorMessage || `markitdown failed with exit code ${result.code}`,
+      },
+    ],
+    details: { source } as { source: string },
+  };
+}
+
+async function executeMarkitdownTool(
+  _toolCallId: string,
+  params: { source: string },
+  signal: AbortSignal | undefined,
+  onUpdate?: AgentToolUpdateCallback<unknown> | undefined,
+  _ctx: ExtensionContext = {} as ExtensionContext,
+): Promise<AgentToolResult<{ source: string }>> {
+  const { source } = params;
+
+  try {
+    onUpdate?.({
+      content: [
+        { type: "text" as const, text: `Converting ${source} to Markdown...` },
+      ],
+      details: { source, status: "converting" },
+    });
+
+    const result = await executeMarkitdown(
+      _ctx as unknown as ExtensionAPI,
+      source,
+      signal,
+    );
+
+    if (result.code === 0)
+      return buildSuccessResult(source, result.stdout) as AgentToolResult<{
+        source: string;
+      }>;
+
+    return buildErrorResult(source, result);
+  } catch (error) {
+    return {
+      content: [{ type: "text" as const, text: `Unexpected error: ${error}` }],
+      details: { source, error: String(error) },
+    } as AgentToolResult<{ source: string }>;
+  }
+}
+
+function createTool(pi: ExtensionAPI) {
+  return {
     name: "transcribe",
     label: "Transcribe",
     description: `Convert various file formats and web content to Markdown text.
@@ -20,78 +131,10 @@ Supports URLs and local files.`,
       }),
     }),
 
-    async execute(_toolCallId, params, signal, onUpdate) {
-      const { source } = params;
+    execute: executeMarkitdownTool,
+  };
+}
 
-      try {
-        onUpdate?.({
-          content: [
-            {
-              type: "text",
-              text: `Converting ${source} to Markdown...`,
-            },
-          ],
-          details: { source, status: "converting" },
-        });
-
-        // Only pass signal if it's a valid AbortSignal with addEventListener
-        const hasValidSignal =
-          signal instanceof AbortSignal &&
-          typeof signal.addEventListener === "function";
-
-        // Detect if source is a URL (remote) and fetch with proper User-Agent
-        const isRemote = /^https?:\/\//i.test(source);
-        let result;
-
-        const markitdownPath = `${process.env.HOME}/.local/bin/markitdown`;
-
-        if (isRemote) {
-          // Use curl to fetch and pipe directly to markitdown to avoid E2BIG
-          const command = `curl -s -A 'Mozilla/5.0' -o - '${source}' | ${markitdownPath}`;
-          result = await pi.exec(
-            "bash",
-            ["-c", command],
-            hasValidSignal ? { signal } : undefined,
-          );
-        } else {
-          // Local file - use markitdown directly
-          result = await pi.exec(
-            markitdownPath,
-            [source],
-            hasValidSignal ? { signal } : undefined,
-          );
-        }
-
-        if (result.code === 0)
-          return {
-            content: [{ type: "text", text: result.stdout }],
-            details: { source, converted: true },
-          };
-        // Build error message with all available information
-        const stderr = result.stderr?.trim();
-        const stdout = result.stdout?.trim();
-        const errorMessage = [stderr, stdout, `Exit code: ${result.code}`]
-          .filter(Boolean)
-          .join("\n\n");
-
-        const errorText =
-          errorMessage || `markitdown failed with exit code ${result.code}`;
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error converting source: ${errorText}`,
-            },
-          ],
-          details: { source, error: errorMessage, exitCode: result.code },
-        };
-      } catch (error) {
-        return {
-          content: [{ type: "text", text: `Unexpected error: ${error}` }],
-          details: { source, error: String(error) },
-        };
-      }
-    },
-  });
+export default function (pi: ExtensionAPI): void {
+  pi.registerTool(createTool(pi));
 }
