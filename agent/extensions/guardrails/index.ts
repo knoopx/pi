@@ -1,5 +1,6 @@
 import type {
   ExtensionAPI,
+  ExtensionCommandContext,
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import {
@@ -23,46 +24,62 @@ import { glob } from "tinyglobby";
  * - Global settings: ~/.pi/agent/settings.json under key "guardrails"
  */
 
+function createGuardrailsHandler(ref: { value: boolean }) {
+  return async function handler(
+    args: string,
+    ctx: ExtensionCommandContext,
+  ): Promise<void> {
+    const action = args.trim().toLowerCase();
+
+    if (action === "on") {
+      ref.value = true;
+      await saveGuardrailsSettings({ enabled: true });
+      ctx.ui?.notify("Guardrails enabled", "info");
+      return;
+    }
+
+    if (action === "off") {
+      ref.value = false;
+      await saveGuardrailsSettings({ enabled: false });
+      ctx.ui?.notify("Guardrails disabled", "warning");
+      return;
+    }
+
+    const status = ref.value ? "enabled" : "disabled";
+    ctx.ui?.notify(
+      `Guardrails are currently ${status}. Use /guardrails on|off.`,
+      "info",
+    );
+  };
+}
+
 export default async function (pi: ExtensionAPI) {
   await configLoader.load();
   const config = configLoader.getConfig();
 
-  let guardrailsEnabled = (await loadGuardrailsSettings()).enabled;
+  const guardrailsEnabledRef = {
+    value: (await loadGuardrailsSettings()).enabled,
+  };
 
   pi.registerCommand("guardrails", {
     description: "Enable or disable guardrails (usage: /guardrails on|off)",
-    async handler(args, ctx) {
-      const action = args.trim().toLowerCase();
-
-      if (action === "on") {
-        guardrailsEnabled = true;
-        await saveGuardrailsSettings({ enabled: true });
-        if (ctx.hasUI) {
-          ctx.ui.notify("Guardrails enabled", "info");
-        }
-        return;
-      }
-
-      if (action === "off") {
-        guardrailsEnabled = false;
-        await saveGuardrailsSettings({ enabled: false });
-        if (ctx.hasUI) {
-          ctx.ui.notify("Guardrails disabled", "warning");
-        }
-        return;
-      }
-
-      const status = guardrailsEnabled ? "enabled" : "disabled";
-      if (ctx.hasUI) {
-        ctx.ui.notify(
-          `Guardrails are currently ${status}. Use /guardrails on|off.`,
-          "info",
-        );
-      }
-    },
+    handler: createGuardrailsHandler(guardrailsEnabledRef),
   });
 
-  setupPermissionGateHook(pi, config, () => guardrailsEnabled);
+  setupPermissionGateHook(pi, config, () => guardrailsEnabledRef.value);
+}
+
+async function hasMatchingFiles(
+  pattern: string,
+  root: string,
+): Promise<boolean> {
+  const matches = await glob(pattern, {
+    cwd: root,
+    absolute: false,
+    dot: true,
+    onlyDirectories: false,
+  });
+  return matches.length > 0;
 }
 
 /**
@@ -74,18 +91,8 @@ export async function isGroupActive(
   excludePattern?: string,
 ): Promise<boolean> {
   try {
-    if (pattern === "*") {
-      if (!excludePattern) return true;
-    } else {
-      const matches = await glob(pattern, {
-        cwd: root,
-        absolute: false,
-        dot: true,
-        onlyDirectories: false,
-      });
-      if (matches.length === 0) return false;
-    }
-
+    if (pattern === "*") return !excludePattern;
+    if (!(await hasMatchingFiles(pattern, root))) return false;
     if (excludePattern) {
       const excludeMatches = await glob(excludePattern, {
         cwd: root,
@@ -95,7 +102,6 @@ export async function isGroupActive(
       });
       if (excludeMatches.length > 0) return false;
     }
-
     return true;
   } catch {
     return false;
