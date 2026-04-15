@@ -297,34 +297,59 @@ function parseSearchResults(
 }
 
 /**
+ * Fetch HTML from DuckDuckGo at given offset
+ */
+async function fetchHtmlPage(
+  query: string,
+  offset: number,
+): Promise<{ html: string; ok: boolean }> {
+  const requestUrl = "https://html.duckduckgo.com/html/";
+
+  await acquireSlot(DDG_HOST);
+  const bodyParams = new URLSearchParams(
+    offset === 0
+      ? { q: query }
+      : {
+          q: query,
+          s: offset.toString(),
+          dc: offset.toString(),
+          v: "l",
+          o: "json",
+          api: "d.js",
+        },
+  );
+
+  const response = await fetch(requestUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "Apifox/1.0.0 (https://apifox.com)",
+      Accept: "*/*",
+      Host: "html.duckduckgo.com",
+      Connection: "keep-alive",
+    },
+    body: bodyParams.toString(),
+  });
+
+  return { html: await response.text(), ok: response.ok };
+}
+
+/**
  * HTML-based DuckDuckGo search as fallback
  */
 async function searchDuckDuckGoHtml(
   query: string,
   maxResults = 10,
 ): Promise<SearchResult[]> {
-  const requestUrl = "https://html.duckduckgo.com/html/";
   const results: SearchResult[] = [];
   let offset = 0;
 
   try {
     await acquireSlot(DDG_HOST);
-    let response = await fetch(requestUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": "Apifox/1.0.0 (https://apifox.com)",
-        Accept: "*/*",
-        Host: "html.duckduckgo.com",
-        Connection: "keep-alive",
-      },
-      body: new URLSearchParams({ q: query }).toString(),
-    });
+    const { html, ok } = await fetchHtmlPage(query, 0);
 
-    if (!response.ok)
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    if (!ok) throw new Error(`HTTP fetch failed`);
 
-    const html = await response.text();
     let $ = cheerio.load(html);
     let items = $("div.result");
 
@@ -334,34 +359,12 @@ async function searchDuckDuckGoHtml(
 
     while (results.length < maxResults && items.length > 0) {
       offset += items.length;
+      const { html: nextHtml, ok: nextOk } = await fetchHtmlPage(query, offset);
 
-      await acquireSlot(DDG_HOST);
-      response = await fetch(requestUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": "Apifox/1.0.0 (https://apifox.com)",
-          Accept: "*/*",
-          Host: "html.duckduckgo.com",
-          Connection: "keep-alive",
-        },
-        body: new URLSearchParams({
-          q: query,
-          s: offset.toString(),
-          dc: offset.toString(),
-          v: "l",
-          o: "json",
-          api: "d.js",
-        }).toString(),
-      });
+      if (!nextOk) break;
 
-      if (!response.ok)
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-
-      const nextHtml = await response.text();
       $ = cheerio.load(nextHtml);
       items = $("div.result");
-
       parseSearchResults($, items, results, maxResults);
     }
 
