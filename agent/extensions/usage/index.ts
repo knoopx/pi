@@ -167,6 +167,23 @@ function getSessionsDir(): string {
 
 async function getAllSessionFiles(signal?: AbortSignal): Promise<string[]> {
   const sessionsDir = getSessionsDir();
+  async function collectSessionFiles(
+    cwdPath: string,
+    signal?: AbortSignal,
+  ): Promise<string[]> {
+    const result: string[] = [];
+    try {
+      const sessionFiles = await readdir(cwdPath);
+      for (const file of sessionFiles) {
+        if (signal?.aborted) return result;
+        if (file.endsWith(".jsonl")) result.push(join(cwdPath, file));
+      }
+    } catch {
+      // Skip directories we can't read
+    }
+    return result;
+  }
+
   const files: string[] = [];
 
   try {
@@ -175,14 +192,8 @@ async function getAllSessionFiles(signal?: AbortSignal): Promise<string[]> {
       if (signal?.aborted) return files;
       if (!dir.isDirectory()) continue;
       const cwdPath = join(sessionsDir, dir.name);
-      try {
-        const sessionFiles = await readdir(cwdPath);
-        for (const file of sessionFiles) {
-          if (file.endsWith(".jsonl")) files.push(join(cwdPath, file));
-        }
-      } catch {
-        // Skip directories we can't read
-      }
+      const sessionFiles = await collectSessionFiles(cwdPath, signal);
+      files.push(...sessionFiles);
     }
   } catch {
     // Return empty if we can't read sessions dir
@@ -273,7 +284,8 @@ async function parseSessionFile(
 
     for (let i = 0; i < lines.length; i++) {
       if (checkSignalAborted(signal)) return null;
-      if (i % 500 === 0) await new Promise<void>((resolve) => setImmediate(resolve));
+      if (i % 500 === 0)
+        await new Promise<void>((resolve) => setImmediate(resolve));
       const result = await parseSessionLine(lines[i], seenHashes);
       if (result.sessionId) sessionId = result.sessionId;
       if (result.message) messages.push(result.message);
@@ -556,7 +568,11 @@ function handleUsageInput(
 
   if (handleEscape(matches, done)) return;
 
-  if (matches("tab") || matches("right")) onTabForward(); else if (matches("shift+tab") || matches("left")) onTabBackward(); else if (matches("up")) onUp(); else if (matches("down")) onDown(); else if (onEnter && (matches("enter") || matches("space"))) onEnter();
+  if (matches("tab") || matches("right")) onTabForward();
+  else if (matches("shift+tab") || matches("left")) onTabBackward();
+  else if (matches("up")) onUp();
+  else if (matches("down")) onDown();
+  else if (onEnter && (matches("enter") || matches("space"))) onEnter();
 }
 
 class UsageComponent {
@@ -647,7 +663,8 @@ class UsageComponent {
   toggleProvider(): void {
     const provider = this.providerOrder[this.selectedIndex];
     if (!provider) return;
-    if (this.expanded.has(provider)) this.expanded.delete(provider); else {
+    if (this.expanded.has(provider)) this.expanded.delete(provider);
+    else {
       this.expanded.add(provider);
     }
     this.requestRender();
@@ -756,24 +773,22 @@ class UsageComponent {
       });
       lines.push(prefix + dataRow.slice(2)); // Replace indent with arrow prefix
 
-      // Model rows (if expanded)
       if (isExpanded) {
-        const models = Array.from(providerStats.models.entries()).sort(
-          (a, b) => b[1].cost - a[1].cost,
-        );
-
-        for (const [modelName, modelStats] of models) {
-          lines.push(
-            this.renderDataRow(modelName, modelStats, {
-              indent: 4,
-              dimAll: true,
-            }),
-          );
-        }
+        const modelLines = this.renderModelRows(providerStats);
+        lines.push(...modelLines);
       }
     }
 
     return lines;
+  }
+
+  private renderModelRows(providerStats: ProviderStats): string[] {
+    const models = Array.from(providerStats.models.entries()).sort(
+      (a, b) => b[1].cost - a[1].cost,
+    );
+    return models.map(([modelName, modelStats]) =>
+      this.renderDataRow(modelName, modelStats, { indent: 4, dimAll: true }),
+    );
   }
 
   private renderTotals(): string[] {
@@ -822,6 +837,23 @@ interface ToolStats {
   byDate: Record<string, { count: number; tools: Record<string, number> }>;
 }
 
+async function collectToolSessionFiles(
+  dirPath: string,
+  dir: string,
+): Promise<{ dir: string; file: string }[]> {
+  const result: { dir: string; file: string }[] = [];
+  try {
+    const files = await readdir(dirPath);
+    for (const file of files) {
+      if (file.endsWith(".jsonl"))
+        result.push({ dir, file: join(dirPath, file) });
+    }
+  } catch {
+    // Skip non-directories
+  }
+  return result;
+}
+
 async function findToolSessionFiles(
   sessionsDir: string,
 ): Promise<{ dir: string; file: string }[]> {
@@ -831,19 +863,34 @@ async function findToolSessionFiles(
     for (const dir of sessionDirs) {
       if (dir === "subagents") continue;
       const dirPath = join(sessionsDir, dir);
-      try {
-        const files = await readdir(dirPath);
-        for (const file of files) {
-          if (file.endsWith(".jsonl")) results.push({ dir, file: join(dirPath, file) });
-        }
-      } catch {
-        // Skip non-directories
-      }
+      const files = await collectToolSessionFiles(dirPath, dir);
+      results.push(...files);
     }
   } catch {
     // Return empty if we can't read sessions dir
   }
   return results;
+}
+
+function collectToolCallsFromContents(
+  contents: unknown[],
+  sessionId: string,
+  timestamp: number,
+): ToolCall[] {
+  const toolCalls: ToolCall[] = [];
+  for (const content of contents) {
+    if (
+      (content as { type?: string; name?: string })?.type === "toolCall" &&
+      (content as { name?: string }).name
+    ) {
+      toolCalls.push({
+        name: (content as { name: string }).name,
+        sessionId,
+        timestamp: String(timestamp),
+      });
+    }
+  }
+  return toolCalls;
 }
 
 function parseSessionEntry(
@@ -855,20 +902,20 @@ function parseSessionEntry(
     const entry = JSON.parse(line);
     if (entry.type === "session" && entry.id)
       return { sessionId: entry.id, toolCalls: [] };
-    if (entry.type === "message" && entry.message?.content && sessionId) {
-      const contents = Array.isArray(entry.message.content)
-        ? entry.message.content
-        : [entry.message.content];
-      const toolCalls: ToolCall[] = [];
-      for (const content of contents) {
-        if (content?.type === "toolCall" && content.name) toolCalls.push({
-          name: content.name,
-          sessionId,
-          timestamp: entry.timestamp,
-        });
-      }
-      return { sessionId, toolCalls };
-    }
+    if (entry.type !== "message" || !entry.message?.content || !sessionId)
+      return { sessionId, toolCalls: [] };
+
+    const contents = Array.isArray(entry.message.content)
+      ? entry.message.content
+      : [entry.message.content];
+    return {
+      sessionId,
+      toolCalls: collectToolCallsFromContents(
+        contents,
+        sessionId,
+        entry.timestamp,
+      ),
+    };
   } catch {
     // Skip malformed lines
   }
@@ -906,7 +953,8 @@ function aggregateToolStats(
   for (const call of allToolCalls) {
     stats.byTool[call.name] = (stats.byTool[call.name] || 0) + 1;
 
-    if (!stats.bySession[call.sessionId]) stats.bySession[call.sessionId] = { count: 0, tools: {} };
+    if (!stats.bySession[call.sessionId])
+      stats.bySession[call.sessionId] = { count: 0, tools: {} };
     stats.bySession[call.sessionId].count++;
     stats.bySession[call.sessionId].tools[call.name] =
       (stats.bySession[call.sessionId].tools[call.name] || 0) + 1;
@@ -1282,11 +1330,15 @@ async function loadAndDisplay<
         finish(null);
       };
 
-      collectData(loader.signal)
-        .then(finish)
-        .catch(() => {
+      (async () => {
+        try {
+          const result = await collectData(loader.signal);
+          finish(result);
+        } catch (e) {
+          console.error("Data collection failed:", e);
           finish(null);
-        });
+        }
+      })();
 
       return loader;
     },
