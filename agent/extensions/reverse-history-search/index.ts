@@ -207,11 +207,12 @@ function processMessageEntry(
     if (!text) return;
 
     const firstLine = text.split("\n")[0]?.trim();
-    if (firstLine) addHistoryEntry(history, seen, {
-      content: firstLine,
-      timestamp,
-      type: "message",
-    });
+    if (firstLine)
+      addHistoryEntry(history, seen, {
+        content: firstLine,
+        timestamp,
+        type: "message",
+      });
 
     for (const command of extractBangCommandsFromUserText(text)) {
       addHistoryEntry(history, seen, {
@@ -239,14 +240,16 @@ function walkDir(
       const fullPath = join(dir, entry);
       try {
         const stat = statSync(fullPath);
-        if (stat.isDirectory()) walkDir(fullPath, targetCwd, cutoffTimestamp, history, seen); else if (entry.endsWith(".jsonl") &&
-        stat.mtimeMs >= cutoffTimestamp) processSessionFile(
-          fullPath,
-          targetCwd,
-          cutoffTimestamp,
-          history,
-          seen,
-        );
+        if (stat.isDirectory())
+          walkDir(fullPath, targetCwd, cutoffTimestamp, history, seen);
+        else if (entry.endsWith(".jsonl") && stat.mtimeMs >= cutoffTimestamp)
+          processSessionFile(
+            fullPath,
+            targetCwd,
+            cutoffTimestamp,
+            history,
+            seen,
+          );
       } catch {
         // Skip files we can't read
       }
@@ -319,7 +322,8 @@ class HistorySearchComponent {
     }
 
     // Regular character input
-    if (data.length === 1 && data.charCodeAt(0) >= 32) this.handleCharacter(data);
+    if (data.length === 1 && data.charCodeAt(0) >= 32)
+      this.handleCharacter(data);
   }
 
   private handleEscape(): void {
@@ -327,7 +331,8 @@ class HistorySearchComponent {
   }
 
   private handleEnter(): void {
-    if (this.filteredHistory.length > 0) this.onSelect?.(this.filteredHistory[this.selectedIndex]);
+    if (this.filteredHistory.length > 0)
+      this.onSelect?.(this.filteredHistory[this.selectedIndex]);
   }
 
   private handleUp(): void {
@@ -362,7 +367,8 @@ class HistorySearchComponent {
     );
 
     // Reset selection if out of bounds
-    if (this.selectedIndex >= this.filteredHistory.length) this.selectedIndex = Math.max(0, this.filteredHistory.length - 1);
+    if (this.selectedIndex >= this.filteredHistory.length)
+      this.selectedIndex = Math.max(0, this.filteredHistory.length - 1);
 
     this.invalidate();
   }
@@ -429,6 +435,35 @@ class HistorySearchComponent {
   }
 }
 
+function makeHistorySearchRenderer(
+  theme: Theme,
+  history: HistoryEntry[],
+  done: (result: HistoryEntry | null) => void,
+  tuiRef: TUI,
+): {
+  render(w: number): string[];
+  invalidate(): void;
+  handleInput(data: string): void;
+} {
+  const component = new HistorySearchComponent(theme, history);
+
+  component.onSelect = (entry) => done(entry);
+  component.onCancel = () => done(null);
+
+  return {
+    render(w: number) {
+      return component.render(w);
+    },
+    invalidate() {
+      component.invalidate();
+    },
+    handleInput(data: string) {
+      component.handleInput(data);
+      tuiRef.requestRender();
+    },
+  };
+}
+
 export default function (pi: ExtensionAPI): void {
   pi.registerShortcut("ctrl+r", {
     description:
@@ -436,48 +471,24 @@ export default function (pi: ExtensionAPI): void {
     async handler(ctx: ExtensionContext) {
       if (!ctx.hasUI) return;
 
-      // Load history (messages and commands) from sessions matching current cwd
       const history = loadSessionHistoryForCwd(ctx.cwd);
-
       if (history.length === 0) {
         ctx.ui.notify("No history found", "warning");
         return;
       }
 
       const result = await ctx.ui.custom<HistoryEntry | null>(
-        (
-          tui: TUI,
-          theme: Theme,
-          keybindings,
-          done: (result: HistoryEntry | null) => void,
-        ) => {
-          const component = new HistorySearchComponent(theme, history);
-
-          component.onSelect = (entry) => {
-            done(entry);
-          };
-          component.onCancel = () => {
-            done(null);
-          };
-
-          return {
-            render: (w) => component.render(w),
-            invalidate() {
-              component.invalidate();
-            },
-            handleInput(data: string) {
-              component.handleInput(data);
-              tui.requestRender();
-            },
-          };
-        },
+        (tuiRef, themeRef, _kb, doneRef) =>
+          makeHistorySearchRenderer(themeRef, history, doneRef, tuiRef),
       );
 
-      if (result) {
-        // Insert selected content into editor
-        if (result.type === "command") ctx.ui.setEditorText(`!${result.content.trim().replace(/\n+$/, "")}`); else {
-          ctx.ui.setEditorText(result.content.trim().replace(/\n+$/, ""));
-        }
+      if (!result) return;
+
+      const content = result.content.trim().replace(/\n+$/, "");
+      if (result.type === "command") {
+        ctx.ui.setEditorText(`!${content}`);
+      } else {
+        ctx.ui.setEditorText(content);
       }
     },
   });
