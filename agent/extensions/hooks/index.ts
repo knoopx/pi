@@ -1,6 +1,7 @@
 import type {
   AgentEndEvent,
   ExtensionAPI,
+  ExtensionCommandContext,
   ExtensionContext,
   ToolCallEvent,
   ToolResultEvent,
@@ -691,46 +692,53 @@ function registerEventHandlers(
   });
 }
 
+async function handleHooksReload(
+  _args: string,
+  ctx: ExtensionCommandContext,
+): Promise<void> {
+  try {
+    await configLoader.load();
+    const config = configLoader.getConfig();
+    ctx.ui?.notify(`Hooks reloaded: ${config.length} groups loaded`, "info");
+  } catch (error) {
+    ctx.ui?.notify(`Failed to reload hooks: ${error}`, "error");
+  }
+}
+
+async function handleHooksList(
+  _args: string,
+  ctx: ExtensionCommandContext,
+): Promise<void> {
+  if (!ctx.hasUI) return;
+  const config = configLoader.getConfig();
+
+  if (config.length === 0) {
+    ctx.ui?.notify("No hooks configured", "info");
+    return;
+  }
+
+  const lines: string[] = [];
+  for (const group of config) {
+    const isActive = await isGroupActive(group.pattern, ctx.cwd);
+    const status = isActive ? "✓" : "✗";
+    lines.push(`${status} ${group.group} (${group.pattern})`);
+    for (const hook of group.hooks) {
+      const context = hook.context ? ` [${hook.context}: ${hook.pattern}]` : "";
+      lines.push(`  → ${hook.event}${context}: ${hook.command}`);
+    }
+  }
+
+  ctx.ui?.notify(lines.join("\n"), "info");
+}
+
 function registerCommands(pi: ExtensionAPI): void {
   pi.registerCommand("hooks-reload", {
     description: "Reload hooks configuration from disk",
-    async handler(_args, ctx) {
-      if (!ctx.hasUI) return;
-      try {
-        await configLoader.load();
-        const config = configLoader.getConfig();
-        ctx.ui.notify(`Hooks reloaded: ${config.length} groups loaded`, "info");
-      } catch (error) {
-        ctx.ui.notify(`Failed to reload hooks: ${error}`, "error");
-      }
-    },
+    handler: handleHooksReload,
   });
 
   pi.registerCommand("hooks-list", {
     description: "List all configured hooks with their active status",
-    async handler(_args, ctx) {
-      if (!ctx.hasUI) return;
-      const config = configLoader.getConfig();
-
-      if (config.length === 0) {
-        ctx.ui.notify("No hooks configured", "info");
-        return;
-      }
-
-      const lines: string[] = [];
-      for (const group of config) {
-        const isActive = await isGroupActive(group.pattern, ctx.cwd);
-        const status = isActive ? "✓" : "✗";
-        lines.push(`${status} ${group.group} (${group.pattern})`);
-        for (const hook of group.hooks) {
-          const context = hook.context
-            ? ` [${hook.context}: ${hook.pattern}]`
-            : "";
-          lines.push(`  → ${hook.event}${context}: ${hook.command}`);
-        }
-      }
-
-      ctx.ui.notify(lines.join("\n"), "info");
-    },
+    handler: handleHooksList,
   });
 }

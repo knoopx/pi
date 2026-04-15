@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
-import { type HooksConfig, isValidConfig } from "./schema";
+import { type HooksConfig, type HooksGroup, isValidConfig } from "./schema";
 
 const GLOBAL_CONFIG_PATH = resolve(homedir(), ".pi/agent/settings.json");
 const EXTENSION_CONFIG_PATH = resolve(
@@ -68,32 +68,42 @@ class ConfigLoader {
     return projectConfig ?? this.defaultsConfig ?? [];
   }
 
+  private mergeHooksInGroup(
+    existing: HooksGroup,
+    override: HooksGroup,
+  ): HooksGroup {
+    return {
+      ...existing,
+      hooks: [...existing.hooks, ...override.hooks],
+    };
+  }
+
   private mergeGroupConfigs(
     base: HooksConfig,
     override: HooksConfig,
   ): HooksConfig {
     const result = [...base];
     const groupMap = new Map(result.map((g, i) => [g.group, i]));
+    const toAdd: HooksGroup[] = [];
 
     for (const overrideGroup of override) {
       const existingIndex = groupMap.get(overrideGroup.group);
       if (existingIndex !== undefined) {
-        // Merge hooks into existing group
-        result[existingIndex] = {
-          ...result[existingIndex],
-          hooks: [...result[existingIndex].hooks, ...overrideGroup.hooks],
-        };
+        result[existingIndex] = this.mergeHooksInGroup(
+          result[existingIndex],
+          overrideGroup,
+        );
       } else {
-        // Add new group
-        result.push(overrideGroup);
+        toAdd.push(overrideGroup);
       }
     }
 
-    return result;
+    return [...result, ...toAdd];
   }
 
   getConfig(): HooksConfig {
-    if (!this.resolved) throw new Error("Config not loaded. Call load() first.");
+    if (!this.resolved)
+      throw new Error("Config not loaded. Call load() first.");
     return this.resolved;
   }
 
