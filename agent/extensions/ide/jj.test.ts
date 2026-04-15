@@ -6,6 +6,8 @@ import {
   listBookmarksByChange,
   loadOpLog,
   restoreFile,
+  hasFileChanges,
+  createNewChange,
 } from "./jj";
 
 interface ExecResult {
@@ -209,6 +211,174 @@ describe("jj module", () => {
         await expect(
           restoreFile(pi, "/repo", "abc123", "src/file.ts"),
         ).rejects.toThrow("Failed to discard file changes");
+      });
+    });
+  });
+
+  describe("given current jj change", () => {
+    let execMock: ReturnType<typeof vi.fn>;
+    let pi: ExtensionAPI;
+
+    beforeEach(() => {
+      execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>();
+      pi = { exec: execMock } as unknown as ExtensionAPI;
+    });
+
+    describe("when checking if change has file modifications", () => {
+      describe("and current change is empty", () => {
+        it("then returns false", async () => {
+          execMock.mockResolvedValue({
+            code: 0,
+            stdout: "empty\n",
+            stderr: "",
+          });
+
+          const result = await hasFileChanges(pi, "/repo");
+
+          expect(execMock).toHaveBeenCalledWith(
+            "jj",
+            expect.arrayContaining(["log", "-r", "@"]),
+            { cwd: "/repo" },
+          );
+          expect(result).toBe(false);
+        });
+      });
+
+      describe("and current change has modifications", () => {
+        it("then returns true", async () => {
+          execMock.mockResolvedValue({
+            code: 0,
+            stdout: "changed\n",
+            stderr: "",
+          });
+
+          const result = await hasFileChanges(pi, "/repo");
+
+          expect(result).toBe(true);
+        });
+      });
+
+      describe("when jj log fails", () => {
+        it("then returns false", async () => {
+          execMock.mockResolvedValue({
+            code: 1,
+            stdout: "",
+            stderr: "not a git repo",
+          });
+
+          const result = await hasFileChanges(pi, "/repo");
+
+          expect(result).toBe(false);
+        });
+      });
+    });
+  });
+
+  describe("given session start", () => {
+    let execMock: ReturnType<typeof vi.fn>;
+    let pi: ExtensionAPI;
+
+    beforeEach(() => {
+      execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>();
+      pi = { exec: execMock } as unknown as ExtensionAPI;
+    });
+
+    describe("when current change is empty", () => {
+      it("then does not create new change and returns created=false", async () => {
+        execMock.mockResolvedValueOnce({
+          code: 0,
+          stdout: "empty\n",
+          stderr: "",
+        });
+
+        const result = await createNewChange(pi, "/repo");
+
+        expect(result).toEqual({ success: true, created: false });
+        expect(execMock).toHaveBeenCalledTimes(1); // Only checks empty status
+      });
+    });
+
+    describe("when current change has modifications", () => {
+      describe("and jj new succeeds", () => {
+        it("then creates new change and returns change id", async () => {
+          execMock
+            .mockResolvedValueOnce({
+              code: 0,
+              stdout: "changed\n",
+              stderr: "",
+            })
+            .mockResolvedValueOnce({
+              code: 0,
+              stdout: "",
+              stderr: "",
+            })
+            .mockResolvedValueOnce({
+              code: 0,
+              stdout: "newchange123\n",
+              stderr: "",
+            });
+
+          const result = await createNewChange(pi, "/repo");
+
+          expect(result).toEqual({
+            success: true,
+            changeId: "newchange123",
+            created: true,
+          });
+          expect(execMock).toHaveBeenCalledTimes(3);
+        });
+      });
+
+      describe("and jj new fails", () => {
+        it("then returns success=false with error", async () => {
+          execMock
+            .mockResolvedValueOnce({
+              code: 0,
+              stdout: "changed\n",
+              stderr: "",
+            })
+            .mockResolvedValueOnce({
+              code: 1,
+              stdout: "",
+              stderr: "worktree locked",
+            });
+
+          const result = await createNewChange(pi, "/repo");
+
+          expect(result).toEqual({
+            success: false,
+            created: false,
+            error: "worktree locked",
+          });
+        });
+      });
+
+      describe("and jj log fails after new", () => {
+        it("then returns success=true with created=true but no change id", async () => {
+          execMock
+            .mockResolvedValueOnce({
+              code: 0,
+              stdout: "changed\n",
+              stderr: "",
+            })
+            .mockResolvedValueOnce({
+              code: 0,
+              stdout: "",
+              stderr: "",
+            })
+            .mockResolvedValueOnce({
+              code: 1,
+              stdout: "",
+              stderr: "error",
+            });
+
+          const result = await createNewChange(pi, "/repo");
+
+          expect(result).toEqual({
+            success: true,
+            created: true,
+          });
+        });
       });
     });
   });
