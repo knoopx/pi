@@ -109,96 +109,136 @@ export function formatSimpleOutput(
   return result;
 }
 
-export default function (pi: ExtensionAPI): void {
-  const turnStartTimes = new Map<number, number>();
-  let agentStartTime: number | null = null;
-  let lastTurnEndTimestamp: number | null = null;
-
-  pi.on("turn_start", (event: TurnStartEvent) => {
+function createTurnStartHandler(
+  turnStartTimes: Map<number, number>,
+): (event: TurnStartEvent) => void {
+  return (event: TurnStartEvent) => {
     turnStartTimes.set(event.turnIndex, Date.now());
-  });
+  };
+}
 
-  pi.on("turn_end", (event: TurnEndEvent, ctx: ExtensionContext) => {
+function createTurnEndHandler(
+  turnStartTimes: Map<number, number>,
+  agentState: { lastTurnEndTimestamp?: number | null },
+) {
+  return (event: TurnEndEvent, ctx: ExtensionContext): void => {
     const { turnIndex } = event;
     const startTime = turnStartTimes.get(turnIndex);
     turnStartTimes.delete(turnIndex);
 
-    const { message } = event;
-    if (message.role !== "assistant") return;
-
-    const { usage } = message;
+    if (event.message.role !== "assistant") return;
 
     const turnEndTimestamp = Date.now();
+    agentState.lastTurnEndTimestamp = turnEndTimestamp;
+
     const durationMs =
       startTime !== undefined ? Math.max(0, turnEndTimestamp - startTime) : 0;
-    lastTurnEndTimestamp = turnEndTimestamp;
 
-    const outputTokens = usage.output;
-    const notificationStr = formatSimpleOutput(outputTokens, durationMs, usage);
+    const notificationStr = formatSimpleOutput(
+      event.message.usage.output,
+      durationMs,
+      event.message.usage,
+    );
     ctx.ui.notify(notificationStr, "info");
-  });
+  };
+}
 
-  pi.on("agent_start", () => {
-    agentStartTime ??= Date.now();
-  });
+function computeAggregateStats(messages: AgentEndEvent["messages"]): {
+  turns: number;
+  totalOutputTokens: number;
+  totalInputTokens: number;
+  totalCost: Usage["cost"];
+} | null {
+  let turns = 0;
+  let totalOutputTokens = 0;
+  let totalInputTokens = 0;
+  const totalCost: Usage["cost"] = {
+    input: 0,
+    output: 0,
+    cacheRead: 0,
+    cacheWrite: 0,
+    total: 0,
+  };
 
-  pi.on("agent_end", (event: AgentEndEvent, ctx: ExtensionContext) => {
-    if (agentStartTime === null) return;
-
-    const endTimestamp = lastTurnEndTimestamp ?? Date.now();
-    const totalDurationMs = endTimestamp - agentStartTime;
-
-    let turns = 0;
-    let totalOutputTokens = 0;
-    let totalInputTokens = 0;
-    const totalCost: Usage["cost"] = {
-      input: 0,
-      output: 0,
-      cacheRead: 0,
-      cacheWrite: 0,
-      total: 0,
-    };
-
-    for (const message of event.messages) {
-      if (message.role !== "assistant") continue;
-      turns++;
-      const { usage } = message;
-      totalOutputTokens += usage.output;
-      totalInputTokens += usage.input;
-      totalCost.input += usage.cost.input;
-      totalCost.output += usage.cost.output;
-      totalCost.cacheRead += usage.cost.cacheRead;
-      totalCost.cacheWrite += usage.cost.cacheWrite;
-      totalCost.total += usage.cost.total;
-    }
-
-    if (turns === 0) return;
-
-    const stats: AggregateStats = {
-      turns,
-      totalOutputTokens,
-      totalInputTokens,
-      totalCacheReadTokens: 0,
-      totalCacheWriteTokens: 0,
-      totalTokens: totalInputTokens + totalOutputTokens,
-      totalCost,
-    };
-
-    const notificationStr = formatAggregateOutput(stats, totalDurationMs);
-    if (ctx.hasUI) ctx.ui.notify(notificationStr, "info");
-  });
-
-  function resetCounters(): void {
-    turnStartTimes.clear();
-    agentStartTime = null;
-    lastTurnEndTimestamp = null;
+  for (const message of messages) {
+    if (message.role !== "assistant") continue;
+    turns++;
+    const { usage } = message;
+    totalOutputTokens += usage.output;
+    totalInputTokens += usage.input;
+    totalCost.input += usage.cost.input;
+    totalCost.output += usage.cost.output;
+    totalCost.cacheRead += usage.cost.cacheRead;
+    totalCost.cacheWrite += usage.cost.cacheWrite;
+    totalCost.total += usage.cost.total;
   }
 
-  pi.on("session_start", () => {
-    resetCounters();
-  });
+  if (turns === 0) return null;
 
-  pi.on("session_shutdown", () => {
-    resetCounters();
-  });
+  return { turns, totalOutputTokens, totalInputTokens, totalCost };
+}
+
+function createAgentEndHandler(agentState: {
+  agentStartTime: number | null;
+  lastTurnEndTimestamp?: number | null;
+}) {
+  return (event: AgentEndEvent, ctx: ExtensionContext): void => {
+    if (agentState.agentStartTime === null) return;
+
+    const endTimestamp = agentState.lastTurnEndTimestamp ?? Date.now();
+    const totalDurationMs = endTimestamp - agentState.agentStartTime;
+
+    const stats = computeAggregateStats(event.messages);
+    if (!stats) return;
+
+    const aggregate: AggregateStats = {
+      ...stats,
+      totalCacheReadTokens: 0,
+      totalCacheWriteTokens: 0,
+      totalTokens: stats.totalInputTokens + stats.totalOutputTokens,
+    };
+
+    const notificationStr = formatAggregateOutput(aggregate, totalDurationMs);
+    if (ctx.hasUI) ctx.ui.notify(notificationStr, "info");
+  };
+}
+
+function createAgentStartHandler(state: {
+  agentStartTime: number | null;
+}): () => void {
+  return () => {
+    state.agentStartTime ??= Date.now();
+  };
+}
+
+function createSessionHandlers(turnStartTimes: Map<number, number>) {
+  function resetCounters(): void {
+    turnStartTimes.clear();
+  }
+
+  return {
+    onSessionStart() {
+      resetCounters();
+    },
+    onSessionShutdown() {
+      resetCounters();
+    },
+  };
+}
+
+export default function (pi: ExtensionAPI): void {
+  const turnStartTimes = new Map<number, number>();
+  const agentState = {
+    agentStartTime: null as number | null,
+    lastTurnEndTimestamp: undefined as number | null | undefined,
+  };
+
+  pi.on("turn_start", createTurnStartHandler(turnStartTimes));
+  pi.on("turn_end", createTurnEndHandler(turnStartTimes, agentState));
+  pi.on("agent_start", createAgentStartHandler(agentState));
+  pi.on("agent_end", createAgentEndHandler(agentState));
+
+  const sessionHandlers = createSessionHandlers(turnStartTimes);
+  pi.on("session_start", sessionHandlers.onSessionStart);
+  pi.on("session_shutdown", sessionHandlers.onSessionShutdown);
 }
