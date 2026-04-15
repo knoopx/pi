@@ -1,5 +1,5 @@
 import { codeToANSI } from "@shikijs/cli";
-import type { BundledLanguage, BundledTheme } from "shiki";
+import type { BundledLanguage } from "shiki";
 import { createLRUCache } from "../../../shared/cache";
 import { THEME, MAX_HL_CHARS, CACHE_LIMIT } from "./shiki-constants";
 const _cache = createLRUCache<string, string[]>(CACHE_LIMIT);

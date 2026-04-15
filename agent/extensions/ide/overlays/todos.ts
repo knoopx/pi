@@ -1,5 +1,5 @@
 /**
- * TODO comment browser overlay.
+ * Overlay for browsing deferred work markers.
  */
 
 import type {

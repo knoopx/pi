@@ -20,10 +20,7 @@ import {
 export async function openChangesBrowser(
   pi: ExtensionAPI,
   ctx: ExtensionContext,
-  promptAndSetBookmark: (
-    ctx: ExtensionContext,
-    changeId: string,
-  ) => Promise<string | null>,
+  promptAndSetBookmark: (changeId: string) => Promise<string | null>,
 ): Promise<void> {
   const showChanges = async (): Promise<SymbolReferenceActionResult | null> => {
     let pendingCmAction: SymbolReferenceActionResult | null = null;
@@ -35,7 +32,7 @@ export async function openChangesBrowser(
         (text) => {
           ctx.ui.setEditorText(ctx.ui.getEditorText() + text);
         },
-        (changeId) => promptAndSetBookmark(ctx, changeId),
+        (changeId) => promptAndSetBookmark(changeId),
         async (filePath, action) => {
           pendingCmAction = { filePath, action };
           done();

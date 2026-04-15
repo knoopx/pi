@@ -1,4 +1,4 @@
-import type { BundledLanguage, BundledTheme } from "shiki";
+import type { BundledTheme } from "shiki";
 
 const THEME: BundledTheme =
   (process.env.PRETTY_THEME as BundledTheme | undefined) ?? "github-dark";

@@ -18,11 +18,8 @@ export async function getTheme(
   },
   cwd: string,
 ): Promise<BundledTheme> {
-  // Check environment variable first (for quick override)
   const envTheme = process.env.PRETTY_THEME as BundledTheme | undefined;
   if (envTheme) return envTheme;
-
-  // Try to load from settings.json
   try {
     const result = await pi.exec("cat", [`${cwd}/agent/settings.json`], {
       cwd: undefined,
@@ -103,22 +100,15 @@ function getTerminalBgColor(): [number, number, number] | null {
  * Load theme directly and extract colors for diff backgrounds
  */
 async function initShiki(theme: BundledTheme): Promise<void> {
-  // Skip if already initialized with same theme
   if (addBg && removeBg && currentTheme === theme) return;
 
-  // Load theme directly without initializing full highlighter
   const themeModule = await import(`@shikijs/themes/${theme}`);
   const themeData = themeModule.default;
   const colors = themeData.colors || {};
-
-  // Use VS Code diff colors from the theme
   const green = colors["diffEditor.insertedTextBackground"];
   const red = colors["diffEditor.removedTextBackground"];
-
-  // Convert hex (with alpha) to RGB with alpha blending
   const hexToRGBA = (hex: string): [number, number, number, number] => {
     const clean = hex.startsWith("#") ? hex.slice(1) : hex;
-    // Handle 8-digit hex (with alpha)
     if (clean.length === 8) {
       const hexR = parseInt(clean.slice(0, 2), 16);
       const hexG = parseInt(clean.slice(2, 4), 16);
@@ -126,16 +116,11 @@ async function initShiki(theme: BundledTheme): Promise<void> {
       const hexA = parseInt(clean.slice(6, 8), 16) / 255;
       return [hexR, hexG, hexB, hexA];
     }
-    // Handle 6-digit hex (no alpha)
     const hexR2 = parseInt(clean.slice(0, 2), 16);
     const hexG2 = parseInt(clean.slice(2, 4), 16);
     const hexB2 = parseInt(clean.slice(4, 6), 16);
     return [hexR2, hexG2, hexB2, 1];
   };
-
-  // Blend semi-transparent diff color over solid background
-  // Formula: result = fg * alpha + bg * (1 - alpha)
-  // where alpha is the diff color's opacity (1 = opaque, 0 = transparent)
   const blend = (
     fg: [number, number, number, number],
     bg: [number, number, number],
@@ -153,7 +138,6 @@ async function initShiki(theme: BundledTheme): Promise<void> {
   const [greenR, greenG, greenB, greenAlpha] = hexToRGBA(green);
   const [redR, redG, redB, redAlpha] = hexToRGBA(red);
 
-  // Query terminal for actual background color, fallback to black
   const terminalBg = getTerminalBgColor() ?? [0, 0, 0];
   const [addBgR, addBgG, addBgB] = blend(
     [greenR, greenG, greenB, greenAlpha],
@@ -481,41 +465,41 @@ function colorDiffLine(line: DiffLine, highlightedContent: string): string {
 /**
  * Render diff with syntax highlighting using Shiki
  */
+async function processHunk(
+  hunk: DiffHunkBlock,
+  file: DiffHunk,
+  language: BundledLanguage | undefined,
+  theme: BundledTheme,
+  output: string[],
+): Promise<void> {
+  if (file.hunks[0] === hunk) {
+    output.push(`\x1b[1m${file.file}\x1b[0m`, "");
+  }
+  output.push(`\x1b[90m${hunk.header}\x1b[0m`);
+
+  for (const line of hunk.lines) {
+    if (line.type === "empty") {
+      output.push("");
+      continue;
+    }
+    const highlighted = await highlightLine(line.content, language, theme);
+    output.push(colorDiffLine(line, highlighted));
+  }
+}
+
 export async function renderDiffWithShiki(
   diff: string,
   theme: BundledTheme,
 ): Promise<string[]> {
-  // Initialize Shiki to get theme colors
   await initShiki(theme);
-
   const parsed = parseGitDiff(diff);
   const output: string[] = [];
 
   for (const file of parsed) {
     const language = lang(file.file);
-
     for (const hunk of file.hunks) {
-      // File header (first hunk only)
-      if (file.hunks[0] === hunk) {
-        output.push(`\x1b[1m${file.file}\x1b[0m`);
-        output.push("");
-      }
-
-      // Hunk header (muted)
-      output.push(`\x1b[90m${hunk.header}\x1b[0m`);
-
-      // Diff lines
-      for (const line of hunk.lines) {
-        if (line.type === "empty") {
-          output.push("");
-          continue;
-        }
-
-        const highlighted = await highlightLine(line.content, language, theme);
-        output.push(colorDiffLine(line, highlighted));
-      }
+      await processHunk(hunk, file, language, theme, output);
     }
-
     output.push("");
   }
 

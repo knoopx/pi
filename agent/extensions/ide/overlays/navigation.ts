@@ -93,16 +93,16 @@ export async function runNavigationStack<T>(
     }
 
     if (action && target) {
-      // Handle delete action
       if (action === "delete") {
         await handleDeleteAction(pi, ctx, target);
         continue;
       }
 
       const cmDef = SYMBOL_REFERENCE_COMMANDS[action];
-      if (cmDef) stack.push({
-        factory: createSymbolReferenceCommandScreen(cmDef, target, ctx),
-      });
+      if (cmDef)
+        stack.push({
+          factory: createSymbolReferenceCommandScreen(cmDef, target, ctx),
+        });
       continue;
     }
 
