@@ -11,10 +11,9 @@ import {
   type ListPickerAction,
 } from "./list-picker";
 import { truncateAnsi } from "./text-utils";
-
-import { createMarkdownTheme, formatRelativeTime } from "./formatting";
+import { createMarkdownTheme } from "./formatting";
+import { formatRelativeTime } from "./formatting-utils";
 import { notifyMutation } from "../jj";
-
 /**
  * Execute a gh CLI command and handle the result.
  * On success: notifies with success message and reloads picker.
@@ -37,7 +36,6 @@ async function executeGhCommand(
   notifyMutation(pi, "error", result.stderr || errorMsg);
   return false;
 }
-
 async function openPrInBrowser(
   pi: ExtensionAPI,
   prNumber: number,
@@ -46,7 +44,6 @@ async function openPrInBrowser(
   await pi.exec("gh", ["pr", "view", String(prNumber), "--web"], { cwd });
   notifyMutation(pi, "info", `Opened PR #${prNumber} in browser`);
 }
-
 /** Pull request data from GitHub CLI */
 interface PullRequest extends ListPickerItem {
   number: number;
@@ -64,31 +61,26 @@ interface PullRequest extends ListPickerItem {
   url: string;
   body: string;
 }
-
 /** PR state icons (Nerd Font) */
 const PR_STATE_ICONS: Record<string, string> = {
   OPEN: "󰐊",
   CLOSED: "󰅖",
   MERGED: "󰘬",
 };
-
 /** Review decision icons */
 const REVIEW_ICONS: Record<string, string> = {
   APPROVED: "󰄬",
   CHANGES_REQUESTED: "󰌑",
   REVIEW_REQUIRED: "󰈈",
 };
-
 function getPrIcon(state: string, isDraft: boolean): string {
   if (isDraft) return "󰽾";
   return PR_STATE_ICONS[state] || "󰐊";
 }
-
 function getReviewIcon(decision: string | null): string {
   if (!decision) return "";
   return REVIEW_ICONS[decision] || "";
 }
-
 async function fetchPullRequests(
   pi: ExtensionAPI,
   cwd: string,
@@ -103,13 +95,10 @@ async function fetchPullRequests(
     "--limit",
     "100",
   ];
-
   if (stateArg) args.push(stateArg);
-
   const result = await pi.exec("gh", args, { cwd });
-
-  if (result.code !== 0) throw new Error(result.stderr || "Failed to fetch pull requests");
-
+  if (result.code !== 0)
+    throw new Error(result.stderr || "Failed to fetch pull requests");
   try {
     const data = JSON.parse(result.stdout) as {
       number: number;
@@ -127,7 +116,6 @@ async function fetchPullRequests(
       url: string;
       body: string;
     }[];
-
     return data.map((pr) => ({
       id: String(pr.number),
       label: pr.title,
@@ -150,7 +138,6 @@ async function fetchPullRequests(
     throw new Error("Failed to parse pull request data");
   }
 }
-
 export function createPullRequestsComponent(
   pi: ExtensionAPI,
   tui: { terminal: { rows: number }; requestRender: () => void },
@@ -163,7 +150,6 @@ export function createPullRequestsComponent(
   let pickerRef: ListPickerComponent | null = null;
   let notify: (message: string, type?: "info" | "error") => void = () => {};
   let currentState: "open" | "closed" | "merged" | "all" = "open";
-
   const actions: ListPickerAction<PullRequest>[] = [
     {
       key: Key.ctrl("o"),
@@ -230,7 +216,6 @@ export function createPullRequestsComponent(
         await pickerRef?.reload();
       },
     },
-
     {
       key: Key.ctrl("i"),
       label: "insert",
@@ -250,7 +235,6 @@ export function createPullRequestsComponent(
       },
     },
   ];
-
   const picker = createListPicker<PullRequest>(
     pi,
     tui,
@@ -276,27 +260,24 @@ export function createPullRequestsComponent(
       formatItem(item, width, theme) {
         const icon = getPrIcon(item.state, item.isDraft);
         const reviewIcon = getReviewIcon(item.reviewDecision);
-        const stateColor =
-          item.state === "MERGED"
-            ? "accent"
-            : item.state === "CLOSED"
-              ? "error"
-              : item.isDraft
-                ? "dim"
-                : "success";
-
-        const prNum = theme.fg(stateColor, `#${item.number}`);
-        const iconStyled = theme.fg(stateColor, icon);
-
+        let stateColor: "success" | "error" | "accent" | "dim" | string;
+        if (item.state === "MERGED") {
+          stateColor = "accent";
+        } else if (item.state === "CLOSED") {
+          stateColor = "error";
+        } else if (item.isDraft) {
+          stateColor = "dim";
+        } else {
+          stateColor = "success";
+        }
+        const prNum = theme.fg(stateColor as any, `#${item.number}`);
+        const iconStyled = theme.fg(stateColor as any, icon);
         const additions = theme.fg("success", `+${item.additions}`);
         const deletions = theme.fg("error", `-${item.deletions}`);
         const stats = `${additions}/${deletions}`;
-
         const branch = theme.fg("dim", item.headRefName);
         const author = theme.fg("dim", `@${item.author}`);
         const time = theme.fg("dim", formatRelativeTime(item.updatedAt));
-
-        // Calculate available width for title
         const fixedParts = [
           `${icon} `,
           `#${item.number} `,
@@ -306,22 +287,18 @@ export function createPullRequestsComponent(
           ` +${item.additions}/-${item.deletions}`,
           ` ${formatRelativeTime(item.updatedAt)}`,
         ].join("");
-
         const titleWidth = Math.max(20, width - fixedParts.length - 4);
         const title =
           item.title.length > titleWidth
             ? `${item.title.slice(0, titleWidth - 1)}…`
             : item.title;
-
         const reviewPart = reviewIcon
           ? `${theme.fg(
               item.reviewDecision === "APPROVED" ? "success" : "warning",
               reviewIcon,
             )} `
           : "";
-
         const text = `${iconStyled} ${prNum} ${reviewPart}${title} ${branch} ${author} ${stats} ${time}`;
-
         return truncateAnsi(text, width);
       },
       async loadPreview(item) {
@@ -331,25 +308,21 @@ export function createPullRequestsComponent(
           `| Author | @${item.author} |`,
           `| Branch | ${item.headRefName} → ${item.baseRefName} |`,
           `| State | ${item.state}${item.isDraft ? " (Draft)" : ""} |`,
-          `| Review | ${item.reviewDecision || "Pending"} |`,
+          `| Review | ${item.reviewDecision ?? "Pending"} |`,
           `| Changes | +${item.additions} / -${item.deletions} |`,
           `| Updated | ${formatRelativeTime(item.updatedAt)} |`,
           ``,
         ];
-
         if (item.body) mdParts.push(item.body);
-
         const mdTheme = createMarkdownTheme(theme);
         const md = new Markdown(mdParts.join("\n"), 0, 0, mdTheme);
         return md.render(100);
       },
     },
   );
-
   notify = (message, type) => {
     picker.notify?.(message, type);
   };
-
   pickerRef = picker;
   return picker;
 }

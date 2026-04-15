@@ -1,6 +1,7 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { dirname, basename } from "node:path";
-import { hlBlock, MAX_PREVIEW_LINES } from "./shiki";
+import { hlBlock } from "./shiki";
+import { MAX_PREVIEW_LINES } from "./shiki-constants";
 import { fileIconGlyph, dirIconGlyph } from "./icons";
 import { termW, strip } from "./utils";
 import { lang } from "./language";
@@ -70,9 +71,10 @@ export async function renderFileContent(
   }
 
   out.push(theme.fg("border", "─".repeat(tw)));
-  if (total > maxLines) out.push(
-    theme.fg("dim", `  … ${total - maxLines} more lines (${total} total)`),
-  );
+  if (total > maxLines)
+    out.push(
+      theme.fg("dim", `  … ${total - maxLines} more lines (${total} total)`),
+    );
   return out.join("\n");
 }
 
@@ -98,9 +100,10 @@ export function renderTree(text: string, theme: Theme): string {
     out.push(`${connector}${fg}`);
   }
 
-  if (total > MAX_PREVIEW_LINES) out.push(
-    `${theme.fg("border", "└── ")}${theme.fg("dim", `… ${total - MAX_PREVIEW_LINES} more entries`)}`,
-  );
+  if (total > MAX_PREVIEW_LINES)
+    out.push(
+      `${theme.fg("border", "└── ")}${theme.fg("dim", `… ${total - MAX_PREVIEW_LINES} more entries`)}`,
+    );
 
   return out.join("\n");
 }

@@ -1,7 +1,7 @@
 import type { Theme, ThemeColor } from "@mariozechner/pi-coding-agent";
+import type { BundledLanguage } from "shiki";
 import { hlBlock } from "../tools/shiki";
 import { lang } from "../tools/language";
-
 /** Text file extensions that we can preview */
 const SUPPORTED_EXTENSIONS = new Set([
   ".ts",
@@ -119,7 +119,6 @@ const SUPPORTED_EXTENSIONS = new Set([
   ".tool-versions",
   ".ruby-gemset",
 ]);
-
 /** Check if a file path is supported for text preview */
 function isSupportedFile(filePath: string): boolean {
   const lowerPath = filePath.toLowerCase();
@@ -128,7 +127,6 @@ function isSupportedFile(filePath: string): boolean {
   }
   return false;
 }
-
 /**
  * Highlight code lines with optional accent color.
  */
@@ -140,7 +138,6 @@ export function highlightCodeLines(
   if (accentColor) return theme.fg(accentColor, line);
   return line;
 }
-
 /**
  * Load file preview using Shiki for syntax highlighting.
  * Returns empty array for unsupported file types.
@@ -151,9 +148,7 @@ export async function loadFilePreviewWithShiki(
   content: string,
   theme: Theme,
 ): Promise<string[]> {
-  // Only render supported file types
   if (!isSupportedFile(filePath)) return [];
-
   try {
     const mutedColor = theme.getFgAnsi("muted");
     const language = lang(filePath);

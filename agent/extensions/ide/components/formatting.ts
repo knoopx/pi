@@ -1,7 +1,7 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import type { MarkdownTheme } from "@mariozechner/pi-tui";
+import { formatRelativeTime, formatErrorMessage } from "./formatting-utils";
 
-/** Create a markdown theme from the pi theme */
 export function createMarkdownTheme(theme: Theme): MarkdownTheme {
   return {
     heading: (text) => theme.fg("mdHeading", theme.bold(text)),
@@ -19,25 +19,4 @@ export function createMarkdownTheme(theme: Theme): MarkdownTheme {
     strikethrough: (text) => theme.strikethrough(text),
     underline: (text) => theme.underline(text),
   };
-}
-
-/** Format a date string as relative time (e.g. "5m ago", "2h ago", "3d ago") */
-export function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60_000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 30) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
-
-/** Generic error message formatter */
-export function formatErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
 }

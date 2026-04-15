@@ -1,8 +1,8 @@
 import {
-  createReadToolDefinition as createReadToolDef,
-  createLsToolDefinition as createLsToolDef,
-  createFindToolDefinition as createFindToolDef,
-  createGrepToolDefinition as createGrepToolDef,
+  createReadToolDefinition,
+  createLsToolDefinition,
+  createFindToolDefinition,
+  createGrepToolDefinition,
   createReadTool,
   createLsTool,
   createFindTool,
@@ -23,8 +23,6 @@ import type {
   ReadToolInput,
   ToolRenderResultOptions,
 } from "@mariozechner/pi-coding-agent";
-
-// Local type for ToolRenderContext (not exported from SDK)
 interface ToolRenderContext<TState, TArgs> {
   args: TArgs;
   toolCallId: string;
@@ -43,7 +41,6 @@ import type { Theme } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import type { Component } from "@mariozechner/pi-tui";
 import type { ImageContent } from "@mariozechner/pi-ai";
-
 import {
   renderFileContent,
   renderTree,
@@ -52,7 +49,7 @@ import {
 } from "./renderers";
 import { fileIconGlyph } from "./icons";
 import { humanSize } from "./images";
-import { MAX_PREVIEW_LINES } from "./shiki";
+import { MAX_PREVIEW_LINES } from "./shiki-constants";
 import { termW, shortPath } from "./utils";
 import {
   extractTextContent,
@@ -61,19 +58,14 @@ import {
   getTextComponent,
   handleRenderResult,
 } from "./pretty-utils";
-
-// State tracking for async rendering
 interface ReadState {
   _rk?: string;
   _rt?: string;
 }
-
 interface GrepState {
   _gk?: string;
   _gt?: string;
 }
-
-// Extended details types for the IDE extension
 type ReadDetails =
   | ReadToolDetails
   | undefined
@@ -86,7 +78,6 @@ type ReadDetails =
       offset?: number;
       lineCount?: number;
     };
-
 type LsDetails =
   | LsToolDetails
   | undefined
@@ -96,7 +87,6 @@ type LsDetails =
       text?: string;
       entryCount?: number;
     };
-
 type FindDetails =
   | FindToolDetails
   | undefined
@@ -106,7 +96,6 @@ type FindDetails =
       pattern?: string;
       matchCount?: number;
     };
-
 type GrepDetails =
   | GrepToolDetails
   | undefined
@@ -116,32 +105,21 @@ type GrepDetails =
       pattern?: string;
       matchCount?: number;
     };
-
 export default async function piPrettyExtension(
   pi: ExtensionAPI,
 ): Promise<void> {
-  // Resolve to preferred export (new name falls back to old)
-  const createReadToolFn = createReadToolDef ?? createReadTool;
-  const createLsToolFn = createLsToolDef ?? createLsTool;
-  const createFindToolFn = createFindToolDef ?? createFindTool;
-  const createGrepToolFn = createGrepToolDef ?? createGrepTool;
-
+  const createReadToolFn = createReadToolDefinition ?? createReadTool;
+  const createLsToolFn = createLsToolDefinition ?? createLsTool;
+  const createFindToolFn = createFindToolDefinition ?? createFindTool;
+  const createGrepToolFn = createGrepToolDefinition ?? createGrepTool;
   if (!createReadToolFn) return;
-
   const cwd = process.cwd();
   const home = process.env.HOME ?? "";
   const sp = (p: string): string => shortPath(cwd, home, p);
-
-  // ===================================================================
-  // read — syntax-highlighted file content
-  // ===================================================================
-
   const origRead = createReadToolFn(cwd);
-
   pi.registerTool({
     ...origRead,
     name: "read",
-
     async execute(
       tid: string,
       params: ReadToolInput,
@@ -156,10 +134,8 @@ export default async function piPrettyExtension(
         upd,
         ctx,
       )) as AgentToolResult<ReadDetails>;
-
       const fp = params.path ?? "";
       const offset = params.offset ?? 1;
-
       const imageBlock = result.content?.find(
         (c): c is ImageContent => c.type === "image",
       );
@@ -172,9 +148,7 @@ export default async function piPrettyExtension(
         };
         return result;
       }
-
       const textContent = extractTextContent(result.content);
-
       if (textContent && fp) {
         const lineCount = textContent.split("\n").length;
         result.details = {
@@ -185,10 +159,8 @@ export default async function piPrettyExtension(
           lineCount,
         };
       }
-
       return result;
     },
-
     renderCall(
       args: ReadToolInput,
       theme: Theme,
@@ -210,7 +182,6 @@ export default async function piPrettyExtension(
       );
       return text;
     },
-
     renderResult(
       result: AgentToolResult<ReadDetails>,
       options: ToolRenderResultOptions,
@@ -218,37 +189,30 @@ export default async function piPrettyExtension(
       ctx: ToolRenderContext<ReadState, ReadToolInput>,
     ): Component {
       const text = getTextComponent(ctx, Text);
-
       if (ctx.isError) return renderError(result.content, theme, text);
-
       const d = result.details as unknown as Record<string, unknown>;
-
       if (d?._type === "readImage") {
         const tw = termW();
         const out: string[] = [];
         const byteSize = Math.ceil(((d.data as string).length * 3) / 4);
         const sizeStr = humanSize(byteSize);
         const mimeStr = (d.mimeType as string) ?? "image";
-
         out.push(
           `  ${fileIconGlyph(
             d.filePath as string,
           )}${theme.fg("dim", `${mimeStr} · ${sizeStr}`)}`,
         );
         out.push(theme.fg("border", "─".repeat(tw)));
-
         out.push(theme.fg("border", "─".repeat(tw)));
         text.setText(out.join("\n"));
         return text;
       }
-
       if (d?._type === "readFile" && d.content) {
         const key = `read:${d.filePath}:${d.offset}:${d.lineCount}:${termW()}`;
         if (ctx.state._rk !== key) {
           ctx.state._rk = key;
           const info = theme.fg("dim", `${d.lineCount} lines`);
           ctx.state._rt = `  ${info}`;
-
           const maxShow = options.expanded
             ? (d.lineCount as number)
             : MAX_PREVIEW_LINES;
@@ -271,25 +235,17 @@ export default async function piPrettyExtension(
         );
         return text;
       }
-
       const fallback = result.content?.[0] as { text?: string } | undefined;
       const fallbackText = fallback?.text ?? "read";
       text.setText(`  ${theme.fg("dim", fallbackText.slice(0, 120))}`);
       return text;
     },
   });
-
-  // ===================================================================
-  // ls — tree view with icons
-  // ===================================================================
-
   if (createLsToolFn) {
     const origLs = createLsToolFn(cwd);
-
     pi.registerTool({
       ...origLs,
       name: "ls",
-
       async execute(
         tid: string,
         params: LsToolInput,
@@ -304,22 +260,17 @@ export default async function piPrettyExtension(
           upd,
           ctx,
         )) as AgentToolResult<LsDetails>;
-
         const textContent = extractTextContent(result.content);
-
         const fp = params.path ?? cwd;
         const entryCount = countLines(textContent);
-
         result.details = {
           _type: "lsResult" as const,
           text: textContent,
           path: fp,
           entryCount,
         };
-
         return result;
       },
-
       renderCall(
         args: LsToolInput,
         theme: Theme,
@@ -335,7 +286,6 @@ export default async function piPrettyExtension(
         );
         return text;
       },
-
       renderResult(
         result: AgentToolResult<LsDetails>,
         _options: ToolRenderResultOptions,
@@ -343,7 +293,6 @@ export default async function piPrettyExtension(
         ctx: ToolRenderContext<unknown, LsToolInput>,
       ): Component {
         const text = getTextComponent(ctx, Text);
-
         return handleRenderResult(
           result,
           ctx,
@@ -351,7 +300,10 @@ export default async function piPrettyExtension(
           text,
           (d) => {
             if (d?._type === "lsResult" && d.text) {
-              const tree = renderTree(d.text as string, theme);
+              const tree = renderTree(
+                d.text as string,
+                theme,
+              ) as unknown as string[];
               const info = theme.fg("dim", `${d.entryCount} entries`);
               text.setText(`  ${info}\n${tree}`);
               return text;
@@ -363,18 +315,11 @@ export default async function piPrettyExtension(
       },
     });
   }
-
-  // ===================================================================
-  // find — grouped file list with icons
-  // ===================================================================
-
   if (createFindToolFn) {
     const origFind = createFindToolFn(cwd);
-
     pi.registerTool({
       ...origFind,
       name: "find",
-
       async execute(
         tid: string,
         params: FindToolInput,
@@ -389,21 +334,16 @@ export default async function piPrettyExtension(
           upd,
           ctx,
         )) as AgentToolResult<FindDetails>;
-
         const textContent = extractTextContent(result.content);
-
         const matchCount = countLines(textContent);
-
         result.details = {
           _type: "findResult" as const,
           text: textContent,
           pattern: params.pattern ?? "",
           matchCount,
         };
-
         return result;
       },
-
       renderCall(
         args: FindToolInput,
         theme: Theme,
@@ -422,7 +362,6 @@ export default async function piPrettyExtension(
         );
         return text;
       },
-
       renderResult(
         result: AgentToolResult<FindDetails>,
         _options: ToolRenderResultOptions,
@@ -430,7 +369,6 @@ export default async function piPrettyExtension(
         ctx: ToolRenderContext<unknown, FindToolInput>,
       ): Component {
         const text = getTextComponent(ctx, Text);
-
         return handleRenderResult(
           result,
           ctx,
@@ -450,18 +388,11 @@ export default async function piPrettyExtension(
       },
     });
   }
-
-  // ===================================================================
-  // grep — highlighted matches with line numbers
-  // ===================================================================
-
   if (createGrepToolFn) {
     const origGrep = createGrepToolFn(cwd);
-
     pi.registerTool({
       ...origGrep,
       name: "grep",
-
       async execute(
         tid: string,
         params: GrepToolInput,
@@ -476,9 +407,7 @@ export default async function piPrettyExtension(
           upd,
           ctx,
         )) as AgentToolResult<GrepDetails>;
-
         const textContent = extractTextContent(result.content);
-
         const matchCount = textContent
           ? (() => {
               const lines = textContent.trim().split("\n");
@@ -490,17 +419,14 @@ export default async function piPrettyExtension(
               return count;
             })()
           : 0;
-
         result.details = {
           _type: "grepResult" as const,
           text: textContent,
           pattern: params.pattern ?? "",
           matchCount,
         };
-
         return result;
       },
-
       renderCall(
         args: GrepToolInput,
         theme: Theme,
@@ -522,7 +448,6 @@ export default async function piPrettyExtension(
         );
         return text;
       },
-
       renderResult(
         result: AgentToolResult<GrepDetails>,
         _options: ToolRenderResultOptions,
@@ -530,7 +455,6 @@ export default async function piPrettyExtension(
         ctx: ToolRenderContext<unknown, GrepToolInput>,
       ): Component {
         const text = getTextComponent(ctx, Text);
-
         return handleRenderResult(
           result,
           ctx,
@@ -544,7 +468,6 @@ export default async function piPrettyExtension(
                 state._gk = key;
                 const info = theme.fg("dim", `${d.matchCount} matches`);
                 state._gt = `  ${info}`;
-
                 renderGrepResults(d.text as string, d.pattern as string, theme)
                   .then((rendered: string) => {
                     if (state._gk !== key) return;

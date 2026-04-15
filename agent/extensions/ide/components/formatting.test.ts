@@ -1,20 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Theme } from "@mariozechner/pi-coding-agent";
-import {
-  formatRelativeTime,
-  formatErrorMessage,
-  createMarkdownTheme,
-} from "./formatting";
-
+import { createMarkdownTheme } from "./formatting";
+import { formatRelativeTime, formatErrorMessage } from "./formatting-utils";
 describe("formatRelativeTime", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
-
   afterEach(() => {
     vi.useRealTimers();
   });
-
   describe("given a date within the last hour", () => {
     const cases = [
       { minutesAgo: 0, expected: "0m ago" },
@@ -22,77 +16,64 @@ describe("formatRelativeTime", () => {
       { minutesAgo: 30, expected: "30m ago" },
       { minutesAgo: 59, expected: "59m ago" },
     ];
-
     cases.forEach(({ minutesAgo, expected }) => {
       describe(`when ${minutesAgo} minutes ago`, () => {
         it(`then returns "${expected}"`, () => {
           const now = new Date("2024-01-15T12:00:00Z");
           vi.setSystemTime(now);
-
           const past = new Date(now.getTime() - minutesAgo * 60_000);
           expect(formatRelativeTime(past.toISOString())).toBe(expected);
         });
       });
     });
   });
-
   describe("given a date within the last day", () => {
     const cases = [
       { hoursAgo: 1, expected: "1h ago" },
       { hoursAgo: 12, expected: "12h ago" },
       { hoursAgo: 23, expected: "23h ago" },
     ];
-
     cases.forEach(({ hoursAgo, expected }) => {
       describe(`when ${hoursAgo} hours ago`, () => {
         it(`then returns "${expected}"`, () => {
           const now = new Date("2024-01-15T12:00:00Z");
           vi.setSystemTime(now);
-
           const past = new Date(now.getTime() - hoursAgo * 60 * 60_000);
           expect(formatRelativeTime(past.toISOString())).toBe(expected);
         });
       });
     });
   });
-
   describe("given a date within the last month", () => {
     const cases = [
       { daysAgo: 1, expected: "1d ago" },
       { daysAgo: 7, expected: "7d ago" },
       { daysAgo: 29, expected: "29d ago" },
     ];
-
     cases.forEach(({ daysAgo, expected }) => {
       describe(`when ${daysAgo} days ago`, () => {
         it(`then returns "${expected}"`, () => {
           const now = new Date("2024-01-15T12:00:00Z");
           vi.setSystemTime(now);
-
           const past = new Date(now.getTime() - daysAgo * 24 * 60 * 60_000);
           expect(formatRelativeTime(past.toISOString())).toBe(expected);
         });
       });
     });
   });
-
   describe("given a date older than 30 days", () => {
     describe("when 30+ days ago", () => {
       it("then returns locale date string", () => {
         const now = new Date("2024-01-15T12:00:00Z");
         vi.setSystemTime(now);
-
         const past = new Date("2023-12-01T12:00:00Z");
         const result = formatRelativeTime(past.toISOString());
-
-        // Should be a date format, not "Xd ago"
         expect(result).not.toContain("ago");
         expect(result).toMatch(/\d/);
       });
     });
   });
 });
-
 describe("formatErrorMessage", () => {
   describe("given an Error object", () => {
     describe("when formatting", () => {
@@ -102,7 +83,6 @@ describe("formatErrorMessage", () => {
       });
     });
   });
-
   describe("given a string", () => {
     describe("when formatting", () => {
       it("then returns the string directly", () => {
@@ -110,7 +90,6 @@ describe("formatErrorMessage", () => {
       });
     });
   });
-
   describe("given a number", () => {
     describe("when formatting", () => {
       it("then returns string representation", () => {
@@ -118,7 +97,6 @@ describe("formatErrorMessage", () => {
       });
     });
   });
-
   describe("given null or undefined", () => {
     describe("when formatting", () => {
       it("then returns string representation", () => {
@@ -127,7 +105,6 @@ describe("formatErrorMessage", () => {
       });
     });
   });
-
   describe("given an object", () => {
     describe("when formatting", () => {
       it("then returns object string representation", () => {
@@ -136,7 +113,6 @@ describe("formatErrorMessage", () => {
     });
   });
 });
-
 describe("createMarkdownTheme", () => {
   describe("given a pi theme", () => {
     const mockTheme = {
@@ -146,11 +122,9 @@ describe("createMarkdownTheme", () => {
       strikethrough: (text: string) => `~~${text}~~`,
       underline: (text: string) => `_${text}_`,
     } as unknown as Theme;
-
     describe("when creating markdown theme", () => {
       it("then returns theme with all required properties", () => {
         const mdTheme = createMarkdownTheme(mockTheme);
-
         expect(mdTheme.heading).toBeDefined();
         expect(mdTheme.link).toBeDefined();
         expect(mdTheme.linkUrl).toBeDefined();
@@ -166,17 +140,14 @@ describe("createMarkdownTheme", () => {
         expect(mdTheme.strikethrough).toBeDefined();
         expect(mdTheme.underline).toBeDefined();
       });
-
       it("then heading applies color and bold", () => {
         const mdTheme = createMarkdownTheme(mockTheme);
         expect(mdTheme.heading("Title")).toBe("[mdHeading:**Title**]");
       });
-
       it("then bold uses theme bold", () => {
         const mdTheme = createMarkdownTheme(mockTheme);
         expect(mdTheme.bold("text")).toBe("**text**");
       });
-
       it("then italic uses theme italic", () => {
         const mdTheme = createMarkdownTheme(mockTheme);
         expect(mdTheme.italic("text")).toBe("*text*");
