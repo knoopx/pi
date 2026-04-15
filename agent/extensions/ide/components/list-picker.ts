@@ -91,6 +91,7 @@ export function createListPicker<T extends ListPickerItem>(
   let error: string | null = null;
   let cachedLines: string[] = [];
   let cachedWidth = 0;
+  let listHeight = 0;
   const previewCache = new Map<string, string[]>();
   const statusState: StatusMessageState = { message: null, timeout: null };
   let reloadTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -127,7 +128,8 @@ export function createListPicker<T extends ListPickerItem>(
   }
 
   function filterItems(): void {
-    if (!searchQuery) filteredItems = items; else {
+    if (!searchQuery) filteredItems = items;
+    else {
       const lower = searchQuery.toLowerCase();
       filteredItems = config.filterItems(items, lower);
     }
@@ -221,6 +223,8 @@ export function createListPicker<T extends ListPickerItem>(
       createBaseDimensionsConfig(true),
     );
 
+    listHeight = dims.contentH;
+
     const titleText =
       typeof config.title === "function" ? config.title() : config.title;
     const searchDisplay = searchQuery
@@ -275,11 +279,16 @@ export function createListPicker<T extends ListPickerItem>(
   }
 
   // Navigation helpers
-  const navigate = (direction: "up" | "down") => {
+  const navigate = (direction: "up" | "down" | "pageUp" | "pageDown") => {
+    const pageOffset = Math.max(1, listHeight - 1);
     const newIndex =
       direction === "up"
         ? Math.max(0, focusedIndex - 1)
-        : Math.min(filteredItems.length - 1, focusedIndex + 1);
+        : direction === "pageUp"
+          ? Math.max(0, focusedIndex - pageOffset)
+          : direction === "pageDown"
+            ? Math.min(filteredItems.length - 1, focusedIndex + pageOffset)
+            : Math.min(filteredItems.length - 1, focusedIndex + 1);
     if (newIndex !== focusedIndex) {
       focusedIndex = newIndex;
       const item = getFocusedItem();
@@ -298,7 +307,9 @@ export function createListPicker<T extends ListPickerItem>(
       leftFocus: true,
     });
     const maxScroll = Math.max(0, sourceLines.length - dims.contentH);
-    if (direction === "down") sourceScroll = Math.min(maxScroll, sourceScroll + dims.contentH); else {
+    if (direction === "down")
+      sourceScroll = Math.min(maxScroll, sourceScroll + dims.contentH);
+    else {
       sourceScroll = Math.max(0, sourceScroll - dims.contentH);
     }
     invalidate();
@@ -340,7 +351,19 @@ export function createListPicker<T extends ListPickerItem>(
         navigate("down");
       },
     },
-
+    {
+      key: "pageUp",
+      label: "scroll",
+      handler() {
+        navigate("pageUp");
+      },
+    },
+    {
+      key: "pageDown",
+      handler() {
+        navigate("pageDown");
+      },
+    },
     {
       key: "escape",
       handler() {
@@ -353,17 +376,18 @@ export function createListPicker<T extends ListPickerItem>(
       when: () => config.onEdit !== undefined,
       handler() {
         const item = getFocusedItem();
-        if (item !== null && config.onEdit) void Promise.resolve(config.onEdit(item));
+        if (item !== null && config.onEdit)
+          void Promise.resolve(config.onEdit(item));
       },
     },
     {
-      key: "pageUp",
+      key: "shift+pageUp",
       handler() {
         scrollPreview("up");
       },
     },
     {
-      key: "pageDown",
+      key: "shift+pageDown",
       handler() {
         scrollPreview("down");
       },

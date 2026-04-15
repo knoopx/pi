@@ -123,18 +123,18 @@ Select changes with `Space`, then press `d` to generate conventional commit desc
 
 **Files pane:**
 
-| Key         | Action                 |
-| ----------- | ---------------------- |
-| `Tab`       | Switch focus           |
-| `↑/↓`       | Navigate               |
-| `e`         | Open file in VS Code   |
-| `d`         | Discard file changes   |
-| `Ctrl+T`    | Inspect file symbols   |
-| `Ctrl+I`    | Insert file path       |
-| `Ctrl+D`    | Show file dependencies |
-| `Ctrl+U`    | Show file used-by      |
-| `PgUp/PgDn` | Scroll diff            |
-| `Esc`       | Exit                   |
+| Key               | Action                 |
+| ----------------- | ---------------------- |
+| `Tab`             | Switch focus           |
+| `↑/↓`             | Navigate               |
+| `e`               | Open file in VS Code   |
+| `d`               | Discard file changes   |
+| `Ctrl+T`          | Inspect file symbols   |
+| `Ctrl+I`          | Insert file path       |
+| `Ctrl+D`          | Show file dependencies |
+| `Ctrl+U`          | Show file used-by      |
+| `Shift+PgUp/PgDn` | Scroll diff            |
+| `Esc`             | Exit                   |
 
 ### `/oplog`
 
@@ -170,13 +170,13 @@ Review all workspaces and their changes.
 
 **Files/Changes pane:**
 
-| Key         | Action       |
-| ----------- | ------------ |
-| `Tab`       | Switch focus |
-| `↑/↓`       | Navigate     |
-| `d`         | Discard file |
-| `PgUp/PgDn` | Scroll diff  |
-| `Esc`       | Exit         |
+| Key               | Action       |
+| ----------------- | ------------ |
+| `Tab`             | Switch focus |
+| `↑/↓`             | Navigate     |
+| `d`               | Discard file |
+| `Shift+PgUp/PgDn` | Scroll diff  |
+| `Esc`             | Exit         |
 
 ### `/skills [query]`
 
@@ -184,16 +184,16 @@ Browse local and remote skills, preview files, install remote skills, or insert 
 
 ![Skills](../../../screenshots/skills.png)
 
-| Key         | Action                                           |
-| ----------- | ------------------------------------------------ |
-| `↑/↓`       | Navigate (focused pane)                          |
-| `Tab`       | Switch skills/files pane                         |
-| `Ctrl+/`    | Toggle local/remote view                         |
-| `Enter`     | Install (remote) or insert `/skill:name` (local) |
-| `Ctrl+D`    | Delete local skill                               |
-| `PgUp/PgDn` | Scroll preview                                   |
-| `Type`      | Filter skills                                    |
-| `Esc`       | Exit                                             |
+| Key               | Action                                           |
+| ----------------- | ------------------------------------------------ |
+| `↑/↓`             | Navigate (focused pane)                          |
+| `Tab`             | Switch skills/files pane                         |
+| `Ctrl+/`          | Toggle local/remote view                         |
+| `Enter`           | Install (remote) or insert `/skill:name` (local) |
+| `Ctrl+D`          | Delete local skill                               |
+| `Shift+PgUp/PgDn` | Scroll preview                                   |
+| `Type`            | Filter skills                                    |
+| `Esc`             | Exit                                             |
 
 ### `/pull-requests`
 
