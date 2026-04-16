@@ -404,7 +404,7 @@ async function searchDuckDuckGo(
 
 export default function duckduckgoExtension(pi: ExtensionAPI) {
   pi.registerTool({
-    name: "search-duckduckgo",
+    name: "search-web",
     label: "Search DuckDuckGo",
     description: `Search using DuckDuckGo search engine.
 
