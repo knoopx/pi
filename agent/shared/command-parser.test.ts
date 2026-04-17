@@ -1,9 +1,6 @@
 import { describe, it, expect } from "vitest";
-import {
-  matchCommandPattern,
-  parsePattern,
-  tokenizeCommand,
-} from "./command-parser";
+import { tokenizeCommand } from "./tokenizer";
+import { matchCommandPattern, parsePattern } from "./pattern-matching";
 
 describe("command-parser", () => {
   describe("tokenizeCommand", () => {
@@ -31,7 +28,7 @@ describe("command-parser", () => {
   describe("parsePattern", () => {
     describe("given ast-like tokens", () => {
       it("then parses spread and single placeholders", () => {
-        const parsed = parsePattern("npm ? *");
+        const parsed = parsePattern("npm ? * ");
         expect(parsed).toEqual([
           { kind: "literal", value: "npm" },
           { kind: "single" },
@@ -40,7 +37,7 @@ describe("command-parser", () => {
       });
 
       it("then parses OR token groups", () => {
-        const parsed = parsePattern("{npm,bun} test *");
+        const parsed = parsePattern("{npm,bun} test * ");
         expect(parsed).toEqual([
           { kind: "or", options: [["npm"], ["bun"]] },
           { kind: "literal", value: "test" },
@@ -56,6 +53,22 @@ describe("command-parser", () => {
   });
 
   describe("matchCommandPattern", () => {
+    describe("given env vars and wrappers", () => {
+      it("then strips prefixes and matches the executable", () => {
+        expect(
+          matchCommandPattern("FOO=bar env npm install", "npm install"),
+        ).toBe(true);
+      });
+    });
+
+    describe("given pipelines and logical operators", () => {
+      it("then matches any segment in a pipeline", () => {
+        expect(
+          matchCommandPattern("cd /tmp && npm install | cat", "npm *"),
+        ).toBe(true);
+      });
+    });
+
     describe("given literal-only pattern", () => {
       it("then matches exact token sequence", () => {
         expect(matchCommandPattern("npm install", "npm install")).toBe(true);
@@ -165,6 +178,12 @@ describe("command-parser", () => {
     describe("given empty pattern", () => {
       it("then does not match", () => {
         expect(matchCommandPattern("npm install", "")).toBe(false);
+      });
+    });
+
+    describe("given empty command", () => {
+      it("then does not match", () => {
+        expect(matchCommandPattern("", "npm *")).toBe(false);
       });
     });
   });
