@@ -114,7 +114,8 @@ describe("getSessionsDir", () => {
   const originalEnv = process.env.PI_CODING_AGENT_DIR;
 
   afterEach(() => {
-    if (originalEnv === undefined) delete process.env.PI_CODING_AGENT_DIR; else {
+    if (originalEnv === undefined) delete process.env.PI_CODING_AGENT_DIR;
+    else {
       process.env.PI_CODING_AGENT_DIR = originalEnv;
     }
   });
@@ -135,7 +136,6 @@ describe("getSessionsDir", () => {
     });
   });
 });
-
 
 describe("formatCost", () => {
   describe("when cost is zero", () => {
