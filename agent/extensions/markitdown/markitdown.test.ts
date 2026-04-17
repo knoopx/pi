@@ -193,7 +193,7 @@ describe("Markitdown Extension", () => {
 
       it("then it should return error in content", () => {
         expect((result.content[0] as TextContent).text).toBe(
-          "Error converting source: markitdown: file not found\n\nExit code: 1",
+          "markitdown: file not found\n\nExit code: 1",
         );
       });
 

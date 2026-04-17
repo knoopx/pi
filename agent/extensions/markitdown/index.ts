@@ -11,7 +11,7 @@ const MARKITDOWN_PATH = `${process.env.HOME}/.local/bin/markitdown`;
 function hasValidSignal(signal: unknown): signal is AbortSignal {
   return (
     signal instanceof AbortSignal &&
-    typeof (signal).addEventListener === "function"
+    typeof signal.addEventListener === "function"
   );
 }
 
@@ -71,45 +71,50 @@ function buildErrorResult(
         text: errorMessage || `markitdown failed with exit code ${result.code}`,
       },
     ],
-    details: { source } as { source: string },
+    details: { source, error: errorMessage, exitCode: result.code } as {
+      source: string;
+    } & Record<string, unknown>,
   };
 }
 
-async function executeMarkitdownTool(
-  _toolCallId: string,
-  params: { source: string },
-  signal: AbortSignal | undefined,
-  onUpdate?: AgentToolUpdateCallback<unknown> | undefined,
-  _ctx: ExtensionContext = {} as ExtensionContext,
-): Promise<AgentToolResult<{ source: string }>> {
-  const { source } = params;
+function createExecuteMarkitdownTool(pi: ExtensionAPI) {
+  return async function executeMarkitdownTool(
+    _toolCallId: string,
+    params: { source: string },
+    signal: AbortSignal | undefined,
+    onUpdate?: AgentToolUpdateCallback<unknown> | undefined,
+    _ctx: ExtensionContext = {} as ExtensionContext,
+  ): Promise<AgentToolResult<{ source: string }>> {
+    const { source } = params;
 
-  try {
-    onUpdate?.({
-      content: [
-        { type: "text" as const, text: `Converting ${source} to Markdown...` },
-      ],
-      details: { source, status: "converting" },
-    });
+    try {
+      onUpdate?.({
+        content: [
+          {
+            type: "text" as const,
+            text: `Converting ${source} to Markdown...`,
+          },
+        ],
+        details: { source, status: "converting" },
+      });
 
-    const result = await executeMarkitdown(
-      _ctx as unknown as ExtensionAPI,
-      source,
-      signal,
-    );
+      const result = await executeMarkitdown(pi, source, signal);
 
-    if (result.code === 0)
-      return buildSuccessResult(source, result.stdout) as AgentToolResult<{
-        source: string;
-      }>;
+      if (result.code === 0)
+        return buildSuccessResult(source, result.stdout) as AgentToolResult<{
+          source: string;
+        }>;
 
-    return buildErrorResult(source, result);
-  } catch (error) {
-    return {
-      content: [{ type: "text" as const, text: `Unexpected error: ${error}` }],
-      details: { source, error: String(error) },
-    } as AgentToolResult<{ source: string }>;
-  }
+      return buildErrorResult(source, result);
+    } catch (error) {
+      return {
+        content: [
+          { type: "text" as const, text: `Unexpected error: ${error}` },
+        ],
+        details: { source, error: String(error) },
+      } as AgentToolResult<{ source: string }>;
+    }
+  };
 }
 
 function createTool(pi: ExtensionAPI) {
@@ -131,7 +136,7 @@ Supports URLs and local files.`,
       }),
     }),
 
-    execute: executeMarkitdownTool,
+    execute: createExecuteMarkitdownTool(pi),
   };
 }
 
