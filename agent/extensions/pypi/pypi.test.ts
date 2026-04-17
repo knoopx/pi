@@ -50,9 +50,10 @@ describe("PyPI Extension", () => {
     let registeredTool: MockTool;
 
     beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => (call[0] as MockTool).name === "search-pypi-packages",
-      )![0] as MockTool;
+      const calls = mockPi.registerTool.mock.calls as [MockTool][];
+      const found = calls.find((c) => c.name === "search-pypi-packages");
+      if (!found) throw new Error("not found");
+      registeredTool = found[0];
     });
 
     describe("given a valid search query with HTML results", () => {
@@ -181,9 +182,10 @@ describe("PyPI Extension", () => {
     let registeredTool: MockTool;
 
     beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => (call[0] as MockTool).name === "pypi-package-info",
-      )![0] as MockTool;
+      const calls = mockPi.registerTool.mock.calls as [MockTool][];
+      const found = calls.find((c) => c.name === "pypi-package-info");
+      if (!found) throw new Error("not found");
+      registeredTool = found[0];
     });
 
     describe("given a valid package on PyPI", () => {
