@@ -1,7 +1,6 @@
 import type {
   ExtensionAPI,
   AgentToolResult,
-  AgentToolUpdateCallback,
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
@@ -82,13 +81,15 @@ function createExecuteMarkitdownTool(pi: ExtensionAPI) {
     _toolCallId: string,
     params: { source: string },
     signal: AbortSignal | undefined,
-    onUpdate?: AgentToolUpdateCallback<unknown> | undefined,
-    _ctx: ExtensionContext = {} as ExtensionContext,
+    _onUpdate?: (
+      partialResult: AgentToolResult<Record<string, unknown>>,
+    ) => void,
+    _ctx?: ExtensionContext,
   ): Promise<AgentToolResult<{ source: string }>> {
     const { source } = params;
 
     try {
-      onUpdate?.({
+      _onUpdate?.({
         content: [
           {
             type: "text" as const,

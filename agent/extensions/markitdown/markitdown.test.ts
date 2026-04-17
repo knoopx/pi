@@ -28,7 +28,7 @@ describe("Markitdown Extension", () => {
       });
 
       it("then it should register with the correct label", () => {
-        const call = mockPi.registerTool.mock.calls[0];
+        const call = mockPi.registerTool.mock.calls[0] as [MockTool];
         expect(call[0].label).toBe("Transcribe");
       });
     });
@@ -39,7 +39,8 @@ describe("Markitdown Extension", () => {
     let registeredTool: MockTool;
 
     beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls[0][0];
+      const calls = mockPi.registerTool.mock.calls as [MockTool][];
+      registeredTool = calls[0];
     });
 
     // Execute signature: (toolCallId, params, signal, onUpdate, ctx)
