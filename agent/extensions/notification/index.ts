@@ -7,13 +7,11 @@
 
 import type {
   AgentToolResult,
-  AgentToolUpdateCallback,
   ExtensionAPI,
   ExtensionCommandContext,
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { StringEnum } from "@mariozechner/pi-ai";
-import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
 import { buildNotifySendArgs } from "./notify-send";
 
@@ -75,37 +73,6 @@ function runTtsIfNeeded(
   runTts(pi, buildSpeechText(params.summary, params.body));
 }
 
-function renderCall(
-  args: { summary: string },
-  theme: Parameters<
-    NonNullable<Parameters<ExtensionAPI["registerTool"]>[0]["renderCall"]>
-  >[1],
-  _context: unknown,
-) {
-  const summary =
-    args.summary.length > 50
-      ? `"${args.summary.substring(0, 50)}..."`
-      : `"${args.summary}"`;
-  return new Text(
-    theme.fg("toolTitle", theme.bold("notify")) +
-      theme.fg("muted", ` ${summary}`),
-    0,
-    0,
-  );
-}
-
-function renderResult(
-  result: { content: Array<{ type: string; text?: string }> },
-  _options: unknown,
-  theme: Parameters<
-    NonNullable<Parameters<ExtensionAPI["registerTool"]>[0]["renderResult"]>
-  >[2],
-  _context: unknown,
-) {
-  const text = result.content[0]?.type === "text" ? result.content[0].text : "";
-  return new Text(theme.fg("success", text ?? ""), 0, 0);
-}
-
 function createExecuteNotify(
   isTtsEnabledRef: { value: boolean },
   pi: ExtensionAPI,
@@ -114,8 +81,6 @@ function createExecuteNotify(
     _toolCallId: string,
     params: NotifyToolParams,
     signal: AbortSignal | undefined,
-    _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-    _ctx: ExtensionContext,
   ): Promise<AgentToolResult<Record<string, unknown>>> {
     const options = signal ? { signal } : undefined;
 
