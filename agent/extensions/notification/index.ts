@@ -17,7 +17,7 @@ import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
 import { buildNotifySendArgs } from "./notify-send";
 
-type NotifyToolParams = {
+interface NotifyToolParams {
   summary: string;
   body?: string;
   urgency?: "low" | "normal" | "critical";
@@ -25,7 +25,7 @@ type NotifyToolParams = {
   appName?: string;
   icon?: string;
   category?: string;
-};
+}
 
 const buildSpeechText = (summary: string, body?: string): string =>
   body ? `${summary}. ${body}` : summary;
