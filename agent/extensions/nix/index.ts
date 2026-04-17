@@ -525,7 +525,7 @@ function formatPackageTable(res: Record<string, string>[]): string {
     attr_name: pkg.attr_name || "",
     license: pkg.license || "",
     maintainers: pkg.maintainers || "",
-    homepage: Array.isArray(pkg.homepage) ? pkg.homepage[0] || "" : "",
+    homepage: pkg.homepage || "",
   }));
 
   return [

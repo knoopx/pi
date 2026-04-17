@@ -229,6 +229,7 @@ async function executePackageInfo(
   try {
     const response = await throttledFetch(
       `https://pypi.org/pypi/${encodeURIComponent(packageName)}/json`,
+      { signal: undefined },
     );
 
     if (!response.ok) {
