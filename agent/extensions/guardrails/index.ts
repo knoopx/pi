@@ -91,7 +91,19 @@ export async function isGroupActive(
   excludePattern?: string,
 ): Promise<boolean> {
   try {
-    if (pattern === "*") return !excludePattern;
+    // Wildcard pattern is active by default; only deactivate if exclude matches
+    if (pattern === "*") {
+      if (excludePattern) {
+        const excludeMatches = await glob(excludePattern, {
+          cwd: root,
+          absolute: false,
+          dot: true,
+          onlyDirectories: false,
+        });
+        if (excludeMatches.length > 0) return false;
+      }
+      return true;
+    }
     if (!(await hasMatchingFiles(pattern, root))) return false;
     if (excludePattern) {
       const excludeMatches = await glob(excludePattern, {

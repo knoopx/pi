@@ -45,10 +45,10 @@ describe("DuckDuckGo Extension", () => {
     toolConfig = mockPi.registerTool.mock.calls[0][0] as MockTool;
   });
 
-  it("should register search-duckduckgo tool", () => {
+  it("should register search-web tool", () => {
     expect(mockPi.registerTool).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: "search-duckduckgo",
+        name: "search-web",
         label: "Search DuckDuckGo",
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         description: expect.stringContaining("Search using DuckDuckGo"),
@@ -57,14 +57,16 @@ describe("DuckDuckGo Extension", () => {
   });
 
   describe("Tool Execution", () => {
-    it("should return no results message when search returns empty", async () => {
+    it("should return error when search fails with network error", async () => {
       const result = await executeSearchTool(
         toolConfig,
         vi.fn().mockRejectedValue(new Error("Network error")),
       );
 
-      expect((result.content[0] as TextContent).text).toBe("No results found.");
-      expect(result.details).toEqual({ query: "test query", limit: 5 });
+      expect((result.content[0] as TextContent).text).toBe(
+        "Error: DuckDuckGo search failed",
+      );
+      expect(result.details.query).toBe("test query");
     });
 
     it("should format search results correctly", async () => {

@@ -47,7 +47,6 @@ const DDG_DATA_HEADERS = {
   "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
 };
 
-
 interface SearchResult {
   title: string;
   url: string;
@@ -412,14 +411,19 @@ Returns search results with titles, URLs, and descriptions.`,
     parameters: SearchDuckDuckGoParams,
 
     async execute(_toolCallId: string, params: SearchDuckDuckGoParamsType) {
-      const { query, limit = 10 } = params;
-      const results = await searchDuckDuckGo(query, limit);
+      try {
+        const { query, limit = 10 } = params;
+        const results = await searchDuckDuckGo(query, limit);
 
-      if (results.length === 0)
-        return textResult("No results found.", { query, limit });
+        if (results.length === 0)
+          return textResult("No results found.", { query, limit });
 
-      const text = formatSearchOutput(query, results);
-      return textResult(text, { query, limit, results });
+        const text = formatSearchOutput(query, results);
+        return textResult(text, { query, limit, results });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return textResult(`Error: ${message}`, { query: params.query });
+      }
     },
   });
 }
