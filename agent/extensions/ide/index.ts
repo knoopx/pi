@@ -59,6 +59,10 @@ function shortenHomePath(cwd: string): string {
   return cwd;
 }
 
+function reportWorkspaceError(ctx: ExtensionContext, msg: string): void {
+  if (ctx.hasUI) ctx.ui.notify(msg, "error");
+}
+
 interface ThemeWithFg {
   fg(color: string, text: string): string;
 }
@@ -376,8 +380,7 @@ function handleSessionFork(
     })
     .catch((error) => {
       const msg = error instanceof Error ? error.message : String(error);
-      if (ctx.hasUI)
-        ctx.ui.notify(`Failed to create workspace on fork: ${msg}`, "error");
+      reportWorkspaceError(ctx, `Failed to create workspace on fork: ${msg}`);
     });
 }
 
@@ -410,8 +413,7 @@ function handleWorkspaceCommand(
         })
         .catch((error) => {
           const msg = error instanceof Error ? error.message : String(error);
-          if (ctx.hasUI)
-            ctx.ui.notify(`Failed to create workspace: ${msg}`, "error");
+          reportWorkspaceError(ctx, `Failed to create workspace: ${msg}`);
         }),
     )
     .catch(() => {});

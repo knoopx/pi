@@ -98,20 +98,22 @@ function handleCustomBindings<TContext>(
   ctx: TContext,
 ): boolean {
   for (const binding of bindings) {
-    if (typeof binding.key === "string") {
-      if (
-        (matchesKey as (data: string, key: KeyPattern) => boolean)(
-          data,
-          binding.key,
-        )
-      ) {
-        if (binding.when && !binding.when(ctx)) continue;
-        const result = binding.handler(ctx);
-        if (result === true || result === undefined) return true;
-      }
-    }
+    if (!tryMatchBinding(data, binding, ctx)) continue;
+    const result = binding.handler(ctx);
+    if (result === true || result === undefined) return true;
   }
   return false;
+}
+
+function tryMatchBinding<TContext>(
+  data: string,
+  binding: KeyBinding<TContext>,
+  ctx: TContext,
+): boolean {
+  if (typeof binding.key !== "string") return false;
+  if (!matchesKey(data, binding.key)) return false;
+  if (binding.when && !binding.when(ctx)) return false;
+  return true;
 }
 
 function handleNavigation(

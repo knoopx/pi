@@ -49,6 +49,15 @@ function createMockReadFileImpl(
   };
 }
 
+// Shared helper to assert that only "good" config entries pass validation
+async function expectOnlyGood(cfg: unknown, expectedLength = 1): Promise<void> {
+  mockReadFile.mockImplementation(createMockReadFileImpl(cfg, []));
+  await configLoader.load();
+  const loaded = configLoader.getConfig();
+  expect(loaded).toHaveLength(expectedLength);
+  expect(loaded[0].group).toBe("good");
+}
+
 describe("guardrails configLoader", () => {
   const mockReadFile = readFile as unknown as Mock;
   const mockWriteFile = writeFile as unknown as Mock;
@@ -196,12 +205,7 @@ describe("guardrails configLoader", () => {
         },
       ];
 
-      mockReadFile.mockImplementation(createMockReadFileImpl(cfg, []));
-
-      await configLoader.load();
-      const loaded = configLoader.getConfig();
-      expect(loaded).toHaveLength(1);
-      expect(loaded[0].group).toBe("good");
+      await expectOnlyGood(cfg);
     });
   });
 
@@ -274,12 +278,7 @@ describe("guardrails configLoader", () => {
         },
       ];
 
-      mockReadFile.mockImplementation(createMockReadFileImpl(cfg, []));
-
-      await configLoader.load();
-      const loaded = configLoader.getConfig();
-      expect(loaded).toHaveLength(1);
-      expect(loaded[0].group).toBe("good");
+      await expectOnlyGood(cfg);
     });
   });
 });

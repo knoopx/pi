@@ -68,6 +68,45 @@ function get<T extends object>(obj: T, path: string): unknown {
   return cur;
 }
 
+/** Test HTTP and network error handling for a registered tool. */
+function testErrorHandling(
+  tool: MockTool,
+  params: Record<string, string>,
+  okMsg: string,
+  failMsgPrefix: string,
+): void {
+  it("then it should return error message", async () => {
+    const result = await runWithFetch(
+      tool,
+      params,
+      undefined,
+      500,
+      "Internal Server Error",
+    );
+    expect((result.content[0] as TextContent).text).toBe(
+      `${failMsgPrefix} Internal Server Error`,
+    );
+  });
+
+  it("then it should return error on network failure", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockRejectedValue(new Error("Network error"))
+      as unknown as typeof globalThis.fetch;
+    globalThis.fetch = mockFetch;
+    const result = await tool.execute(
+      "tool1",
+      params,
+      undefined,
+      undefined,
+      undefined,
+    );
+    expect((result.content[0] as TextContent).text).toBe(
+      `${failMsgPrefix} Network error`,
+    );
+  });
+}
+
 describe("NPM Extension", () => {
   let mockPi: MockExtensionAPI;
   let originalFetch: typeof globalThis.fetch;
@@ -212,24 +251,12 @@ describe("NPM Extension", () => {
     });
 
     describe("given the fetch function throws an error", () => {
-      it("then it should return error message", async () => {
-        const mockFetch = vi
-          .fn()
-          .mockRejectedValue(
-            new Error("Network error"),
-          ) as unknown as typeof globalThis.fetch;
-        globalThis.fetch = mockFetch;
-        const result = await registeredTool.execute(
-          "tool1",
-          { query: "test" },
-          undefined,
-          undefined,
-          undefined,
-        );
-        expect((result.content[0] as TextContent).text).toBe(
-          "Error searching packages: Network error",
-        );
-      });
+      testErrorHandling(
+        registeredTool,
+        { query: "test" },
+        "No packages found.",
+        "Error searching packages:",
+      );
     });
   });
 
@@ -345,24 +372,12 @@ describe("NPM Extension", () => {
     });
 
     describe("given the fetch function throws an error", () => {
-      it("then it should return error message", async () => {
-        const mockFetch = vi
-          .fn()
-          .mockRejectedValue(
-            new Error("Network error"),
-          ) as unknown as typeof globalThis.fetch;
-        globalThis.fetch = mockFetch;
-        const result = await registeredTool.execute(
-          "tool1",
-          { package: "lodash" },
-          undefined,
-          undefined,
-          undefined,
-        );
-        expect((result.content[0] as TextContent).text).toBe(
-          `Error ${action}: Network error`,
-        );
-      });
+      testErrorHandling(
+        registeredTool,
+        { package: "lodash" },
+        `No packages found.`,
+        `Error ${action}:`,
+      );
     });
   });
 });

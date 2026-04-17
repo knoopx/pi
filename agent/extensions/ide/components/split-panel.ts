@@ -600,73 +600,88 @@ export function renderFileChangeRows(
   let startIdx = 0;
   if (fileIndex >= visibleCount) startIdx = fileIndex - visibleCount + 1;
 
-  const getStatusColor = (
-    status: string,
-  ): "toolDiffAdded" | "toolDiffRemoved" | "warning" => {
-    if (status === "A") return "toolDiffAdded";
-    if (status === "D") return "toolDiffRemoved";
-    return "warning";
-  };
-
   for (let i = 0; i < visibleCount && startIdx + i < files.length; i++) {
     const idx = startIdx + i;
     const file = files[idx];
     const isSelected = idx === fileIndex && isFocused;
-    const statusIcon = getFileStatusIcon(file.status);
-    const fileIcon = getFileIcon(file.path);
-    const fileIconColor = getFileIconColor(file.path);
-    const statusColor = getStatusColor(file.status);
-
-    const _styledStatus = theme.fg(statusColor, statusIcon);
-    const _styledFileIcon = fileIconColor
-      ? hexColor(fileIconColor, fileIcon)
-      : theme.fg(statusColor, fileIcon);
-    const styledPath = theme.fg(statusColor, file.path);
-
-    const stats = formatFileStats(file.insertions, file.deletions);
-    const statsColor = stats.isPositive ? "toolDiffAdded" : "toolDiffRemoved";
-    const styledStats = stats.text
-      ? theme.fg(statsColor, ` ${stats.text}`)
-      : "";
-
-    const prefix = ` ${statusIcon} ${fileIcon} `; // status + file icon + spaces
-    const prefixWidth = stringWidth(prefix);
-    const statsWidth = styledStats ? stringWidth(styledStats) : 0;
-    const rightPadding = 1; // one char padding from right edge
-    const availablePathWidth = Math.max(
-      1,
-      width - prefixWidth - statsWidth - rightPadding,
-    );
-
-    const truncatedPath = truncateAnsi(styledPath, availablePathWidth);
-    const pathWidth = stringWidth(truncatedPath);
-    const paddingSpaces = Math.max(0, availablePathWidth - pathWidth);
-    const padding = " ".repeat(paddingSpaces);
-
-    const rightPaddingStr = " ".repeat(rightPadding);
-    const line = `${prefix}${truncatedPath}${padding}${styledStats}${rightPaddingStr}`;
-    const padded = ensureWidth(line, width);
-
-    if (isSelected) {
-      const statsPlain = stats.text ? ` ${stats.text}` : "";
-      const plainPrefix = ` ${statusIcon} ${fileIcon} `;
-      const plainPath = truncateAnsi(file.path, availablePathWidth);
-      const plainPathWidth = stringWidth(plainPath);
-      const plainPaddingSpaces = Math.max(
-        0,
-        availablePathWidth - plainPathWidth,
-      );
-      const plainPadding = " ".repeat(plainPaddingSpaces);
-      const plainText = `${plainPrefix}${plainPath}${plainPadding}${statsPlain}${rightPaddingStr}`;
-      const paddedPlain = ensureWidth(plainText, width);
-      const styled = theme.fg("accent", theme.bold(paddedPlain));
-      rows.push(theme.bg("selectedBg", styled));
-    } else {
-      rows.push(padded);
-    }
+    rows.push(renderFileRow(file, { width, isSelected, isFocused, theme }));
   }
 
   return rows;
+}
+
+interface FileRowOptions {
+  width: number;
+  isSelected: boolean;
+  isFocused: boolean;
+  theme: Theme;
+}
+
+function renderFileRow(
+  file: { path: string; status: string },
+  opts: FileRowOptions,
+): string {
+  const { width, isSelected, isFocused, theme } = opts;
+  const statusIcon = getFileStatusIcon(file.status);
+  const fileIcon = getFileIcon(file.path);
+  const fileIconColor = getFileIconColor(file.path);
+  const statusColor: "toolDiffAdded" | "toolDiffRemoved" | "warning" =
+    file.status === "A"
+      ? "toolDiffAdded"
+      : file.status === "D"
+        ? "toolDiffRemoved"
+        : "warning";
+
+  const styledPath = theme.fg(statusColor, file.path);
+  const stats = formatFileStats(file.insertions, file.deletions);
+  const statsColor = stats.isPositive ? "toolDiffAdded" : "toolDiffRemoved";
+  const styledStats = stats.text ? theme.fg(statsColor, ` ${stats.text}`) : "";
+
+  const prefix = ` ${statusIcon} ${fileIcon} `;
+  const prefixWidth = stringWidth(prefix);
+  const statsWidth = styledStats ? stringWidth(styledStats) : 0;
+  const availablePathWidth = Math.max(1, width - prefixWidth - statsWidth - 1);
+
+  if (isSelected && isFocused) {
+    const statsPlain = stats.text ? ` ${stats.text}` : "";
+    return renderSelectedRow(file, {
+      availablePathWidth,
+      prefix,
+      statsText: statsPlain,
+      width,
+      theme,
+    });
+  }
+
+  const truncatedPath = truncateAnsi(styledPath, availablePathWidth);
+  const pathWidth = stringWidth(truncatedPath);
+  const padding = " ".repeat(Math.max(0, availablePathWidth - pathWidth));
+  return ensureWidth(
+    `${prefix}${truncatedPath}${padding}${styledStats}`,
+    width,
+  );
+}
+
+function renderSelectedRow(
+  file: { path: string },
+  opts: {
+    availablePathWidth: number;
+    prefix: string;
+    statsText: string;
+    width: number;
+    theme: Theme;
+  },
+): string {
+  const { availablePathWidth, prefix, statsText, width, theme } = opts;
+  const plainPath = truncateAnsi(file.path, availablePathWidth);
+  const padding = " ".repeat(
+    Math.max(0, availablePathWidth - stringWidth(plainPath)),
+  );
+  const padded = ensureWidth(
+    `${prefix}${plainPath}${padding}${statsText}`,
+    width,
+  );
+  return theme.bg("selectedBg", theme.fg("accent", theme.bold(padded)));
 }
 
 /**
