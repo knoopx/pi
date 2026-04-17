@@ -120,8 +120,10 @@ function getSessionCwd(content: string): string | null {
   for (const line of lines) {
     if (!line.trim()) continue;
     try {
-      const parsed = JSON.parse(line);
-      if (parsed.type === "session" && parsed.cwd) return parsed.cwd as string;
+      const raw = JSON.parse(line) as unknown;
+      if (typeof raw !== "object" || raw === null) continue;
+      const parsed = raw as { type?: string; cwd?: string };
+      if (parsed.type === "session" && parsed.cwd) return parsed.cwd;
     } catch {
       continue;
     }
@@ -146,18 +148,22 @@ function extractTimestamp(
 /**
  * Process a single session file and add matching history entries
  */
+interface ProcessSessionFileOpts {
+  targetCwd: string;
+  cutoffTimestamp: number;
+  history: HistoryEntry[];
+  seen: Set<string>;
+}
+
 function processSessionFile(
   fullPath: string,
-  targetCwd: string,
-  cutoffTimestamp: number,
-  history: HistoryEntry[],
-  seen: Set<string>,
+  opts: ProcessSessionFileOpts,
 ): void {
   try {
     const content = readFileSync(fullPath, "utf-8");
     const sessionCwd = getSessionCwd(content);
 
-    if (!sessionCwd || !isPathMatch(sessionCwd, targetCwd)) return;
+    if (!sessionCwd || !isPathMatch(sessionCwd, opts.targetCwd)) return;
 
     const lines = content.trim().split("\n");
     for (const line of lines) {
@@ -170,9 +176,9 @@ function processSessionFile(
         if (!message) continue;
 
         const timestamp = extractTimestamp(entry, message);
-        if (timestamp < cutoffTimestamp) continue;
+        if (timestamp < opts.cutoffTimestamp) continue;
 
-        processMessageEntry(message, timestamp, history, seen);
+        processMessageEntry(message, timestamp, opts.history, opts.seen);
       } catch {
         continue;
       }
@@ -227,10 +233,12 @@ function processMessageEntry(
  */
 function walkDir(
   dir: string,
-  targetCwd: string,
-  cutoffTimestamp: number,
-  history: HistoryEntry[],
-  seen: Set<string>,
+  opts: {
+    targetCwd: string;
+    cutoffTimestamp: number;
+    history: HistoryEntry[];
+    seen: Set<string>;
+  },
 ): void {
   try {
     const entries = readdirSync(dir);
@@ -238,16 +246,12 @@ function walkDir(
       const fullPath = join(dir, entry);
       try {
         const stat = statSync(fullPath);
-        if (stat.isDirectory())
-          walkDir(fullPath, targetCwd, cutoffTimestamp, history, seen);
-        else if (entry.endsWith(".jsonl") && stat.mtimeMs >= cutoffTimestamp)
-          processSessionFile(
-            fullPath,
-            targetCwd,
-            cutoffTimestamp,
-            history,
-            seen,
-          );
+        if (stat.isDirectory()) walkDir(fullPath, opts);
+        else if (
+          entry.endsWith(".jsonl") &&
+          stat.mtimeMs >= opts.cutoffTimestamp
+        )
+          processSessionFile(fullPath, opts);
       } catch {
         // Skip files we can't read
       }
@@ -264,7 +268,7 @@ const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
 
   try {
     const sessionsDir = join(homedir(), ".pi", "agent", "sessions");
-    walkDir(sessionsDir, targetCwd, cutoffTimestamp, history, seen);
+    walkDir(sessionsDir, { targetCwd, cutoffTimestamp, history, seen });
   } catch {
     // Sessions directory doesn't exist or can't be read
   }

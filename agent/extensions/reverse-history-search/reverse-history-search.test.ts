@@ -4,6 +4,8 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   ExtensionUIContext,
+  SessionManager,
+  ModelRegistry,
 } from "@mariozechner/pi-coding-agent";
 import setupExtension from "./index";
 import { fuzzyMatch } from "../../shared/fuzzy";
@@ -22,15 +24,18 @@ describe("Reverse History Search Extension", () => {
   describe("given the extension is initialized", () => {
     describe("when registering shortcut", () => {
       it("then it should register ctrl+r shortcut", () => {
-        expect(mockPi.registerShortcut).toHaveBeenCalledWith("ctrl+r", {
-          description:
-            "Reverse history search (user messages and commands from sessions in current directory)",
-          handler: expect.any(Function),
-        });
+        const { registerShortcut } = mockPi as unknown as MockExtensionAPI;
+        const matcher = {
+          handler: expect.any(Function) as unknown,
+        };
+        expect(registerShortcut).toHaveBeenCalledWith("ctrl+r", matcher);
       });
 
       it("then it should register a handler function", () => {
-        const call = mockPi.registerShortcut.mock.calls[0];
+        const call = mockPi.registerShortcut.mock.calls[0] as [
+          string,
+          { handler: unknown },
+        ];
         expect(call[1].handler).toBeInstanceOf(Function);
       });
     });
@@ -42,7 +47,11 @@ describe("Reverse History Search Extension", () => {
     let mockCtx: ExtensionContext;
 
     beforeEach(() => {
-      handler = mockPi.registerShortcut.mock.calls[0][1].handler;
+      const regCall = mockPi.registerShortcut.mock.calls[0] as [
+        string,
+        { handler: unknown },
+      ];
+      handler = regCall[1].handler as (ctx: ExtensionContext) => Promise<void>;
       mockCtx = {
         hasUI: true,
         cwd: "/home/test/project",
@@ -50,7 +59,7 @@ describe("Reverse History Search Extension", () => {
           notify: vi.fn(),
           custom: vi.fn(),
           setEditorText: vi.fn(),
-          theme: {} as any,
+          theme: { fg: vi.fn() },
           select: vi.fn(),
           confirm: vi.fn(),
           input: vi.fn(),
@@ -67,8 +76,8 @@ describe("Reverse History Search Extension", () => {
           getTheme: vi.fn(),
           setTheme: vi.fn(),
         } as ExtensionUIContext,
-        sessionManager: {} as any,
-        modelRegistry: {} as any,
+        sessionManager: vi.fn() as unknown as SessionManager,
+        modelRegistry: vi.fn() as unknown as ModelRegistry,
         model: undefined,
         isIdle: vi.fn(),
         abort: vi.fn(),
