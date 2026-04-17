@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { table, type Column } from "./table";
+import { table } from "./table";
+import type { Column } from "./types";
 
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
 function strip(text: string): string {

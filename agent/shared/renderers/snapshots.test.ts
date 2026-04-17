@@ -6,7 +6,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { table, type Column } from "./table";
+import { table } from "./table";
+import type { Column } from "./types";
 import { detail } from "./detail";
 import { dotJoin, sectionDivider, threadSeparator, stateDot } from "./header";
 import { actionLine } from "./action";

@@ -9,26 +9,7 @@
 import { visibleWidth } from "@mariozechner/pi-tui";
 import { wrapPlain } from "./text";
 
-// ── Types ────────────────────────────────────────────────
-
-export interface Column {
-  /** Column header label */
-  key: string;
-  /** Right-align values (for numbers) */
-  align?: "left" | "right";
-  /** Minimum column width */
-  minWidth?: number;
-  /** Maximum column width before wrapping */
-  maxWidth?: number;
-  /** Format cell value (return ANSI-colored string) */
-  format?: (value: unknown, row: Record<string, unknown>) => string;
-}
-
-interface MeasuredColumn extends Column {
-  width: number;
-}
-
-// ── Helpers ──────────────────────────────────────────────
+import type { Column, MeasuredColumn } from "./types";
 
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
 
@@ -50,8 +31,6 @@ function cellStr(value: unknown): string {
   if (value === null || value === undefined) return "";
   return String(value);
 }
-
-// ── Table renderer ───────────────────────────────────────
 
 /**
  * Render a list of rows as a table following the design system.
@@ -170,7 +149,7 @@ export function table(
       if (segments.length === 1) {
         const lines = wrapSegment(segments[0]);
         if (lines.length <= 1) return lines;
-        return [lines[0], ...lines.slice(1).map((l) => `    ${  l}`)];
+        return [lines[0], ...lines.slice(1).map((l) => `    ${l}`)];
       }
       // Multi-line cell — wrap each segment, join with newlines, then re-split
       const wrappedSegments = segments.map((seg) =>
