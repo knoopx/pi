@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
+    "@leeoniya/ufuzzy": "1.0.0",
     "@mariozechner/pi-agent-core": "^0.66.1",
     "@mariozechner/pi-ai": "^0.66.1",
     "@mariozechner/pi-coding-agent": "^0.66.1",
     "@mariozechner/pi-tui": "^0.66.1",
-    "@leeoniya/ufuzzy": "1.0.0",
-    "@sinclair/typebox": "^0.34.48"
+    "@sinclair/typebox": "^0.34.48",
+    "eslint-antislop": "file:///home/knoopx/Projects/knoopx/eslint-antislop"
   },
   "devDependencies": {
     "vitest": "^3.2.4"

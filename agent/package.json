@@ -1,0 +1,12 @@
+{
+  "name": "pi-agent",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@leeoniya/ufuzzy": "^1.0.19",
+    "shell-quote": "^1.8.3"
+  },
+  "devDependencies": {
+    "@types/shell-quote": "^1.7.5"
+  }
+}

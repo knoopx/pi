@@ -1,0 +1,7 @@
+{
+  "name": "pi",
+  "type": "module",
+  "devDependencies": {
+    "vitest": "^4.1.4"
+  }
+}
