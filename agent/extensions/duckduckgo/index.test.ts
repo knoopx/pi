@@ -15,19 +15,16 @@ import { disableThrottle } from "../../shared/throttle";
 /**
  * Helper to execute the search tool with fetch mocking
  */
-async function executeSearchTool(
-  toolConfig: MockTool,
-  mockFetch: typeof global.fetch,
-) {
+async function executeSearchTool(toolConfig: MockTool, mockFetch: unknown) {
   const originalFetch = global.fetch;
-  global.fetch = mockFetch;
+  global.fetch = mockFetch as typeof global.fetch;
   try {
     return await toolConfig.execute(
       "test-id",
       { query: "test query", limit: 5 },
-      vi.fn(),
+      undefined,
+      undefined,
       {} as ExtensionContext,
-      new AbortController().signal,
     );
   } finally {
     global.fetch = originalFetch;
@@ -50,7 +47,6 @@ describe("DuckDuckGo Extension", () => {
       expect.objectContaining({
         name: "search-web",
         label: "Search DuckDuckGo",
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         description: expect.stringContaining("Search using DuckDuckGo"),
       }),
     );
@@ -58,10 +54,12 @@ describe("DuckDuckGo Extension", () => {
 
   describe("Tool Execution", () => {
     it("should return error when search fails with network error", async () => {
-      const result = await executeSearchTool(
-        toolConfig,
-        vi.fn().mockRejectedValue(new Error("Network error")),
-      );
+      const mockFetch = vi
+        .fn()
+        .mockRejectedValue(
+          new Error("Network error"),
+        ) as unknown as typeof global.fetch;
+      const result = await executeSearchTool(toolConfig, mockFetch);
 
       expect((result.content[0] as TextContent).text).toBe(
         "Error: DuckDuckGo search failed",

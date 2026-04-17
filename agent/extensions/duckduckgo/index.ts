@@ -1,4 +1,7 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type {
+  AgentToolResult,
+  ExtensionAPI,
+} from "@mariozechner/pi-coding-agent";
 import { Type, type Static } from "@sinclair/typebox";
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";

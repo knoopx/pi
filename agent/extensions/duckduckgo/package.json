@@ -12,15 +12,15 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@mariozechner/pi-ai": "^0.63.1",
-    "@mariozechner/pi-coding-agent": "^0.63.1",
+    "@mariozechner/pi-ai": "^0.63.2",
+    "@mariozechner/pi-coding-agent": "^0.63.2",
     "cheerio": "^1.2.0"
   },
   "devDependencies": {
-    "@types/node": "^22.13.1",
-    "eslint": "^10.0.0",
-    "eslint-antislop": "github:knoopx/eslint-antislop",
-    "typescript": "^5.7.3",
-    "typescript-eslint": "^8.0.0"
+    "@types/node": "^22.19.17",
+    "eslint": "^10.2.0",
+    "eslint-antislop": "file:///home/knoopx/Projects/knoopx/eslint-antislop/",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.58.2"
   }
 }
