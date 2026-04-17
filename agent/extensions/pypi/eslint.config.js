@@ -1,21 +1,3 @@
-import { config } from "eslint-antislop";
+import base from "../../shared/eslint.config.base.js";
 
-export default [
-  { ignores: ["node_modules", "dist", "eslint.config.js"] },
-  ...config,
-  {
-    files: ["**/*.ts"],
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-    rules: {
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        { argsIgnorePattern: "^_" },
-      ],
-    },
-  },
-];
+export default base;
