@@ -1,4 +1,3 @@
-// @ts-nocheck — test calls use incorrect arity/types; needs execute signature migration
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { TextContent } from "@mariozechner/pi-ai";
 import type {
@@ -51,6 +50,7 @@ describe("DuckDuckGo Extension", () => {
       expect.objectContaining({
         name: "search-duckduckgo",
         label: "Search DuckDuckGo",
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         description: expect.stringContaining("Search using DuckDuckGo"),
       }),
     );
@@ -85,16 +85,15 @@ describe("DuckDuckGo Extension", () => {
             ok: true,
             text: () => Promise.resolve("<html>No preload</html>"),
           });
-        } else {
-          // Subsequent calls - POST requests for results
-          return Promise.resolve({
-            ok: true,
-            text: () =>
-              Promise.resolve(
-                fetchCallCount === 2 ? mockHtmlWithResults : "<html></html>",
-              ),
-          });
         }
+        // Subsequent calls - POST requests for results
+        return Promise.resolve({
+          ok: true,
+          text: () =>
+            Promise.resolve(
+              fetchCallCount === 2 ? mockHtmlWithResults : "<html></html>",
+            ),
+        });
       });
 
       const result = await executeSearchTool(toolConfig, mockFetch);

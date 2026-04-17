@@ -47,7 +47,7 @@ const DDG_DATA_HEADERS = {
   "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
 };
 
-// Define types
+
 interface SearchResult {
   title: string;
   url: string;
@@ -226,43 +226,39 @@ async function searchDuckDuckGoPreloadUrl(
 ): Promise<SearchResult[]> {
   const results: SearchResult[] = [];
 
-  try {
-    const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&t=h_&ia=web`;
-    await acquireSlot(DDG_HOST);
-    const response = await fetch(searchUrl, { headers: DDG_HEADERS });
+  const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&t=h_&ia=web`;
+  await acquireSlot(DDG_HOST);
+  const response = await fetch(searchUrl, { headers: DDG_HEADERS });
 
-    if (!response.ok)
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  if (!response.ok)
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
-    const html = await response.text();
-    const basePreloadUrl = extractPreloadUrl(html);
+  const html = await response.text();
+  const basePreloadUrl = extractPreloadUrl(html);
 
-    if (!basePreloadUrl) return [];
+  if (!basePreloadUrl) return [];
 
-    const preloadUrlObj = new URL(basePreloadUrl);
-    let offset = 0;
+  const preloadUrlObj = new URL(basePreloadUrl);
+  let offset = 0;
 
-    while (results.length < maxResults) {
-      const {
-        results: pageResults,
-        validCount,
-        hasMore,
-      } = await fetchPreloadPage(
-        preloadUrlObj,
-        offset,
-        maxResults - results.length,
-      );
+  while (results.length < maxResults) {
+    const {
+      results: pageResults,
+      validCount,
+      hasMore,
+    } = await fetchPreloadPage(
+      preloadUrlObj,
+      offset,
+      maxResults - results.length,
+    );
 
-      results.push(...pageResults);
+    results.push(...pageResults);
 
-      if (!hasMore || validCount === 0) break;
-      offset += validCount;
-    }
-
-    return results.slice(0, maxResults);
-  } catch {
-    return [];
+    if (!hasMore || validCount === 0) break;
+    offset += validCount;
   }
+
+  return results.slice(0, maxResults);
 }
 
 /**
@@ -335,7 +331,7 @@ async function fetchHtmlPage(
 }
 
 /**
- * HTML-based DuckDuckGo search as fallback
+ * * HTML-based DuckDuckGo search using the HTML endpoint
  */
 async function searchDuckDuckGoHtml(
   query: string,
@@ -344,34 +340,30 @@ async function searchDuckDuckGoHtml(
   const results: SearchResult[] = [];
   let offset = 0;
 
-  try {
-    await acquireSlot(DDG_HOST);
-    const { html, ok } = await fetchHtmlPage(query, 0);
+  await acquireSlot(DDG_HOST);
+  const { html, ok } = await fetchHtmlPage(query, 0);
 
-    if (!ok) throw new Error(`HTTP fetch failed`);
+  if (!ok) throw new Error(`HTTP fetch failed`);
 
-    let $ = cheerio.load(html);
-    let items = $("div.result");
+  let $ = cheerio.load(html);
+  let items = $("div.result");
 
-    if (items.length === 0) return results;
+  if (items.length === 0) return results;
 
+  parseSearchResults($, items, results, maxResults);
+
+  while (results.length < maxResults && items.length > 0) {
+    offset += items.length;
+    const { html: nextHtml, ok: nextOk } = await fetchHtmlPage(query, offset);
+
+    if (!nextOk) break;
+
+    $ = cheerio.load(nextHtml);
+    items = $("div.result");
     parseSearchResults($, items, results, maxResults);
-
-    while (results.length < maxResults && items.length > 0) {
-      offset += items.length;
-      const { html: nextHtml, ok: nextOk } = await fetchHtmlPage(query, offset);
-
-      if (!nextOk) break;
-
-      $ = cheerio.load(nextHtml);
-      items = $("div.result");
-      parseSearchResults($, items, results, maxResults);
-    }
-
-    return results.slice(0, maxResults);
-  } catch {
-    return [];
   }
+
+  return results.slice(0, maxResults);
 }
 
 /**
