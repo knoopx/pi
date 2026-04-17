@@ -618,7 +618,12 @@ interface FileRowOptions {
 }
 
 function renderFileRow(
-  file: { path: string; status: string },
+  file: {
+    status: string;
+    path: string;
+    insertions?: number;
+    deletions?: number;
+  },
   opts: FileRowOptions,
 ): string {
   const { width, isSelected, isFocused, theme } = opts;

@@ -1,17 +1,6 @@
 import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
 import { loadFilePreviewWithShiki } from "./file-preview";
 
-/**
- * Create a loadPreview function for list picker components.
- * Reads file content and returns syntax-highlighted preview.
- *
- * Usage:
- * ```ts
- * const loadPreview = createFilePreviewLoader(pi, cwd, theme);
- * // In list picker:
- * loadPreview: (item) => loadPreview(item)
- * ```
- */
 export function createFilePreviewLoader(
   pi: ExtensionAPI,
   cwd: string,
@@ -19,7 +8,8 @@ export function createFilePreviewLoader(
 ): (item: { path: string }) => Promise<string[]> {
   return async (item) => {
     const result = await pi.exec("cat", [item.path], { cwd });
-    if (result.code !== 0) return [`Error reading file: ${result.stderr}`];
+    if (result.code !== 0)
+      throw new Error(`Failed to read ${item.path}: ${result.stderr}`);
     return loadFilePreviewWithShiki(item.path, result.stdout, theme);
   };
 }

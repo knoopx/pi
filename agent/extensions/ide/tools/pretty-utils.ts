@@ -41,29 +41,27 @@ export function renderError(
 }
 
 /**
- * Get fallback text from result with length limit
+ * Get first text item from result content with length limit
  */
-function getFallbackText(
+function getFirstText(
   content: AgentToolResult<unknown>["content"],
-  defaultText: string,
   maxLength = 120,
 ): string {
   const firstItem = content?.[0];
-  const text = firstItem?.type === "text" ? firstItem.text : defaultText;
-  return text?.slice(0, maxLength) ?? defaultText;
+  if (firstItem?.type !== "text") throw new Error("No text content in result");
+  return firstItem.text.slice(0, maxLength);
 }
 
 /**
- * Render fallback result as dimmed text
+ * Render empty result as dimmed text
  */
-function renderFallback(
+function renderEmpty(
   content: AgentToolResult<unknown>["content"],
-  defaultText: string,
   theme: Theme,
   text: Component & { setText: (s: string) => void },
 ): Component {
-  const fallback = getFallbackText(content, defaultText);
-  text.setText(`  ${theme.fg("dim", fallback)}`);
+  const firstLine = getFirstText(content);
+  text.setText(`  ${theme.fg("dim", firstLine)}`);
   return text;
 }
 
@@ -91,7 +89,7 @@ export function getTextComponent(
 }
 
 /**
- * Handle common renderResult pattern: error check and fallback
+ * Handle common renderResult pattern: error check and details
  */
 export function handleRenderResult<T>(
   result: AgentToolResult<T>,
@@ -99,7 +97,6 @@ export function handleRenderResult<T>(
   theme: Theme,
   text: Component & { setText: (s: string) => void },
   renderDetails: (d: Record<string, unknown>) => Component | undefined,
-  defaultText: string,
 ): Component {
   if (ctx.isError) return renderError(result.content, theme, text);
 
@@ -107,5 +104,5 @@ export function handleRenderResult<T>(
   const rendered = renderDetails(d);
   if (rendered) return rendered;
 
-  return renderFallback(result.content, defaultText, theme, text);
+  return renderEmpty(result.content, theme, text);
 }

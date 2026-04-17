@@ -57,25 +57,9 @@ const zaiConfig: ProviderConfig = {
 function calculateResetDescription(
   nextResetTime: number | undefined,
 ): string | undefined {
-  // Use API-provided nextResetTime if available, otherwise calculate
-  if (nextResetTime) {
-    // API returns milliseconds, formatRemainingDuration expects seconds for numbers
-    return formatRemainingDuration(nextResetTime / 1000);
-  }
+  if (!nextResetTime) throw new Error("Z.AI API did not provide nextResetTime");
 
-  // Fallback: Calculate next 5-hour block
-  const now = new Date();
-  const nextReset = new Date(now);
-  nextReset.setHours(now.getHours() + 1, 0, 0, 0);
-  const hour = nextReset.getHours();
-  const next5hHour = Math.ceil(hour / 5) * 5;
-  if (next5hHour >= 24) {
-    nextReset.setHours(0, 0, 0, 0);
-    nextReset.setDate(nextReset.getDate() + 1);
-  } else {
-    nextReset.setHours(next5hHour, 0, 0, 0);
-  }
-  return formatRemainingDuration(nextReset.getTime() / 1000);
+  return formatRemainingDuration(nextResetTime / 1000);
 }
 
 export const fetchZAIUsage = await createGenericProvider(zaiConfig);

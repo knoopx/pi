@@ -5,6 +5,7 @@
  * boilerplate across list pickers, browsers, and form components.
  */
 
+import type { KeyId } from "@mariozechner/pi-tui";
 import { Key, matchesKey } from "@mariozechner/pi-tui";
 import type { KeyPattern } from "./types";
 
@@ -52,7 +53,7 @@ export function filterActiveBindings<TContext>(
 ): KeyBinding<TContext>[] {
   return bindings.filter((b) => {
     if (!b.label) return false;
-    if (b.when && !b.when(ctx!)) return false;
+    if (b.when && ctx != null && !b.when(ctx)) return false;
     return true;
   });
 }
@@ -111,7 +112,7 @@ function tryMatchBinding<TContext>(
   ctx: TContext,
 ): boolean {
   if (typeof binding.key !== "string") return false;
-  if (!matchesKey(data, binding.key)) return false;
+  if (!matchesKey(data, binding.key as KeyId)) return false;
   if (binding.when && !binding.when(ctx)) return false;
   return true;
 }

@@ -293,25 +293,18 @@ export default async function piPrettyExtension(
         ctx: ToolRenderContext<unknown, LsToolInput>,
       ): Component {
         const text = getTextComponent(ctx, Text);
-        return handleRenderResult(
-          result,
-          ctx,
-          theme,
-          text,
-          (d) => {
-            if (d?._type === "lsResult" && d.text) {
-              const tree = renderTree(
-                d.text as string,
-                theme,
-              ) as unknown as string[];
-              const info = theme.fg("dim", `${d.entryCount} entries`);
-              text.setText(`  ${info}\n${tree}`);
-              return text;
-            }
-            return undefined;
-          },
-          "listed",
-        );
+        return handleRenderResult(result, ctx, theme, text, (d) => {
+          if (d?._type === "lsResult" && d.text) {
+            const tree = renderTree(
+              d.text as string,
+              theme,
+            ) as unknown as string[];
+            const info = theme.fg("dim", `${d.entryCount} entries`);
+            text.setText(`  ${info}\n${tree}`);
+            return text;
+          }
+          return undefined;
+        });
       },
     });
   }
@@ -369,22 +362,15 @@ export default async function piPrettyExtension(
         ctx: ToolRenderContext<unknown, FindToolInput>,
       ): Component {
         const text = getTextComponent(ctx, Text);
-        return handleRenderResult(
-          result,
-          ctx,
-          theme,
-          text,
-          (d) => {
-            if (d?._type === "findResult" && d.text) {
-              const rendered = renderFindResults(d.text as string, theme);
-              const info = theme.fg("dim", `${d.matchCount} files`);
-              text.setText(`  ${info}\n${rendered}`);
-              return text;
-            }
-            return undefined;
-          },
-          "found",
-        );
+        return handleRenderResult(result, ctx, theme, text, (d) => {
+          if (d?._type === "findResult" && d.text) {
+            const rendered = renderFindResults(d.text as string, theme);
+            const info = theme.fg("dim", `${d.matchCount} files`);
+            text.setText(`  ${info}\n${rendered}`);
+            return text;
+          }
+          return undefined;
+        });
       },
     });
   }
@@ -455,36 +441,29 @@ export default async function piPrettyExtension(
         ctx: ToolRenderContext<unknown, GrepToolInput>,
       ): Component {
         const text = getTextComponent(ctx, Text);
-        return handleRenderResult(
-          result,
-          ctx,
-          theme,
-          text,
-          (d) => {
-            if (d?._type === "grepResult" && d.text) {
-              const key = `grep:${d.pattern}:${d.matchCount}:${termW()}`;
-              const state = ctx.state as GrepState;
-              if (state._gk !== key) {
-                state._gk = key;
-                const info = theme.fg("dim", `${d.matchCount} matches`);
-                state._gt = `  ${info}`;
-                renderGrepResults(d.text as string, d.pattern as string, theme)
-                  .then((rendered: string) => {
-                    if (state._gk !== key) return;
-                    state._gt = `  ${info}\n${rendered}`;
-                    ctx.invalidate();
-                  })
-                  .catch(() => {});
-              }
-              text.setText(
-                state._gt ?? `  ${theme.fg("dim", `${d.matchCount} matches`)}`,
-              );
-              return text;
+        return handleRenderResult(result, ctx, theme, text, (d) => {
+          if (d?._type === "grepResult" && d.text) {
+            const key = `grep:${d.pattern}:${d.matchCount}:${termW()}`;
+            const state = ctx.state as GrepState;
+            if (state._gk !== key) {
+              state._gk = key;
+              const info = theme.fg("dim", `${d.matchCount} matches`);
+              state._gt = `  ${info}`;
+              renderGrepResults(d.text as string, d.pattern as string, theme)
+                .then((rendered: string) => {
+                  if (state._gk !== key) return;
+                  state._gt = `  ${info}\n${rendered}`;
+                  ctx.invalidate();
+                })
+                .catch(() => {});
             }
-            return undefined;
-          },
-          "searched",
-        );
+            text.setText(
+              state._gt ?? `  ${theme.fg("dim", `${d.matchCount} matches`)}`,
+            );
+            return text;
+          }
+          return undefined;
+        });
       },
     });
   }
