@@ -483,6 +483,20 @@ Use the **sem** skill to understand actual code changes vs cosmetic modification
     );
   }
 
+  async function handleInspectChange(): Promise<void> {
+    if (!selectedChange) return;
+    done();
+    const task = `Review the jujutsu change ${selectedChange.changeId} using entity-level code analysis.
+
+<workflow>
+1. Get git hash: \`jj log -r ${selectedChange.changeId} -T 'commit_id' --no-graph\`
+2. Run inspect diff: \`inspect diff --format markdown <hash-from-step-1>\`
+3. Analyze the entity-level review output (risk scores, changed entities, blast radius)
+4. Address all issues found by inspect
+</workflow>`;
+    pi.sendUserMessage(task);
+  }
+
   async function refreshAfterMutation() {
     changeCache.clear();
     await reloadChanges();
@@ -524,6 +538,9 @@ Use the **sem** skill to understand actual code changes vs cosmetic modification
           break;
         case "revert":
           await handleRevert();
+          break;
+        case "inspect":
+          await handleInspectChange();
           break;
       }
     } catch (error) {
@@ -1234,6 +1251,14 @@ Use the **sem** skill to understand actual code changes vs cosmetic modification
       when: () => hasSelectedChange() && onBookmark !== undefined,
       handler() {
         void setBookmark();
+      },
+    },
+    {
+      key: "i",
+      label: "inspect",
+      when: hasSelectedChange,
+      handler() {
+        void executeAction("inspect");
       },
     },
     {
