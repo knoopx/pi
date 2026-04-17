@@ -13,16 +13,16 @@
     ]
   },
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "^0.63.1",
+    "@mariozechner/pi-coding-agent": "^0.67.6",
     "picomatch": "^4.0.4"
   },
   "devDependencies": {
-    "@types/node": "^22.13.1",
+    "@types/node": "^25.6.0",
     "@types/picomatch": "^4.0.3",
-    "eslint": "^10.0.0",
-    "eslint-antislop": "github:knoopx/eslint-antislop",
-    "typescript": "^5.7.3",
-    "typescript-eslint": "^8.0.0",
-    "vitest": "^3.2.4"
+    "eslint": "^10.2.0",
+    "eslint-antislop": "file:///home/knoopx/Projects/knoopx/eslint-antislop/",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.58.2",
+    "vitest": "^4.1.4"
   }
 }
