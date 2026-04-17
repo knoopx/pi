@@ -70,9 +70,10 @@ describe("Nix Extension", () => {
     let registeredTool: MockTool;
 
     beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => (call[0] as MockTool).name === "search-nix-packages",
-      )![0] as MockTool;
+      const calls = mockPi.registerTool.mock.calls as [MockTool][];
+      const found = calls.find((c) => c[0].name === "search-nix-packages");
+      if (!found) throw new Error("not found");
+      registeredTool = found[0];
     });
 
     describe("given a valid package query", () => {
@@ -172,9 +173,10 @@ describe("Nix Extension", () => {
     let registeredTool: MockTool;
 
     beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => (call[0] as MockTool).name === "search-nix-options",
-      )![0] as MockTool;
+      const calls = mockPi.registerTool.mock.calls as [MockTool][];
+      const found = calls.find((c) => c[0].name === "search-nix-options");
+      if (!found) throw new Error("not found");
+      registeredTool = found[0];
     });
 
     describe("given a valid option query", () => {
@@ -224,9 +226,12 @@ describe("Nix Extension", () => {
     let registeredTool: MockTool;
 
     beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
-        (call) => (call[0] as MockTool).name === "search-home-manager-options",
-      )![0] as MockTool;
+      const calls = mockPi.registerTool.mock.calls as [MockTool][];
+      const found = calls.find(
+        (c) => c[0].name === "search-home-manager-options",
+      );
+      if (!found) throw new Error("not found");
+      registeredTool = found[0];
     });
 
     describe("given a valid Home Manager option query", () => {

@@ -1,7 +1,13 @@
 import type {
-  ExtensionAPI,
   AgentToolResult,
+  ExtensionAPI,
+  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
+
+type NixToolExecute = (
+  _toolCallId: string,
+  params: SearchQueryParamsType,
+) => Promise<AgentToolResult<Record<string, unknown>>>;
 import { Type, type Static } from "@sinclair/typebox";
 import { dotJoin, countLabel, table } from "../../shared/renderers";
 import type { Column } from "../../shared/renderers";
@@ -368,7 +374,10 @@ function buildPackageFilterItem(): Record<string, unknown> {
 }
 
 function buildEmptyBoolMustArray(): Record<string, unknown>[] {
-  return Array(5).fill({ bool: { should: [] } });
+  return Array.from({ length: 5 }, () => ({ bool: { should: [] } })) as Record<
+    string,
+    unknown
+  >[];
 }
 
 function buildPackageQueryClause(query: string): Record<string, unknown> {
@@ -558,17 +567,21 @@ function mapHomeManagerOption(opt: HomeManagerOption): Record<string, string> {
 }
 
 function createTool<T>(
-  name: string,
-  label: string,
-  description: string,
+  meta: { name: string; label: string; description: string },
   searchFn: (q: string) => Promise<T[]>,
   mapper: (item: T) => Record<string, string>,
   contentBuilder: (res: Record<string, string>[]) => string,
-) {
+): {
+  name: string;
+  label: string;
+  description: string;
+  parameters: typeof SearchQueryParams;
+  execute: NixToolExecute;
+} {
   return {
-    name,
-    label,
-    description,
+    name: meta.name,
+    label: meta.label,
+    description: meta.description,
     parameters: SearchQueryParams,
     async execute(
       _toolCallId: string,
@@ -587,9 +600,10 @@ function createTool<T>(
 export default function (pi: ExtensionAPI): void {
   pi.registerTool(
     createTool(
-      "search-nix-packages",
-      "Search Nix Packages",
-      `Find packages available in the NixOS package repository.
+      {
+        name: "search-nix-packages",
+        label: "Search Nix Packages",
+        description: `Find packages available in the NixOS package repository.
 
 Use this to:
 - Discover software packages for installation
@@ -598,6 +612,7 @@ Use this to:
 - Get package metadata and maintainers
 
 Returns detailed package information from nixpkgs.`,
+      },
       searchNixPackages,
       mapPackage,
       formatPackageTable,
@@ -606,9 +621,10 @@ Returns detailed package information from nixpkgs.`,
 
   pi.registerTool(
     createTool(
-      "search-nix-options",
-      "Search Nix Options",
-      `Find configuration options available in NixOS.
+      {
+        name: "search-nix-options",
+        label: "Search Nix Options",
+        description: `Find configuration options available in NixOS.
 
 Use this to:
 - Discover system configuration settings
@@ -617,6 +633,7 @@ Use this to:
 - Get examples for configuration
 
 Returns NixOS configuration option details.`,
+      },
       searchNixOptions,
       mapNixOption,
       buildOptionTableRenderer(false),
@@ -625,9 +642,10 @@ Returns NixOS configuration option details.`,
 
   pi.registerTool(
     createTool(
-      "search-home-manager-options",
-      "Search Home-Manager Options",
-      `Find configuration options for Home Manager.
+      {
+        name: "search-home-manager-options",
+        label: "Search Home-Manager Options",
+        description: `Find configuration options for Home Manager.
 
 Use this to:
 - Configure user-specific settings
@@ -636,6 +654,7 @@ Use this to:
 - Manage user-level services
 
 Returns Home Manager configuration options.`,
+      },
       searchHomeManagerOptions,
       mapHomeManagerOption,
       buildOptionTableRenderer(true),
