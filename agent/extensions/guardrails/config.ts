@@ -164,8 +164,9 @@ class GuardrailsConfigLoader {
   private async loadDefaultsFile(): Promise<GuardrailsConfig | null> {
     try {
       const content = await readFile(EXTENSION_CONFIG_PATH, "utf-8");
-      const parsed = JSON.parse(content);
-      return Array.isArray(parsed) ? (parsed as GuardrailsConfig) : null;
+      const parsed = JSON.parse(content) as unknown as GuardrailsGroup[];
+      if (Array.isArray(parsed)) return parsed;
+      return null;
     } catch {
       return null;
     }
@@ -174,7 +175,7 @@ class GuardrailsConfigLoader {
   private async loadGlobalFile(): Promise<GuardrailsConfig | null> {
     try {
       const content = await readFile(GLOBAL_CONFIG_PATH, "utf-8");
-      const parsed = JSON.parse(content) as Record<string, unknown>;
+      const parsed: Record<string, unknown> = JSON.parse(content);
       const { guardrails } = parsed;
 
       if (Array.isArray(guardrails)) return guardrails as GuardrailsConfig;

@@ -5,10 +5,10 @@ import { matchCommandPattern } from "./command-parser";
 
 const typedDefaults = defaults as GuardrailsConfig;
 
-function getGroup(name: string) {
+function getGroup(name: string): GuardrailsConfig[number] {
   const group = typedDefaults.find((g) => g.group === name);
-  expect(group).toBeDefined();
-  return group!;
+  if (!group) throw new Error(`Group not found: ${name}`);
+  return group;
 }
 
 /** True if any rule in the group matches the command. */

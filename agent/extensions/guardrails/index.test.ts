@@ -8,8 +8,9 @@ import {
   afterAll,
   type Mock,
 } from "vitest";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
-let guardrailsExtension: (pi: any) => Promise<void>;
+let guardrailsExtension: (pi: ExtensionAPI) => Promise<void>;
 let isGroupActive: (
   pattern: string,
   root: string,
@@ -76,7 +77,7 @@ async function setupHandler(
   glob.mockResolvedValue(["package.json"]);
 
   const pi = { on: vi.fn(), registerCommand: vi.fn() };
-  await guardrailsExtension(pi as unknown);
+  await guardrailsExtension(pi as unknown as ExtensionAPI);
   const handler = pi.on.mock.calls.find((c) => c[0] === "tool_call")?.[1] as (
     event: unknown,
     ctx: unknown,
@@ -167,7 +168,7 @@ describe("guardrails extension", () => {
       configLoader.getConfig.mockReturnValue([]);
 
       const pi = { on: vi.fn(), registerCommand: vi.fn() };
-      await guardrailsExtension(pi as unknown);
+      await guardrailsExtension(pi as unknown as ExtensionAPI);
 
       expect(configLoader.load).toHaveBeenCalled();
       expect(configLoader.getConfig).toHaveBeenCalled();
@@ -183,7 +184,7 @@ describe("guardrails extension", () => {
       glob.mockResolvedValue(["package.json"]);
 
       const pi = { on: vi.fn(), registerCommand: vi.fn() };
-      await guardrailsExtension(pi as unknown);
+      await guardrailsExtension(pi as unknown as ExtensionAPI);
 
       const command = pi.registerCommand.mock.calls.find(
         (c) => c[0] === "guardrails",
