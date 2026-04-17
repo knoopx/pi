@@ -1,16 +1,18 @@
 import { describe, it, expect } from "vitest";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import {
-  buildHookInput,
   containsAbortText,
   extractTextContent,
   isAbortedToolResult,
   isAbortedTurnEnd,
   isAbortedAgentEnd,
+} from "./abort-detection";
+import { buildHookInput } from "./pattern-matching";
+import {
   getContextValue,
   getInputField,
   matchValuePattern,
-} from "./index";
+} from "./pattern-matching";
 
 const mockCtx: ExtensionContext = {
   cwd: "/test",

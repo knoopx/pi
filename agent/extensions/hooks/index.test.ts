@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { isGroupActive, substituteVariables, doesRuleMatch } from "./index";
+import {
+  isGroupActive,
+  substituteVariables,
+  doesRuleMatch,
+} from "./pattern-matching";
 
 describe("isGroupActive", () => {
   const testDir = import.meta.dirname;

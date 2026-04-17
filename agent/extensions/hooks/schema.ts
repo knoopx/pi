@@ -103,8 +103,8 @@ export interface HookOutput {
 }
 
 export function validateConfig(data: unknown): HooksConfig {
-  if (!Value.Check(HooksConfigSchema, data)) {
-    const errors = [...Value.Errors(HooksConfigSchema, data)];
+  if (!Value.Check(HooksConfigSchema as any, data)) {
+    const errors = [...Value.Errors(HooksConfigSchema as any, data)];
     const messages = errors.map((e) => `${e.path}: ${e.message}`).join(", ");
     throw new Error(`Invalid hooks config: ${messages}`);
   }
@@ -112,7 +112,7 @@ export function validateConfig(data: unknown): HooksConfig {
 }
 
 export function isValidConfig(data: unknown): data is HooksConfig {
-  return Value.Check(HooksConfigSchema, data);
+  return Value.Check(HooksConfigSchema as any, data);
 }
 
 /**
