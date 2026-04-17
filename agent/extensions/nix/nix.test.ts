@@ -22,9 +22,7 @@ function assertFormattedOptionResults(
   expect(result.details.totalFound).toBe(1);
 }
 
-// ============================================
 // Extension Registration
-// ============================================
 describe("Nix Extension", () => {
   let mockPi: MockExtensionAPI;
   let originalFetch: typeof globalThis.fetch;
@@ -68,9 +66,6 @@ describe("Nix Extension", () => {
     });
   });
 
-  // ============================================
-  // Search Nix Packages
-  // ============================================
   describe("search-nix-packages", () => {
     let registeredTool: MockTool;
 
@@ -173,9 +168,6 @@ describe("Nix Extension", () => {
     });
   });
 
-  // ============================================
-  // Search Nix Options
-  // ============================================
   describe("search-nix-options", () => {
     let registeredTool: MockTool;
 
@@ -228,9 +220,6 @@ describe("Nix Extension", () => {
     });
   });
 
-  // ============================================
-  // Search Home Manager Options
-  // ============================================
   describe("search-home-manager-options", () => {
     let registeredTool: MockTool;
 

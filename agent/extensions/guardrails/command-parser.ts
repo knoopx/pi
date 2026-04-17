@@ -132,9 +132,8 @@ export function parsePattern(pattern: string): PatternToken[] {
 /**
  * Match a token sequence against a parsed pattern using backtracking.
  *
- * Literals must match the basename of the token (so /usr/bin/python
- * matches the literal "python"). `?` consumes exactly one token.
- * `*` consumes zero or more tokens (tries shortest first).
+ * Literals match the token basename (so /usr/bin/python matches "python").
+ * `?` consumes one token, `*` consumes zero or more (tries shortest first).
  */
 function matchTokens(
   pattern: PatternToken[],
@@ -165,7 +164,6 @@ function matchTokens(
 
   if (pat.kind === "or")
     return pat.options.some((optionTokens) => {
-      // Check if all tokens in this option match consecutively
       if (ti + optionTokens.length > tokens.length) {
         return false;
       }

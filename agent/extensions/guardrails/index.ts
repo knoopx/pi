@@ -137,7 +137,6 @@ function matchesPattern(
  * implemented by `matchCommandPattern` (`?`, `*`).
  *
  * For "file_name" and "file_content" contexts, `pattern` is regex.
- * If `file_pattern` is specified, the file path must match it first.
  *
  * @returns The matched target value for includes/excludes filtering, or null.
  */
@@ -202,7 +201,6 @@ function matchRule(
   const filePath = getInputFieldAsString(input, "path");
   if (!checkFilePatternMatch(filePath, rule.file_pattern)) return null;
 
-  // Check scope restriction
   if (rule.scope) {
     const withinProject = isPathWithinProject(filePath, cwd);
     if (rule.scope === "project" && !withinProject) return null;

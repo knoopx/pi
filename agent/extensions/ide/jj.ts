@@ -433,14 +433,12 @@ export async function createNewChange(
   created: boolean;
   error?: string;
 }> {
-  // Check if current change has file modifications
   const hasChanges = await hasFileChanges(pi, cwd);
   if (!hasChanges) {
     return { success: true, created: false };
   }
   const result = await pi.exec("jj", ["new"], { cwd });
   if (result.code === 0) {
-    // Get the new change id
     const changeResult = await pi.exec(
       "jj",
       ["log", "-r", "@", "--no-graph", "-T", 'change_id.short() ++ "\n"'],

@@ -46,9 +46,6 @@ describe("PyPI Extension", () => {
     });
   });
 
-  // ============================================
-  // Search PyPI Packages
-  // ============================================
   describe("search-pypi-packages", () => {
     let registeredTool: MockTool;
 
@@ -179,9 +176,7 @@ describe("PyPI Extension", () => {
     });
   });
 
-  // ============================================
   // PyPI Package Info
-  // ============================================
   describe("pypi-package-info", () => {
     let registeredTool: MockTool;
 

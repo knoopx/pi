@@ -155,7 +155,6 @@ export async function isGroupActive(
 
   try {
     const files = await readdir(root);
-    // Check if any file matches the glob pattern
     return files.some((file) =>
       picomatch.isMatch(file, pattern, { dot: true }),
     );
@@ -202,8 +201,6 @@ export function matchValuePattern(value: string, pattern: string): boolean {
   // New token pattern syntax support for non-command contexts
   if (matchCommandPattern(value, pattern)) return true;
 
-  // Glob pattern matching (e.g., *.js, *.{ts,tsx})
-  // Check if basename matches the glob pattern
   const basename = value.split(/[\/\\]/).pop() ?? value;
   return picomatch.isMatch(basename, pattern);
 }
@@ -296,7 +293,6 @@ async function runHook(
   const stdinInput = JSON.stringify(hookInput);
 
   try {
-    // Run hook with JSON input via stdin
     const result = await pi.exec(
       "sh",
       [
@@ -309,7 +305,6 @@ async function runHook(
     const stdout = result.stdout?.trim() ?? "";
     const stderr = result.stderr?.trim() ?? "";
 
-    // Parse JSON output if exit code is 0
     const output = result.code === 0 ? parseHookOutput(stdout) : undefined;
 
     return {

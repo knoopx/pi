@@ -34,9 +34,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
-// =============================================================================
 // Types
-// =============================================================================
 
 interface TokenStats {
   total: number;
@@ -77,9 +75,7 @@ interface UsageData {
 
 type TabName = "today" | "thisWeek" | "allTime";
 
-// =============================================================================
 // Input Handling Utilities
-// =============================================================================
 
 /**
  * Creates a key matcher function for input handling
@@ -106,9 +102,7 @@ function handleEscape(
   return false;
 }
 
-// =============================================================================
 // Column Configuration
-// =============================================================================
 
 interface DataColumn {
   label: string;
@@ -154,9 +148,7 @@ const DATA_COLUMNS: DataColumn[] = [
 const TABLE_WIDTH =
   NAME_COL_WIDTH + DATA_COLUMNS.reduce((sum, col) => sum + col.width, 0);
 
-// =============================================================================
 // Data Collection
-// =============================================================================
 
 function getSessionsDir(): string {
   // Replicate Pi's logic: respect PI_CODING_AGENT_DIR env var
@@ -493,9 +485,7 @@ async function collectUsageData(
   return data;
 }
 
-// =============================================================================
 // Formatting Helpers
-// =============================================================================
 
 function formatCost(cost: number): string {
   if (cost === 0) return "-";
@@ -540,9 +530,7 @@ function padRight(s: string, len: number): string {
   return s + " ".repeat(len - vis);
 }
 
-// =============================================================================
 // Component
-// =============================================================================
 
 const TAB_LABELS: Record<TabName, string> = {
   today: "Today",
@@ -819,9 +807,7 @@ class UsageComponent {
   dispose(): void {}
 }
 
-// =============================================================================
 // Tool Usage Analysis
-// =============================================================================
 
 interface ToolCall {
   name: string;
@@ -1278,9 +1264,7 @@ function createBorderedCustomUI<
   };
 }
 
-// =============================================================================
 // Extension Entry Point
-// =============================================================================
 
 export {
   getSessionsDir,

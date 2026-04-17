@@ -555,8 +555,6 @@ describe("doesRuleMatch", () => {
 
     describe("when using case-insensitive flag", () => {
       it("then matches regardless of case", () => {
-        // Note: JavaScript regex doesn't support inline (?i) flag
-        // This test documents the current behavior
         expect(doesRuleMatch(rule, "write", {})).toBe(false);
         expect(doesRuleMatch(rule, "WRITE", {})).toBe(false);
       });
@@ -698,7 +696,6 @@ describe("Non-blocking tools", () => {
     describe(`given ${toolName} tool`, () => {
       describe("when hook fails", () => {
         it("should not block the tool (documented behavior)", () => {
-          // edit and write are non-blocking to preserve editing flow
           expect(nonBlockingTools).toContain(toolName);
         });
       });
@@ -712,7 +709,6 @@ describe("Skipped tools", () => {
   skippedTools.forEach((toolName) => {
     describe(`given ${toolName} tool`, () => {
       it("should skip hook execution entirely (documented behavior)", () => {
-        // read tool is skipped to avoid noise
         expect(skippedTools).toContain(toolName);
       });
     });

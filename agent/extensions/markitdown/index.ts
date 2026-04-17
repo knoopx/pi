@@ -11,7 +11,7 @@ const MARKITDOWN_PATH = `${process.env.HOME}/.local/bin/markitdown`;
 function hasValidSignal(signal: unknown): signal is AbortSignal {
   return (
     signal instanceof AbortSignal &&
-    typeof (signal as AbortSignal).addEventListener === "function"
+    typeof (signal).addEventListener === "function"
   );
 }
 

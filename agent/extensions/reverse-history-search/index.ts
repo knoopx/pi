@@ -138,8 +138,8 @@ function extractTimestamp(
 ): number {
   if (typeof entry.timestamp === "string")
     return new Date(entry.timestamp).getTime();
-  else if (typeof entry.timestamp === "number") return entry.timestamp;
-  else if (typeof message.timestamp === "number") return message.timestamp;
+  if (typeof entry.timestamp === "number") return entry.timestamp;
+  if (typeof message.timestamp === "number") return message.timestamp;
   return Date.now();
 }
 
@@ -191,7 +191,6 @@ function processMessageEntry(
   history: HistoryEntry[],
   seen: Set<string>,
 ): void {
-  // Add bash execution commands
   if (message.role === "bashExecution" && typeof message.command === "string") {
     addHistoryEntry(history, seen, {
       content: message.command,
@@ -201,7 +200,6 @@ function processMessageEntry(
     return;
   }
 
-  // Add user messages and extract commands
   if (message.role === "user") {
     const text = getUserTextFromContent(message.content);
     if (!text) return;
@@ -259,7 +257,6 @@ function walkDir(
   }
 }
 
-// Load command history from session files matching the given cwd
 const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
   const history: HistoryEntry[] = [];
   const seen = new Set<string>();
@@ -272,7 +269,6 @@ const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
     // Sessions directory doesn't exist or can't be read
   }
 
-  // Sort by timestamp, most recent first
   return history.sort((a, b) => b.timestamp - a.timestamp);
 };
 
@@ -366,7 +362,6 @@ class HistorySearchComponent {
       fuzzyMatch(entry.content, this.query),
     );
 
-    // Reset selection if out of bounds
     if (this.selectedIndex >= this.filteredHistory.length)
       this.selectedIndex = Math.max(0, this.filteredHistory.length - 1);
 
@@ -393,7 +388,6 @@ class HistorySearchComponent {
     );
     const end = Math.min(start + maxVisible, this.filteredHistory.length);
 
-    // Filter/status line at top
     const queryPart = this.query ? `${this.query} • ` : "";
     const pagerPart = `[${start + 1}-${end} of ${this.filteredHistory.length}]`;
     lines.push(this.theme.fg("dim", `${queryPart}${pagerPart}`));
@@ -447,8 +441,12 @@ function makeHistorySearchRenderer(
 } {
   const component = new HistorySearchComponent(theme, history);
 
-  component.onSelect = (entry) => done(entry);
-  component.onCancel = () => done(null);
+  component.onSelect = (entry) => {
+    done(entry);
+  };
+  component.onCancel = () => {
+    done(null);
+  };
 
   return {
     render(w: number) {

@@ -10,9 +10,7 @@ import { fuzzyMatch } from "../../shared/fuzzy";
 import type { MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 
-// ============================================
 // Extension Registration
-// ============================================
 describe("Reverse History Search Extension", () => {
   let mockPi: MockExtensionAPI;
 
@@ -38,9 +36,7 @@ describe("Reverse History Search Extension", () => {
     });
   });
 
-  // ============================================
   // Shortcut Handler
-  // ============================================
   describe("ctrl+r shortcut handler", () => {
     let handler: (ctx: ExtensionContext) => Promise<void>;
     let mockCtx: ExtensionContext;
@@ -114,9 +110,7 @@ describe("Reverse History Search Extension", () => {
     });
   });
 
-  // ============================================
   // Fuzzy Matching Logic
-  // ============================================
   describe("fuzzyMatch function", () => {
     describe("given an empty query", () => {
       it("then it should return true for empty query", () => {

@@ -16,8 +16,6 @@ const SearchQueryParams = Type.Object({
 
 type SearchQueryParamsType = Static<typeof SearchQueryParams>;
 
-// Adapted from https://github.com/vicinaehq/extensions/tree/main/extensions/nix
-
 interface NixPackage {
   type: string;
   package_attr_name: string;

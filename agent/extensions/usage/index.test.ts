@@ -20,9 +20,7 @@ import {
   type UsageData,
 } from "./index";
 
-// =============================================================================
 // Helper Functions
-// =============================================================================
 
 function createMockUsageData(): UsageData {
   return {
@@ -110,9 +108,7 @@ const mockTheme = {
   bold: (text: string) => text,
 } as Theme;
 
-// =============================================================================
 // Session Directory Tests
-// =============================================================================
 
 describe("getSessionsDir", () => {
   const originalEnv = process.env.PI_CODING_AGENT_DIR;
@@ -140,9 +136,7 @@ describe("getSessionsDir", () => {
   });
 });
 
-// =============================================================================
 // Formatting Functions Tests
-// =============================================================================
 
 describe("formatCost", () => {
   describe("when cost is zero", () => {
@@ -289,9 +283,7 @@ describe("padRight", () => {
   });
 });
 
-// =============================================================================
 // Usage Component Tests
-// =============================================================================
 
 describe("UsageComponent", () => {
   let component: UsageComponent;

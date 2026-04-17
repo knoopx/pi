@@ -7,9 +7,7 @@ import setupMarkitdownExtension from "./index";
 import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 
-// ============================================
 // Extension Registration
-// ============================================
 describe("Markitdown Extension", () => {
   let mockPi: MockExtensionAPI;
 
@@ -36,9 +34,7 @@ describe("Markitdown Extension", () => {
     });
   });
 
-  // ============================================
   // Transcribe Tool
-  // ============================================
   describe("transcribe tool", () => {
     let registeredTool: MockTool;
 

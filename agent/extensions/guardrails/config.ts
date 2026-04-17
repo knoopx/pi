@@ -2,13 +2,6 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 
-/**
- * Configuration schema for the guardrails extension.
- *
- * GuardrailsConfig is the user-facing schema (all fields optional).
- * ResolvedConfig is the internal schema (all fields required, defaults applied).
- */
-
 export interface GuardrailsRule {
   context: "command" | "file_name" | "file_content";
   /**
@@ -23,9 +16,6 @@ export interface GuardrailsRule {
    * If not specified, the rule applies to all files.
    */
   file_pattern?: string;
-  /**
-   * Optional pattern that must also match for the rule to apply.
-   */
   includes?: string;
   /**
    * Optional pattern that exempts the rule from applying.
@@ -110,7 +100,6 @@ export async function loadGuardrailsSettings(): Promise<GuardrailsSettings> {
   const raw = settings[GUARDRAILS_SETTINGS_KEY];
 
   if (raw === undefined || Array.isArray(raw)) {
-    // Legacy format uses `guardrails` as rule array.
     return { ...DEFAULT_GUARDRAILS_SETTINGS };
   }
 
@@ -188,7 +177,6 @@ class GuardrailsConfigLoader {
       const parsed = JSON.parse(content) as Record<string, unknown>;
       const { guardrails } = parsed;
 
-      // Legacy format: guardrails is an array of groups.
       if (Array.isArray(guardrails)) return guardrails as GuardrailsConfig;
 
       // Current format: guardrails is an object with a `rules` array.
