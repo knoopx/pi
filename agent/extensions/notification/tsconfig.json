@@ -1,19 +1,31 @@
 {
+  "extends": "../../shared/tsconfig.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": ["ES2022"],
-    "strict": true,
-    "noEmit": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "verbatimModuleSyntax": false,
-    "noUncheckedIndexedAccess": false,
-    "noImplicitOverride": false
+    "paths": {
+      "@mariozechner/pi-tui": [
+        "./node_modules/@mariozechner/pi-tui"
+      ],
+      "@mariozechner/pi-coding-agent": [
+        "./node_modules/@mariozechner/pi-coding-agent"
+      ],
+      "@mariozechner/pi-ai": [
+        "./node_modules/@mariozechner/pi-ai"
+      ],
+      "@mariozechner/pi-agent-core": [
+        "./node_modules/@mariozechner/pi-agent-core"
+      ],
+      "@sinclair/typebox": [
+        "./node_modules/@sinclair/typebox"
+      ]
+    }
   },
-  "include": ["*.ts"],
-  "exclude": ["node_modules", "../../shared"]
+  "include": [
+    "index.ts",
+    "**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/shared/**",
+    "eslint.config.js"
+  ]
 }
