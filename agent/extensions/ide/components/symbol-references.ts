@@ -146,7 +146,7 @@ function parseLocation(
       startLine: parseInt(lineRangeMatch[1], 10),
       endLine: parseInt(lineRangeMatch[2], 10),
     };
-  } else if (locationPart.includes(":")) {
+  } if (locationPart.includes(":")) {
     const colonIdx = locationPart.lastIndexOf(":");
     const path = locationPart.slice(0, colonIdx);
     const parsedStartLine = parseInt(locationPart.slice(colonIdx + 1), 10);

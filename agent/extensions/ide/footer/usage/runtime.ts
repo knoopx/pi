@@ -63,7 +63,7 @@ async function nodeFetch(
         data += chunk;
       });
 
-      res.on("end", () => handleResponse(res, data, resolve));
+      res.on("end", () => { handleResponse(res, data, resolve); });
     });
 
     req.on("error", (error) => {

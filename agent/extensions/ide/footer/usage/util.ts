@@ -32,7 +32,7 @@ export function formatRemainingDuration(
   const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
 
   if (days > 0) return `${days}d ${hours}h`;
-  else if (hours > 0) return `${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
   return `${minutes}m`;
 }
 

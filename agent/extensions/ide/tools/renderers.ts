@@ -229,13 +229,13 @@ function processGrepLine(
     }
     out.push(renderGrepMatch(lineNo, content, highlighter, theme));
     return { output: out, newFile: file, count: 1 };
-  } else if (line.trim() === "--")
+  } if (line.trim() === "--")
     return {
       output: [theme.fg("dim", "  ···")],
       newFile: currentFile,
       count: 0,
     };
-  else if (line.trim())
+  if (line.trim())
     return { output: [line], newFile: currentFile, count: 1 };
   return { output: [], newFile: currentFile, count: 0 };
 }

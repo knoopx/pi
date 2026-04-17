@@ -310,7 +310,7 @@ async function refreshFooterData(
 
   try {
     const [vcsLabel, usage] = await Promise.all([
-      getVcsLabelFn(pi, _lastContext!.cwd),
+      getVcsLabelFn(pi, _lastContext.cwd),
       _lastContext.model ? detectAndFetchUsage(_lastContext.model) : undefined,
     ]);
     _currentVcsLabel = vcsLabel;
@@ -612,14 +612,17 @@ function registerCommands(pi: ExtensionAPI): void {
 }
 
 export default async function ideExtension(pi: ExtensionAPI): Promise<void> {
-  // Install periodic footer refresh
   setInterval(() => void refreshFooterData(pi, getVcsLabel), 5 * 60 * 1000);
 
-  pi.on("session_start", (_event, ctx) => handleSessionStart(pi, ctx));
-  pi.on("model_select", (_event, ctx) => handleModelSelect(pi, ctx));
-  pi.on("session_before_fork", (_event, ctx) =>
-    handleSessionFork(pi, _event, ctx),
-  );
+  pi.on("session_start", (_event, ctx) => {
+    handleSessionStart(pi, ctx);
+  });
+  pi.on("model_select", (_event, ctx) => {
+    handleModelSelect(pi, ctx);
+  });
+  pi.on("session_before_fork", (_event, ctx) => {
+    handleSessionFork(pi, _event, ctx);
+  });
 
   registerShortcuts(pi);
   registerCommands(pi);
