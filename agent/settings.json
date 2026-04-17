@@ -1,7 +1,7 @@
 {
-  "lastChangelogVersion": "0.67.2",
+  "lastChangelogVersion": "0.67.6",
   "defaultProvider": "local",
-  "defaultModel": "mudler/Qwen3.5-35B-A3B-APEX-GGUF",
+  "defaultModel": "mudler/Qwen3.6-35B-A3B-APEX-GGUF",
   "theme": "custom",
   "enabledModels": [
     "github-copilot/grok-code-fast-1",
@@ -10,9 +10,7 @@
     "local/unsloth/Qwen3.5-27B-GGUF",
     "zai-coding-plan/glm-5.1",
     "zai-coding-plan/glm-5-turbo",
-    "local/unsloth/Qwen3.5-35B-A3B-GGUF",
-    "local/mudler/Qwen3.5-35B-A3B-APEX-GGUF",
-    "local/samuelcardillo/Qwen3.5-35B-A3B-Claude-4.6-Opus-Reasoning-Distilled-GGUF"
+    "local/mudler/Qwen3.6-35B-A3B-APEX-GGUF"
   ],
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "medium",
