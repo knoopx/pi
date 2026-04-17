@@ -289,9 +289,9 @@ export type ListRepoFilesParamsType = Static<typeof ListRepoFilesParams>;
 async function executeGetRepoContents(
   params: GetRepoContentsParamsType,
 ): Promise<AgentToolResult<{ contents: GHFile[] }>> {
-  const owner = params.owner as string;
-  const repo = params.repo as string;
-  const path = params.path as string | undefined;
+  const owner = params.owner;
+  const repo = params.repo;
+  const path = params.path;
   const contents = await getRepoContents(owner, repo, path ?? "");
   const output = formatRepoContents(owner, repo, path ?? "", contents);
   return createRepoResult(output, { contents });
@@ -300,10 +300,10 @@ async function executeGetRepoContents(
 async function executeGetFileContent(
   params: GetFileContentParamsType,
 ): Promise<AgentToolResult<FileContentResult>> {
-  const owner = params.owner as string;
-  const repo = params.repo as string;
-  const filePath = params.path as string;
-  const ref = params.ref as string | undefined;
+  const owner = params.owner;
+  const repo = params.repo;
+  const filePath = params.path;
+  const ref = params.ref;
   const result = await getFileContent(owner, repo, filePath, ref ?? undefined);
   const output = formatFileContent(result);
   return createRepoResult<FileContentResult>(output, {
@@ -318,10 +318,10 @@ async function executeGetFileContent(
 async function executeListRepoFiles(
   params: ListRepoFilesParamsType,
 ): Promise<AgentToolResult<{ files: GHFile[]; count: number }>> {
-  const owner = params.owner as string;
-  const repo = params.repo as string;
-  const path = params.path as string | undefined;
-  const maxFiles = params.maxFiles as number | undefined;
+  const owner = params.owner;
+  const repo = params.repo;
+  const path = params.path;
+  const maxFiles = params.maxFiles;
   const result = await listRepoFiles(owner, repo, path ?? "", maxFiles ?? 50);
   const output = formatRepoFilesList({
     ...result,

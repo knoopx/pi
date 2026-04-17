@@ -435,8 +435,8 @@ async function executeListGists(
   params: ListGistsParamsType,
 ): Promise<AgentToolResult<{ gists: Gist[] }>> {
   const since = params.since ? new Date(params.since) : undefined;
-  const userId = params.userId as string | undefined;
-  const limit = params.limit as number | undefined;
+  const userId = params.userId;
+  const limit = params.limit;
   const gists = await listGists(userId, limit, since);
 
   const lines = gists
@@ -464,8 +464,8 @@ async function executeCreateGist(
     string,
     { content: string; filename?: string }
   >;
-  const description = params.description as string | undefined;
-  const isPublic = params.isPublic as boolean | undefined;
+  const description = params.description;
+  const isPublic = params.isPublic;
   const gist = await createGist(files, description, isPublic);
   const output = formatGist(gist);
   return createGistResult(output, gist);
@@ -474,11 +474,11 @@ async function executeCreateGist(
 async function executeUpdateGist(
   params: UpdateGistParamsType,
 ): Promise<AgentToolResult<{ gist: Gist }>> {
-  const gistId = params.gistId as string;
+  const gistId = params.gistId;
   const files = params.files as
     | Record<string, { content: string; filename?: string }>
     | undefined;
-  const description = params.description as string | undefined;
+  const description = params.description;
   const gist = await updateGist(gistId, files, description);
   const output = formatGistUpdate(gist);
   return createGistResult(output, gist);
