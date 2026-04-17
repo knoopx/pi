@@ -188,7 +188,7 @@ async function getAllSessionFiles(signal?: AbortSignal): Promise<string[]> {
       files.push(...sessionFiles);
     }
   } catch {
-    // Return empty if we can't read sessions dir
+    // Skip directories we can't read
   }
 
   return files;
@@ -203,11 +203,6 @@ interface SessionMessage {
   cacheRead: number;
   cacheWrite: number;
   timestamp: number;
-}
-
-function extractSessionIdFromEntry(entry: FileEntry): string | null {
-  if (entry.type === "session" && typeof entry.id === "string") return entry.id;
-  return null;
 }
 
 function validateEntry(
@@ -295,10 +290,20 @@ async function parseSessionLine(
 ): Promise<{ sessionId?: string; message?: SessionMessage }> {
   if (!line.trim()) return {};
   try {
-    const entry = JSON.parse(line);
-    const extractedSessionId = extractSessionIdFromEntry(entry);
-    if (extractedSessionId) return { sessionId: extractedSessionId };
-    const message = extractMessageFromEntry(entry, seenHashes);
+    const raw = JSON.parse(line) as unknown;
+    const entry = raw as { type?: string; id?: string };
+    if (entry.type === "session" && typeof entry.id === "string")
+      return { sessionId: entry.id, message: undefined };
+    const messageEntry = raw as {
+      type?: string;
+      id?: string;
+      message?: unknown;
+    };
+    if (messageEntry.type !== "message" || !messageEntry.message) return {};
+    const message = extractMessageFromEntry(
+      messageEntry as FileEntry,
+      seenHashes,
+    );
     if (message) return { message };
   } catch {
     // Skip malformed lines
@@ -362,12 +367,14 @@ function getTimePeriods(
 
 function processMessage(
   msg: SessionMessage,
-  sessionId: string,
-  data: UsageData,
-  todayMs: number,
-  weekStartMs: number,
+  opts: {
+    sessionId: string;
+    data: UsageData;
+    todayMs: number;
+    weekStartMs: number;
+  },
 ): { today: boolean; thisWeek: boolean; allTime: boolean } {
-  const periods = getTimePeriods(msg.timestamp, todayMs, weekStartMs);
+  const periods = getTimePeriods(msg.timestamp, opts.todayMs, opts.weekStartMs);
   const tokens = {
     total: msg.input + msg.output,
     input: msg.input,
@@ -377,7 +384,10 @@ function processMessage(
   const sessionContributed = { today: false, thisWeek: false, allTime: false };
 
   for (const period of periods) {
-    const stats = data[period];
+    const rawData = opts.data as unknown as Record<string, unknown>;
+    const raw = rawData[period];
+    if (!raw || typeof raw !== "object" || raw === null) continue;
+    const stats = raw as TimeFilteredStats;
     let providerStats = stats.providers.get(msg.provider);
     if (!providerStats) {
       providerStats = emptyProviderStats();
@@ -388,9 +398,9 @@ function processMessage(
       modelStats = emptyModelStats();
       providerStats.models.set(msg.model, modelStats);
     }
-    modelStats.sessions.add(sessionId);
+    modelStats.sessions.add(opts.sessionId);
     accumulateStats(modelStats, msg.cost, tokens);
-    providerStats.sessions.add(sessionId);
+    providerStats.sessions.add(opts.sessionId);
     accumulateStats(providerStats, msg.cost, tokens);
     accumulateStats(stats.totals, msg.cost, tokens);
     sessionContributed[period] = true;
@@ -421,16 +431,20 @@ function createEmptyUsageData(): UsageData {
   };
 }
 
+interface ProcessSessionOpts {
+  seenHashes: Set<string>;
+  data: UsageData;
+  todayMs: number;
+  weekStartMs: number;
+}
+
 async function processSessionFile(
   filePath: string,
-  seenHashes: Set<string>,
-  data: UsageData,
-  todayMs: number,
-  weekStartMs: number,
+  opts: ProcessSessionOpts,
   signal?: AbortSignal,
 ): Promise<void> {
   if (checkSignalAborted(signal)) return;
-  const parsed = await parseSessionFile(filePath, seenHashes, signal);
+  const parsed = await parseSessionFile(filePath, opts.seenHashes, signal);
   if (checkSignalAborted(signal)) return;
   if (!parsed) return;
 
@@ -443,21 +457,20 @@ async function processSessionFile(
 
   for (const msg of messages) {
     if (checkSignalAborted(signal)) return;
-    const contributed = processMessage(
-      msg,
+    const contributed = processMessage(msg, {
       sessionId,
-      data,
-      todayMs,
-      weekStartMs,
-    );
+      data: opts.data,
+      todayMs: opts.todayMs,
+      weekStartMs: opts.weekStartMs,
+    });
     if (contributed.today) sessionContributed.today = true;
     if (contributed.thisWeek) sessionContributed.thisWeek = true;
     if (contributed.allTime) sessionContributed.allTime = true;
   }
 
-  if (sessionContributed.today) data.today.totals.sessions++;
-  if (sessionContributed.thisWeek) data.thisWeek.totals.sessions++;
-  if (sessionContributed.allTime) data.allTime.totals.sessions++;
+  if (sessionContributed.today) opts.data.today.totals.sessions++;
+  if (sessionContributed.thisWeek) opts.data.thisWeek.totals.sessions++;
+  if (sessionContributed.allTime) opts.data.allTime.totals.sessions++;
 }
 
 async function collectUsageData(
@@ -473,10 +486,7 @@ async function collectUsageData(
   for (const filePath of sessionFiles) {
     await processSessionFile(
       filePath,
-      seenHashes,
-      data,
-      todayMs,
-      weekStartMs,
+      { seenHashes, data, todayMs, weekStartMs },
       signal,
     );
     await new Promise<void>((resolve) => setImmediate(resolve));
@@ -484,8 +494,6 @@ async function collectUsageData(
 
   return data;
 }
-
-// Formatting Helpers
 
 function formatCost(cost: number): string {
   if (cost === 0) return "-";
@@ -545,22 +553,25 @@ const TAB_ORDER: TabName[] = ["today", "thisWeek", "allTime"];
  */
 function handleUsageInput(
   data: string,
-  done: () => void,
-  onTabForward: () => void,
-  onTabBackward: () => void,
-  onUp: () => void,
-  onDown: () => void,
-  onEnter?: () => void,
+  opts: {
+    done: () => void;
+    onTabForward: () => void;
+    onTabBackward: () => void;
+    onUp: () => void;
+    onDown: () => void;
+    onEnter?: () => void;
+  },
 ): void {
   const matches = createKeyMatcher(data);
 
-  if (handleEscape(matches, done)) return;
+  if (handleEscape(matches, opts.done)) return;
 
-  if (matches("tab") || matches("right")) onTabForward();
-  else if (matches("shift+tab") || matches("left")) onTabBackward();
-  else if (matches("up")) onUp();
-  else if (matches("down")) onDown();
-  else if (onEnter && (matches("enter") || matches("space"))) onEnter();
+  if (matches("tab") || matches("right")) opts.onTabForward();
+  else if (matches("shift+tab") || matches("left")) opts.onTabBackward();
+  else if (matches("up")) opts.onUp();
+  else if (matches("down")) opts.onDown();
+  else if (opts.onEnter && (matches("enter") || matches("space")))
+    opts.onEnter();
 }
 
 class UsageComponent {
@@ -588,7 +599,6 @@ class UsageComponent {
 
   private updateProviderOrder(): void {
     const statsData = this.data[this.activeTab];
-    // Filter out providers with zero usage data (all sessions, messages, and tokens must be > 0)
     const providersWithUsage = Array.from(statsData.providers.entries())
       .filter(([_, providerStats]) => {
         const sessionCount =
@@ -612,31 +622,30 @@ class UsageComponent {
   }
 
   handleInput(data: string): void {
-    handleUsageInput(
-      data,
-      this.done,
-      () => {
+    handleUsageInput(data, {
+      done: this.done,
+      onTabForward: () => {
         this.cycleTab(1);
       },
-      () => {
+      onTabBackward: () => {
         this.cycleTab(-1);
       },
-      () => {
+      onUp: () => {
         this.navigateSelection(-1);
       },
-      () => {
+      onDown: () => {
         this.navigateSelection(1);
       },
-      () => {
+      onEnter: () => {
         this.toggleProvider();
       },
-    );
+    });
   }
 
   cycleTab(direction: number): void {
     const idx = TAB_ORDER.indexOf(this.activeTab);
-    this.activeTab =
-      TAB_ORDER[(idx + direction + TAB_ORDER.length) % TAB_ORDER.length]!;
+    const newIdx = (idx + direction + TAB_ORDER.length) % TAB_ORDER.length;
+    this.activeTab = TAB_ORDER[newIdx];
     this.updateProviderOrder();
     this.requestRender();
   }
@@ -657,10 +666,6 @@ class UsageComponent {
     }
     this.requestRender();
   }
-
-  // -------------------------------------------------------------------------
-  // Render Methods
-  // -------------------------------------------------------------------------
 
   render(): string[] {
     return [
@@ -746,7 +751,7 @@ class UsageComponent {
 
     for (let i = 0; i < this.providerOrder.length; i++) {
       const providerName = this.providerOrder[i];
-      const providerStats = stats.providers.get(providerName)!;
+      const providerStats = stats.providers.get(providerName);
       const isSelected = i === this.selectedIndex;
       const isExpanded = this.expanded.has(providerName);
 
@@ -755,15 +760,17 @@ class UsageComponent {
       const prefix = isSelected
         ? th.fg("accent", `${arrow} `)
         : th.fg("dim", `${arrow} `);
-      const dataRow = this.renderDataRow(providerName, providerStats, {
-        indent: 2,
-        selected: isSelected,
-      });
-      lines.push(prefix + dataRow.slice(2)); // Replace indent with arrow prefix
+      if (providerStats) {
+        const dataRow = this.renderDataRow(providerName, providerStats, {
+          indent: 2,
+          selected: isSelected,
+        });
+        lines.push(prefix + dataRow.slice(2)); // Replace indent with arrow prefix
 
-      if (isExpanded) {
-        const modelLines = this.renderModelRows(providerStats);
-        lines.push(...modelLines);
+        if (isExpanded) {
+          const modelLines = this.renderModelRows(providerStats);
+          lines.push(...modelLines);
+        }
       }
     }
 
@@ -853,7 +860,7 @@ async function findToolSessionFiles(
       results.push(...files);
     }
   } catch {
-    // Return empty if we can't read sessions dir
+    // Skip directories we can't read
   }
   return results;
 }
@@ -885,8 +892,14 @@ function parseSessionEntry(
 ): { sessionId: string | null; toolCalls: ToolCall[] } {
   if (!line.trim()) return { sessionId, toolCalls: [] };
   try {
-    const entry = JSON.parse(line);
-    if (entry.type === "session" && entry.id)
+    const raw = JSON.parse(line) as unknown;
+    const entry = raw as {
+      type?: string;
+      id?: string;
+      timestamp?: string;
+      message?: { content?: unknown };
+    };
+    if (entry.type === "session" && typeof entry.id === "string")
       return { sessionId: entry.id, toolCalls: [] };
     if (entry.type !== "message" || !entry.message?.content || !sessionId)
       return { sessionId, toolCalls: [] };
@@ -899,7 +912,7 @@ function parseSessionEntry(
       toolCalls: collectToolCallsFromContents(
         contents,
         sessionId,
-        entry.timestamp,
+        entry.timestamp ? new Date(entry.timestamp).getTime() : 0,
       ),
     };
   } catch {
@@ -999,29 +1012,28 @@ class ToolUsageComponent {
   }
 
   handleInput(data: string): void {
-    handleUsageInput(
-      data,
-      this.done,
-      () => {
+    handleUsageInput(data, {
+      done: this.done,
+      onTabForward: () => {
         this.cycleToolTab(1);
       },
-      () => {
+      onTabBackward: () => {
         this.cycleToolTab(-1);
       },
-      () => {
+      onUp: () => {
         if (this.selectedIndex > 0) {
           this.selectedIndex--;
           this.requestRender();
         }
       },
-      () => {
+      onDown: () => {
         const maxIdx = this.getRowCount() - 1;
         if (this.selectedIndex < maxIdx) {
           this.selectedIndex++;
           this.requestRender();
         }
       },
-    );
+    });
   }
 
   private cycleToolTab(direction: number): void {
@@ -1029,7 +1041,7 @@ class ToolUsageComponent {
     this.activeTab =
       TOOL_TAB_ORDER[
         (idx + direction + TOOL_TAB_ORDER.length) % TOOL_TAB_ORDER.length
-      ]!;
+      ];
     this.selectedIndex = 0;
     this.requestRender();
   }
@@ -1314,15 +1326,13 @@ async function loadAndDisplay<
         finish(null);
       };
 
-      (async () => {
-        try {
-          const result = await collectData(loader.signal);
+      collectData(loader.signal)
+        .then((result) => {
           finish(result);
-        } catch (e) {
-          console.error("Data collection failed:", e);
+        })
+        .catch(() => {
           finish(null);
-        }
-      })();
+        });
 
       return loader;
     },

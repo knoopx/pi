@@ -136,7 +136,6 @@ describe("getSessionsDir", () => {
   });
 });
 
-// Formatting Functions Tests
 
 describe("formatCost", () => {
   describe("when cost is zero", () => {
