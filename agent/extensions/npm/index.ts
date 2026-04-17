@@ -82,7 +82,7 @@ async function fetchNpmPackage(
 
     if (!response.ok)
       return response.status === 404
-        ? buildNotFoundResult(pkg, errorContext)
+        ? buildNotFoundResult(pkg)
         : buildHttpErrorResult(pkg, errorContext, response);
 
     const data = (await response.json()) as NpmPackageResponse;
@@ -92,10 +92,7 @@ async function fetchNpmPackage(
   }
 }
 
-function buildNotFoundResult(
-  pkg: string,
-  errorContext: string,
-): {
+function buildNotFoundResult(pkg: string): {
   ok: false;
   result: AgentToolResult<Record<string, unknown>>;
 } {
@@ -338,7 +335,7 @@ async function getNpmPackageInfo(
   pkg: string,
 ): Promise<AgentToolResult<Record<string, unknown>>> {
   const fetchResult = await fetchNpmPackage(pkg, "get package info");
-  if (!fetchResult.ok) return fetchResult.result;
+  if (fetchResult.ok === false) return fetchResult.result;
 
   const info = extractNpmPackageInfo(fetchResult.data, pkg);
   const fields = buildNpmPackageFields(info);
@@ -351,7 +348,7 @@ async function getNpmPackageVersions(
   pkg: string,
 ): Promise<AgentToolResult<Record<string, unknown>>> {
   const fetchResult = await fetchNpmPackage(pkg, "get package versions");
-  if (!fetchResult.ok) return fetchResult.result;
+  if (fetchResult.ok === false) return fetchResult.result;
 
   const { data } = fetchResult;
   const versions = Object.keys(data?.versions ?? {});
