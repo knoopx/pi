@@ -65,13 +65,25 @@ export async function viewIssue(
   );
 }
 
-export async function createIssue(
-  owner: string,
-  repo: string,
-  title: string,
-  body?: string,
-  labels?: string[],
-): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+interface CreateIssueOpts {
+  owner: string;
+  repo: string;
+  title: string;
+  body?: string;
+  labels?: string[];
+}
+
+export async function createIssue({
+  owner,
+  repo,
+  title,
+  body,
+  labels,
+}: CreateIssueOpts): Promise<{
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}> {
   const args = ["issue", "create", "-R", `${owner}/${repo}`, "--title", title];
 
   if (body) args.push("--body", body);
@@ -240,13 +252,13 @@ Examples:
       stderr: string;
       exitCode: number;
     }> =>
-      createIssue(
-        params.owner,
-        params.repo,
-        params.title,
-        params.body,
-        params.labels,
-      ),
+      createIssue({
+        owner: params.owner,
+        repo: params.repo,
+        title: params.title,
+        body: params.body,
+        labels: params.labels,
+      }),
     confirmationTitle: "Create Issue",
     confirmationDescription: (params: {
       owner: string;

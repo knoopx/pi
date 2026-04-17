@@ -1,7 +1,6 @@
 import type {
   ExtensionAPI,
   ExtensionContext,
-  AgentToolUpdateCallback,
   AgentToolResult,
   Theme,
 } from "@mariozechner/pi-coding-agent";
@@ -323,6 +322,10 @@ Examples:
       _toolCallId: string,
       params: ListGistsParamsType,
       _signal: AbortSignal | undefined,
+      _onUpdate:
+        | ((partialResult: AgentToolResult<{ gists: Gist[] }>) => void)
+        | undefined,
+      _ctx: ExtensionContext,
     ) {
       try {
         return await executeListGists(params);
@@ -363,6 +366,10 @@ Examples:
       _toolCallId: string,
       params: GetGistParamsType,
       _signal: AbortSignal | undefined,
+      _onUpdate:
+        | ((partialResult: AgentToolResult<{ gist: Gist }>) => void)
+        | undefined,
+      _ctx: ExtensionContext,
     ) {
       try {
         const gist = await getGist(params.gistId);
@@ -405,7 +412,9 @@ Examples:
       _toolCallId: string,
       params: CreateGistParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _onUpdate:
+        | ((partialResult: AgentToolResult<{ gist: Gist }>) => void)
+        | undefined,
       ctx: ExtensionContext,
     ) {
       const fileNames = Object.keys(params.files || {}).join(", ");
@@ -504,7 +513,9 @@ Examples:
       _toolCallId: string,
       params: UpdateGistParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _onUpdate:
+        | ((partialResult: AgentToolResult<{ gist: Gist }>) => void)
+        | undefined,
       ctx: ExtensionContext,
     ) {
       const fileNames = params.files
@@ -529,8 +540,7 @@ Examples:
         const fileCount = Object.keys(a.files).length;
         text += theme.fg("dim", ` ${fileCount} file(s) updated`);
       }
-      if (a.description)
-        text += theme.fg("dim", ` desc="${a.description}"`);
+      if (a.description) text += theme.fg("dim", ` desc="${a.description}"`);
       return new Text(text, 0, 0);
     },
 

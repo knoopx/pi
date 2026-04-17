@@ -84,7 +84,7 @@ export function createTextResultRender() {
     theme: Theme,
     _context: ToolRenderContext<unknown, unknown>,
   ) {
-    return renderTextToolResult(result, theme);
+    return renderTextToolResult(result, theme as any);
   };
 }
 
@@ -97,15 +97,12 @@ function createToolExecute<T extends Record<string, unknown>>(
   _id: string,
   params: Record<string, unknown>,
   _signal: AbortSignal | undefined,
-  _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+  _onUpdate: ((partialResult: AgentToolResult<T>) => void) | undefined,
   _ctx: ExtensionContext,
 ) => Promise<AgentToolResult<T>> {
   return async (
     _id: string,
     params: Record<string, unknown>,
-    _signal: AbortSignal | undefined,
-    _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-    _ctx: ExtensionContext,
   ): Promise<AgentToolResult<T>> => {
     try {
       return await handler(params);
@@ -371,16 +368,7 @@ export function registerCreateTool<TParams extends TSchema>(
   pi: ExtensionAPI,
   options: RegisterCreateToolOptions<TParams>,
 ) {
-  const {
-    toolName,
-    toolLabel,
-    toolDescription,
-    paramsSchema,
-    createFn,
-    confirmationTitle,
-    confirmationDescription,
-    successMessagePrefix,
-  } = options;
+  const { toolName, toolLabel, toolDescription, paramsSchema } = options;
 
   pi.registerTool({
     name: toolName,
@@ -388,10 +376,12 @@ export function registerCreateTool<TParams extends TSchema>(
     description: toolDescription,
     parameters: paramsSchema,
     async execute(
-      _id,
+      _id: string,
       params: Static<TParams>,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _onUpdate:
+        | ((partialResult: AgentToolResult<Record<string, unknown>>) => void)
+        | undefined,
       ctx: ExtensionContext,
     ) {
       return await executeCreateTool(ctx, params, options);

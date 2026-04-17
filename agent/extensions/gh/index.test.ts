@@ -1,6 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import type { EventEmitter } from "node:events";
-import type { Readable } from "node:stream";
 import type { TextContent } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
@@ -58,35 +56,33 @@ const errorSpawnResult = {
   exitCode: 1,
 };
 
-interface SpawnProc extends EventEmitter {
-  stdout: Readable;
-  stderr: Readable;
+interface SpawnProc {
+  stdout: { push(data: string | null): void };
+  stderr: { push(data: string | null): void };
+  emit(event: string, code?: number): void;
 }
 
-function createProc(
-  EventEmitter: typeof import("node:events").EventEmitter,
-  Readable: typeof import("node:stream").Readable,
-): SpawnProc {
-  const proc = new EventEmitter() as unknown as SpawnProc;
-  proc.stdout = new Readable({ read() {} });
-  proc.stderr = new Readable({ read() {} });
+function createProc(): SpawnProc {
+  const proc = {
+    stdout: { push: vi.fn(), on: vi.fn() },
+    stderr: { push: vi.fn(), on: vi.fn() },
+    emit: vi.fn(),
+    on: vi.fn(),
+  } as unknown as SpawnProc;
 
   setTimeout(() => {
     proc.stdout.push(spawnResult.stdout);
     proc.stdout.push(null);
     proc.stderr.push(spawnResult.stderr);
     proc.stderr.push(null);
-    (proc as unknown as EventEmitter).emit("close", spawnResult.exitCode);
+    (proc as SpawnProc).emit("close", spawnResult.exitCode);
   }, 0);
 
   return proc;
 }
 
 async function getSpawnMock() {
-  const { EventEmitter } = await import("node:events");
-  const { Readable } = await import("node:stream");
-
-  return { spawn: () => createProc(EventEmitter, Readable) };
+  return { spawn: createProc };
 }
 
 function getToolByName(mockPi: MockExtensionAPI, name: string): MockTool {

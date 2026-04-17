@@ -67,15 +67,29 @@ export async function viewPR(
   );
 }
 
-export async function createPR(
-  owner: string,
-  repo: string,
-  title: string,
-  body?: string,
-  head?: string,
-  base?: string,
-  draft?: boolean,
-): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+interface CreatePROpts {
+  owner: string;
+  repo: string;
+  title: string;
+  body?: string;
+  head?: string;
+  base?: string;
+  draft?: boolean;
+}
+
+export async function createPR({
+  owner,
+  repo,
+  title,
+  body,
+  head,
+  base,
+  draft,
+}: CreatePROpts): Promise<{
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}> {
   const args = ["pr", "create", "-R", `${owner}/${repo}`, "--title", title];
 
   if (body) args.push("--body", body);
@@ -255,15 +269,15 @@ Examples:
       stderr: string;
       exitCode: number;
     }> =>
-      createPR(
-        params.owner,
-        params.repo,
-        params.title,
-        params.body,
-        params.head,
-        params.base,
-        params.draft,
-      ),
+      createPR({
+        owner: params.owner,
+        repo: params.repo,
+        title: params.title,
+        body: params.body,
+        head: params.head,
+        base: params.base,
+        draft: params.draft,
+      }),
     confirmationTitle: "Create PR",
     confirmationDescription: (params: {
       owner: string;

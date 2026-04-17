@@ -1,3 +1,9 @@
+import type { ChildProcess } from "node:child_process";
+import { spawn as nodeSpawn } from "node:child_process";
+
+/** Type of the child_process.spawn function */
+type SpawnFn = typeof nodeSpawn;
+
 /**
  * Execute gh CLI command and return output
  */
@@ -15,7 +21,7 @@ export async function ghCmd(
  * Collect stdout and stderr from a process stream
  */
 function collectProcessOutput(
-  proc: import("node:child_process").ChildProcess,
+  proc: ChildProcess,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise((resolve, reject) => {
     let stdout = "";
@@ -43,7 +49,7 @@ function collectProcessOutput(
  * Execute gh CLI command and collect output
  */
 function executeGhCommand(
-  spawn: typeof import("node:child_process").spawn,
+  spawn: SpawnFn,
   args: string[],
   options: { stdio?: "inherit" | "pipe" },
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
@@ -102,7 +108,7 @@ export async function ghCmdJsonWithInput<T>(
  * Execute gh CLI command with stdin input and collect output
  */
 function executeGhCommandWithInput(
-  spawn: typeof import("node:child_process").spawn,
+  spawn: SpawnFn,
   args: string[],
   input: unknown,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {

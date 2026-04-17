@@ -10,7 +10,6 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   AgentToolResult,
-  AgentToolUpdateCallback,
   Theme,
   ToolRenderResultOptions,
 } from "@mariozechner/pi-coding-agent";
@@ -348,7 +347,10 @@ function createSearchToolRenderer(toolName: string) {
       theme: Theme,
       _context: ToolRenderContext<unknown, unknown>,
     ) {
-      return renderTextToolResult(result as AgentToolResult<unknown>, theme);
+      return renderTextToolResult(
+        result as AgentToolResult<unknown>,
+        theme as any,
+      );
     },
   };
 }
@@ -390,7 +392,9 @@ function registerSearchTool<TParams extends TSchema, TResult>(
       _toolCallId: string,
       params: Static<TParams> & { query: string; limit?: number },
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _onUpdate:
+        | ((partialResult: AgentToolResult<unknown>) => void)
+        | undefined,
       _ctx: ExtensionContext,
     ) {
       return await executeSearchTool(

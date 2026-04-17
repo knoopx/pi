@@ -2,7 +2,6 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   AgentToolResult,
-  AgentToolUpdateCallback,
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
 import { dotJoin, table, stateDot, type Column } from "../../shared/renderers";
@@ -35,7 +34,8 @@ async function ghList<T>(args: string[], errorBase: string): Promise<T[]> {
 
   let items: T[];
   try {
-    items = JSON.parse(result.stdout);
+    const raw = JSON.parse(result.stdout) as unknown;
+    items = Array.isArray(raw) ? (raw as T[]) : [];
   } catch {
     throw new Error(`Failed to parse ${errorBase} output: ${result.stdout}`);
   }
@@ -153,7 +153,11 @@ Examples:
       _id: string,
       params: ListWorkflowsParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _onUpdate:
+        | ((
+            partialResult: AgentToolResult<{ workflows: GHWorkflow[] }>,
+          ) => void)
+        | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -230,7 +234,9 @@ Examples:
       _id: string,
       params: ListRunsParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _onUpdate:
+        | ((partialResult: AgentToolResult<{ runs: GHWorkflowRun[] }>) => void)
+        | undefined,
       _ctx: ExtensionContext,
     ) {
       try {

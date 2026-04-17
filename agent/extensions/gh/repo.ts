@@ -1,7 +1,6 @@
 import type {
   ExtensionAPI,
   ExtensionContext,
-  AgentToolUpdateCallback,
   AgentToolResult,
   Theme,
 } from "@mariozechner/pi-coding-agent";
@@ -130,13 +129,19 @@ export async function getFileContent(
   };
 }
 
-async function processRepoItem(
-  item: GHFile,
-  owner: string,
-  repo: string,
-  files: GHFile[],
-  maxFiles: number,
-): Promise<void> {
+interface ProcessRepoItemOpts {
+  item: GHFile;
+  owner: string;
+  repo: string;
+  files: GHFile[];
+}
+
+async function processRepoItem({
+  item,
+  owner,
+  repo,
+  files,
+}: ProcessRepoItemOpts): Promise<void> {
   if (item.type === "file") {
     files.push(item);
     return;
@@ -167,7 +172,7 @@ export async function listRepoFiles(
 
   for (const item of contents) {
     if (files.length >= maxFiles) break;
-    await processRepoItem(item, owner, repo, files, maxFiles);
+    await processRepoItem({ item, owner, repo, files });
   }
 
   return { files, count: files.length };
@@ -353,7 +358,9 @@ Examples:
       _toolCallId: string,
       params: GetRepoContentsParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _onUpdate:
+        | ((partialResult: AgentToolResult<Record<string, unknown>>) => void)
+        | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -390,7 +397,9 @@ Examples:
       _toolCallId: string,
       params: GetFileContentParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _onUpdate:
+        | ((partialResult: AgentToolResult<Record<string, unknown>>) => void)
+        | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -433,7 +442,9 @@ Examples:
       _toolCallId: string,
       params: ListRepoFilesParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _onUpdate:
+        | ((partialResult: AgentToolResult<Record<string, unknown>>) => void)
+        | undefined,
       _ctx: ExtensionContext,
     ) {
       try {

@@ -2,7 +2,6 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   AgentToolResult,
-  AgentToolUpdateCallback,
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
 import {
@@ -160,7 +159,9 @@ Examples:
       _id: string,
       params: ListReleasesParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _onUpdate:
+        | ((partialResult: AgentToolResult<{ releases: GHRelease[] }>) => void)
+        | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
@@ -275,7 +276,9 @@ Examples:
       _id: string,
       params: ViewReleaseParamsType,
       _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      _onUpdate:
+        | ((partialResult: AgentToolResult<{ release: GHRelease }>) => void)
+        | undefined,
       _ctx: ExtensionContext,
     ) {
       try {
