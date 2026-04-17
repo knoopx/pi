@@ -40,7 +40,7 @@ describe("Markitdown Extension", () => {
 
     beforeEach(() => {
       const calls = mockPi.registerTool.mock.calls as [MockTool][];
-      registeredTool = calls[0];
+      registeredTool = calls[0][0];
     });
 
     // Execute signature: (toolCallId, params, signal, onUpdate, ctx)

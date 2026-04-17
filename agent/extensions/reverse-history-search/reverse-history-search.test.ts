@@ -26,6 +26,7 @@ describe("Reverse History Search Extension", () => {
       it("then it should register ctrl+r shortcut", () => {
         const { registerShortcut } = mockPi as unknown as MockExtensionAPI;
         const matcher = {
+          description: expect.any(String),
           handler: expect.any(Function) as unknown,
         };
         expect(registerShortcut).toHaveBeenCalledWith("ctrl+r", matcher);

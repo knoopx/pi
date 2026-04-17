@@ -9,7 +9,7 @@ import {
   registerCreateTool,
 } from "./shared";
 
-export interface GHPR {
+interface GHPR {
   number: number;
   title: string;
   state: string;
@@ -24,7 +24,7 @@ export interface GHPR {
   reviewDecision: string;
 }
 
-export async function listPRs(
+async function listPRs(
   owner: string,
   repo: string,
   state?: "open" | "closed" | "merged" | "all",
@@ -47,7 +47,7 @@ export async function listPRs(
   return ghCmdJson<GHPR[]>(args, "pr list");
 }
 
-export async function viewPR(
+async function viewPR(
   owner: string,
   repo: string,
   prNumber: number,
@@ -77,7 +77,7 @@ interface CreatePROpts {
   draft?: boolean;
 }
 
-export async function createPR({
+async function createPR({
   owner,
   repo,
   title,
@@ -100,13 +100,13 @@ export async function createPR({
   return ghCmd(args);
 }
 
-export const ListPRsParams = createListParamsSchema(
+const ListPRsParams = createListParamsSchema(
   "List pull requests in a GitHub repository",
   ["open", "closed", "merged", "all"],
   "PRs",
 );
 
-export const ViewPRParams = Type.Object({
+const ViewPRParams = Type.Object({
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
   }),
@@ -118,7 +118,7 @@ export const ViewPRParams = Type.Object({
   }),
 });
 
-export const CreatePRParams = Type.Object({
+const CreatePRParams = Type.Object({
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
   }),
@@ -152,9 +152,9 @@ export const CreatePRParams = Type.Object({
   ),
 });
 
-export type ListPRsParamsType = Static<typeof ListPRsParams>;
-export type ViewPRParamsType = Static<typeof ViewPRParams>;
-export type CreatePRParamsType = Static<typeof CreatePRParams>;
+type ListPRsParamsType = Static<typeof ListPRsParams>;
+type ViewPRParamsType = Static<typeof ViewPRParams>;
+type CreatePRParamsType = Static<typeof CreatePRParams>;
 
 function createPrColumns(): Column[] {
   return [

@@ -9,7 +9,7 @@ import {
   registerCreateTool,
 } from "./shared";
 
-export interface GHIssue {
+interface GHIssue {
   number: number;
   title: string;
   state: string;
@@ -22,7 +22,7 @@ export interface GHIssue {
   milestone: { title: string; description: string; dueOn: string } | null;
 }
 
-export async function listIssues(
+async function listIssues(
   owner: string,
   repo: string,
   state?: "open" | "closed" | "merged" | "all",
@@ -45,7 +45,7 @@ export async function listIssues(
   return ghCmdJson<GHIssue[]>(args, "issue list");
 }
 
-export async function viewIssue(
+async function viewIssue(
   owner: string,
   repo: string,
   issueNumber: number,
@@ -73,7 +73,7 @@ interface CreateIssueOpts {
   labels?: string[];
 }
 
-export async function createIssue({
+async function createIssue({
   owner,
   repo,
   title,
@@ -92,13 +92,13 @@ export async function createIssue({
   return ghCmd(args);
 }
 
-export const ListIssuesParams = createListParamsSchema(
+const ListIssuesParams = createListParamsSchema(
   "List issues in a GitHub repository",
   ["open", "closed", "all"],
   "issues",
 );
 
-export const ViewIssueParams = Type.Object({
+const ViewIssueParams = Type.Object({
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
   }),
@@ -110,7 +110,7 @@ export const ViewIssueParams = Type.Object({
   }),
 });
 
-export const CreateIssueParams = Type.Object({
+const CreateIssueParams = Type.Object({
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
   }),
@@ -132,9 +132,9 @@ export const CreateIssueParams = Type.Object({
   ),
 });
 
-export type ListIssuesParamsType = Static<typeof ListIssuesParams>;
-export type ViewIssueParamsType = Static<typeof ViewIssueParams>;
-export type CreateIssueParamsType = Static<typeof CreateIssueParams>;
+type ListIssuesParamsType = Static<typeof ListIssuesParams>;
+type ViewIssueParamsType = Static<typeof ViewIssueParams>;
+type CreateIssueParamsType = Static<typeof CreateIssueParams>;
 
 function createIssueColumns(): Column[] {
   return [

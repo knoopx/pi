@@ -52,7 +52,7 @@ function createRepoErrorResult(error: unknown) {
   return createErrorResult(message);
 }
 
-export interface GHFile {
+interface GHFile {
   name: string;
   path: string;
   sha: string;
@@ -66,7 +66,7 @@ export interface GHFile {
   encoding?: string;
 }
 
-export interface FileContentResult extends Record<string, unknown> {
+interface FileContentResult extends Record<string, unknown> {
   repo: string;
   path: string;
   content: string;
@@ -74,7 +74,7 @@ export interface FileContentResult extends Record<string, unknown> {
   size?: number;
 }
 
-export async function getRepoContents(
+async function getRepoContents(
   owner: string,
   repo: string,
   path = "",
@@ -91,7 +91,7 @@ export async function getRepoContents(
   );
 }
 
-export async function getFileContent(
+async function getFileContent(
   owner: string,
   repo: string,
   filePath: string,
@@ -161,7 +161,7 @@ async function processRepoItem({
   }
 }
 
-export async function listRepoFiles(
+async function listRepoFiles(
   owner: string,
   repo: string,
   path = "",
@@ -234,7 +234,7 @@ function formatRepoFilesList(result: {
   return lines.join("\n");
 }
 
-export const GetRepoContentsParams = Type.Object({
+const GetRepoContentsParams = Type.Object({
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
   }),
@@ -248,7 +248,7 @@ export const GetRepoContentsParams = Type.Object({
   ),
 });
 
-export const GetFileContentParams = Type.Object({
+const GetFileContentParams = Type.Object({
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
   }),
@@ -265,7 +265,7 @@ export const GetFileContentParams = Type.Object({
   ),
 });
 
-export const ListRepoFilesParams = Type.Object({
+const ListRepoFilesParams = Type.Object({
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
   }),
@@ -287,9 +287,9 @@ export const ListRepoFilesParams = Type.Object({
   ),
 });
 
-export type GetRepoContentsParamsType = Static<typeof GetRepoContentsParams>;
-export type GetFileContentParamsType = Static<typeof GetFileContentParams>;
-export type ListRepoFilesParamsType = Static<typeof ListRepoFilesParams>;
+type GetRepoContentsParamsType = Static<typeof GetRepoContentsParams>;
+type GetFileContentParamsType = Static<typeof GetFileContentParams>;
+type ListRepoFilesParamsType = Static<typeof ListRepoFilesParams>;
 
 async function executeGetRepoContents(
   params: GetRepoContentsParamsType,

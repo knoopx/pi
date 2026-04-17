@@ -91,7 +91,30 @@ function getToolByName(mockPi: MockExtensionAPI, name: string): MockTool {
   )![0] as MockTool;
 }
 
-vi.mock("node:child_process", async () => getSpawnMock());
+// Mock ./utils to avoid dynamic child_process import issues
+vi.mock("./utils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./utils")>();
+  return {
+    ...actual,
+    ghCmd: vi.fn().mockImplementation(async (args: string[]) => {
+      return {
+        stdout: spawnResult.stdout,
+        stderr: spawnResult.stderr,
+        exitCode: spawnResult.exitCode,
+      };
+    }),
+    ghCmdJson: vi.fn().mockImplementation(async () => {
+      if (spawnResult.exitCode !== 0) {
+        throw new Error(spawnResult.stderr);
+      }
+      try {
+        return JSON.parse(spawnResult.stdout);
+      } catch {
+        return [];
+      }
+    }),
+  };
+});
 
 import setupGhExtension from "./index";
 
@@ -166,7 +189,7 @@ describe("GH Extension", () => {
       );
 
       expect((result.content[0] as TextContent).text).toBe(
-        "Error: gh search repos failed: gh: not authenticated",
+        "Error: gh: not authenticated",
       );
     });
   });

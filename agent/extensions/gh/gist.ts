@@ -35,7 +35,7 @@ function createGistErrorResult(error: unknown) {
   return createErrorResult(message);
 }
 
-export interface GistFile {
+interface GistFile {
   filename: string;
   type: string;
   language: string | null;
@@ -44,7 +44,7 @@ export interface GistFile {
   size: number;
 }
 
-export interface Gist {
+interface Gist {
   id: string;
   description: string | null;
   public: boolean;
@@ -60,7 +60,7 @@ export interface Gist {
   } | null;
 }
 
-export async function listGists(
+async function listGists(
   userId?: string,
   limit = 30,
   _since?: Date,
@@ -99,11 +99,11 @@ export async function listGists(
   return gists;
 }
 
-export async function getGist(gistId: string): Promise<Gist> {
+async function getGist(gistId: string): Promise<Gist> {
   return ghCmdJson<Gist>(["api", `/gists/${gistId}`], "api gist");
 }
 
-export async function createGist(
+async function createGist(
   files: Record<string, { content: string; filename?: string }>,
   description = "",
   isPublic = false,
@@ -147,7 +147,7 @@ export async function createGist(
   return getGist(gistId);
 }
 
-export async function updateGist(
+async function updateGist(
   gistId: string,
   files?: Record<string, { content: string; filename?: string }>,
   description?: string,
@@ -212,7 +212,7 @@ function formatGistUpdate(gist: Gist): string {
   return lines.join("\n");
 }
 
-export const ListGistsParams = Type.Object({
+const ListGistsParams = Type.Object({
   userId: Type.Optional(
     Type.String({
       description:
@@ -234,13 +234,13 @@ export const ListGistsParams = Type.Object({
   ),
 });
 
-export const GetGistParams = Type.Object({
+const GetGistParams = Type.Object({
   gistId: Type.String({
     description: "Gist ID (e.g., 'abc123')",
   }),
 });
 
-export const CreateGistParams = Type.Object({
+const CreateGistParams = Type.Object({
   files: Type.Record(
     Type.String(),
     Type.Object({
@@ -271,7 +271,7 @@ export const CreateGistParams = Type.Object({
   ),
 });
 
-export const UpdateGistParams = Type.Object({
+const UpdateGistParams = Type.Object({
   gistId: Type.String({
     description: "Gist ID to update",
   }),
@@ -297,10 +297,10 @@ export const UpdateGistParams = Type.Object({
   ),
 });
 
-export type ListGistsParamsType = Static<typeof ListGistsParams>;
-export type GetGistParamsType = Static<typeof GetGistParams>;
-export type CreateGistParamsType = Static<typeof CreateGistParams>;
-export type UpdateGistParamsType = Static<typeof UpdateGistParams>;
+type ListGistsParamsType = Static<typeof ListGistsParams>;
+type GetGistParamsType = Static<typeof GetGistParams>;
+type CreateGistParamsType = Static<typeof CreateGistParams>;
+type UpdateGistParamsType = Static<typeof UpdateGistParams>;
 
 function createListGistsTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
   return {

@@ -20,7 +20,7 @@ import { renderTextToolResult } from "../../shared/render-utils";
 /**
  * Search code using gh CLI
  */
-export async function searchCode(
+async function searchCode(
   query: string,
   limit = 20,
 ): Promise<{ query: string; results: GHCodeSearchResult[]; total: number }> {
@@ -47,7 +47,7 @@ export async function searchCode(
 /**
  * Search issues using gh CLI
  */
-export async function searchIssues(
+async function searchIssues(
   query: string,
   limit = 20,
 ): Promise<{ query: string; results: GHIssueSearchResult[]; total: number }> {
@@ -74,7 +74,7 @@ export async function searchIssues(
 /**
  * Search PRs using gh CLI
  */
-export async function searchPRs(
+async function searchPRs(
   query: string,
   limit = 20,
 ): Promise<{ query: string; results: GHPRSearchResult[]; total: number }> {
@@ -101,7 +101,7 @@ export async function searchPRs(
 /**
  * Search repositories using gh CLI
  */
-export async function searchRepos(
+async function searchRepos(
   query: string,
   limit = 20,
 ): Promise<{ query: string; results: GHRepoSearchResult[]; total: number }> {

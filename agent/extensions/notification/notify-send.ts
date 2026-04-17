@@ -50,7 +50,7 @@ function isExtensionContext(value: unknown): value is ExtensionContext {
   );
 }
 
-export function normalizeToolExecuteArgs(
+function normalizeToolExecuteArgs(
   arg1: unknown,
   arg2: unknown,
   arg3: unknown,

@@ -21,12 +21,10 @@ describe("notification output snapshots", () => {
     mockPi = createMockExtensionAPI();
     const { default: ext } = await import("./index");
     ext(mockPi as ExtensionAPI);
-    const calls = mockPi.registerTool.mock.calls as unknown as Array<
-      { name: string } & MockTool
-    >;
-    const found = calls.find((c) => c.name === "notify");
+    const calls = mockPi.registerTool.mock.calls as [MockTool][];
+    const found = calls.find((c) => c[0]?.name === "notify");
     expect(found).toBeDefined();
-    tool = found as MockTool;
+    tool = found![0];
   });
 
   it("renders success output", async () => {

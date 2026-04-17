@@ -18,7 +18,7 @@ import {
   createViewRenderCall,
 } from "./shared";
 
-export interface GHRelease {
+interface GHRelease {
   tagName: string;
   name: string;
   publishedAt: string;
@@ -33,7 +33,7 @@ export interface GHRelease {
   }[];
 }
 
-export async function listReleases(
+async function listReleases(
   owner: string,
   repo: string,
   limit = 30,
@@ -66,7 +66,7 @@ export async function listReleases(
   return releases;
 }
 
-export async function viewRelease(
+async function viewRelease(
   owner: string,
   repo: string,
   tag: string,
@@ -106,7 +106,7 @@ function createErrorResult(
   };
 }
 
-export const ListReleasesParams = Type.Object({
+const ListReleasesParams = Type.Object({
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
   }),
@@ -123,7 +123,7 @@ export const ListReleasesParams = Type.Object({
   ),
 });
 
-export const ViewReleaseParams = Type.Object({
+const ViewReleaseParams = Type.Object({
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
   }),
@@ -135,8 +135,8 @@ export const ViewReleaseParams = Type.Object({
   }),
 });
 
-export type ListReleasesParamsType = Static<typeof ListReleasesParams>;
-export type ViewReleaseParamsType = Static<typeof ViewReleaseParams>;
+type ListReleasesParamsType = Static<typeof ListReleasesParams>;
+type ViewReleaseParamsType = Static<typeof ViewReleaseParams>;
 
 function createListReleasesTool() {
   return {

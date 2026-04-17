@@ -8,14 +8,14 @@ import { dotJoin, table, stateDot, type Column } from "../../shared/renderers";
 import { ghCmd } from "./utils";
 import { createListRenderCall, createTextResultRender } from "./shared";
 
-export interface GHWorkflow {
+interface GHWorkflow {
   name: string;
   id: number;
   state: string;
   path: string;
 }
 
-export interface GHWorkflowRun {
+interface GHWorkflowRun {
   workflow_name: string;
   status: string;
   conclusion: string;
@@ -43,7 +43,7 @@ async function ghList<T>(args: string[], errorBase: string): Promise<T[]> {
   return items;
 }
 
-export async function listWorkflows(
+async function listWorkflows(
   owner: string,
   repo: string,
   limit = 30,
@@ -61,7 +61,7 @@ export async function listWorkflows(
   );
 }
 
-export async function listWorkflowRuns(
+async function listWorkflowRuns(
   owner: string,
   repo: string,
   workflowId?: number | string,
@@ -89,7 +89,7 @@ function createErrorResult(
   };
 }
 
-export const ListWorkflowsParams = Type.Object({
+const ListWorkflowsParams = Type.Object({
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
   }),
@@ -106,7 +106,7 @@ export const ListWorkflowsParams = Type.Object({
   ),
 });
 
-export const ListRunsParams = Type.Object({
+const ListRunsParams = Type.Object({
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
   }),
@@ -129,8 +129,8 @@ export const ListRunsParams = Type.Object({
   ),
 });
 
-export type ListWorkflowsParamsType = Static<typeof ListWorkflowsParams>;
-export type ListRunsParamsType = Static<typeof ListRunsParams>;
+type ListWorkflowsParamsType = Static<typeof ListWorkflowsParams>;
+type ListRunsParamsType = Static<typeof ListRunsParams>;
 
 function createListWorkflowsTool() {
   return {

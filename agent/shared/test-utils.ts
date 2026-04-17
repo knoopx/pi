@@ -91,7 +91,7 @@ export function createMockExtensionAPI(): MockExtensionAPI {
 /**
  * Create a mock fetch that returns a resolved HTTP response.
  */
-export function mockFetchResponse({
+function mockFetchResponse({
   ok,
   status,
   statusText,
@@ -118,7 +118,7 @@ export function mockFetchResponse({
 /**
  * Replace globalThis.fetch with a mock that resolves to the given response.
  */
-export function setupMockFetch(
+function setupMockFetch(
   responses: Array<{
     url?: string | RegExp;
     response: Response;
