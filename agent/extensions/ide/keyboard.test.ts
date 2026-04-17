@@ -90,6 +90,35 @@ describe("createKeyboardHandler", () => {
         expect(handler).toHaveBeenCalledWith(context);
       });
     });
+
+    describe("when handler returns a Promise", () => {
+      it("then treats the binding as successfully handled", async () => {
+        const handler = vi
+          .fn()
+          .mockReturnValue(
+            new Promise<void>((resolve) => setTimeout(resolve, 10)),
+          );
+        const keyHandler = createKeyboardHandler({
+          bindings: [{ key: "enter", handler }],
+        });
+
+        const result = keyHandler("\r");
+        expect(handler).toHaveBeenCalled();
+        expect(result).toBe(true);
+      });
+
+      it("then suppresses unhandled rejections", async () => {
+        const handler = vi
+          .fn()
+          .mockReturnValue(Promise.reject(new Error("fail")));
+        const keyHandler = createKeyboardHandler({
+          bindings: [{ key: "enter", handler }],
+        });
+
+        // Should not throw - the rejection is caught internally
+        expect(() => keyHandler("\r")).not.toThrow();
+      });
+    });
   });
 
   describe("given escape handler", () => {

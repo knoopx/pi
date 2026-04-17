@@ -26,7 +26,8 @@ export function pad(text: string, width: number): string {
   const cleaned = stripOscSequences(text);
   const len = stringWidth(cleaned);
   if (len >= width) return sliceAnsi(cleaned, 0, width);
-  return cleaned + " ".repeat(width - len);
+  // Always reset before padding to prevent ANSI style leakage into trailing spaces
+  return cleaned + "\x1b[0m" + " ".repeat(width - len);
 }
 
 /** Ensure line is exactly the specified width */
@@ -35,7 +36,8 @@ export function ensureWidth(text: string, width: number): string {
   const currentWidth = stringWidth(cleaned);
   if (currentWidth === width) return cleaned;
   if (currentWidth > width) return sliceAnsi(cleaned, 0, width);
-  return cleaned + " ".repeat(width - currentWidth);
+  // Always reset before padding to prevent ANSI style leakage into trailing spaces
+  return cleaned + "\x1b[0m" + " ".repeat(width - currentWidth);
 }
 
 /** Build help text from conditional items */
@@ -49,7 +51,7 @@ export function buildHelpText(
  * Render a list row with optional selection highlighting and status styling.
  * Handles truncation, width padding, and theme application.
  */
-export function renderListRow(
+function renderListRow(
   text: string,
   width: number,
   isSelected: boolean,
@@ -60,8 +62,8 @@ export function renderListRow(
   const final = ensureWidth(truncated, width);
 
   if (isSelected && theme) {
-    const styled = theme.fg("accent", theme.bold(final));
-    return theme.bg("selectedBg", styled);
+    const styled = theme.fg("accent", theme.bold(truncated));
+    return theme.bg("selectedBg", ensureWidth(styled, width));
   }
   if (isCurrent && theme) return theme.fg("warning", final);
   return final;

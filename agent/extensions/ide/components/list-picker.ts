@@ -1,3 +1,4 @@
+import type { Component } from "@mariozechner/pi-tui";
 import type {
   ExtensionAPI,
   KeybindingsManager,
@@ -10,12 +11,11 @@ import {
   type KeyBinding,
 } from "../keyboard";
 import { truncateAnsi, ensureWidth, pad } from "./text-utils";
-import { applyFocusedStyle } from "./style-utils";
 import {
   calculateDimensions,
   renderSplitPanel,
   renderSourceRows,
-} from "./split-panel";
+} from "./split-panel/index";
 import { isRenderCacheValid } from "./state/factories";
 import { createBaseDimensionsConfig } from "./state/navigation";
 import {
@@ -60,7 +60,9 @@ interface ListPickerTui {
   requestRender: () => void;
 }
 
-export interface ListPickerComponent {
+export interface ListPickerComponent<
+  T extends ListPickerItem = ListPickerItem,
+> {
   render: (width: number) => string[];
   handleInput: (data: string) => void;
   dispose: () => void;
@@ -80,185 +82,234 @@ export function createListPicker<T extends ListPickerItem>(
   done: (result: T | null) => void,
   initialQuery: string,
   config: ListPickerConfig<T>,
-): ListPickerComponent {
-  let items: T[] = [];
-  let filteredItems: T[] = [];
-  let focusedIndex = 0;
-  let searchQuery = initialQuery;
-  let sourceLines: string[] = [];
-  let sourceScroll = 0;
-  let loading = true;
-  let error: string | null = null;
-  let cachedLines: string[] = [];
-  let cachedWidth = 0;
-  let listHeight = 0;
-  const previewCache = new Map<string, string[]>();
-  const statusState: StatusMessageState = { message: null, timeout: null };
-  let reloadTimeout: ReturnType<typeof setTimeout> | null = null;
+): ListPickerComponent<T> {
+  const component = new ListPickerImpl(tui, theme, done, initialQuery, config);
+  return component as unknown as ListPickerComponent<T>;
+}
 
-  const showStatus = createStatusNotifier(statusState, () => {
-    invalidate();
-    tui.requestRender();
-  });
+class ListPickerImpl<T extends ListPickerItem> implements Component {
+  private items: T[] = [];
+  private filteredItems: T[] = [];
+  private focusedIndex = 0;
+  private searchQuery: string;
+  private sourceLines: string[] = [];
+  private sourceScroll = 0;
+  private loading = true;
+  private error: string | null = null;
+  private cachedLines: string[] = [];
+  private cachedWidth = 0;
+  private listHeight = 0;
+  private previewCache = new Map<string, string[]>();
+  private statusState: StatusMessageState = { message: null, timeout: null };
+  private reloadTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  async function loadItemsWithQuery(query: string): Promise<void> {
+  private keyboardHandler: (data: string) => void;
+  private notify!: (message: string, type?: "info" | "error") => void;
+
+  constructor(
+    private tui: ListPickerTui,
+    private theme: Theme,
+    private done: (result: T | null) => void,
+    initialQuery: string,
+    private config: ListPickerConfig<T>,
+  ) {
+    this.searchQuery = initialQuery;
+
+    this.notify = createStatusNotifier(this.statusState, () => {
+      this.invalidate();
+      this.tui.requestRender();
+    });
+
+    const actionBindings = this.getActionBindings();
+    const coreBindings = this.getCoreBindings();
+    const allBindings = [...coreBindings, ...actionBindings];
+
+    this.keyboardHandler = createKeyboardHandler({
+      bindings: allBindings as KeyBinding[],
+      onBackspace: () => {
+        if (this.searchQuery.length > 0) {
+          this.searchQuery = this.searchQuery.slice(0, -1);
+          this.updateSearch();
+        }
+      },
+      onTextInput: (char) => {
+        this.searchQuery += char;
+        this.updateSearch();
+      },
+    });
+
+    void this.loadItemsWithQuery(initialQuery);
+  }
+
+  invalidate(): void {
+    this.cachedLines = [];
+    this.cachedWidth = 0;
+  }
+
+  private async loadItemsWithQuery(query: string): Promise<void> {
     try {
-      items = await config.loadItems(query);
-      filterItems();
-      loading = false;
+      this.items = await this.config.loadItems(query);
+      this.filterItems();
+      this.loading = false;
 
-      if (filteredItems.length > 0) void loadPreview(filteredItems[0]);
+      if (this.filteredItems.length > 0)
+        void this.loadPreview(this.filteredItems[0]);
 
-      invalidate();
-      tui.requestRender();
+      this.invalidate();
+      this.tui.requestRender();
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
-      loading = false;
-      invalidate();
-      tui.requestRender();
+      this.error = e instanceof Error ? e.message : String(e);
+      this.loading = false;
+      this.invalidate();
+      this.tui.requestRender();
     }
   }
 
-  function scheduleReload(query: string): void {
-    if (!config.reloadDebounceMs) return;
-    if (reloadTimeout) clearTimeout(reloadTimeout);
-    reloadTimeout = setTimeout(() => {
-      void loadItemsWithQuery(query);
-    }, config.reloadDebounceMs);
+  private scheduleReload(query: string): void {
+    if (!this.config.reloadDebounceMs) return;
+    if (this.reloadTimeout) clearTimeout(this.reloadTimeout);
+    this.reloadTimeout = setTimeout(() => {
+      void this.loadItemsWithQuery(query);
+    }, this.config.reloadDebounceMs);
   }
 
-  function filterItems(): void {
-    if (!searchQuery) filteredItems = items;
+  private filterItems(): void {
+    if (!this.searchQuery) this.filteredItems = this.items;
     else {
-      const lower = searchQuery.toLowerCase();
-      filteredItems = config.filterItems(items, lower);
+      const lower = this.searchQuery.toLowerCase();
+      this.filteredItems = this.config.filterItems(this.items, lower);
     }
-    focusedIndex = Math.min(
-      focusedIndex,
-      Math.max(0, filteredItems.length - 1),
+    this.focusedIndex = Math.min(
+      this.focusedIndex,
+      Math.max(0, this.filteredItems.length - 1),
     );
   }
 
-  function getFocusedItem(): T | null {
-    if (filteredItems.length === 0) return null;
-
-    return filteredItems[focusedIndex];
+  private getFocusedItem(): T | null {
+    if (this.filteredItems.length === 0) return null;
+    return this.filteredItems[this.focusedIndex];
   }
 
-  async function loadPreview(item: T): Promise<void> {
+  private async loadPreview(item: T): Promise<void> {
     const cacheKey = item.path ?? item.id;
-    const cached = previewCache.get(cacheKey);
+    const cached = this.previewCache.get(cacheKey);
     if (cached) {
-      sourceLines = cached;
-      sourceScroll = item.startLine ? Math.max(0, item.startLine - 3) : 0;
-      invalidate();
-      tui.requestRender();
+      this.sourceLines = cached;
+      this.sourceScroll = item.startLine ? Math.max(0, item.startLine - 3) : 0;
+      this.invalidate();
+      this.tui.requestRender();
       return;
     }
 
     try {
-      const lines = await config.loadPreview(item);
-      previewCache.set(cacheKey, lines);
-      sourceLines = lines;
-      sourceScroll = item.startLine ? Math.max(0, item.startLine - 3) : 0;
-      invalidate();
-      tui.requestRender();
+      const lines = await this.config.loadPreview(item);
+      this.previewCache.set(cacheKey, lines);
+      this.sourceLines = lines;
+      this.sourceScroll = item.startLine ? Math.max(0, item.startLine - 3) : 0;
+      this.invalidate();
+      this.tui.requestRender();
     } catch {
-      sourceLines = [];
-      invalidate();
-      tui.requestRender();
+      this.sourceLines = [];
+      this.invalidate();
+      this.tui.requestRender();
     }
   }
 
-  function invalidate(): void {
-    cachedLines = [];
-    cachedWidth = 0;
-  }
-
-  function getItemRows(width: number, height: number): string[] {
+  private getItemRows(width: number, height: number): string[] {
     const rows: string[] = [];
 
-    if (loading) {
-      rows.push(theme.fg("dim", pad(" Loading...", width)));
+    if (this.loading) {
+      rows.push(this.theme.fg("dim", pad(" Loading...", width)));
       return rows;
     }
 
-    if (error) {
-      rows.push(theme.fg("error", pad(` Error: ${error}`, width)));
+    if (this.error) {
+      rows.push(this.theme.fg("error", pad(` Error: ${this.error}`, width)));
       return rows;
     }
 
-    if (filteredItems.length === 0) {
-      rows.push(theme.fg("dim", pad(" No items found", width)));
+    if (this.filteredItems.length === 0) {
+      rows.push(this.theme.fg("dim", pad(" No items found", width)));
       return rows;
     }
 
     let startIdx = 0;
-    if (focusedIndex >= height) startIdx = focusedIndex - height + 1;
+    if (this.focusedIndex >= height) startIdx = this.focusedIndex - height + 1;
 
-    for (let i = 0; i < height && startIdx + i < filteredItems.length; i++) {
+    for (
+      let i = 0;
+      i < height && startIdx + i < this.filteredItems.length;
+      i++
+    ) {
       const idx = startIdx + i;
-      const item = filteredItems[idx];
-      const isFocused = idx === focusedIndex;
-      const formatted = config.formatItem(item, width - 2, theme);
-      const text = ` ${truncateAnsi(formatted, width - 2)}`;
-      const padded = ensureWidth(text, width);
-      const styled = isFocused
-        ? applyFocusedStyle(theme, padded, true)
-        : padded;
-      rows.push(styled);
+      const item = this.filteredItems[idx];
+      const isFocused = idx === this.focusedIndex;
+      const formatted = this.config.formatItem(item, width - 1, this.theme);
+      const text = ` ${formatted}`;
+      if (isFocused) {
+        const styled = this.theme.fg(
+          "accent",
+          this.theme.bold(truncateAnsi(text, width)),
+        );
+        rows.push(this.theme.bg("selectedBg", ensureWidth(styled, width)));
+      } else {
+        rows.push(ensureWidth(text, width));
+      }
     }
 
     return rows;
   }
 
-  function render(width: number): string[] {
-    if (isRenderCacheValid(width, cachedWidth, cachedLines)) return cachedLines;
+  render(width: number): string[] {
+    if (isRenderCacheValid(width, this.cachedWidth, this.cachedLines))
+      return this.cachedLines;
 
     const dims = calculateDimensions(
-      tui.terminal.rows,
+      this.tui.terminal.rows,
       width,
       createBaseDimensionsConfig(true),
     );
 
-    listHeight = dims.contentH;
+    this.listHeight = dims.contentH;
 
     const titleText =
-      typeof config.title === "function" ? config.title() : config.title;
-    const searchDisplay = searchQuery
-      ? ` Search: ${truncateAnsi(searchQuery, dims.leftW - 10)}`
+      typeof this.config.title === "function"
+        ? this.config.title()
+        : this.config.title;
+    const searchDisplay = this.searchQuery
+      ? ` Search: ${truncateAnsi(this.searchQuery, dims.leftW - 10)}`
       : ` ${titleText}`;
-    const itemCount = `(${String(filteredItems.length)}/${String(items.length)})`;
+    const itemCount = `(${String(this.filteredItems.length)}/${String(this.items.length)})`;
     const leftTitle = truncateAnsi(`${searchDisplay} ${itemCount}`, dims.leftW);
 
-    const focusedItem = getFocusedItem();
+    const focusedItem = this.getFocusedItem();
     const previewTitleText = focusedItem
-      ? (config.previewTitle?.(focusedItem) ?? focusedItem.path)
+      ? (this.config.previewTitle?.(focusedItem) ?? focusedItem.path)
       : undefined;
     const rightTitle = previewTitleText
       ? ` ${truncateAnsi(previewTitleText, dims.rightW - 2)}`
       : " Source Preview";
 
-    const itemRows = getItemRows(dims.leftW, dims.contentH);
+    const itemRows = this.getItemRows(dims.leftW, dims.contentH);
     const sourceRows = renderSourceRows(
-      sourceLines,
+      this.sourceLines,
       dims.rightW,
       dims.contentH,
-      sourceScroll,
-      theme,
+      this.sourceScroll,
+      this.theme,
       focusedItem?.startLine && focusedItem.endLine
         ? { start: focusedItem.startLine, end: focusedItem.endLine }
         : undefined,
     );
 
     const helpText = formatHelpWithStatus(
-      theme,
-      statusState.message,
-      getHelpText(),
+      this.theme,
+      this.statusState.message,
+      this.getHelpText(),
     );
 
-    cachedLines = renderSplitPanel(
-      theme,
+    this.cachedLines = renderSplitPanel(
+      this.theme,
       {
         leftTitle,
         rightTitle,
@@ -272,126 +323,104 @@ export function createListPicker<T extends ListPickerItem>(
       },
     );
 
-    cachedWidth = width;
-    return cachedLines;
+    this.cachedWidth = width;
+    return this.cachedLines;
   }
 
-  // Navigation helpers
-  const navigate = (direction: "up" | "down" | "pageUp" | "pageDown") => {
-    const pageOffset = Math.max(1, listHeight - 1);
+  private navigate(direction: "up" | "down" | "pageUp" | "pageDown"): void {
+    const pageOffset = Math.max(1, this.listHeight - 1);
     const newIndex =
       direction === "up"
-        ? Math.max(0, focusedIndex - 1)
+        ? Math.max(0, this.focusedIndex - 1)
         : direction === "pageUp"
-          ? Math.max(0, focusedIndex - pageOffset)
+          ? Math.max(0, this.focusedIndex - pageOffset)
           : direction === "pageDown"
-            ? Math.min(filteredItems.length - 1, focusedIndex + pageOffset)
-            : Math.min(filteredItems.length - 1, focusedIndex + 1);
-    if (newIndex !== focusedIndex) {
-      focusedIndex = newIndex;
-      const item = getFocusedItem();
-      if (item !== null) void loadPreview(item);
-      invalidate();
-      tui.requestRender();
+            ? Math.min(
+                this.filteredItems.length - 1,
+                this.focusedIndex + pageOffset,
+              )
+            : Math.min(this.filteredItems.length - 1, this.focusedIndex + 1);
+    if (newIndex !== this.focusedIndex) {
+      this.focusedIndex = newIndex;
+      const item = this.getFocusedItem();
+      if (item !== null) void this.loadPreview(item);
+      this.invalidate();
+      this.tui.requestRender();
     }
-  };
+  }
 
-  const scrollPreview = (direction: "up" | "down") => {
-    if (sourceLines.length === 0) return;
-    const dims = calculateDimensions(tui.terminal.rows, 100, {
+  private scrollPreview(direction: "up" | "down"): void {
+    if (this.sourceLines.length === 0) return;
+    const dims = calculateDimensions(this.tui.terminal.rows, 100, {
       leftTitle: "",
       rightTitle: "",
       helpText: "",
       leftFocus: true,
     });
-    const maxScroll = Math.max(0, sourceLines.length - dims.contentH);
+    const maxScroll = Math.max(0, this.sourceLines.length - dims.contentH);
     if (direction === "down")
-      sourceScroll = Math.min(maxScroll, sourceScroll + dims.contentH);
+      this.sourceScroll = Math.min(
+        maxScroll,
+        this.sourceScroll + dims.contentH,
+      );
     else {
-      sourceScroll = Math.max(0, sourceScroll - dims.contentH);
+      this.sourceScroll = Math.max(0, this.sourceScroll - dims.contentH);
     }
-    invalidate();
-    tui.requestRender();
-  };
+    this.invalidate();
+    this.tui.requestRender();
+  }
 
-  const updateSearch = () => {
-    filterItems();
-    scheduleReload(searchQuery);
-    const item = getFocusedItem();
-    if (item !== null) void loadPreview(item);
-    invalidate();
-    tui.requestRender();
-  };
+  private updateSearch(): void {
+    this.filterItems();
+    this.scheduleReload(this.searchQuery);
+    const item = this.getFocusedItem();
+    if (item !== null) void this.loadPreview(item);
+    this.invalidate();
+    this.tui.requestRender();
+  }
 
-  const actionBindings: KeyBinding[] = (config.actions ?? []).map((action) => ({
-    key: action.key as KeyBinding["key"],
-    label: action.label,
-    when: () => filteredItems.length > 0,
-    handler() {
-      const item = getFocusedItem();
-      if (item !== null) void Promise.resolve(action.handler(item));
-    },
-  }));
+  private getActionBindings(): KeyBinding[] {
+    return (this.config.actions ?? []).map((action) => ({
+      key: action.key as KeyBinding["key"],
+      label: action.label,
+      when: () => this.filteredItems.length > 0,
+      handler: async () => {
+        const item = this.getFocusedItem();
+        if (item !== null) await Promise.resolve(action.handler(item));
+      },
+    }));
+  }
 
-  const coreBindings: KeyBinding[] = [
-    {
-      key: "up",
-      label: "nav",
-      handler() {
-        navigate("up");
+  private getCoreBindings(): KeyBinding[] {
+    return [
+      { key: "up", label: "nav", handler: () => this.navigate("up") },
+      { key: "down", handler: () => this.navigate("down") },
+      {
+        key: "pageUp",
+        label: "scroll",
+        handler: () => this.navigate("pageUp"),
       },
-    },
-    {
-      key: "down",
-      handler() {
-        navigate("down");
+      { key: "pageDown", handler: () => this.navigate("pageDown") },
+      { key: "escape", handler: () => this.done(null) },
+      {
+        key: Key.ctrl("e"),
+        label: "edit",
+        when: () => this.config.onEdit !== undefined,
+        handler: () => {
+          const item = this.getFocusedItem();
+          if (item !== null && this.config.onEdit)
+            void Promise.resolve(this.config.onEdit(item));
+        },
       },
-    },
-    {
-      key: "pageUp",
-      label: "scroll",
-      handler() {
-        navigate("pageUp");
-      },
-    },
-    {
-      key: "pageDown",
-      handler() {
-        navigate("pageDown");
-      },
-    },
-    {
-      key: "escape",
-      handler() {
-        done(null);
-      },
-    },
-    {
-      key: Key.ctrl("e"),
-      label: "edit",
-      when: () => config.onEdit !== undefined,
-      handler() {
-        const item = getFocusedItem();
-        if (item !== null && config.onEdit)
-          void Promise.resolve(config.onEdit(item));
-      },
-    },
-    {
-      key: "shift+pageUp",
-      handler() {
-        scrollPreview("up");
-      },
-    },
-    {
-      key: "shift+pageDown",
-      handler() {
-        scrollPreview("down");
-      },
-    },
-  ];
+      { key: "shift+pageUp", handler: () => this.scrollPreview("up") },
+      { key: "shift+pageDown", handler: () => this.scrollPreview("down") },
+    ];
+  }
 
-  const allBindings = [...coreBindings, ...actionBindings];
-  function getHelpText(): string {
+  private getHelpText(): string {
+    const coreBindings = this.getCoreBindings();
+    const actionBindings = this.getActionBindings();
+    const allBindings = [...coreBindings, ...actionBindings];
     const activeBindings = allBindings.filter((b) => {
       if (!b.label) return false;
       if (b.when && !b.when(undefined as never)) return false;
@@ -399,61 +428,35 @@ export function createListPicker<T extends ListPickerItem>(
     });
     return buildHelpFromBindings(activeBindings);
   }
-  const keyboardHandler = createKeyboardHandler({
-    bindings: [...coreBindings, ...actionBindings],
-    onBackspace() {
-      if (searchQuery.length > 0) {
-        searchQuery = searchQuery.slice(0, -1);
-        updateSearch();
-      }
-    },
-    onTextInput(char) {
-      searchQuery += char;
-      updateSearch();
-    },
-  });
 
-  function handleInput(data: string): void {
-    // Custom key handler takes precedence
-    if (config.onKey?.(data)) return;
-    keyboardHandler(data);
+  handleInput(data: string): void {
+    if (this.config.onKey?.(data)) return;
+    this.keyboardHandler(data);
   }
 
-  function dispose(): void {
-    previewCache.clear();
+  dispose(): void {
+    this.previewCache.clear();
   }
 
-  function setPreview(lines: string[]): void {
-    sourceLines = lines;
-    sourceScroll = 0;
-    invalidate();
-    tui.requestRender();
+  private setPreview(lines: string[]): void {
+    this.sourceLines = lines;
+    this.sourceScroll = 0;
+    this.invalidate();
+    this.tui.requestRender();
   }
 
-  void loadItemsWithQuery(initialQuery);
-
-  async function reload(): Promise<void> {
-    loading = true;
-    error = null;
-    invalidate();
-    tui.requestRender();
-    await loadItemsWithQuery(searchQuery);
+  private async reload(): Promise<void> {
+    this.loading = true;
+    this.error = null;
+    this.invalidate();
+    this.tui.requestRender();
+    await this.loadItemsWithQuery(this.searchQuery);
   }
 
-  return {
-    render,
-    handleInput,
-    dispose,
-    setPreview,
-    invalidate,
-    reload,
-    notify: showStatus,
-    getSearchQuery: () => searchQuery,
-    clearSearchQuery() {
-      searchQuery = "";
-      filterItems();
-      invalidate();
-      tui.requestRender();
-    },
-  };
+  private clearSearchQuery(): void {
+    this.searchQuery = "";
+    this.filterItems();
+    this.invalidate();
+    this.tui.requestRender();
+  }
 }

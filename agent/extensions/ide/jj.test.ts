@@ -3,6 +3,7 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import {
   sanitizeDescription,
   loadChanges,
+  loadChangedFiles,
   listBookmarksByChange,
   loadOpLog,
   restoreFile,
@@ -270,6 +271,112 @@ describe("jj module", () => {
 
           expect(result).toBe(false);
         });
+      });
+    });
+  });
+
+  describe("given changed files output", () => {
+    let execMock: ReturnType<typeof vi.fn>;
+    let pi: ExtensionAPI;
+
+    beforeEach(() => {
+      execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>();
+      pi = { exec: execMock } as unknown as ExtensionAPI;
+    });
+
+    describe("when jj log returns add, modify, delete statuses", () => {
+      it("then parses each file with correct status and line counts", async () => {
+        execMock.mockResolvedValue({
+          code: 0,
+          stdout:
+            "A src/new.ts 42 0\nM src/old.ts 5 3\nD src/deleted.ts 0 18\n",
+          stderr: "",
+        });
+
+        const result = await loadChangedFiles(pi, "/repo", "abc123");
+
+        expect(result).toEqual([
+          { status: "D", path: "src/deleted.ts", insertions: 0, deletions: 18 },
+          { status: "A", path: "src/new.ts", insertions: 42, deletions: 0 },
+          { status: "M", path: "src/old.ts", insertions: 5, deletions: 3 },
+        ]);
+      });
+    });
+
+    describe("when jj log returns rename status", () => {
+      it("then parses renames with the new path", async () => {
+        execMock.mockResolvedValue({
+          code: 0,
+          stdout: "R src/new-name.ts 0 0\n",
+          stderr: "",
+        });
+
+        const result = await loadChangedFiles(pi, "/repo", "abc123");
+
+        expect(result).toEqual([
+          { status: "R", path: "src/new-name.ts", insertions: 0, deletions: 0 },
+        ]);
+      });
+    });
+
+    describe("when jj log returns exists and unknown statuses", () => {
+      it("then parses E and ? statuses correctly", async () => {
+        execMock.mockResolvedValue({
+          code: 0,
+          stdout: "E shared/lib.ts 2 1\n? misc/file.json 10 0\n",
+          stderr: "",
+        });
+
+        const result = await loadChangedFiles(pi, "/repo", "abc123");
+
+        expect(result).toEqual([
+          { status: "?", path: "misc/file.json", insertions: 10, deletions: 0 },
+          {
+            status: "E",
+            path: "shared/lib.ts",
+            insertions: 2,
+            deletions: 1,
+          },
+        ]);
+      });
+    });
+
+    describe("when jj log fails", () => {
+      it("then returns an empty list", async () => {
+        execMock.mockResolvedValue({ code: 1, stdout: "", stderr: "error" });
+
+        const result = await loadChangedFiles(pi, "/repo", "abc123");
+
+        expect(result).toEqual([]);
+      });
+    });
+
+    describe("when jj log returns a mixed rename with other changes", () => {
+      it("then parses all statuses and sorts by path", async () => {
+        execMock.mockResolvedValue({
+          code: 0,
+          stdout:
+            "R src/renamed.ts 5 3\nM src/existing.ts 10 2\nA src/new.ts 42 0\n",
+          stderr: "",
+        });
+
+        const result = await loadChangedFiles(pi, "/repo", "abc123");
+
+        expect(result).toEqual([
+          {
+            status: "M",
+            path: "src/existing.ts",
+            insertions: 10,
+            deletions: 2,
+          },
+          { status: "A", path: "src/new.ts", insertions: 42, deletions: 0 },
+          {
+            status: "R",
+            path: "src/renamed.ts",
+            insertions: 5,
+            deletions: 3,
+          },
+        ]);
       });
     });
   });

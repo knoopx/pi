@@ -102,6 +102,12 @@ function handleCustomBindings<TContext>(
     if (!tryMatchBinding(data, binding, ctx)) continue;
     const result = binding.handler(ctx);
     if (result === true || result === undefined) return true;
+    // Async handlers return a Promise — treat as successfully handled,
+    // and prevent unhandled rejection since caller uses void
+    if (result instanceof Promise) {
+      result.catch(() => {});
+      return true;
+    }
   }
   return false;
 }

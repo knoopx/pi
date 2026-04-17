@@ -1,4 +1,5 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { KeyPattern } from "../../types";
 
 export function formatBookmarkReference(
   theme: Theme,
@@ -57,9 +58,12 @@ export function formatChangeRow(
         : opts.description;
   let leftText = `${selectMarker}${moveIndicator}${bookmarkLabel}${description}`;
 
-  if (opts.isSelected) leftText = theme.bg("selectedBg", leftText);
-
   const rightText = opts.author ? theme.fg("dim", ` ${opts.author}`) : "";
 
   return { leftText, rightText };
+}
+
+/** Compute visible (un-escaped) length of an ANSI string. */
+export function visibleLength(str: string): number {
+  return str.replace(/\x1b\[[0-9;]*m/g, "").length;
 }

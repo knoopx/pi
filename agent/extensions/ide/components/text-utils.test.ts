@@ -73,10 +73,10 @@ describe("truncateAnsi", () => {
 describe("pad", () => {
   describe("given text shorter than width", () => {
     describe("when padding", () => {
-      it("then adds spaces to reach width", () => {
+      it("then adds spaces and reset before padding", () => {
         const result = pad("hi", 5);
-        expect(result).toBe("hi   ");
-        expect(result.length).toBe(5);
+        expect(result).toBe("hi\x1b[0m   ");
+        expect(result).toContain("hi");
       });
     });
   });
@@ -110,8 +110,8 @@ describe("pad", () => {
 
   describe("given empty string", () => {
     describe("when padding to width", () => {
-      it("then returns spaces", () => {
-        expect(pad("", 3)).toBe("   ");
+      it("then returns reset + spaces", () => {
+        expect(pad("", 3)).toBe("\x1b[0m   ");
       });
     });
   });
@@ -120,9 +120,9 @@ describe("pad", () => {
 describe("ensureWidth", () => {
   describe("given text shorter than width", () => {
     describe("when ensuring width", () => {
-      it("then pads with spaces", () => {
+      it("then pads with reset + spaces", () => {
         const result = ensureWidth("hi", 5);
-        expect(result).toBe("hi   ");
+        expect(result).toBe("hi\x1b[0m   ");
       });
     });
   });

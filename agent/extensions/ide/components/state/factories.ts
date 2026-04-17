@@ -11,7 +11,7 @@ interface ComponentTui {
 }
 
 /** Base component parameters shared across overlay components */
-export interface BaseComponentParams {
+interface BaseComponentParams {
   pi: ExtensionAPI;
   tui: ComponentTui;
   theme: Theme;
@@ -20,15 +20,13 @@ export interface BaseComponentParams {
 }
 
 /** Generic cache interface for component state */
-export interface ComponentCache<T = unknown> {
+interface ComponentCache<T = unknown> {
   files: T[];
   diffs: Map<string, string[]>;
 }
 
 /** Creates a standardized cache instance */
-export function createComponentCache<T = unknown>(
-  files: T[] = [],
-): ComponentCache<T> {
+function createComponentCache<T = unknown>(files: T[] = []): ComponentCache<T> {
   return {
     files,
     diffs: new Map(),
@@ -36,7 +34,7 @@ export function createComponentCache<T = unknown>(
 }
 
 /** Creates standardized selection state */
-export function createSelectionState(): {
+function createSelectionState(): {
   selectedIndex: number;
   fileIndex: number;
   diffScroll: number;
@@ -51,7 +49,7 @@ export function createSelectionState(): {
 }
 
 /** Creates standardized loading state */
-export function createLoadingState(): {
+function createLoadingState(): {
   loading: boolean;
   cachedLines: string[];
   cachedWidth: number;
@@ -64,7 +62,7 @@ export function createLoadingState(): {
 }
 
 /** Generic cache invalidation */
-export function invalidateCache(state: {
+function invalidateCache(state: {
   loading: boolean;
   cachedLines: string[];
   cachedWidth: number;

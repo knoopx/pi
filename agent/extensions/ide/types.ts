@@ -83,7 +83,7 @@ export interface Change {
 /**
  * Bookmark filter modes
  */
-export const BOOKMARK_FILTER_MODES = [
+const BOOKMARK_FILTER_MODES = [
   "all",
   "bookmarks",
   "descriptions",

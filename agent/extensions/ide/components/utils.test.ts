@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ensureWidth } from "./text-utils";
 import { loadFilePreviewWithShiki } from "./file-preview";
-import { formatBookmarkReference } from "./change-utils";
+import { formatBookmarkReference } from "./changes/formatting";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import stringWidth from "string-width";
 

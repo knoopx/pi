@@ -1,0 +1,119 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ChangeRow focused snapshots > bookmark + move indicator 1`] = `"[BG:selectedBg:[warning:↕ ][I:[accent: 󰃀 main ]] [warning:**bm-move**]                         ]"`;
+
+exports[`ChangeRow focused snapshots > empty description at narrow width 1`] = `"                            [dim: Alice]"`;
+
+exports[`ChangeRow focused snapshots > empty description no author 1`] = `"[BG:selectedBg:[accent:****]                                                                   ]"`;
+
+exports[`ChangeRow focused snapshots > graph + immutable 1`] = `"  imm                                                                           "`;
+
+exports[`ChangeRow focused snapshots > graph + move indicator 1`] = `"[BG:selectedBg:  [warning:↕ ][warning:**move**]                                                ]"`;
+
+exports[`ChangeRow focused snapshots > immutable + graph 1`] = `"[BG:selectedBg:  [accent:**imm**]                                                              ]"`;
+
+exports[`ChangeRow focused snapshots > immutable focused 1`] = `"[BG:selectedBg:[dim:][accent:**immutable**]                                        [dim: Alice]]"`;
+
+exports[`ChangeRow focused snapshots > long author 1`] = `"[BG:selectedBg:[accent:**x**]                                        [dim: Xavier Longname III]]"`;
+
+exports[`ChangeRow focused snapshots > long author at narrow width 1`] = `"x             [dim: Xavier Longname III]"`;
+
+exports[`ChangeRow focused snapshots > long desc narrow width 1`] = `"[BG:selectedBg:[accent:**this is a very lon[dim: Alice]]"`;
+
+exports[`ChangeRow focused snapshots > long description 1`] = `"[BG:selectedBg:[accent:**this is a very long commit message**]                     [dim: Alice]]"`;
+
+exports[`ChangeRow focused snapshots > move mode at narrow width 1`] = `"[warning:↕ ][warning:****]              "`;
+
+exports[`ChangeRow focused snapshots > narrow width 1`] = `"[BG:selectedBg:[accent:****]               [dim: Alice]]"`;
+
+exports[`ChangeRow focused snapshots > no author focused 1`] = `"[BG:selectedBg:[accent:****]                                                                   ]"`;
+
+exports[`ChangeRow focused snapshots > normal change at narrow width 1`] = `"feat: add login             [dim: Alice]"`;
+
+exports[`ChangeRow focused snapshots > short description 1`] = `"[BG:selectedBg:[accent:****]                                                       [dim: Alice]]"`;
+
+exports[`ChangeRow focused snapshots > very narrow width 1`] = `"[BG:selectedBg:[accent:[dim: Alice]]"`;
+
+exports[`ChangeRow focused snapshots > with bookmarks 1`] = `"[BG:selectedBg:[I:[accent: 󰃀 main ]] [I:[accent: 󰃀 develop ]] [accent:**bm**]                  ]"`;
+
+exports[`ChangeRow focused snapshots > with graph prefix 1`] = `"[BG:selectedBg:  [accent:**graph**]                                                            ]"`;
+
+exports[`ChangeRow focused snapshots > with move indicator 1`] = `"[BG:selectedBg:[warning:↕ ][warning:**moving**]                                                ]"`;
+
+exports[`ChangeRow focused snapshots > with multiple bookmarks 1`] = `"[I:[accent: 󰃀 main ]] [I:[accent: 󰃀 develop ]] [I:[accent: 󰃀 release ]] multi-bm"`;
+
+exports[`ChangeRow focused snapshots > with single bookmark 1`] = `"[I:[accent: 󰃀 main ]] bm                                                        "`;
+
+exports[`ChangeRow focused snapshots > with working copy icon 1`] = `"[BG:selectedBg:[accent:  ][accent:**wip**]                                                     ]"`;
+
+exports[`ChangeRow focused snapshots > working copy + focused 1`] = `"[BG:selectedBg:[accent:  ][accent:**wip**]                                                     ]"`;
+
+exports[`ChangeRow focused snapshots > working copy at narrow width 1`] = `"[accent:  ]wip                          "`;
+
+exports[`ChangeRow marked snapshots > bookmark + move indicator 1`] = `"[BG:selectedBg:[accent:✓ ][warning:↕ ][I:[accent: 󰃀 main ]] [warning:**bm-move**]              ]"`;
+
+exports[`ChangeRow marked snapshots > empty description marked at narrow width 1`] = `"[BG:selectedBg:[accent:✓ ]                             ]"`;
+
+exports[`ChangeRow marked snapshots > empty description no author 1`] = `"[BG:selectedBg:[accent:✓ ]                                                                     ]"`;
+
+exports[`ChangeRow marked snapshots > graph + move indicator 1`] = `"[BG:selectedBg:  [accent:✓ ][warning:↕ ][warning:**move**]                                     ]"`;
+
+exports[`ChangeRow marked snapshots > immutable + graph 1`] = `"[BG:selectedBg:  [accent:✓ ]imm                                                                ]"`;
+
+exports[`ChangeRow marked snapshots > immutable marked 1`] = `"[BG:selectedBg:[accent:✓ ][dim:][dim:immutable]                                                ]"`;
+
+exports[`ChangeRow marked snapshots > long author 1`] = `"[BG:selectedBg:[accent:✓ ]x                                                                    ]"`;
+
+exports[`ChangeRow marked snapshots > long author marked at narrow width 1`] = `"[BG:selectedBg:[accent:✓ ]x                            ]"`;
+
+exports[`ChangeRow marked snapshots > long description 1`] = `"[BG:selectedBg:[accent:✓ ]this is a very long commit message                                   ]"`;
+
+exports[`ChangeRow marked snapshots > narrow width 1`] = `"[BG:selectedBg:[accent:✓ ]                             ]"`;
+
+exports[`ChangeRow marked snapshots > no author marked 1`] = `"[BG:selectedBg:[accent:✓ ]                                                                     ]"`;
+
+exports[`ChangeRow marked snapshots > normal marked at narrow width 1`] = `"[BG:selectedBg:[accent:✓ ]feat: x                      ]"`;
+
+exports[`ChangeRow marked snapshots > short description 1`] = `"[BG:selectedBg:[accent:✓ ]                                                                     ]"`;
+
+exports[`ChangeRow marked snapshots > with bookmarks 1`] = `"[BG:selectedBg:[accent:✓ ][I:[accent: 󰃀 main ]] bm                                             ]"`;
+
+exports[`ChangeRow marked snapshots > with graph prefix 1`] = `"[BG:selectedBg:  [accent:✓ ]graph                                                              ]"`;
+
+exports[`ChangeRow marked snapshots > with move indicator 1`] = `"[BG:selectedBg:[accent:✓ ][warning:↕ ][warning:**moving**]                                     ]"`;
+
+exports[`ChangeRow marked snapshots > with multiple bookmarks 1`] = `"[BG:selectedBg:[accent:✓ ][I:[accent: 󰃀 main ]] [I:[accent: 󰃀 develop ]] [I:[accent: 󰃀 release ]"`;
+
+exports[`ChangeRow marked snapshots > with single bookmark 1`] = `"[BG:selectedBg:[accent:✓ ][I:[accent: 󰃀 main ]] bm                                             ]"`;
+
+exports[`ChangeRow marked snapshots > with working copy icon 1`] = `"[BG:selectedBg:[accent:  ][accent:✓ ]wip                                                       ]"`;
+
+exports[`ChangeRow marked snapshots > working copy + marked 1`] = `"[BG:selectedBg:[accent:  ][accent:✓ ]wip                                                       ]"`;
+
+exports[`ChangeRow snapshots > empty description, no author 1`] = `"                                                                                "`;
+
+exports[`ChangeRow snapshots > immutable change 1`] = `"[dim:][dim:immutable]                                               [dim: Alice]"`;
+
+exports[`ChangeRow snapshots > long author name 1`] = `"x                                                     [dim: Xavier Longname III]"`;
+
+exports[`ChangeRow snapshots > long description at narrow width 1`] = `"this is a very long commit m[dim: Alice]"`;
+
+exports[`ChangeRow snapshots > move mode indicator 1`] = `"[warning:↕ ][warning:**moving**]                                                "`;
+
+exports[`ChangeRow snapshots > no author column 1`] = `"                                                                                "`;
+
+exports[`ChangeRow snapshots > normal change with graph and author 1`] = `"feat: add login                                                     [dim: Alice]"`;
+
+exports[`ChangeRow snapshots > normal change without graph 1`] = `"feat: add login                                                     [dim: Alice]"`;
+
+exports[`ChangeRow snapshots > with bookmarks 1`] = `"[I:[accent: 󰃀 main ]] [I:[accent: 󰃀 release ]] bookmark                         "`;
+
+exports[`ChangeRow snapshots > with graph prefix 1`] = `"  feat: add login                                                   [dim: Alice]"`;
+
+exports[`ChangeRow snapshots > working copy with accent 1`] = `"[accent:  ]wip                                                                  "`;
+
+exports[`EmptyChangeRow snapshots > renders 'No changes' in dim color 1`] = `"[dim: No changes]                                                               "`;
+
+exports[`EmptyChangeRow snapshots > renders at very narrow width 1`] = `"[dim: No change"`;
+
+exports[`EmptyChangeRow snapshots > truncates long message at narrow width 1`] = `"[dim: This is a very long empt"`;

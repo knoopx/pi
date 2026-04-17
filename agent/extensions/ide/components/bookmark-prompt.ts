@@ -1,8 +1,6 @@
-import type {
-  ExtensionAPI,
-  KeybindingsManager,
-  Theme,
-} from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Component } from "@mariozechner/pi-tui";
 import { Input } from "@mariozechner/pi-tui";
 import { buildHelpText, ensureWidth } from "./text-utils";
 import { createKeyboardHandler } from "../keyboard";
@@ -22,34 +20,47 @@ export function createBookmarkPromptComponent(
   pi: ExtensionAPI,
   tui: { requestRender: () => void },
   theme: Theme,
-  _keybindings: KeybindingsManager,
   done: (result: string | null) => void,
-  _changeId: string,
   cwd: string,
-) {
-  const input = new Input();
-  input.focused = true;
+): Component {
+  return new BookmarkPrompt(pi, tui, theme, done, cwd);
+}
 
-  let selectedIndex = 0;
-  let loading = true;
-  let error: string | null = null;
-  let bookmarks: string[] = [];
+class BookmarkPrompt implements Component {
+  private input = new Input();
+  private selectedIndex = 0;
+  private loading = true;
+  private error: string | null = null;
+  private bookmarks: string[] = [];
 
-  async function loadBookmarks(): Promise<void> {
+  constructor(
+    private pi: ExtensionAPI,
+    private tui: { requestRender: () => void },
+    private theme: Theme,
+    private done: (result: string | null) => void,
+    private cwd: string,
+  ) {
+    this.input.focused = true;
+    void this.loadBookmarks();
+  }
+
+  // ── Data loading ────────────────────────────────────────────────────────
+
+  async loadBookmarks(): Promise<void> {
     try {
-      loading = true;
-      error = null;
-      tui.requestRender();
+      this.loading = true;
+      this.error = null;
+      this.tui.requestRender();
 
-      const result = await pi.exec(
+      const result = await this.pi.exec(
         "jj",
         ["bookmark", "list", "-T", 'self.name() ++ "\\n"'],
-        { cwd },
+        { cwd: this.cwd },
       );
 
       if (result.code !== 0) {
-        error = result.stderr || "Failed to load bookmarks";
-        bookmarks = [];
+        this.error = result.stderr || "Failed to load bookmarks";
+        this.bookmarks = [];
         return;
       }
 
@@ -63,84 +74,96 @@ export function createBookmarkPromptComponent(
         loaded.push(name);
       }
 
-      bookmarks = loaded;
+      this.bookmarks = loaded;
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
-      bookmarks = [];
+      this.error = e instanceof Error ? e.message : String(e);
+      this.bookmarks = [];
     } finally {
-      loading = false;
-      tui.requestRender();
+      this.loading = false;
+      this.tui.requestRender();
     }
   }
 
-  function getCandidates(): string[] {
-    const query = input.getValue().trim();
-    const filtered = filterBookmarks(bookmarks, query);
-
+  getCandidates(): string[] {
+    const query = this.input.getValue().trim();
+    const filtered = filterBookmarks(this.bookmarks, query);
     if (filtered.length > 0) return filtered;
-
     if (query.length > 0) return [query];
-
     return [];
   }
 
-  function renderFooter(innerWidth: number, helpParts: string[]): string[] {
+  // ── Rendering helpers ───────────────────────────────────────────────────
+
+  private renderFooter(innerWidth: number, helpParts: string[]): string[] {
     const helpText = buildHelpText(...helpParts);
     return [
-      horizontalSeparator(theme, innerWidth),
-      borderedLine(theme, ` ${theme.fg("dim", helpText)}`, innerWidth),
-      bottomBorder(theme, innerWidth),
+      horizontalSeparator(this.theme, innerWidth),
+      borderedLine(
+        this.theme,
+        ` ${this.theme.fg("dim", helpText)}`,
+        innerWidth,
+      ),
+      bottomBorder(this.theme, innerWidth),
     ];
   }
 
-  function renderEmptyState(
+  private renderEmptyState(
     innerWidth: number,
     state: "loading" | "error" | "empty",
     detail?: string,
     footerHelp?: string[],
   ): string[] {
     const lines: string[] = [];
+
     if (state === "loading") {
       lines.push(
         borderedLine(
-          theme,
-          theme.fg("dim", " Loading bookmarks..."),
+          this.theme,
+          this.theme.fg("dim", " Loading bookmarks..."),
           innerWidth,
         ),
       );
-      lines.push(borderedLine(theme, "", innerWidth));
+      lines.push(borderedLine(this.theme, "", innerWidth));
       lines.push(
-        ...renderFooter(
+        ...this.renderFooter(
           innerWidth,
           footerHelp ?? ["enter set", "↑↓ nav", "esc cancel"],
         ),
       );
     } else if (state === "error") {
       lines.push(
-        borderedLine(theme, theme.fg("error", ` Error: ${detail}`), innerWidth),
-      );
-      lines.push(borderedLine(theme, "", innerWidth));
-      lines.push(...renderFooter(innerWidth, ["esc cancel"]));
-    } else {
-      lines.push(
         borderedLine(
-          theme,
-          theme.fg("dim", detail ?? " No bookmarks yet. Type to create one."),
+          this.theme,
+          this.theme.fg("error", ` Error: ${detail}`),
           innerWidth,
         ),
       );
-      lines.push(borderedLine(theme, "", innerWidth));
+      lines.push(borderedLine(this.theme, "", innerWidth));
+      lines.push(...this.renderFooter(innerWidth, ["esc cancel"]));
+    } else {
       lines.push(
-        ...renderFooter(
+        borderedLine(
+          this.theme,
+          this.theme.fg(
+            "dim",
+            detail ?? " No bookmarks yet. Type to create one.",
+          ),
+          innerWidth,
+        ),
+      );
+      lines.push(borderedLine(this.theme, "", innerWidth));
+      lines.push(
+        ...this.renderFooter(
           innerWidth,
           footerHelp ?? ["type bookmark", "enter set", "esc cancel"],
         ),
       );
     }
+
     return lines;
   }
 
-  function renderCandidateRows(
+  private renderCandidateRows(
     candidates: string[],
     innerWidth: number,
     query: string,
@@ -148,87 +171,102 @@ export function createBookmarkPromptComponent(
     const lines: string[] = [];
     const maxVisible = 5;
     let startIdx = 0;
-    if (selectedIndex >= maxVisible) startIdx = selectedIndex - maxVisible + 1;
+    if (this.selectedIndex >= maxVisible)
+      startIdx = this.selectedIndex - maxVisible + 1;
 
     const visibleCount = Math.min(maxVisible, candidates.length - startIdx);
 
     for (let i = 0; i < visibleCount; i++) {
       const idx = startIdx + i;
       const candidate = candidates[idx];
-      const isFocused = idx === selectedIndex;
+      const isFocused = idx === this.selectedIndex;
 
       const isCreateOption =
         query.length > 0 &&
         candidate === query &&
-        !bookmarks.includes(candidate);
+        !this.bookmarks.includes(candidate);
 
       let rowContent: string;
       if (isCreateOption) {
-        const icon = theme.fg("warning", "󰐕");
-        const label = theme.fg("warning", "new");
+        const icon = this.theme.fg("warning", "󰐕");
+        const label = this.theme.fg("warning", "new");
         rowContent = ` ${icon} ${label} ${candidate}`;
       } else {
         rowContent = ` 󰃀 ${candidate}`;
       }
 
       if (isFocused) {
-        const focusedContent = theme.fg("accent", theme.bold(rowContent));
+        const focusedContent = this.theme.fg(
+          "accent",
+          this.theme.bold(rowContent),
+        );
         lines.push(
           borderedLine(
-            theme,
-            theme.bg("selectedBg", ensureWidth(focusedContent, innerWidth)),
+            this.theme,
+            this.theme.bg(
+              "selectedBg",
+              ensureWidth(focusedContent, innerWidth),
+            ),
             innerWidth,
           ),
         );
       } else {
-        lines.push(borderedLine(theme, rowContent, innerWidth));
+        lines.push(borderedLine(this.theme, rowContent, innerWidth));
       }
     }
 
     for (let i = visibleCount; i < maxVisible; i++) {
-      lines.push(borderedLine(theme, "", innerWidth));
+      lines.push(borderedLine(this.theme, "", innerWidth));
     }
 
     if (candidates.length > maxVisible) {
-      const countText = theme.fg(
+      const countText = this.theme.fg(
         "dim",
-        ` ${selectedIndex + 1}/${candidates.length}`,
+        ` ${this.selectedIndex + 1}/${candidates.length}`,
       );
-      lines.push(borderedLine(theme, countText, innerWidth));
+      lines.push(borderedLine(this.theme, countText, innerWidth));
     }
 
     return lines;
   }
 
-  function render(width: number): string[] {
+  // ── Component interface ────────────────────────────────────────────────
+
+  render(width: number): string[] {
     const lines: string[] = [];
     const innerWidth = width - 2;
-    const query = input.getValue().trim();
+    const query = this.input.getValue().trim();
 
-    lines.push(topBorderWithTitle(theme, " Set Bookmark ", innerWidth));
+    lines.push(topBorderWithTitle(this.theme, " Set Bookmark ", innerWidth));
 
-    const inputValue = input.getValue();
-    const cursor = theme.fg("accent", "▏");
-    lines.push(borderedLine(theme, ` 󰃀  ${inputValue}${cursor}`, innerWidth));
-    lines.push(horizontalSeparator(theme, innerWidth));
+    const inputValue = this.input.getValue();
+    const cursor = this.theme.fg("accent", "▏");
+    lines.push(
+      borderedLine(this.theme, ` 󰃀  ${inputValue}${cursor}`, innerWidth),
+    );
+    lines.push(horizontalSeparator(this.theme, innerWidth));
 
-    if (loading) {
-      return [...lines, ...renderEmptyState(innerWidth, "loading")];
-    }
-    if (error) {
-      return [...lines, ...renderEmptyState(innerWidth, "error", error)];
-    }
+    if (this.loading)
+      return [...lines, ...this.renderEmptyState(innerWidth, "loading")];
+    if (this.error)
+      return [
+        ...lines,
+        ...this.renderEmptyState(innerWidth, "error", this.error),
+      ];
 
-    const candidates = getCandidates();
-    selectedIndex = Math.min(selectedIndex, Math.max(0, candidates.length - 1));
+    const candidates = this.getCandidates();
+    this.selectedIndex = Math.min(
+      this.selectedIndex,
+      Math.max(0, candidates.length - 1),
+    );
 
     if (candidates.length === 0) {
-      return [...lines, ...renderEmptyState(innerWidth, "empty")];
+      return [...lines, ...this.renderEmptyState(innerWidth, "empty")];
     }
 
-    lines.push(...renderCandidateRows(candidates, innerWidth, query));
+    lines.push(...this.renderCandidateRows(candidates, innerWidth, query));
     lines.push(
-      ...renderFooter(innerWidth, [
+      ...this.renderFooter(innerWidth, [
         "↑↓ nav",
         "enter select/create",
         "esc cancel",
@@ -237,47 +275,40 @@ export function createBookmarkPromptComponent(
     return lines;
   }
 
-  const handleKeyboard = createKeyboardHandler({
+  private keyboardHandler = createKeyboardHandler({
     navigation: () => ({
-      index: selectedIndex,
-      maxIndex: Math.max(0, getCandidates().length - 1),
+      index: this.selectedIndex,
+      maxIndex: Math.max(0, this.getCandidates().length - 1),
     }),
-    onNavigate(newIndex) {
-      selectedIndex = newIndex;
-      tui.requestRender();
+    onNavigate: (newIndex) => {
+      this.selectedIndex = newIndex;
+      this.tui.requestRender();
     },
-    onEscape() {
-      done(null);
+    onEscape: () => {
+      this.done(null);
     },
-    onEnter() {
-      const candidates = getCandidates();
+    onEnter: () => {
+      const candidates = this.getCandidates();
       if (candidates.length === 0) {
-        done(null);
+        this.done(null);
         return;
       }
-      done(candidates[selectedIndex] || null);
+      this.done(candidates[this.selectedIndex] || null);
     },
   });
 
-  function handleInput(data: string): void {
-    if (handleKeyboard(data)) return;
+  handleInput(data: string): void {
+    if (this.keyboardHandler(data)) return;
 
-    // Forward remaining input to text field
-    const before = input.getValue();
-    input.handleInput(data);
-    const after = input.getValue();
-    if (before !== after) selectedIndex = 0;
-    tui.requestRender();
+    const before = this.input.getValue();
+    this.input.handleInput(data);
+    if (before !== this.input.getValue()) this.selectedIndex = 0;
+    this.tui.requestRender();
   }
 
-  void loadBookmarks();
+  invalidate(): void {
+    this.input.invalidate();
+  }
 
-  return {
-    render,
-    handleInput,
-    invalidate() {
-      input.invalidate();
-    },
-    dispose() {},
-  };
+  dispose(): void {}
 }

@@ -1,0 +1,282 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderFileChangeRows — status icon and file icon layout > given a realistic mixed change set > when rendering all unselected > then shows all five rows with correct per-file formatting 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:src/new-feature.ts]                      [toolDiffAdded:󰐕 120] ",
+  "[38;2;49;120;198m󰛦[39m [warning:src/existing.ts]                                       [warning:󰏫 5] ",
+  "[38;2;49;120;198m󰛦[39m [warning:__tests__/extract/__fixtures__/renamed-file.ts]         [warning: 󰑕] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:src/old-deprecated.ts]                [toolDiffRemoved:󰍴 95] ",
+  "[38;2;49;120;198m󰛦[39m [warning:src/utils/helpers.ts]                                  [warning:󰏫 8] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given a realistic mixed change set > when rendering with deleted file selected > then highlights the deleted file with red deletion stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:src/new-feature.ts]                      [toolDiffAdded:󰐕 120] ",
+  "[38;2;49;120;198m󰛦[39m [warning:src/existing.ts]                                       [warning:󰏫 5] ",
+  "[38;2;49;120;198m󰛦[39m [warning:__tests__/extract/__fixtures__/renamed-file.ts]         [warning: 󰑕] ",
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [toolDiffRemoved:src/old-deprecated.ts]                [toolDiffRemoved:󰍴 95] ]",
+  "[38;2;49;120;198m󰛦[39m [warning:src/utils/helpers.ts]                                  [warning:󰏫 8] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given a realistic mixed change set > when rendering with last file selected > then highlights the last file at bottom of list 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:src/new-feature.ts]                      [toolDiffAdded:󰐕 120] ",
+  "[38;2;49;120;198m󰛦[39m [warning:src/existing.ts]                                       [warning:󰏫 5] ",
+  "[38;2;49;120;198m󰛦[39m [warning:__tests__/extract/__fixtures__/renamed-file.ts]         [warning: 󰑕] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:src/old-deprecated.ts]                [toolDiffRemoved:󰍴 95] ",
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [warning:src/utils/helpers.ts]                                  [warning:󰏫 8] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given a realistic mixed change set > when rendering with renamed file selected > then highlights the renamed file with zero stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:src/new-feature.ts]                      [toolDiffAdded:󰐕 120] ",
+  "[38;2;49;120;198m󰛦[39m [warning:src/existing.ts]                                       [warning:󰏫 5] ",
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [warning:__tests__/extract/__fixtures__/renamed-file.ts]         [warning: 󰑕] ]",
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:src/old-deprecated.ts]                [toolDiffRemoved:󰍴 95] ",
+  "[38;2;49;120;198m󰛦[39m [warning:src/utils/helpers.ts]                                  [warning:󰏫 8] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given a realistic mixed change set > when rendering with second file selected (modified) > then highlights the modified file and shows all rows 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:src/new-feature.ts]                      [toolDiffAdded:󰐕 120] ",
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [warning:src/existing.ts]                                       [warning:󰏫 5] ]",
+  "[38;2;49;120;198m󰛦[39m [warning:__tests__/extract/__fixtures__/renamed-file.ts]         [warning: 󰑕] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:src/old-deprecated.ts]                [toolDiffRemoved:󰍴 95] ",
+  "[38;2;49;120;198m󰛦[39m [warning:src/utils/helpers.ts]                                  [warning:󰏫 8] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given added files > when selected and focused > renders long path truncated with selection highlight 1`] = `
+[
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [toolDiffAdded:__tests__/extract/__fixtures__/very-long-n[toolDiffAdded:󰐕 42] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given added files > when selected and focused > renders short path with selection highlight 1`] = `
+[
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [toolDiffAdded:new.ts]                                   [toolDiffAdded:󰐕 10] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given added files > when unselected and unfocused > renders long path truncated with icons in correct positions 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:__tests__/extract/__fixtures__/very-long-n[toolDiffAdded:󰐕 42] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given added files > when unselected and unfocused > renders short path with file icon after path and status icon at end 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:new.ts]                                   [toolDiffAdded:󰐕 10] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given an empty list > renders the empty message 1`] = `
+[
+  "[dim:  No files changed]                                                        ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given an empty list > renders with custom empty message 1`] = `
+[
+  "[dim:  No changed files]                                                        ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given deleted files > when selected and focused > renders long deleted file truncated with selection highlight 1`] = `
+[
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [toolDiffRemoved:__tests__/extract/__fixtures__/very-l[toolDiffRemoved:󰍴 200] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given deleted files > when selected and focused > renders short deleted file with selection highlight 1`] = `
+[
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [toolDiffRemoved:gone.ts]                              [toolDiffRemoved:󰍴 15] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given deleted files > when unselected and unfocused > renders long deleted file truncated with stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:__tests__/extract/__fixtures__/very-l[toolDiffRemoved:󰍴 200] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given deleted files > when unselected and unfocused > renders short deleted file with deletion stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:gone.ts]                              [toolDiffRemoved:󰍴 15] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given exists files > renders with small net change stats 1`] = `
+[
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [warning:unchanged.ts]                                          [warning:E 1] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given exists files > when selected and focused > renders with selection highlight 1`] = `
+[
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [warning:unchanged.ts]                                          [warning:E 1] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given files with different net change directions > renders with correct signed stats for each file 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [warning:mostly-added.ts]                                      [warning:󰏫 95] ",
+  "[38;2;49;120;198m󰛦[39m [warning:mostly-removed.ts]                                    [warning:󰏫 77] ",
+  "[38;2;49;120;198m󰛦[39m [warning:balanced.ts]                                           [warning:󰏫 1] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given files with no changes at all > renders without stats text between path and icons 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [warning:empty.ts]                                               [warning: E] ",
+  "[38;2;49;120;198m󰛦[39m [warning:renamed-empty.ts]                                       [warning: 󰑕] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given files with various path lengths > when rendering all three with index -1 (unselected) > then each row has the layout: fileIcon path... stats statusIcon 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [warning:a.ts]                                                  [warning:󰏫 1] ",
+  "[38;2;49;120;198m󰛦[39m [warning:short-path.ts]                                          [warning: 󰑕] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:__tests__/extract/__fixtures__/very-long-f[toolDiffAdded:󰐕 40] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given files with various path lengths > when rendering with middle file selected > then the selected row shows highlight with correct layout 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [warning:a.ts]                                                  [warning:󰏫 1] ",
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [warning:short-path.ts]                                          [warning: 󰑕] ]",
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:__tests__/extract/__fixtures__/very-long-f[toolDiffAdded:󰐕 40] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given files with various path lengths > when rendering with truncated path file selected > then the long path is truncated and icons remain visible at edges 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [warning:a.ts]                                                  [warning:󰏫 1] ",
+  "[38;2;49;120;198m󰛦[39m [warning:short-path.ts]                                          [warning: 󰑕] ",
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [toolDiffAdded:__tests__/extract/__fixtures__/very-long-f[toolDiffAdded:󰐕 40] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given modified files > when selected and focused > renders long path truncated with selection highlight and stats 1`] = `
+[
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [warning:__tests__/extract/__fixtures__/very-long-modified-file[warning:󰏫 80] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given modified files > when selected and focused > renders short path with selection highlight and stats 1`] = `
+[
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [warning:mod.ts]                                                [warning:󰏫 2] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given modified files > when unselected and unfocused > renders long path truncated with stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [warning:__tests__/extract/__fixtures__/very-long-modified-file[warning:󰏫 80] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given modified files > when unselected and unfocused > renders short path with stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [warning:mod.ts]                                                [warning:󰏫 2] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given renamed files > when selected and focused > renders long renamed file truncated with selection highlight 1`] = `
+[
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [warning:__tests__/extract/__fixtures__/very-long-renamed-file-na[warning: 󰑕] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given renamed files > when selected and focused > renders short renamed file with selection highlight 1`] = `
+[
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [warning:moved.ts]                                               [warning: 󰑕] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given renamed files > when unselected and unfocused > renders long renamed file truncated with no stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [warning:__tests__/extract/__fixtures__/very-long-renamed-file-na[warning: 󰑕] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given renamed files > when unselected and unfocused > renders short renamed file with zero stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [warning:moved.ts]                                               [warning: 󰑕] ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given unknown-status files > renders with warning color and stats 1`] = `
+[
+  "[BG:selectedBg:[38;2;203;203;65m󰘦[39m [warning:weird.json]                                           [warning:? 10] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given unknown-status files > when selected and focused > renders with selection highlight 1`] = `
+[
+  "[BG:selectedBg:[38;2;203;203;65m󰘦[39m [warning:weird.json]                                           [warning:? 10] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > when terminal height is smaller than file count > when scrolled to bottom (index 18) > then shows only the last visible rows 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [warning:file-009.ts]                                          [warning:󰏫 30] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:file-010.ts]                          [toolDiffRemoved:󰍴 33] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-011.ts]                                          [warning:󰑕 36] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:file-012.ts]                              [toolDiffAdded:󰐕 39] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-013.ts]                                          [warning:󰏫 42] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:file-014.ts]                          [toolDiffRemoved:󰍴 45] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-015.ts]                                          [warning:󰑕 48] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:file-016.ts]                              [toolDiffAdded:󰐕 51] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-017.ts]                                          [warning:󰏫 54] ",
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [toolDiffRemoved:file-018.ts]                          [toolDiffRemoved:󰍴 57] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > when terminal height is smaller than file count > when scrolled to bottom (index 19) > then shows the last few rows including the very last one 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:file-010.ts]                          [toolDiffRemoved:󰍴 33] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-011.ts]                                          [warning:󰑕 36] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:file-012.ts]                              [toolDiffAdded:󰐕 39] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-013.ts]                                          [warning:󰏫 42] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:file-014.ts]                          [toolDiffRemoved:󰍴 45] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-015.ts]                                          [warning:󰑕 48] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:file-016.ts]                              [toolDiffAdded:󰐕 51] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-017.ts]                                          [warning:󰏫 54] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:file-018.ts]                          [toolDiffRemoved:󰍴 57] ",
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [warning:file-019.ts]                                          [warning:󰑕 60] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > when terminal height is smaller than file count > when scrolled to middle (index 9) > then shows only the visible rows around index 9 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:file-000.ts]                               [toolDiffAdded:󰐕 3] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-001.ts]                                           [warning:󰏫 6] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:file-002.ts]                           [toolDiffRemoved:󰍴 9] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-003.ts]                                          [warning:󰑕 12] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:file-004.ts]                              [toolDiffAdded:󰐕 15] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-005.ts]                                          [warning:󰏫 18] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:file-006.ts]                          [toolDiffRemoved:󰍴 21] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-007.ts]                                          [warning:󰑕 24] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:file-008.ts]                              [toolDiffAdded:󰐕 27] ",
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [warning:file-009.ts]                                          [warning:󰏫 30] ]",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > when terminal height is smaller than file count > when scrolled to top (index 0) > then shows only the first visible rows 1`] = `
+[
+  "[BG:selectedBg:[38;2;49;120;198m󰛦[39m [toolDiffAdded:file-000.ts]                               [toolDiffAdded:󰐕 3] ]",
+  "[38;2;49;120;198m󰛦[39m [warning:file-001.ts]                                           [warning:󰏫 6] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:file-002.ts]                           [toolDiffRemoved:󰍴 9] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-003.ts]                                          [warning:󰑕 12] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:file-004.ts]                              [toolDiffAdded:󰐕 15] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-005.ts]                                          [warning:󰏫 18] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffRemoved:file-006.ts]                          [toolDiffRemoved:󰍴 21] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-007.ts]                                          [warning:󰑕 24] ",
+  "[38;2;49;120;198m󰛦[39m [toolDiffAdded:file-008.ts]                              [toolDiffAdded:󰐕 27] ",
+  "[38;2;49;120;198m󰛦[39m [warning:file-009.ts]                                          [warning:󰏫 30] ",
+]
+`;

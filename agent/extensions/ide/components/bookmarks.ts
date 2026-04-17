@@ -10,7 +10,7 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { formatBookmarkReference } from "./change-utils";
+import { formatBookmarkReference } from "./changes/formatting";
 
 import {
   forgetBookmark,

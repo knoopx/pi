@@ -29,7 +29,7 @@ import {
   createWorkspace,
   getCurrentChangeId,
 } from "./workspace";
-import { createWorkspacesComponent } from "./components/workspaces";
+import { createWorkspacesComponent } from "./components/workspaces/index";
 import { createBookmarkPromptComponent } from "./components/bookmark-prompt";
 import { registerAllTools } from "./tools/registration";
 import { setBookmarkToChange, getVcsLabel, createNewChange } from "./jj";
@@ -148,16 +148,8 @@ const promptAndSetBookmark = (
     if (!ctx.hasUI) return null;
 
     const bookmarkName = await ctx.ui.custom<string | null>(
-      (tui, theme, keybindings, done) => {
-        return createBookmarkPromptComponent(
-          pi,
-          tui,
-          theme,
-          keybindings,
-          done,
-          changeId,
-          ctx.cwd,
-        );
+      (tui, _theme, _keybindings, done) => {
+        return createBookmarkPromptComponent(pi, tui, _theme, done, ctx.cwd);
       },
       {
         overlay: true,

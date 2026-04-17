@@ -3,6 +3,7 @@ import type {
   KeybindingsManager,
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Component } from "@mariozechner/pi-tui";
 import { Key } from "@mariozechner/pi-tui";
 import {
   createListPicker,
@@ -55,167 +56,167 @@ export function createFilesComponent(
   done: (result: FileResult | null) => void,
   initialQuery: string,
   cwd: string,
-): ListPickerComponent & { invalidate: () => void } {
-  // Track pending action for when an action key is pressed
-  let pendingAction: SymbolReferenceActionType | undefined;
+): ListPickerComponent & Component {
+  return new FilesView(pi, tui, theme, keybindings, done, initialQuery, cwd);
+}
 
-  // Multi-selection state
-  const selectedFiles = new Set<string>();
+class FilesView implements Component {
+  private picker: ListPickerComponent;
+  private pendingAction: SymbolReferenceActionType | undefined;
+  private selectedFiles = new Set<string>();
+  private pi: ExtensionAPI;
+  private done: (result: FileResult | null) => void;
 
-  // Wrapper to close picker with action metadata
-  function doneWithAction(item: FileInfo | null): void {
-    if (item && pendingAction) done({ file: item, action: pendingAction });
-    else if (item) done({ file: item });
-    else {
-      done(null);
-    }
-    pendingAction = undefined;
+  constructor(
+    pi: ExtensionAPI,
+    tui: { terminal: { rows: number }; requestRender: () => void },
+    theme: Theme,
+    keybindings: KeybindingsManager,
+    done: (result: FileResult | null) => void,
+    initialQuery: string,
+    private cwd: string,
+  ) {
+    this.pi = pi;
+    this.done = done;
+    this.picker = createListPicker<FileInfo>(
+      pi,
+      tui,
+      theme,
+      keybindings,
+      (item: FileInfo | null) => this.onPickerDone(item),
+      initialQuery,
+      {
+        title: () => `Files (${this.selectedFiles.size} selected)`,
+        formatItem: (item, width, theme) => {
+          const isSelected = this.selectedFiles.has(item.path);
+          const prefix = isSelected ? theme.fg("accent", "✓") : "";
+          return `${prefix}${getFileIcon(item.path)} ${item.path}`;
+        },
+        loadPreview: createFilePreviewLoader(pi, cwd, theme),
+        filterItems: (items, query) =>
+          items.filter((item) => item.path.toLowerCase().includes(query)),
+        async loadItems(query) {
+          const result = await pi.exec(
+            "rg",
+            ["--files", "--hidden", "-g", "!node_modules", "-g", "!.git"],
+            { cwd },
+          );
+          if (result.code !== 0)
+            throw new Error(`Failed to load files: ${result.stderr}`);
+
+          const { statSync } = await import("node:fs");
+          const { join } = await import("node:path");
+
+          return result.stdout
+            .split("\n")
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .map((path) => ({ id: path, label: path, path }))
+            .sort(getMtimeSorter(cwd, statSync, join));
+        },
+        actions: [
+          {
+            key: Key.ctrl("i"),
+            label: "insert",
+            handler: (item) => this.onPickerDone(item),
+          },
+          ...(
+            [
+              [Key.ctrl("t"), "inspect"] as const,
+              [Key.ctrl("d"), "delete"] as const,
+              [Key.ctrl("u"), "used-by"] as const,
+            ] as const
+          ).map(([key, action]) => ({
+            key,
+            label: action,
+            handler: (item: FileInfo) => {
+              this.pendingAction = action;
+              this.onPickerDone(item);
+            },
+          })),
+          {
+            key: "space",
+            label: "select",
+            handler: () => {
+              this.selectedFiles.clear();
+              this.invalidate();
+              tui.requestRender();
+            },
+          },
+          {
+            key: Key.ctrl("s"),
+            label: "split",
+            handler: (item) => void this.splitFile(item, cwd),
+          },
+        ],
+        async onEdit(item) {
+          await pi.exec("editor", [item.path], { cwd });
+        },
+      },
+    );
   }
 
-  // Action definitions: [key, label/action]
-  const ACTION_DEFS: [string, SymbolReferenceActionType][] = [
-    [Key.ctrl("t"), "inspect"],
-    [Key.ctrl("d"), "delete"],
-    [Key.ctrl("u"), "used-by"],
-  ];
-  const internalDone = (item: FileInfo | null) => {
-    if (item) done({ file: item });
-    else {
-      done(null);
+  private onPickerDone = (item: FileInfo | null): void => {
+    const doneCb = this.done;
+    if (item && this.pendingAction) {
+      doneCb({ file: item, action: this.pendingAction });
+    } else if (item) {
+      doneCb({ file: item });
+    } else {
+      doneCb(null);
     }
+    this.pendingAction = undefined;
   };
-  const splitFiles = async (
-    focusedItem: FileInfo | null,
-    notify?: (msg: string, type?: "info" | "error") => void,
-  ) => {
+
+  private async splitFile(item: FileInfo | null, cwd: string): Promise<void> {
     const filesToSplit =
-      selectedFiles.size > 0
-        ? [...selectedFiles]
-        : focusedItem
-          ? [focusedItem.path]
+      this.selectedFiles.size > 0
+        ? [...this.selectedFiles]
+        : item
+          ? [item.path]
           : [];
 
     if (filesToSplit.length === 0) {
-      notify?.("No files selected", "error");
+      this.picker.notify?.("No files selected", "error");
       return;
     }
 
     try {
-      const splitResult = await pi.exec(
+      const splitResult = await this.pi.exec(
         "jj",
         ["split", "-m", "", "--", ...filesToSplit],
         { cwd },
       );
-      selectedFiles.clear();
+      this.selectedFiles.clear();
       const msg = `Split selected files (${filesToSplit.length}): ${filesToSplit.join(", ")}`;
-      notify?.(msg, "info");
-      notifyMutation(pi, msg, splitResult.stderr || splitResult.stdout);
+      this.picker.notify?.(msg, "info");
+      notifyMutation(this.pi, msg, splitResult.stderr || splitResult.stdout);
     } catch (error) {
-      notify?.(
+      this.picker.notify?.(
         `Failed to split: ${error instanceof Error ? error.message : String(error)}`,
         "error",
       );
     }
-  };
+  }
 
-  const actions: ListPickerAction<FileInfo>[] = [
-    {
-      key: Key.ctrl("i"),
-      label: "insert",
-      handler(item: FileInfo) {
-        internalDone(item);
-      },
-    },
-    ...ACTION_DEFS.map(([key, action]) => ({
-      key,
-      label: action,
-      handler(item: FileInfo) {
-        pendingAction = action;
-        doneWithAction(item);
-      },
-    })),
-  ];
+  setPreview(_lines: string[]): void {
+    // Not applicable for file browser
+  }
 
-  let pickerInstance: ListPickerComponent | null = null;
+  async reload(): Promise<void> {
+    this.invalidate();
+  }
 
-  const handleSelect = (item: FileInfo) => {
-    if (selectedFiles.has(item.path)) selectedFiles.delete(item.path);
-    else selectedFiles.add(item.path);
-  };
-
-  const loadItemsWithMtime = async (_query: string): Promise<FileInfo[]> => {
-    const result = await pi.exec(
-      "rg",
-      ["--files", "--hidden", "-g", "!node_modules", "-g", "!.git"],
-      { cwd },
-    );
-
-    if (result.code !== 0)
-      throw new Error(`Failed to load files: ${result.stderr}`);
-
-    const { statSync } = await import("node:fs");
-    const { join } = await import("node:path");
-
-    return result.stdout
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((path) => ({ id: path, label: path, path }))
-      .sort(getMtimeSorter(cwd, statSync, join));
-  };
-
-  const picker = createListPicker<FileInfo>(
-    pi,
-    tui,
-    theme,
-    keybindings,
-    internalDone,
-    initialQuery,
-    {
-      title: () =>
-        selectedFiles.size > 0
-          ? `Files (${selectedFiles.size} selected)`
-          : "Files",
-      actions: [
-        ...actions,
-        {
-          key: "space",
-          label: "select",
-          handler(item) {
-            handleSelect(item);
-            picker.invalidate();
-            tui.requestRender();
-          },
-        },
-        {
-          key: Key.ctrl("s"),
-          label: "split",
-          handler(item) {
-            void splitFiles(item, pickerInstance?.notify);
-          },
-        },
-      ],
-      async onEdit(item) {
-        await pi.exec("editor", [item.path], { cwd });
-      },
-      loadItems: loadItemsWithMtime,
-      filterItems: (items, query) =>
-        items.filter((item) => item.path.toLowerCase().includes(query)),
-      formatItem(item, width, theme) {
-        const isSelected = selectedFiles.has(item.path);
-        const marker = isSelected ? theme.fg("accent", "✓ ") : "  ";
-        return `${marker}${getFileIcon(item.path)} ${item.path}`;
-      },
-      loadPreview: createFilePreviewLoader(pi, cwd, theme),
-    },
-  );
-
-  pickerInstance = picker;
-
-  return {
-    ...picker,
-    invalidate() {
-      picker.invalidate();
-    },
-  };
+  render(width: number): string[] {
+    return this.picker.render(width);
+  }
+  handleInput(data: string): void {
+    this.picker.handleInput(data);
+  }
+  invalidate(): void {
+    this.picker.invalidate();
+  }
+  dispose(): void {
+    this.picker.dispose();
+  }
 }

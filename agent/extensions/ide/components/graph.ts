@@ -3,7 +3,7 @@
  * Based on serie/kaospilot approach for jj commit graphs
  */
 
-import { getChangeIcon } from "./change-utils";
+import { getChangeIcon } from "./changes/formatting";
 
 export interface GraphNode {
   id: string;

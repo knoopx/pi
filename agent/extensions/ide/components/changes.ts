@@ -1,4 +1,4 @@
-import path from "node:path";
+import type { Component } from "@mariozechner/pi-tui";
 import { Key } from "@mariozechner/pi-tui";
 import {
   ACTION_KEYS,
@@ -7,253 +7,493 @@ import {
   filterActiveBindings,
   type KeyBinding,
 } from "../keyboard";
-import { ensureWidth, truncateAnsi } from "./text-utils";
-import { formatChangeRow } from "./change-utils";
-import {
-  calculateDimensions,
-  calculateDiffScroll,
-  renderSplitPanel,
-  renderDiffRows,
-  renderFileChangeRows,
-} from "./split-panel";
 import { formatErrorMessage } from "./formatting-utils";
+import { createStatusNotifier, type StatusMessageState } from "./ui/status";
+import type { Change, FileChange } from "../types";
 import {
-  createComponentCache,
-  createSelectionState,
-  createLoadingState,
-  invalidateCache,
-  type BaseComponentParams,
-} from "./state/factories";
-
-import { renderLoadingRow, renderEmptyState } from "./ui/render";
-import {
-  createStatusNotifier,
-  formatHelpWithStatus,
-  type StatusMessageState,
-} from "./ui/status";
-import type { FileChange, Change } from "../types";
-import {
-  loadChanges,
   loadChangedFiles,
   getRawDiff,
   restoreFile,
-  listBookmarksByChange,
   getCurrentChangeIdShort,
   notifyMutation,
 } from "../jj";
+import path from "node:path";
+
 import { getTheme, renderDiffWithShiki } from "../tools/diff";
+import { calculateGraphLayout } from "./graph";
 
+import { DataService } from "./changes/service";
+import { ChangesState } from "./changes/state";
+import { Navigation, type NavigationCallbacks } from "./changes/navigation";
+import { Renderer } from "./changes/renderer";
+import { createActionHandlers } from "./changes/actions";
 import {
-  calculateGraphLayout,
-  renderGraphRow,
-  type GraphLayout,
-} from "./graph";
+  REVISION_FILTERS,
+  type ChangesComponentFactory,
+  type ChangesComponentAPI,
+} from "./changes/types";
 
-interface RevisionFilter {
-  name: string;
-  revision: string;
-}
-
-const REVISION_FILTERS: RevisionFilter[] = [
-  { name: "Stack", revision: "ancestors(@, 50) ~ root()" },
-  { name: "Mine", revision: "mine()" },
-  { name: "Tracked", revision: "bookmarks()" },
-  { name: "Recent", revision: "committer_date(after:'30 days ago')" },
-];
+const REFRESH_INTERVAL_MS = 2000;
 
 export function createChangesComponent(
-  { pi, tui, theme, cwd }: BaseComponentParams,
-  done: () => void,
+  init: Parameters<NonNullable<ChangesComponentFactory>>[0],
+  finish: () => void,
   onInsert?: (text: string) => void,
   onBookmark?: (changeId: string) => Promise<string | null>,
   onFileCmAction?: (
     path: string,
     action: "inspect" | "deps" | "used-by",
   ) => void,
-) {
-  let changes: Change[] = [];
-  let selectedChange: Change | null = null;
-  let currentChangeId: string | null = null;
-  let files: FileChange[] = [];
-  let diffContent: string[] = [];
-  let bookmarksByChange = new Map<string, string[]>();
-  const selectedChangeIds = new Set<string>();
-  interface ChangeCache {
-    files: FileChange[];
-    diffs: Map<string, string[]>;
-  }
+): ChangesComponentAPI {
+  const component = new ChangesComponent(
+    init,
+    finish,
+    onInsert,
+    onBookmark,
+    onFileCmAction,
+  );
+  return component as unknown as ChangesComponentAPI;
+}
 
-  const changeCache = new Map<string, ChangeCache>();
-  let graphLayout: GraphLayout | null = null;
+class ChangesComponent implements Component {
+  private service: DataService;
+  private state: ChangesState;
+  private statusState: StatusMessageState;
+  private notify: (message: string, type?: "info" | "error") => void;
+  private tui: { requestRender: () => void };
+  private pi: any;
+  private cwd: string;
 
-  let currentFilterIndex = 0;
-  const selectionState = createSelectionState();
-  const loadingState = createLoadingState();
-  const statusState: StatusMessageState = { message: null, timeout: null };
-  let leftListHeight = 0;
-  let rightListHeight = 0;
+  private navigation: Navigation;
+  private renderer: Renderer;
+  private actions: ReturnType<typeof createActionHandlers>;
+  private refreshInterval: ReturnType<typeof setInterval> | null = null;
+  private helpText = "";
 
-  let mode: "normal" | "move" = "normal";
-  let moveOriginalIndex = -1;
-  let moveOriginalChanges: Change[] = [];
-  let refreshInterval: ReturnType<typeof setInterval> | null = null;
-  const REFRESH_INTERVAL_MS = 2000; // 2 seconds
+  private leftHandler: (data: string) => void;
+  private rightHandler: (data: string) => void;
+  private moveHandler: (data: string) => void;
 
-  const notify = createStatusNotifier(statusState, () => {
-    invalidateCache(loadingState);
-    tui.requestRender();
-  });
+  constructor(
+    init: Parameters<NonNullable<ChangesComponentFactory>>[0],
+    private finish: () => void,
+    private onInsert?: (text: string) => void,
+    private onBookmark?: (changeId: string) => Promise<string | null>,
+    private onFileCmAction?: (
+      path: string,
+      action: "inspect" | "deps" | "used-by",
+    ) => void,
+  ) {
+    const { pi, tui, theme } = init;
+    this.pi = pi;
+    this.tui = tui;
+    this.cwd = init.cwd;
 
-  // Navigation handlers - defined inline to access current array values
-  function navigateChanges(
-    direction: "up" | "down" | "pageUp" | "pageDown",
-  ): void {
-    if (changes.length === 0) return;
-
-    const maxIndex = changes.length - 1;
-    const pageOffset = Math.max(1, rightListHeight - 1);
-    const newIndex =
-      direction === "up"
-        ? Math.max(0, selectionState.selectedIndex - 1)
-        : direction === "pageUp"
-          ? Math.max(0, selectionState.selectedIndex - pageOffset)
-          : direction === "pageDown"
-            ? Math.min(maxIndex, selectionState.selectedIndex + pageOffset)
-            : Math.min(maxIndex, selectionState.selectedIndex + 1);
-
-    if (newIndex !== selectionState.selectedIndex) {
-      selectionState.selectedIndex = newIndex;
-      selectedChange = changes[newIndex];
-      void loadFilesAndDiff(selectedChange);
-      invalidateCache(loadingState);
+    // Infrastructure
+    this.service = new DataService(pi, init.cwd);
+    this.state = new ChangesState();
+    this.statusState = { message: null, timeout: null };
+    this.notify = createStatusNotifier(this.statusState, () => {
+      this.state.loadingState.cachedLines = [];
+      this.state.loadingState.cachedWidth = 0;
       tui.requestRender();
-    }
-  }
+    });
 
-  function navigateFiles(
-    direction: "up" | "down" | "pageUp" | "pageDown",
-  ): void {
-    if (files.length === 0 || selectedChange === null) return;
+    // Navigation
+    const navigationCallbacks: NavigationCallbacks = {
+      onChangeSelected: async (changeId) => {
+        const change =
+          this.state.changes[this.state.selectionState.selectedIndex];
+        if (!change) return;
+        this.state.selectedChange = change;
+        await this.loadFilesAndDiff(change).catch(() => {});
+      },
+      onFileSelected: async (filePath) => {
+        if (!this.state.selectedChange) return;
+        await this.loadDiff(this.state.selectedChange, filePath);
+      },
+      onSwitchFocus: () => {
+        this.state.loadingState.cachedLines = [];
+        tui.requestRender();
+      },
+    };
+    this.navigation = new Navigation(this.state, tui, navigationCallbacks);
 
-    const maxIndex = files.length - 1;
-    const pageOffset = Math.max(1, leftListHeight - 1);
-    const newIndex =
-      direction === "up"
-        ? Math.max(0, selectionState.fileIndex - 1)
-        : direction === "pageUp"
-          ? Math.max(0, selectionState.fileIndex - pageOffset)
-          : direction === "pageDown"
-            ? Math.min(maxIndex, selectionState.fileIndex + pageOffset)
-            : Math.min(maxIndex, selectionState.fileIndex + 1);
+    this.renderer = new Renderer(this.state, tui, theme);
+    this.renderer.setStatusMsg(null);
 
-    if (newIndex !== selectionState.fileIndex) {
-      selectionState.fileIndex = newIndex;
-      const file = files[newIndex];
-      void loadDiff(selectedChange, file.path);
-      invalidateCache(loadingState);
-      tui.requestRender();
-    }
-  }
-
-  function scrollDiff(direction: "up" | "down"): void {
-    selectionState.diffScroll = calculateDiffScroll(
-      direction,
-      selectionState.diffScroll,
-      diffContent.length,
-      tui.terminal.rows,
-      loadingState.cachedWidth,
+    const notify: (msg: string, type?: string) => void = (msg, _type) =>
+      this.notify(msg);
+    this.actions = createActionHandlers(
+      pi,
+      init.cwd,
+      this.state,
+      finish,
+      () => this.refreshAfterMutation(),
+      (prevIndex: number) => this.restoreSelection(prevIndex),
+      (change: Change) => this.loadFilesAndDiff(change),
+      notify,
+      onBookmark,
+      onFileCmAction,
     );
-    invalidateCache(loadingState);
-    tui.requestRender();
+
+    const globalBindings = this.getGlobalBindings();
+    const leftPaneBindings = this.getLeftPaneBindings();
+    const rightPaneBindings = this.getRightPaneBindings();
+    const moveModeBindings = this.getMoveModeBindings();
+
+    this.leftHandler = createKeyboardHandler({
+      bindings: [...globalBindings, ...leftPaneBindings] as KeyBinding[],
+    });
+    this.rightHandler = createKeyboardHandler({
+      bindings: [...globalBindings, ...rightPaneBindings] as KeyBinding[],
+    });
+    this.moveHandler = createKeyboardHandler({ bindings: moveModeBindings });
+
+    void this.reloadChanges();
+    this.startAutoRefresh();
   }
 
-  function enterMoveMode(): void {
-    if (!selectedChange || changes.length < 2) return;
-    mode = "move";
-    moveOriginalIndex = selectionState.selectedIndex;
-    moveOriginalChanges = [...changes];
-    invalidateCache(loadingState);
-    tui.requestRender();
+  // ── Data loading ────────────────────────────────────────────────────────
+
+  private buildGraphInput(): {
+    id: string;
+    parentIds: string[];
+    isWorkingCopy: boolean;
+  }[] {
+    const changeIdSet = new Set(this.state.changes.map((c) => c.changeId));
+    return this.state.changes.map((c) => ({
+      id: c.changeId,
+      parentIds: (c.parentIds ?? []).filter((pid) => changeIdSet.has(pid)),
+      isWorkingCopy:
+        this.state.currentChangeId !== null &&
+        c.changeId === this.state.currentChangeId,
+    }));
   }
 
-  function cancelMoveMode(): void {
-    changes = moveOriginalChanges;
-    selectionState.selectedIndex = moveOriginalIndex;
-    selectedChange = changes[moveOriginalIndex];
-    mode = "normal";
-    moveOriginalIndex = -1;
-    moveOriginalChanges = [];
-    invalidateCache(loadingState);
-    tui.requestRender();
+  private reloadGraphLayout(): void {
+    const input = this.buildGraphInput();
+    this.state.graphLayout = calculateGraphLayout(input);
   }
 
-  function moveChange(direction: "up" | "down"): void {
-    const currentIndex = selectionState.selectedIndex;
-    const targetIndex =
-      direction === "up" ? currentIndex - 1 : currentIndex + 1;
-
-    if (targetIndex < 0 || targetIndex >= changes.length) return;
-
-    const changeToMove = changes[currentIndex];
-    const isWorkingCopy =
-      currentChangeId !== null && changeToMove?.changeId === currentChangeId;
-    if (isWorkingCopy) return;
-
-    [changes[currentIndex], changes[targetIndex]] = [
-      changes[targetIndex],
-      changes[currentIndex],
-    ];
-    selectionState.selectedIndex = targetIndex;
-    invalidateCache(loadingState);
-    tui.requestRender();
+  private async reloadBookmarks(): Promise<void> {
+    const bookmarksByChange = await this.service.getBookmarksForChanges(
+      this.state.changes,
+    );
+    this.state.bookmarksByChange.clear();
+    for (const [changeId, bookmarks] of bookmarksByChange) {
+      this.state.bookmarksByChange.set(changeId, bookmarks);
+    }
   }
 
-  async function applyMoveMode(): Promise<void> {
-    if (!selectedChange) {
-      mode = "normal";
+  private async reloadChanges(): Promise<void> {
+    const previousSelectedChangeId =
+      this.state.selectedChange?.changeId ?? null;
+    try {
+      await this.reloadChangesImpl(previousSelectedChangeId);
+    } catch (error) {
+      this.state.loadingState.loading = false;
+      const msg = formatErrorMessage(error);
+      this.state.diffContent = [`Error: ${msg}`];
+      this.state.loadingState.cachedLines = [];
+      this.tui.requestRender();
+    }
+  }
+
+  private async reloadChangesImpl(
+    previousSelectedChangeId: string | null,
+  ): Promise<void> {
+    const filter = REVISION_FILTERS[this.state.currentFilterIndex];
+    this.state.changes = await this.service.loadChanges(filter.revision);
+    this.state.currentChangeId = await this.service.getCurrentChangeIdShort();
+    await this.reloadBookmarks();
+
+    this.state.loadingState.loading = false;
+
+    if (this.state.changes.length > 0) {
+      if (this.state.selectedChange?.changeId) {
+        await this.handleSelectedChange();
+      } else {
+        await this.handleNewSelection(previousSelectedChangeId);
+      }
+    } else {
+      this.state.selectionState.selectedIndex = 0;
+      this.state.selectedChange = null;
+      this.state.files = [];
+      this.state.diffContent = [];
+      this.state.graphLayout = null;
+    }
+
+    this.reloadGraphLayout();
+    this.state.loadingState.cachedLines = [];
+    this.tui.requestRender();
+  }
+
+  private async handleSelectedChange(): Promise<void> {
+    const matchedIndex = this.state.changes.findIndex(
+      (c) => c.changeId === this.state.selectedChange?.changeId,
+    );
+    if (matchedIndex < 0) {
+      this.state.selectionState.selectedIndex = 0;
+      this.state.selectedChange = this.state.changes[0];
+      await this.loadFilesAndDiff(this.state.selectedChange);
+      return;
+    }
+    this.state.selectionState.selectedIndex = matchedIndex;
+    this.state.selectedChange = this.state.changes[matchedIndex];
+    this.state.files = await this.service.loadChangedFiles(
+      this.state.selectedChange.changeId,
+    );
+    this.state.selectionState.fileIndex = Math.min(
+      this.state.selectionState.fileIndex,
+      this.state.files.length - 1,
+    );
+    const file = this.state.files[this.state.selectionState.fileIndex];
+    if (file) {
+      await this.loadDiff(this.state.selectedChange, file.path, {
+        preserveScroll: true,
+      });
+    }
+  }
+
+  private async handleNewSelection(
+    previousSelectedChangeId: string | null,
+  ): Promise<void> {
+    const preferredChangeId =
+      this.state.currentChangeId ?? previousSelectedChangeId;
+    const matchedIndex = preferredChangeId
+      ? this.state.changes.findIndex((c) => c.changeId === preferredChangeId)
+      : -1;
+    this.state.selectionState.selectedIndex =
+      matchedIndex >= 0 ? matchedIndex : 0;
+    this.state.selectedChange =
+      this.state.changes[this.state.selectionState.selectedIndex];
+    await this.loadFilesAndDiff(this.state.selectedChange);
+  }
+
+  private async loadFilesAndDiff(change: Change): Promise<void> {
+    if (!this.state.selectedChange) return;
+    try {
+      this.state.files = await this.service.loadChangedFiles(change.changeId);
+      this.state.selectionState.fileIndex = 0;
+      await this.loadDiff(change, this.state.files[0]?.path);
+    } catch (error) {
+      const msg = formatErrorMessage(error);
+      this.state.files = [];
+      this.state.diffContent = [`Error loading files: ${msg}`];
+      this.state.loadingState.cachedLines = [];
+      this.tui.requestRender();
+    }
+  }
+
+  private async loadDiff(
+    change: Change,
+    filePath?: string,
+    options?: { preserveScroll?: boolean },
+  ): Promise<void> {
+    try {
+      const diff = await this.service.getRawDiff(change.changeId, filePath);
+      const themeInstance = await getTheme(this.pi, this.cwd);
+      this.state.diffContent = await renderDiffWithShiki(diff, themeInstance);
+      if (!options?.preserveScroll) this.state.selectionState.diffScroll = 0;
+      this.state.loadingState.cachedLines = [];
+      this.tui.requestRender();
+    } catch (error) {
+      const msg = formatErrorMessage(error);
+      this.state.diffContent = [`Error: ${msg}`];
+      this.state.loadingState.cachedLines = [];
+      this.tui.requestRender();
+    }
+  }
+
+  private getCachedFileCache(changeId: string): {
+    hit: boolean;
+    files?: FileChange[];
+    cachedDiff?: string[] | undefined;
+  } {
+    const cache = this.state.changeCache.get(changeId);
+    if (!cache) return { hit: false };
+    const files = cache.files;
+    const diffKey = files[0]?.path ?? "";
+    return { hit: true, files, cachedDiff: cache.diffs.get(diffKey) };
+  }
+
+  // ── Action helpers ──────────────────────────────────────────────────────
+
+  private async refreshAfterMutation(): Promise<void> {
+    await this.reloadChanges();
+  }
+
+  private async restoreSelection(prevIndex: number): Promise<void> {
+    if (this.state.changes.length > 0) {
+      this.state.selectionState.selectedIndex = Math.min(
+        prevIndex,
+        this.state.changes.length - 1,
+      );
+      this.state.selectedChange =
+        this.state.changes[this.state.selectionState.selectedIndex];
+    } else {
+      this.state.selectionState.selectedIndex = 0;
+      this.state.selectedChange = null;
+      this.state.files = [];
+      this.state.diffContent = [];
+    }
+  }
+
+  private getSelectedFile(): import("../types").FileChange | undefined {
+    if (!this.state.selectedChange) return undefined;
+    return this.state.files[this.state.selectionState.fileIndex];
+  }
+
+  private async discardFile(): Promise<void> {
+    const file = this.getSelectedFile();
+    if (!file || !this.state.selectedChange) return;
+    try {
+      const restoreOutput = await restoreFile(
+        this.pi,
+        this.cwd,
+        this.state.selectedChange.changeId,
+        file.path,
+      );
+      this.state.changeCache.delete(this.state.selectedChange.changeId);
+      await this.loadFilesAndDiff(this.state.selectedChange);
+      const msg = `Restored file ${file.path} in change ${this.state.selectedChange!.changeId.slice(0, 8)}`;
+      notifyMutation(this.pi, msg, restoreOutput);
+    } catch (error) {
+      this.notify(
+        `Failed to discard file: ${formatErrorMessage(error)}`,
+        "error",
+      );
+    }
+  }
+
+  private async splitFile(): Promise<void> {
+    const file = this.getSelectedFile();
+    if (!file) return;
+    try {
+      const msg = `Moved ${file.path} from change ${this.state.selectedChange!.changeId.slice(0, 8)} to a new change`;
+      const splitResult = await this.pi.exec(
+        "jj",
+        [
+          "split",
+          "-m",
+          msg,
+          "-r",
+          this.state.selectedChange!.changeId,
+          "--insert-after",
+          this.state.selectedChange!.changeId,
+          file.path,
+        ],
+        { cwd: this.cwd },
+      );
+      const prevChangeId = this.state.selectedChange!.changeId;
+      const prevFileIndex = this.state.selectionState.fileIndex;
+      const prevFileCount = this.state.files.length;
+      this.state.changeCache.clear();
+      await this.reloadChanges();
+      const restoredIndex = this.state.changes.findIndex(
+        (c) => c.changeId === prevChangeId,
+      );
+      if (restoredIndex < 0) return;
+      this.state.selectionState.selectedIndex = restoredIndex;
+      this.state.selectedChange = this.state.changes[restoredIndex];
+      this.state.selectionState.fileIndex = Math.min(
+        prevFileIndex,
+        this.state.files.length - 1,
+      );
+      this.state.selectionState.diffScroll = 0;
+      await this.loadFilesAndDiff(this.state.selectedChange);
+      this.state.loadingState.cachedLines = [];
+      this.tui.requestRender();
+      notifyMutation(this.pi, msg, splitResult.stderr || splitResult.stdout);
+    } catch (error) {
+      this.notify(
+        `Failed to split file: ${formatErrorMessage(error)}`,
+        "error",
+      );
+    }
+  }
+
+  private async pushBookmarks(): Promise<void> {
+    if (!this.state.selectedChange) return;
+    const bookmarks =
+      this.state.bookmarksByChange.get(this.state.selectedChange.changeId) ??
+      [];
+    if (bookmarks.length === 0) return;
+
+    try {
+      const outputs: string[] = [];
+      for (const bookmark of bookmarks) {
+        const r = await this.pi.exec("jj", ["git", "push", "-b", bookmark], {
+          cwd: this.cwd,
+        });
+        outputs.push(r.stderr || r.stdout);
+      }
+      await this.reloadChanges();
+      const msg = `Pushed bookmark${bookmarks.length > 1 ? "s" : ""}: ${bookmarks.join(", ")}`;
+      notifyMutation(this.pi, msg, outputs.join("\n"));
+    } catch (error) {
+      this.notify(`Failed to push: ${formatErrorMessage(error)}`, "error");
+    }
+  }
+
+  private async setBookmark(): Promise<void> {
+    if (!this.state.selectedChange || !this.onBookmark) return;
+    try {
+      const bookmarkName = await this.onBookmark(
+        this.state.selectedChange.changeId,
+      );
+      if (!bookmarkName) return;
+      await this.reloadBookmarks();
+      const msg = `Updated bookmark '${bookmarkName}' to ${this.state.selectedChange.changeId}`;
+      notifyMutation(
+        this.pi,
+        msg,
+        `Set bookmark '${bookmarkName}' to ${this.state.selectedChange.changeId.slice(0, 8)}`,
+      );
+    } catch (error) {
+      this.notify(
+        `Failed to update bookmark: ${formatErrorMessage(error)}`,
+        "error",
+      );
+    }
+  }
+
+  private async applyMoveMode(): Promise<void> {
+    if (this.state.mode !== "move") {
       return;
     }
 
-    const currentIndex = selectionState.selectedIndex;
-    if (currentIndex === moveOriginalIndex) {
-      mode = "normal";
-      moveOriginalIndex = -1;
-      moveOriginalChanges = [];
-      invalidateCache(loadingState);
-      tui.requestRender();
+    const currentIndex = this.state.selectionState.selectedIndex;
+    if (currentIndex === this.state.moveOriginalIndex) {
+      this.state.mode = "normal";
+      this.state.loadingState.cachedLines = [];
+      this.tui.requestRender();
       return;
     }
 
     try {
-      await performRebase();
-      mode = "normal";
-      moveOriginalIndex = -1;
-      moveOriginalChanges = [];
-      changeCache.clear();
-      await reloadChanges();
+      await this.performRebase();
+      this.state.mode = "normal";
+      this.state.changeCache.clear();
+      await this.reloadChanges();
     } catch (error) {
-      notify(`Failed to move: ${formatErrorMessage(error)}`, "error");
-      cancelMoveMode();
+      this.notify(`Failed to move: ${formatErrorMessage(error)}`, "error");
+      this.navigation.cancelMoveMode();
     }
   }
 
-  async function performRebase(): Promise<void> {
-    const changeToMove = selectedChange;
-    if (!changeToMove) {
-      notify("No change selected");
-      return;
-    }
-    const currentIndex = selectionState.selectedIndex;
-    let result;
-    let targetChangeId = "";
-    let relation = "";
+  private async performRebase(): Promise<void> {
+    const changeToMove = this.state.selectedChange;
+    if (!changeToMove) return;
+    const currentIndex = this.state.selectionState.selectedIndex;
+    let result: { stderr?: string; stdout?: string };
+    let targetChange: Change | null = null;
 
-    if (currentIndex < moveOriginalIndex) {
-      const targetChange = changes[currentIndex + 1];
+    if (currentIndex < this.state.moveOriginalIndex) {
+      targetChange = this.state.changes[currentIndex + 1];
       if (!targetChange) return;
-      targetChangeId = targetChange.changeId;
-      relation = "after";
-      result = await pi.exec(
+      result = await this.pi.exec(
         "jj",
         [
           "rebase",
@@ -262,14 +502,12 @@ export function createChangesComponent(
           "--after",
           targetChange.changeId,
         ],
-        { cwd },
+        { cwd: this.cwd },
       );
     } else {
-      const targetChange = changes[currentIndex - 1];
+      targetChange = this.state.changes[currentIndex - 1];
       if (!targetChange) return;
-      targetChangeId = targetChange.changeId;
-      relation = "before";
-      result = await pi.exec(
+      result = await this.pi.exec(
         "jj",
         [
           "rebase",
@@ -278,1199 +516,431 @@ export function createChangesComponent(
           "--before",
           targetChange.changeId,
         ],
-        { cwd },
+        { cwd: this.cwd },
       );
     }
 
-    const msg = `Moved change ${changeToMove.changeId.slice(0, 8)} ${relation} ${targetChangeId.slice(0, 8)}`;
-    notifyMutation(pi, msg, result.stderr || result.stdout);
+    const msg = `Moved change ${changeToMove.changeId.slice(0, 8)} after ${targetChange.changeId.slice(0, 8)}`;
+    notifyMutation(this.pi, msg, result.stderr ?? result.stdout ?? "");
   }
 
-  function switchFocus(): void {
-    selectionState.focus = selectionState.focus === "left" ? "right" : "left";
-    invalidateCache(loadingState);
-    tui.requestRender();
-  }
-
-  function getDescribeTargets(): Change[] {
-    if (selectedChangeIds.size > 0)
-      return changes.filter((change) => selectedChangeIds.has(change.changeId));
-    return selectedChange ? [selectedChange] : [];
-  }
-
-  async function handleDescribe() {
-    const targets = getDescribeTargets();
-    if (targets.length === 0) return;
-
-    done();
-    const ids = targets.map((target) => target.changeId);
-
-    const workflowLines = ids
-      .map((id, index) => {
-        return `${String(index + 1)}. Get git hash: \`jj log -r ${id} -T 'commit_id' --no-graph\`\n   Check semantic changes: \`sem diff --commit <hash-from-step-1>\` (use the hash, NOT parent!)\n   Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "<type>(<scope>): <description>"\``;
-      })
-      .join("\n");
-
-    const task = `Describe jujutsu changes ${ids.join(", ")} using Conventional Commits format.
-
-Use the **conventional-commits** skill for type/scope rules.
-Use the **sem** skill to understand actual code changes vs cosmetic modifications.
-
-<format>
-\`<type>(<scope>): <description>\`
-
-**Scope is required** - always include a scope in parentheses.
-
-Examples:
-- \`feat(auth): add passwordless login\`
-- \`fix(api): handle empty pagination cursor\`
-- \`chore(deps): bump react to 18.3.0\`
-
-Type selection:
-- Users see new behavior → \`feat\`
-- Users see corrected behavior → \`fix\`
-- Otherwise → \`chore\` or more specific type (\`refactor\`, \`build\`, \`ci\`, \`test\`, \`docs\`, \`perf\`, \`style\`)
-
-Scope guidelines:
-- Use a short noun: \`api\`, \`auth\`, \`ui\`, \`db\`, \`cli\`, \`deps\`, \`docs\`, \`agent\`, \`lint\`, \`build\`
-- Use repo/module/package name when working in a monorepo
-- If unsure, use a generic scope like \`core\`, \`general\`, or \`misc\`
-
-Description guidelines:
-- Use imperative mood: "add", "fix", "remove", "update"
-- No ending punctuation
-- Be specific; avoid "changes", "stuff", "update things"
-- Describe actual content, not generic categories. Name what was added/changed, not that "rules" or "principles" were added.
-
-Bad examples (vague, generic):
-- "add behavioral guidelines and core principles"
-- "add agent operating principles"
-- "add behavior rules"
-
-Good examples (specific, concrete):
-- "add rules for dead code removal, build verification, security, debugging, architecture, and tool usage"
-</format>
-
-<sem-guidance>
-- If sem shows all changes are \`~\` (cosmetic) → use \`style:\` or \`format:\`
-- If sem shows \`∆\` (modified) → describe the actual behavior change
-- If sem shows \`+\` or \`-\` → describe additions/removals
-- Large file counts don't always mean large changes — sem reveals the truth
-</sem-guidance>
-
-<workflow>
-${workflowLines}
-</workflow>`;
-    pi.sendUserMessage(task);
-  }
-
-  async function handleEdit(): Promise<void> {
-    if (!selectedChange) return;
-    const editResult = await pi.exec("jj", ["edit", selectedChange.changeId], {
-      cwd,
-    });
-    await refreshAfterMutation();
-    notifyMutation(
-      pi,
-      `Set working copy to change ${selectedChange.changeId.slice(0, 8)}`,
-      editResult.stderr || editResult.stdout,
-    );
-  }
-
-  async function handleSplit(): Promise<void> {
-    if (!selectedChange) return;
-    done();
-    const task = `Split jujutsu change ${selectedChange.changeId} into semantically logical commits.
-
-<workflow>
-1. Get git hash: \`jj log -r ${selectedChange.changeId} -T 'commit_id' --no-graph\`
-2. Check semantic changes: \`sem diff --commit <hash-from-step-1>\` (use the hash, NOT parent!)
-3. List changed files: \`jj diff --name-only -r ${selectedChange.changeId}\`
-4. Identify logical groupings by domain/purpose using sem output
-5. Split iteratively:
-   - First split: \`jj split -r ${selectedChange.changeId} --insert-after ${selectedChange.changeId} "<file-pattern>" -m "type(scope): description"\`
-   - This creates a new child commit with the selected files; note its change ID (shown in output)
-   - Subsequent splits: \`jj split -r ${selectedChange.changeId} --insert-after <new-commit-change-id-from-previous-split> "<file-pattern>" -m "type(scope): description"\`
-   - Each iteration extracts more files from the original change, inserting the new commit after the previous split's result
-   - Continue until all logical groupings are separated
-6. Update remaining change description: \`jj desc -r ${selectedChange.changeId} -m "type(scope): description"\`
-</workflow>
-
-<split-explanation>
-- The original change (${selectedChange.changeId}) remains in place with remaining files
-- Each split extracts selected files into a new commit
-- --insert-after specifies where to place the new commit in the history
-- For iterative splitting, each new commit is inserted after the previous one, creating a chain:
-  \`original --insert-after original -> new1 --insert-after new1 -> new2 --insert-after new2 -> new3...\`
-- Always use the change ID from the most recent split as the --insert-after target for the next split
-- **Important**: Split files sequentially, one at a time, waiting for each split to complete before starting the next. Each split modifies the original commit, so running splits out of order or in parallel can introduce merge conflicts.
-</split-explanation>
-
-<sem-guidance>
-- Use sem to identify actual behavioral changes vs cosmetic modifications
-- Group files by semantic entities (functions, classes, types) that were changed
-- If sem shows all changes are \`~\` (cosmetic), consider keeping as a single style/format commit
-- Split commits by semantic boundaries, not just file boundaries
-- Large file counts don't always mean large changes — sem reveals the truth
-</sem-guidance>
-
-Use the **conventional-commits** skill for commit message format.
-Use the **sem** skill to understand actual code changes vs cosmetic modifications.`;
-    pi.sendUserMessage(task);
-  }
-
-  async function handleSquash(): Promise<void> {
-    if (!selectedChange) return;
-    const prevIndex = selectionState.selectedIndex;
-    const squashResult = await pi.exec(
-      "jj",
-      ["squash", "-u", "-r", selectedChange.changeId],
-      { cwd },
-    );
-    await refreshAfterMutation();
-    await restoreSelection(prevIndex);
-    const parentChangeId = selectedChange.parentIds?.[0]?.slice(0, 8);
-    const msg = parentChangeId
-      ? `Squashed change ${selectedChange.changeId.slice(0, 8)} into change ${parentChangeId}`
-      : `Squashed change ${selectedChange.changeId.slice(0, 8)}`;
-    notifyMutation(pi, msg, squashResult.stderr || squashResult.stdout);
-  }
-
-  async function handleDrop(): Promise<void> {
-    if (!selectedChange) return;
-    const prevIndex = selectionState.selectedIndex;
-    const dropResult = await pi.exec(
-      "jj",
-      ["abandon", selectedChange.changeId],
-      {
-        cwd,
-      },
-    );
-    selectedChangeIds.delete(selectedChange.changeId);
-    await refreshAfterMutation();
-    await restoreSelection(prevIndex);
-    notifyMutation(
-      pi,
-      `Dropped change ${selectedChange.changeId}`,
-      dropResult.stderr || dropResult.stdout,
-    );
-  }
-
-  async function handleNew(): Promise<void> {
-    if (!selectedChange) return;
-    const newResult = await pi.exec("jj", ["new", selectedChange.changeId], {
-      cwd,
-    });
-    await refreshAfterMutation();
-    const msg = currentChangeId
-      ? `Created change ${currentChangeId} from change ${selectedChange.changeId.slice(0, 8)}`
-      : `Started a child change from change ${selectedChange.changeId.slice(0, 8)}`;
-    notifyMutation(pi, msg, newResult.stderr || newResult.stdout);
-  }
-
-  async function handleRevert(): Promise<void> {
-    if (!selectedChange) return;
-    const revertResult = await pi.exec(
-      "jj",
-      ["revert", "-r", selectedChange.changeId, "--insert-after", "@"],
-      { cwd },
-    );
-    await refreshAfterMutation();
-    notifyMutation(
-      pi,
-      `Reverted change ${selectedChange.changeId.slice(0, 8)}`,
-      revertResult.stderr || revertResult.stdout,
-    );
-  }
-
-  async function handleInspectChange(): Promise<void> {
-    if (!selectedChange) return;
-    done();
-    const task = `Review the jujutsu change ${selectedChange.changeId} using entity-level code analysis.
-
-<workflow>
-1. Get git hash: \`jj log -r ${selectedChange.changeId} -T 'commit_id' --no-graph\`
-2. Run inspect diff: \`inspect diff --format markdown <hash-from-step-1>\`
-3. Analyze the entity-level review output (risk scores, changed entities, blast radius)
-4. Address all issues found by inspect
-</workflow>`;
-    pi.sendUserMessage(task);
-  }
-
-  async function refreshAfterMutation() {
-    changeCache.clear();
-    await reloadChanges();
-  }
-
-  async function restoreSelection(prevIndex: number) {
-    if (changes.length > 0) {
-      selectionState.selectedIndex = Math.min(prevIndex, changes.length - 1);
-      selectedChange = changes[selectionState.selectedIndex];
-      await loadFilesAndDiff(selectedChange);
-    } else {
-      selectionState.selectedIndex = 0;
-      selectedChange = null;
-      files = [];
-      diffContent = [];
-    }
-  }
-
-  async function executeAction(action: string): Promise<void> {
-    try {
-      switch (action) {
-        case "describe":
-          await handleDescribe();
-          break;
-        case "edit":
-          await handleEdit();
-          break;
-        case "split":
-          await handleSplit();
-          break;
-        case "squash":
-          await handleSquash();
-          break;
-        case "drop":
-          await handleDrop();
-          break;
-        case "new":
-          await handleNew();
-          break;
-        case "revert":
-          await handleRevert();
-          break;
-        case "inspect":
-          await handleInspectChange();
-          break;
-      }
-    } catch (error) {
-      const msg = formatErrorMessage(error);
-      diffContent = [`Error: ${msg}`];
-      invalidateCache(loadingState);
-      tui.requestRender();
-    }
-  }
-
-  async function reloadBookmarks() {
-    const bookmarkEntries = await listBookmarksByChange(pi, cwd);
-    const nextBookmarksByChange = new Map<string, string[]>();
-    for (const change of changes) {
-      const bookmarks = bookmarkEntries
-        .filter(
-          (entry) =>
-            change.changeId.startsWith(entry.changeId) ||
-            entry.changeId.startsWith(change.changeId),
-        )
-        .map((entry) => entry.bookmark);
-      nextBookmarksByChange.set(change.changeId, bookmarks);
-    }
-    bookmarksByChange = nextBookmarksByChange;
-  }
-
-  async function reloadChanges() {
-    const previousSelectedChangeId = selectedChange?.changeId ?? null;
-    try {
-      await reloadChangesImpl(previousSelectedChangeId);
-    } catch (error) {
-      loadingState.loading = false;
-      const msg = formatErrorMessage(error);
-      diffContent = [`Error: ${msg}`];
-      invalidateCache(loadingState);
-      tui.requestRender();
-    }
-  }
-
-  async function reloadChangesImpl(previousSelectedChangeId: string | null) {
-    const filter = REVISION_FILTERS[currentFilterIndex];
-    changes = await loadChanges(pi, cwd, filter.revision);
-    currentChangeId = await getCurrentChangeIdShort(pi, cwd);
-    await reloadBookmarks();
-
-    const changeIdSet = new Set(changes.map((c) => c.changeId));
-    graphLayout = calculateGraphLayout(
-      changes.map((c) => ({
-        id: c.changeId,
-        parentIds: (c.parentIds ?? []).filter((pid) => changeIdSet.has(pid)),
-        isWorkingCopy:
-          currentChangeId !== null && c.changeId === currentChangeId,
-      })),
-    );
-
-    const existingIds = new Set(changes.map((change) => change.changeId));
-    for (const changeId of selectedChangeIds) {
-      if (!existingIds.has(changeId)) selectedChangeIds.delete(changeId);
-    }
-
-    loadingState.loading = false;
-
-    if (changes.length > 0) {
-      if (selectedChange?.changeId) {
-        await handleSelectedChange();
-      } else {
-        await handleNewSelection(previousSelectedChangeId);
-      }
-    } else {
-      selectionState.selectedIndex = 0;
-      selectedChange = null;
-      files = [];
-      diffContent = [];
-      graphLayout = null;
-    }
-
-    invalidateCache(loadingState);
-    tui.requestRender();
-  }
-
-  async function handleSelectedChange() {
-    const matchedIndex = changes.findIndex(
-      (change) => change.changeId === selectedChange?.changeId,
-    );
-    if (matchedIndex < 0) {
-      selectionState.selectedIndex = 0;
-      selectedChange = changes[0];
-      await loadFilesAndDiff(selectedChange);
-      return;
-    }
-    selectionState.selectedIndex = matchedIndex;
-    selectedChange = changes[matchedIndex];
-    files = await loadChangedFiles(pi, cwd, selectedChange.changeId);
-    const cache = createComponentCache(files);
-    changeCache.set(selectedChange.changeId, cache);
-    selectionState.fileIndex = Math.min(
-      selectionState.fileIndex,
-      files.length - 1,
-    );
-    const file = files[selectionState.fileIndex];
-    if (file) {
-      await loadDiff(selectedChange, file.path, { preserveScroll: true });
-    }
-  }
-
-  async function handleNewSelection(previousSelectedChangeId: string | null) {
-    const preferredChangeId = currentChangeId ?? previousSelectedChangeId;
-    const matchedIndex = preferredChangeId
-      ? changes.findIndex((change) => change.changeId === preferredChangeId)
-      : -1;
-    selectionState.selectedIndex = matchedIndex >= 0 ? matchedIndex : 0;
-    selectedChange = changes[selectionState.selectedIndex];
-    await loadFilesAndDiff(selectedChange);
-  }
-
-  async function loadFilesAndDiff(change: Change): Promise<void> {
-    if (!selectedChange) return;
-
-    try {
-      const cacheResult = getCachedFileCache(selectedChange.changeId);
-      if (cacheResult.hit && cacheResult.files) {
-        files = cacheResult.files;
-        selectionState.fileIndex = 0;
-        await applyCachedDiff(cacheResult.cachedDiff);
-      } else {
-        const newCache = await loadAndCacheFiles(change.changeId);
-        files = newCache.files;
-        selectionState.fileIndex = 0;
-      }
-
-      await loadDiff(change, files[0]?.path);
-    } catch (error) {
-      const msg = formatErrorMessage(error);
-      files = [];
-      diffContent = [`Error loading files: ${msg}`];
-      invalidateCache(loadingState);
-      tui.requestRender();
-    }
-  }
-
-  function applyCachedDiff(cachedDiff?: string[]): void {
-    if (!cachedDiff) return;
-    diffContent = cachedDiff;
-    selectionState.diffScroll = 0;
-    invalidateCache(loadingState);
-    tui.requestRender();
-  }
-
-  function getCachedFileCache(changeId: string): {
-    hit: boolean;
-    files?: FileChange[];
-    cachedDiff?: string[] | undefined;
-  } {
-    const cache = changeCache.get(changeId);
-    if (!cache) return { hit: false };
-    const files = cache.files;
-    const diffKey = files[0]?.path ?? "";
-    return { hit: true, files, cachedDiff: cache.diffs.get(diffKey) };
-  }
-
-  async function loadAndCacheFiles(changeId: string): Promise<{
-    files: FileChange[];
-    cache: ReturnType<typeof createComponentCache>;
-  }> {
-    const loaded = await loadChangedFiles(pi, cwd, changeId);
-    const cache = createComponentCache(loaded);
-    changeCache.set(changeId, cache);
-    return { files: loaded, cache };
-  }
-
-  async function loadDiff(
-    change: Change,
-    filePath?: string,
-    options?: { preserveScroll?: boolean },
-  ): Promise<void> {
-    const diffKey = filePath ?? "";
-
-    const cache = changeCache.get(change.changeId);
-    if (cache) {
-      const cachedDiff = cache.diffs.get(diffKey);
-      if (cachedDiff) {
-        diffContent = cachedDiff;
-        if (!options?.preserveScroll) selectionState.diffScroll = 0;
-        invalidateCache(loadingState);
-        tui.requestRender();
-        return;
-      }
-    }
-
-    try {
-      const { diff } = await getRawDiff(pi, cwd, change.changeId, filePath);
-      const theme = await getTheme(pi, cwd);
-      diffContent = await renderDiffWithShiki(diff, theme);
-      if (!options?.preserveScroll) selectionState.diffScroll = 0;
-
-      if (cache) cache.diffs.set(diffKey, diffContent);
-
-      invalidateCache(loadingState);
-      tui.requestRender();
-    } catch (error) {
-      const msg = formatErrorMessage(error);
-      diffContent = [`Error: ${msg}`];
-      invalidateCache(loadingState);
-      tui.requestRender();
-    }
-  }
-
-  function getChangeRows(width: number, height: number): string[] {
-    if (loadingState.loading) return [renderLoadingRow(width)];
-
-    if (changes.length === 0)
-      return renderEmptyState(
-        width,
-        "No changes on branch",
-        "All changes are immutable",
-      );
-
-    const visibleCount = height;
-    const startIdx = Math.max(
-      0,
-      selectionState.selectedIndex - visibleCount + 1,
-    );
-    const rows: string[] = [];
-
-    for (let i = 0; i < visibleCount && startIdx + i < changes.length; i++) {
-      const idx = startIdx + i;
-      const change = changes[idx];
-      const rowState = getChangeRowState(idx, change);
-      const graphPrefix = renderChangeGraphPrefix(
-        change,
-        idx,
-        rowState.isWorkingCopy,
-      );
-      const { leftText, rightText } = getChangeRowText(change, rowState);
-      const line = assembleChangeRow(
-        graphPrefix,
-        leftText,
-        rightText,
-        width,
-        rowState,
-        change,
-      );
-      rows.push(line);
-    }
-
-    return rows;
-  }
-
-  function getChangeRowState(
-    idx: number,
-    change: { changeId: string; immutable: boolean },
-  ): {
-    isCursor: boolean;
-    isMarked: boolean;
-    isWorkingCopy: boolean;
-    isFocused: boolean;
-  } {
-    const isCursor = idx === selectionState.selectedIndex;
-    const isMarked = selectedChangeIds.has(change.changeId);
-    const isWorkingCopy =
-      currentChangeId !== null && change.changeId === currentChangeId;
-    const isFocused = isCursor && selectionState.focus === "left";
-    return { isCursor, isMarked, isWorkingCopy, isFocused };
-  }
-
-  function renderChangeGraphPrefix(
-    change: { changeId: string; immutable: boolean },
-    idx: number,
-    isWorkingCopy: boolean,
-  ): string {
-    if (!graphLayout) return "";
-    const pos = graphLayout.positions.get(change.changeId);
-    const edges = graphLayout.edges[idx] ?? [];
-    if (!pos) return "";
-    return `${renderGraphRow(
-      edges,
-      pos.x,
-      isWorkingCopy,
-      change.immutable,
-      graphLayout.maxX,
-    )} `;
-  }
-
-  function getChangeRowText(
-    change: {
-      changeId: string;
-      immutable: boolean;
-      description: string;
-      author?: string;
-    },
-    state: { isMarked: boolean; isFocused: boolean; isCursor: boolean },
-  ): { leftText: string; rightText: string } {
-    const bookmarks = bookmarksByChange.get(change.changeId) ?? [];
-    const isMoving = mode === "move" && state.isCursor;
-    return formatChangeRow(theme, {
-      isImmutable: change.immutable,
-      isSelected: state.isMarked,
-      isFocused: state.isFocused,
-      isMoving,
-      bookmarks,
-      description: change.description,
-      author: change.author,
-    });
-  }
-
-  function assembleChangeRow(
-    graphPrefix: string,
-    leftText: string,
-    rightText: string,
-    width: number,
-    state: { isFocused: boolean },
-    change: { immutable: boolean },
-  ): string {
-    const graphWidth = graphPrefix.length;
-    const rightLen = rightText.replace(/\x1b\[[0-9;]*m/g, "").length;
-    const availableLeftWidth = Math.max(1, width - rightLen - graphWidth);
-    const leftTruncated = truncateAnsi(leftText, availableLeftWidth);
-    const leftPadded = ensureWidth(leftTruncated, availableLeftWidth);
-    let styledGraph: string;
-    if (state.isFocused) {
-      styledGraph = theme.fg("accent", graphPrefix);
-    } else if (change.immutable) {
-      styledGraph = theme.fg("dim", graphPrefix);
-    } else {
-      styledGraph = graphPrefix;
-    }
-    let line = styledGraph + leftPadded + rightText;
-    if (state.isFocused) line = theme.bg("selectedBg", line);
-    return line;
-  }
-
-  function getFileRows(width: number, height: number): string[] {
-    return renderFileChangeRows(
-      files,
-      width,
-      height,
-      selectionState.fileIndex,
-      selectionState.focus === "right",
-      theme,
-    );
-  }
-
-  function render(width: number): string[] {
-    if (
-      loadingState.cachedWidth === width &&
-      loadingState.cachedLines.length > 0
-    )
-      return loadingState.cachedLines;
-
-    const dims = calculateDimensions(tui.terminal.rows, width, {
-      leftTitle: "",
-      rightTitle: "",
-      helpText: "",
-      leftFocus: selectionState.focus === "left",
-      rightFocus: selectionState.focus === "right",
-      leftRatio: 0.28,
-      rightSplit: true,
-      rightTopRatio: 0.3,
-    });
-
-    const filter = REVISION_FILTERS[currentFilterIndex];
-    const leftTitle = ` ${filter.name} (${String(changes.length)})`;
-    const rightTopTitle = selectedChange
-      ? ` ${theme.fg("dim", selectedChange.changeId.slice(0, 8))} ${selectedChange.description || "(no description)"}`
-      : " Files";
-    const rightBottomTitle = selectedChange
-      ? ` Diff: ${files[selectionState.fileIndex]?.path ?? "all"} (${selectedChange.changeId.slice(0, 8)})`
-      : " Diff";
-
-    const changeRows = getChangeRows(dims.leftW, dims.contentH);
-    const fileRows = getFileRows(dims.rightW, dims.rightTopH ?? 5);
-    const diffRows = renderDiffRows(
-      diffContent,
-      dims.rightW,
-      dims.rightBottomH ?? 10,
-      selectionState.diffScroll,
-      theme,
-    );
-
-    const helpText = formatHelpWithStatus(
-      theme,
-      statusState.message,
-      getHelpText(),
-    );
-
-    // Capture list heights for page scrolling
-    leftListHeight = dims.rightTopH ?? dims.contentH;
-    rightListHeight = dims.contentH;
-
-    loadingState.cachedLines = renderSplitPanel(
-      theme,
-      {
-        leftTitle,
-        rightTitle: rightTopTitle,
-        rightTopTitle,
-        rightBottomTitle,
-        helpText,
-        leftFocus: selectionState.focus === "left",
-        rightFocus: selectionState.focus === "right",
-        rightSplit: true,
-      },
-      dims,
-      {
-        left: changeRows,
-        rightTop: fileRows,
-        rightBottom: diffRows,
-      },
-    );
-
-    loadingState.cachedWidth = width;
-    return loadingState.cachedLines;
-  }
-
-  const isLeftFocus = () => selectionState.focus === "left";
-  const hasSelectedChange = () => selectedChange !== null;
-  const hasSelectedFile = () => files[selectionState.fileIndex] !== undefined;
-  const canSquash = () =>
-    hasSelectedChange() &&
-    changes.length > 1 &&
-    selectionState.selectedIndex < changes.length - 1;
-  const canMove = () =>
-    hasSelectedChange() &&
-    changes.length > 1 &&
-    currentChangeId !== selectedChange?.changeId;
-  const hasBookmarks = () =>
-    selectedChange !== null &&
-    (bookmarksByChange.get(selectedChange.changeId)?.length ?? 0) > 0;
-
-  const cycleFilter = (direction: 1 | -1) => {
-    currentFilterIndex =
-      (currentFilterIndex + direction + REVISION_FILTERS.length) %
+  private cycleFilter(direction: 1 | -1): void {
+    this.state.currentFilterIndex =
+      (this.state.currentFilterIndex + direction + REVISION_FILTERS.length) %
       REVISION_FILTERS.length;
-    selectionState.selectedIndex = 0;
-    selectionState.fileIndex = 0;
-    selectionState.diffScroll = 0;
-    changeCache.clear();
-    void reloadChanges();
-  };
-
-  async function discardFile(): Promise<void> {
-    if (!selectedChange || !files[selectionState.fileIndex]) return;
-    const file = files[selectionState.fileIndex];
-    try {
-      const restoreOutput = await restoreFile(
-        pi,
-        cwd,
-        selectedChange.changeId,
-        file.path,
-      );
-      changeCache.delete(selectedChange.changeId);
-      await loadFilesAndDiff(selectedChange);
-      const msg = `Restored file ${file.path} in change ${selectedChange.changeId.slice(0, 8)}`;
-      notifyMutation(pi, msg, restoreOutput);
-    } catch (error) {
-      notify(`Failed to discard file: ${formatErrorMessage(error)}`, "error");
-    }
+    this.state.selectionState.selectedIndex = 0;
+    this.state.selectionState.fileIndex = 0;
+    this.state.selectionState.diffScroll = 0;
+    this.state.changeCache.clear();
+    void this.reloadChanges();
   }
 
-  async function splitFile(): Promise<void> {
-    if (!selectedChange || !files[selectionState.fileIndex]) return;
-    const file = files[selectionState.fileIndex];
-    try {
-      const msg = `Moved ${file.path} from change ${selectedChange.changeId.slice(0, 8)} to a new change`;
-      const splitResult = await pi.exec(
-        "jj",
-        [
-          "split",
-          "-m",
-          msg,
-          "-r",
-          selectedChange.changeId,
-          "--insert-after",
-          selectedChange.changeId,
-          file.path,
-        ],
-        { cwd },
-      );
-      const prevChangeId = selectedChange.changeId;
-      const prevFileIndex = selectionState.fileIndex;
-      const prevFileCount = files.length;
-      changeCache.clear();
-      await reloadChanges();
-      const restoredIndex = changes.findIndex(
-        (c) => c.changeId === prevChangeId,
-      );
-      if (restoredIndex < 0) return;
-      selectionState.selectedIndex = restoredIndex;
-      selectedChange = changes[restoredIndex];
-      const newFileIndex = computeNewFileIndex(prevFileIndex, prevFileCount);
-      selectionState.fileIndex = newFileIndex;
-      selectionState.diffScroll = 0;
-      await loadFilesAndDiff(selectedChange);
-      invalidateCache(loadingState);
-      tui.requestRender();
-      notifyMutation(pi, msg, splitResult.stderr || splitResult.stdout);
-    } catch (error) {
-      notify(`Failed to split file: ${formatErrorMessage(error)}`, "error");
-    }
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  render(width: number): string[] {
+    this.helpText = this.buildHelpText();
+    return this.renderer.render(width, this.helpText);
   }
 
-  async function pushBookmarks(): Promise<void> {
-    if (!selectedChange) return;
-    const bookmarks = bookmarksByChange.get(selectedChange.changeId) ?? [];
-    if (bookmarks.length === 0) return;
-
-    try {
-      const pushOutputs = await pushBookmarkList(bookmarks);
-      await reloadChanges();
-      invalidateCache(loadingState);
-      tui.requestRender();
-      const msg = `Pushed bookmark${bookmarks.length > 1 ? "s" : ""}: ${bookmarks.join(", ")}`;
-      notifyMutation(pi, msg, pushOutputs.join("\n"));
-    } catch (error) {
-      notify(`Failed to push: ${formatErrorMessage(error)}`, "error");
-    }
-  }
-
-  async function pushBookmarkList(bookmarks: string[]): Promise<string[]> {
-    const outputs: string[] = [];
-    for (const bookmark of bookmarks) {
-      const r = await pi.exec("jj", ["git", "push", "-b", bookmark], { cwd });
-      outputs.push(r.stderr || r.stdout);
-    }
-    return outputs;
-  }
-
-  async function setBookmark(): Promise<void> {
-    if (!selectedChange || !onBookmark) return;
-    try {
-      const bookmarkName = await onBookmark(selectedChange.changeId);
-      if (!bookmarkName) return;
-      await reloadBookmarks();
-      invalidateCache(loadingState);
-      tui.requestRender();
-      const msg = `Updated bookmark '${bookmarkName}' to ${selectedChange.changeId}`;
-      notifyMutation(
-        pi,
-        msg,
-        `Set bookmark '${bookmarkName}' to ${selectedChange.changeId.slice(0, 8)}`,
-      );
-    } catch (error) {
-      notify(
-        `Failed to update bookmark: ${formatErrorMessage(error)}`,
-        "error",
-      );
-    }
-  }
-
-  function computeNewFileIndex(
-    prevFileIndex: number,
-    prevFileCount: number,
-  ): number {
-    if (prevFileIndex >= prevFileCount - 1) {
-      return Math.max(0, prevFileCount - 2);
-    }
-    if (prevFileIndex > 0) {
-      return prevFileIndex - 1;
-    }
-    return prevFileIndex;
-  }
-
-  const moveModeBindings: KeyBinding[] = [
-    {
-      key: "up",
-      label: "move",
-      handler() {
-        moveChange("up");
-      },
-    },
-    {
-      key: "down",
-      handler() {
-        moveChange("down");
-      },
-    },
-    {
-      key: "enter",
-      label: "apply",
-      handler() {
-        void applyMoveMode();
-      },
-    },
-    {
-      key: "escape",
-      label: "cancel",
-      handler() {
-        cancelMoveMode();
-      },
-    },
-  ];
-
-  const leftPaneBindings: KeyBinding[] = [
-    {
-      key: "up",
-      label: "nav",
-      handler() {
-        navigateChanges("up");
-      },
-    },
-    {
-      key: "down",
-      handler() {
-        navigateChanges("down");
-      },
-    },
-    {
-      key: "pageUp",
-      label: "scroll",
-      handler() {
-        navigateChanges("pageUp");
-      },
-    },
-    {
-      key: "pageDown",
-      handler() {
-        navigateChanges("pageDown");
-      },
-    },
-    {
-      key: Key.ctrl("/"),
-      label: "filter",
-      handler() {
-        cycleFilter(1);
-      },
-    },
-    {
-      key: "space",
-      label: "select",
-      when: hasSelectedChange,
-      handler() {
-        if (!selectedChange) return;
-        const id = selectedChange.changeId;
-        selectedChangeIds.has(id)
-          ? selectedChangeIds.delete(id)
-          : selectedChangeIds.add(id);
-        invalidateCache(loadingState);
-        tui.requestRender();
-      },
-    },
-    {
-      key: "n",
-      label: "new",
-      when: hasSelectedChange,
-      handler() {
-        void executeAction("new");
-      },
-    },
-    {
-      key: "e",
-      label: "edit",
-      when: hasSelectedChange,
-      handler() {
-        void executeAction("edit");
-      },
-    },
-    {
-      key: "r",
-      label: "revert",
-      when: hasSelectedChange,
-      handler() {
-        void executeAction("revert");
-      },
-    },
-    {
-      key: "d",
-      label: "describe",
-      when: () => hasSelectedChange() || selectedChangeIds.size > 0,
-      handler() {
-        void executeAction("describe");
-      },
-    },
-    {
-      key: "s",
-      label: "split",
-      when: hasSelectedChange,
-      handler() {
-        void executeAction("split");
-      },
-    },
-    {
-      key: "f",
-      label: "fixup",
-      when: canSquash,
-      handler() {
-        void executeAction("squash");
-      },
-    },
-    {
-      key: Key.ctrl("m"),
-      label: "move",
-      when: canMove,
-      handler() {
-        enterMoveMode();
-      },
-    },
-    {
-      key: Key.ctrl("i"),
-      label: "insert",
-      when: () => hasSelectedChange() && onInsert !== undefined,
-      handler() {
-        if (selectedChange && onInsert) onInsert(selectedChange.changeId);
-        done();
-      },
-    },
-    {
-      key: "b",
-      label: "bookmark",
-      when: () => hasSelectedChange() && onBookmark !== undefined,
-      handler() {
-        void setBookmark();
-      },
-    },
-    {
-      key: "i",
-      label: "inspect",
-      when: hasSelectedChange,
-      handler() {
-        void executeAction("inspect");
-      },
-    },
-    {
-      key: Key.ctrl("p"),
-      label: "push",
-      when: hasBookmarks,
-      handler() {
-        void pushBookmarks();
-      },
-    },
-    {
-      key: ACTION_KEYS.delete,
-      label: "drop",
-      when: hasSelectedChange,
-      handler() {
-        void executeAction("drop");
-      },
-    },
-  ];
-
-  const rightPaneBindings: KeyBinding[] = [
-    {
-      key: "up",
-      label: "nav",
-      handler() {
-        navigateFiles("up");
-      },
-    },
-    {
-      key: "down",
-      handler() {
-        navigateFiles("down");
-      },
-    },
-    {
-      key: "pageUp",
-      label: "scroll",
-      handler() {
-        navigateFiles("pageUp");
-      },
-    },
-    {
-      key: "pageDown",
-      handler() {
-        navigateFiles("pageDown");
-      },
-    },
-    {
-      key: "e",
-      label: "edit",
-      when: hasSelectedFile,
-      handler() {
-        const file = files[selectionState.fileIndex];
-        void pi.exec("editor", [path.join(cwd, file.path)]);
-      },
-    },
-    {
-      key: "s",
-      label: "split",
-      when: () => hasSelectedChange() && hasSelectedFile(),
-      handler() {
-        void splitFile();
-      },
-    },
-    {
-      key: "d",
-      label: "discard",
-      when: () => hasSelectedChange() && hasSelectedFile(),
-      handler() {
-        void discardFile();
-      },
-    },
-    {
-      key: Key.ctrl("t"),
-      label: "inspect",
-      when: () => onFileCmAction !== undefined && hasSelectedFile(),
-      handler() {
-        const path = files[selectionState.fileIndex]?.path;
-        if (path && onFileCmAction) {
-          onFileCmAction(path, "inspect");
-        }
-      },
-    },
-    {
-      key: Key.ctrl("d"),
-      label: "deps",
-      when: () => onFileCmAction !== undefined && hasSelectedFile(),
-      handler() {
-        const path = files[selectionState.fileIndex]?.path;
-        if (path && onFileCmAction) {
-          onFileCmAction(path, "deps");
-        }
-      },
-    },
-    {
-      key: Key.ctrl("u"),
-      label: "used-by",
-      when: () => onFileCmAction !== undefined && hasSelectedFile(),
-      handler() {
-        const path = files[selectionState.fileIndex]?.path;
-        if (path && onFileCmAction) {
-          onFileCmAction(path, "used-by");
-        }
-      },
-    },
-    {
-      key: Key.ctrl("i"),
-      label: "insert",
-      when: () => hasSelectedFile() && onInsert !== undefined,
-      handler() {
-        const path = files[selectionState.fileIndex]?.path;
-        if (path && onInsert) onInsert(path);
-        done();
-      },
-    },
-    {
-      key: "shift+pageUp",
-      label: "scroll",
-      handler() {
-        scrollDiff("up");
-      },
-    },
-    {
-      key: "shift+pageDown",
-      handler() {
-        scrollDiff("down");
-      },
-    },
-  ];
-
-  const globalBindings: KeyBinding[] = [
-    {
-      key: "tab",
-      label: "pane",
-      handler() {
-        switchFocus();
-      },
-    },
-    {
-      key: "escape",
-      handler() {
-        done();
-      },
-    },
-    {
-      key: "q",
-      handler() {
-        done();
-      },
-    },
-  ];
-
-  function getHelpText(): string {
-    const bindings = getBindingsForModeOrPane();
+  private buildHelpText(): string {
+    const bindings = this.getBindingsForModeOrPane();
     const activeBindings = filterActiveBindings(bindings);
     return buildHelpFromBindings(activeBindings);
   }
 
-  function getBindingsForModeOrPane(): KeyBinding[] {
-    if (mode === "move") return moveModeBindings;
-    if (selectionState.focus === "left")
-      return [...globalBindings, ...leftPaneBindings];
-    return [...globalBindings, ...rightPaneBindings];
+  // ── Keyboard input ────────────────────────────────────────────────────────
+
+  private navigateMove(direction: "up" | "down"): void {
+    try {
+      this.navigation.moveChange(direction);
+      const change =
+        this.state.changes[this.state.selectionState.selectedIndex];
+      if (change) {
+        this.state.selectedChange = change;
+        const result = this.navigation.onChangeSelected(change.changeId);
+        if (result instanceof Promise) {
+          void result.catch(() => {});
+        }
+      }
+    } catch {
+      // Ignore errors — state is still valid, just skip async file loading.
+    }
+    this.tui.requestRender();
   }
 
-  const moveModeHandler = createKeyboardHandler({ bindings: moveModeBindings });
-  const leftPaneHandler = createKeyboardHandler({
-    bindings: [...globalBindings, ...leftPaneBindings] as KeyBinding[],
-  });
-  const rightPaneHandler = createKeyboardHandler({
-    bindings: [...globalBindings, ...rightPaneBindings] as KeyBinding[],
-  });
+  private getMoveModeBindings(): KeyBinding[] {
+    return [
+      {
+        key: "up",
+        label: "move",
+        handler: () => this.navigateMove("up"),
+      },
+      {
+        key: "down",
+        handler: () => this.navigateMove("down"),
+      },
+      {
+        key: "enter",
+        label: "apply",
+        handler: () => {
+          void this.applyMoveMode();
+        },
+      },
+      {
+        key: "escape",
+        label: "cancel",
+        handler: () => {
+          this.navigation.cancelMoveMode();
+          this.state.loadingState.cachedLines = [];
+          this.tui.requestRender();
+        },
+      },
+    ];
+  }
 
-  function handleInput(data: string): void {
-    if (mode === "move") {
-      moveModeHandler(data);
+  private getLeftPaneBindings(): KeyBinding[] {
+    return [
+      {
+        key: "up",
+        handler: () => {
+          this.navigation.navigateChanges("up");
+        },
+      },
+      {
+        key: "down",
+        handler: () => {
+          this.navigation.navigateChanges("down");
+        },
+      },
+      {
+        key: "pageUp",
+        label: "scroll",
+        handler: () => {
+          this.navigation.navigateChanges("pageUp");
+        },
+      },
+      {
+        key: "pageDown",
+        handler: () => {
+          this.navigation.navigateChanges("pageDown");
+        },
+      },
+      {
+        key: Key.ctrl("/"),
+        label: "filter",
+        handler: () => {
+          this.cycleFilter(1);
+          this.state.loadingState.cachedLines = [];
+          this.tui.requestRender();
+        },
+      },
+      {
+        key: "space",
+        label: "select",
+        when: () => !!this.state.selectedChange,
+        handler: () => {
+          if (this.state.selectedChange) this.navigation.toggleSelection();
+          this.state.loadingState.cachedLines = [];
+          this.tui.requestRender();
+        },
+      },
+      {
+        key: "n",
+        label: "new",
+        when: () => !!this.state.selectedChange,
+        handler: () => {
+          void this.actions.handleNew();
+        },
+      },
+      {
+        key: "e",
+        label: "edit",
+        when: () => !!this.state.selectedChange,
+        handler: () => {
+          void this.actions.handleEdit();
+        },
+      },
+      {
+        key: "r",
+        label: "revert",
+        when: () => !!this.state.selectedChange,
+        handler: () => {
+          void this.actions.handleRevert();
+        },
+      },
+      {
+        key: "d",
+        label: "describe",
+        when: () =>
+          !!this.state.selectedChange || this.state.selectedChangeIds.size > 0,
+        handler: () => {
+          void this.actions.handleDescribe();
+        },
+      },
+      {
+        key: "s",
+        label: "split",
+        when: () => !!this.state.selectedChange,
+        handler: () => {
+          void this.actions.handleSplit();
+        },
+      },
+      {
+        key: "f",
+        label: "fixup",
+        when: () =>
+          !!this.state.selectedChange &&
+          this.state.changes.length > 1 &&
+          this.state.selectionState.selectedIndex <
+            this.state.changes.length - 1,
+        handler: () => {
+          void this.actions.handleSquash();
+        },
+      },
+      {
+        key: Key.ctrl("m"),
+        label: "move",
+        when: () =>
+          !!this.state.selectedChange &&
+          this.state.changes.length > 1 &&
+          this.state.currentChangeId !== this.state.selectedChange?.changeId,
+        handler: () => {
+          this.navigation.enterMoveMode();
+          this.state.loadingState.cachedLines = [];
+          this.tui.requestRender();
+        },
+      },
+      {
+        key: Key.ctrl("i"),
+        label: "insert",
+        when: () => !!this.state.selectedChange && this.onInsert !== undefined,
+        handler: () => {
+          if (this.state.selectedChange && this.onInsert)
+            this.onInsert(this.state.selectedChange.changeId);
+          this.finish();
+        },
+      },
+      {
+        key: "b",
+        label: "bookmark",
+        when: () =>
+          !!this.state.selectedChange && this.onBookmark !== undefined,
+        handler: () => {
+          void this.setBookmark();
+        },
+      },
+      {
+        key: "i",
+        label: "inspect",
+        when: () => !!this.state.selectedChange,
+        handler: () => {
+          void this.actions.handleInspectChange();
+        },
+      },
+      {
+        key: Key.ctrl("p"),
+        label: "push",
+        when: () =>
+          !!this.state.selectedChange &&
+          this.state.bookmarksByChange.get(this.state.selectedChange.changeId)
+            ?.length !== undefined,
+        handler: () => {
+          void this.pushBookmarks();
+        },
+      },
+      {
+        key: ACTION_KEYS.delete,
+        label: "drop",
+        when: () => !!this.state.selectedChange,
+        handler: () => {
+          void this.actions.handleDrop();
+        },
+      },
+    ];
+  }
+
+  private getRightPaneBindings(): KeyBinding[] {
+    return [
+      {
+        key: "up",
+        handler: () => {
+          this.navigation.navigateFiles("up");
+        },
+      },
+      {
+        key: "down",
+        handler: () => {
+          this.navigation.navigateFiles("down");
+        },
+      },
+      {
+        key: "pageUp",
+        label: "scroll",
+        handler: () => {
+          this.navigation.navigateFiles("pageUp");
+        },
+      },
+      {
+        key: "pageDown",
+        label: "scroll",
+        handler: () => {
+          this.navigation.navigateFiles("pageDown");
+        },
+      },
+      {
+        key: "e",
+        label: "edit",
+        when: () =>
+          this.state.files[this.state.selectionState.fileIndex] !== undefined,
+        handler: () => {
+          const file = this.state.files[this.state.selectionState.fileIndex];
+          if (file)
+            void this.pi.exec("editor", [path.join(this.cwd, file.path)]);
+        },
+      },
+      {
+        key: "s",
+        label: "split",
+        when: () =>
+          !!this.state.selectedChange &&
+          this.state.files[this.state.selectionState.fileIndex] !== undefined,
+        handler: () => {
+          void this.splitFile();
+        },
+      },
+      {
+        key: "d",
+        label: "discard",
+        when: () =>
+          !!this.state.selectedChange &&
+          this.state.files[this.state.selectionState.fileIndex] !== undefined,
+        handler: () => {
+          void this.discardFile();
+        },
+      },
+      ...this.getFileActionBindings(),
+      {
+        key: Key.ctrl("i"),
+        label: "insert",
+        when: () => !!this.state.selectedChange && this.state.files.length > 0,
+        handler: () => {
+          const file = this.state.files[this.state.selectionState.fileIndex];
+          if (!file || !this.onInsert) return;
+          this.onInsert(file.path);
+          this.finish();
+        },
+      },
+      {
+        key: "shift+pageUp",
+        label: "scroll",
+        handler: () => {
+          this.navigation.scrollDiff("up");
+          this.state.loadingState.cachedLines = [];
+          this.tui.requestRender();
+        },
+      },
+      {
+        key: "shift+pageDown",
+        handler: () => {
+          this.navigation.scrollDiff("down");
+          this.state.loadingState.cachedLines = [];
+          this.tui.requestRender();
+        },
+      },
+    ];
+  }
+
+  private getFileActionBindings(): KeyBinding[] {
+    const makeBinding = (
+      ctrlKey: "t" | "d" | "u",
+      label: string,
+      action: "inspect" | "deps" | "used-by",
+    ): KeyBinding => ({
+      key: Key.ctrl(ctrlKey),
+      label,
+      when: () => !!this.state.selectedChange && this.state.files.length > 0,
+      handler: () => {
+        const file = this.state.files[this.state.selectionState.fileIndex];
+        if (!file || !this.onFileCmAction) return;
+        this.onFileCmAction(file.path, action);
+      },
+    });
+    return [
+      makeBinding("t", "inspect", "inspect"),
+      makeBinding("d", "deps", "deps"),
+      makeBinding("u", "used-by", "used-by"),
+    ];
+  }
+
+  private getGlobalBindings(): KeyBinding[] {
+    return [
+      {
+        key: "tab",
+        label: "pane",
+        handler: () => {
+          this.navigation.switchFocus();
+          this.state.loadingState.cachedLines = [];
+          this.tui.requestRender();
+        },
+      },
+      {
+        key: "escape",
+        handler: () => {
+          this.finish();
+        },
+      },
+      {
+        key: "q",
+        handler: () => {
+          this.finish();
+        },
+      },
+    ];
+  }
+
+  private getBindingsForModeOrPane(): KeyBinding[] {
+    if (this.state.mode === "move") return this.getMoveModeBindings();
+    if (this.state.selectionState.focus === "left")
+      return [...this.getGlobalBindings(), ...this.getLeftPaneBindings()];
+    return [...this.getGlobalBindings(), ...this.getRightPaneBindings()];
+  }
+
+  handleInput(data: string): void {
+    if (this.state.mode === "move") {
+      this.moveHandler(data);
       return;
     }
-
-    const handler = isLeftFocus() ? leftPaneHandler : rightPaneHandler;
+    const handler =
+      this.state.selectionState.focus === "left"
+        ? this.leftHandler
+        : this.rightHandler;
     handler(data);
   }
 
-  function startAutoRefresh(): void {
-    refreshInterval = setInterval(() => {
-      if (mode === "normal") {
-        invalidateCache(loadingState);
-        void reloadChanges();
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
+
+  private startAutoRefresh(): void {
+    this.refreshInterval = setInterval(() => {
+      if (this.state.mode === "normal") {
+        this.state.loadingState.cachedLines = [];
+        void this.reloadChanges();
       }
     }, REFRESH_INTERVAL_MS);
   }
 
-  function stopAutoRefresh(): void {
-    if (refreshInterval) {
-      clearInterval(refreshInterval);
-      refreshInterval = null;
+  private stopAutoRefresh(): void {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
     }
   }
 
-  function dispose(): void {
-    stopAutoRefresh();
+  private dispose(): void {
+    this.stopAutoRefresh();
   }
 
-  void reloadChanges();
-  startAutoRefresh();
-
-  return {
-    render,
-    handleInput,
-    invalidate() {
-      invalidateCache(loadingState);
-    },
-    dispose,
-  };
+  invalidate(): void {
+    this.state.loadingState.cachedLines = [];
+    this.state.loadingState.cachedWidth = 0;
+  }
 }

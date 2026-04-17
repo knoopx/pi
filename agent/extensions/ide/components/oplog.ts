@@ -9,7 +9,7 @@ import {
   type ListPickerComponent,
   type ListPickerAction,
 } from "./list-picker";
-import { getChangeIcon } from "./change-utils";
+import { getChangeIcon } from "./changes/formatting";
 
 import {
   loadOpLog,

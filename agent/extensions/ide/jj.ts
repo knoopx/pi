@@ -144,7 +144,7 @@ export async function loadChangedFiles(
   if (result.code !== 0) return [];
 
   return parseStdoutLines(result.stdout, (line) => {
-    const match = /^([AMD])\s+(.+)\s+(\d+)\s+(\d+)$/.exec(line);
+    const match = /^([AMDRE?])\s+(.+)\s+(\d+)\s+(\d+)$/.exec(line);
     if (match) {
       return {
         status: match[1],
