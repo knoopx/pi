@@ -149,6 +149,7 @@ describe("Nix Extension", () => {
           (..._args) =>
             ({
               ok: false,
+              status: 500,
               preconnect: vi.fn(),
             }) as unknown,
         );
@@ -163,7 +164,7 @@ describe("Nix Extension", () => {
         );
 
         expect((result.content[0] as TextContent).text).toMatch(
-          /^Error: Search request failed/,
+          /^Error: HTTP \d+ from Nix search API$/,
         );
       });
     });
