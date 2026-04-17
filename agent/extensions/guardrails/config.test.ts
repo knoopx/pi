@@ -18,6 +18,9 @@ vi.mock("node:fs/promises", () => ({
 const { configLoader, loadGuardrailsSettings, saveGuardrailsSettings } =
   await import("./config");
 
+const mockReadFile = readFile as unknown as Mock;
+const mockWriteFile = writeFile as unknown as Mock;
+
 // Shared test fixtures
 const defaultConfig = [
   {
@@ -59,9 +62,6 @@ async function expectOnlyGood(cfg: unknown, expectedLength = 1): Promise<void> {
 }
 
 describe("guardrails configLoader", () => {
-  const mockReadFile = readFile as unknown as Mock;
-  const mockWriteFile = writeFile as unknown as Mock;
-
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => vi.resetAllMocks());
 

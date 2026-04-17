@@ -70,14 +70,15 @@ function get<T extends object>(obj: T, path: string): unknown {
 
 /** Test HTTP and network error handling for a registered tool. */
 function testErrorHandling(
-  tool: MockTool,
+  getTool: () => MockTool,
   params: Record<string, string>,
   okMsg: string,
   failMsgPrefix: string,
+  netFailMsgPrefix: string,
 ): void {
   it("then it should return error message", async () => {
     const result = await runWithFetch(
-      tool,
+      getTool(),
       params,
       undefined,
       500,
@@ -89,12 +90,10 @@ function testErrorHandling(
   });
 
   it("then it should return error on network failure", async () => {
-    const mockFetch = vi
-      .fn()
-      .mockRejectedValue(new Error("Network error"))
-      as unknown as typeof globalThis.fetch;
+    const mockFetchFn = vi.fn().mockRejectedValue(new Error("Network error"));
+    const mockFetch = mockFetchFn as unknown as typeof globalThis.fetch;
     globalThis.fetch = mockFetch;
-    const result = await tool.execute(
+    const result = await getTool().execute(
       "tool1",
       params,
       undefined,
@@ -102,7 +101,7 @@ function testErrorHandling(
       undefined,
     );
     expect((result.content[0] as TextContent).text).toBe(
-      `${failMsgPrefix} Network error`,
+      `${netFailMsgPrefix} Network error`,
     );
   });
 }
@@ -252,9 +251,10 @@ describe("NPM Extension", () => {
 
     describe("given the fetch function throws an error", () => {
       testErrorHandling(
-        registeredTool,
+        () => registeredTool,
         { query: "test" },
         "No packages found.",
+        "Failed to search packages:",
         "Error searching packages:",
       );
     });
@@ -373,9 +373,10 @@ describe("NPM Extension", () => {
 
     describe("given the fetch function throws an error", () => {
       testErrorHandling(
-        registeredTool,
+        () => registeredTool,
         { package: "lodash" },
         `No packages found.`,
+        `Failed to ${action}:`,
         `Error ${action}:`,
       );
     });

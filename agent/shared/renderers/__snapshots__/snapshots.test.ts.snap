@@ -9,9 +9,9 @@ description │ Fast web framework"
 
 exports[`renderer snapshots > detail > renders multi-line values 1`] = `
 "  tags │ web
-       │     http
-       │     server
-       │     framework
+       │ http
+       │ server
+       │ framework
 author │ TJ Holowaychuk"
 `;
 
