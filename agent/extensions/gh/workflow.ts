@@ -4,7 +4,8 @@ import type {
   AgentToolResult,
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
-import { dotJoin, table, stateDot, type Column } from "../../shared/renderers";
+import { dotJoin, stateDot, table, type Column } from "../../shared/renderers";
+
 import { ghCmd } from "./utils";
 import { createListRenderCall, createTextResultRender } from "./shared";
 
@@ -185,7 +186,7 @@ async function executeListWorkflows(
     { key: "id", align: "right", minWidth: 8 },
     {
       key: "info",
-      format(_v, row) {
+      format(_v: unknown, row: Record<string, unknown>) {
         const r = row as Record<string, string>;
         const dot = r.state === "active" ? stateDot("on") : stateDot("off");
         return [`${dot} ${r.name}`, r.path].join("\n");
@@ -265,7 +266,7 @@ async function executeListRuns(
     { key: "status", minWidth: 3 },
     {
       key: "info",
-      format(_v, row) {
+      format(_v: unknown, row: Record<string, unknown>) {
         const r = row as Record<string, string>;
         return [r.title, `${r.workflow} · ${r.branch} · ${r.date}`].join("\n");
       },

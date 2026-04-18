@@ -26,7 +26,7 @@ import { Type, type Static, type TSchema } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
 import { dangerousOperationConfirmation } from "../../shared/tool-utils";
 import { renderTextToolResult } from "../../shared/render-utils";
-import { table, detail, type Column } from "../../shared/renderers";
+import { detail, table, type Column } from "../../shared/renderers";
 
 /**
  * Common params for GitHub list tools

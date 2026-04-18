@@ -6,7 +6,9 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
-import { dotJoin, table, type Column } from "../../shared/renderers";
+import { dotJoin, table } from "../../shared/renderers";
+import type { Column } from "../../shared/renderers";
+
 import { ghCmd, ghCmdJson } from "./utils";
 import { createErrorResult, createTextResultRender } from "./shared";
 

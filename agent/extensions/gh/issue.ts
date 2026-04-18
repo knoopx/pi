@@ -1,6 +1,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
-import { type Column } from "../../shared/renderers";
+import type { Column } from "../../shared/renderers";
+
 import { ghCmd, ghCmdJson } from "./utils";
 import {
   createListParamsSchema,
@@ -141,7 +142,7 @@ function createIssueColumns(): Column[] {
     { key: "#", align: "right", minWidth: 5 },
     {
       key: "title",
-      format(_v, row) {
+      format(_v: unknown, row: Record<string, unknown>) {
         const r = row as Record<string, string>;
         const dot = r.state === "OPEN" ? "●" : "○";
         const lines = [`${dot} ${r.title}`];
