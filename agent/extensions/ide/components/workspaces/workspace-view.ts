@@ -93,6 +93,7 @@ export class WorkspaceView implements Component {
           graphLayout: null,
           loadingState: { loading: this.props.loading },
           focus: this.props.focus,
+          height: dims.rightTopH ?? 5,
           theme: this.theme,
         })
       : new FileListPane({

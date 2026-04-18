@@ -22,6 +22,7 @@ export interface ChangeListPaneProps {
   filterName?: string;
   mode?: "normal" | "move";
   moveOriginalIndex?: number;
+  height: number;
   theme: Theme;
 }
 
@@ -40,16 +41,26 @@ export class ChangeListPane extends CachedPane implements Component {
       return [ensureWidth(this.props.theme.fg("dim", " No changes"), width)];
     }
 
+    const height = this.props.height;
+    let startIdx = 0;
+    if (this.props.selectedIndex >= height)
+      startIdx = this.props.selectedIndex - height + 1;
+
     const rows: string[] = [];
 
-    for (let i = 0; i < this.props.changes.length; i++) {
-      const change = this.props.changes[i];
-      const isCursor = i === this.props.selectedIndex;
+    for (
+      let i = 0;
+      i < height && startIdx + i < this.props.changes.length;
+      i++
+    ) {
+      const idx = startIdx + i;
+      const change = this.props.changes[idx];
+      const isCursor = idx === this.props.selectedIndex;
       const isMarked = this.props.selectedChangeIds.has(change.changeId);
       const isFocused = isCursor && this.props.focus === "left";
       const isWorkingCopy = this.props.currentChangeId === change.changeId;
       const isMoving =
-        this.props.mode === "move" && i === this.props.selectedIndex;
+        this.props.mode === "move" && idx === this.props.selectedIndex;
 
       const flags: ChangeRowFlags = {
         isCursor,
@@ -61,7 +72,7 @@ export class ChangeListPane extends CachedPane implements Component {
       const bookmarks = this.props.bookmarksByChange.get(change.changeId) ?? [];
       const row = new ChangeRow({
         change,
-        idx: i,
+        idx,
         flags,
         bookmarks,
         theme: this.props.theme,

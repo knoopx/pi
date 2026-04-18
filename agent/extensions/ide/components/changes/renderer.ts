@@ -57,6 +57,7 @@ export class Renderer {
       filterName,
       mode: this.state.mode,
       moveOriginalIndex: this.state.moveOriginalIndex,
+      height: dims.contentH,
       theme: this.theme,
     });
 
