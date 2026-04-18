@@ -55,7 +55,6 @@ export class ChangeRowRenderer {
       isMoving: false,
       bookmarks: [],
       description: change.description,
-      author: change.author,
     });
 
     return this.assembleRow(graph, leftText, rightText, width, flags);
@@ -89,7 +88,6 @@ export class ChangeRowRenderer {
       isMoving: false,
       bookmarks,
       description: change.description,
-      author: change.author,
     });
 
     return this.assembleRow(graph, leftText, rightText, width, flags);

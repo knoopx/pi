@@ -110,7 +110,10 @@ export class Renderer {
     if (!this.state.selectedChange) return " Files";
     const id = this.state.selectedChange.changeId.slice(0, 8);
     const desc = this.state.selectedChange.description || "(no description)";
-    return ` ${this.theme.fg("dim", id)} ${desc}`;
+    const author = this.state.selectedChange.author
+      ? ` ${this.theme.fg("dim", this.state.selectedChange.author)}`
+      : "";
+    return ` ${this.theme.fg("dim", id)} ${desc}${author}`;
   }
 
   private renderRightBottomTitle(): string {

@@ -39,7 +39,6 @@ export function formatChangeRow(
     isMoving?: boolean;
     bookmarks: string[];
     description: string;
-    author?: string;
   },
 ): { leftText: string; rightText: string } {
   const selectMarker = opts.isSelected ? theme.fg("accent", "✓ ") : "";
@@ -56,11 +55,9 @@ export function formatChangeRow(
       : opts.isImmutable
         ? theme.fg("dim", opts.description)
         : opts.description;
-  let leftText = `${selectMarker}${moveIndicator}${bookmarkLabel}${description}`;
+  const leftText = `${selectMarker}${moveIndicator}${bookmarkLabel}${description}`;
 
-  const rightText = opts.author ? theme.fg("dim", ` ${opts.author}`) : "";
-
-  return { leftText, rightText };
+  return { leftText, rightText: "" };
 }
 
 /** Compute visible (un-escaped) length of an ANSI string. */

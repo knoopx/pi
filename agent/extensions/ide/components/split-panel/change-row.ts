@@ -55,7 +55,6 @@ export class ChangeRow extends CachedRow {
       isMoving: this.props.flags.isMoving,
       bookmarks: this.props.bookmarks,
       description: this.props.change.description,
-      author: this.props.change.author,
     });
 
     return this.assembleRow(
