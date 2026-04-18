@@ -85,7 +85,7 @@ async function createPickerWithConfig(
 async function waitForLoaded(picker: any) {
   await vi.waitFor(() => {
     const lines = picker.render(80);
-    return !lines.some((l) => l.includes("Loading"));
+    return !lines.some((l: string) => l.includes("Loading"));
   });
 }
 
@@ -144,7 +144,7 @@ describe("list-picker — list row rendering", () => {
       await vi.waitFor(
         () => {
           const lines = picker.render(80);
-          return !lines.some((l) => l.includes("Loading"));
+          return !lines.some((l: string) => l.includes("Loading"));
         },
         { timeout: 100 },
       );
