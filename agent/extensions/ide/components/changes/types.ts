@@ -48,7 +48,7 @@ interface RevisionFilter {
  * Shared revision filter list, used by changes.ts.
  */
 export const REVISION_FILTERS: RevisionFilter[] = [
-  { name: "Stack", revision: "ancestors(@, 50) ~ root()" },
+  { name: "Stack", revision: "ancestors(@) ~ root()" },
   { name: "Mine", revision: "mine()" },
   { name: "Tracked", revision: "bookmarks()" },
   { name: "Recent", revision: "committer_date(after:'30 days ago')" },

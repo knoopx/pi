@@ -31,7 +31,7 @@ export class DataService {
     public readonly cwd: string,
   ) {}
 
-  async loadChanges(revision = "ancestors(@, 50) ~ root()"): Promise<Change[]> {
+  async loadChanges(revision = "ancestors(@) ~ root()"): Promise<Change[]> {
     return loadChanges(this.pi, this.cwd, revision);
   }
 
