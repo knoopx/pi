@@ -53,6 +53,8 @@ const SUPPORTED_EXTENSIONS = new Set([
   ".psm1",
   ".psd1",
   ".ps1xml",
+  ".nu",
+  ".nushell",
   ".nix",
   ".ml",
   ".mli",
