@@ -3,6 +3,7 @@ import type { Theme } from "@mariozechner/pi-coding-agent";
 import type { Component } from "@mariozechner/pi-tui";
 import { Input } from "@mariozechner/pi-tui";
 import { buildHelpText, ensureWidth } from "./text-utils";
+import { visibleWidth } from "@mariozechner/pi-tui";
 import { createKeyboardHandler } from "../keyboard";
 import {
   borderedLine,
@@ -200,13 +201,13 @@ class BookmarkPrompt implements Component {
           "accent",
           this.theme.bold(rowContent),
         );
+        // Pad content to full width then apply bg so spaces also get background
+        const visibleLen = visibleWidth(focusedContent);
+        const pad = Math.max(0, innerWidth - visibleLen);
         lines.push(
           borderedLine(
             this.theme,
-            this.theme.bg(
-              "selectedBg",
-              ensureWidth(focusedContent, innerWidth),
-            ),
+            this.theme.bg("selectedBg", focusedContent + " ".repeat(pad)),
             innerWidth,
           ),
         );
