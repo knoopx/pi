@@ -14,6 +14,13 @@ Git-compatible VCS focused on concurrent development and ease of use.
 > - Child: `@+` not `@~-1`
 > - Use `jj log` not `jj changes`
 
+> 🚨 **CRITICAL — NEVER USE `git` FOR MUTATIONS IN A JJ REPO!**
+>
+> In a colocated repo, `git` commands that create or modify commits (e.g. `git commit`, `git rebase`, `git cherry-pick`, `git merge`) will silently corrupt your history and **cause irreversible file loss**. The jj data model is fundamentally different — git has no concept of it.
+>
+> ✅ **Allowed** (read-only): `git log`, `git diff`, `git show`, `git blame`, `git grep`
+> ❌ **Forbidden** (mutations): `git commit`, `git rebase`, `git cherry-pick`, `git merge`, `git reset --hard`, `git checkout` on tracked files, `git stash`
+
 ## Key Commands
 
 | Command                    | Description                                  |
@@ -133,6 +140,49 @@ jj bisect bad           # Mark current as bad
 jj fix                  # Run configured formatters on files
 jj sign -r @            # Sign current revision
 jj metaedit -r @ -m "new message"  # Edit metadata only
+```
+
+## Git Equivalents
+
+| Git command               | Jujutsu equivalent                                                       |
+| ------------------------- | ------------------------------------------------------------------------ |
+| `git show <rev>:<file>`   | `jj file show <file> -r <rev>`                                           |
+| `git blame <file>`        | `jj file annotate <file>`                                                |
+| `git diff <rev1> <rev2>`  | `jj diff --from <rev1> --to <rev2>`                                      |
+| `git log -- <file>`       | `jj log -r 'files("path")'`                                              |
+| `git grep <pattern>`      | `jj file search <pattern>`                                               |
+| `git ls-tree -r <rev>`    | `jj file list -r <rev>`                                                  |
+| `git stash`               | `jj new -p`                                                              |
+| `git stash pop`           | `jj restore -s @- --to @` (manual approach)                              |
+| `git checkout <file> @~1` | `jj file show <file> -r @~- > <file>`                                    |
+| `git show <rev>`          | `jj diff -r <rev>`                                                       |
+| `git log --oneline`       | `jj log --limit 20 -T 'commit_id.short() ++ " " ++ description ++ "\n"'` |
+| `git log --stat`          | `jj log -T 'commit_id.short() ++ " " ++ diff.stat() ++ "\n"'`            |
+| `git show --stat <rev>`   | `jj diff -r <rev> -T 'stat()'`                                           |
+| `git tag <name> <rev>`    | `jj bookmark create <name> -r <rev>`                                     |
+| `git branch <name> <rev>` | `jj bookmark create <name> -r <rev>`                                     |
+| `git checkout -b <name>`  | `jj new <name>`                                                          |
+| `git reset HEAD <file>`   | (no staging — use `jj split` or edit)                                    |
+| `git rebase <upstream>`   | `jj rebase -d <upstream> -s ::@`                                         |
+
+## Get Git Commit Hash from jj Change
+
+Jujutsu has a human-readable **change ID** and a corresponding git **commit hash** (in colocated repos).
+
+```bash
+# Full commit hash for current change
+git rev-parse @  # → d60f1caf1ebf96973c3decd939e3fdf5ee380dc0
+jj log -T 'commit_id ++ "\n"' -r @
+
+# Short commit hash
+jj log -T 'commit_id.short() ++ "\n"' -r @
+
+# Commit hash for any revision by change ID or revset
+jj log -T 'change_id ++ " → " ++ commit_id ++ "\n"' -r 'change_id("uzwqqk")'
+jj log -T 'commit_id ++ "\n"' -r '@-'
+
+# Show both IDs together in log
+jj log -T '{change_id} {commit_id}\n' --limit 5
 ```
 
 ## Tips
