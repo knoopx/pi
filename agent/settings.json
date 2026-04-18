@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.66.1",
+  "lastChangelogVersion": "0.67.68",
   "defaultProvider": "local",
   "defaultModel": "mudler/Qwen3.6-35B-A3B-APEX-GGUF",
   "theme": "custom",
