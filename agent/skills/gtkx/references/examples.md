@@ -44,13 +44,13 @@ export const App = () => (
     onClose={quit}
   >
     <AdwToolbarView>
-      <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
+      <AdwToolbarView.AddTopBar>
         <AdwHeaderBar>
-          <x.Slot for={AdwHeaderBar} id="titleWidget">
+          <AdwHeaderBar.TitleWidget>
             <AdwWindowTitle title="My App" subtitle="Welcome" />
-          </x.Slot>
+          </AdwHeaderBar.TitleWidget>
         </AdwHeaderBar>
-      </x.ContainerSlot>
+      </AdwToolbarView.AddTopBar>
       <AdwStatusPage
         iconName="applications-system-symbolic"
         title="Welcome"
@@ -91,35 +91,35 @@ const LoginForm = () => {
 
   return (
     <GtkGrid rowSpacing={12} columnSpacing={12}>
-      <x.GridChild column={0} row={0}>
+      <GtkGrid.Child column={0} row={0}>
         <GtkLabel label="Email:" halign={Gtk.Align.END} />
-      </x.GridChild>
-      <x.GridChild column={1} row={0}>
+      </GtkGrid.Child>
+      <GtkGrid.Child column={1} row={0}>
         <GtkEntry
           text={email}
           onChanged={(e) => setEmail(e.getText())}
           hexpand
         />
-      </x.GridChild>
-      <x.GridChild column={0} row={1}>
+      </GtkGrid.Child>
+      <GtkGrid.Child column={0} row={1}>
         <GtkLabel label="Password:" halign={Gtk.Align.END} />
-      </x.GridChild>
-      <x.GridChild column={1} row={1}>
+      </GtkGrid.Child>
+      <GtkGrid.Child column={1} row={1}>
         <GtkEntry
           text={password}
           onChanged={(e) => setPassword(e.getText())}
           visibility={false}
           hexpand
         />
-      </x.GridChild>
-      <x.GridChild column={0} row={2} columnSpan={2}>
+      </GtkGrid.Child>
+      <GtkGrid.Child column={0} row={2} columnSpan={2}>
         <GtkButton
           label="Login"
           onClicked={handleSubmit}
           cssClasses={["suggested-action"]}
           halign={Gtk.Align.END}
         />
-      </x.GridChild>
+      </GtkGrid.Child>
     </GtkGrid>
   );
 };
@@ -242,7 +242,7 @@ const SidebarNav = () => {
 
   return (
     <GtkPaned position={200}>
-      <x.Slot for={GtkPaned} id="startChild">
+      <GtkPaned.StartChild>
         <GtkScrolledWindow cssClasses={["sidebar"]}>
           <GtkListView
             selected={[currentPage]}
@@ -260,20 +260,20 @@ const SidebarNav = () => {
             )}
           />
         </GtkScrolledWindow>
-      </x.Slot>
-      <x.Slot for={GtkPaned} id="endChild">
+      </GtkPaned.EndChild>
+      <GtkPaned.StartChild>
         <GtkStack page={currentPage}>
-          <x.StackPage id="home">
+          <GtkStack.Page id="home">
             <GtkLabel label="Home Content" vexpand />
-          </x.StackPage>
-          <x.StackPage id="settings">
+          </GtkStack.Page>
+          <GtkStack.Page id="settings">
             <GtkLabel label="Settings Content" vexpand />
-          </x.StackPage>
-          <x.StackPage id="about">
+          </GtkStack.Page>
+          <GtkStack.Page id="about">
             <GtkLabel label="About Content" vexpand />
-          </x.StackPage>
+          </GtkStack.Page>
         </GtkStack>
-      </x.Slot>
+      </GtkPaned.EndChild>
     </GtkPaned>
   );
 };
@@ -306,26 +306,26 @@ const AppWithNavigation = () => {
       defaultHeight={400}
       onClose={quit}
     >
-      <x.Slot for={GtkWindow} id="titlebar">
+      <GtkWindow.TitleWidget>
         <GtkHeaderBar>
-          <x.ContainerSlot for={GtkHeaderBar} id="packStart">
+          <GtkHeaderBar.PackStart>
             {page !== "home" && (
               <GtkButton
                 iconName="go-previous-symbolic"
                 onClicked={() => setPage("home")}
               />
             )}
-          </x.ContainerSlot>
-          <x.Slot for={GtkHeaderBar} id="titleWidget">
+          </AdwToolbarView.AddTopBar>
+          <GtkHeaderBar.TitleWidget>
             <GtkLabel
               label={page === "home" ? "Home" : "Details"}
               cssClasses={["title"]}
             />
-          </x.Slot>
+          </GtkHeaderBar.TitleWidget>
         </GtkHeaderBar>
-      </x.Slot>
+      </GtkHeaderBar.PackStart>
       <GtkStack page={page}>
-        <x.StackPage id="home">
+        <GtkStack.Page id="home">
           <GtkBox
             orientation={Gtk.Orientation.VERTICAL}
             spacing={12}
@@ -339,10 +339,10 @@ const AppWithNavigation = () => {
               onClicked={() => setPage("details")}
             />
           </GtkBox>
-        </x.StackPage>
-        <x.StackPage id="details">
+        </GtkStack.Page>
+        <GtkStack.Page id="details">
           <GtkLabel label="Details Page Content" vexpand />
-        </x.StackPage>
+        </GtkStack.Page>
       </GtkStack>
     </GtkApplicationWindow>
   );
@@ -470,21 +470,21 @@ const FileTable = () => {
         onSortChanged={handleSort}
         items={sortedFiles.map((file) => ({ id: file.id, value: file }))}
       >
-        <x.ColumnViewColumn
+        <GtkColumnView.Column
           title="Name"
           id="name"
           expand
           sortable
           renderCell={(f: FileItem) => <GtkLabel label={f.name} />}
         />
-        <x.ColumnViewColumn
+        <GtkColumnView.Column
           title="Size"
           id="size"
           fixedWidth={100}
           sortable
           renderCell={(f: FileItem) => <GtkLabel label={`${f.size} KB`} />}
         />
-        <x.ColumnViewColumn
+        <GtkColumnView.Column
           title="Modified"
           id="modified"
           fixedWidth={120}
@@ -528,48 +528,48 @@ const MenuDemo = () => {
       <GtkMenuButton label="File" halign={Gtk.Align.START}>
         <x.Slot for={GtkMenuButton} id="popover">
           <GtkPopoverMenu>
-            <x.MenuSection>
-              <x.MenuItem
+            <GtkMenuButton.MenuSection>
+              <GtkMenuButton.MenuItem
                 id="new"
                 label="New"
                 onActivate={() => setLastAction("New")}
                 accels="<Control>n"
               />
-              <x.MenuItem
+              <GtkMenuButton.MenuItem
                 id="open"
                 label="Open"
                 onActivate={() => setLastAction("Open")}
                 accels="<Control>o"
               />
-              <x.MenuItem
+              <GtkMenuButton.MenuItem
                 id="save"
                 label="Save"
                 onActivate={() => setLastAction("Save")}
                 accels="<Control>s"
               />
-            </x.MenuSection>
-            <x.MenuSection>
-              <x.MenuSubmenu label="Export">
-                <x.MenuItem
+            </GtkMenuButton.MenuSection>
+            <GtkMenuButton.MenuSection>
+              <GtkMenuButton.MenuSubmenu label="Export">
+                <GtkMenuButton.MenuItem
                   id="pdf"
                   label="As PDF"
                   onActivate={() => setLastAction("Export PDF")}
                 />
-                <x.MenuItem
+                <GtkMenuButton.MenuItem
                   id="csv"
                   label="As CSV"
                   onActivate={() => setLastAction("Export CSV")}
                 />
-              </x.MenuSubmenu>
-            </x.MenuSection>
-            <x.MenuSection>
-              <x.MenuItem
+              </GtkMenuButton.MenuSubmenu>
+            </GtkMenuButton.MenuSection>
+            <GtkMenuButton.MenuSection>
+              <GtkMenuButton.MenuItem
                 id="quit"
                 label="Quit"
                 onActivate={quit}
                 accels="<Control>q"
               />
-            </x.MenuSection>
+            </GtkMenuButton.MenuSection>
           </GtkPopoverMenu>
         </x.Slot>
       </GtkMenuButton>
@@ -759,11 +759,11 @@ const NavigationDemo = () => {
       onClose={quit}
     >
       <AdwNavigationView history={history} onHistoryChanged={setHistory}>
-        <x.NavigationPage for={AdwNavigationView} id="home" title="Home">
+        <AdwNavigationView.Page id="home" title="Home">
           <AdwToolbarView>
-            <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
+            <AdwToolbarView.AddTopBar>
               <AdwHeaderBar />
-            </x.ContainerSlot>
+            </AdwToolbarView.AddTopBar>
             <GtkBox
               orientation={Gtk.Orientation.VERTICAL}
               spacing={12}
@@ -778,20 +778,19 @@ const NavigationDemo = () => {
               />
             </GtkBox>
           </AdwToolbarView>
-        </x.NavigationPage>
-        <x.NavigationPage
-          for={AdwNavigationView}
+        </AdwNavigationView.Page>
+        </>AdwNavigationView.Page
           id="settings"
           title="Settings"
           canPop
         >
-          <AdwToolbarView>
-            <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
+          </>AdwNavigationView.Page><AdwToolbarView>
+            <AdwToolbarView.AddTopBar>
               <AdwHeaderBar />
-            </x.ContainerSlot>
+            </AdwToolbarView.AddTopBar>
             <GtkLabel label="Settings page content" vexpand />
           </AdwToolbarView>
-        </x.NavigationPage>
+        </AdwNavigationView.Page>
       </AdwNavigationView>
     </AdwApplicationWindow>
   );
@@ -847,15 +846,10 @@ const SplitViewDemo = () => {
         minSidebarWidth={200}
         maxSidebarWidth={300}
       >
-        <x.NavigationPage
-          for={AdwNavigationSplitView}
-          id="sidebar"
-          title="Mail"
-        >
-          <AdwToolbarView>
-            <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
+        <AdwNavigationSplitView.Page id="sidebar"><AdwToolbarView>
+            <AdwToolbarView.AddTopBar>
               <AdwHeaderBar />
-            </x.ContainerSlot>
+            </AdwToolbarView.AddTopBar>
             <GtkScrolledWindow vexpand>
               <GtkListBox
                 cssClasses={["navigation-sidebar"]}
@@ -867,25 +861,20 @@ const SplitViewDemo = () => {
               >
                 {items.map((item) => (
                   <AdwActionRow key={item.id} title={item.title}>
-                    <x.ContainerSlot for={AdwActionRow} id="addPrefix">
+                    <AdwActionRow.AddPrefix>
                       <GtkImage iconName={item.icon} />
-                    </x.ContainerSlot>
+                    </AdwToolbarView.AddTopBar>
                   </AdwActionRow>
                 ))}
               </GtkListBox>
             </GtkScrolledWindow>
           </AdwToolbarView>
-        </x.NavigationPage>
+        </AdwNavigationView.Page>
 
-        <x.NavigationPage
-          for={AdwNavigationSplitView}
-          id="content"
-          title={selected?.title ?? ""}
-        >
-          <AdwToolbarView>
-            <x.ContainerSlot for={AdwToolbarView} id="addTopBar">
+        <AdwNavigationSplitView.Page id="content"><AdwToolbarView>
+            <AdwToolbarView.AddTopBar>
               <AdwHeaderBar />
-            </x.ContainerSlot>
+            </AdwToolbarView.AddTopBar>
             <GtkBox
               orientation={Gtk.Orientation.VERTICAL}
               spacing={12}
@@ -903,7 +892,7 @@ const SplitViewDemo = () => {
               />
             </GtkBox>
           </AdwToolbarView>
-        </x.NavigationPage>
+        </AdwNavigationView.Page>
       </AdwNavigationSplitView>
     </AdwApplicationWindow>
   );
@@ -1000,12 +989,12 @@ const StackNavigation = () => {
         <GtkButton label="Settings" onClicked={() => setPage("settings")} />
       </GtkBox>
       <GtkStack page={page} onPageChanged={setPage} vexpand>
-        <x.StackPage id="home">
+        <GtkStack.Page id="home">
           <GtkLabel label="Home Content" />
-        </x.StackPage>
-        <x.StackPage id="settings">
+        </GtkStack.Page>
+        <GtkStack.Page id="settings">
           <GtkLabel label="Settings Content" />
-        </x.StackPage>
+        </GtkStack.Page>
       </GtkStack>
     </GtkBox>
   );
