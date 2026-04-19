@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.67.68",
   "defaultProvider": "local",
-  "defaultModel": "mudler/Qwen3.6-35B-A3B-APEX-GGUF",
+  "defaultModel": "AesSedai/Qwen3.6-35B-A3B-GGUF",
   "theme": "custom",
   "enabledModels": [
     "github-copilot/grok-code-fast-1",
@@ -10,10 +10,11 @@
     "local/unsloth/Qwen3.5-27B-GGUF",
     "zai-coding-plan/glm-5.1",
     "zai-coding-plan/glm-5-turbo",
+    "local/AesSedai/Qwen3.6-35B-A3B-GGUF",
     "local/mudler/Qwen3.6-35B-A3B-APEX-GGUF"
   ],
   "hideThinkingBlock": false,
-  "defaultThinkingLevel": "medium",
+  "defaultThinkingLevel": "high",
   "branchSummary": {
     "skipPrompt": true
   },
