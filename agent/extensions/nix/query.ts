@@ -49,7 +49,7 @@ interface NixSearchResponse<T> {
 }
 
 const SEARCH_URL =
-  "https://search.nixos.org/backend/latest-44-nixos-unstable/_search";
+  "https://search.nixos.org/backend/latest-45-nixos-unstable/_search";
 const AUTH_TOKEN =
   process.env.NIX_SEARCH_TOKEN ??
   "YVdWU0FMWHBadjpYOGdQSG56TDUyd0ZFZWt1eHNmUTljU2g=";

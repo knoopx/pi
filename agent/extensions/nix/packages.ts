@@ -34,20 +34,22 @@ function buildPackageQueryClause(query: string): Record<string, unknown> {
 
 function buildPackageAggregations(): Record<string, unknown> {
   return {
-    global: {},
-    aggregations: {
-      package_attr_set: { terms: { field: "package_attr_set", size: 20 } },
-      package_license_set: {
-        terms: { field: "package_license_set", size: 20 },
-      },
-      package_maintainers_set: {
-        terms: { field: "package_maintainers_set", size: 20 },
-      },
-      package_teams_set: {
-        terms: { field: "package_teams_set", size: 20 },
-      },
-      package_platforms: {
-        terms: { field: "package_platforms", size: 20 },
+    all: {
+      global: {},
+      aggregations: {
+        package_attr_set: { terms: { field: "package_attr_set", size: 20 } },
+        package_license_set: {
+          terms: { field: "package_license_set", size: 20 },
+        },
+        package_maintainers_set: {
+          terms: { field: "package_maintainers_set", size: 20 },
+        },
+        package_teams_set: {
+          terms: { field: "package_teams_set", size: 20 },
+        },
+        package_platforms: {
+          terms: { field: "package_platforms", size: 20 },
+        },
       },
     },
   };
@@ -63,7 +65,10 @@ function buildPackageQuery(query: string): Record<string, unknown> {
 }
 
 export async function searchNixPackages(query: string): Promise<NixPackage[]> {
-  return searchNix(buildPackageQuery, throttledFetch, query);
+  console.error("[searchNixPackages] Searching for:", query);
+  const result = await searchNix(buildPackageQuery, throttledFetch, query);
+  console.error("[searchNixPackages] Got", result.length, "results");
+  return result;
 }
 
 export function mapPackage(item: NixPackage): Record<string, string> {
@@ -76,10 +81,10 @@ export function mapPackage(item: NixPackage): Record<string, string> {
     homepage: Array.isArray(item.package_homepage)
       ? item.package_homepage.join(", ")
       : String(item.package_homepage || ""),
-    maintainers: item.package_maintainers
+    maintainers: (item.package_maintainers ?? [])
       .map((m) => m.name || m.github)
       .join(", "),
-    license: item.package_license_set.join(", "),
+    license: (item.package_license_set ?? []).join(", "),
   });
 }
 
