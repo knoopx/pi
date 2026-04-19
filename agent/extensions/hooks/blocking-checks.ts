@@ -21,26 +21,40 @@ function checkJsonBlock(
   if (!result.output) return null;
   const { output } = result;
 
-  if (output.continue === false)
-    return {
-      block: true,
-      reason: output.stopReason || "Hook stopped processing",
-    };
-
-  if (output.decision === "block" && output.reason)
-    return { block: true, reason: output.reason };
-
+  if (checkContinueBlock(output)) return checkContinueBlock(output);
+  if (checkDecisionBlock(output)) return checkDecisionBlock(output);
   if (event === "tool_call" && output.hookSpecificOutput) {
-    const { permissionDecision, permissionDecisionReason } =
-      output.hookSpecificOutput;
-    if (permissionDecision === "deny")
-      return {
-        block: true,
-        reason: permissionDecisionReason || "Hook denied permission",
-      };
+    return checkPermissionBlock(output.hookSpecificOutput);
   }
 
   return null;
+}
+
+function checkContinueBlock(
+  output: NonNullable<HookResult["output"]>,
+): { block: true; reason: string } | null {
+  if (output.continue !== false) return null;
+  return {
+    block: true,
+    reason: output.stopReason || "Hook stopped processing",
+  };
+}
+
+function checkDecisionBlock(
+  output: NonNullable<HookResult["output"]>,
+): { block: true; reason: string } | null {
+  if (output.decision !== "block" || !output.reason) return null;
+  return { block: true, reason: output.reason };
+}
+
+function checkPermissionBlock(
+  hookOutput: NonNullable<HookResult["output"]>["hookSpecificOutput"],
+): { block: true; reason: string } | null {
+  if (!hookOutput || hookOutput.permissionDecision !== "deny") return null;
+  return {
+    block: true,
+    reason: hookOutput.permissionDecisionReason || "Hook denied permission",
+  };
 }
 
 function checkErrorBlock(
@@ -77,8 +91,4 @@ export function shouldBlock(
   if (errorBlock) return errorBlock;
 
   return { block: false, reason: "" };
-}
-
-function getAdditionalContext(result: HookResult): string | undefined {
-  return result.output?.hookSpecificOutput?.additionalContext;
 }

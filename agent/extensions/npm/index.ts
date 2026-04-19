@@ -65,9 +65,6 @@ interface NpmPackageResponse {
   versions?: Record<string, NpmPackageVersion>;
 }
 
-/**
- * Fetch npm package data with standardized error handling
- */
 async function fetchNpmPackage(
   pkg: string,
   errorContext: string,
@@ -290,26 +287,52 @@ function countDependencies(deps: Record<string, string> | undefined): number {
   return deps ? Object.keys(deps).length : 0;
 }
 
+function countDeps(
+  info: NpmPackageVersion | undefined,
+  key: "dependencies" | "devDependencies",
+): number {
+  return countDependencies(info?.[key]);
+}
+
 function extractNpmPackageInfo(
   data: NpmPackageResponse,
   pkg: string,
 ): Record<string, unknown> {
-  const latestVersion = data?.["dist-tags"]?.latest ?? "";
-  const latestInfo = data?.versions?.[latestVersion];
+  const latestVersion = getLatestVersion(data);
+  const latestInfo = getLatestVersionInfo(data, latestVersion);
 
   return {
-    name: data?.name ?? pkg,
-    description: data?.description ?? "",
-    author: extractNpmAuthor(data?.author),
-    maintainers: extractNpmMaintainers(data?.maintainers),
-    homepage: data?.homepage ?? "",
-    repository: extractStringOrProperty(data?.repository, "url"),
-    license: latestInfo?.license ?? "Unknown",
+    name: getName(data, pkg),
+    description: data.description,
+    author: extractNpmAuthor(data.author),
+    maintainers: extractNpmMaintainers(data.maintainers),
+    homepage: data.homepage,
+    repository: extractStringOrProperty(data.repository, "url"),
+    license: getLicense(latestInfo),
     latestVersion,
-    keywords: extractNpmKeywords(data?.keywords),
-    dependencies: countDependencies(latestInfo?.dependencies),
-    devDependencies: countDependencies(latestInfo?.devDependencies),
+    keywords: extractNpmKeywords(data.keywords),
+    dependencies: countDeps(latestInfo, "dependencies"),
+    devDependencies: countDeps(latestInfo, "devDependencies"),
   };
+}
+
+function getLatestVersion(data: NpmPackageResponse): string {
+  return data?.["dist-tags"]?.latest ?? "";
+}
+
+function getLatestVersionInfo(
+  data: NpmPackageResponse,
+  latestVersion: string,
+): NpmPackageVersion | undefined {
+  return data?.versions?.[latestVersion];
+}
+
+function getName(data: NpmPackageResponse, pkg: string): string {
+  return data?.name ?? pkg;
+}
+
+function getLicense(latestInfo: NpmPackageVersion | undefined): string {
+  return latestInfo?.license ?? "Unknown";
 }
 
 function buildNpmPackageFields(

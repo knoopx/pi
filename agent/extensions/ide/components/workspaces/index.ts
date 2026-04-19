@@ -1,19 +1,21 @@
 import type { Component } from "@mariozechner/pi-tui";
 import type {
   ExtensionAPI,
+  ExtensionContext,
   KeybindingsManager,
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { AgentWorkspace } from "../../lib/types";
 import {
   ACTION_KEYS,
   createKeyboardHandler,
-  buildHelpFromBindings,
-  filterActiveBindings,
   type KeyBinding,
 } from "../../keyboard";
-import { calculateDiffScroll } from "../split-panel";
-import { formatErrorMessage } from "../formatting-utils";
-import { WorkspaceView } from "./workspace-view";
+import { calculateDiffScroll } from "../../lib/split-panel/layout";
+import { formatErrorMessage } from "../../lib/footer";
+import { renderDiffWithShiki } from "../../tools/diff";
+import { THEME } from "../../tools/shiki-constants";
+import { WorkspaceView } from "./view";
 import {
   createWorkspaceState,
   createCacheStore,
@@ -22,23 +24,48 @@ import {
   loadWorkspaceFiles,
   type WorkspaceState,
   type WorkspaceCacheStore,
+  type WorkspaceCache,
 } from "./data-loading";
-import { notifyMutation } from "../../jj";
+
+function calculateNavigationTarget(
+  currentIndex: number,
+  maxIndex: number,
+  direction: "up" | "down" | "pageUp" | "pageDown",
+  pageOffset: number,
+): number {
+  const delta =
+    direction === "up"
+      ? -1
+      : direction === "down"
+        ? 1
+        : direction === "pageUp"
+          ? -pageOffset
+          : pageOffset;
+  return Math.max(0, Math.min(maxIndex, currentIndex + delta));
+}
+
+import { notifyMutation } from "../../jj/core";
 import {
   forgetWorkspace,
   killTmuxSession,
   createWorkspace,
   generateWorkspaceName,
 } from "../../workspace";
+import { openEditor } from "../../lib/editor-utils";
+
+export interface WorkspacesComponentOptions {
+  pi: ExtensionAPI;
+  tui: { terminal: { rows: number }; requestRender: () => void };
+  theme: Theme;
+  keybindings: KeybindingsManager;
+  done: (result?: void) => void;
+  ctx: ExtensionContext;
+}
 
 export function createWorkspacesComponent(
-  pi: ExtensionAPI,
-  tui: { terminal: { rows: number }; requestRender: () => void },
-  theme: Theme,
-  _keybindings: KeybindingsManager,
-  done: (result?: void) => void,
+  options: WorkspacesComponentOptions,
 ): WorkspacesComponentAPI {
-  const component = new WorkspaceComponent(pi, tui, theme, _keybindings, done);
+  const component = new WorkspaceComponent(options);
   return component as unknown as WorkspacesComponentAPI;
 }
 
@@ -51,24 +78,28 @@ interface WorkspacesComponentAPI {
 }
 
 class WorkspaceComponent implements Component {
+  private pi: ExtensionAPI;
+  private tui: { terminal: { rows: number }; requestRender: () => void };
+  private theme: Theme;
+  private done: (result?: void) => void;
+  private ctx: ExtensionContext;
   private state: WorkspaceState;
   private cacheStore: WorkspaceCacheStore;
   private selectedIndex = 0;
   private focus: "left" | "right" = "left";
-  private cachedLines: string[] = [];
-  private cachedWidth = 0;
   private availableListHeight = 0;
+  private terminalWidth = 0;
 
   private leftHandler: (data: string) => void;
   private rightHandler: (data: string) => void;
 
-  constructor(
-    private pi: ExtensionAPI,
-    private tui: { terminal: { rows: number }; requestRender: () => void },
-    private theme: Theme,
-    _keybindings: KeybindingsManager,
-    private done: (result?: void) => void,
-  ) {
+  constructor(options: WorkspacesComponentOptions) {
+    const { pi, tui, theme, keybindings: _keybindings, done, ctx } = options;
+    this.pi = pi;
+    this.tui = tui;
+    this.theme = theme;
+    this.done = done;
+    this.ctx = ctx;
     this.state = createWorkspaceState();
     this.cacheStore = createCacheStore();
 
@@ -96,8 +127,6 @@ class WorkspaceComponent implements Component {
   }
 
   invalidate(): void {
-    this.cachedLines = [];
-    this.cachedWidth = 0;
     this.tui.requestRender();
   }
 
@@ -120,9 +149,7 @@ class WorkspaceComponent implements Component {
     }
   }
 
-  private async loadFilesAndDiff(
-    ws: import("../../types").AgentWorkspace,
-  ): Promise<void> {
+  private async loadFilesAndDiff(ws: AgentWorkspace): Promise<void> {
     const isDefault = ws.name === "default";
     try {
       if (isDefault) {
@@ -152,33 +179,27 @@ class WorkspaceComponent implements Component {
 
   private async handleWorkspaceAction(
     action: string,
-    ws: import("../../types").AgentWorkspace,
+    ws: AgentWorkspace,
   ): Promise<void> {
-    switch (action) {
-      case "attach":
-        await this.handleAttach(ws);
-        break;
-      case "rebase":
+    const handlers: Record<string, () => void | Promise<void>> = {
+      attach: () => this.handleAttach(ws),
+      rebase: () => {
         this.handleRebase(ws);
-        break;
-      case "edit":
-        await this.pi.exec("editor", [ws.path]);
-        break;
-      case "terminal":
+      },
+      edit: async () => {
+        await openEditor(this.pi, this.ctx, ws.path);
+      },
+      terminal: async () => {
         await this.pi.exec("terminal", [ws.path]);
-        break;
-      case "kill":
-        await this.handleKill(ws);
-        break;
-      case "forget":
-        await this.handleForget(ws);
-        break;
-    }
+      },
+      kill: () => this.handleKill(ws),
+      forget: () => this.handleForget(ws),
+    };
+    const handler = handlers[action];
+    if (handler) await handler();
   }
 
-  private async handleAttach(
-    ws: import("../../types").AgentWorkspace,
-  ): Promise<void> {
+  private async handleAttach(ws: AgentWorkspace): Promise<void> {
     this.done();
     if (process.env.TMUX) {
       await this.pi.exec("tmux", ["switch-client", "-t", ws.name]);
@@ -197,7 +218,7 @@ class WorkspaceComponent implements Component {
     }
   }
 
-  private handleRebase(ws: import("../../types").AgentWorkspace): void {
+  private handleRebase(ws: AgentWorkspace): void {
     this.done();
     const task = `Integrate changes from workspace "${ws.name}":
 1. List changed files: \`jj diff --summary -r ${ws.name}@\`
@@ -209,17 +230,13 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
     this.pi.sendUserMessage(task);
   }
 
-  private async handleKill(
-    ws: import("../../types").AgentWorkspace,
-  ): Promise<void> {
+  private async handleKill(ws: AgentWorkspace): Promise<void> {
     await killTmuxSession(this.pi, ws.name);
     this.cacheStore.delete(ws.name);
     await this.loadWorkspaces();
   }
 
-  private async handleForget(
-    ws: import("../../types").AgentWorkspace,
-  ): Promise<void> {
+  private async handleForget(ws: AgentWorkspace): Promise<void> {
     await forgetWorkspace(this.pi, ws.name);
     this.cacheStore.delete(ws.name);
     await this.loadWorkspaces();
@@ -247,8 +264,8 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
 
   private async createNewWorkspace(): Promise<void> {
     try {
-      const { getRepoRoot, getCurrentChangeId } =
-        await import("../../workspace");
+      const { getRepoRoot } = await import("../../jj/files");
+      const { getCurrentChangeId } = await import("../../workspace");
       const repoRootPath = await getRepoRoot(this.pi);
       const parentChangeId = await getCurrentChangeId(this.pi, repoRootPath);
       const workspaceName = generateWorkspaceName();
@@ -281,63 +298,165 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
   }
 
   private async discardFile(): Promise<void> {
-    if (!this.state.selectedWorkspace || this.isDefaultWs() || !this.hasFile())
-      return;
+    if (!this.canDiscardFile()) return;
     const file = this.state.files[this.state.fileIndex];
-    const restoreResult = await this.pi.exec("jj", ["restore", file.path], {
-      cwd: this.state.selectedWorkspace.path,
+    const ws = this.state.selectedWorkspace;
+    if (!ws) return;
+    const { getRepoRoot } = await import("../../jj/files");
+    const repoRoot = await getRepoRoot(this.pi, ws.path);
+    const result = await this.pi.exec("jj", ["restore", file.path], {
+      cwd: repoRoot,
     });
-    this.cacheStore.delete(this.state.selectedWorkspace.name);
-    await this.loadFilesAndDiff(this.state.selectedWorkspace);
-    const msg = `Restored file ${file.path} in workspace ${this.state.selectedWorkspace.name}`;
-    notifyMutation(this.pi, msg, restoreResult.stderr || restoreResult.stdout);
+    this.cacheStore.delete(ws.name);
+    await this.loadFilesAndDiff(ws);
+    notifyMutation(
+      this.pi,
+      `Restored file ${file.path} in workspace ${ws.name}`,
+      result.stderr || result.stdout,
+    );
+  }
+
+  private canDiscardFile(): boolean {
+    return !!(
+      this.state.selectedWorkspace &&
+      !this.isDefaultWs() &&
+      this.hasFile()
+    );
   }
 
   private navigateWorkspace(
     direction: "up" | "down" | "pageUp" | "pageDown",
   ): void {
     const pageOffset = Math.max(1, this.availableListHeight - 1);
-    const newIndex =
-      direction === "up"
-        ? Math.max(0, this.selectedIndex - 1)
-        : direction === "pageUp"
-          ? Math.max(0, this.selectedIndex - pageOffset)
-          : direction === "pageDown"
-            ? Math.min(
-                this.state.workspaces.length - 1,
-                this.selectedIndex + pageOffset,
-              )
-            : Math.min(
-                this.state.workspaces.length - 1,
-                this.selectedIndex + 1,
-              );
+    const maxIndex = this.state.workspaces.length - 1;
+    const newIndex = calculateNavigationTarget(
+      this.selectedIndex,
+      maxIndex,
+      direction,
+      pageOffset,
+    );
     if (newIndex !== this.selectedIndex) {
       this.selectedIndex = newIndex;
       this.state.selectedWorkspace = this.state.workspaces[this.selectedIndex];
+      this.state.fileIndex = 0;
+      this.state.diffScroll = 0;
+      this.state.diffContent = ["Loading..."];
       void this.loadFilesAndDiff(this.state.selectedWorkspace);
       this.invalidate();
     }
   }
 
-  private navigateFile(direction: "up" | "down" | "pageUp" | "pageDown"): void {
+  private async navigateFile(
+    direction: "up" | "down" | "pageUp" | "pageDown",
+  ): Promise<void> {
     if (!this.state.selectedWorkspace) return;
     const isDefault = this.isDefaultWs();
     const maxIndex = isDefault
       ? this.state.changes.length - 1
       : this.state.files.length - 1;
     const pageOffset = Math.max(1, this.availableListHeight - 1);
-    const newIndex =
-      direction === "up"
-        ? Math.max(0, this.state.fileIndex - 1)
-        : direction === "pageUp"
-          ? Math.max(0, this.state.fileIndex - pageOffset)
-          : direction === "pageDown"
-            ? Math.min(maxIndex, this.state.fileIndex + pageOffset)
-            : Math.min(maxIndex, this.state.fileIndex + 1);
+    const newIndex = calculateNavigationTarget(
+      this.state.fileIndex,
+      maxIndex,
+      direction,
+      pageOffset,
+    );
     if (newIndex !== this.state.fileIndex) {
       this.state.fileIndex = newIndex;
+      this.state.diffScroll = 0;
+      this.state.diffContent = ["Loading..."];
       this.invalidate();
+      await this.loadDiffForCurrentSelection();
     }
+  }
+
+  private async loadDiffForCurrentSelection(): Promise<void> {
+    if (!this.state.selectedWorkspace) return;
+    const ws = this.state.selectedWorkspace;
+    try {
+      if (ws.name === "default") {
+        await this.loadDefaultWorkspaceDiff(ws);
+      } else {
+        await this.loadWorkspaceFileDiff(ws);
+      }
+    } catch (error) {
+      const msg = formatErrorMessage(error);
+      this.state.diffContent = [`Error: ${msg}`];
+    }
+    this.invalidate();
+  }
+
+  private async loadDefaultWorkspaceDiff(ws: AgentWorkspace): Promise<void> {
+    const { getRawDiff } = await import("../../jj/files");
+    const cache = this.getOrCreateCache(ws.name, () => ({
+      files: [],
+      changes: this.state.changes,
+      diffs: new Map(),
+    }));
+
+    const changeId = this.state.changes[this.state.fileIndex]?.changeId;
+    if (!changeId) {
+      this.setDiffContent([]);
+      return;
+    }
+
+    await this.loadCachedOrFetchDiff(cache, changeId, async () => {
+      const { diff } = await getRawDiff(this.pi, ws.path, changeId);
+      return renderDiffWithShiki(diff, THEME);
+    });
+  }
+
+  private async loadWorkspaceFileDiff(ws: AgentWorkspace): Promise<void> {
+    const { getRawDiff } = await import("../../jj/files");
+    const cache = this.getOrCreateCache(ws.name, () => ({
+      files: this.state.files,
+      changes: [],
+      diffs: new Map(),
+    }));
+
+    const file = this.state.files[this.state.fileIndex];
+    if (!file) {
+      this.setDiffContent([]);
+      return;
+    }
+
+    const diffKey = file.path ?? "";
+    await this.loadCachedOrFetchDiff(cache, diffKey, async () => {
+      const { diff } = await getRawDiff(this.pi, ws.path, "@", file.path);
+      return renderDiffWithShiki(diff, THEME);
+    });
+  }
+
+  private getOrCreateCache(
+    name: string,
+    factory: () => WorkspaceCache,
+  ): WorkspaceCache {
+    let cache = this.cacheStore.get(name);
+    if (!cache) {
+      cache = factory();
+      this.cacheStore.set(name, cache);
+    }
+    return cache;
+  }
+
+  private setDiffContent(content: string[]): void {
+    this.state.diffContent = content;
+    this.invalidate();
+  }
+
+  private async loadCachedOrFetchDiff(
+    cache: WorkspaceCache,
+    key: string,
+    fetcher: () => Promise<string[]>,
+  ): Promise<void> {
+    const cached = cache.diffs.get(key);
+    if (cached) {
+      this.setDiffContent(cached);
+      return;
+    }
+    const content = await fetcher();
+    cache.diffs.set(key, content);
+    this.setDiffContent(content);
   }
 
   private getGlobalBindings(): KeyBinding[] {
@@ -350,8 +469,18 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
           this.invalidate();
         },
       },
-      { key: "escape", handler: () => this.done() },
-      { key: "q", handler: () => this.done() },
+      {
+        key: "escape",
+        handler: () => {
+          this.done();
+        },
+      },
+      {
+        key: "q",
+        handler: () => {
+          this.done();
+        },
+      },
       {
         key: "n",
         label: "new",
@@ -413,19 +542,59 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
 
   private getLeftPaneBindings(): KeyBinding[] {
     return [
-      { key: "up", handler: () => this.navigateWorkspace("up") },
-      { key: "down", handler: () => this.navigateWorkspace("down") },
-      { key: "pageUp", handler: () => this.navigateWorkspace("pageUp") },
-      { key: "pageDown", handler: () => this.navigateWorkspace("pageDown") },
+      {
+        key: "up",
+        handler: () => {
+          this.navigateWorkspace("up");
+        },
+      },
+      {
+        key: "down",
+        handler: () => {
+          this.navigateWorkspace("down");
+        },
+      },
+      {
+        key: "pageUp",
+        handler: () => {
+          this.navigateWorkspace("pageUp");
+        },
+      },
+      {
+        key: "pageDown",
+        handler: () => {
+          this.navigateWorkspace("pageDown");
+        },
+      },
     ];
   }
 
   private getRightPaneBindings(): KeyBinding[] {
     return [
-      { key: "up", handler: () => this.navigateFile("up") },
-      { key: "down", handler: () => this.navigateFile("down") },
-      { key: "pageUp", handler: () => this.navigateFile("pageUp") },
-      { key: "pageDown", handler: () => this.navigateFile("pageDown") },
+      {
+        key: "up",
+        handler: () => {
+          void this.navigateFile("up");
+        },
+      },
+      {
+        key: "down",
+        handler: () => {
+          void this.navigateFile("down");
+        },
+      },
+      {
+        key: "pageUp",
+        handler: () => {
+          void this.navigateFile("pageUp");
+        },
+      },
+      {
+        key: "pageDown",
+        handler: () => {
+          void this.navigateFile("pageDown");
+        },
+      },
       {
         key: "d",
         label: "discard",
@@ -439,26 +608,26 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
         key: "shift+pageUp",
         label: "scroll",
         handler: () => {
-          this.state.diffScroll = calculateDiffScroll(
-            "up",
-            this.state.diffScroll,
-            this.state.diffContent.length,
-            this.tui.terminal.rows,
-            this.cachedWidth,
-          );
+          this.state.diffScroll = calculateDiffScroll({
+            direction: "up",
+            currentScroll: this.state.diffScroll,
+            contentLength: this.state.diffContent.length,
+            terminalRows: this.tui.terminal.rows,
+            cachedWidth: this.terminalWidth,
+          });
           this.invalidate();
         },
       },
       {
         key: "shift+pageDown",
         handler: () => {
-          this.state.diffScroll = calculateDiffScroll(
-            "down",
-            this.state.diffScroll,
-            this.state.diffContent.length,
-            this.tui.terminal.rows,
-            this.cachedWidth,
-          );
+          this.state.diffScroll = calculateDiffScroll({
+            direction: "down",
+            currentScroll: this.state.diffScroll,
+            contentLength: this.state.diffContent.length,
+            terminalRows: this.tui.terminal.rows,
+            cachedWidth: this.terminalWidth,
+          });
           this.invalidate();
         },
       },
@@ -466,6 +635,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
   }
 
   render(width: number): string[] {
+    this.terminalWidth = width;
     const view = new WorkspaceView(
       {
         workspaces: this.state.workspaces,
@@ -482,10 +652,7 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
       this.tui,
       this.theme,
     );
-    const result = view.render(width);
-    this.cachedLines = result;
-    this.cachedWidth = width;
-    return result;
+    return view.render(width);
   }
 
   handleInput(data: string): void {

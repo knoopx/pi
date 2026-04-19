@@ -21,11 +21,7 @@ const HookContextSchema = Type.Union([
 const HookRuleSchema = Type.Object({
   event: HookEventSchema,
   context: Type.Optional(HookContextSchema),
-  /**
-   * Matcher pattern:
-   * - tool_name/file_name contexts: glob pattern (e.g., `*.ts`, `{write,edit}`)
-   * - command context: token pattern (`?` = one token, `*` = any tokens)
-   */
+  
   pattern: Type.Optional(Type.String()),
 
   command: Type.String(),
@@ -47,23 +43,21 @@ export type HookRule = Static<typeof HookRuleSchema>;
 export type HooksGroup = Static<typeof HooksGroupSchema>;
 export type HooksConfig = Static<typeof HooksConfigSchema>;
 
-/**
- * JSON input passed to hooks via stdin (Claude Code compatible).
- */
+
 export interface HookInput {
-  /** Current session identifier */
+  
   session_id?: string;
-  /** Current working directory */
+  
   cwd: string;
-  /** Name of the event that fired */
+  
   hook_event_name: HookEvent;
-  /** Tool name (for tool_call, tool_result) */
+  
   tool_name?: string;
-  /** Tool input parameters (for tool_call, tool_result) */
+  
   tool_input?: Record<string, unknown>;
-  /** Tool call ID (for tool_call, tool_result) */
+  
   tool_call_id?: string;
-  /** Tool response (for tool_result) */
+  
   tool_response?: {
     content?: unknown[];
     details?: Record<string, unknown>;
@@ -71,60 +65,66 @@ export interface HookInput {
   };
 }
 
-/**
- * JSON output from hooks (Claude Code compatible).
- * Hooks can return structured decisions via JSON on stdout.
- */
+
 export interface HookOutput {
-  /** If false, Claude stops processing entirely */
+  
   continue?: boolean;
-  /** Message shown to user when continue is false */
+  
   stopReason?: string;
-  /** If true, hides stdout from output */
+  
   suppressOutput?: boolean;
-  /** Warning message shown to user */
+  
   systemMessage?: string;
-  /** Block decision (for tool_call, tool_result, agent_end) */
+  
   decision?: "block";
-  /** Reason for blocking */
+  
   reason?: string;
-  /** Event-specific output (Claude Code's hookSpecificOutput) */
+  
   hookSpecificOutput?: {
     hookEventName: HookEvent;
-    /** Permission decision for tool_call (PreToolUse) */
+    
     permissionDecision?: "allow" | "deny" | "ask";
-    /** Reason for permission decision */
+    
     permissionDecisionReason?: string;
-    /** Modified tool input (for tool_call) */
+    
     updatedInput?: Record<string, unknown>;
-    /** Additional context to inject */
+    
     additionalContext?: string;
   };
 }
 
+// Workaround for @sinclair/typebox 0.34.x CJS/ESM dual-module type mismatch.
+// cross-module type checking between the CJS and ESM builds.
+const vc = (Value as { Check(schema: unknown, data: unknown): boolean }).Check;
+const ve = (
+  Value as {
+    Errors(
+      schema: unknown,
+      data: unknown,
+    ): Iterable<{ path: string; message: string }>;
+  }
+).Errors;
+
 export function validateConfig(data: unknown): HooksConfig {
-  if (!Value.Check(HooksConfigSchema as any, data)) {
-    const errors = [...Value.Errors(HooksConfigSchema as any, data)];
+  if (!vc(HooksConfigSchema, data)) {
+    const errors = [...ve(HooksConfigSchema, data)];
     const messages = errors.map((e) => `${e.path}: ${e.message}`).join(", ");
     throw new Error(`Invalid hooks config: ${messages}`);
   }
-  return data;
+  return data as HooksConfig;
 }
 
 export function isValidConfig(data: unknown): data is HooksConfig {
-  return Value.Check(HooksConfigSchema as any, data);
+  return vc(HooksConfigSchema, data);
 }
 
-/**
- * Parse JSON output from hook stdout.
- * Returns undefined if not valid JSON or not an object.
- */
+
 export function parseHookOutput(stdout: string): HookOutput | undefined {
   const trimmed = stdout.trim();
   if (!trimmed.startsWith("{")) return undefined;
 
   try {
-    const parsed = JSON.parse(trimmed);
+    const parsed: unknown = JSON.parse(trimmed);
     if (typeof parsed !== "object" || parsed === null) return undefined;
     return parsed as HookOutput;
   } catch {

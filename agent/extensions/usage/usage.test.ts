@@ -1,11 +1,3 @@
-/**
- * Unit Tests for Usage Statistics Module
- *
- * Tests cover:
- * - Pure formatting functions (no I/O)
- * - UsageComponent UI logic
- * - Data aggregation logic (with mocked data sources)
- */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Theme } from "@mariozechner/pi-coding-agent";
@@ -284,6 +276,7 @@ describe("padRight", () => {
 
 // Usage Component Tests
 
+// eslint-disable-next-line max-lines-per-function -- large test suite
 describe("UsageComponent", () => {
   let component: UsageComponent;
   let mockData: UsageData;

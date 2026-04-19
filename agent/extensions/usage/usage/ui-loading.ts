@@ -1,10 +1,7 @@
 import { CancellableLoader, Container, Spacer } from "@mariozechner/pi-tui";
 import { DynamicBorder } from "@mariozechner/pi-coding-agent";
-import type {
-  ExtensionAPI,
-  ExtensionCommandContext,
-} from "@mariozechner/pi-coding-agent";
-import type { Theme as ThemeType } from "../shared/types";
+import type { ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "../shared/types";
 
 function createBorderedCustomUI<
   T extends {
@@ -58,7 +55,7 @@ export async function loadAndDisplay<
   ctx: ExtensionCommandContext,
   loaderMessage: string,
   collectData: (signal: AbortSignal) => Promise<TData | null>,
-  createComponent: (theme: ThemeType, data: TData) => TComponent,
+  createComponent: (theme: Theme, data: TData) => TComponent,
 ): Promise<void> {
   if (!ctx.hasUI) return;
 

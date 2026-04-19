@@ -1,0 +1,159 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderEditorView > given basic rendering > when rendering lines with cursor > then includes CURSOR_MARKER on cursor line 1`] = `
+[
+  "[38;2;76;62;118m   1 _pi:c[39mhello                                                                      ",
+  "[38;2;76;62;118m   2 [39mworld                                                                      ",
+  "[38;2;76;62;118m   3 [39mfoo                                                                        ",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+]
+`;
+
+exports[`renderEditorView > given basic rendering > when rendering with cursor hidden > then does not include cursor marker 1`] = `
+[
+  "[38;2;76;62;118m   1 [39mhello                                                                      ",
+  "[38;2;76;62;118m   2 [39mworld                                                                      ",
+  "[38;2;76;62;118m   3 [39mfoo                                                                        ",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+]
+`;
+
+exports[`renderEditorView > given cursor positioning > when cursor is at end of line > then places cursor marker after content 1`] = `
+[
+  "[38;2;76;62;118m   1 [39mhi_pi:c                                                                         ",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+]
+`;
+
+exports[`renderEditorView > given cursor positioning > when cursor is mid-line > then places cursor marker at correct position 1`] = `
+[
+  "[38;2;76;62;118m   1 [39mhel_pi:clo                                                                      ",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+]
+`;
+
+exports[`renderEditorView > given empty content > when rendering empty lines array > then returns all empty lines matching height 1`] = `
+[
+  "",
+  "",
+  "",
+  "",
+  "",
+]
+`;
+
+exports[`renderEditorView > given line numbers > when line count exceeds 99 > then widens line number column 1`] = `
+[
+  "[38;2;76;62;118m   1 _pi:c[39mline0                                                                      ",
+  "[38;2;76;62;118m   2 [39mline1                                                                      ",
+  "[38;2;76;62;118m   3 [39mline2                                                                      ",
+  "[38;2;76;62;118m   4 [39mline3                                                                      ",
+  "[38;2;76;62;118m   5 [39mline4                                                                      ",
+]
+`;
+
+exports[`renderEditorView > given line numbers > when rendering numbered lines > then shows line numbers with dim color prefix 1`] = `
+[
+  "[38;2;76;62;118m   1 _pi:c[39mhello                                                                      ",
+  "[38;2;76;62;118m   2 [39mworld                                                                      ",
+  "[38;2;76;62;118m   3 [39mfoo                                                                        ",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+]
+`;
+
+exports[`renderEditorView > given selection highlighting > when multi-line selection is active > then highlights partial first and last lines 1`] = `
+[
+  "[38;2;76;62;118m   1 _pi:c[39mhel[48;2;50;36;93mlo[49m                                                                      ",
+  "[38;2;76;62;118m   2 [39m[48;2;50;36;93mworld[49m                                                                      ",
+  "[38;2;76;62;118m   3 [39m[48;2;50;36;93mfo[49mo                                                                        ",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+]
+`;
+
+exports[`renderEditorView > given selection highlighting > when no selection is active > then does not apply selection styling 1`] = `
+[
+  "[38;2;76;62;118m   1 _pi:c[39mhello                                                                      ",
+  "[38;2;76;62;118m   2 [39mworld                                                                      ",
+  "[38;2;76;62;118m   3 [39mfoo                                                                        ",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+]
+`;
+
+exports[`renderEditorView > given selection highlighting > when single-line selection is active > then applies selectedBg to selected portion 1`] = `
+[
+  "[38;2;76;62;118m   1 _pi:c[39m[48;2;50;36;93mhello[49m                                                                      ",
+  "[38;2;76;62;118m   2 [39mworld                                                                      ",
+  "[38;2;76;62;118m   3 [39mfoo                                                                        ",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+]
+`;
+
+exports[`renderEditorView > given viewport clipping > when content exceeds height > then clips to viewport height using topLine offset 1`] = `
+[
+  "[38;2;76;62;118m   3 [39mc                                                                          ",
+  "[38;2;76;62;118m   4 [39md                                                                          ",
+  "[38;2;76;62;118m   5 [39me                                                                          ",
+]
+`;
+
+exports[`renderEditorView > given viewport clipping > when content is shorter than height > then pads with empty lines 1`] = `
+[
+  "[38;2;76;62;118m   1 _pi:c[39monly one                                                                   ",
+  "",
+  "",
+  "",
+  "",
+]
+`;

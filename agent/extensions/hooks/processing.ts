@@ -4,7 +4,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import type { HookEvent, HooksGroup, HookRule, HookInput } from "./schema";
 import { doesRuleMatch } from "./pattern-matching";
-import type { HookProcessState } from "./types";
+import type { HookProcessState, HookVariables, HookResult } from "./types";
 import { runHook } from "./hook-execution";
 import { shouldBlock } from "./blocking-checks";
 
@@ -25,7 +25,7 @@ export async function processHookExecution(
     rule: HookRule;
     group: HooksGroup;
     ctx: ExtensionContext;
-    vars: import("./types").HookVariables;
+    vars: HookVariables;
     hookInput: HookInput;
   },
   executionContext: {
@@ -74,8 +74,6 @@ export async function processHookExecution(
   return undefined;
 }
 
-function getAdditionalContext(
-  result: import("./types").HookResult,
-): string | undefined {
+function getAdditionalContext(result: HookResult): string | undefined {
   return result.output?.hookSpecificOutput?.additionalContext;
 }

@@ -1,20 +1,23 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import {
-  sanitizeDescription,
-  loadChanges,
-  loadChangedFiles,
-  listBookmarksByChange,
-  loadOpLog,
-  restoreFile,
-  hasFileChanges,
-  createNewChange,
-} from "./jj";
+import { describe, it, expect, beforeEach } from "vitest";
+import { loadOpLog } from "./jj/oplog";
+import { createMockExecPi } from "./lib/test-utils";
+import { sanitizeDescription } from "./jj/core";
+import { loadChanges } from "./jj/changes";
+import { hasFileChanges } from "./jj/changes";
+import { createNewChange } from "./jj/changes";
+import { loadChangedFiles } from "./jj/files";
+import { getRawDiff } from "./jj/files";
+import { restoreFile } from "./jj/files";
+import { listBookmarksByChange } from "./jj/bookmarks";
 
-interface ExecResult {
-  code: number;
-  stdout: string;
-  stderr: string;
+const { execMock, pi } = createMockExecPi();
+beforeEach(() => execMock.mockReset());
+
+
+async function assertEmptyOnFailure(fn: () => Promise<any>) {
+  execMock.mockResolvedValue({ code: 1, stdout: "", stderr: "error" });
+  const result = await fn();
+  expect(result).toEqual([]);
 }
 
 describe("jj module", () => {
@@ -37,14 +40,6 @@ describe("jj module", () => {
   });
 
   describe("given changes output", () => {
-    let execMock: ReturnType<typeof vi.fn>;
-    let pi: ExtensionAPI;
-
-    beforeEach(() => {
-      execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>();
-      pi = { exec: execMock } as unknown as ExtensionAPI;
-    });
-
     describe("when jj log succeeds", () => {
       it("then parses rows and sanitizes descriptions", async () => {
         execMock.mockResolvedValue({
@@ -78,24 +73,12 @@ describe("jj module", () => {
 
     describe("when jj log fails", () => {
       it("then returns an empty list", async () => {
-        execMock.mockResolvedValue({ code: 1, stdout: "", stderr: "error" });
-
-        const result = await loadChanges(pi, "/repo");
-
-        expect(result).toEqual([]);
+        await assertEmptyOnFailure(() => loadChanges(pi, "/repo"));
       });
     });
   });
 
   describe("given bookmark list output", () => {
-    let execMock: ReturnType<typeof vi.fn>;
-    let pi: ExtensionAPI;
-
-    beforeEach(() => {
-      execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>();
-      pi = { exec: execMock } as unknown as ExtensionAPI;
-    });
-
     describe("when output contains duplicate bookmarks", () => {
       it("then deduplicates and sanitizes descriptions", async () => {
         execMock.mockResolvedValue({
@@ -136,14 +119,6 @@ describe("jj module", () => {
   });
 
   describe("given operation log output", () => {
-    let execMock: ReturnType<typeof vi.fn>;
-    let pi: ExtensionAPI;
-
-    beforeEach(() => {
-      execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>();
-      pi = { exec: execMock } as unknown as ExtensionAPI;
-    });
-
     describe("when entries contain unicode and separators", () => {
       it("then parses ids and sanitizes descriptions", async () => {
         execMock.mockResolvedValue({
@@ -169,21 +144,74 @@ describe("jj module", () => {
   });
 
   describe("given file discard requests", () => {
-    let execMock: ReturnType<typeof vi.fn>;
-    let pi: ExtensionAPI;
-
-    beforeEach(() => {
-      execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>();
-      pi = { exec: execMock } as unknown as ExtensionAPI;
-    });
-
     describe("when restore succeeds", () => {
-      it("then uses --changes-in with the selected change id", async () => {
-        execMock.mockResolvedValue({ code: 0, stdout: "", stderr: "" });
+      it("then resolves repo root and uses --changes-in with the selected change id", async () => {
+        execMock
+          .mockResolvedValueOnce({
+            code: 0,
+            stdout: "/repo", // workspace root
+            stderr: "",
+          })
+          .mockResolvedValueOnce({ code: 0, stdout: "", stderr: "" });
 
         await restoreFile(pi, "/repo", "abc123", "src/file.ts");
 
-        expect(execMock).toHaveBeenCalledWith(
+        expect(execMock).toHaveBeenNthCalledWith(
+          1,
+          "jj",
+          ["workspace", "root"],
+          { cwd: "/repo" },
+        );
+        expect(execMock).toHaveBeenNthCalledWith(
+          2,
+          "jj",
+          ["restore", "--changes-in", "abc123", "src/file.ts"],
+          { cwd: "/repo" },
+        );
+      });
+    });
+
+    describe("when called from a subdirectory", () => {
+      it("then resolves the repo root and uses it as cwd", async () => {
+        execMock
+          .mockResolvedValueOnce({
+            code: 0,
+            stdout: "/repo", // workspace root
+            stderr: "",
+          })
+          .mockResolvedValueOnce({ code: 0, stdout: "", stderr: "" });
+
+        await restoreFile(pi, "/repo/subdir", "abc123", "src/file.ts");
+
+        expect(execMock).toHaveBeenNthCalledWith(
+          1,
+          "jj",
+          ["workspace", "root"],
+          { cwd: "/repo/subdir" },
+        );
+        expect(execMock).toHaveBeenNthCalledWith(
+          2,
+          "jj",
+          ["restore", "--changes-in", "abc123", "src/file.ts"],
+          { cwd: "/repo" },
+        );
+      });
+    });
+
+    describe("when workspace root command fails", () => {
+      it("then falls back to the original cwd", async () => {
+        execMock
+          .mockResolvedValueOnce({
+            code: 1,
+            stdout: "",
+            stderr: "not a jj repo",
+          })
+          .mockResolvedValueOnce({ code: 0, stdout: "", stderr: "" });
+
+        await restoreFile(pi, "/repo", "abc123", "src/file.ts");
+
+        expect(execMock).toHaveBeenNthCalledWith(
+          2,
           "jj",
           ["restore", "--changes-in", "abc123", "src/file.ts"],
           { cwd: "/repo" },
@@ -193,11 +221,17 @@ describe("jj module", () => {
 
     describe("when restore fails with stderr", () => {
       it("then throws the command error", async () => {
-        execMock.mockResolvedValue({
-          code: 1,
-          stdout: "",
-          stderr: "permission denied",
-        });
+        execMock
+          .mockResolvedValueOnce({
+            code: 0,
+            stdout: "/repo",
+            stderr: "",
+          })
+          .mockResolvedValueOnce({
+            code: 1,
+            stdout: "",
+            stderr: "permission denied",
+          });
 
         await expect(
           restoreFile(pi, "/repo", "abc123", "src/file.ts"),
@@ -207,7 +241,13 @@ describe("jj module", () => {
 
     describe("when restore fails without stderr", () => {
       it("then throws a fallback error", async () => {
-        execMock.mockResolvedValue({ code: 1, stdout: "", stderr: "" });
+        execMock
+          .mockResolvedValueOnce({
+            code: 0,
+            stdout: "/repo",
+            stderr: "",
+          })
+          .mockResolvedValueOnce({ code: 1, stdout: "", stderr: "" });
 
         await expect(
           restoreFile(pi, "/repo", "abc123", "src/file.ts"),
@@ -217,14 +257,6 @@ describe("jj module", () => {
   });
 
   describe("given current jj change", () => {
-    let execMock: ReturnType<typeof vi.fn>;
-    let pi: ExtensionAPI;
-
-    beforeEach(() => {
-      execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>();
-      pi = { exec: execMock } as unknown as ExtensionAPI;
-    });
-
     describe("when checking if change has file modifications", () => {
       describe("and current change is empty", () => {
         it("then returns false", async () => {
@@ -276,14 +308,6 @@ describe("jj module", () => {
   });
 
   describe("given changed files output", () => {
-    let execMock: ReturnType<typeof vi.fn>;
-    let pi: ExtensionAPI;
-
-    beforeEach(() => {
-      execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>();
-      pi = { exec: execMock } as unknown as ExtensionAPI;
-    });
-
     describe("when jj log returns add, modify, delete statuses", () => {
       it("then parses each file with correct status and line counts", async () => {
         execMock.mockResolvedValue({
@@ -343,11 +367,9 @@ describe("jj module", () => {
 
     describe("when jj log fails", () => {
       it("then returns an empty list", async () => {
-        execMock.mockResolvedValue({ code: 1, stdout: "", stderr: "error" });
-
-        const result = await loadChangedFiles(pi, "/repo", "abc123");
-
-        expect(result).toEqual([]);
+        await assertEmptyOnFailure(() =>
+          loadChangedFiles(pi, "/repo", "abc123"),
+        );
       });
     });
 
@@ -382,14 +404,6 @@ describe("jj module", () => {
   });
 
   describe("given session start", () => {
-    let execMock: ReturnType<typeof vi.fn>;
-    let pi: ExtensionAPI;
-
-    beforeEach(() => {
-      execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>();
-      pi = { exec: execMock } as unknown as ExtensionAPI;
-    });
-
     describe("when current change is empty", () => {
       it("then does not create new change and returns created=false", async () => {
         execMock.mockResolvedValueOnce({
@@ -486,6 +500,122 @@ describe("jj module", () => {
             created: true,
           });
         });
+      });
+    });
+  });
+
+  describe("given raw diff requests", () => {
+    describe("when getting diff for all files in a change", () => {
+      it("then uses the original cwd", async () => {
+        execMock
+          .mockResolvedValueOnce({
+            code: 0,
+            stdout: "", // workspace update-stale
+            stderr: "",
+          })
+          .mockResolvedValueOnce({
+            code: 0,
+            stdout:
+              "diff --git a/src/file.ts b/src/file.ts\n@@ -1 +1 @@\n-old\n+new\n",
+            stderr: "",
+          });
+
+        const result = await getRawDiff(pi, "/repo", "abc123");
+
+        expect(execMock).toHaveBeenNthCalledWith(
+          2,
+          "jj",
+          ["diff", "--git", "-r", "abc123"],
+          { cwd: "/repo" },
+        );
+        expect(result.files).toContain("src/file.ts");
+      });
+    });
+
+    describe("when getting diff for a specific file from a subdirectory", () => {
+      it("then resolves the repo root and uses it as cwd", async () => {
+        execMock
+          .mockResolvedValueOnce({
+            code: 0,
+            stdout: "", // workspace update-stale
+            stderr: "",
+          })
+          .mockResolvedValueOnce({
+            code: 0,
+            stdout: "/repo", // workspace root
+            stderr: "",
+          })
+          .mockResolvedValueOnce({
+            code: 0,
+            stdout:
+              "diff --git a/src/file.ts b/src/file.ts\n@@ -1 +1 @@\n-old\n+new\n",
+            stderr: "",
+          });
+
+        const result = await getRawDiff(
+          pi,
+          "/repo/subdir",
+          "abc123",
+          "src/file.ts",
+        );
+
+        expect(execMock).toHaveBeenNthCalledWith(
+          3,
+          "jj",
+          ["diff", "--git", "-r", "abc123", "src/file.ts"],
+          { cwd: "/repo" },
+        );
+        expect(result.files).toContain("src/file.ts");
+      });
+    });
+
+    describe("when workspace root command fails", () => {
+      it("then falls back to the original cwd", async () => {
+        execMock
+          .mockResolvedValueOnce({
+            code: 0,
+            stdout: "", // workspace update-stale
+            stderr: "",
+          })
+          .mockResolvedValueOnce({
+            code: 1,
+            stdout: "", // workspace root fails
+            stderr: "not a jj repo",
+          })
+          .mockResolvedValueOnce({
+            code: 0,
+            stdout: "diff --git a/file.ts b/file.ts\n",
+            stderr: "",
+          });
+
+        await getRawDiff(pi, "/repo", "abc123", "file.ts");
+
+        expect(execMock).toHaveBeenNthCalledWith(
+          3,
+          "jj",
+          ["diff", "--git", "-r", "abc123", "file.ts"],
+          { cwd: "/repo" },
+        );
+      });
+    });
+
+    describe("when jj diff fails", () => {
+      it("then throws an error with stderr message", async () => {
+        execMock
+          .mockResolvedValueOnce({
+            code: 0,
+            stdout: "", // workspace update-stale
+            stderr: "",
+          })
+          .mockResolvedValueOnce({
+            code: 1,
+            stdout: "",
+            stderr: "no such file",
+          });
+
+        await expect(getRawDiff(pi, "/repo", "abc123")).rejects.toThrow(
+          "Failed to get diff: no such file",
+        );
       });
     });
   });

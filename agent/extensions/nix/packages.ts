@@ -1,36 +1,33 @@
-import { throttledFetch } from "../../shared/throttle";
 import { dotJoin, countLabel, table } from "../../shared/renderers";
 import type { Column } from "../../shared/renderers";
+
+function str(value: string | undefined): string {
+  return value || "";
+}
 import {
   cleanText,
   removeEmptyProperties,
   buildMultiMatchQuery,
   buildDisMaxQuery,
-  PACKAGE_SOURCE_FIELDS,
-  PACKAGE_MUST_FIELDS,
+  NIXPKGS_GITHUB_BASE,
+  PACKAGE_SEARCH_FIELDS,
   searchNix,
   type NixPackage,
 } from "./query";
 
-const PACKAGE_FILTERS = [{ field: "package_attr_set", value: "nixpkgs" }];
-
-function buildPackageFilterItem(): Record<string, unknown> {
-  const filters = [...PACKAGE_FILTERS];
-  return { bool: { filter: filters } };
-}
-
-function buildEmptyBoolMustArray(): Record<string, unknown>[] {
-  return [];
-}
-
-function buildPackageQueryClause(query: string): Record<string, unknown> {
-  const must = buildEmptyBoolMustArray();
-  const should = [buildMultiMatchQuery(query, PACKAGE_SOURCE_FIELDS)];
-  if (must.length > 0) {
-    return { bool: { must, should, minimum_should_match: 1 } };
-  }
-  return { bool: { should, minimum_should_match: 1 } };
-}
+const PACKAGE_SOURCE_FIELDS = [
+  "package_attr_name",
+  "package_attr_set",
+  "package_pname",
+  "package_pversion",
+  "package_system",
+  "package_position",
+  "package_description",
+  "package_longDescription",
+  "package_homepage",
+  "package_maintainers",
+  "package_license_set",
+];
 
 function buildPackageAggregations(): Record<string, unknown> {
   return {
@@ -57,18 +54,35 @@ function buildPackageAggregations(): Record<string, unknown> {
 
 function buildPackageQuery(query: string): Record<string, unknown> {
   return {
-    _source: PACKAGE_MUST_FIELDS,
-    query: buildDisMaxQuery([buildPackageQueryClause(query)]),
+    _source: PACKAGE_SOURCE_FIELDS,
+    query: buildDisMaxQuery([
+      {
+        bool: {
+          should: [buildMultiMatchQuery(query, PACKAGE_SEARCH_FIELDS)],
+          minimum_should_match: 1,
+        },
+      },
+    ]),
     size: 100,
     aggregations: buildPackageAggregations(),
   };
 }
 
 export async function searchNixPackages(query: string): Promise<NixPackage[]> {
-  console.error("[searchNixPackages] Searching for:", query);
-  const result = await searchNix(buildPackageQuery, throttledFetch, query);
-  console.error("[searchNixPackages] Got", result.length, "results");
-  return result;
+  return await searchNix<NixPackage>(buildPackageQuery, query);
+}
+
+function buildPackageSourceUrl(
+  position: NixPackage["package_position"],
+): string | null {
+  if (!position) return null;
+  const lastColon = position.lastIndexOf(":");
+  const filePath = (
+    lastColon >= 0 ? position.slice(0, lastColon) : position
+  ).replace(/^\/+/, "");
+  const line = lastColon >= 0 ? position.slice(lastColon + 1) : undefined;
+  const anchor = line ? `#L${line}` : "";
+  return `${NIXPKGS_GITHUB_BASE}/${filePath}${anchor}`;
 }
 
 export function mapPackage(item: NixPackage): Record<string, string> {
@@ -85,6 +99,7 @@ export function mapPackage(item: NixPackage): Record<string, string> {
       .map((m) => m.name || m.github)
       .join(", "),
     license: (item.package_license_set ?? []).join(", "),
+    sourceUrl: buildPackageSourceUrl(item.package_position) ?? "",
   });
 }
 
@@ -104,6 +119,7 @@ export function formatPackageTable(res: Record<string, string>[]): string {
         if (meta.length > 0) lines.push(meta.join(" · "));
         if (r.maintainers) lines.push(r.maintainers);
         if (r.homepage) lines.push(r.homepage);
+        if (r.sourceUrl) lines.push(r.sourceUrl);
         return lines.join("\n");
       },
     },
@@ -111,13 +127,14 @@ export function formatPackageTable(res: Record<string, string>[]): string {
 
   const rows = res.map((pkg, i) => ({
     "#": String(i + 1),
-    version: pkg.version || "",
-    package: pkg.pname || pkg.attr_name || "",
-    description: pkg.description || "",
-    attr_name: pkg.attr_name || "",
-    license: pkg.license || "",
-    maintainers: pkg.maintainers || "",
-    homepage: pkg.homepage || "",
+    version: str(pkg.version),
+    package: str(pkg.pname) || str(pkg.attr_name),
+    description: str(pkg.description),
+    attr_name: str(pkg.attr_name),
+    license: str(pkg.license),
+    maintainers: str(pkg.maintainers),
+    homepage: str(pkg.homepage),
+    sourceUrl: str(pkg.sourceUrl),
   }));
 
   return [

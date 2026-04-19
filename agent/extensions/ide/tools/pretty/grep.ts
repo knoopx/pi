@@ -1,12 +1,12 @@
-import type { AgentToolResult } from "@mariozechner/pi-coding-agent";
-import type { ImageContent, TextContent } from "@mariozechner/pi-ai";
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { AgentToolResult, Theme } from "@mariozechner/pi-coding-agent";
 import type { Component } from "@mariozechner/pi-tui";
 import { renderGrepResults } from "../renderers";
 import {
-  extractTextContent,
+  createExecuteWrapper,
   buildRenderCall,
   buildRenderResult,
+  type ToolExecuteFn,
+  type WrappedToolHandler,
 } from "./utils";
 import type { ToolRenderContext } from "./types";
 
@@ -21,43 +21,28 @@ interface GrepParams {
 }
 
 export function createGrepExecute(
-  orig: (
-    tid: string,
-    params: unknown,
-    sig: unknown,
-    upd: unknown,
-    ctx: unknown,
-  ) => Promise<unknown>,
-): (
-  tid: string,
-  params: GrepParams,
-  sig: AbortSignal | undefined,
-  upd: ((details: Record<string, unknown>) => void) | undefined,
-  ctx: any,
-) => Promise<unknown> {
-  return async (tid, params, sig, upd, ctx) => {
-    const p = params as GrepParams;
-    const result = (await orig(tid, p, sig, upd, ctx)) as {
-      content: (TextContent | ImageContent)[];
-      details?: Record<string, unknown>;
-    };
-    const textContent = extractTextContent(result.content);
-    let matchCount = 0;
-    if (textContent) {
-      const lines = textContent.trim().split("\n");
-      const regex = /^.+?[:\-]\d+[:\-]/;
-      for (const l of lines) {
-        if (regex.test(l)) matchCount++;
-      }
-    }
+  orig: ToolExecuteFn,
+): WrappedToolHandler<GrepParams> {
+  return createExecuteWrapper<GrepParams>((result, textContent, p) => {
+    const matchCount = countGrepMatches(textContent);
     result.details = {
       _type: "grepResult" as const,
       text: textContent,
       pattern: p.pattern ?? "",
       matchCount,
     };
-    return result;
-  };
+  })(orig);
+}
+
+function countGrepMatches(textContent: string | null): number {
+  if (!textContent) return 0;
+  const lines = textContent.trim().split("\n");
+  const regex = /^.+?[:\-]\d+[:\-]/;
+  let count = 0;
+  for (const l of lines) {
+    if (regex.test(l)) count++;
+  }
+  return count;
 }
 
 export function createGrepRenderCall(
@@ -69,20 +54,20 @@ export function createGrepRenderCall(
   ctx: ToolRenderContext<unknown, GrepParams>,
 ) => Component {
   return (args, theme, ctx) =>
-    buildRenderCall(
+    buildRenderCall({
       cwd,
       home,
-      "grep",
-      args as unknown as Record<string, unknown>,
+      toolName: "grep",
+      args: args as unknown as Record<string, unknown>,
       theme,
       ctx,
-      (a: Record<string, unknown>, t: Theme) => {
+      suffix: (a: Record<string, unknown>, t: Theme) => {
         const glob = (a as { glob?: string })?.glob
           ? ` ${t.fg("muted", `(${a.glob})`)}`
           : "";
         return glob;
       },
-    );
+    });
 }
 
 export function createGrepRenderResult(): (

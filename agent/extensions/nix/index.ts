@@ -32,10 +32,7 @@ interface CreateToolMeta {
   description: string;
 }
 
-/**
- * Creates a search tool registration object.
- * Delegates execution to executeSearchTool from options.ts.
- */
+
 function createTool<T>(
   meta: CreateToolMeta,
   searchFn: (q: string) => Promise<T[]>,
@@ -57,7 +54,6 @@ function createTool<T>(
       _toolCallId: string,
       params: SearchQueryParamsType,
     ): Promise<AgentToolResult<Record<string, unknown>>> {
-      // Lazy import to avoid circular dependencies at module init
       const { executeSearchTool } = await import("./options");
       return executeSearchTool(
         searchFn as never,

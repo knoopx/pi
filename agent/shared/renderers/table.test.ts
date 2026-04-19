@@ -1,15 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { table } from "./table";
+import { table } from "./table/renderer";
 import type { Column } from "./types";
-
-const ANSI_RE = /\x1b\[[0-9;]*m/g;
-function strip(text: string): string {
-  return text.replace(ANSI_RE, "");
-}
 
 // Shared helper to check for blank separator lines
 function assertNoBlankSeparatorLines(output: string) {
-  const lines = strip(output).split("\n");
+  const lines = output.split("\n");
   for (const line of lines) {
     expect(line).not.toMatch(/^\s*│\s*$/);
   }
@@ -20,7 +15,7 @@ describe("table", () => {
 
   it("renders header and separator", () => {
     const rows = [{ name: "Alice", score: 100 }];
-    const out = strip(table(cols, rows));
+    const out = table(cols, rows);
     const lines = out.split("\n");
     expect(lines[0]).toMatch(/name\s+│\s+score/);
     expect(lines[1]).toMatch(/─+┼─+/);
@@ -31,7 +26,7 @@ describe("table", () => {
       { name: "Alice", score: 100 },
       { name: "Bob", score: 42 },
     ];
-    const out = strip(table(cols, rows));
+    const out = table(cols, rows);
     const lines = out.split("\n");
     // Data rows start at index 2
     expect(lines[2]).toContain("Alice");
@@ -45,7 +40,7 @@ describe("table", () => {
       { name: "A", score: 1 },
       { name: "B", score: 999 },
     ];
-    const out = strip(table(cols, rows));
+    const out = table(cols, rows);
     const lines = out.split("\n");
     // The rightmost digit of 1 and 999 should align at the same column
     const endOf1 = lines[2].lastIndexOf("1");
@@ -60,12 +55,12 @@ describe("table", () => {
 
   it("applies format function", () => {
     const formatted: Column[] = [{ key: "val", format: (v) => `<${v}>` }];
-    const out = strip(table(formatted, [{ val: "x" }]));
+    const out = table(formatted, [{ val: "x" }]);
     expect(out).toContain("<x>");
   });
 
   it("uses custom indent", () => {
-    const out = strip(table(cols, [{ name: "A", score: 1 }], { indent: 2 }));
+    const out = table(cols, [{ name: "A", score: 1 }], { indent: 2 });
     expect(out.split("\n")[0]).toMatch(/^ {2}/);
   });
 
@@ -88,7 +83,7 @@ describe("table", () => {
         url: "https://example.com/very/long/path/that/exceeds/column/width",
       },
     ];
-    const out = strip(table(longCols, rows, { maxTableWidth: 60 }));
+    const out = table(longCols, rows, { maxTableWidth: 60 });
     const lines = out.split("\n");
     for (const line of lines) {
       expect(line.length).toBeLessThanOrEqual(60);
@@ -104,7 +99,7 @@ describe("table", () => {
       { key: "text" },
     ];
     const rows = [{ "#": "1", text: "x".repeat(100) }];
-    const out = strip(table(numCols, rows, { maxTableWidth: 40 }));
+    const out = table(numCols, rows, { maxTableWidth: 40 });
     const headerLine = out.split("\n")[0];
     // The "#" column should still be present and right-aligned
     expect(headerLine).toMatch(/\s+#\s+│/);
@@ -125,7 +120,7 @@ describe("table", () => {
         desc: "Whether to enable.\n\ndefault: false",
       },
     ];
-    const out = strip(table(cols, rows));
+    const out = table(cols, rows);
     // Should not have any blank lines or lines with only separators
     assertNoBlankSeparatorLines(table(cols, rows));
     // Content should still be present
@@ -139,7 +134,7 @@ describe("table", () => {
   it("handles leading and trailing newlines", () => {
     const cols: Column[] = [{ key: "col", maxWidth: 20 }];
     const rows = [{ col: "\n\nhello\n\n" }];
-    const out = strip(table(cols, rows));
+    const out = table(cols, rows);
     const lines = out.split("\n");
     // Should not have blank lines at the start of cell content
     const dataLines = lines.slice(2); // Skip header and separator
@@ -149,7 +144,7 @@ describe("table", () => {
   it("handles many consecutive newlines", () => {
     const cols: Column[] = [{ key: "col" }];
     const rows = [{ col: "line1\n\n\n\n\nline2" }];
-    const out = strip(table(cols, rows));
+    const out = table(cols, rows);
     // Should not have blank separator lines
     assertNoBlankSeparatorLines(table(cols, rows));
     expect(out).toContain("line1");
@@ -159,7 +154,7 @@ describe("table", () => {
   it("handles empty string cells", () => {
     const cols: Column[] = [{ key: "col" }];
     const rows = [{ col: "" }];
-    const out = strip(table(cols, rows));
+    const out = table(cols, rows);
     const lines = out.split("\n");
     // Should render without errors, just empty cell
     expect(lines[2]).toBe("");
@@ -183,7 +178,7 @@ describe("table", () => {
       { "#": "3", desc: "\n\nleading newlines" },
       { "#": "4", desc: "trailing\n\n" },
     ];
-    const out = strip(table(cols, rows));
+    const out = table(cols, rows);
     // No blank separator lines anywhere
     assertNoBlankSeparatorLines(table(cols, rows));
     // All content present

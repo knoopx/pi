@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import type { HookEvent, HooksGroup, HookRule } from "./schema";
+import type { HooksGroup, HookRule, HookOutput } from "./schema";
 import { SKIP_TOOLS } from "./constants";
 
 interface HookResult {
@@ -7,7 +7,7 @@ interface HookResult {
   exitCode: number;
   stdout: string;
   stderr: string;
-  output: import("./schema").HookOutput | undefined;
+  output: HookOutput | undefined;
   group: string;
   command: string;
 }
@@ -67,7 +67,7 @@ export async function processHookGroupExecution(
   ruleExecutor: (
     rule: HookRule,
     group: HooksGroup,
-  ) => Promise<import("./schema").HookOutput | undefined>,
+  ) => Promise<HookOutput | undefined>,
 ): Promise<void> {
   for (const group of config) {
     for (const rule of group.hooks) {

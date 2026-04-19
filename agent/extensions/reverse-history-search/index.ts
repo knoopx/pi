@@ -1,30 +1,19 @@
 import { fuzzyMatch } from "../../shared/fuzzy";
 
-/**
- * Reverse History Search - Ctrl+R fuzzy history search
- *
- * Usage: pi (extension auto-loaded from .pi/extensions/)
- *
- * - Ctrl+R: Open reverse history search
- * - Type to fuzzy filter commands
- * - Up/Down: Navigate results
- * - Enter: Insert selected command into editor
- * - Escape: Cancel
- */
-
 import type {
   ExtensionAPI,
   ExtensionContext,
   Theme,
 } from "@mariozechner/pi-coding-agent";
 import { matchesKey, type TUI } from "@mariozechner/pi-tui";
-import { ensureWidth } from "../ide/components/text-utils";
+import { ensureWidth } from "../ide/lib/text-utils";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
 interface HistoryEntry {
   content: string;
+  preview?: string;
   timestamp: number;
   type: "command" | "message";
 }
@@ -61,7 +50,8 @@ const addHistoryEntry = (
   if (seen.has(key)) return;
 
   seen.add(key);
-  history.push({ ...entry, content });
+  const firstLine = content.split("\n")[0]?.trim() ?? content;
+  history.push({ ...entry, content, preview: firstLine });
 };
 
 const extractBangCommandsFromUserText = (text: string): string[] => {
@@ -112,9 +102,6 @@ const truncateSingleLine = (value: string, maxLength: number): string => {
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-/**
- * Extract session CWD from JSONL file
- */
 function getSessionCwd(content: string): string | null {
   const lines = content.trim().split("\n");
   for (const line of lines) {
@@ -131,9 +118,6 @@ function getSessionCwd(content: string): string | null {
   return null;
 }
 
-/**
- * Extract timestamp from entry or message
- */
 function extractTimestamp(
   entry: SessionLine,
   message: SessionMessageLine,
@@ -145,9 +129,6 @@ function extractTimestamp(
   return Date.now();
 }
 
-/**
- * Process a single session file and add matching history entries
- */
 interface ProcessSessionFileOpts {
   targetCwd: string;
   cutoffTimestamp: number;
@@ -161,36 +142,41 @@ function processSessionFile(
 ): void {
   try {
     const content = readFileSync(fullPath, "utf-8");
-    const sessionCwd = getSessionCwd(content);
-
-    if (!sessionCwd || !isPathMatch(sessionCwd, opts.targetCwd)) return;
+    if (!shouldProcessSession(content, opts.targetCwd)) return;
 
     const lines = content.trim().split("\n");
     for (const line of lines) {
-      if (!line.trim()) continue;
-      try {
-        const entry = JSON.parse(line) as SessionLine;
-        if (entry.type !== "message") continue;
-
-        const message = asSessionMessage(entry.message);
-        if (!message) continue;
-
-        const timestamp = extractTimestamp(entry, message);
-        if (timestamp < opts.cutoffTimestamp) continue;
-
-        processMessageEntry(message, timestamp, opts.history, opts.seen);
-      } catch {
-        continue;
-      }
+      processSessionLine(line, opts);
     }
   } catch {
     // Skip files we can't read
   }
 }
 
-/**
- * Process a message entry and add history entries
- */
+function shouldProcessSession(content: string, targetCwd: string): boolean {
+  const sessionCwd = getSessionCwd(content);
+  if (!sessionCwd) return false;
+  return isPathMatch(sessionCwd, targetCwd);
+}
+
+function processSessionLine(line: string, opts: ProcessSessionFileOpts): void {
+  if (!line.trim()) return;
+  try {
+    const entry = JSON.parse(line) as SessionLine;
+    if (entry.type !== "message") return;
+
+    const message = asSessionMessage(entry.message);
+    if (!message) return;
+
+    const timestamp = extractTimestamp(entry, message);
+    if (timestamp < opts.cutoffTimestamp) return;
+
+    processMessageEntry(message, timestamp, opts.history, opts.seen);
+  } catch {
+    // Skip malformed lines
+  }
+}
+
 function processMessageEntry(
   message: SessionMessageLine,
   timestamp: number,
@@ -210,13 +196,11 @@ function processMessageEntry(
     const text = getUserTextFromContent(message.content);
     if (!text) return;
 
-    const firstLine = text.split("\n")[0]?.trim();
-    if (firstLine)
-      addHistoryEntry(history, seen, {
-        content: firstLine,
-        timestamp,
-        type: "message",
-      });
+    addHistoryEntry(history, seen, {
+      content: text,
+      timestamp,
+      type: "message",
+    });
 
     for (const command of extractBangCommandsFromUserText(text)) {
       addHistoryEntry(history, seen, {
@@ -228,9 +212,6 @@ function processMessageEntry(
   }
 }
 
-/**
- * Walk through directories and process JSONL files
- */
 function walkDir(
   dir: string,
   opts: {
@@ -403,7 +384,10 @@ class HistorySearchComponent {
       const typeIndicator = entry.type === "command" ? "$" : "󰆉";
       const typeColor = entry.type === "command" ? "success" : "accent";
 
-      const displayContent = truncateSingleLine(entry.content, width - 2);
+      const displayContent = truncateSingleLine(
+        entry.preview ?? entry.content,
+        width - 2,
+      );
       const content = `${typeIndicator} ${displayContent}`;
       const padded = ensureWidth(content, width);
 

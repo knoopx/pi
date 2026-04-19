@@ -1,0 +1,109 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ChangeRow focused snapshots > bookmark + move indicator 1`] = `"[48;2;50;36;93m[38;2;250;208;0m↕ [39m[7m[38;2;250;208;0m 󰃀 main [39m[27m [38;2;250;208;0m[1mbm-move[22m[39m                                                              [49m"`;
+
+exports[`ChangeRow focused snapshots > empty description at narrow width 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[39m                                        [49m"`;
+
+exports[`ChangeRow focused snapshots > graph + move indicator 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m↕ [39m[38;2;250;208;0m[1mmove[22m[39m                                                                        [49m"`;
+
+exports[`ChangeRow focused snapshots > immutable + graph 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m[1mimm[22m[39m                                                                           [49m"`;
+
+exports[`ChangeRow focused snapshots > immutable 1`] = `"[48;2;50;36;93m[38;2;76;62;118m[39m[38;2;250;208;0m[1mimmutable[22m[39m                                                                       [49m"`;
+
+exports[`ChangeRow focused snapshots > long author 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mx[22m[39m                                                                               [49m"`;
+
+exports[`ChangeRow focused snapshots > long author at narrow width 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mx[22m[39m                                       [49m"`;
+
+exports[`ChangeRow focused snapshots > long desc narrow width 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mthis is a very long commit message that [22m[39m[49m"`;
+
+exports[`ChangeRow focused snapshots > long description 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mthis is a very long commit message[22m[39m                                              [49m"`;
+
+exports[`ChangeRow focused snapshots > narrow width 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[39m                                        [49m"`;
+
+exports[`ChangeRow focused snapshots > no author 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[39m                                                                                [49m"`;
+
+exports[`ChangeRow focused snapshots > normal at narrow width 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mfeat: add login[22m[39m                         [49m"`;
+
+exports[`ChangeRow focused snapshots > short description 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[39m                                                                                [49m"`;
+
+exports[`ChangeRow focused snapshots > very narrow width 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[39m                    [49m"`;
+
+exports[`ChangeRow focused snapshots > with bookmarks 1`] = `"[48;2;50;36;93m[7m[38;2;250;208;0m 󰃀 main [39m[27m [38;2;250;208;0m[1mbm[22m[39m                                                                     [49m"`;
+
+exports[`ChangeRow focused snapshots > with graph prefix 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m[1mgraph[22m[39m                                                                         [49m"`;
+
+exports[`ChangeRow focused snapshots > with move indicator 1`] = `"[48;2;50;36;93m[38;2;250;208;0m↕ [39m[38;2;250;208;0m[1mmoving[22m[39m                                                                        [49m"`;
+
+exports[`ChangeRow focused snapshots > with multiple bookmarks 1`] = `"[48;2;50;36;93m[7m[38;2;250;208;0m 󰃀 main [39m[27m [7m[38;2;250;208;0m 󰃀 develop [39m[27m [7m[38;2;250;208;0m 󰃀 release [39m[27m [38;2;250;208;0m[1mmulti-bm[22m[39m                                       [49m"`;
+
+exports[`ChangeRow focused snapshots > with single bookmark 1`] = `"[48;2;50;36;93m[7m[38;2;250;208;0m 󰃀 main [39m[27m [38;2;250;208;0m[1mbm[22m[39m                                                                     [49m"`;
+
+exports[`ChangeRow focused snapshots > with working copy icon 1`] = `"[48;2;50;36;93m[38;2;250;208;0m  [39m[38;2;250;208;0m[1mwip[22m[39m                                                                           [49m"`;
+
+exports[`ChangeRow focused snapshots > working copy + state 1`] = `"[48;2;50;36;93m[38;2;250;208;0m  [39m[38;2;250;208;0m[1mwip[22m[39m                                                                           [49m"`;
+
+exports[`ChangeRow marked snapshots > bookmark + move indicator 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m[38;2;250;208;0m↕ [39m[7m[38;2;250;208;0m 󰃀 main [39m[27m [38;2;250;208;0m[1mbm-move[22m[39m                                                            [49m"`;
+
+exports[`ChangeRow marked snapshots > empty description at narrow width 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m                                      [49m"`;
+
+exports[`ChangeRow marked snapshots > graph + move indicator 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m✓ [39m[38;2;250;208;0m↕ [39m[38;2;250;208;0m[1mmove[22m[39m                                                                      [49m"`;
+
+exports[`ChangeRow marked snapshots > immutable + graph 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m✓ [39mimm                                                                         [49m"`;
+
+exports[`ChangeRow marked snapshots > immutable 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m[38;2;76;62;118m[39m[38;2;76;62;118mimmutable[39m                                                                     [49m"`;
+
+exports[`ChangeRow marked snapshots > long author 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39mx                                                                             [49m"`;
+
+exports[`ChangeRow marked snapshots > long author at narrow width 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39mx                                     [49m"`;
+
+exports[`ChangeRow marked snapshots > long description 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39mthis is a very long commit message                                            [49m"`;
+
+exports[`ChangeRow marked snapshots > narrow width 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m                                      [49m"`;
+
+exports[`ChangeRow marked snapshots > no author 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m                                                                              [49m"`;
+
+exports[`ChangeRow marked snapshots > normal at narrow width 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39mfeat: add login                       [49m"`;
+
+exports[`ChangeRow marked snapshots > short description 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m                                                                              [49m"`;
+
+exports[`ChangeRow marked snapshots > with bookmarks 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m[7m[38;2;250;208;0m 󰃀 main [39m[27m bm                                                                   [49m"`;
+
+exports[`ChangeRow marked snapshots > with graph prefix 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m✓ [39mgraph                                                                       [49m"`;
+
+exports[`ChangeRow marked snapshots > with move indicator 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m[38;2;250;208;0m↕ [39m[38;2;250;208;0m[1mmoving[22m[39m                                                                      [49m"`;
+
+exports[`ChangeRow marked snapshots > with multiple bookmarks 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m[7m[38;2;250;208;0m 󰃀 main [39m[27m [7m[38;2;250;208;0m 󰃀 develop [39m[27m [7m[38;2;250;208;0m 󰃀 release [39m[27m multi-bm                                     [49m"`;
+
+exports[`ChangeRow marked snapshots > with single bookmark 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m[7m[38;2;250;208;0m 󰃀 main [39m[27m bm                                                                   [49m"`;
+
+exports[`ChangeRow marked snapshots > with working copy icon 1`] = `"[48;2;50;36;93m[38;2;250;208;0m  [39m[38;2;250;208;0m✓ [39mwip                                                                         [49m"`;
+
+exports[`ChangeRow marked snapshots > working copy + state 1`] = `"[48;2;50;36;93m[38;2;250;208;0m  [39m[38;2;250;208;0m✓ [39mwip                                                                         [49m"`;
+
+exports[`ChangeRow snapshots > empty description, no author 1`] = `"[0m                                                                                "`;
+
+exports[`ChangeRow snapshots > immutable change 1`] = `"[38;2;76;62;118m[39m[38;2;76;62;118mimmutable[39m[0m                                                                       "`;
+
+exports[`ChangeRow snapshots > long author name 1`] = `"x[0m                                                                               "`;
+
+exports[`ChangeRow snapshots > long description at narrow width 1`] = `"this is a very long commit message that "`;
+
+exports[`ChangeRow snapshots > move mode indicator 1`] = `"[38;2;250;208;0m↕ [39m[38;2;250;208;0m[1mmoving[22m[39m[0m                                                                        "`;
+
+exports[`ChangeRow snapshots > no author column 1`] = `"[0m                                                                                "`;
+
+exports[`ChangeRow snapshots > normal change with graph and author 1`] = `"feat: add login[0m                                                                 "`;
+
+exports[`ChangeRow snapshots > normal change without graph 1`] = `"feat: add login[0m                                                                 "`;
+
+exports[`ChangeRow snapshots > with bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m [7m[38;2;250;208;0m 󰃀 release [39m[27m bookmark[0m                                                   "`;
+
+exports[`ChangeRow snapshots > with graph prefix 1`] = `"  feat: add login[0m                                                               "`;
+
+exports[`ChangeRow snapshots > working copy with accent 1`] = `"[38;2;250;208;0m  [39mwip[0m                                                                           "`;
+
+exports[`createEmptyChangeRow snapshots > renders 'No changes' in dim color 1`] = `"[38;2;76;62;118m No changes[39m[0m                                                                     "`;
+
+exports[`createEmptyChangeRow snapshots > renders at very narrow width 1`] = `"[38;2;76;62;118m No changes[39m[0m    "`;
+
+exports[`createEmptyChangeRow snapshots > truncates long message at narrow width 1`] = `"[38;2;76;62;118m This is a very long empty mes[39m"`;

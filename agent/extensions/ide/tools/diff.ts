@@ -1,51 +1,16 @@
 import { codeToANSI } from "@shikijs/cli";
+import { bundledThemes } from "shiki";
 import type { BundledLanguage, BundledTheme } from "shiki";
 import { createLRUCache } from "../../../shared/cache";
 import { lang } from "./language";
-
-const DEFAULT_THEME: BundledTheme = "github-dark";
-
-/**
- * Get the Shiki theme from settings or environment variable
- */
-export async function getTheme(
-  pi: {
-    exec: (
-      cmd: string,
-      args: string[],
-      opts: { cwd: undefined },
-    ) => Promise<{ code: number; stdout: string }>;
-  },
-  cwd: string,
-): Promise<BundledTheme> {
-  const envTheme = process.env.PRETTY_THEME as BundledTheme | undefined;
-  if (envTheme) return envTheme;
-  try {
-    const result = await pi.exec("cat", [`${cwd}/agent/settings.json`], {
-      cwd: undefined,
-    });
-    if (result.code !== 0) return DEFAULT_THEME;
-    const settings = JSON.parse(result.stdout) as {
-      ide?: { shikiTheme?: string };
-    };
-    const theme = settings.ide?.shikiTheme as BundledTheme | undefined;
-    return theme ?? DEFAULT_THEME;
-  } catch {
-    return DEFAULT_THEME;
-  }
-}
-
 let addBg: string | null = null;
 let removeBg: string | null = null;
 let currentTheme: BundledTheme | null = null;
 
-/**
- * Read terminal response until terminator or limit
- */
 function readTerminalResponse(): Buffer {
   let response = Buffer.alloc(0);
   for (;;) {
-    const result = process.stdin.read(1);
+    const result: Buffer | null = process.stdin.read(1) as Buffer | null;
     if (result === null) break;
     if (result.length === 0) break;
     response = Buffer.concat([response, result]);
@@ -56,9 +21,6 @@ function readTerminalResponse(): Buffer {
   return response;
 }
 
-/**
- * Parse terminal color response into RGB tuple
- */
 function parseColorResponse(response: Buffer): [number, number, number] | null {
   const str = response.toString("utf8");
   const match = str.match(
@@ -74,10 +36,6 @@ function parseColorResponse(response: Buffer): [number, number, number] | null {
   return [r, g, b];
 }
 
-/**
- * Query terminal for its background color using OSC sequence
- * Returns [r, g, b] or null if query fails
- */
 function getTerminalBgColor(): [number, number, number] | null {
   if (!process.stdout.isTTY || !process.stdin.isTTY) return null;
 
@@ -96,15 +54,12 @@ function getTerminalBgColor(): [number, number, number] | null {
   }
 }
 
-/**
- * Load theme directly and extract colors for diff backgrounds
- */
 async function initShiki(theme: BundledTheme): Promise<void> {
   if (addBg && removeBg && currentTheme === theme) return;
 
-  const themeModule = await import(`@shikijs/themes/${theme}`);
-  const themeData = themeModule.default;
-  const colors = themeData.colors || {};
+  const themeModule = await bundledThemes[theme]?.();
+  const themeData = themeModule?.default;
+  const colors = themeData?.colors || {};
   const green = colors["diffEditor.insertedTextBackground"];
   const red = colors["diffEditor.removedTextBackground"];
   const hexToRGBA = (hex: string): [number, number, number, number] => {
@@ -174,9 +129,6 @@ interface DiffLine {
   lineNo?: number;
 }
 
-/**
- * Extract file name from diff --git line
- */
 function extractFileNameFromDiffLine(line: string): string | null {
   const match = line.match(/diff --git "?(a\/)?(.+?)"?"?"?( b\/.+)?$/);
   if (!match) return null;
@@ -184,9 +136,6 @@ function extractFileNameFromDiffLine(line: string): string | null {
   return fileName ?? null;
 }
 
-/**
- * Parse hunk header line to extract line numbers
- */
 function parseHunkHeader(line: string): {
   removeLineNo: number;
   addLineNo: number;
@@ -199,9 +148,6 @@ function parseHunkHeader(line: string): {
   };
 }
 
-/**
- * Parse an added line from diff
- */
 function parseAddedLine(
   line: string,
   addLineNo: number | null,
@@ -218,9 +164,6 @@ function parseAddedLine(
   return null;
 }
 
-/**
- * Parse a removed line from diff
- */
 function parseRemovedLine(
   line: string,
   removeLineNo: number | null,
@@ -237,9 +180,6 @@ function parseRemovedLine(
   return null;
 }
 
-/**
- * Parse a context line from diff
- */
 function parseContextLine(
   line: string,
   addLineNo: number | null,
@@ -262,16 +202,10 @@ function parseContextLine(
   return null;
 }
 
-/**
- * Parse an empty line from diff
- */
 function parseEmptyLine(): { line: DiffLine } | null {
   return { line: { type: "empty", content: "" } };
 }
 
-/**
- * Parse a single diff line into a DiffLine object
- */
 function parseDiffLine(
   line: string,
   addLineNo: number | null,
@@ -304,12 +238,6 @@ function parseDiffLine(
   return null;
 }
 
-/**
- * Parse git diff format into structured data
- */
-/**
- * Check if line is a metadata line to skip
- */
 function isMetadataLine(line: string): boolean {
   return (
     line.startsWith("index ") ||
@@ -318,9 +246,6 @@ function isMetadataLine(line: string): boolean {
   );
 }
 
-/**
- * Handle diff --git line (new file)
- */
 function handleGitLine(
   line: string,
   result: DiffHunk[],
@@ -349,9 +274,6 @@ function handleGitLine(
   };
 }
 
-/**
- * Handle @@ hunk header line
- */
 function handleHunkHeader(
   line: string,
   currentFile: DiffHunk | null,
@@ -371,9 +293,6 @@ function handleHunkHeader(
   return { currentHunk: null, addLineNo: null, removeLineNo: null };
 }
 
-/**
- * Handle diff content line
- */
 function handleDiffLine(
   line: string,
   currentHunk: DiffHunkBlock | null,
@@ -428,9 +347,6 @@ function _touch(k: string, v: string[]): string[] {
   return _cache.touch(k, v);
 }
 
-/**
- * Highlight a single line of code with Shiki
- */
 async function highlightLine(
   content: string,
   language: BundledLanguage | undefined,
@@ -451,9 +367,6 @@ async function highlightLine(
   }
 }
 
-/**
- * Color diff line with Shiki theme background colors
- */
 function colorDiffLine(line: DiffLine, highlightedContent: string): string {
   if (line.type === "add" && addBg)
     return `${addBg + highlightedContent}\x1b[0m`;
@@ -462,16 +375,16 @@ function colorDiffLine(line: DiffLine, highlightedContent: string): string {
   return highlightedContent;
 }
 
-/**
- * Render diff with syntax highlighting using Shiki
- */
-async function processHunk(
-  hunk: DiffHunkBlock,
-  file: DiffHunk,
-  language: BundledLanguage | undefined,
-  theme: BundledTheme,
-  output: string[],
-): Promise<void> {
+interface ProcessHunkOptions {
+  hunk: DiffHunkBlock;
+  file: DiffHunk;
+  language: BundledLanguage | undefined;
+  theme: BundledTheme;
+  output: string[];
+}
+
+async function processHunk(options: ProcessHunkOptions): Promise<void> {
+  const { hunk, file, language, theme, output } = options;
   if (file.hunks[0] === hunk) {
     output.push(`\x1b[1m${file.file}\x1b[0m`, "");
   }
@@ -498,7 +411,7 @@ export async function renderDiffWithShiki(
   for (const file of parsed) {
     const language = lang(file.file);
     for (const hunk of file.hunks) {
-      await processHunk(hunk, file, language, theme, output);
+      await processHunk({ hunk, file, language, theme, output });
     }
     output.push("");
   }

@@ -1,10 +1,5 @@
-/**
- * Shared mutable state for the changes component.
- * All modules in this directory operate on this single instance.
- */
-
-import type { Change, FileChange } from "../../types";
-import type { GraphLayout } from "../graph";
+import type { Change, FileChange } from "../../lib/types";
+import type { GraphLayout } from "../../lib/graph";
 
 interface SelectionState {
   selectedIndex: number;
@@ -15,8 +10,6 @@ interface SelectionState {
 
 interface LoadingState {
   loading: boolean;
-  cachedLines: string[];
-  cachedWidth: number;
 }
 
 interface ChangeCacheEntry {
@@ -24,7 +17,6 @@ interface ChangeCacheEntry {
   diffs: Map<string, string[]>;
 }
 
-/** Single mutable state instance — all mutations go through here. */
 export class ChangesState {
   selectionState: SelectionState = {
     selectedIndex: 0,
@@ -35,8 +27,6 @@ export class ChangesState {
 
   loadingState: LoadingState = {
     loading: false,
-    cachedLines: [],
-    cachedWidth: 0,
   };
 
   changes: Change[] = [];
@@ -49,7 +39,6 @@ export class ChangesState {
   changeCache = new Map<string, ChangeCacheEntry>();
   graphLayout: GraphLayout | null = null;
   currentFilterIndex = 0;
-  leftListHeight = 0;
   rightListHeight = 0;
   mode: "normal" | "move" = "normal";
   moveOriginalIndex = -1;

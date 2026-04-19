@@ -1,13 +1,7 @@
-/**
- * DataService — encapsulates all jj command execution.
- * No UI dependencies, pure data operations.
- */
-
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import type { Change, FileChange } from "../../types";
+import type { Change, FileChange } from "../../lib/types";
 
-/** Filter bookmark entries that match a change ID (bidirectional prefix match). */
-function filterBookmarksForChange(
+function filterBookmarksByChange(
   entries: { bookmark: string; changeId: string }[],
   changeId: string,
 ): string[] {
@@ -17,13 +11,11 @@ function filterBookmarksForChange(
     )
     .map((e) => e.bookmark);
 }
-import {
-  loadChanges,
-  getCurrentChangeIdShort,
-  loadChangedFiles,
-  listBookmarksByChange,
-  getRawDiff as jjGetRawDiff,
-} from "../../jj";
+import { listBookmarksByChange } from "../../jj/bookmarks";
+import { loadChanges } from "../../jj/changes";
+import { getCurrentChangeIdShort } from "../../jj/changes";
+import { loadChangedFiles } from "../../jj/files";
+import { getRawDiff } from "../../jj/files";
 
 export class DataService {
   constructor(
@@ -31,20 +23,20 @@ export class DataService {
     public readonly cwd: string,
   ) {}
 
-  async loadChanges(revision = "ancestors(@) ~ root()"): Promise<Change[]> {
+  loadChanges(revision = "ancestors(@) ~ root()"): Promise<Change[]> {
     return loadChanges(this.pi, this.cwd, revision);
   }
 
-  async getCurrentChangeIdShort(): Promise<string | null> {
+  getCurrentChangeIdShort(): Promise<string | null> {
     return getCurrentChangeIdShort(this.pi, this.cwd);
   }
 
-  async loadChangedFiles(changeId: string): Promise<FileChange[]> {
+  loadChangedFiles(changeId: string): Promise<FileChange[]> {
     return loadChangedFiles(this.pi, this.cwd, changeId);
   }
 
   async getRawDiff(changeId: string, filePath?: string): Promise<string> {
-    const { diff } = await jjGetRawDiff(this.pi, this.cwd, changeId, filePath);
+    const { diff } = await getRawDiff(this.pi, this.cwd, changeId, filePath);
     return diff;
   }
 
@@ -61,7 +53,7 @@ export class DataService {
     const entries = await this.listBookmarksByChange();
     const result = new Map<string, string[]>();
     for (const change of changes) {
-      const bookmarks = filterBookmarksForChange(entries, change.changeId);
+      const bookmarks = filterBookmarksByChange(entries, change.changeId);
       if (bookmarks.length > 0) result.set(change.changeId, bookmarks);
     }
     return result;

@@ -3,14 +3,15 @@ import type {
   ExtensionAPI,
   ExtensionCommandContext,
   ExtensionContext,
+  ThemeColor,
   ToolCallEvent,
   ToolResultEvent,
   TurnEndEvent,
 } from "@mariozechner/pi-coding-agent";
+import { createThemeFg, notifyAuditResult } from "../../shared/audit-utils";
 
-import { configLoader } from "./config";
+import { configLoader, loadHooksSettings, saveHooksSettings } from "./config";
 import type { HookEvent, HooksConfig } from "./schema";
-import { processHooks as _processHooks } from "./engine.js";
 import { getSkipTools } from "./results.js";
 import {
   isAbortedToolResult,
@@ -18,117 +19,96 @@ import {
   isAbortedAgentEnd,
 } from "./abort-detection.js";
 import { isGroupActive } from "./pattern-matching.js";
+import {
+  matchCommandPattern,
+  matchFileNamePattern,
+} from "../../shared/pattern-matching";
+import { runEngineHooks } from "./engine.js";
 
-/**
- * Hooks Extension
- *
- * Run shell commands at specific points in pi's lifecycle.
- * Inspired by Claude Code hooks: https://code.claude.com/docs/en/hooks
- *
- * Features:
- * - JSON input via stdin (Claude Code compatible)
- * - JSON output for decision control (allow/deny/block)
- * - Exit code 2 for blocking tool calls
- * - Variable substitution (%file%, %tool%, %cwd%)
- * - Group-based activation via file patterns
- *
- * Supported events:
- * - session_start, session_shutdown
- * - tool_call (PreToolUse), tool_result (PostToolUse)
- * - agent_start, agent_end (Stop)
- * - turn_start, turn_end
- */
-
-export default async function hooksExtension(pi: ExtensionAPI): Promise<void> {
-  await configLoader.load();
-  let currentVersion = configLoader.getVersion();
-
-  const getConfig = async (cwd: string): Promise<HooksConfig> => {
-    const newVersion = configLoader.getVersion();
-    if (newVersion !== currentVersion) currentVersion = newVersion;
-    return configLoader.getConfigForProject(cwd);
-  };
-
-  registerEventHandlers(pi, getConfig);
-  registerCommands(pi);
-}
-
-interface BlockResult {
-  block: true;
-  reason: string;
-}
-
-async function processHooks(
+function registerSessionHandlers(
   pi: ExtensionAPI,
-  config: HooksConfig,
-  event: HookEvent,
-  ctx: ExtensionContext,
-  toolName?: string,
-  input?: unknown,
-  toolCallId?: string,
-  toolResponse?: { content?: unknown[]; details?: unknown; isError?: boolean },
-): Promise<BlockResult | undefined> {
-  return _processHooks(pi, config, {
-    event,
-    ctx,
-    toolInfo: { toolName, input, toolCallId, toolResponse },
-  });
-}
-
-function registerEventHandlers(
-  pi: ExtensionAPI,
-  getConfig: (cwd: string) => Promise<HooksConfig>,
+  getConfig: () => Promise<HooksConfig>,
+  isEnabled: () => boolean,
+  abortedInCurrentTurnRef: { value: boolean },
 ): void {
-  let abortedInCurrentTurn = false;
-
   pi.on("session_start", async (_event, ctx) => {
-    await processHooks(pi, await getConfig(ctx.cwd), "session_start", ctx);
+    if (!isEnabled()) return;
+    await runProcessHooks({
+      pi,
+      config: await getConfig(),
+      event: "session_start",
+      ctx,
+    });
   });
 
   pi.on("session_shutdown", async (_event, ctx) => {
-    if (abortedInCurrentTurn) return;
-    await processHooks(pi, await getConfig(ctx.cwd), "session_shutdown", ctx);
-  });
-
-  pi.on("tool_call", async (event: ToolCallEvent, ctx) => {
-    if (getSkipTools().has(event.toolName)) return;
-    return processHooks(
+    if (!isEnabled() || abortedInCurrentTurnRef.value) return;
+    await runProcessHooks({
       pi,
-      await getConfig(ctx.cwd),
-      "tool_call",
+      config: await getConfig(),
+      event: "session_shutdown",
       ctx,
-      event.toolName,
-      event.input,
-      event.toolCallId,
-    );
-  });
-
-  pi.on("tool_result", async (event: ToolResultEvent, ctx) => {
-    if (getSkipTools().has(event.toolName)) return;
-
-    if (isAbortedToolResult(event)) {
-      abortedInCurrentTurn = true;
-      return;
-    }
-
-    await processHooks(
-      pi,
-      await getConfig(ctx.cwd),
-      "tool_result",
-      ctx,
-      event.toolName,
-      event.input,
-      event.toolCallId,
-      {
-        content: event.content,
-        details: event.details,
-        isError: event.isError,
-      },
-    );
+    });
   });
 
   pi.on("agent_start", async (_event, ctx) => {
-    await processHooks(pi, await getConfig(ctx.cwd), "agent_start", ctx);
+    if (!isEnabled()) return;
+    await runProcessHooks({
+      pi,
+      config: await getConfig(),
+      event: "agent_start",
+      ctx,
+    });
+  });
+}
+
+function registerToolHandlers(
+  pi: ExtensionAPI,
+  getConfig: () => Promise<HooksConfig>,
+  isEnabled: () => boolean,
+  abortedInCurrentTurnRef: { value: boolean },
+): void {
+  pi.on("tool_call", async (event: ToolCallEvent, ctx) => {
+    if (!isEnabled()) return;
+    if (getSkipTools().has(event.toolName)) return;
+    return runProcessHooks({
+      pi,
+      config: await getConfig(),
+      event: "tool_call",
+      ctx,
+      toolInfo: {
+        toolName: event.toolName,
+        input: event.input,
+        toolCallId: event.toolCallId,
+      },
+    });
+  });
+
+  pi.on("tool_result", async (event: ToolResultEvent, ctx) => {
+    if (!isEnabled()) return;
+    if (getSkipTools().has(event.toolName)) return;
+
+    if (isAbortedToolResult(event)) {
+      abortedInCurrentTurnRef.value = true;
+      return;
+    }
+
+    await runProcessHooks({
+      pi,
+      config: await getConfig(),
+      event: "tool_result",
+      ctx,
+      toolInfo: {
+        toolName: event.toolName,
+        input: event.input,
+        toolCallId: event.toolCallId,
+        toolResponse: {
+          content: event.content,
+          details: event.details,
+          isError: event.isError,
+        },
+      },
+    });
   });
 
   (
@@ -139,39 +119,116 @@ function registerEventHandlers(
       ): void;
     }
   ).on("agent_end", async (event: AgentEndEvent, ctx: ExtensionContext) => {
-    if (abortedInCurrentTurn || isAbortedAgentEnd(event)) return;
-    await processHooks(pi, await getConfig(ctx.cwd), "agent_end", ctx);
+    if (
+      !isEnabled() ||
+      abortedInCurrentTurnRef.value ||
+      isAbortedAgentEnd(event)
+    )
+      return;
+    await runProcessHooks({
+      pi,
+      config: await getConfig(),
+      event: "agent_end",
+      ctx,
+    });
   });
+}
 
+function registerTurnHandlers(
+  pi: ExtensionAPI,
+  getConfig: () => Promise<HooksConfig>,
+  isEnabled: () => boolean,
+  abortedInCurrentTurnRef: { value: boolean },
+): void {
   pi.on("turn_start", async (_event, ctx) => {
-    abortedInCurrentTurn = false;
-    await processHooks(pi, await getConfig(ctx.cwd), "turn_start", ctx);
+    if (!isEnabled()) return;
+    abortedInCurrentTurnRef.value = false;
+    await runProcessHooks({
+      pi,
+      config: await getConfig(),
+      event: "turn_start",
+      ctx,
+    });
   });
 
   pi.on("turn_end", async (event: TurnEndEvent, ctx) => {
-    if (abortedInCurrentTurn || isAbortedTurnEnd(event)) return;
-    await processHooks(pi, await getConfig(ctx.cwd), "turn_end", ctx);
+    if (
+      !isEnabled() ||
+      abortedInCurrentTurnRef.value ||
+      isAbortedTurnEnd(event)
+    )
+      return;
+    await runProcessHooks({
+      pi,
+      config: await getConfig(),
+      event: "turn_end",
+      ctx,
+    });
   });
 }
 
-async function handleHooksReload(
-  _args: string,
-  ctx: ExtensionCommandContext,
-): Promise<void> {
-  try {
-    await configLoader.load();
-    const config = configLoader.getConfig();
-    ctx.ui?.notify(`Hooks reloaded: ${config.length} groups loaded`, "info");
-  } catch (error) {
-    ctx.ui?.notify(`Failed to reload hooks: ${error}`, "error");
-  }
+export default async function hooksExtension(pi: ExtensionAPI): Promise<void> {
+  const getConfig = (): Promise<HooksConfig> => {
+    configLoader.load();
+    return Promise.resolve(configLoader.getConfig());
+  };
+
+  const hooksEnabledRef = {
+    value: (await loadHooksSettings()).enabled,
+  };
+
+  registerEventHandlers(pi, getConfig, () => hooksEnabledRef.value);
+  registerCommands(pi, hooksEnabledRef);
 }
 
-async function handleHooksList(
+interface BlockResult {
+  block: true;
+  reason: string;
+}
+
+interface ProcessHooksParams {
+  pi: ExtensionAPI;
+  config: HooksConfig;
+  event: HookEvent;
+  ctx: ExtensionContext;
+  toolInfo?: {
+    toolName?: string;
+    input?: unknown;
+    toolCallId?: string;
+    toolResponse?: {
+      content?: unknown[];
+      details?: unknown;
+      isError?: boolean;
+    };
+  };
+}
+
+function runProcessHooks(
+  params: ProcessHooksParams,
+): Promise<BlockResult | undefined> {
+  return runEngineHooks(params.pi, params.config, {
+    event: params.event,
+    ctx: params.ctx,
+    toolInfo: params.toolInfo,
+  });
+}
+
+function registerEventHandlers(
+  pi: ExtensionAPI,
+  getConfig: () => Promise<HooksConfig>,
+  isEnabled: () => boolean,
+): void {
+  const abortedInCurrentTurnRef = { value: false };
+
+  registerSessionHandlers(pi, getConfig, isEnabled, abortedInCurrentTurnRef);
+  registerToolHandlers(pi, getConfig, isEnabled, abortedInCurrentTurnRef);
+  registerTurnHandlers(pi, getConfig, isEnabled, abortedInCurrentTurnRef);
+}
+
+async function handleHooksAudit(
   _args: string,
   ctx: ExtensionCommandContext,
 ): Promise<void> {
-  if (!ctx.hasUI) return;
   const config = configLoader.getConfig();
 
   if (config.length === 0) {
@@ -179,28 +236,148 @@ async function handleHooksList(
     return;
   }
 
+  const fg = createThemeFg(ctx.ui.theme);
+  const auditResult = await auditHooksConfig(config, ctx.cwd, fg);
+  notifyAuditResult(ctx, auditResult, fg);
+}
+
+interface AuditResult {
+  lines: string[];
+  errors: number;
+}
+
+async function auditHooksConfig(
+  config: ReturnType<typeof configLoader.getConfig>,
+  cwd: string,
+  fg: (color: ThemeColor, text: string) => string,
+): Promise<AuditResult> {
   const lines: string[] = [];
+  let errors = 0;
+
   for (const group of config) {
-    const isActive = await isGroupActive(group.pattern, ctx.cwd);
-    const status = isActive ? "✓" : "✗";
-    lines.push(`${status} ${group.group} (${group.pattern})`);
-    for (const hook of group.hooks) {
-      const context = hook.context ? ` [${hook.context}: ${hook.pattern}]` : "";
-      lines.push(`  → ${hook.event}${context}: ${hook.command}`);
+    const isActive = await isGroupActive(group.pattern, cwd);
+    lines.push(renderGroupHeader(fg, group, isActive));
+
+    for (let i = 0; i < group.hooks.length; i++) {
+      const hook = group.hooks[i];
+      lines.push(renderHookLine(hook));
+      errors += validateHookPattern(hook, { index: i, fg, lines });
     }
   }
 
-  ctx.ui?.notify(lines.join("\n"), "info");
+  return { lines, errors };
 }
 
-function registerCommands(pi: ExtensionAPI): void {
-  pi.registerCommand("hooks-reload", {
-    description: "Reload hooks configuration from disk",
-    handler: handleHooksReload,
-  });
+function renderGroupHeader(
+  fg: (color: ThemeColor, text: string) => string,
+  group: { group: string; pattern: string },
+  isActive: boolean,
+): string {
+  const statusIcon = isActive ? "✓" : "✗";
+  const statusColor = isActive ? "success" : "error";
+  return `${fg(statusColor, statusIcon)} ${group.group} (${group.pattern})`;
+}
 
-  pi.registerCommand("hooks-list", {
-    description: "List all configured hooks with their active status",
-    handler: handleHooksList,
+function renderHookLine(hook: {
+  event: string;
+  context?: string;
+  pattern?: string;
+  command: string;
+}): string {
+  const context = hook.context ? ` [${hook.context}: ${hook.pattern}]` : "";
+  return `  → ${hook.event}${context}: ${hook.command}`;
+}
+
+interface PatternValidationCtx {
+  index: number;
+  fg: (color: ThemeColor, text: string) => string;
+  lines: string[];
+}
+
+function validateHookPattern(
+  hook: NonNullable<
+    ReturnType<typeof configLoader.getConfig>
+  >[number]["hooks"][number],
+  ctx: PatternValidationCtx,
+): number {
+  if (!hook.context || !hook.pattern) return 0;
+  return validatePatternWithContext(hook.context, hook.pattern, ctx);
+}
+
+function validatePatternWithContext(
+  context: string,
+  pattern: string,
+  ctx: PatternValidationCtx,
+): number {
+  const matcher = buildPatternMatcher(context, pattern);
+  if (!tryValidate(matcher, "test", ctx)) {
+    return 1;
+  }
+  if (context === "command") {
+    return tryValidate(matcher, "echo test", ctx) ? 0 : 1;
+  }
+  return 0;
+}
+
+function buildPatternMatcher(
+  context: string,
+  pattern: string,
+): (input: string) => void {
+  if (context === "file_name") {
+    return (input: string) => matchFileNamePattern(input, pattern);
+  }
+  return (input: string) => matchCommandPattern(input, pattern);
+}
+
+function tryValidate(
+  matcher: (input: string) => void,
+  input: string,
+  ctx: PatternValidationCtx,
+): boolean {
+  try {
+    matcher(input);
+    return true;
+  } catch (e) {
+    ctx.lines.push(
+      `    ${ctx.fg("error", "✗")} invalid pattern at hooks[${ctx.index}]: ${(e as Error).message}`,
+    );
+    return false;
+  }
+}
+
+function createHooksHandler(ref: { value: boolean }) {
+  return async function handler(
+    args: string,
+    ctx: ExtensionCommandContext,
+  ): Promise<void> {
+    const action = args.trim().toLowerCase();
+
+    if (action === "on") {
+      ref.value = true;
+      await saveHooksSettings({ enabled: true });
+      ctx.ui?.notify("Hooks enabled", "info");
+      return;
+    }
+
+    if (action === "off") {
+      ref.value = false;
+      await saveHooksSettings({ enabled: false });
+      ctx.ui?.notify("Hooks disabled", "warning");
+      return;
+    }
+
+    // No argument — run audit
+    await handleHooksAudit(args, ctx);
+  };
+}
+
+function registerCommands(
+  pi: ExtensionAPI,
+  hooksEnabledRef: { value: boolean },
+): void {
+  pi.registerCommand("hooks", {
+    description:
+      "Audit hooks config, or toggle with on|off (usage: /hooks [on|off])",
+    handler: createHooksHandler(hooksEnabledRef),
   });
 }

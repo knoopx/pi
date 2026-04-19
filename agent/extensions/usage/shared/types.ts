@@ -7,10 +7,6 @@ interface TokenStats {
   cache: number;
 }
 
-function emptyTokens(): TokenStats {
-  return { total: 0, input: 0, output: 0, cache: 0 };
-}
-
 export interface BaseStats {
   messages: number;
   cost: number;

@@ -44,7 +44,7 @@ async function ghList<T>(args: string[], errorBase: string): Promise<T[]> {
   return items;
 }
 
-async function listWorkflows(
+function listWorkflows(
   owner: string,
   repo: string,
   limit = 30,
@@ -62,7 +62,7 @@ async function listWorkflows(
   );
 }
 
-async function listWorkflowRuns(
+function listWorkflowRuns(
   owner: string,
   repo: string,
   workflowId?: number | string,
@@ -150,6 +150,7 @@ Examples:
 - gh-list-workflows(owner='microsoft', repo='vscode', limit=50)
 - gh-list-workflows(owner='golang', repo='go', limit=20)`,
     parameters: ListWorkflowsParams,
+    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _id: string,
       params: ListWorkflowsParamsType,
@@ -231,6 +232,7 @@ Examples:
 - gh-list-runs(owner='microsoft', repo='vscode', workflow='ci.yml', limit=50)
 - gh-list-runs(owner='golang', repo='go', limit=20)`,
     parameters: ListRunsParams,
+    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _id: string,
       params: ListRunsParamsType,

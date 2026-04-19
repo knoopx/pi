@@ -4,6 +4,7 @@ import type { Column } from "../../shared/renderers";
 
 import { ghCmd, ghCmdJson } from "./utils";
 import {
+  createBasicColumns,
   createListParamsSchema,
   registerListTool,
   registerViewTool,
@@ -25,7 +26,7 @@ interface GHPR {
   reviewDecision: string;
 }
 
-async function listPRs(
+function listPRs(
   owner: string,
   repo: string,
   state?: "open" | "closed" | "merged" | "all",
@@ -48,11 +49,7 @@ async function listPRs(
   return ghCmdJson<GHPR[]>(args, "pr list");
 }
 
-async function viewPR(
-  owner: string,
-  repo: string,
-  prNumber: number,
-): Promise<GHPR> {
+function viewPR(owner: string, repo: string, prNumber: number): Promise<GHPR> {
   return ghCmdJson<GHPR>(
     [
       "pr",
@@ -78,7 +75,7 @@ interface CreatePROpts {
   draft?: boolean;
 }
 
-async function createPR({
+function createPR({
   owner,
   repo,
   title,
@@ -153,26 +150,12 @@ const CreatePRParams = Type.Object({
   ),
 });
 
-type ListPRsParamsType = Static<typeof ListPRsParams>;
-type ViewPRParamsType = Static<typeof ViewPRParams>;
 type CreatePRParamsType = Static<typeof CreatePRParams>;
 
 function createPrColumns(): Column[] {
-  return [
-    { key: "#", align: "right", minWidth: 5 },
-    {
-      key: "title",
-      format(_v: unknown, row: Record<string, unknown>) {
-        const r = row as Record<string, string>;
-        const dot = r.state === "OPEN" ? "●" : "○";
-        return [
-          `${dot} ${r.title}`,
-          `${r.base} ← ${r.head} · ${r.author} · ${r.date}`,
-          r.url,
-        ].join("\n");
-      },
-    },
-  ];
+  return createBasicColumns(
+    (r) => `${r.base} ← ${r.head} · ${r.author} · ${r.date}\n${r.url}`,
+  );
 }
 
 function createPrRowMapper() {

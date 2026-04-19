@@ -1,6 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { getRawDiff } from "./jj";
+import { beforeEach, describe, expect, it } from "vitest";
+import { getRawDiff } from "./jj/files";
 import {
   generateWorkspaceName,
   parseWorkspaceList,
@@ -9,12 +8,10 @@ import {
   spawnAgent,
   loadAgentWorkspaces,
 } from "./workspace";
+import { createMockExecPi, createMockExecPiWithRoutes } from "./lib/test-utils";
 
-interface ExecResult {
-  code: number;
-  stdout: string;
-  stderr: string;
-}
+const { execMock, pi } = createMockExecPi();
+beforeEach(() => execMock.mockReset());
 
 describe("workspace module", () => {
   describe("given workspace name generation", () => {
@@ -99,14 +96,6 @@ describe("workspace module", () => {
   });
 
   describe("given tmux session checks", () => {
-    let execMock: ReturnType<typeof vi.fn>;
-    let pi: ExtensionAPI;
-
-    beforeEach(() => {
-      execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>();
-      pi = { exec: execMock } as unknown as ExtensionAPI;
-    });
-
     describe("when tmux session does not exist", () => {
       it("then reports completed status", async () => {
         execMock.mockResolvedValueOnce({ code: 1, stdout: "", stderr: "" });
@@ -143,18 +132,19 @@ describe("workspace module", () => {
   });
 
   describe("given workspace diff loading", () => {
-    let execMock: ReturnType<typeof vi.fn>;
-    let pi: ExtensionAPI;
-
-    beforeEach(() => {
-      execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>();
-      pi = { exec: execMock } as unknown as ExtensionAPI;
-    });
-
     describe("when file path contains single quotes", () => {
       it("then returns diff with files", async () => {
         execMock
-          .mockResolvedValueOnce({ code: 0, stdout: "", stderr: "" })
+          .mockResolvedValueOnce({
+            code: 0,
+            stdout: "",
+            stderr: "",
+          })
+          .mockResolvedValueOnce({
+            code: 0,
+            stdout: "",
+            stderr: "",
+          })
           .mockResolvedValueOnce({
             code: 0,
             stdout: "diff output",
@@ -191,25 +181,17 @@ describe("workspace module", () => {
   });
 
   describe("given subagent spawning", () => {
-    let execMock: ReturnType<typeof vi.fn>;
-    let pi: ExtensionAPI;
-
-    beforeEach(() => {
-      execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>();
-      pi = { exec: execMock } as unknown as ExtensionAPI;
-    });
-
     describe("when session path and quoted task are provided", () => {
       it("then builds tmux command with escaped task and session argument", async () => {
         execMock.mockResolvedValue({ code: 0, stdout: "", stderr: "" });
 
-        await spawnAgent(
+        await spawnAgent({
           pi,
-          "/repo/.jj/workspaces/ide-abc",
-          "ide-abc",
-          'fix "discard" flow',
-          "/repo/.pi/sessions/child.json",
-        );
+          workspacePath: "/repo/.jj/workspaces/ide-abc",
+          sessionName: "ide-abc",
+          task: 'fix "discard" flow',
+          forkedSessionPath: "/repo/.pi/sessions/child.json",
+        });
 
         expect(execMock).toHaveBeenCalledWith("tmux", [
           "new-session",
@@ -234,7 +216,12 @@ describe("workspace module", () => {
         });
 
         await expect(
-          spawnAgent(pi, "/repo/.jj/workspaces/ide-abc", "ide-abc", "task"),
+          spawnAgent({
+            pi,
+            workspacePath: "/repo/.jj/workspaces/ide-abc",
+            sessionName: "ide-abc",
+            task: "task",
+          }),
         ).rejects.toThrow("Failed to spawn agent: tmux failed");
       });
     });
@@ -243,52 +230,42 @@ describe("workspace module", () => {
   describe("given agent workspace aggregation", () => {
     describe("when ide and non-ide workspaces are listed", () => {
       it("then returns only ide workspaces with status and file stats", async () => {
-        const execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>(
-          async (command: unknown, args: unknown) => {
-            const cmd = String(command);
-            const argList = (args as string[]) ?? [];
-
-            if (
-              cmd === "jj" &&
-              argList[0] === "workspace" &&
-              argList[1] === "list"
-            )
-              return {
-                code: 0,
-                stdout:
-                  "ide-abc: znvxvkwopwql feat: ✨ add\nother: qwerty not ide\n",
-                stderr: "",
-              };
-
-            if (
-              cmd === "jj" &&
-              argList[0] === "workspace" &&
-              argList[1] === "root"
-            )
-              return { code: 0, stdout: "/repo\n", stderr: "" };
-
-            if (cmd === "tmux" && argList[0] === "has")
-              return { code: 0, stdout: "", stderr: "" };
-
-            if (cmd === "tmux" && argList[0] === "list-panes")
-              return { code: 0, stdout: "pi\n", stderr: "" };
-
-            if (
-              cmd === "jj" &&
-              argList[0] === "diff" &&
-              argList[1] === "--stat"
-            )
-              return {
-                code: 0,
-                stdout: " a.ts | 2 ++\n b.ts | 1 -\n",
-                stderr: "",
-              };
-
-            return { code: 1, stdout: "", stderr: "unexpected call" };
+        const { pi } = createMockExecPiWithRoutes([
+          {
+            command: "jj",
+            args: ["workspace", "list"],
+            result: {
+              code: 0,
+              stdout:
+                "ide-abc: znvxvkwopwql feat: ✨ add\nother: qwerty not ide\n",
+              stderr: "",
+            },
           },
-        );
-
-        const pi = { exec: execMock } as unknown as ExtensionAPI;
+          {
+            command: "jj",
+            args: ["workspace", "root"],
+            result: { code: 0, stdout: "/repo\n", stderr: "" },
+          },
+          {
+            command: "tmux",
+            args: ["has"],
+            result: { code: 0, stdout: "", stderr: "" },
+          },
+          {
+            command: "tmux",
+            args: ["list-panes"],
+            result: { code: 0, stdout: "pi\n", stderr: "" },
+          },
+          {
+            command: "jj",
+            args: ["diff", "--stat"],
+            result: {
+              code: 0,
+              stdout: " a.ts | 2 ++\n b.ts | 1 -\n",
+              stderr: "",
+            },
+          },
+        ]);
 
         const result = await loadAgentWorkspaces(pi);
 

@@ -58,7 +58,7 @@ async function listReleases(
 
   let releases: GHRelease[];
   try {
-    releases = JSON.parse(result.stdout);
+    releases = JSON.parse(result.stdout) as GHRelease[];
   } catch {
     throw new Error(`Failed to parse gh release list output: ${result.stdout}`);
   }
@@ -89,7 +89,7 @@ async function viewRelease(
 
   let release: GHRelease;
   try {
-    release = JSON.parse(result.stdout);
+    release = JSON.parse(result.stdout) as GHRelease;
   } catch {
     throw new Error(`Failed to parse gh release view output: ${result.stdout}`);
   }
@@ -155,6 +155,7 @@ Examples:
 - gh-list-releases(owner='microsoft', repo='vscode', limit=50)
 - gh-list-releases(owner='golang', repo='go', limit=10)`,
     parameters: ListReleasesParams,
+    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _id: string,
       params: ListReleasesParamsType,
@@ -272,6 +273,7 @@ Examples:
 - gh-view-release(owner='microsoft', repo='vscode', tag='1.85.0')
 - gh-view-release(owner='golang', repo='go', tag='go1.21.0')`,
     parameters: ViewReleaseParams,
+    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _id: string,
       params: ViewReleaseParamsType,

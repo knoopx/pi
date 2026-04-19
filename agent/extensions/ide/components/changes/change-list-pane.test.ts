@@ -2,11 +2,40 @@ import { describe, it, expect } from "vitest";
 import {
   createMockChange,
   renderSnapshot,
-  renderRawSnapshot,
   defaultMockChange,
   featureBookmarkChange,
   setMockChanges,
+  wcPrevChanges,
 } from "./test-helpers";
+import { createMockTheme } from "../../lib/test-utils";
+
+async function createChangeListPaneLines(
+  changes: ReturnType<typeof createMockChange>[],
+  selectedIndex: number,
+  focus: "left" | "right",
+  side: "left" | "right",
+): Promise<string[]> {
+  const { ChangeListPane } =
+    await import("../../lib/split-panel/change-list-pane");
+  const theme = createMockTheme();
+  return new ChangeListPane({
+    changes: changes.map((c) => ({
+      ...c,
+      immutable: c.immutable ?? false,
+      description: c.description,
+    })),
+    selectedIndex,
+    selectedChangeIds: new Set(),
+    currentChangeId: null,
+    bookmarksByChange: new Map(),
+    graphLayout: null,
+    loadingState: { loading: false },
+    focus,
+    side,
+    height: 5,
+    theme,
+  }).render(60);
+}
 
 describe("linear chain graph renders with tree structure", () => {
   it("then renders tree structure for chained commits", async () => {
@@ -40,25 +69,8 @@ describe("linear chain graph renders with tree structure", () => {
 
   it("then renders working copy icon for current change", async () => {
     const visibleLines = await renderSnapshot(120, (state) => {
-      setMockChanges(
-        state,
-        [
-          createMockChange({
-            changeId: "wc",
-            description: "work in progress",
-            author: "Alice",
-            parentIds: ["prev"],
-          }),
-          createMockChange({
-            changeId: "prev",
-            description: "previous commit",
-            author: "Alice",
-            parentIds: [],
-          }),
-        ],
-        0,
-      );
-      state.currentChangeId = "wc"; // wc IS the current working copy
+      setMockChanges(state, wcPrevChanges(), 0);
+      state.currentChangeId = "wc";
     });
     expect(visibleLines).toMatchSnapshot();
   });
@@ -246,7 +258,7 @@ describe("selected / marked changes", () => {
   });
 
   it("then renders marked background for selected change", async () => {
-    const rawLines = await renderRawSnapshot(120, (state) => {
+    const rawLines = await renderSnapshot(120, (state) => {
       setMockChanges(state, [
         createMockChange({
           changeId: "x",
@@ -261,7 +273,7 @@ describe("selected / marked changes", () => {
   });
 
   it("then extends marked background to full row width for empty description", async () => {
-    const rawLines = await renderRawSnapshot(60, (state) => {
+    const rawLines = await renderSnapshot(60, (state) => {
       setMockChanges(state, [
         createMockChange({
           changeId: "empty",
@@ -366,20 +378,7 @@ describe("edge cases", () => {
 
   it("then renders working copy as selected change", async () => {
     const visibleLines = await renderSnapshot(120, (state) => {
-      setMockChanges(state, [
-        createMockChange({
-          changeId: "wc",
-          description: "work in progress",
-          author: "Alice",
-          parentIds: ["prev"],
-        }),
-        createMockChange({
-          changeId: "prev",
-          description: "previous commit",
-          author: "Bob",
-          parentIds: [],
-        }),
-      ]);
+      setMockChanges(state, wcPrevChanges("Bob"));
       state.currentChangeId = "wc";
     });
     expect(visibleLines).toMatchSnapshot();
@@ -426,5 +425,69 @@ describe("edge cases", () => {
       state.bookmarksByChange.set("abc", ["main"]);
     });
     expect(visibleLines).toMatchSnapshot();
+  });
+});
+
+describe("side prop controls focus indicator", () => {
+  function renderSide(focus: "left" | "right", side: "left" | "right") {
+    return createChangeListPaneLines(
+      [
+        createMockChange({
+          changeId: "a",
+          description: "first change",
+          author: "Alice",
+          parentIds: [],
+        }),
+      ],
+      0,
+      focus,
+      side,
+    );
+  }
+
+  it("then shows focused cursor when side is left and focus is left", async () => {
+    const lines = await renderSide("left", "left");
+    expect(lines).toMatchSnapshot();
+  });
+
+  it("then shows unfocused cursor when side is left but focus is right", async () => {
+    const lines = await renderSide("right", "left");
+    expect(lines).toMatchSnapshot();
+  });
+
+  it("then shows focused cursor when side is right and focus is right", async () => {
+    const lines = await renderSide("right", "right");
+    expect(lines).toMatchSnapshot();
+  });
+
+  it("then shows unfocused cursor when side is right but focus is left", async () => {
+    const lines = await renderSide("left", "right");
+    expect(lines).toMatchSnapshot();
+  });
+
+  it("then defaults to left side when side prop is omitted", async () => {
+    const { ChangeListPane } =
+      await import("../../lib/split-panel/change-list-pane");
+    const theme = createMockTheme();
+    const lines = new ChangeListPane({
+      changes: [
+        {
+          changeId: "a",
+          immutable: false,
+          description: "first change",
+          author: "Alice",
+        },
+      ],
+      selectedIndex: 0,
+      selectedChangeIds: new Set(),
+      currentChangeId: null,
+      bookmarksByChange: new Map(),
+      graphLayout: null,
+      loadingState: { loading: false },
+      focus: "left",
+      height: 5,
+      theme,
+    }).render(60);
+    expect(lines).toMatchSnapshot();
   });
 });

@@ -1,13 +1,13 @@
-import type { AgentToolResult } from "@mariozechner/pi-coding-agent";
-import type { ImageContent, TextContent } from "@mariozechner/pi-ai";
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { AgentToolResult, Theme } from "@mariozechner/pi-coding-agent";
 import type { Component } from "@mariozechner/pi-tui";
 import { renderFindResults } from "../renderers";
 import {
-  extractTextContent,
+  createExecuteWrapper,
   countLines,
   buildRenderCall,
   buildRenderResult,
+  type ToolExecuteFn,
+  type WrappedToolHandler,
 } from "./utils";
 import type { ToolRenderContext } from "./types";
 
@@ -18,35 +18,16 @@ interface FindParams {
 }
 
 export function createFindExecute(
-  orig: (
-    tid: string,
-    params: unknown,
-    sig: unknown,
-    upd: unknown,
-    ctx: unknown,
-  ) => Promise<unknown>,
-): (
-  tid: string,
-  params: FindParams,
-  sig: AbortSignal | undefined,
-  upd: ((details: Record<string, unknown>) => void) | undefined,
-  ctx: any,
-) => Promise<unknown> {
-  return async (tid, params, sig, upd, ctx) => {
-    const p = params as FindParams;
-    const result = (await orig(tid, p, sig, upd, ctx)) as {
-      content: (TextContent | ImageContent)[];
-      details?: Record<string, unknown>;
-    };
-    const textContent = extractTextContent(result.content);
+  orig: ToolExecuteFn,
+): WrappedToolHandler<FindParams> {
+  return createExecuteWrapper<FindParams>((result, textContent, p) => {
     result.details = {
       _type: "findResult" as const,
       text: textContent,
       pattern: p.pattern ?? "",
       matchCount: countLines(textContent),
     };
-    return result;
-  };
+  })(orig);
 }
 
 export function createFindRenderCall(
@@ -58,14 +39,14 @@ export function createFindRenderCall(
   ctx: ToolRenderContext<unknown, FindParams>,
 ) => Component {
   return (args, theme, ctx) =>
-    buildRenderCall(
+    buildRenderCall({
       cwd,
       home,
-      "find",
-      args as unknown as Record<string, unknown>,
+      toolName: "find",
+      args: args as unknown as Record<string, unknown>,
       theme,
       ctx,
-    );
+    });
 }
 
 export function createFindRenderResult(): (

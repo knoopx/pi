@@ -1,37 +1,70 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { ChangesState } from "./state";
-import { notifyMutation } from "../../jj";
-import type { Change } from "../../types";
+import { getRepoRoot } from "../../jj/files";
+import type { Change } from "../../lib/types";
+import { notifyMutation } from "../../jj/core";
 
-export function createActionHandlers(
+interface ActionHandlersOptions {
+  pi: ExtensionAPI;
+  cwd: string;
+  state: ChangesState;
+  finish: () => void;
+  refreshAfterMutation: () => Promise<void>;
+  restoreSelection: (prevIndex: number) => Promise<void>;
+  loadFilesAndDiff: (change: Change) => Promise<void>;
+  notify: (msg: string, type?: string) => void;
+  onBookmark?: (changeId: string) => Promise<string | null>;
+  onFileCmAction?: (
+    path: string,
+    action: "inspect" | "deps" | "used-by",
+  ) => void;
+}
+
+interface ActionHandlers {
+  handleDescribe: () => Promise<void>;
+  handleEdit: () => Promise<void>;
+  handleSplit: () => Promise<void>;
+  handleSquash: () => Promise<void>;
+  handleDrop: () => Promise<void>;
+  handleNew: () => Promise<void>;
+  handleRevert: () => Promise<void>;
+  handleInspectChange: () => Promise<void>;
+  getSelectedChanges: () => Change[];
+}
+
+function getSelectedChanges(state: ChangesState): Change[] {
+  if (state.selectedChangeIds.size > 0)
+    return state.changes.filter((c) => state.selectedChangeIds.has(c.changeId));
+  return state.selectedChange ? [state.selectedChange] : [];
+}
+
+async function handleDescribe(
   pi: ExtensionAPI,
   cwd: string,
   state: ChangesState,
   finish: () => void,
-  refreshAfterMutation: () => Promise<void>,
-  restoreSelection: (prevIndex: number) => Promise<void>,
-  loadFilesAndDiff: (change: Change) => Promise<void>,
-  notify: (msg: string, type?: string) => void,
-  onBookmark?: (changeId: string) => Promise<string | null>,
-  onFileCmAction?: (
-    path: string,
-    action: "inspect" | "deps" | "used-by",
-  ) => void,
 ) {
-  async function handleDescribe() {
-    const selectedChangeIds = getSelectedChanges();
-    if (selectedChangeIds.length === 0) return;
+  const selectedChanges = getSelectedChanges(state);
+  if (selectedChanges.length === 0) return;
 
-    finish();
-    const ids = selectedChangeIds.map((target) => target.changeId);
+  finish();
+  const ids = selectedChanges.map((target) => target.changeId);
 
-    const workflowLines = ids
-      .map((id, index) => {
-        return `${String(index + 1)}. Get git hash: \`jj log -r ${id} -T 'commit_id' --no-graph\`\n   Check semantic changes: \`sem diff --commit <hash-from-step-1>\` (use the hash, NOT parent!)\n   Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "<type>(<scope>): <description>"\``;
-      })
-      .join("\n");
+  const workflowLines = ids
+    .map((id, index) => {
+      return `${String(index + 1)}. Get git hash: \`jj log -r ${id} -T 'commit_id' --no-graph\`\n   Check semantic changes: \`sem diff --commit <hash-from-step-1>\` (use the hash, NOT parent!)\n   Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "<type>(<scope>): <description>"\``;
+    })
+    .join("\n");
 
-    const task = `Describe jujutsu changes ${ids.join(", ")} using Conventional Commits format.
+  const repoRoot = await getRepoRoot(pi, cwd);
+
+  const task = `Describe jujutsu changes ${ids.join(", ")} using Conventional Commits format.
+
+<context>
+- Current working directory: \`${cwd}\`
+- Jujutsu workspace root: \`${repoRoot}\`
+- File paths in change diffs are relative to the workspace root. Run jj commands from \`${repoRoot}\` when they take file paths.
+</context>
 
 Use the **conventional-commits** skill for type/scope rules.
 Use the **sem** skill to understand actual code changes vs cosmetic modifications.
@@ -81,28 +114,46 @@ Good examples (specific, concrete):
 <workflow>
 ${workflowLines}
 </workflow>`;
-    pi.sendUserMessage(task);
-  }
+  pi.sendUserMessage(task);
+}
 
-  async function handleEdit(): Promise<void> {
-    if (!state.selectedChange) return;
-    const editResult = await pi.exec(
-      "jj",
-      ["edit", state.selectedChange.changeId],
-      { cwd },
-    );
-    await refreshAfterMutation();
-    notifyMutation(
-      pi,
-      `Set working copy to change ${state.selectedChange.changeId.slice(0, 8)}`,
-      editResult.stderr || editResult.stdout,
-    );
-  }
+async function handleEdit(
+  pi: ExtensionAPI,
+  cwd: string,
+  state: ChangesState,
+  refreshAfterMutation: () => Promise<void>,
+) {
+  if (!state.selectedChange) return;
+  const editResult = await pi.exec(
+    "jj",
+    ["edit", state.selectedChange.changeId],
+    { cwd },
+  );
+  await refreshAfterMutation();
+  notifyMutation(
+    pi,
+    `Set working copy to change ${state.selectedChange.changeId.slice(0, 8)}`,
+    editResult.stderr || editResult.stdout,
+  );
+}
 
-  async function handleSplit(): Promise<void> {
-    if (!state.selectedChange) return;
-    finish();
-    const task = `Split jujutsu change ${state.selectedChange.changeId} into semantically logical commits.
+async function handleSplit(
+  pi: ExtensionAPI,
+  cwd: string,
+  state: ChangesState,
+  finish: () => void,
+) {
+  if (!state.selectedChange) return;
+  finish();
+  const repoRoot = await getRepoRoot(pi, cwd);
+
+  const task = `Split jujutsu change ${state.selectedChange.changeId} into semantically logical commits.
+
+<context>
+- Current working directory: \`${cwd}\`
+- Jujutsu workspace root: \`${repoRoot}\`
+- File paths in change diffs are relative to the workspace root. Run jj commands from \`${repoRoot}\` when they take file paths.
+</context>
 
 <workflow>
 1. Get git hash: \`jj log -r ${state.selectedChange.changeId} -T 'commit_id' --no-graph\`
@@ -138,83 +189,105 @@ ${workflowLines}
 
 Use the **conventional-commits** skill for commit message format.
 Use the **sem** skill to understand actual code changes vs cosmetic modifications.`;
-    pi.sendUserMessage(task);
-  }
+  pi.sendUserMessage(task);
+}
 
-  async function handleSquash(): Promise<void> {
-    if (!state.selectedChange) return;
-    const prevIndex = state.selectionState.selectedIndex;
-    const originalChangeId = state.selectedChange.changeId;
-    const parentChangeId = state.selectedChange.parentIds?.[0]?.slice(0, 8);
-    const squashResult = await pi.exec(
-      "jj",
-      ["squash", "-u", "-r", originalChangeId],
-      { cwd },
-    );
-    await refreshAfterMutation();
-    await restoreSelection(prevIndex);
-    if (state.selectedChange) {
-      await loadFilesAndDiff(state.selectedChange);
-    }
-    const msg = parentChangeId
-      ? `Squashed change ${originalChangeId.slice(0, 8)} into change ${parentChangeId}`
-      : `Squashed change ${originalChangeId.slice(0, 8)}`;
-    notifyMutation(pi, msg, squashResult.stderr || squashResult.stdout);
-  }
+interface SquashDropOptions {
+  pi: ExtensionAPI;
+  cwd: string;
+  state: ChangesState;
+  refreshAfterMutation: () => Promise<void>;
+  restoreSelection: (prevIndex: number) => Promise<void>;
+  loadFilesAndDiff: (change: Change) => Promise<void>;
+}
 
-  async function handleDrop(): Promise<void> {
-    if (!state.selectedChange) return;
-    const prevIndex = state.selectionState.selectedIndex;
-    const originalChangeId = state.selectedChange.changeId;
-    const dropResult = await pi.exec("jj", ["abandon", originalChangeId], {
-      cwd,
-    });
-    state.selectedChangeIds.delete(originalChangeId);
-    await refreshAfterMutation();
-    await restoreSelection(prevIndex);
-    if (state.selectedChange) {
-      await loadFilesAndDiff(state.selectedChange);
-    }
-    notifyMutation(
-      pi,
-      `Dropped change ${originalChangeId}`,
-      dropResult.stderr || dropResult.stdout,
-    );
-  }
+async function handleSquash(options: SquashDropOptions) {
+  const { pi, cwd, state } = options;
+  if (!state.selectedChange) return;
+  const originalChangeId = state.selectedChange.changeId;
+  const parentChangeId = state.selectedChange.parentIds?.[0]?.slice(0, 8);
+  const result = await pi.exec("jj", ["squash", "-u", "-r", originalChangeId], {
+    cwd,
+  });
+  await runMutationFlow(options);
+  const msg = parentChangeId
+    ? `Squashed change ${originalChangeId.slice(0, 8)} into change ${parentChangeId}`
+    : `Squashed change ${originalChangeId.slice(0, 8)}`;
+  notifyMutation(pi, msg, result.stderr || result.stdout);
+}
 
-  async function handleNew(): Promise<void> {
-    if (!state.selectedChange) return;
-    const newResult = await pi.exec(
-      "jj",
-      ["new", state.selectedChange.changeId],
-      { cwd },
-    );
-    await refreshAfterMutation();
-    const msg = state.currentChangeId
-      ? `Created change ${state.currentChangeId} from change ${state.selectedChange.changeId.slice(0, 8)}`
-      : `Started a child change from change ${state.selectedChange.changeId.slice(0, 8)}`;
-    notifyMutation(pi, msg, newResult.stderr || newResult.stdout);
-  }
+async function handleDrop(options: SquashDropOptions) {
+  const { pi, cwd, state } = options;
+  if (!state.selectedChange) return;
+  const originalChangeId = state.selectedChange.changeId;
+  const result = await pi.exec("jj", ["abandon", originalChangeId], { cwd });
+  state.selectedChangeIds.delete(originalChangeId);
+  await runMutationFlow(options);
+  notifyMutation(
+    pi,
+    `Dropped change ${originalChangeId}`,
+    result.stderr || result.stdout,
+  );
+}
 
-  async function handleRevert(): Promise<void> {
-    if (!state.selectedChange) return;
-    const revertResult = await pi.exec(
-      "jj",
-      ["revert", "-r", state.selectedChange.changeId, "--insert-after", "@"],
-      { cwd },
-    );
-    await refreshAfterMutation();
-    notifyMutation(
-      pi,
-      `Reverted change ${state.selectedChange.changeId.slice(0, 8)}`,
-      revertResult.stderr || revertResult.stdout,
-    );
+async function runMutationFlow(options: SquashDropOptions) {
+  const { refreshAfterMutation, restoreSelection, loadFilesAndDiff, state } =
+    options;
+  const prevIndex = state.selectionState.selectedIndex;
+  await refreshAfterMutation();
+  await restoreSelection(prevIndex);
+  if (state.selectedChange) {
+    await loadFilesAndDiff(state.selectedChange);
   }
+}
 
-  async function handleInspectChange(): Promise<void> {
-    if (!state.selectedChange) return;
-    finish();
-    const task = `Review the jujutsu change ${state.selectedChange.changeId} using entity-level code analysis.
+async function handleNew(
+  pi: ExtensionAPI,
+  cwd: string,
+  state: ChangesState,
+  refreshAfterMutation: () => Promise<void>,
+) {
+  if (!state.selectedChange) return;
+  const newResult = await pi.exec(
+    "jj",
+    ["new", state.selectedChange.changeId],
+    { cwd },
+  );
+  await refreshAfterMutation();
+  const msg = state.currentChangeId
+    ? `Created change ${state.currentChangeId} from change ${state.selectedChange.changeId.slice(0, 8)}`
+    : `Started a child change from change ${state.selectedChange.changeId.slice(0, 8)}`;
+  notifyMutation(pi, msg, newResult.stderr || newResult.stdout);
+}
+
+async function handleRevert(
+  pi: ExtensionAPI,
+  cwd: string,
+  state: ChangesState,
+  refreshAfterMutation: () => Promise<void>,
+) {
+  if (!state.selectedChange) return;
+  const revertResult = await pi.exec(
+    "jj",
+    ["revert", "-r", state.selectedChange.changeId, "--insert-after", "@"],
+    { cwd },
+  );
+  await refreshAfterMutation();
+  notifyMutation(
+    pi,
+    `Reverted change ${state.selectedChange.changeId.slice(0, 8)}`,
+    revertResult.stderr || revertResult.stdout,
+  );
+}
+
+function handleInspectChange(
+  pi: ExtensionAPI,
+  state: ChangesState,
+  finish: () => void,
+): void {
+  if (!state.selectedChange) return;
+  finish();
+  const task = `Review the jujutsu change ${state.selectedChange.changeId} using entity-level code analysis.
 
 <workflow>
 1. Get git hash: \`jj log -r ${state.selectedChange.changeId} -T 'commit_id' --no-graph\`
@@ -222,26 +295,49 @@ Use the **sem** skill to understand actual code changes vs cosmetic modification
 3. Analyze the entity-level review output (risk scores, changed entities, blast radius)
 4. Address all issues found by inspect
 </workflow>`;
-    pi.sendUserMessage(task);
-  }
+  pi.sendUserMessage(task);
+}
 
-  function getSelectedChanges(): Change[] {
-    if (state.selectedChangeIds.size > 0)
-      return state.changes.filter((c) =>
-        state.selectedChangeIds.has(c.changeId),
-      );
-    return state.selectedChange ? [state.selectedChange] : [];
-  }
+export function createActionHandlers(
+  options: ActionHandlersOptions,
+): ActionHandlers {
+  const {
+    pi,
+    cwd,
+    state,
+    finish,
+    refreshAfterMutation,
+    restoreSelection,
+    loadFilesAndDiff,
+  } = options;
 
   return {
-    handleDescribe,
-    handleEdit,
-    handleSplit,
-    handleSquash,
-    handleDrop,
-    handleNew,
-    handleRevert,
-    handleInspectChange,
-    getSelectedChanges,
+    handleDescribe: () => handleDescribe(pi, cwd, state, finish),
+    handleEdit: () => handleEdit(pi, cwd, state, refreshAfterMutation),
+    handleSplit: () => handleSplit(pi, cwd, state, finish),
+    handleSquash: () =>
+      handleSquash({
+        pi,
+        cwd,
+        state,
+        refreshAfterMutation,
+        restoreSelection,
+        loadFilesAndDiff,
+      }),
+    handleDrop: () =>
+      handleDrop({
+        pi,
+        cwd,
+        state,
+        refreshAfterMutation,
+        restoreSelection,
+        loadFilesAndDiff,
+      }),
+    handleNew: () => handleNew(pi, cwd, state, refreshAfterMutation),
+    handleRevert: () => handleRevert(pi, cwd, state, refreshAfterMutation),
+    handleInspectChange: async () => {
+      handleInspectChange(pi, state, finish);
+    },
+    getSelectedChanges: () => getSelectedChanges(state),
   };
 }

@@ -8,10 +8,11 @@
     "@mariozechner/pi-ai": "^0.66.1",
     "@mariozechner/pi-coding-agent": "^0.66.1",
     "@mariozechner/pi-tui": "^0.66.1",
-    "@sinclair/typebox": "^0.34.48",
-    "eslint-antislop": "file:///home/knoopx/Projects/knoopx/eslint-antislop"
+    "eslint-antislop": "file:///home/knoopx/Projects/knoopx/eslint-antislop",
+    "picomatch": "^4.0.4"
   },
   "devDependencies": {
+    "@types/picomatch": "^4.0.3",
     "vitest": "^3.2.4"
   }
 }

@@ -97,3 +97,101 @@ exports[`graph > working copy at top of linear chain 1`] = `
   "○",
 ]
 `;
+
+exports[`graph complex multi-branch with working copy 1`] = `
+[
+  "◉",
+  "◆─╮",
+  "◆ │",
+  "│ ◆",
+  "○ ╯",
+]
+`;
+
+exports[`graph diamond merge pattern (two branches reconverge) 1`] = `
+[
+  "◉",
+  "◆",
+  "│ ◆",
+  "○ ╯",
+]
+`;
+
+exports[`graph empty commit in chain 1`] = `
+[
+  "○",
+  "○",
+]
+`;
+
+exports[`graph linear chain renders as single column of icons 1`] = `
+[
+  "◆",
+  "◆",
+  "○",
+]
+`;
+
+exports[`graph multiple branches from single commit 1`] = `
+[
+  "◆",
+  "│ ◆",
+  "│ │ ◆",
+  "○ ╯─╯",
+]
+`;
+
+exports[`graph real-world-like topology with merge and linear history 1`] = `
+[
+  "◉",
+  "◆─╮",
+  "◆ │",
+  "│ ◆",
+  "○ ╯",
+]
+`;
+
+exports[`graph renderGraphRow edge cases empty non-working-copy icon 1`] = `"○"`;
+
+exports[`graph renderGraphRow edge cases empty working copy icon 1`] = `"◎"`;
+
+exports[`graph renderGraphRow edge cases non-empty working copy icon 1`] = `"◉"`;
+
+exports[`graph renderGraphRow edge cases renders branch-out with horizontal connector 1`] = `"◆───╮"`;
+
+exports[`graph renderGraphRow edge cases renders combined junction character 1`] = `"◆─├"`;
+
+exports[`graph renderGraphRow edge cases renders combined left junction (┤) 1`] = `"╭ ◆"`;
+
+exports[`graph renderGraphRow edge cases renders commit-only row at lane 0 with no other edges 1`] = `"◆"`;
+
+exports[`graph renderGraphRow edge cases renders left branch-out (LeftDown) 1`] = `"╭ ◆"`;
+
+exports[`graph renderGraphRow edge cases renders left merge (LeftUp) 1`] = `"╭ ◆"`;
+
+exports[`graph renderGraphRow edge cases renders merge-in from right 1`] = `"◆ ╯"`;
+
+exports[`graph renderGraphRow edge cases renders vertical line alongside commit in another lane 1`] = `"│ ◆"`;
+
+exports[`graph simple merge (two parents from same root) 1`] = `
+[
+  "◆─╮",
+  "◆ │",
+  "│ ◆",
+  "○ ╯",
+]
+`;
+
+exports[`graph single root commit 1`] = `
+[
+  "○",
+]
+`;
+
+exports[`graph working copy at top of linear chain 1`] = `
+[
+  "◉",
+  "◆",
+  "○",
+]
+`;

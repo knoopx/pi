@@ -1,7 +1,4 @@
-import type {
-  AgentToolResult,
-  ExtensionAPI,
-} from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type, type Static } from "@sinclair/typebox";
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
@@ -11,6 +8,45 @@ import type { Column } from "../../shared/renderers";
 import { acquireSlot } from "../../shared/throttle";
 
 const DDG_HOST = "duckduckgo.com";
+const MAX_REDIRECTS = 3;
+
+async function fetchWithRedirect(
+  url: string,
+  init: RequestInit = {},
+): Promise<{
+  response: Response;
+  redirected: boolean;
+  redirectChain: string[];
+}> {
+  const redirectChain: string[] = [];
+  let currentUrl = url;
+  let redirected = false;
+
+  for (let i = 0; i < MAX_REDIRECTS; i++) {
+    const response = await fetch(currentUrl, init);
+
+    if (!response.ok && response.status < 300)
+      return { response, redirected, redirectChain };
+
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+      if (!location) return { response, redirected, redirectChain };
+      const nextUrl = new URL(location, currentUrl).toString();
+      redirectChain.push(currentUrl);
+      currentUrl = nextUrl;
+      redirected = true;
+      // Preserve headers and body across redirects
+      init.headers = response.headers;
+      continue;
+    }
+
+    return { response, redirected, redirectChain };
+  }
+
+  throw new Error(
+    `DuckDuckGo request redirected too many times (${MAX_REDIRECTS})`,
+  );
+}
 
 // Standard headers for DuckDuckGo requests
 const DDG_HEADERS = {
@@ -115,9 +151,6 @@ const SearchDuckDuckGoParams = Type.Object({
 
 type SearchDuckDuckGoParamsType = Static<typeof SearchDuckDuckGoParams>;
 
-/**
- * Extract preloaded d.js URL from DuckDuckGo search page
- */
 function extractPreloadUrl(html: string): string {
   const $ = cheerio.load(html);
   let basePreloadUrl = "";
@@ -151,45 +184,61 @@ function extractPreloadUrl(html: string): string {
   return basePreloadUrl;
 }
 
-/**
- * Parse JSONP response and extract search results
- */
 function parseJsonpData(
   dataHtml: string,
   maxResults: number,
 ): { results: SearchResult[]; validCount: number } {
-  const jsonpRegex = /DDG\.pageLayout\.load\('d',\s*(\[.*?\])\s*\);/s;
-  const jsonpMatch = jsonpRegex.exec(dataHtml);
-
-  if (!jsonpMatch?.[1]) return { results: [], validCount: 0 };
+  const raw = extractJsonpData(dataHtml);
+  if (!raw) return { results: [], validCount: 0 };
 
   try {
-    const jsonData = JSON.parse(jsonpMatch[1]) as JsonpDataItem[];
-    const results: SearchResult[] = [];
-    let validCount = 0;
-
-    for (const item of jsonData) {
-      if (item.n || results.length >= maxResults) continue;
-
-      validCount++;
-      results.push({
-        title: item.t || "",
-        url: item.u || "",
-        description: item.a || "",
-        source: item.i || item.sn || "",
-        engine: "duckduckgo",
-      });
-    }
-
-    return { results, validCount };
+    const jsonData = JSON.parse(raw) as JsonpDataItem[];
+    return buildSearchResults(jsonData, maxResults);
   } catch {
     return { results: [], validCount: 0 };
   }
 }
 
-/**
- * Fetch search results from preload URL at given offset
- */
+function extractJsonpData(dataHtml: string): string | null {
+  const jsonpRegex = /DDG\.pageLayout\.load\('d',\s*(\[.*?\])\s*\);/s;
+  const match = jsonpRegex.exec(dataHtml);
+  return match?.[1] ?? null;
+}
+
+function buildSearchResults(
+  items: JsonpDataItem[],
+  maxResults: number,
+): { results: SearchResult[]; validCount: number } {
+  const results: SearchResult[] = [];
+  let validCount = 0;
+
+  for (const item of items) {
+    if (shouldSkipItem(item, results.length, maxResults)) continue;
+    validCount++;
+    results.push(toSearchResult(item));
+  }
+
+  return { results, validCount };
+}
+
+function shouldSkipItem(
+  item: JsonpDataItem,
+  currentLength: number,
+  maxResults: number,
+): boolean {
+  return !!item.n || currentLength >= maxResults;
+}
+
+function toSearchResult(item: JsonpDataItem): SearchResult {
+  return {
+    title: item.t || "",
+    url: item.u || "",
+    description: item.a || "",
+    source: item.i || item.sn || "",
+    engine: "duckduckgo",
+  };
+}
+
 async function fetchPreloadPage(
   preloadUrl: URL,
   offset: number,
@@ -202,7 +251,7 @@ async function fetchPreloadPage(
   preloadUrl.searchParams.set("s", offset.toString());
 
   await acquireSlot(DDG_HOST);
-  const response = await fetch(preloadUrl.toString(), {
+  const { response } = await fetchWithRedirect(preloadUrl.toString(), {
     headers: DDG_DATA_HEADERS,
   });
 
@@ -219,9 +268,6 @@ async function fetchPreloadPage(
   };
 }
 
-/**
- * Extract preloaded d.js URL from DuckDuckGo search page and use it directly
- */
 async function searchDuckDuckGoPreloadUrl(
   query: string,
   maxResults = 10,
@@ -230,7 +276,9 @@ async function searchDuckDuckGoPreloadUrl(
 
   const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&t=h_&ia=web`;
   await acquireSlot(DDG_HOST);
-  const response = await fetch(searchUrl, { headers: DDG_HEADERS });
+  const { response } = await fetchWithRedirect(searchUrl, {
+    headers: DDG_HEADERS,
+  });
 
   if (!response.ok)
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -263,9 +311,6 @@ async function searchDuckDuckGoPreloadUrl(
   return results.slice(0, maxResults);
 }
 
-/**
- * Parse search results from HTML elements
- */
 function parseSearchResults(
   $: cheerio.CheerioAPI,
   items: cheerio.Cheerio<Element>,
@@ -294,9 +339,6 @@ function parseSearchResults(
   });
 }
 
-/**
- * Fetch HTML from DuckDuckGo at given offset
- */
 async function fetchHtmlPage(
   query: string,
   offset: number,
@@ -317,7 +359,7 @@ async function fetchHtmlPage(
         },
   );
 
-  const response = await fetch(requestUrl, {
+  const { response } = await fetchWithRedirect(requestUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -332,9 +374,6 @@ async function fetchHtmlPage(
   return { html: await response.text(), ok: response.ok };
 }
 
-/**
- * * HTML-based DuckDuckGo search using the HTML endpoint
- */
 async function searchDuckDuckGoHtml(
   query: string,
   maxResults = 10,

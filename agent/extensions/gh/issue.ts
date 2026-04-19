@@ -4,6 +4,7 @@ import type { Column } from "../../shared/renderers";
 
 import { ghCmd, ghCmdJson } from "./utils";
 import {
+  createBasicColumns,
   createListParamsSchema,
   registerListTool,
   registerViewTool,
@@ -23,7 +24,7 @@ interface GHIssue {
   milestone: { title: string; description: string; dueOn: string } | null;
 }
 
-async function listIssues(
+function listIssues(
   owner: string,
   repo: string,
   state?: "open" | "closed" | "merged" | "all",
@@ -46,7 +47,7 @@ async function listIssues(
   return ghCmdJson<GHIssue[]>(args, "issue list");
 }
 
-async function viewIssue(
+function viewIssue(
   owner: string,
   repo: string,
   issueNumber: number,
@@ -74,7 +75,7 @@ interface CreateIssueOpts {
   labels?: string[];
 }
 
-async function createIssue({
+function createIssue({
   owner,
   repo,
   title,
@@ -133,25 +134,14 @@ const CreateIssueParams = Type.Object({
   ),
 });
 
-type ListIssuesParamsType = Static<typeof ListIssuesParams>;
-type ViewIssueParamsType = Static<typeof ViewIssueParams>;
 type CreateIssueParamsType = Static<typeof CreateIssueParams>;
 
 function createIssueColumns(): Column[] {
-  return [
-    { key: "#", align: "right", minWidth: 5 },
-    {
-      key: "title",
-      format(_v: unknown, row: Record<string, unknown>) {
-        const r = row as Record<string, string>;
-        const dot = r.state === "OPEN" ? "●" : "○";
-        const lines = [`${dot} ${r.title}`];
-        if (r.labels) lines.push(r.labels);
-        lines.push(`${r.author} · ${r.date}`, r.url);
-        return lines.join("\n");
-      },
-    },
-  ];
+  return createBasicColumns((r) => {
+    const parts = [`${r.author} · ${r.date}`, r.url];
+    if (r.labels) parts.unshift(r.labels);
+    return parts.join("\n");
+  });
 }
 
 function createIssueRowMapper() {

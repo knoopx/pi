@@ -1,5 +1,6 @@
 import {
   type ExtensionAPI,
+  type ExtensionContext,
   SessionManager,
 } from "@mariozechner/pi-coding-agent";
 import type {
@@ -7,35 +8,23 @@ import type {
   WorkspaceStatus,
   WorkspaceListEntry,
   DiffStats,
-} from "./types";
-import { updateStaleWorkspace, sanitizeDescription } from "./jj";
+} from "./lib/types";
+import { getRepoRoot } from "./jj/files";
+import { sanitizeDescription, updateStaleWorkspace } from "./jj/core";
+import { formatFileStats } from "./lib/formatters";
 
 const WORKSPACE_PREFIX = "ide-";
+const CHECK_INTERVAL = 5000;
+const MAX_WAIT = 3600000;
 
-/**
- * Generate a unique workspace name
- */
 export function generateWorkspaceName(): string {
   const timestamp = Date.now().toString(36);
   const random = Math.random().toString(36).substring(2, 6);
   return `${WORKSPACE_PREFIX}${timestamp}-${random}`;
 }
 
-/**
- * Check if a workspace name is an ide workspace
- */
 function isIdeWorkspace(name: string): boolean {
   return name.startsWith(WORKSPACE_PREFIX);
-}
-
-/**
- * Get the root repository path
- */
-export async function getRepoRoot(pi: ExtensionAPI): Promise<string> {
-  const result = await pi.exec("jj", ["workspace", "root"]);
-  if (result.code !== 0)
-    throw new Error(`Failed to get repo root: ${result.stderr}`);
-  return result.stdout.trim();
 }
 
 export async function getCurrentChangeId(
@@ -68,9 +57,6 @@ export function parseWorkspaceList(output: string): WorkspaceListEntry[] {
   return entries;
 }
 
-/**
- * List all jujutsu workspaces
- */
 async function listWorkspaces(pi: ExtensionAPI): Promise<WorkspaceListEntry[]> {
   const result = await pi.exec("jj", ["workspace", "list"]);
   if (result.code !== 0)
@@ -78,9 +64,6 @@ async function listWorkspaces(pi: ExtensionAPI): Promise<WorkspaceListEntry[]> {
   return parseWorkspaceList(result.stdout);
 }
 
-/**
- * Create a new jujutsu workspace
- */
 export async function createWorkspace(
   pi: ExtensionAPI,
   name: string,
@@ -109,9 +92,6 @@ export async function createWorkspace(
   return workspacePath;
 }
 
-/**
- * Get diff stats for a workspace compared to its parent
- */
 async function getDiffStats(
   pi: ExtensionAPI,
   workspacePath: string,
@@ -126,9 +106,6 @@ async function getDiffStats(
   return parseDiffStats(result.stdout);
 }
 
-/**
- * Parse jj diff --stat output
- */
 export function parseDiffStats(output: string): DiffStats {
   const files: DiffStats["files"] = [];
   let totalInsertions = 0;
@@ -156,9 +133,6 @@ export function parseDiffStats(output: string): DiffStats {
   return { files, totalInsertions, totalDeletions };
 }
 
-/**
- * Check if a tmux session exists
- */
 async function tmuxSessionExists(
   pi: ExtensionAPI,
   sessionName: string,
@@ -167,9 +141,6 @@ async function tmuxSessionExists(
   return result.code === 0;
 }
 
-/**
- * Get tmux session status
- */
 export async function getTmuxSessionStatus(
   pi: ExtensionAPI,
   sessionName: string,
@@ -239,13 +210,14 @@ export function forkSessionToWorkspace(
  * @param task Task description to send to the agent
  * @param forkedSessionPath Optional path to a forked session file for context
  */
-export async function spawnAgent(
-  pi: ExtensionAPI,
-  workspacePath: string,
-  sessionName: string,
-  task: string,
-  forkedSessionPath?: string,
-): Promise<void> {
+export async function spawnAgent(options: {
+  pi: ExtensionAPI;
+  workspacePath: string;
+  sessionName: string;
+  task: string;
+  forkedSessionPath?: string;
+}): Promise<void> {
+  const { pi, workspacePath, sessionName, task, forkedSessionPath } = options;
   let piCmd = "pi";
   if (forkedSessionPath) piCmd += ` --session "${forkedSessionPath}"`;
 
@@ -267,9 +239,6 @@ export async function spawnAgent(
     throw new Error(`Failed to spawn agent: ${result.stderr}`);
 }
 
-/**
- * Kill a tmux session
- */
 export async function killTmuxSession(
   pi: ExtensionAPI,
   sessionName: string,
@@ -277,9 +246,6 @@ export async function killTmuxSession(
   await pi.exec("tmux", ["kill-session", "-t", sessionName]);
 }
 
-/**
- * Load all ide workspaces with their status
- */
 export async function loadAgentWorkspaces(
   pi: ExtensionAPI,
 ): Promise<AgentWorkspace[]> {
@@ -313,9 +279,6 @@ export async function loadAgentWorkspaces(
   return result;
 }
 
-/**
- * Remove the workspace directory
- */
 async function cleanupWorkspaceDir(
   pi: ExtensionAPI,
   workspaceName: string,
@@ -325,9 +288,6 @@ async function cleanupWorkspaceDir(
   await pi.exec("rm", ["-rf", workspacePath]);
 }
 
-/**
- * Forget (delete) a jujutsu workspace
- */
 export async function forgetWorkspace(
   pi: ExtensionAPI,
   workspaceName: string,
@@ -340,4 +300,65 @@ export async function forgetWorkspace(
     throw new Error(`Failed to forget workspace: ${result.stderr}`);
 
   await cleanupWorkspaceDir(pi, workspaceName);
+}
+
+export function monitorWorkspace(
+  pi: ExtensionAPI,
+  workspaceName: string,
+  ctx: ExtensionContext,
+): void {
+  const startTime = Date.now();
+
+  const check = async (): Promise<void> => {
+    if (Date.now() - startTime > MAX_WAIT) return;
+
+    try {
+      const workspaces = await loadAgentWorkspaces(pi);
+      const ws = workspaces.find((w) => w.name === workspaceName);
+
+      if (!ws) return;
+      if (ws.status === "running") {
+        scheduleNextCheck(check);
+        return;
+      }
+
+      await handleCompletedWorkspace(pi, ctx, workspaceName, ws);
+    } catch {
+      scheduleNextCheck(check);
+    }
+  };
+
+  setTimeout(() => void check(), CHECK_INTERVAL);
+}
+
+function scheduleNextCheck(check: () => Promise<void>): void {
+  setTimeout(() => void check(), CHECK_INTERVAL);
+}
+
+function formatStatusText(status: string): string {
+  return status === "completed" ? "completed" : status;
+}
+
+async function handleCompletedWorkspace(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+  workspaceName: string,
+  ws: Awaited<ReturnType<typeof loadAgentWorkspaces>>[number],
+): Promise<void> {
+  const stats = formatFileStats(ws);
+  const statusText = formatStatusText(ws.status);
+
+  if (ctx.hasUI) {
+    ctx.ui.notify(
+      `Agent ${workspaceName} ${statusText} ${stats}`,
+      ws.status === "completed" ? "info" : "warning",
+    );
+  }
+
+  await pi.exec("notify-send", [
+    "-a",
+    "IDE",
+    `Agent ${statusText}`,
+    `${ws.description}\n${stats}`,
+  ]);
 }

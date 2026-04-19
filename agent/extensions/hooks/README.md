@@ -17,16 +17,9 @@ Supported events:
 
 Only `tool_call` can block tool execution.
 
-## Config Locations
+## Config Location
 
-- Global: `~/.pi/agent/settings.json` under key `hooks`
-- Project: `.pi/hooks.json`
-- Defaults: `agent/extensions/hooks/defaults.json`
-
-Resolution behavior:
-
-- Global config overrides defaults.
-- Project config merges into defaults by group name.
+- Defaults: `agent/extensions/hooks/defaults.ts`
 
 ## Rule Schema
 
@@ -125,5 +118,4 @@ A hook can block when:
 
 ## Commands
 
-- `/hooks-reload`
-- `/hooks-list`
+- `/hooks:audit` — validate patterns and list active rules

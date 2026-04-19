@@ -2,29 +2,26 @@ import type {
   ExtensionAPI,
   ExtensionCommandContext,
   ExtensionContext,
+  ThemeColor,
 } from "@mariozechner/pi-coding-agent";
+import { createThemeFg, notifyAuditResult } from "../../shared/audit-utils";
 import {
   configLoader,
   loadGuardrailsSettings,
   saveGuardrailsSettings,
 } from "./config";
 import type { GuardrailsGroup, GuardrailsRule, ResolvedConfig } from "./config";
-import { matchCommandPattern } from "./command-parser";
+import {
+  matchCommandPattern,
+  matchContentPattern,
+  matchFileNamePattern,
+} from "../../shared/pattern-matching";
 import { glob } from "tinyglobby";
 
-/**
- * Guardrails Extension
- *
- * Security hooks to prevent potentially dangerous operations.
- * Groups define file patterns and rules for blocking/confirming commands.
- * A group is activated if any file matching its pattern exists in the project.
- *
- * Configuration:
- * - Extension defaults: defaults.json (used when no global config exists)
- * - Global settings: ~/.pi/agent/settings.json under key "guardrails"
- */
-
-function createGuardrailsHandler(ref: { value: boolean }) {
+function createGuardrailsHandler(
+  ref: { value: boolean },
+  _config: ResolvedConfig,
+) {
   return async function handler(
     args: string,
     ctx: ExtensionCommandContext,
@@ -45,16 +42,13 @@ function createGuardrailsHandler(ref: { value: boolean }) {
       return;
     }
 
-    const status = ref.value ? "enabled" : "disabled";
-    ctx.ui?.notify(
-      `Guardrails are currently ${status}. Use /guardrails on|off.`,
-      "info",
-    );
+    // No argument — run audit
+    await handleGuardrailsAudit(args, ctx);
   };
 }
 
 export default async function (pi: ExtensionAPI) {
-  await configLoader.load();
+  configLoader.load();
   const config = configLoader.getConfig();
 
   const guardrailsEnabledRef = {
@@ -62,8 +56,9 @@ export default async function (pi: ExtensionAPI) {
   };
 
   pi.registerCommand("guardrails", {
-    description: "Enable or disable guardrails (usage: /guardrails on|off)",
-    handler: createGuardrailsHandler(guardrailsEnabledRef),
+    description:
+      "Audit guardrails config, or toggle with on|off (usage: /guardrails [on|off])",
+    handler: createGuardrailsHandler(guardrailsEnabledRef, config),
   });
 
   setupPermissionGateHook(pi, config, () => guardrailsEnabledRef.value);
@@ -82,9 +77,6 @@ async function hasMatchingFiles(
   return matches.length > 0;
 }
 
-/**
- * Check if a guardrails group should be active based on file pattern matching.
- */
 export async function isGroupActive(
   pattern: string,
   root: string,
@@ -137,9 +129,16 @@ function matchesPattern(
   targetValue: string,
   pattern: string,
 ): boolean {
-  if (context === "command") return matchCommandPattern(targetValue, pattern);
-
-  return new RegExp(pattern).test(targetValue);
+  switch (context) {
+    case "command":
+      return matchCommandPattern(targetValue, pattern);
+    case "file_name":
+      return matchFileNamePattern(targetValue, pattern);
+    case "file_content":
+      return matchContentPattern(targetValue, pattern);
+    default:
+      return false;
+  }
 }
 
 /**
@@ -148,7 +147,9 @@ function matchesPattern(
  * For "command" context, `pattern` uses AST-like token matching
  * implemented by `matchCommandPattern` (`?`, `*`).
  *
- * For "file_name" and "file_content" contexts, `pattern` is regex.
+ * For "file_name" context, `pattern` uses glob matching via picomatch.
+ * For "file_content" context, `pattern` uses literal substring matching
+ * with pipe-separated alternatives.
  *
  * @returns The matched target value for includes/excludes filtering, or null.
  */
@@ -169,8 +170,7 @@ function checkFilePatternMatch(
   filePattern: string | undefined,
 ): boolean {
   if (!filePattern || !filePath) return true;
-  const filePatternRegex = new RegExp(filePattern);
-  return filePatternRegex.test(filePath);
+  return matchFileNamePattern(filePath, filePattern);
 }
 
 function isPathWithinProject(
@@ -212,36 +212,33 @@ function matchRule(
 
   const filePath = getInputFieldAsString(input, "path");
   if (!checkFilePatternMatch(filePath, rule.file_pattern)) return null;
-
-  if (rule.scope) {
-    const withinProject = isPathWithinProject(filePath, cwd);
-    if (rule.scope === "project" && !withinProject) return null;
-    if (rule.scope === "external" && withinProject) return null;
-  }
+  if (!passesScopeCheck(rule, filePath, cwd)) return null;
 
   const targetValue = getFileTargetValue(rule, toolName, input, filePath);
   if (!targetValue) return null;
 
-  const rulePattern = new RegExp(rule.pattern);
-  if (!rulePattern.test(targetValue)) return null;
+  if (!matchesPattern(rule.context, targetValue, rule.pattern)) return null;
   return { targetValue };
 }
 
-/**
- * Permission gate that prompts user confirmation for blocked operations.
- * Uses groups config to define blocking rules based on context.
- * Groups are only active if their file pattern matches files in the project.
- */
+function passesScopeCheck(
+  rule: GuardrailsRule,
+  filePath: string | undefined,
+  cwd: string,
+): boolean {
+  if (!rule.scope) return true;
+  const withinProject = isPathWithinProject(filePath, cwd);
+  if (rule.scope === "project") return withinProject;
+  return !withinProject;
+}
+
 interface MatchedRule {
   rule: GuardrailsRule;
   group: GuardrailsGroup;
   targetValue: string;
 }
 
-async function shouldIncludeRule(
-  rule: GuardrailsRule,
-  targetValue: string,
-): Promise<boolean> {
+function shouldIncludeRule(rule: GuardrailsRule, targetValue: string): boolean {
   if (
     rule.includes &&
     !matchesPattern(rule.context, targetValue, rule.includes)
@@ -285,9 +282,6 @@ async function processGroupRules(
   return matched;
 }
 
-/**
- * Find matching rules for a tool call
- */
 async function findMatchingRules(
   toolName: string,
   input: unknown,
@@ -304,9 +298,6 @@ async function findMatchingRules(
   return matched;
 }
 
-/**
- * Handle a single matched rule
- */
 async function handleMatchedRule(
   matched: MatchedRule,
   ctx: ExtensionContext,
@@ -321,8 +312,9 @@ async function handleMatchedRule(
     if (!ctx.hasUI)
       return { block: true, reason: `Blocked [${group.group}]: ${reason}` };
 
+    const icon = ctx.ui.theme ? ctx.ui.theme.fg("warning", "󰀪") : "󰀪";
     const proceed = await ctx.ui.confirm(
-      `⚠️ ${group.group}: ${reason}`,
+      `${icon} ${group.group}: ${reason}`,
       targetValue,
     );
     if (!proceed)
@@ -332,9 +324,107 @@ async function handleMatchedRule(
   return undefined;
 }
 
-/**
- * Permission gate that prompts user confirmation for blocked operations.
- */
+async function handleGuardrailsAudit(
+  _args: string,
+  ctx: ExtensionCommandContext,
+): Promise<void> {
+  const config = configLoader.getConfig();
+
+  if (config.length === 0) {
+    ctx.ui?.notify("No guardrails configured", "info");
+    return;
+  }
+
+  const fg = createThemeFg(ctx.ui.theme);
+  const auditResult = await auditGuardrailsConfig(config, ctx.cwd, fg);
+  notifyAuditResult(ctx, auditResult, fg);
+}
+
+interface GuardrailsAuditResult {
+  lines: string[];
+  errors: number;
+}
+
+async function auditGuardrailsConfig(
+  config: ResolvedConfig,
+  cwd: string,
+  fg: (color: ThemeColor, text: string) => string,
+): Promise<GuardrailsAuditResult> {
+  const lines: string[] = [];
+  let errors = 0;
+
+  for (const group of config) {
+    const isActive = await isGroupActive(
+      group.pattern,
+      cwd,
+      group.excludePattern,
+    );
+    const statusIcon = isActive ? "✓" : "✗";
+    const statusColor = isActive ? "success" : "error";
+    lines.push(
+      `${fg(statusColor, statusIcon)} ${group.group} (${group.pattern})`,
+    );
+
+    for (let i = 0; i < group.rules.length; i++) {
+      const rule = group.rules[i];
+      const actionTag =
+        rule.action === "block" ? fg("error", "󰳛") : fg("warning", "󰀪");
+      lines.push(`  ${actionTag} [${rule.context}] ${rule.pattern}`);
+
+      errors += validateGuardrailsRule(rule, i, fg, lines);
+    }
+  }
+
+  return { lines, errors };
+}
+
+function validateGuardrailsRule(
+  rule: GuardrailsRule,
+  index: number,
+  fg: (color: ThemeColor, text: string) => string,
+  lines: string[],
+): number {
+  let errors = 0;
+
+  if (
+    (rule.context === "file_name" || rule.context === "file_content") &&
+    rule.pattern
+  ) {
+    try {
+      matchesPattern(rule.context, "test", rule.pattern);
+    } catch (e) {
+      lines.push(
+        `    ${fg("error", "✗")} invalid pattern at rules[${index}]: ${(e as Error).message}`,
+      );
+      errors++;
+    }
+
+    if (rule.file_pattern) {
+      try {
+        matchFileNamePattern("test", rule.file_pattern);
+      } catch (e) {
+        lines.push(
+          `    ${fg("error", "✗")} invalid file_pattern at rules[${index}]: ${(e as Error).message}`,
+        );
+        errors++;
+      }
+    }
+  }
+
+  if (rule.context === "command") {
+    try {
+      matchCommandPattern("echo test", rule.pattern);
+    } catch (e) {
+      lines.push(
+        `    ${fg("error", "✗")} invalid command pattern at rules[${index}]: ${(e as Error).message}`,
+      );
+      errors++;
+    }
+  }
+
+  return errors;
+}
+
 function setupPermissionGateHook(
   pi: ExtensionAPI,
   config: ResolvedConfig,

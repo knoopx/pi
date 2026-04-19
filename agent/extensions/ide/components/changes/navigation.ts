@@ -1,11 +1,4 @@
-/**
- * Keyboard-driven navigation for the changes component.
- *
- * Operates directly on ChangesState fields, providing high-level methods
- * like navigateChanges(), navigateFiles(), scrollDiff(), etc.
- */
 
-import type { Change, FileChange } from "../../types";
 import type { ChangesState } from "./state";
 
 export interface NavigationCallbacks {

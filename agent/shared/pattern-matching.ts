@@ -1,10 +1,56 @@
+import picomatch from "picomatch";
 import { tokenizeCommand } from "./tokenizer";
 
-export type PatternToken =
+type PatternToken =
   | { kind: "literal"; value: string }
   | { kind: "or"; options: string[][] }
   | { kind: "single" } // ?
   | { kind: "spread" }; // *
+
+/**
+ * Match a file path against a glob pattern.
+ *
+ * Supports standard glob syntax:
+ *
+ * - `*.ts` matches any .ts file (basename only)
+ * - `*.{js,jsx}` matches .js or .jsx files
+ * - `{package-lock.json,bun.lockb,yarn.lock}` matches exact basenames
+ * - `.jj/*` matches anything under .jj/
+ *
+ * Patterns without `/` match against the basename only.
+ * Patterns with `/` match against the full path.
+ */
+export function matchFileNamePattern(
+  filePath: string,
+  pattern: string,
+): boolean {
+  if (!filePath || !pattern) return false;
+
+  const basename = filePath.split(/[\/\\]/).pop() ?? filePath;
+
+  // If pattern contains a slash, match against the full path.
+  // Otherwise match against the basename (standard glob behavior).
+  if (pattern.includes("/") || pattern.includes("\\")) {
+    return picomatch.isMatch(filePath, pattern, { dot: true });
+  }
+  return picomatch.isMatch(basename, pattern, { dot: true });
+}
+
+/**
+ * Match file content against a literal substring pattern.
+ *
+ * Supports pipe-separated alternatives: `pattern1|pattern2`
+ * matches if any single alternative is found as a substring.
+ */
+export function matchContentPattern(content: string, pattern: string): boolean {
+  if (!content || !pattern) return false;
+
+  const alternatives = pattern
+    .split("|")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return alternatives.some((alt) => content.includes(alt));
+}
 
 /**
  * Split a pattern string into whitespace-separated parts, treating

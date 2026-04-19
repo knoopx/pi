@@ -5,24 +5,20 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import setupNixExtension from "./index";
 import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
-
-const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
-
 import { disableThrottle } from "../../shared/throttle";
 
-/**
- * Helper to assert formatted option results
- */
+
 function assertFormattedOptionResults(
   result: AgentToolResult<Record<string, unknown>>,
   query: string,
 ) {
-  expect(stripAnsi((result.content[0] as TextContent).text)).toMatchSnapshot();
+  expect((result.content[0] as TextContent).text).toMatchSnapshot();
   expect(result.details.query).toBe(query);
   expect(result.details.totalFound).toBe(1);
 }
 
 // Extension Registration
+// eslint-disable-next-line max-lines-per-function -- large test suite
 describe("Nix Extension", () => {
   let mockPi: MockExtensionAPI;
   let originalFetch: typeof globalThis.fetch;
@@ -91,6 +87,7 @@ describe("Nix Extension", () => {
             package_homepage: ["https://www.gnu.org/software/hello/"],
             package_maintainers: [{ name: "John Doe" }],
             package_license_set: ["GPL-3.0-or-later"],
+            package_position: "/pkgs/applications/misc/hello/default.nix:35",
           },
         ];
 
@@ -114,9 +111,7 @@ describe("Nix Extension", () => {
       });
 
       it("then it should return formatted package results", () => {
-        expect(
-          stripAnsi((result.content[0] as TextContent).text),
-        ).toMatchSnapshot();
+        expect((result.content[0] as TextContent).text).toMatchSnapshot();
         expect(result.details.query).toBe("hello");
         expect(result.details.totalFound).toBe(1);
       });
@@ -192,6 +187,8 @@ describe("Nix Extension", () => {
             option_type: "boolean",
             option_default: "false",
             option_example: "true",
+            option_source:
+              "nixos/modules/services/web-servers/apache-httpd/default.nix",
           },
         ];
 

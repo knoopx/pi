@@ -2,14 +2,66 @@ import type { AgentToolResult, Theme } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
 import type { Component } from "@mariozechner/pi-tui";
 import type { ToolRenderContext } from "./types";
+import { shortPath } from "../terminal-utils";
 
-interface RenderResultContext {
-  isError: boolean;
+// ─── Execute wrapper factory ──────────────────────────────────────────────
+// The pi framework calls tool execute handlers with 5 arguments.
+// These types and the handler below match that external contract.
+/* eslint-disable max-params -- pi framework requires 5-arg handler signature */
+
+export type ToolExecuteFn = (
+  tid: string,
+  params: unknown,
+  sig: unknown,
+  upd: unknown,
+  ctx: unknown,
+) => Promise<unknown>;
+
+// Typed handler returned by createExecuteWrapper.
+export type WrappedToolHandler<P> = (
+  tid: string,
+  params: P,
+  sig: AbortSignal | undefined,
+  upd: ((details: Record<string, unknown>) => void) | undefined,
+  ctx: unknown,
+) => Promise<unknown>;
+
+interface ToolResult {
+  content: (AgentToolResult<unknown> extends {
+    content: infer C;
+  }
+    ? C
+    : Array<{ type?: string }>) &
+    Array<{ type?: string }>;
+  details?: Record<string, unknown>;
 }
 
-/**
- * Extract text content from AgentToolResult
- */
+export function createExecuteWrapper<Params>(
+  postProcess: (
+    result: ToolResult,
+    textContent: string,
+    params: Params,
+  ) => void,
+): (orig: ToolExecuteFn) => WrappedToolHandler<Params> {
+  return (orig) => {
+    const handler = async (
+      tid: string,
+      params: unknown,
+      sig: unknown,
+      upd: unknown,
+      ctx: unknown,
+    ): Promise<unknown> => {
+      const p = params as Params;
+      const result = (await orig(tid, p, sig, upd, ctx)) as ToolResult;
+      const textContent = extractTextContent(result.content);
+      postProcess(result, textContent, p);
+      return result;
+    };
+    return handler as WrappedToolHandler<Params>;
+  };
+}
+/* eslint-enable max-params */
+
 export function extractTextContent(
   content: AgentToolResult<unknown>["content"],
 ): string {
@@ -21,16 +73,10 @@ export function extractTextContent(
   );
 }
 
-/**
- * Get error text from result content for display
- */
 function getErrorText(content: AgentToolResult<unknown>["content"]): string {
   return extractTextContent(content) || "Error";
 }
 
-/**
- * Render error result as themed text component
- */
 export function renderError(
   content: AgentToolResult<unknown>["content"],
   theme: Theme,
@@ -41,41 +87,10 @@ export function renderError(
   return text;
 }
 
-/**
- * Get first text item from result content with length limit
- */
-function getFirstText(
-  content: AgentToolResult<unknown>["content"],
-  maxLength = 120,
-): string {
-  const firstItem = content?.[0];
-  if (firstItem?.type !== "text") throw new Error("No text content in result");
-  return firstItem.text.slice(0, maxLength);
-}
-
-/**
- * Render empty result as dimmed text
- */
-function renderEmpty(
-  content: AgentToolResult<unknown>["content"],
-  theme: Theme,
-  text: Component & { setText: (s: string) => void },
-): Component {
-  const firstLine = getFirstText(content);
-  text.setText(`  ${theme.fg("dim", firstLine)}`);
-  return text;
-}
-
-/**
- * Count non-empty lines in text
- */
 export function countLines(text: string): number {
   return text.trim().split("\n").filter(Boolean).length;
 }
 
-/**
- * Get or reuse TextComponent from context
- */
 export function getTextComponent(
   ctx: { lastComponent: Component | undefined },
   TextComponent: typeof Text,
@@ -89,45 +104,22 @@ export function getTextComponent(
   };
 }
 
-/**
- * Handle common renderResult pattern: error check and details
- */
-function handleRenderResult<T>(
-  result: AgentToolResult<T>,
-  ctx: RenderResultContext,
-  theme: Theme,
-  text: Component & { setText: (s: string) => void },
-  renderDetails: (d: Record<string, unknown>) => Component | undefined,
-): Component {
-  if (ctx.isError) return renderError(result.content, theme, text);
-
-  const d = result.details as unknown as Record<string, unknown>;
-  const rendered = renderDetails(d);
-  if (rendered) return rendered;
-
-  return renderEmpty(result.content, theme, text);
+interface BuildRenderCallOptions {
+  cwd: string;
+  home: string;
+  toolName: string;
+  args: Record<string, unknown>;
+  theme: Theme;
+  ctx: ToolRenderContext<unknown, unknown>;
+  suffix?: (args: Record<string, unknown>, theme: Theme) => string;
 }
 
-/**
- * Build a standard renderCall function for tool invocations.
- */
-export function buildRenderCall(
-  cwd: string,
-  home: string,
-  toolName: string,
-  args: Record<string, unknown>,
-  theme: Theme,
-  _ctx: ToolRenderContext<unknown, unknown>,
-  suffix?: (args: Record<string, unknown>, theme: Theme) => string,
-): Component {
+export function buildRenderCall(options: BuildRenderCallOptions): Component {
+  const { cwd, home, toolName, args, theme, suffix } = options;
   const text = new Text("", 0, 0);
-  const sp = (p: string) => {
-    const { shortPath } = require("../utils");
-    return shortPath(cwd, home, p);
-  };
   let pathStr = "";
   const pathArg = args.path as string | undefined;
-  if (pathArg) pathStr = sp(pathArg);
+  if (pathArg) pathStr = shortPath(cwd, home, pathArg);
   else {
     const pattern = args.pattern as string | undefined;
     if (pattern) pathStr = theme.fg("accent", pattern);
@@ -142,9 +134,20 @@ export function buildRenderCall(
   return text;
 }
 
-/**
- * Build a standard renderResult function that dispatches by details type.
- */
+function applyRenderedContent(
+  rendered: string | Promise<string>,
+  text: { setText: (s: string) => void },
+  footer: string,
+): void {
+  if (rendered instanceof Promise) {
+    void rendered.then((content) => {
+      text.setText(`${content}\n${footer}`);
+    });
+  } else {
+    text.setText(`${rendered}\n${footer}`);
+  }
+}
+
 export function buildRenderResult<DetailsType extends string, Args>(
   toolName: string,
   detailType: DetailsType,
@@ -160,23 +163,49 @@ export function buildRenderResult<DetailsType extends string, Args>(
     const text = new Text("", 0, 0);
     if (ctx.isError) return renderError(result.content, theme, text);
 
-    const d = result.details as Record<string, unknown>;
-    if ((d?._type as string) === detailType && d.text) {
-      const rendered = renderContent(d.text as string, theme);
-      if (rendered instanceof Promise) {
-        rendered.then((content) => {
-          text.setText(`${content}\n${footerFn(d, theme)}`);
-        });
-      } else {
-        text.setText(`${rendered}\n${footerFn(d, theme)}`);
-      }
-      return text;
-    }
+    const detailResult = tryRenderDetail({
+      details: result.details,
+      detailType,
+      renderContent,
+      footerFn,
+      text,
+      theme,
+    });
+    if (detailResult) return detailResult;
 
-    const fallback = result.content?.[0] as { text?: string } | undefined;
-    text.setText(
-      `  ${theme.fg("dim", (fallback?.text ?? toolName).slice(0, 120))}`,
-    );
+    const fallbackText = getFallbackText(result.content, toolName, theme);
+    text.setText(fallbackText);
     return text;
   };
+}
+
+function tryRenderDetail(opts: {
+  details: Record<string, unknown> | undefined;
+  detailType: string;
+  renderContent: (text: string, theme: Theme) => string | Promise<string>;
+  footerFn: (d: Record<string, unknown>, theme: Theme) => string;
+  text: Component & { setText: (s: string) => void };
+  theme: Theme;
+}): Component | null {
+  const { details, detailType, renderContent, footerFn, text, theme } = opts;
+  if (!details || details._type !== detailType) return null;
+  const d = details as { text?: unknown };
+  if (!d.text) return null;
+
+  applyRenderedContent(
+    renderContent(d.text as string, theme),
+    text,
+    footerFn(details, theme),
+  );
+  return text;
+}
+
+function getFallbackText(
+  content: AgentToolResult<unknown>["content"] | undefined,
+  toolName: string,
+  theme: Theme,
+): string {
+  const raw = (content?.[0] as { text?: string })?.text;
+  const displayText = raw ?? toolName;
+  return `  ${theme.fg("dim", displayText.slice(0, 120))}`;
 }

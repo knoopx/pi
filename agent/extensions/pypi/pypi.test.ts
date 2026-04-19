@@ -1,16 +1,14 @@
-// @ts-nocheck — test calls use incorrect arity/types; needs execute signature migration
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
 import setupPyPIExtension from "./index";
 import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
-
-const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
-
 import { disableThrottle } from "../../shared/throttle";
 
+// eslint-disable-next-line max-lines-per-function -- large test suite
 describe("PyPI Extension", () => {
   let mockPi: MockExtensionAPI;
   let originalFetch: typeof globalThis.fetch;
@@ -77,15 +75,18 @@ describe("PyPI Extension", () => {
           (..._args) =>
             ({
               ok: true,
-              text: async () => mockHtml,
+              text: () => Promise.resolve(mockHtml),
               preconnect: vi.fn(),
             }) as unknown,
         );
 
-        result = await registeredTool.execute("tool1", {
-          query: "requests",
-          limit: 5,
-        });
+        result = await registeredTool.execute(
+          "tool1",
+          { query: "requests", limit: 5 },
+          undefined,
+          undefined,
+          undefined,
+        );
       });
 
       it("then it should call PyPI search endpoint", () => {
@@ -98,9 +99,7 @@ describe("PyPI Extension", () => {
       });
 
       it("then it should return formatted search results", () => {
-        expect(
-          stripAnsi((result.content[0] as TextContent).text),
-        ).toMatchSnapshot();
+        expect((result.content[0] as TextContent).text).toMatchSnapshot();
         expect(result.details.query).toBe("requests");
         expect(result.details.total).toBe(2);
       });
@@ -118,23 +117,28 @@ describe("PyPI Extension", () => {
           }))
           .mockResolvedValueOnce({
             ok: true,
-            text: async () => `<html>
+            text: () =>
+              Promise.resolve(`<html>
               <a class="package-snippet" href="/project/requests/">
                 <span class="package-snippet__name">requests</span>
                 <span class="package-snippet__version">2.31.0</span>
                 <p class="package-snippet__description">Python HTTP for Humans.</p>
               </a>
-            </html>`,
+            </html>`),
           } as unknown);
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        result = await registeredTool.execute("tool1", { query: "requests" });
+        result = await registeredTool.execute(
+          "tool1",
+          { query: "requests" },
+          undefined,
+          undefined,
+          undefined,
+        );
       });
 
       it("then it should fallback to direct package lookup", () => {
-        expect(
-          stripAnsi((result.content[0] as TextContent).text),
-        ).toMatchSnapshot();
+        expect((result.content[0] as TextContent).text).toMatchSnapshot();
         expect(result.details.total).toBe(1);
       });
     });
@@ -149,13 +153,14 @@ describe("PyPI Extension", () => {
             (..._args) =>
               ({
                 ok: true,
-                text: async () => `<html>
+                text: () =>
+                  Promise.resolve(`<html>
                   <div class="search-page">
                     <div class="search-page__section">
                       <h2>No results found</h2>
                     </div>
                   </div>
-                </html>`,
+                </html>`),
                 preconnect: vi.fn(),
               }) as unknown,
           )
@@ -164,15 +169,17 @@ describe("PyPI Extension", () => {
           });
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
-        result = await registeredTool.execute("tool1", {
-          query: "nonexistent-pkg-xyz-123",
-        });
+        result = await registeredTool.execute(
+          "tool1",
+          { query: "nonexistent-pkg-xyz-123" },
+          undefined,
+          undefined,
+          undefined,
+        );
       });
 
       it("then it should return empty result message", () => {
-        expect(
-          stripAnsi((result.content[0] as TextContent).text),
-        ).toMatchSnapshot();
+        expect((result.content[0] as TextContent).text).toMatchSnapshot();
       });
     });
   });
@@ -196,23 +203,28 @@ describe("PyPI Extension", () => {
           (..._args) =>
             ({
               ok: true,
-              json: async () => ({
-                info: {
-                  name: "requests",
-                  version: "2.31.0",
-                  summary: "Python HTTP for Humans.",
-                  home_page: "https://requests.readthedocs.io/",
-                  author: "Kenneth Reitz",
-                  license: "Apache 2.0",
-                },
-              }),
+              json: () =>
+                Promise.resolve({
+                  info: {
+                    name: "requests",
+                    version: "2.31.0",
+                    summary: "Python HTTP for Humans.",
+                    home_page: "https://requests.readthedocs.io/",
+                    author: "Kenneth Reitz",
+                    license: "Apache 2.0",
+                  },
+                }),
               preconnect: vi.fn(),
             }) as unknown,
         );
 
-        result = await registeredTool.execute("tool1", {
-          package: "requests",
-        });
+        result = await registeredTool.execute(
+          "tool1",
+          { package: "requests" },
+          undefined,
+          undefined,
+          undefined,
+        );
       });
 
       it("then it should fetch package info from PyPI", () => {
@@ -223,9 +235,7 @@ describe("PyPI Extension", () => {
       });
 
       it("then it should return formatted package info", () => {
-        expect(
-          stripAnsi((result.content[0] as TextContent).text),
-        ).toMatchSnapshot();
+        expect((result.content[0] as TextContent).text).toMatchSnapshot();
         expect(result.details.package).toBe("requests");
       });
     });
@@ -238,25 +248,28 @@ describe("PyPI Extension", () => {
           (..._args) =>
             ({
               ok: true,
-              json: async () => ({
-                info: {
-                  name: "big-package",
-                  version: "1.0.0",
-                  summary: "A package with many deps",
-                  requires_dist: requiresDist,
-                },
-              }),
+              json: () =>
+                Promise.resolve({
+                  info: {
+                    name: "big-package",
+                    version: "1.0.0",
+                    summary: "A package with many deps",
+                    requires_dist: requiresDist,
+                  },
+                }),
               preconnect: vi.fn(),
             }) as unknown,
         );
 
-        const result = await registeredTool.execute("tool1", {
-          package: "big-package",
-        });
+        const result = await registeredTool.execute(
+          "tool1",
+          { package: "big-package" },
+          undefined,
+          undefined,
+          undefined,
+        );
 
-        expect(
-          stripAnsi((result.content[0] as TextContent).text),
-        ).toMatchSnapshot();
+        expect((result.content[0] as TextContent).text).toMatchSnapshot();
       });
     });
 
@@ -273,9 +286,13 @@ describe("PyPI Extension", () => {
             }) as unknown,
         );
 
-        result = await registeredTool.execute("tool1", {
-          package: "nonexistent-pkg-xyz-123",
-        });
+        result = await registeredTool.execute(
+          "tool1",
+          { package: "nonexistent-pkg-xyz-123" },
+          undefined,
+          undefined,
+          undefined,
+        );
       });
 
       it("then it should return not found message", () => {
@@ -298,9 +315,13 @@ describe("PyPI Extension", () => {
             }) as unknown,
         );
 
-        const result = await registeredTool.execute("tool1", {
-          package: "requests",
-        });
+        const result = await registeredTool.execute(
+          "tool1",
+          { package: "requests" },
+          undefined,
+          undefined,
+          undefined,
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           "Error fetching package info: HTTP 500",
@@ -314,9 +335,13 @@ describe("PyPI Extension", () => {
           .fn()
           .mockRejectedValue(new Error("Network error"));
 
-        const result = await registeredTool.execute("tool1", {
-          package: "requests",
-        });
+        const result = await registeredTool.execute(
+          "tool1",
+          { package: "requests" },
+          undefined,
+          undefined,
+          undefined,
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           "Failed to show package info: Error: Network error",
@@ -330,9 +355,13 @@ describe("PyPI Extension", () => {
           .fn()
           .mockRejectedValue(new Error("Something went wrong"));
 
-        const result = await registeredTool.execute("tool1", {
-          package: "requests",
-        });
+        const result = await registeredTool.execute(
+          "tool1",
+          { package: "requests" },
+          undefined,
+          undefined,
+          undefined,
+        );
 
         expect((result.content[0] as TextContent).text).toBe(
           "Failed to show package info: Error: Something went wrong",

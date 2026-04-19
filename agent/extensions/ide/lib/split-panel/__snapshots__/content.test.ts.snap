@@ -1,0 +1,282 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderFileChangeRows — status icon and file icon layout > given a realistic mixed change set > when rendering all unselected > then shows all five rows with correct per-file formatting 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144msrc/new-feature.ts[39m                                                      [38;2;165;255;144m󰐕 120[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0msrc/existing.ts[39m                                                           [38;2;250;208;0m󰏫 5[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0m__tests__/extract/__fixtures__/renamed-file.ts[39m                             [38;2;250;208;0m 󰑕[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140msrc/old-deprecated.ts[39m                                                    [38;2;255;98;140m󰍴 95[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0msrc/utils/helpers.ts[39m                                                      [38;2;250;208;0m󰏫 8[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given a realistic mixed change set > when rendering with deleted file selected > then highlights the deleted file with red deletion stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144msrc/new-feature.ts[39m                                                      [38;2;165;255;144m󰐕 120[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0msrc/existing.ts[39m                                                           [38;2;250;208;0m󰏫 5[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0m__tests__/extract/__fixtures__/renamed-file.ts[39m                             [38;2;250;208;0m 󰑕[39m ",
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;255;98;140msrc/old-deprecated.ts[39m                                                    [38;2;255;98;140m󰍴 95[39m [49m",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0msrc/utils/helpers.ts[39m                                                      [38;2;250;208;0m󰏫 8[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given a realistic mixed change set > when rendering with last file selected > then highlights the last file at bottom of list 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144msrc/new-feature.ts[39m                                                      [38;2;165;255;144m󰐕 120[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0msrc/existing.ts[39m                                                           [38;2;250;208;0m󰏫 5[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0m__tests__/extract/__fixtures__/renamed-file.ts[39m                             [38;2;250;208;0m 󰑕[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140msrc/old-deprecated.ts[39m                                                    [38;2;255;98;140m󰍴 95[39m ",
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;250;208;0msrc/utils/helpers.ts[39m                                                      [38;2;250;208;0m󰏫 8[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given a realistic mixed change set > when rendering with renamed file selected > then highlights the renamed file with zero stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144msrc/new-feature.ts[39m                                                      [38;2;165;255;144m󰐕 120[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0msrc/existing.ts[39m                                                           [38;2;250;208;0m󰏫 5[39m ",
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;250;208;0m__tests__/extract/__fixtures__/renamed-file.ts[39m                             [38;2;250;208;0m 󰑕[39m [49m",
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140msrc/old-deprecated.ts[39m                                                    [38;2;255;98;140m󰍴 95[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0msrc/utils/helpers.ts[39m                                                      [38;2;250;208;0m󰏫 8[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given a realistic mixed change set > when rendering with second file selected (modified) > then highlights the modified file and shows all rows 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144msrc/new-feature.ts[39m                                                      [38;2;165;255;144m󰐕 120[39m ",
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;250;208;0msrc/existing.ts[39m                                                           [38;2;250;208;0m󰏫 5[39m [49m",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0m__tests__/extract/__fixtures__/renamed-file.ts[39m                             [38;2;250;208;0m 󰑕[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140msrc/old-deprecated.ts[39m                                                    [38;2;255;98;140m󰍴 95[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0msrc/utils/helpers.ts[39m                                                      [38;2;250;208;0m󰏫 8[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given added files > when selected and focused > renders long path truncated with selection highlight 1`] = `
+[
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;165;255;144m__tests__/extract/__fixtures__/very-long-new-file-name.ts[39m                [38;2;165;255;144m󰐕 42[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given added files > when selected and focused > renders short path with selection highlight 1`] = `
+[
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;165;255;144mnew.ts[39m                                                                   [38;2;165;255;144m󰐕 10[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given added files > when unselected and unfocused > renders long path truncated with icons in correct positions 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144m__tests__/extract/__fixtures__/very-long-new-file-name.ts[39m                [38;2;165;255;144m󰐕 42[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given added files > when unselected and unfocused > renders short path with file icon after path and status icon at end 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144mnew.ts[39m                                                                   [38;2;165;255;144m󰐕 10[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given an empty list > renders the empty message 1`] = `
+[
+  "[38;2;76;62;118m  No files changed[39m[0m                                                              ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given an empty list > renders with custom empty message 1`] = `
+[
+  "[38;2;76;62;118m  No changed files[39m[0m                                                              ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given deleted files > when selected and focused > renders long deleted file truncated with selection highlight 1`] = `
+[
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;255;98;140m__tests__/extract/__fixtures__/very-long-deleted-file-name.ts[39m           [38;2;255;98;140m󰍴 200[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given deleted files > when selected and focused > renders short deleted file with selection highlight 1`] = `
+[
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;255;98;140mgone.ts[39m                                                                  [38;2;255;98;140m󰍴 15[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given deleted files > when unselected and unfocused > renders long deleted file truncated with stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140m__tests__/extract/__fixtures__/very-long-deleted-file-name.ts[39m           [38;2;255;98;140m󰍴 200[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given deleted files > when unselected and unfocused > renders short deleted file with deletion stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140mgone.ts[39m                                                                  [38;2;255;98;140m󰍴 15[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given exists files > renders with small net change stats 1`] = `
+[
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;250;208;0munchanged.ts[39m                                                              [38;2;250;208;0mE 1[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given exists files > when selected and focused > renders with selection highlight 1`] = `
+[
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;250;208;0munchanged.ts[39m                                                              [38;2;250;208;0mE 1[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given files with different net change directions > renders with correct signed stats for each file 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mmostly-added.ts[39m                                                          [38;2;250;208;0m󰏫 95[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mmostly-removed.ts[39m                                                        [38;2;250;208;0m󰏫 77[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mbalanced.ts[39m                                                               [38;2;250;208;0m󰏫 1[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given files with no changes at all > renders without stats text between path and icons 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mempty.ts[39m                                                                   [38;2;250;208;0m E[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mrenamed-empty.ts[39m                                                           [38;2;250;208;0m 󰑕[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given files with various path lengths > when rendering all three with index -1 (unselected) > then each row has the layout: fileIcon path... stats statusIcon 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0ma.ts[39m                                                                      [38;2;250;208;0m󰏫 1[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mshort-path.ts[39m                                                              [38;2;250;208;0m 󰑕[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144m__tests__/extract/__fixtures__/very-long-file-name-that-needs-truncation.[39m[38;2;165;255;144m󰐕 40[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given files with various path lengths > when rendering with middle file selected > then the selected row shows highlight with correct layout 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0ma.ts[39m                                                                      [38;2;250;208;0m󰏫 1[39m ",
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;250;208;0mshort-path.ts[39m                                                              [38;2;250;208;0m 󰑕[39m [49m",
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144m__tests__/extract/__fixtures__/very-long-file-name-that-needs-truncation.[39m[38;2;165;255;144m󰐕 40[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given files with various path lengths > when rendering with truncated path file selected > then the long path is truncated and icons remain visible at edges 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0ma.ts[39m                                                                      [38;2;250;208;0m󰏫 1[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mshort-path.ts[39m                                                              [38;2;250;208;0m 󰑕[39m ",
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;165;255;144m__tests__/extract/__fixtures__/very-long-file-name-that-needs-truncation.[39m[38;2;165;255;144m󰐕 40[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given modified files > when selected and focused > renders long path truncated with selection highlight and stats 1`] = `
+[
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;250;208;0m__tests__/extract/__fixtures__/very-long-modified-file-name.ts[39m           [38;2;250;208;0m󰏫 80[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given modified files > when selected and focused > renders short path with selection highlight and stats 1`] = `
+[
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;250;208;0mmod.ts[39m                                                                    [38;2;250;208;0m󰏫 2[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given modified files > when unselected and unfocused > renders long path truncated with stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0m__tests__/extract/__fixtures__/very-long-modified-file-name.ts[39m           [38;2;250;208;0m󰏫 80[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given modified files > when unselected and unfocused > renders short path with stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mmod.ts[39m                                                                    [38;2;250;208;0m󰏫 2[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given renamed files > when selected and focused > renders long renamed file truncated with selection highlight 1`] = `
+[
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;250;208;0m__tests__/extract/__fixtures__/very-long-renamed-file-name.ts[39m              [38;2;250;208;0m 󰑕[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given renamed files > when selected and focused > renders short renamed file with selection highlight 1`] = `
+[
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;250;208;0mmoved.ts[39m                                                                   [38;2;250;208;0m 󰑕[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given renamed files > when unselected and unfocused > renders long renamed file truncated with no stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0m__tests__/extract/__fixtures__/very-long-renamed-file-name.ts[39m              [38;2;250;208;0m 󰑕[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given renamed files > when unselected and unfocused > renders short renamed file with zero stats 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mmoved.ts[39m                                                                   [38;2;250;208;0m 󰑕[39m ",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given unknown-status files > renders with warning color and stats 1`] = `
+[
+  "[48;2;50;36;93m[38;2;203;203;65m󰘦[39m [38;2;250;208;0mweird.json[39m                                                               [38;2;250;208;0m? 10[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > given unknown-status files > when selected and focused > renders with selection highlight 1`] = `
+[
+  "[48;2;50;36;93m[38;2;203;203;65m󰘦[39m [38;2;250;208;0mweird.json[39m                                                               [38;2;250;208;0m? 10[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > when terminal height is smaller than file count > when scrolled to bottom (index 18) > then shows only the last visible rows 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-009.ts[39m                                                              [38;2;250;208;0m󰏫 30[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140mfile-010.ts[39m                                                              [38;2;255;98;140m󰍴 33[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-011.ts[39m                                                              [38;2;250;208;0m󰑕 36[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144mfile-012.ts[39m                                                              [38;2;165;255;144m󰐕 39[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-013.ts[39m                                                              [38;2;250;208;0m󰏫 42[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140mfile-014.ts[39m                                                              [38;2;255;98;140m󰍴 45[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-015.ts[39m                                                              [38;2;250;208;0m󰑕 48[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144mfile-016.ts[39m                                                              [38;2;165;255;144m󰐕 51[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-017.ts[39m                                                              [38;2;250;208;0m󰏫 54[39m ",
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;255;98;140mfile-018.ts[39m                                                              [38;2;255;98;140m󰍴 57[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > when terminal height is smaller than file count > when scrolled to bottom (index 19) > then shows the last few rows including the very last one 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140mfile-010.ts[39m                                                              [38;2;255;98;140m󰍴 33[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-011.ts[39m                                                              [38;2;250;208;0m󰑕 36[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144mfile-012.ts[39m                                                              [38;2;165;255;144m󰐕 39[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-013.ts[39m                                                              [38;2;250;208;0m󰏫 42[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140mfile-014.ts[39m                                                              [38;2;255;98;140m󰍴 45[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-015.ts[39m                                                              [38;2;250;208;0m󰑕 48[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144mfile-016.ts[39m                                                              [38;2;165;255;144m󰐕 51[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-017.ts[39m                                                              [38;2;250;208;0m󰏫 54[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140mfile-018.ts[39m                                                              [38;2;255;98;140m󰍴 57[39m ",
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-019.ts[39m                                                              [38;2;250;208;0m󰑕 60[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > when terminal height is smaller than file count > when scrolled to middle (index 9) > then shows only the visible rows around index 9 1`] = `
+[
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144mfile-000.ts[39m                                                               [38;2;165;255;144m󰐕 3[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-001.ts[39m                                                               [38;2;250;208;0m󰏫 6[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140mfile-002.ts[39m                                                               [38;2;255;98;140m󰍴 9[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-003.ts[39m                                                              [38;2;250;208;0m󰑕 12[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144mfile-004.ts[39m                                                              [38;2;165;255;144m󰐕 15[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-005.ts[39m                                                              [38;2;250;208;0m󰏫 18[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140mfile-006.ts[39m                                                              [38;2;255;98;140m󰍴 21[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-007.ts[39m                                                              [38;2;250;208;0m󰑕 24[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144mfile-008.ts[39m                                                              [38;2;165;255;144m󰐕 27[39m ",
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-009.ts[39m                                                              [38;2;250;208;0m󰏫 30[39m [49m",
+]
+`;
+
+exports[`renderFileChangeRows — status icon and file icon layout > when terminal height is smaller than file count > when scrolled to top (index 0) > then shows only the first visible rows 1`] = `
+[
+  "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;165;255;144mfile-000.ts[39m                                                               [38;2;165;255;144m󰐕 3[39m [49m",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-001.ts[39m                                                               [38;2;250;208;0m󰏫 6[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140mfile-002.ts[39m                                                               [38;2;255;98;140m󰍴 9[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-003.ts[39m                                                              [38;2;250;208;0m󰑕 12[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144mfile-004.ts[39m                                                              [38;2;165;255;144m󰐕 15[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-005.ts[39m                                                              [38;2;250;208;0m󰏫 18[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;255;98;140mfile-006.ts[39m                                                              [38;2;255;98;140m󰍴 21[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-007.ts[39m                                                              [38;2;250;208;0m󰑕 24[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;165;255;144mfile-008.ts[39m                                                              [38;2;165;255;144m󰐕 27[39m ",
+  "[38;2;49;120;198m󰛦[39m [38;2;250;208;0mfile-009.ts[39m                                                              [38;2;250;208;0m󰏫 30[39m ",
+]
+`;

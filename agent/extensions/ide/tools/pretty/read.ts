@@ -4,9 +4,15 @@ import type { Component } from "@mariozechner/pi-tui";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { fileIconGlyph } from "../icons";
 import { humanSize } from "../images";
-import { renderFileContent, renderTree } from "../renderers";
-import { termW, shortPath } from "../utils";
-import { extractTextContent, renderError, getTextComponent } from "./utils";
+import { renderFileContent } from "../renderers";
+import { termW, shortPath } from "../terminal-utils";
+import {
+  extractTextContent,
+  renderError,
+  getTextComponent,
+  type ToolExecuteFn,
+  type WrappedToolHandler,
+} from "./utils";
 import type { ToolRenderContext } from "./types";
 
 interface ReadParams {
@@ -15,54 +21,80 @@ interface ReadParams {
   limit?: number;
 }
 
+// pi framework requires 5-arg handler signature
+/* eslint-disable max-params */
 export function createReadExecute(
-  orig: (
+  orig: ToolExecuteFn,
+): WrappedToolHandler<ReadParams> {
+  const handler = async (
     tid: string,
-    params: unknown,
-    sig: unknown,
-    upd: unknown,
+    params: ReadParams,
+    sig: AbortSignal | undefined,
+    upd: ((details: Record<string, unknown>) => void) | undefined,
     ctx: unknown,
-  ) => Promise<unknown>,
-): (
-  tid: string,
-  params: ReadParams,
-  sig: AbortSignal | undefined,
-  upd: ((details: Record<string, unknown>) => void) | undefined,
-  ctx: any,
-) => Promise<unknown> {
-  return async (tid, params, sig, upd, ctx) => {
-    const p = params as ReadParams;
-    const result = (await orig(tid, p, sig, upd, ctx)) as {
+  ): Promise<unknown> => {
+    const result = (await orig(tid, params, sig, upd, ctx)) as {
       content: (TextContent | ImageContent)[];
       details?: Record<string, unknown>;
     };
 
-    const fp = p.path ?? "";
-    const offset = p.offset ?? 1;
-    const imageBlock = result.content?.find(
-      (c): c is ImageContent => c.type === "image",
-    );
+    const fp = params.path ?? "";
+    const imageBlock = findImageBlock(result.content);
     if (imageBlock) {
-      result.details = {
-        _type: "readImage" as const,
-        filePath: fp,
-        data: imageBlock.data,
-        mimeType: imageBlock.mimeType ?? "image/png",
-      };
+      result.details = buildImageDetails(fp, imageBlock);
       return result;
     }
-    const textContent = extractTextContent(result.content);
-    if (textContent && fp) {
-      const lineCount = textContent.split("\n").length;
-      result.details = {
-        _type: "readFile" as const,
-        filePath: fp,
-        content: textContent,
-        offset,
-        lineCount,
-      };
-    }
+
+    enrichTextResult(result, fp, params.offset);
     return result;
+  };
+
+  return handler as WrappedToolHandler<ReadParams>;
+}
+/* eslint-enable max-params */
+
+function findImageBlock(
+  content: (TextContent | ImageContent)[] | undefined,
+): ImageContent | undefined {
+  return content?.find((c): c is ImageContent => c.type === "image");
+}
+
+function enrichTextResult(
+  result: {
+    content: (TextContent | ImageContent)[];
+    details?: Record<string, unknown>;
+  },
+  filePath: string,
+  offset: number | undefined,
+): void {
+  const textContent = extractTextContent(result.content);
+  if (!textContent || !filePath) return;
+  result.details = buildFileReadDetails(filePath, textContent, offset ?? 1);
+}
+
+function buildImageDetails(
+  filePath: string,
+  imageBlock: ImageContent,
+): Record<string, unknown> {
+  return {
+    _type: "readImage" as const,
+    filePath,
+    data: imageBlock.data,
+    mimeType: imageBlock.mimeType ?? "image/png",
+  };
+}
+
+function buildFileReadDetails(
+  filePath: string,
+  content: string,
+  offset: number,
+): Record<string, unknown> {
+  return {
+    _type: "readFile" as const,
+    filePath,
+    content,
+    offset,
+    lineCount: content.split("\n").length,
   };
 }
 
@@ -76,22 +108,62 @@ export function createReadRenderCall(
 ) => Component {
   const sp = (p: string) => shortPath(cwd, home, p);
   return (args, theme, ctx) => {
-    const fp = args?.path ?? "";
+    const fp = args.path;
     const text = getTextComponent(ctx, Text);
-    const offset = args?.offset
+    const offsetStr = args.offset
       ? ` ${theme.fg("muted", `from line ${args.offset}`)}`
       : "";
-    const limit = args?.limit
+    const limitStr = args.limit
       ? ` ${theme.fg("muted", `(${args.limit} lines)`)}`
       : "";
     text.setText(
-      `${theme.fg("toolTitle", theme.bold("read"))} ${theme.fg(
-        "accent",
-        sp(fp),
-      )}${offset}${limit}`,
+      `${theme.fg("toolTitle", theme.bold("read"))} ${theme.fg("accent", sp(fp))}${offsetStr}${limitStr}`,
     );
     return text;
   };
+}
+
+function renderImageResult(
+  details: Record<string, unknown>,
+  theme: Theme,
+  text: Component & { setText: (s: string) => void },
+): void {
+  const tw = termW();
+  const byteSize = Math.ceil(((details.data as string).length * 3) / 4);
+  const sizeStr = humanSize(byteSize);
+  const mimeStr = (details.mimeType as string) ?? "image";
+  text.setText(
+    `  ${fileIconGlyph(details.filePath as string)}${theme.fg("dim", `${mimeStr} · ${sizeStr}`)}\n${theme.fg("border", "─".repeat(tw))}\n${theme.fg("border", "─".repeat(tw))}`,
+  );
+}
+
+function renderFileResult(
+  details: Record<string, unknown>,
+  options: { expanded: boolean },
+  theme: Theme,
+  text: Component & { setText: (s: string) => void },
+): void {
+  const maxShow = options.expanded ? (details.lineCount as number) : 80;
+  void renderFileContent({
+    content: details.content as string,
+    filePath: details.filePath as string,
+    offset: details.offset as number,
+    maxLines: maxShow,
+    theme,
+  }).then((rendered) => {
+    text.setText(rendered);
+  });
+}
+
+function renderFallbackResult(
+  result: { content: (TextContent | ImageContent)[] },
+  theme: Theme,
+  text: Component & { setText: (s: string) => void },
+): void {
+  const fallback = result.content?.[0] as { text?: string } | undefined;
+  text.setText(
+    `  ${theme.fg("dim", (fallback?.text ?? "read").slice(0, 120))}`,
+  );
 }
 
 export function createReadRenderResult(): (
@@ -106,34 +178,39 @@ export function createReadRenderResult(): (
   return (result, options, theme, ctx) => {
     const text = getTextComponent(ctx, Text);
     if (ctx.isError) return renderError(result.content, theme, text);
+
     const d = result.details;
-    if (d?._type === "readImage") {
-      const tw = termW();
-      const byteSize = Math.ceil(((d.data as string).length * 3) / 4);
-      const sizeStr = humanSize(byteSize);
-      const mimeStr = (d.mimeType as string) ?? "image";
-      text.setText(
-        `  ${fileIconGlyph(d.filePath as string)}${theme.fg("dim", `${mimeStr} · ${sizeStr}`)}\n${theme.fg("border", "─".repeat(tw))}\n${theme.fg("border", "─".repeat(tw))}`,
-      );
-      return text;
-    }
-    if (d?._type === "readFile" && d.content) {
-      const maxShow = options.expanded ? (d.lineCount as number) : 80;
-      renderFileContent(
-        d.content as string,
-        d.filePath as string,
-        d.offset as number,
-        maxShow,
-        theme,
-      ).then((rendered) => {
-        text.setText(rendered);
-      });
-      return text;
-    }
-    const fallback = result.content?.[0] as { text?: string } | undefined;
-    text.setText(
-      `  ${theme.fg("dim", (fallback?.text ?? "read").slice(0, 120))}`,
-    );
+    const rendered = tryRenderDetailResult(d, options, theme, text);
+    if (rendered) return rendered;
+
+    renderFallbackResult(result, theme, text);
     return text;
   };
+}
+
+function dispatchDetailRenderer(
+  details: Record<string, unknown>,
+  options: { expanded: boolean },
+  theme: Theme,
+  text: Component & { setText: (s: string) => void },
+): void {
+  const d = details as { _type?: string; content?: unknown };
+  if (d._type === "readImage") {
+    renderImageResult(details, theme, text);
+    return;
+  }
+  if (d._type === "readFile" && !!d.content) {
+    renderFileResult(details, options, theme, text);
+  }
+}
+
+function tryRenderDetailResult(
+  details: Record<string, unknown> | undefined,
+  options: { expanded: boolean },
+  theme: Theme,
+  text: Component & { setText: (s: string) => void },
+): Component | null {
+  if (!details) return null;
+  dispatchDetailRenderer(details, options, theme, text);
+  return text;
 }

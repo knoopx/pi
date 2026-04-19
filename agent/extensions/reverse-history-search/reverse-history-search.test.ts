@@ -1,4 +1,3 @@
-// @ts-nocheck — test calls use incorrect arity/types; needs execute signature migration
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type {
   ExtensionAPI,
@@ -25,11 +24,10 @@ describe("Reverse History Search Extension", () => {
     describe("when registering shortcut", () => {
       it("then it should register ctrl+r shortcut", () => {
         const { registerShortcut } = mockPi as unknown as MockExtensionAPI;
-        const matcher = {
-          description: expect.any(String),
-          handler: expect.any(Function) as unknown,
-        };
-        expect(registerShortcut).toHaveBeenCalledWith("ctrl+r", matcher);
+        expect(registerShortcut).toHaveBeenCalledWith(
+          "ctrl+r",
+          expect.anything(),
+        );
       });
 
       it("then it should register a handler function", () => {
@@ -60,7 +58,7 @@ describe("Reverse History Search Extension", () => {
           notify: vi.fn(),
           custom: vi.fn(),
           setEditorText: vi.fn(),
-          theme: { fg: vi.fn() },
+          theme: { fg: vi.fn() } as unknown as ExtensionUIContext["theme"],
           select: vi.fn(),
           confirm: vi.fn(),
           input: vi.fn(),
@@ -76,11 +74,19 @@ describe("Reverse History Search Extension", () => {
           getAllThemes: vi.fn(),
           getTheme: vi.fn(),
           setTheme: vi.fn(),
-        } as ExtensionUIContext,
+          onTerminalInput: vi.fn(),
+          setWorkingIndicator: vi.fn(),
+          setHiddenThinkingLabel: vi.fn(),
+          pasteToEditor: vi.fn(),
+          addAutocompleteProvider: vi.fn(),
+          getToolsExpanded: vi.fn(),
+          setToolsExpanded: vi.fn(),
+        } as unknown as ExtensionUIContext,
         sessionManager: vi.fn() as unknown as SessionManager,
         modelRegistry: vi.fn() as unknown as ModelRegistry,
         model: undefined,
         isIdle: vi.fn(),
+        signal: undefined,
         abort: vi.fn(),
         hasPendingMessages: vi.fn(),
         shutdown: vi.fn(),

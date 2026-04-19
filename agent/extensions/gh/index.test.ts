@@ -3,8 +3,7 @@ import type { TextContent } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
-
-const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
+import type * as utilsTypes from "./utils";
 
 let spawnResult = { stdout: "", stderr: "", exitCode: 0 };
 
@@ -56,59 +55,47 @@ const errorSpawnResult = {
   exitCode: 1,
 };
 
-interface SpawnProc {
-  stdout: { push(data: string | null): void };
-  stderr: { push(data: string | null): void };
-  emit(event: string, code?: number): void;
-}
-
-function createProc(): SpawnProc {
-  const proc = {
-    stdout: { push: vi.fn(), on: vi.fn() },
-    stderr: { push: vi.fn(), on: vi.fn() },
-    emit: vi.fn(),
-    on: vi.fn(),
-  } as unknown as SpawnProc;
-
-  setTimeout(() => {
-    proc.stdout.push(spawnResult.stdout);
-    proc.stdout.push(null);
-    proc.stderr.push(spawnResult.stderr);
-    proc.stderr.push(null);
-    (proc as SpawnProc).emit("close", spawnResult.exitCode);
-  }, 0);
-
-  return proc;
-}
-
-async function getSpawnMock() {
-  return { spawn: createProc };
-}
-
 function getToolByName(mockPi: MockExtensionAPI, name: string): MockTool {
-  return mockPi.registerTool.mock.calls.find(
+  const found = mockPi.registerTool.mock.calls.find(
     (call) => (call[0] as MockTool).name === name,
-  )![0] as MockTool;
+  );
+  if (!found) throw new Error(`Tool ${name} not found`);
+  return found[0] as MockTool;
 }
 
-// Mock ./utils to avoid dynamic child_process import issues
+async function executeSearchCode(
+  mock: MockExtensionAPI,
+  query: string,
+): Promise<string[]> {
+  const ghCmdJson = (await import("./utils")).ghCmdJson as ReturnType<
+    typeof vi.fn
+  >;
+  ghCmdJson.mockClear();
+  const tool = getToolByName(mock, "gh-search-code");
+  spawnResult = createSpawnResult(codeData);
+
+  await tool.execute("tool1", { query }, undefined, undefined, {});
+
+  return ghCmdJson.mock.calls[0][0] as string[];
+}
+
 vi.mock("./utils", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./utils")>();
+  const actual = await importOriginal<typeof utilsTypes>();
   return {
     ...actual,
-    ghCmd: vi.fn().mockImplementation(async (args: string[]) => {
+    ghCmd: vi.fn().mockImplementation((_args: string[]) => {
       return {
         stdout: spawnResult.stdout,
         stderr: spawnResult.stderr,
         exitCode: spawnResult.exitCode,
       };
     }),
-    ghCmdJson: vi.fn().mockImplementation(async () => {
+    ghCmdJson: vi.fn().mockImplementation(() => {
       if (spawnResult.exitCode !== 0) {
         throw new Error(spawnResult.stderr);
       }
       try {
-        return JSON.parse(spawnResult.stdout);
+        return JSON.parse(spawnResult.stdout) as unknown[];
       } catch {
         return [];
       }
@@ -170,9 +157,7 @@ describe("GH Extension", () => {
         {},
       );
 
-      expect(
-        stripAnsi((result.content[0] as TextContent).text),
-      ).toMatchSnapshot();
+      expect((result.content[0] as TextContent).text).toMatchSnapshot();
       expect(result.details).toEqual(expectedDetails);
     });
 
@@ -207,9 +192,34 @@ describe("GH Extension", () => {
         {},
       );
 
-      expect(
-        stripAnsi((result.content[0] as TextContent).text),
-      ).toMatchSnapshot();
+      expect((result.content[0] as TextContent).text).toMatchSnapshot();
+    });
+
+    it("then it should convert repo: qualifier to --repo flag", async () => {
+      const callArgs = await executeSearchCode(
+        mockPi,
+        "wrapGAppsHook4 extension:nix repo:NixOS/nixpkgs",
+      );
+      expect(callArgs).toContain("--repo=NixOS/nixpkgs");
+      expect(callArgs).toContain("--extension=nix");
+      const queryArg = callArgs.find(
+        (arg: string) =>
+          !arg.startsWith("-") && arg !== "search" && arg !== "code",
+      );
+      expect(queryArg).toBe("wrapGAppsHook4");
+    });
+
+    it("then it should convert owner: qualifier to --owner flag", async () => {
+      const callArgs = await executeSearchCode(mockPi, "cli owner:microsoft");
+      expect(callArgs).toContain("--owner=microsoft");
+    });
+
+    it("then it should convert filename: qualifier to --filename flag", async () => {
+      const callArgs = await executeSearchCode(
+        mockPi,
+        "lint filename:package.json",
+      );
+      expect(callArgs).toContain("--filename=package.json");
     });
   });
 });

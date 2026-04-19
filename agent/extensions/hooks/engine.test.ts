@@ -1,17 +1,27 @@
 import { describe, it, expect } from "vitest";
-import { processHooks } from "./engine";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+} from "@mariozechner/pi-coding-agent";
+import { runEngineHooks } from "./engine";
+
+function createMockPi(): ExtensionAPI {
+  return {
+    exec: () => Promise.resolve({ code: 0, stdout: "", stderr: "" }),
+    sendMessage: () => {},
+  } as unknown as ExtensionAPI;
+}
+
+function createMockCtx(cwd: string): ExtensionContext {
+  return { cwd, hasUI: false, abort: () => {} } as unknown as ExtensionContext;
+}
 
 describe("processHooks", () => {
   describe("given empty config", () => {
     it("then returns undefined without executing anything", async () => {
-      const pi = {
-        exec: () => Promise.resolve({ code: 0, stdout: "", stderr: "" }),
-        sendMessage: () => {},
-      } as any;
-
-      const result = await processHooks(pi, [], {
+      const result = await runEngineHooks(createMockPi(), [], {
         event: "session_start",
-        ctx: { cwd: "/test" } as any,
+        ctx: createMockCtx("/test"),
       });
 
       expect(result).toBeUndefined();
@@ -21,14 +31,14 @@ describe("processHooks", () => {
   describe("given group with non-matching pattern", () => {
     it("then skips groups that are inactive", async () => {
       let sendMessageCalled = false;
-      const pi = {
-        exec: () => Promise.resolve({ code: 0, stdout: "", stderr: "" }),
-        sendMessage: () => {
-          sendMessageCalled = true;
-        },
-      } as any;
+      const pi = createMockPi() as ExtensionAPI & {
+        sendMessage: () => void;
+      };
+      pi.sendMessage = () => {
+        sendMessageCalled = true;
+      };
 
-      await processHooks(
+      await runEngineHooks(
         pi,
         [
           {
@@ -44,7 +54,7 @@ describe("processHooks", () => {
         ],
         {
           event: "session_start",
-          ctx: { cwd: "/test" } as any,
+          ctx: createMockCtx("/test"),
         },
       );
 

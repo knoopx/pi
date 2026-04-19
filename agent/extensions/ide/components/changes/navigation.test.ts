@@ -1,34 +1,28 @@
 import { describe, it, expect } from "vitest";
-import { createMockChange } from "../test-utils";
+import { createMockChange } from "../../lib/test-utils";
 import { Navigation } from "./navigation";
 import { ChangesState } from "./state";
+import { expectDefaultSelection } from "./test-helpers";
 
 // ─── Shared assertions ────────────────────────────────────────────────────
 
-/** Asserts the order after moving change "b" past others (a, c, b). */
+
 function expectMovedOrder(state: ChangesState) {
   expect(state.changes[0].changeId).toBe("a");
   expect(state.changes[1].changeId).toBe("c");
   expect(state.changes[2].changeId).toBe("b");
 }
 
-/** Asserts the original order (a, b, c) after undoing a move. */
+
 function expectOriginalOrder(state: ChangesState) {
   expect(state.changes[0].changeId).toBe("a");
   expect(state.changes[1].changeId).toBe("b");
   expect(state.changes[2].changeId).toBe("c");
 }
 
-/** Asserts default selection state values. */
-function expectDefaultSelection(state: ChangesState) {
-  expect(state.selectionState.selectedIndex).toBe(0);
-  expect(state.selectionState.fileIndex).toBe(0);
-  expect(state.selectionState.diffScroll).toBe(0);
-}
-
 // ─── Shared test factories ────────────────────────────────────────────────
 
-/** Creates a state with 3 changes for move-mode tests (middle selected). */
+
 function createMoveModeState() {
   const state = new ChangesState();
   state.changes = [
@@ -41,7 +35,7 @@ function createMoveModeState() {
   return state;
 }
 
-/** Creates a state with exactly 2 changes (first selected). */
+
 function makeTwoChangesState() {
   const state = new ChangesState();
   state.changes = [makeChange("a", "x"), makeChange("b", "y")];
@@ -49,7 +43,7 @@ function makeTwoChangesState() {
   return state;
 }
 
-/** Creates a state with 50 changes at the given start index. */
+
 function makePagedState(startIndex: number) {
   const state = new ChangesState();
   state.changes = Array.from({ length: 50 }, (_, i) =>
@@ -57,16 +51,6 @@ function makePagedState(startIndex: number) {
   );
   state.selectedChange = state.changes[startIndex];
   return state;
-}
-
-// ─── Mock theme (minimal, mimics pi-coding-agent Theme) ──────────────────
-
-function createMockTheme() {
-  return {
-    fg: (color: string, text: string) => `\x1b[${color}m${text}\x1b[39m`,
-    bg: (color: string, text: string) => `\x1b[${color}m${text}\x1b[49m`,
-    bold: (text: string) => `\x1b[1m${text}\x1b[22m`,
-  };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -85,7 +69,7 @@ function makeNavigation(state: ChangesState) {
     state,
     { requestRender: () => {} },
     {
-      onChangeSelected: async (id) => {},
+      onChangeSelected: async (_id) => {},
       onFileSelected: async (_p) => {},
     },
   );
@@ -125,11 +109,11 @@ describe("changes/navigation", () => {
 
       nav.navigateChanges("down");
       expect(state.selectionState.selectedIndex).toBe(1);
-      expect(state.selectedChange!.changeId).toBe("b");
+      expect(state.selectedChange.changeId).toBe("b");
 
       nav.navigateChanges("down");
       expect(state.selectionState.selectedIndex).toBe(2);
-      expect(state.selectedChange!.changeId).toBe("c");
+      expect(state.selectedChange.changeId).toBe("c");
     });
 
     it("then navigate up decrements index", () => {
@@ -247,7 +231,7 @@ describe("changes/navigation", () => {
       const nav = makeNavigation(state);
       nav.cycleFilter(1, 4);
 
-      expectDefaultSelection(state);
+      expectDefaultSelection(state, expect);
     });
 
     it("then navigateFiles increments and decrements file index", () => {

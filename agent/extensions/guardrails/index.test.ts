@@ -72,7 +72,7 @@ async function setupHandler(
   config: unknown[],
   options: { primeTree?: boolean } = {},
 ) {
-  configLoader.load.mockResolvedValue(undefined);
+  configLoader.load.mockReturnValue(undefined);
   configLoader.getConfig.mockReturnValue(config);
   glob.mockResolvedValue(["package.json"]);
 
@@ -124,7 +124,7 @@ describe("isGroupActive", () => {
 
   describe("given excludePattern", () => {
     it("then deactivates group when exclude matches", async () => {
-      glob.mockImplementation(async (pattern: string) => {
+      glob.mockImplementation((pattern: string) => {
         if (pattern === "flake.nix") return ["flake.nix"];
         if (pattern === ".jj") return [".jj"];
         return [];
@@ -133,7 +133,7 @@ describe("isGroupActive", () => {
     });
 
     it("then keeps group active when exclude does not match", async () => {
-      glob.mockImplementation(async (pattern: string) => {
+      glob.mockImplementation((pattern: string) => {
         if (pattern === "flake.nix") return ["flake.nix"];
         if (pattern === ".jj") return [];
         return [];
@@ -142,7 +142,7 @@ describe("isGroupActive", () => {
     });
 
     it("then deactivates wildcard group when exclude matches", async () => {
-      glob.mockImplementation(async (pattern: string) => {
+      glob.mockImplementation((pattern: string) => {
         if (pattern === ".jj") return [".jj"];
         return [];
       });
@@ -150,7 +150,7 @@ describe("isGroupActive", () => {
     });
 
     it("then keeps wildcard group active when exclude does not match", async () => {
-      glob.mockImplementation(async (pattern: string) => {
+      glob.mockImplementation((pattern: string) => {
         if (pattern === ".jj") return [];
         return [];
       });
@@ -159,12 +159,13 @@ describe("isGroupActive", () => {
   });
 });
 
+// eslint-disable-next-line max-lines-per-function -- large test suite
 describe("guardrails extension", () => {
   beforeEach(() => vi.clearAllMocks());
 
   describe("given extension startup", () => {
     it("then loads config and registers tool_call hook", async () => {
-      configLoader.load.mockResolvedValue(undefined);
+      configLoader.load.mockReturnValue(undefined);
       configLoader.getConfig.mockReturnValue([]);
 
       const pi = { on: vi.fn(), registerCommand: vi.fn() };
@@ -179,7 +180,7 @@ describe("guardrails extension", () => {
 
   describe("given /guardrails command", () => {
     it("then persists on/off state", async () => {
-      configLoader.load.mockResolvedValue(undefined);
+      configLoader.load.mockReturnValue(undefined);
       configLoader.getConfig.mockReturnValue([]);
       glob.mockResolvedValue(["package.json"]);
 
@@ -412,7 +413,7 @@ describe("guardrails extension", () => {
           rules: [
             {
               context: "file_name",
-              pattern: "package-lock\\.json",
+              pattern: "package-lock.json",
               action: "block",
               reason: "no lock edits",
             },
@@ -470,7 +471,7 @@ describe("guardrails extension", () => {
           rules: [
             {
               context: "file_content",
-              file_pattern: "\\.(js|ts)$",
+              file_pattern: "*.{js,ts}",
               pattern: "eslint-disable",
               action: "block",
               reason: "no eslint-disable",
@@ -511,8 +512,8 @@ describe("guardrails extension", () => {
           rules: [
             {
               context: "file_name",
-              file_pattern: "\\.js$",
-              pattern: "src/",
+              file_pattern: "*.js",
+              pattern: "**/src/**",
               action: "block",
               reason: "no js in src",
             },
@@ -563,7 +564,7 @@ describe("guardrails extension", () => {
         },
       ]);
 
-      glob.mockImplementation(async (pattern: string) => {
+      glob.mockImplementation((pattern: string) => {
         if (pattern === "flake.nix") return ["flake.nix"];
         if (pattern === ".jj") return [".jj"];
         return [];
@@ -586,7 +587,7 @@ describe("guardrails extension", () => {
           rules: [
             {
               context: "file_name",
-              pattern: ".*",
+              pattern: "*",
               action: "block",
               reason: "block all",
             },
@@ -611,7 +612,7 @@ describe("guardrails extension", () => {
           rules: [
             {
               context: "file_name",
-              pattern: "secret",
+              pattern: "*secret*",
               scope: "project",
               action: "block",
               reason: "project files only",
@@ -654,7 +655,7 @@ describe("guardrails extension", () => {
           rules: [
             {
               context: "file_name",
-              pattern: "config",
+              pattern: "*config*",
               scope: "external",
               action: "block",
               reason: "external files only",
@@ -697,7 +698,7 @@ describe("guardrails extension", () => {
           rules: [
             {
               context: "file_name",
-              pattern: "dangerous",
+              pattern: "*dangerous*",
               action: "block",
               reason: "no scope specified",
             },
@@ -742,7 +743,7 @@ describe("guardrails extension", () => {
           rules: [
             {
               context: "file_name",
-              pattern: "test",
+              pattern: "*test*",
               scope: "project",
               action: "block",
               reason: "project scope",

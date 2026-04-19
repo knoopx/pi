@@ -1,8 +1,3 @@
-/**
- * Turn Stats Extension Tests
- * Tests for duration formatting, token formatting, and cost formatting utilities.
- */
-
 import { describe, it, expect } from "vitest";
 import type { Usage } from "@mariozechner/pi-ai";
 import {
@@ -16,29 +11,25 @@ import {
 } from "./index";
 import type { AggregateStats } from "./index";
 
-/**
- * Helper to create a Usage object for tests
- */
 function createUsage(partial: Partial<Usage>): Usage {
+  const cost = {
+    input: 0,
+    output: 0,
+    cacheRead: 0,
+    cacheWrite: 0,
+    total: 0,
+    ...partial.cost,
+  };
   return {
     input: partial.input ?? 0,
     output: partial.output ?? 0,
     cacheRead: partial.cacheRead ?? 0,
     cacheWrite: partial.cacheWrite ?? 0,
     totalTokens: partial.totalTokens ?? 0,
-    cost: {
-      input: partial.cost?.input ?? 0,
-      output: partial.cost?.output ?? 0,
-      cacheRead: partial.cost?.cacheRead ?? 0,
-      cacheWrite: partial.cost?.cacheWrite ?? 0,
-      total: partial.cost?.total ?? 0,
-    },
+    cost,
   };
 }
 
-/**
- * Helper to test formatCost with expected output
- */
 function testFormatCost(costTotal: number, expected: string) {
   expect(
     formatCost({
@@ -58,9 +49,6 @@ function testFormatCost(costTotal: number, expected: string) {
   ).toBe(expected);
 }
 
-/**
- * Helper to test formatCost with cost components
- */
 function testFormatCostWithComponents(cost: Usage["cost"], expected: string) {
   expect(
     formatCost({
@@ -614,10 +602,8 @@ describe("formatSimpleOutput", () => {
   });
 });
 
+// eslint-disable-next-line max-lines-per-function -- large test suite
 describe("Turn Stats Extension Integration", () => {
-  /**
-   * Integration test scenario: A complete turn with duration, tokens, generation time, and cost
-   */
   describe("given a complete turn with all metrics", () => {
     const outputTokens = 1900;
     const durationMs = 36000;
@@ -689,9 +675,6 @@ describe("Turn Stats Extension Integration", () => {
     });
   });
 
-  /**
-   * Integration test scenario: Multiple turns with generation time tracking
-   */
   describe("given multiple turns in a session", () => {
     const turn1 = {
       output: 500,
@@ -745,9 +728,6 @@ describe("Turn Stats Extension Integration", () => {
     });
   });
 
-  /**
-   * Edge case: Very short duration
-   */
   describe("given a very short duration (milliseconds)", () => {
     const durationMs = 123;
     const outputTokens = 10;
@@ -780,9 +760,6 @@ describe("Turn Stats Extension Integration", () => {
     });
   });
 
-  /**
-   * Edge case: Large token counts
-   */
   describe("given large token counts (millions)", () => {
     const outputTokens = 1500000; // 1.5M
     const durationMs = 3600000; // 1 hour

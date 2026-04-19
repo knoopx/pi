@@ -1,7 +1,3 @@
-/**
- * Snapshot tests for Notification tool output formatting.
- */
-
 import { describe, expect, it, beforeEach } from "vitest";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { createMockExtensionAPI } from "../../shared/test-utils";
@@ -20,11 +16,11 @@ describe("notification output snapshots", () => {
   beforeEach(async () => {
     mockPi = createMockExtensionAPI();
     const { default: ext } = await import("./index");
-    ext(mockPi as ExtensionAPI);
+    await ext(mockPi as ExtensionAPI);
     const calls = mockPi.registerTool.mock.calls as [MockTool][];
     const found = calls.find((c) => c[0]?.name === "notify");
-    expect(found).toBeDefined();
-    tool = found![0];
+    if (!found) throw new Error("notify tool not registered");
+    tool = found[0];
   });
 
   it("renders success output", async () => {

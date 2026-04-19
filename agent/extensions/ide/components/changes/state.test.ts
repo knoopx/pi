@@ -1,16 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { createMockChange } from "../test-utils";
-
-// ─── Shared assertions ────────────────────────────────────────────────────
-
-/** Asserts default selection state values. */
-function expectDefaultSelection(
-  state: InstanceType<typeof import("./state").ChangesState>,
-) {
-  expect(state.selectionState.selectedIndex).toBe(0);
-  expect(state.selectionState.fileIndex).toBe(0);
-  expect(state.selectionState.diffScroll).toBe(0);
-}
+import { createMockChange } from "../../lib/test-utils";
+import { expectDefaultSelection } from "./test-helpers";
 
 // ─── Tests ────────────────────────────────────────────────────────────────
 
@@ -20,7 +10,7 @@ describe("changes/state", () => {
       const { ChangesState } = await import("./state");
       const state = new ChangesState();
 
-      expectDefaultSelection(state);
+      expectDefaultSelection(state, expect);
       expect(state.selectionState.focus).toBe("left");
     });
 
@@ -29,8 +19,6 @@ describe("changes/state", () => {
       const state = new ChangesState();
 
       expect(state.loadingState.loading).toBe(false);
-      expect(state.loadingState.cachedLines).toEqual([]);
-      expect(state.loadingState.cachedWidth).toBe(0);
     });
 
     it("then data collections are empty", async () => {
@@ -47,7 +35,6 @@ describe("changes/state", () => {
       expect(state.changeCache.size).toBe(0);
       expect(state.graphLayout).toBeNull();
       expect(state.currentFilterIndex).toBe(0);
-      expect(state.leftListHeight).toBe(0);
       expect(state.rightListHeight).toBe(0);
       expect(state.mode).toBe("normal");
       expect(state.moveOriginalIndex).toBe(-1);
@@ -81,14 +68,14 @@ describe("changes/state", () => {
       state.selectionState.selectedIndex = 0;
 
       expect(state.changes.length).toBe(2);
-      expect(state.selectedChange!.changeId).toBe("abc123");
+      expect(state.selectedChange.changeId).toBe("abc123");
       expect(state.selectionState.selectedIndex).toBe(0);
 
       state.selectionState.selectedIndex = 1;
       state.selectedChange = state.changes[1];
 
       expect(state.selectionState.selectedIndex).toBe(1);
-      expect(state.selectedChange!.changeId).toBe("ghi789");
+      expect(state.selectedChange.changeId).toBe("ghi789");
     });
 
     it("then currentChangeId is set correctly", async () => {
@@ -200,10 +187,13 @@ describe("changes/state", () => {
       expect(state.graphLayout).toBeNull();
 
       // GraphLayout would normally come from calculateGraphLayout
-      // Just verify the property exists
-      const mockLayout = { positions: new Map(), edges: [], maxX: 0 };
-      (state as any).graphLayout = mockLayout;
-      expect((state as any).graphLayout).toBe(mockLayout);
+      const mockLayout = {
+        positions: new Map<string, { x: number; y: number }>(),
+        edges: [],
+        maxX: 0,
+      };
+      state.graphLayout = mockLayout;
+      expect(state.graphLayout).toBe(mockLayout);
     });
   });
 
@@ -264,17 +254,14 @@ describe("changes/state", () => {
   });
 
   describe("given list heights", () => {
-    it("then leftListHeight and rightListHeight track dimensions", async () => {
+    it("then rightListHeight tracks dimensions", async () => {
       const { ChangesState } = await import("./state");
       const state = new ChangesState();
 
-      expect(state.leftListHeight).toBe(0);
       expect(state.rightListHeight).toBe(0);
 
-      state.leftListHeight = 10;
       state.rightListHeight = 15;
 
-      expect(state.leftListHeight).toBe(10);
       expect(state.rightListHeight).toBe(15);
     });
   });
@@ -288,16 +275,10 @@ describe("changes/state", () => {
 
       // Simulate loading started
       state.loadingState.loading = true;
-      state.loadingState.cachedLines = ["loading..."];
-      state.loadingState.cachedWidth = 120;
 
       expect(state.loadingState.loading).toBe(true);
-      expect(state.loadingState.cachedLines).toEqual(["loading..."]);
-      expect(state.loadingState.cachedWidth).toBe(120);
 
       state.loadingState.loading = false;
-      state.loadingState.cachedLines = [];
-      state.loadingState.cachedWidth = 0;
 
       expect(state.loadingState.loading).toBe(false);
     });

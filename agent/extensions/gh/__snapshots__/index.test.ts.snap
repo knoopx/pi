@@ -15,7 +15,7 @@ exports[`GH Extension > gh-search-repos > then it should return formatted repo l
 
       󰓎 │      󰘬 │ repo
 ────────┼────────┼──────────────────────────────────────
-220.000 │ 45.000 │ facebook/react
+220,000 │ 45,000 │ facebook/react
         │        │ A JavaScript library for building UIs
         │        │ JavaScript
         │        │ https://github.com/facebook/react"

@@ -2,9 +2,9 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
-import type { HookInput, HooksGroup, HookRule, HookOutput } from "./schema";
+import type { HookInput, HooksGroup, HookRule } from "./schema";
 import { parseHookOutput } from "./schema";
-import type { HookResult, HookProcessState } from "./types";
+import type { HookResult, HookVariables } from "./types";
 import { substituteVariables } from "./pattern-matching";
 
 export async function runHook(
@@ -13,7 +13,7 @@ export async function runHook(
     rule: HookRule;
     group: HooksGroup;
     ctx: ExtensionContext;
-    vars: import("./types").HookVariables;
+    vars: HookVariables;
     hookInput: HookInput;
   },
 ): Promise<HookResult> {

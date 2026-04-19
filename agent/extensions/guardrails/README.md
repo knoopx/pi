@@ -6,17 +6,15 @@ Security rules that block or confirm risky tool calls.
 
 Guardrails are loaded from:
 
-- Global rules: `~/.pi/agent/settings.json` under key `guardrails`
-- Defaults: `agent/extensions/guardrails/defaults.json`
+- Defaults: `agent/extensions/guardrails/defaults.ts`
 
-Runtime command state is also stored in `~/.pi/agent/settings.json` under the same `guardrails` object (`enabled`).
+The `enabled` flag is stored in `~/.pi/agent/settings.json` under the `guardrails` key.
 
-## Command
+## Commands
 
-- `/guardrails on`
-- `/guardrails off`
-
-Toggles guardrails enforcement and persists the setting.
+- `/guardrails on` — enable guardrails
+- `/guardrails off` — disable guardrails
+- `/guardrails:audit` — validate patterns and list active rules
 
 A rule has:
 
@@ -119,7 +117,7 @@ This allows you to apply different rules to project files vs. system/external fi
 
 ## Built-in Defaults
 
-`defaults.json` includes guardrails for:
+`defaults.ts` includes guardrails for:
 
 - package manager usage
 - interactive command prevention

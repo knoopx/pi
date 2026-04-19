@@ -1,16 +1,16 @@
-import picomatch from "picomatch";
 import { readdir } from "node:fs/promises";
 import type { HookEvent, HookInput, HookRule } from "./schema";
 import type { HookVariables } from "./types";
-import { matchCommandPattern } from "../../shared/pattern-matching";
+import {
+  matchCommandPattern,
+  matchFileNamePattern,
+} from "../../shared/pattern-matching";
 
 export function isGroupActive(pattern: string, root: string): Promise<boolean> {
   if (pattern === "*") return Promise.resolve(true);
 
   return readdir(root)
-    .then((files) =>
-      files.some((file) => picomatch.isMatch(file, pattern, { dot: true })),
-    )
+    .then((files) => files.some((file) => matchFileNamePattern(file, pattern)))
     .catch(() => false);
 }
 
@@ -43,15 +43,16 @@ export function doesRuleMatch(
   const targetValue = getContextValue(rule.context, toolName, input);
   if (targetValue === undefined) return false;
 
-  return matchValuePattern(targetValue, rule.pattern);
+  return matchValuePattern(rule.context, targetValue, rule.pattern);
 }
 
-export function matchValuePattern(value: string, pattern: string): boolean {
-  // New token pattern syntax support for non-command contexts
-  if (matchCommandPattern(value, pattern)) return true;
-
-  const basename = value.split(/[\/\\]/).pop() ?? value;
-  return picomatch.isMatch(basename, pattern);
+export function matchValuePattern(
+  context: string,
+  value: string,
+  pattern: string,
+): boolean {
+  if (context === "file_name") return matchFileNamePattern(value, pattern);
+  return matchCommandPattern(value, pattern);
 }
 
 export function getContextValue(
@@ -80,35 +81,41 @@ export function getInputField(
   return value != null ? String(value) : undefined;
 }
 
-export function buildHookInput(
-  event: HookEvent,
-  ctx: { cwd: string },
-  toolName?: string,
-  input?: unknown,
-  toolCallId?: string,
+interface BuildHookInputOptions {
+  toolName?: string;
+  input?: unknown;
+  toolCallId?: string;
   toolResponse?: {
     content?: unknown[];
     details?: unknown;
     isError?: boolean;
-  },
+  };
+}
+
+export function buildHookInput(
+  event: HookEvent,
+  ctx: { cwd: string },
+  options: BuildHookInputOptions = {},
 ): HookInput {
   const hookInput: HookInput = {
     cwd: ctx.cwd,
     hook_event_name: event,
   };
 
-  if (toolName) hookInput.tool_name = toolName;
+  if (options.toolName) hookInput.tool_name = options.toolName;
 
-  if (input && typeof input === "object")
-    hookInput.tool_input = input as Record<string, unknown>;
+  if (options.input && typeof options.input === "object")
+    hookInput.tool_input = options.input as Record<string, unknown>;
 
-  if (toolCallId) hookInput.tool_call_id = toolCallId;
+  if (options.toolCallId) hookInput.tool_call_id = options.toolCallId;
 
-  if (toolResponse)
+  if (options.toolResponse)
     hookInput.tool_response = {
-      content: toolResponse.content,
-      details: toolResponse.details as Record<string, unknown> | undefined,
-      isError: toolResponse.isError,
+      content: options.toolResponse.content,
+      details: options.toolResponse.details as
+        | Record<string, unknown>
+        | undefined,
+      isError: options.toolResponse.isError,
     };
 
   return hookInput;

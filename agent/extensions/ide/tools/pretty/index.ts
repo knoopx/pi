@@ -10,6 +10,9 @@ import {
 } from "@mariozechner/pi-coding-agent";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
+import type { Component } from "@mariozechner/pi-tui";
+import type { ToolExecuteFn } from "./utils";
+
 import {
   createReadExecute,
   createReadRenderCall,
@@ -31,81 +34,86 @@ import {
   createGrepRenderResult,
 } from "./grep";
 
-export default async function piPrettyExtension(
+interface ToolDefinition {
+  label: string;
+  description: string;
+  promptSnippet: string;
+  promptGuidelines?: string[];
+  parameters: unknown;
+  renderShell: unknown;
+  prepareArguments: unknown;
+  execute: ToolExecuteFn;
+}
+
+interface ToolRegistryEntry {
+  name: string;
+  createOrigFn: (cwd: string) => unknown;
+  wrapExecute: (
+    orig: ToolExecuteFn,
+  ) => (...args: unknown[]) => Promise<unknown>;
+  createRenderCall: (
+    cwd: string,
+    home: string,
+  ) => (...args: unknown[]) => Component;
+  createRenderResult: () => (...args: unknown[]) => Component;
+}
+
+function registerTool(
   pi: ExtensionAPI,
-): Promise<void> {
-  const cwd = process.cwd();
-  const home = process.env.HOME ?? "";
-
-  const createReadToolFn = createReadToolDefinition ?? createReadTool;
-  if (!createReadToolFn) return;
-  const origRead = createReadToolFn(cwd);
-
+  entry: ToolRegistryEntry,
+  cwd: string,
+): void {
+  const orig = entry.createOrigFn(cwd) as ToolDefinition;
   pi.registerTool({
+    name: entry.name,
+    label: orig.label,
+    description: orig.description,
+    promptSnippet: orig.promptSnippet,
+    promptGuidelines: orig.promptGuidelines,
+    parameters: orig.parameters,
+    renderShell: orig.renderShell,
+    prepareArguments: orig.prepareArguments,
+    execute: entry.wrapExecute(orig.execute),
+    renderCall: entry.createRenderCall(cwd, process.env.HOME ?? ""),
+    renderResult: entry.createRenderResult(),
+  } as unknown as Parameters<typeof pi.registerTool>[0]);
+}
+
+const TOOL_REGISTRY = [
+  {
     name: "read",
-    label: origRead.label,
-    description: origRead.description,
-    promptSnippet: origRead.promptSnippet,
-    promptGuidelines: origRead.promptGuidelines,
-    parameters: origRead.parameters,
-    renderShell: origRead.renderShell,
-    prepareArguments: origRead.prepareArguments,
-    execute: createReadExecute(origRead.execute as any),
-    renderCall: createReadRenderCall(cwd, home),
-    renderResult: createReadRenderResult(),
-  } as any);
+    createOrigFn: createReadToolDefinition ?? createReadTool,
+    wrapExecute: createReadExecute,
+    createRenderCall: createReadRenderCall,
+    createRenderResult: createReadRenderResult,
+  },
+  {
+    name: "ls",
+    createOrigFn: createLsToolDefinition ?? createLsTool,
+    wrapExecute: createLsExecute,
+    createRenderCall: createLsRenderCall,
+    createRenderResult: createLsRenderResult,
+  },
+  {
+    name: "find",
+    createOrigFn: createFindToolDefinition ?? createFindTool,
+    wrapExecute: createFindExecute,
+    createRenderCall: createFindRenderCall,
+    createRenderResult: createFindRenderResult,
+  },
+  {
+    name: "grep",
+    createOrigFn: createGrepToolDefinition ?? createGrepTool,
+    wrapExecute: createGrepExecute,
+    createRenderCall: createGrepRenderCall,
+    createRenderResult: createGrepRenderResult,
+  },
+] as ToolRegistryEntry[];
 
-  const createLsToolFn = createLsToolDefinition ?? createLsTool;
-  if (createLsToolFn) {
-    const origLs = createLsToolFn(cwd);
-    pi.registerTool({
-      name: "ls",
-      label: origLs.label,
-      description: origLs.description,
-      promptSnippet: origLs.promptSnippet,
-      promptGuidelines: origLs.promptGuidelines,
-      parameters: origLs.parameters,
-      renderShell: origLs.renderShell,
-      prepareArguments: origLs.prepareArguments,
-      execute: createLsExecute(origLs.execute as any),
-      renderCall: createLsRenderCall(cwd, home),
-      renderResult: createLsRenderResult(),
-    } as any);
-  }
-
-  const createFindToolFn = createFindToolDefinition ?? createFindTool;
-  if (createFindToolFn) {
-    const origFind = createFindToolFn(cwd);
-    pi.registerTool({
-      name: "find",
-      label: origFind.label,
-      description: origFind.description,
-      promptSnippet: origFind.promptSnippet,
-      promptGuidelines: origFind.promptGuidelines,
-      parameters: origFind.parameters,
-      renderShell: origFind.renderShell,
-      prepareArguments: origFind.prepareArguments,
-      execute: createFindExecute(origFind.execute as any),
-      renderCall: createFindRenderCall(cwd, home),
-      renderResult: createFindRenderResult(),
-    } as any);
-  }
-
-  const createGrepToolFn = createGrepToolDefinition ?? createGrepTool;
-  if (createGrepToolFn) {
-    const origGrep = createGrepToolFn(cwd);
-    pi.registerTool({
-      name: "grep",
-      label: origGrep.label,
-      description: origGrep.description,
-      promptSnippet: origGrep.promptSnippet,
-      promptGuidelines: origGrep.promptGuidelines,
-      parameters: origGrep.parameters,
-      renderShell: origGrep.renderShell,
-      prepareArguments: origGrep.prepareArguments,
-      execute: createGrepExecute(origGrep.execute as any),
-      renderCall: createGrepRenderCall(cwd, home),
-      renderResult: createGrepRenderResult(),
-    } as any);
+export default function piPrettyExtension(pi: ExtensionAPI): void {
+  const cwd = process.cwd();
+  for (const entry of TOOL_REGISTRY) {
+    if (!entry.createOrigFn) continue;
+    registerTool(pi, entry, cwd);
   }
 }

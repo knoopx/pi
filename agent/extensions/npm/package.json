@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "npm package registry integration",
   "scripts": {
-    "lint": "eslint"
+    "lint": "bun ./node_modules/eslint/bin/eslint.js"
   },
   "type": "module",
   "pi": {
@@ -12,16 +12,16 @@
     ]
   },
   "dependencies": {
-    "@mariozechner/pi-ai": "^0.67.6",
-    "@mariozechner/pi-agent-core": "^0.67.6",
-    "@mariozechner/pi-coding-agent": "^0.67.6"
+    "@mariozechner/pi-ai": "^0.70.2",
+    "@mariozechner/pi-agent-core": "^0.70.2",
+    "@mariozechner/pi-coding-agent": "^0.70.2"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
-    "eslint": "^10.2.0",
+    "eslint": "^10.2.1",
     "eslint-antislop": "file:///home/knoopx/Projects/knoopx/eslint-antislop/",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.58.2",
-    "vitest": "^4.1.4"
+    "typescript-eslint": "^8.59.0",
+    "vitest": "^4.1.5"
   }
 }

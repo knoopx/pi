@@ -4,7 +4,7 @@
   "description": "Run shell commands after pi events based on patterns",
   "type": "module",
   "scripts": {
-    "lint": "eslint",
+    "lint": "bun ./node_modules/eslint/bin/eslint.js",
     "test": "bun vitest run *.test.ts"
   },
   "pi": {
@@ -13,16 +13,16 @@
     ]
   },
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "^0.67.6",
+    "@mariozechner/pi-coding-agent": "^0.70.2",
     "picomatch": "^4.0.4"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
     "@types/picomatch": "^4.0.3",
-    "eslint": "^10.2.0",
+    "eslint": "^10.2.1",
     "eslint-antislop": "file:///home/knoopx/Projects/knoopx/eslint-antislop/",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.58.2",
-    "vitest": "^4.1.4"
+    "typescript-eslint": "^8.59.0",
+    "vitest": "^4.1.5"
   }
 }

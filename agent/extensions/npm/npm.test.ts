@@ -8,18 +8,14 @@ import { createMockExtensionAPI } from "../../shared/test-utils";
 
 import { disableThrottle } from "../../shared/throttle";
 
-const stripAnsi = (s: string): string => {
-  const ansiEscape = String.fromCharCode(27);
-  return s.replace(new RegExp(`[${ansiEscape}][\\[][\\d;]*m`, "g"), "");
-};
-
-/** Run a tool with the given mock fetch response set up. */
 async function runWithFetch(
   tool: MockTool,
   params: unknown,
-  jsonResponse?: unknown,
-  errorStatus?: number,
-  errorText?: string,
+  options?: {
+    jsonResponse?: unknown;
+    errorStatus?: number;
+    errorText?: string;
+  },
 ): Promise<
   AgentToolResult<Record<string, unknown>> & {
     __mockFetch: ReturnType<typeof vi.fn>;
@@ -27,15 +23,15 @@ async function runWithFetch(
   }
 > {
   let capturedUrl: string | undefined;
-  const mockFn = vi.fn(async (input: string | URL) => {
+  const mockFn = vi.fn((input: string | URL) => {
     capturedUrl = typeof input === "string" ? input : String(input);
-    if (errorStatus) {
+    if (options?.errorStatus) {
       return new Response(null, {
-        status: errorStatus,
-        statusText: errorText ?? "",
+        status: options.errorStatus,
+        statusText: options.errorText ?? "",
       });
     }
-    return new Response(JSON.stringify(jsonResponse), {
+    return new Response(JSON.stringify(options?.jsonResponse), {
       status: 200,
       headers: { "content-type": "application/json" },
     });
@@ -68,24 +64,22 @@ function get<T extends object>(obj: T, path: string): unknown {
   return cur;
 }
 
-/** Test HTTP and network error handling for a registered tool. */
 function testErrorHandling(
   getTool: () => MockTool,
   params: Record<string, string>,
-  okMsg: string,
-  failMsgPrefix: string,
-  netFailMsgPrefix: string,
+  messages: {
+    okMsg: string;
+    failMsgPrefix: string;
+    netFailMsgPrefix: string;
+  },
 ): void {
   it("then it should return error message", async () => {
-    const result = await runWithFetch(
-      getTool(),
-      params,
-      undefined,
-      500,
-      "Internal Server Error",
-    );
+    const result = await runWithFetch(getTool(), params, {
+      errorStatus: 500,
+      errorText: "Internal Server Error",
+    });
     expect((result.content[0] as TextContent).text).toBe(
-      `${failMsgPrefix} Internal Server Error`,
+      `${messages.failMsgPrefix} Internal Server Error`,
     );
   });
 
@@ -101,11 +95,12 @@ function testErrorHandling(
       undefined,
     );
     expect((result.content[0] as TextContent).text).toBe(
-      `${netFailMsgPrefix} Network error`,
+      `${messages.netFailMsgPrefix} Network error`,
     );
   });
 }
 
+// eslint-disable-next-line max-lines-per-function -- large test suite
 describe("NPM Extension", () => {
   let mockPi: MockExtensionAPI;
   let originalFetch: typeof globalThis.fetch;
@@ -147,9 +142,11 @@ describe("NPM Extension", () => {
     let registeredTool: MockTool;
 
     beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
+      const found = mockPi.registerTool.mock.calls.find(
         (call) => (call[0] as MockTool).name === "search-npm-packages",
-      )![0] as MockTool;
+      );
+      if (!found) throw new Error("search-npm-packages tool not registered");
+      registeredTool = found[0] as MockTool;
     });
 
     describe("given a valid search query", () => {
@@ -173,16 +170,16 @@ describe("NPM Extension", () => {
         result = await runWithFetch(
           registeredTool,
           { query: "lodash", size: 1 },
-          mockResponseData,
+          {
+            jsonResponse: mockResponseData,
+          },
         );
       });
 
       it("then it should return formatted search results", () => {
         expect(result.content).toHaveLength(1);
         expect(result.content[0].type).toBe("text");
-        expect(
-          stripAnsi((result.content[0] as TextContent).text),
-        ).toMatchSnapshot();
+        expect((result.content[0] as TextContent).text).toMatchSnapshot();
         expect(result.details.query).toBe("lodash");
         expect(result.details.count).toBe(1);
         expect(get(result.details, "packages.0.author")).toBe(
@@ -196,7 +193,9 @@ describe("NPM Extension", () => {
         const result = await runWithFetch(
           registeredTool,
           { query: "test" },
-          { objects: [] },
+          {
+            jsonResponse: { objects: [] },
+          },
         );
         expect(result.__mockFetch.mock.calls[0]?.[0]).toContain("size=10");
         expect((result.content[0] as TextContent).text).toBe(
@@ -210,7 +209,9 @@ describe("NPM Extension", () => {
         const result = await runWithFetch(
           registeredTool,
           { query: "nonexistent-pkg-xyz-123" },
-          { objects: [] },
+          {
+            jsonResponse: { objects: [] },
+          },
         );
         expect((result.content[0] as TextContent).text).toBe(
           "No packages found.",
@@ -224,9 +225,10 @@ describe("NPM Extension", () => {
         const result = await runWithFetch(
           registeredTool,
           { query: "test" },
-          undefined,
-          404,
-          "Not Found",
+          {
+            errorStatus: 404,
+            errorText: "Not Found",
+          },
         );
         expect((result.content[0] as TextContent).text).toBe(
           "Failed to search packages: Not Found",
@@ -238,9 +240,10 @@ describe("NPM Extension", () => {
         const result = await runWithFetch(
           registeredTool,
           { query: "test" },
-          undefined,
-          500,
-          "Internal Server Error",
+          {
+            errorStatus: 500,
+            errorText: "Internal Server Error",
+          },
         );
         expect((result.content[0] as TextContent).text).toBe(
           "Failed to search packages: Internal Server Error",
@@ -253,9 +256,11 @@ describe("NPM Extension", () => {
       testErrorHandling(
         () => registeredTool,
         { query: "test" },
-        "No packages found.",
-        "Failed to search packages:",
-        "Error searching packages:",
+        {
+          okMsg: "No packages found.",
+          failMsgPrefix: "Failed to search packages:",
+          netFailMsgPrefix: "Error searching packages:",
+        },
       );
     });
   });
@@ -275,9 +280,11 @@ describe("NPM Extension", () => {
     let registeredTool: MockTool;
 
     beforeEach(() => {
-      registeredTool = mockPi.registerTool.mock.calls.find(
+      const found = mockPi.registerTool.mock.calls.find(
         (call) => (call[0] as MockTool).name === toolName,
-      )![0] as MockTool;
+      );
+      if (!found) throw new Error(`Tool '${toolName}' not registered`);
+      registeredTool = found[0] as MockTool;
     });
 
     describe("given a valid package", () => {
@@ -317,14 +324,14 @@ describe("NPM Extension", () => {
         result = await runWithFetch(
           registeredTool,
           { package: toolName === "npm-package-info" ? "express" : "lodash" },
-          mockPackageData,
+          {
+            jsonResponse: mockPackageData,
+          },
         );
       });
 
       it("then it should return formatted data", () => {
-        expect(
-          stripAnsi((result.content[0] as TextContent).text),
-        ).toMatchSnapshot();
+        expect((result.content[0] as TextContent).text).toMatchSnapshot();
         expect(result.details.package).toBe(
           toolName === "npm-package-info" ? "express" : "lodash",
         );
@@ -342,9 +349,10 @@ describe("NPM Extension", () => {
         const result = await runWithFetch(
           registeredTool,
           { package: "nonexistent-pkg-xyz-123" },
-          undefined,
-          404,
-          "Not Found",
+          {
+            errorStatus: 404,
+            errorText: "Not Found",
+          },
         );
         expect((result.content[0] as TextContent).text).toBe(
           'Package "nonexistent-pkg-xyz-123" not found.',
@@ -360,9 +368,10 @@ describe("NPM Extension", () => {
         const result = await runWithFetch(
           registeredTool,
           { package: "lodash" },
-          undefined,
-          500,
-          "Internal Server Error",
+          {
+            errorStatus: 500,
+            errorText: "Internal Server Error",
+          },
         );
         expect((result.content[0] as TextContent).text).toBe(
           `Failed to ${action}: Internal Server Error`,
@@ -375,9 +384,11 @@ describe("NPM Extension", () => {
       testErrorHandling(
         () => registeredTool,
         { package: "lodash" },
-        `No packages found.`,
-        `Failed to ${action}:`,
-        `Error ${action}:`,
+        {
+          okMsg: `No packages found.`,
+          failMsgPrefix: `Failed to ${action}:`,
+          netFailMsgPrefix: `Error ${action}:`,
+        },
       );
     });
   });

@@ -1,10 +1,3 @@
-/**
- * PyPI Extension
- *
- * Provides tools to query Python packages from PyPI.
- * Tools available: pypi-search, pypi-package-info
- */
-
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, type Static } from "@sinclair/typebox";
@@ -202,22 +195,34 @@ async function executeSearchPackages(
 function buildPackageInfoFields(
   info: PyPIPackageInfo,
 ): Array<{ label: string; value: string }> {
-  const author = info.author || info.maintainer || "-";
-  const license = info.license || "-";
-  const homePage = info.home_page || info.project_url || "-";
-  const summary = info.summary || "-";
-
-  return [
+  const fields = [
     { label: "name", value: info.name },
     { label: "version", value: info.version },
-    { label: "license", value: license },
-    { label: "author", value: author },
-    { label: "description", value: summary },
-    { label: "homepage", value: homePage !== "-" ? homePage : "-" },
-    ...(Array.isArray(info.requires_dist) && info.requires_dist.length > 0
-      ? [{ label: "dependencies", value: info.requires_dist.join(", ") }]
-      : []),
-  ].filter((f) => f.value && f.value !== "-");
+    { label: "license", value: strOrDefault(info.license) },
+    { label: "author", value: strOrDefault(info.author, info.maintainer) },
+    { label: "description", value: strOrDefault(info.summary) },
+    {
+      label: "homepage",
+      value: strOrDefault(info.home_page, info.project_url),
+    },
+  ];
+
+  const deps = getDependenciesField(info);
+  if (deps) fields.push(deps);
+
+  return fields.filter((f) => f.value && f.value !== "-");
+}
+
+function strOrDefault(...values: (string | undefined)[]): string {
+  return values.find(Boolean) || "-";
+}
+
+function getDependenciesField(
+  info: PyPIPackageInfo,
+): { label: string; value: string } | null {
+  if (!Array.isArray(info.requires_dist) || !info.requires_dist.length)
+    return null;
+  return { label: "dependencies", value: info.requires_dist.join(", ") };
 }
 
 async function executePackageInfo(

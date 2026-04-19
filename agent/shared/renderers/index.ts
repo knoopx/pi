@@ -13,6 +13,6 @@
  */
 
 export { dotJoin, stateDot, countLabel } from "./header";
-export { table } from "./table";
+export { table } from "./table/renderer";
 export { type Column } from "./types";
 export { detail } from "./detail";

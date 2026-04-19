@@ -1,5 +1,5 @@
-// @ts-nocheck — test calls use incorrect arity/types; needs execute signature migration
 import { describe, it, expect, beforeEach, vi } from "vitest";
+
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -8,6 +8,7 @@ import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 
 // Extension Registration
+// eslint-disable-next-line max-lines-per-function -- large test suite
 describe("Markitdown Extension", () => {
   let mockPi: MockExtensionAPI;
 
@@ -34,6 +35,7 @@ describe("Markitdown Extension", () => {
     });
   });
 
+  /* eslint-disable max-lines-per-function -- large test suite */
   // Transcribe Tool
   describe("transcribe tool", () => {
     let registeredTool: MockTool;
@@ -287,4 +289,5 @@ describe("Markitdown Extension", () => {
       });
     });
   });
+  /* eslint-enable */
 });

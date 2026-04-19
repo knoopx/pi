@@ -2,30 +2,17 @@
   "extends": "../../shared/tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "@mariozechner/pi-tui": [
-        "./node_modules/@mariozechner/pi-tui"
-      ],
+      "@mariozechner/pi-tui": ["./node_modules/@mariozechner/pi-tui"],
       "@mariozechner/pi-coding-agent": [
         "./node_modules/@mariozechner/pi-coding-agent"
       ],
-      "@mariozechner/pi-ai": [
-        "./node_modules/@mariozechner/pi-ai"
-      ],
+      "@mariozechner/pi-ai": ["./node_modules/@mariozechner/pi-ai"],
       "@mariozechner/pi-agent-core": [
         "./node_modules/@mariozechner/pi-agent-core"
       ],
-      "@sinclair/typebox": [
-        "./node_modules/@sinclair/typebox"
-      ]
+      "@sinclair/typebox": ["./node_modules/@sinclair/typebox"]
     }
   },
-  "include": [
-    "index.ts",
-    "**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "**/shared/**",
-    "eslint.config.js"
-  ]
+  "include": ["index.ts", "**/*.ts"],
+  "exclude": ["node_modules", "**/shared/**"]
 }

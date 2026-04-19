@@ -1,7 +1,6 @@
 import type {
   ExtensionAPI,
   AgentToolResult,
-  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
@@ -14,7 +13,7 @@ function hasValidSignal(signal: unknown): signal is AbortSignal {
   );
 }
 
-async function executeMarkitdown(
+function executeMarkitdown(
   pi: ExtensionAPI,
   source: string,
   signal: AbortSignal | undefined,
@@ -84,7 +83,6 @@ function createExecuteMarkitdownTool(pi: ExtensionAPI) {
     _onUpdate?: (
       partialResult: AgentToolResult<Record<string, unknown>>,
     ) => void,
-    _ctx?: ExtensionContext,
   ): Promise<AgentToolResult<{ source: string }>> {
     const { source } = params;
 

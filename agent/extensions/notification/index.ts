@@ -1,19 +1,42 @@
-/**
- * Notify-Send Extension
- *
- * Provides a tool to send desktop notifications using notify-send.
- * Supports urgency levels, expiration time, app name, icon, and category.
- */
-
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { dirname, resolve } from "node:path";
 import type {
   AgentToolResult,
   ExtensionAPI,
   ExtensionCommandContext,
-  ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
-import { StringEnum } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
 import { buildNotifySendArgs } from "./notify-send";
+
+const SETTINGS_PATH = resolve(homedir(), ".pi/agent/settings.json");
+
+async function loadSettings(): Promise<Record<string, unknown>> {
+  try {
+    const content = await readFile(SETTINGS_PATH, "utf-8");
+    const parsed = JSON.parse(content) as Record<string, unknown>;
+    return typeof parsed === "object" && parsed !== null ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+async function saveTtsEnabled(enabled: boolean): Promise<void> {
+  const settings = await loadSettings();
+  settings.notification = { tts: enabled };
+  await mkdir(dirname(SETTINGS_PATH), { recursive: true });
+  await writeFile(
+    SETTINGS_PATH,
+    `${JSON.stringify(settings, null, 2)}\n`,
+    "utf-8",
+  );
+}
+
+async function loadTtsEnabled(): Promise<boolean> {
+  const settings = await loadSettings();
+  const notification = settings.notification as { tts?: boolean } | undefined;
+  return notification?.tts ?? false;
+}
 
 interface NotifyToolParams {
   summary: string;
@@ -122,9 +145,14 @@ function makeNotifyTool(isTtsEnabledRef: { value: boolean }, pi: ExtensionAPI) {
         Type.String({ description: "Notification body text" }),
       ),
       urgency: Type.Optional(
-        StringEnum(["low", "normal", "critical"] as const, {
-          description: "Urgency level (default: normal)",
-        }),
+        Type.Union(
+          [
+            Type.Literal("low"),
+            Type.Literal("normal"),
+            Type.Literal("critical"),
+          ],
+          { description: "Urgency level (default: normal)" },
+        ),
       ),
       expireTime: Type.Optional(
         Type.Number({
@@ -161,14 +189,17 @@ function createTtsHandler(isTtsEnabledRef: { value: boolean }) {
     switch (action) {
       case "on":
         isTtsEnabledRef.value = true;
+        await saveTtsEnabled(true);
         message = "TTS enabled for notifications";
         break;
       case "off":
         isTtsEnabledRef.value = false;
+        await saveTtsEnabled(false);
         message = "TTS disabled for notifications";
         break;
       case "toggle":
         isTtsEnabledRef.value = !isTtsEnabledRef.value;
+        await saveTtsEnabled(isTtsEnabledRef.value);
         message = isTtsEnabledRef.value
           ? "TTS enabled for notifications"
           : "TTS disabled for notifications";
@@ -181,8 +212,11 @@ function createTtsHandler(isTtsEnabledRef: { value: boolean }) {
   };
 }
 
-export default function notificationExtension(pi: ExtensionAPI): void {
+export default async function notificationExtension(
+  pi: ExtensionAPI,
+): Promise<void> {
   const isTtsEnabledRef = { value: false };
+  isTtsEnabledRef.value = await loadTtsEnabled();
 
   pi.registerTool(makeNotifyTool(isTtsEnabledRef, pi));
 

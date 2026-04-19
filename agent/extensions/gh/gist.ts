@@ -12,9 +12,6 @@ import { detail, stateDot } from "../../shared/renderers";
 import { ghCmd, ghCmdJson, ghCmdJsonWithInput } from "./utils";
 import { createErrorResult, createTextResultRender } from "./shared";
 
-/**
- * Create a successful result with formatted gist output
- */
 function createGistResult(
   output: string,
   gist: Gist,
@@ -28,9 +25,6 @@ function createGistResult(
   };
 }
 
-/**
- * Create an error result from an error
- */
 function createGistErrorResult(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   return createErrorResult(message);
@@ -100,7 +94,7 @@ async function listGists(
   return gists;
 }
 
-async function getGist(gistId: string): Promise<Gist> {
+function getGist(gistId: string): Promise<Gist> {
   return ghCmdJson<Gist>(["api", `/gists/${gistId}`], "api gist");
 }
 
@@ -148,7 +142,7 @@ async function createGist(
   return getGist(gistId);
 }
 
-async function updateGist(
+function updateGist(
   gistId: string,
   files?: Record<string, { content: string; filename?: string }>,
   description?: string,
@@ -319,6 +313,7 @@ Examples:
 - gh-list-gists(userId='octocat', limit=10)`,
     parameters: ListGistsParams,
 
+    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
       params: ListGistsParamsType,
@@ -363,6 +358,7 @@ Examples:
 - gh-get-gist(gistId='0123456789abcdef')`,
     parameters: GetGistParams,
 
+    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
       params: GetGistParamsType,
@@ -409,6 +405,7 @@ Examples:
 - gh-create-gist(files={'main.ts': {content: 'consoleLog("hi")'}}, description='My test gist', public=true)`,
     parameters: CreateGistParams,
 
+    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
       params: CreateGistParamsType,
@@ -510,6 +507,7 @@ Examples:
 - gh-update-gist(gistId='abc123', description='Updated description')`,
     parameters: UpdateGistParams,
 
+    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
       params: UpdateGistParamsType,

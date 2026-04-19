@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { TestTerminal, createMockChange, stripAnsi } from "../test-utils";
-import { calculateGraphLayout } from "../graph";
+import { TestTerminal, createMockChange } from "../../lib/test-utils";
+import { calculateGraphLayout } from "../../lib/graph";
 import { buildGraphInput } from "./types";
 import { Navigation } from "./navigation";
-import { createMockTheme } from "../test-utils";
+import { createMockTheme } from "../../lib/test-utils";
 
-/** Shared Navigation stub to avoid repeated construction. */
 function makeNav(state: any): Navigation {
   return new Navigation(
     state,
@@ -55,17 +54,6 @@ function makeChanges(count: number, startDesc = 0) {
   );
 }
 
-/** Default state setup for move-mode tests. */
-function setDefaultMoveState(state: any, count = 5, selectedIndex = 0) {
-  state.changes = makeChanges(count);
-  state.selectedChange = state.changes[selectedIndex];
-  state.currentChangeId = null;
-  state.files = [];
-  state.diffContent = [];
-  state.selectionState.focus = "left";
-}
-
-/** Options for move-mode state setup. */
 interface MoveModeOptions {
   count?: number;
   selectedIndex?: number;
@@ -74,7 +62,6 @@ interface MoveModeOptions {
   direction?: "up" | "down";
 }
 
-/** Build a complete move-mode state setup with defaults and optional navigation. */
 function setupMoveMode(opts: MoveModeOptions & { changes?: any[] } = {}) {
   const count = opts.count ?? 5;
   const selectedIndex = opts.selectedIndex ?? 0;
@@ -543,7 +530,9 @@ describe("changes/move-mode rendering", () => {
       );
 
       const changeRows = rawLines.slice(3, 8);
-      const hasWarning = changeRows.some((line) => line.includes("[warning:"));
+      const hasWarning = changeRows.some((line) =>
+        line.includes("\x1b[38;2;250;208;0m"),
+      );
       expect(hasWarning).toBe(true);
     });
   });

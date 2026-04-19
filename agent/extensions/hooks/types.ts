@@ -1,4 +1,4 @@
-import type { HookEvent, HookInput, HooksGroup } from "./schema";
+import type { HookOutput } from "./schema";
 
 export interface HookVariables {
   file?: string;
@@ -11,7 +11,7 @@ export interface HookResult {
   exitCode: number;
   stdout: string;
   stderr: string;
-  output: import("./schema").HookOutput | undefined;
+  output: HookOutput | undefined;
   group: string;
   command: string;
 }

@@ -9,18 +9,18 @@
     ]
   },
   "scripts": {
-    "lint": "eslint"
+    "lint": "bun ./node_modules/eslint/bin/eslint.js"
   },
   "dependencies": {
-    "@mariozechner/pi-ai": "^0.63.2",
-    "@mariozechner/pi-coding-agent": "^0.63.2",
+    "@mariozechner/pi-ai": "^0.70.2",
+    "@mariozechner/pi-coding-agent": "^0.70.2",
     "cheerio": "^1.2.0"
   },
   "devDependencies": {
-    "@types/node": "^22.19.17",
-    "eslint": "^10.2.0",
+    "@types/node": "^25.6.0",
+    "eslint": "^10.2.1",
     "eslint-antislop": "file:///home/knoopx/Projects/knoopx/eslint-antislop/",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.58.2"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.0"
   }
 }

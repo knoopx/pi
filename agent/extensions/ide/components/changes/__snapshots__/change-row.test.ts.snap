@@ -1,107 +1,213 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`ChangeRowRenderer — focused > then renders focused empty snapshot 1`] = `"[BG:selectedBg:[accent:****][dim: Alice]                                                       ]"`;
+exports[`ChangeRowRenderer — focused > then renders focused empty snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[39m                                                                                [49m"`;
 
-exports[`ChangeRowRenderer — focused > then renders focused empty with graph narrow snapshot 1`] = `"[BG:selectedBg:  [accent:****][dim: Alice]             ]"`;
+exports[`ChangeRowRenderer — focused > then renders focused empty with graph narrow snapshot 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m[39m                                      [49m"`;
 
-exports[`ChangeRowRenderer — focused > then renders focused immutable snapshot 1`] = `"[BG:selectedBg:[dim:][accent:**feat: add login**][dim: Alice]                                  ]"`;
+exports[`ChangeRowRenderer — focused > then renders focused immutable snapshot 1`] = `"[48;2;50;36;93m[38;2;76;62;118m[39m[38;2;250;208;0m[1mfeat: add login[22m[39m                                                                 [49m"`;
 
-exports[`ChangeRowRenderer — focused > then renders focused immutable with graph snapshot 1`] = `"[BG:selectedBg:[dim:  ][dim:][accent:**feat: add login**][dim: Alice]                          ]"`;
+exports[`ChangeRowRenderer — focused > then renders focused immutable with graph snapshot 1`] = `"[48;2;50;36;93m[38;2;76;62;118m  [39m[38;2;76;62;118m[39m[38;2;250;208;0m[1mfeat: add login[22m[39m                                                               [49m"`;
 
-exports[`ChangeRowRenderer — focused > then renders focused long author snapshot 1`] = `"[BG:selectedBg:[accent:**feat: add login**][dim: Xavier Longname III]                          ]"`;
+exports[`ChangeRowRenderer — focused > then renders focused long author snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mfeat: add login[22m[39m                                                                 [49m"`;
 
-exports[`ChangeRowRenderer — focused > then renders focused long desc narrow snapshot 1`] = `"[BG:selectedBg:[accent:**this is a very lon[dim: Alice]]"`;
+exports[`ChangeRowRenderer — focused > then renders focused long desc narrow snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mthis is a very long commit message that [22m[39m[49m"`;
 
-exports[`ChangeRowRenderer — focused > then renders focused narrow width snapshot 1`] = `"[BG:selectedBg:[accent:****][dim: Alice]               ]"`;
+exports[`ChangeRowRenderer — focused > then renders focused narrow width snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[39m                                        [49m"`;
 
-exports[`ChangeRowRenderer — focused > then renders focused no author snapshot 1`] = `"[BG:selectedBg:[accent:**feat: add login**]                                                    ]"`;
+exports[`ChangeRowRenderer — focused > then renders focused no author snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mfeat: add login[22m[39m                                                                 [49m"`;
 
-exports[`ChangeRowRenderer — focused > then renders focused snapshot 1`] = `"[BG:selectedBg:[accent:**feat: add login**][dim: Alice]                                        ]"`;
+exports[`ChangeRowRenderer — focused > then renders focused snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mfeat: add login[22m[39m                                                                 [49m"`;
 
-exports[`ChangeRowRenderer — focused > then renders focused with graph narrow snapshot 1`] = `"[BG:selectedBg:  [accent:**feat: add login*[dim: Alice]]"`;
+exports[`ChangeRowRenderer — focused > then renders focused with graph narrow snapshot 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m[1mfeat: add login[22m[39m                       [49m"`;
 
-exports[`ChangeRowRenderer — focused > then renders focused with graph snapshot 1`] = `"[BG:selectedBg:  [accent:**feat: add login**][dim: Alice]                                      ]"`;
+exports[`ChangeRowRenderer — focused > then renders focused with graph snapshot 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m[1mfeat: add login[22m[39m                                                               [49m"`;
 
-exports[`ChangeRowRenderer — focused > then renders focused working copy snapshot 1`] = `"[BG:selectedBg:[accent:**feat: add login**][dim: Alice]                                        ]"`;
+exports[`ChangeRowRenderer — focused > then renders focused working copy snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mfeat: add login[22m[39m                                                                 [49m"`;
 
-exports[`ChangeRowRenderer — focused > then renders focused working copy with graph snapshot 1`] = `"[BG:selectedBg:[accent:  ][accent:**feat: add login**][dim: Alice]                             ]"`;
+exports[`ChangeRowRenderer — focused > then renders focused working copy with graph snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m  [39m[38;2;250;208;0m[1mfeat: add login[22m[39m                                                               [49m"`;
 
-exports[`ChangeRowRenderer — marked > then renders marked empty no author snapshot 1`] = `"[BG:selectedBg:[accent:✓ ]                                                                     ]"`;
+exports[`ChangeRowRenderer — focused then renders focused empty snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[39m                                                                                [49m"`;
 
-exports[`ChangeRowRenderer — marked > then renders marked empty snapshot 1`] = `"[BG:selectedBg:[accent:✓ ][dim: Alice]                                                         ]"`;
+exports[`ChangeRowRenderer — focused then renders focused empty with graph narrow snapshot 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m[39m                                      [49m"`;
 
-exports[`ChangeRowRenderer — marked > then renders marked immutable snapshot 1`] = `"[BG:selectedBg:[accent:✓ ][dim:][dim:feat: add login][dim: Alice]                              ]"`;
+exports[`ChangeRowRenderer — focused then renders focused immutable snapshot 1`] = `"[48;2;50;36;93m[38;2;76;62;118m[39m[38;2;250;208;0m[1mfeat: add login[22m[39m                                                                 [49m"`;
 
-exports[`ChangeRowRenderer — marked > then renders marked immutable with graph snapshot 1`] = `"[BG:selectedBg:[dim:  ][accent:✓ ][dim:][dim:feat: add login][dim: Alice]                      ]"`;
+exports[`ChangeRowRenderer — focused then renders focused immutable with graph snapshot 1`] = `"[48;2;50;36;93m[38;2;76;62;118m  [39m[38;2;76;62;118m[39m[38;2;250;208;0m[1mfeat: add login[22m[39m                                                               [49m"`;
 
-exports[`ChangeRowRenderer — marked > then renders marked long author snapshot 1`] = `"[BG:selectedBg:[accent:✓ ]feat: add login[dim: Xavier Longname III]                            ]"`;
+exports[`ChangeRowRenderer — focused then renders focused long author snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mfeat: add login[22m[39m                                                                 [49m"`;
 
-exports[`ChangeRowRenderer — marked > then renders marked long desc narrow snapshot 1`] = `"[BG:selectedBg:[accent:✓ ]this is a very lo[dim: Alice]]"`;
+exports[`ChangeRowRenderer — focused then renders focused long desc narrow snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mthis is a very long commit message that [22m[39m[49m"`;
 
-exports[`ChangeRowRenderer — marked > then renders marked narrow width snapshot 1`] = `"[BG:selectedBg:[accent:✓ ][dim: Alice]                 ]"`;
+exports[`ChangeRowRenderer — focused then renders focused narrow width snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[39m                                        [49m"`;
 
-exports[`ChangeRowRenderer — marked > then renders marked no author narrow snapshot 1`] = `"[BG:selectedBg:[accent:✓ ]                             ]"`;
+exports[`ChangeRowRenderer — focused then renders focused no author snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mfeat: add login[22m[39m                                                                 [49m"`;
 
-exports[`ChangeRowRenderer — marked > then renders marked no author snapshot 1`] = `"[BG:selectedBg:[accent:✓ ]feat: add login                                                      ]"`;
+exports[`ChangeRowRenderer — focused then renders focused snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mfeat: add login[22m[39m                                                                 [49m"`;
 
-exports[`ChangeRowRenderer — marked > then renders marked snapshot 1`] = `"[BG:selectedBg:[accent:✓ ]feat: add login[dim: Alice]                                          ]"`;
+exports[`ChangeRowRenderer — focused then renders focused with graph narrow snapshot 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m[1mfeat: add login[22m[39m                       [49m"`;
 
-exports[`ChangeRowRenderer — marked > then renders marked with graph narrow snapshot 1`] = `"[BG:selectedBg:  [accent:✓ ][dim: Alice]               ]"`;
+exports[`ChangeRowRenderer — focused then renders focused with graph snapshot 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m[1mfeat: add login[22m[39m                                                               [49m"`;
 
-exports[`ChangeRowRenderer — marked > then renders marked with graph snapshot 1`] = `"[BG:selectedBg:  [accent:✓ ]feat: add login[dim: Alice]                                        ]"`;
+exports[`ChangeRowRenderer — focused then renders focused working copy snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m[1mfeat: add login[22m[39m                                                                 [49m"`;
 
-exports[`ChangeRowRenderer — marked > then renders marked working copy snapshot 1`] = `"[BG:selectedBg:[accent:✓ ]feat: add login[dim: Alice]                                          ]"`;
+exports[`ChangeRowRenderer — focused then renders focused working copy with graph snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m  [39m[38;2;250;208;0m[1mfeat: add login[22m[39m                                                               [49m"`;
 
-exports[`ChangeRowRenderer — marked > then renders marked working copy with graph snapshot 1`] = `"[BG:selectedBg:[accent:  ][accent:✓ ]feat: add login[dim: Alice]                               ]"`;
+exports[`ChangeRowRenderer — marked > then renders marked empty no author snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m                                                                              [49m"`;
 
-exports[`ChangeRowRenderer — normal > then renders change without graph 1`] = `"feat: add login[dim: Alice]                                                     "`;
+exports[`ChangeRowRenderer — marked > then renders marked empty snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m                                                                              [49m"`;
 
-exports[`ChangeRowRenderer — normal > then renders empty description 1`] = `"[dim: Alice]                                                                    "`;
+exports[`ChangeRowRenderer — marked > then renders marked immutable snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m[38;2;76;62;118m[39m[38;2;76;62;118mfeat: add login[39m                                                               [49m"`;
 
-exports[`ChangeRowRenderer — normal > then renders immutable change 1`] = `"[dim:][dim:feat: add login][dim: Alice]                                         "`;
+exports[`ChangeRowRenderer — marked > then renders marked immutable with graph snapshot 1`] = `"[48;2;50;36;93m[38;2;76;62;118m  [39m[38;2;250;208;0m✓ [39m[38;2;76;62;118m[39m[38;2;76;62;118mfeat: add login[39m                                                             [49m"`;
 
-exports[`ChangeRowRenderer — normal > then renders immutable with graph 1`] = `"[dim:  ][dim:][dim:feat: add login][dim: Alice]                                 "`;
+exports[`ChangeRowRenderer — marked > then renders marked long author snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39mfeat: add login                                                               [49m"`;
 
-exports[`ChangeRowRenderer — normal > then renders long author name 1`] = `"feat: add login[dim: Xavier Longname III]                                       "`;
+exports[`ChangeRowRenderer — marked > then renders marked long desc narrow snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39mthis is a very long commit message tha[49m"`;
 
-exports[`ChangeRowRenderer — normal > then renders long description at narrow width 1`] = `"this is a very long commit m[dim: Alice]"`;
+exports[`ChangeRowRenderer — marked > then renders marked narrow width snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m                                      [49m"`;
 
-exports[`ChangeRowRenderer — normal > then renders no author column 1`] = `"feat: add login                                                                 "`;
+exports[`ChangeRowRenderer — marked > then renders marked no author narrow snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m                                      [49m"`;
 
-exports[`ChangeRowRenderer — normal > then renders with graph prefix 1`] = `"  feat: add login[dim: Alice]                                                   "`;
+exports[`ChangeRowRenderer — marked > then renders marked no author snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39mfeat: add login                                                               [49m"`;
 
-exports[`ChangeRowRenderer — normal > then renders working copy 1`] = `"feat: add login[dim: Alice]                                                     "`;
+exports[`ChangeRowRenderer — marked > then renders marked snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39mfeat: add login                                                               [49m"`;
 
-exports[`ChangeRowRenderer — normal > then renders working copy with graph 1`] = `"[accent:  ]feat: add login[dim: Alice]                                          "`;
+exports[`ChangeRowRenderer — marked > then renders marked with graph narrow snapshot 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m✓ [39m                                    [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders change with multiple bookmarks 1`] = `"[I:[accent: 󰃀 main ]] [I:[accent: 󰃀 develop ]] [I:[accent: 󰃀 release[dim: Alice]"`;
+exports[`ChangeRowRenderer — marked > then renders marked with graph snapshot 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m✓ [39mfeat: add login                                                             [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders change with single bookmark 1`] = `"[I:[accent: 󰃀 main ]] feat: add login[dim: Alice]                               "`;
+exports[`ChangeRowRenderer — marked > then renders marked working copy snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39mfeat: add login                                                               [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders empty description with bookmarks 1`] = `"[I:[accent: 󰃀 main ]] [dim: Alice]                                              "`;
+exports[`ChangeRowRenderer — marked > then renders marked working copy with graph snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m  [39m[38;2;250;208;0m✓ [39mfeat: add login                                                             [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders focused change with bookmarks 1`] = `"[BG:selectedBg:[I:[accent: 󰃀 main ]] [accent:**feat: add login**][dim: Alice]                 ]"`;
+exports[`ChangeRowRenderer — marked then renders marked empty no author snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m                                                                              [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders focused with graph and bookmarks 1`] = `"[BG:selectedBg:  [I:[accent: 󰃀 main ]] [I:[accent: 󰃀 develop ]] [accent:**feat: add[dim: Alice]]"`;
+exports[`ChangeRowRenderer — marked then renders marked empty snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m                                                                              [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders focused working copy with graph and bookmarks 1`] = `"[BG:selectedBg:[accent:  ][I:[accent: 󰃀 main ]] [I:[accent: 󰃀 develop ]] [accent:**[dim: Alice]]"`;
+exports[`ChangeRowRenderer — marked then renders marked immutable snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m[38;2;76;62;118m[39m[38;2;76;62;118mfeat: add login[39m                                                               [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders immutable with bookmarks 1`] = `"[dim:[I:[accent: 󰃀 main ]] [I:[accent: 󰃀 release ]] ][dim:feat: add [dim: Alice]"`;
+exports[`ChangeRowRenderer — marked then renders marked immutable with graph snapshot 1`] = `"[48;2;50;36;93m[38;2;76;62;118m  [39m[38;2;250;208;0m✓ [39m[38;2;76;62;118m[39m[38;2;76;62;118mfeat: add login[39m                                                             [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders long author with bookmarks 1`] = `"[I:[accent: 󰃀 main ]] x[dim: Xavier Longname III]                               "`;
+exports[`ChangeRowRenderer — marked then renders marked long author snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39mfeat: add login                                                               [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders long description with bookmarks 1`] = `"[I:[accent: 󰃀 main ]] this i[dim: Alice]"`;
+exports[`ChangeRowRenderer — marked then renders marked long desc narrow snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39mthis is a very long commit message tha[49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders marked change with bookmarks 1`] = `"[BG:selectedBg:[accent:✓ ][I:[accent: 󰃀 main ]] feat: add login[dim: Alice]                   ]"`;
+exports[`ChangeRowRenderer — marked then renders marked narrow width snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m                                      [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders marked with graph and bookmarks 1`] = `"[BG:selectedBg:  [accent:✓ ][I:[accent: 󰃀 main ]] feat: add login[dim: Alice]                 ]"`;
+exports[`ChangeRowRenderer — marked then renders marked no author narrow snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m                                      [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders marked working copy with graph and bookmarks 1`] = `"[BG:selectedBg:[accent:  ][accent:✓ ][I:[accent: 󰃀 main ]] feat: add login[dim: Alice]        ]"`;
+exports[`ChangeRowRenderer — marked then renders marked no author snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39mfeat: add login                                                               [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders narrow width with bookmarks 1`] = `"[I:[accent: 󰃀 main ]] feat: [dim: Alice]"`;
+exports[`ChangeRowRenderer — marked then renders marked snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39mfeat: add login                                                               [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders no author with bookmarks 1`] = `"[I:[accent: 󰃀 main ]] feat: add login                                           "`;
+exports[`ChangeRowRenderer — marked then renders marked with graph narrow snapshot 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m✓ [39m                                    [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders very narrow width with bookmarks 1`] = `"[I:[acce[dim: Alice]"`;
+exports[`ChangeRowRenderer — marked then renders marked with graph snapshot 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m✓ [39mfeat: add login                                                             [49m"`;
 
-exports[`ChangeRowRenderer — with bookmarks > then renders with graph and bookmarks 1`] = `"  [I:[accent: 󰃀 main ]] feat: add login[dim: Alice]                             "`;
+exports[`ChangeRowRenderer — marked then renders marked working copy snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39mfeat: add login                                                               [49m"`;
+
+exports[`ChangeRowRenderer — marked then renders marked working copy with graph snapshot 1`] = `"[48;2;50;36;93m[38;2;250;208;0m  [39m[38;2;250;208;0m✓ [39mfeat: add login                                                             [49m"`;
+
+exports[`ChangeRowRenderer — normal > then renders change without graph 1`] = `"feat: add login[0m                                                                 "`;
+
+exports[`ChangeRowRenderer — normal > then renders empty description 1`] = `"[0m                                                                                "`;
+
+exports[`ChangeRowRenderer — normal > then renders immutable change 1`] = `"[38;2;76;62;118m[39m[38;2;76;62;118mfeat: add login[39m[0m                                                                 "`;
+
+exports[`ChangeRowRenderer — normal > then renders immutable with graph 1`] = `"[38;2;76;62;118m  [39m[38;2;76;62;118m[39m[38;2;76;62;118mfeat: add login[39m[0m                                                               "`;
+
+exports[`ChangeRowRenderer — normal > then renders long author name 1`] = `"feat: add login[0m                                                                 "`;
+
+exports[`ChangeRowRenderer — normal > then renders long description at narrow width 1`] = `"this is a very long commit message that "`;
+
+exports[`ChangeRowRenderer — normal > then renders no author column 1`] = `"feat: add login[0m                                                                 "`;
+
+exports[`ChangeRowRenderer — normal > then renders with graph prefix 1`] = `"  feat: add login[0m                                                               "`;
+
+exports[`ChangeRowRenderer — normal > then renders working copy 1`] = `"feat: add login[0m                                                                 "`;
+
+exports[`ChangeRowRenderer — normal > then renders working copy with graph 1`] = `"[38;2;250;208;0m  [39mfeat: add login[0m                                                               "`;
+
+exports[`ChangeRowRenderer — normal then renders change without graph 1`] = `"feat: add login[0m                                                                 "`;
+
+exports[`ChangeRowRenderer — normal then renders empty description 1`] = `"[0m                                                                                "`;
+
+exports[`ChangeRowRenderer — normal then renders immutable change 1`] = `"[38;2;76;62;118m[39m[38;2;76;62;118mfeat: add login[39m[0m                                                                 "`;
+
+exports[`ChangeRowRenderer — normal then renders immutable with graph 1`] = `"[38;2;76;62;118m  [39m[38;2;76;62;118m[39m[38;2;76;62;118mfeat: add login[39m[0m                                                               "`;
+
+exports[`ChangeRowRenderer — normal then renders long author name 1`] = `"feat: add login[0m                                                                 "`;
+
+exports[`ChangeRowRenderer — normal then renders long description at narrow width 1`] = `"this is a very long commit message that "`;
+
+exports[`ChangeRowRenderer — normal then renders no author column 1`] = `"feat: add login[0m                                                                 "`;
+
+exports[`ChangeRowRenderer — normal then renders with graph prefix 1`] = `"  feat: add login[0m                                                               "`;
+
+exports[`ChangeRowRenderer — normal then renders working copy 1`] = `"feat: add login[0m                                                                 "`;
+
+exports[`ChangeRowRenderer — normal then renders working copy with graph 1`] = `"[38;2;250;208;0m  [39mfeat: add login[0m                                                               "`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders change with multiple bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m [7m[38;2;250;208;0m 󰃀 develop [39m[27m [7m[38;2;250;208;0m 󰃀 release [39m[27m feat: add login[0m                                "`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders change with single bookmark 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add login[0m                                                        "`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders empty description with bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m [0m                                                                       "`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders focused change with bookmarks 1`] = `"[48;2;50;36;93m[7m[38;2;250;208;0m 󰃀 main [39m[27m [38;2;250;208;0m[1mfeat: add login[22m[39m                                                       [49m"`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders focused with graph and bookmarks 1`] = `"[48;2;50;36;93m  [7m[38;2;250;208;0m 󰃀 main [39m[27m [7m[38;2;250;208;0m 󰃀 develop [39m[27m [38;2;250;208;0m[1mfeat: add login[22m[39m                                        [49m"`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders focused working copy with graph and bookmarks 1`] = `"[48;2;50;36;93m[38;2;250;208;0m  [39m[7m[38;2;250;208;0m 󰃀 main [39m[27m [7m[38;2;250;208;0m 󰃀 develop [39m[27m [38;2;250;208;0m[1mfeat: add login[22m[39m                                        [49m"`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders immutable with bookmarks 1`] = `"[38;2;76;62;118m[7m[38;2;250;208;0m 󰃀 main [39m[27m [7m[38;2;250;208;0m 󰃀 release [39m[27m [39m[38;2;76;62;118mfeat: add login[39m[0m                                            "`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders long author with bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m x[0m                                                                      "`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders long description with bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m this is a very long commit mess"`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders marked change with bookmarks 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m[7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add login                                                     [49m"`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders marked with graph and bookmarks 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m✓ [39m[7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add login                                                   [49m"`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders marked working copy with graph and bookmarks 1`] = `"[48;2;50;36;93m[38;2;250;208;0m  [39m[38;2;250;208;0m✓ [39m[7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add login                                                   [49m"`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders narrow width with bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add login[0m                "`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders no author with bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add login[0m                                                        "`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders very narrow width with bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add l"`;
+
+exports[`ChangeRowRenderer — with bookmarks > then renders with graph and bookmarks 1`] = `"  [7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add login[0m                                                      "`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders change with multiple bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m [7m[38;2;250;208;0m 󰃀 develop [39m[27m [7m[38;2;250;208;0m 󰃀 release [39m[27m feat: add login[0m                                "`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders change with single bookmark 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add login[0m                                                        "`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders empty description with bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m [0m                                                                       "`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders focused change with bookmarks 1`] = `"[48;2;50;36;93m[7m[38;2;250;208;0m 󰃀 main [39m[27m [38;2;250;208;0m[1mfeat: add login[22m[39m                                                       [49m"`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders focused with graph and bookmarks 1`] = `"[48;2;50;36;93m  [7m[38;2;250;208;0m 󰃀 main [39m[27m [7m[38;2;250;208;0m 󰃀 develop [39m[27m [38;2;250;208;0m[1mfeat: add login[22m[39m                                        [49m"`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders focused working copy with graph and bookmarks 1`] = `"[48;2;50;36;93m[38;2;250;208;0m  [39m[7m[38;2;250;208;0m 󰃀 main [39m[27m [7m[38;2;250;208;0m 󰃀 develop [39m[27m [38;2;250;208;0m[1mfeat: add login[22m[39m                                        [49m"`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders immutable with bookmarks 1`] = `"[38;2;76;62;118m[7m[38;2;250;208;0m 󰃀 main [39m[27m [7m[38;2;250;208;0m 󰃀 release [39m[27m [39m[38;2;76;62;118mfeat: add login[39m[0m                                            "`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders long author with bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m x[0m                                                                      "`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders long description with bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m this is a very long commit mess"`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders marked change with bookmarks 1`] = `"[48;2;50;36;93m[38;2;250;208;0m✓ [39m[7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add login                                                     [49m"`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders marked with graph and bookmarks 1`] = `"[48;2;50;36;93m  [38;2;250;208;0m✓ [39m[7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add login                                                   [49m"`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders marked working copy with graph and bookmarks 1`] = `"[48;2;50;36;93m[38;2;250;208;0m  [39m[38;2;250;208;0m✓ [39m[7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add login                                                   [49m"`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders narrow width with bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add login[0m                "`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders no author with bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add login[0m                                                        "`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders very narrow width with bookmarks 1`] = `"[7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add l"`;
+
+exports[`ChangeRowRenderer — with bookmarks then renders with graph and bookmarks 1`] = `"  [7m[38;2;250;208;0m 󰃀 main [39m[27m feat: add login[0m                                                      "`;

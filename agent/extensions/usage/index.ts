@@ -1,24 +1,10 @@
-/**
- * Usage Statistics Extensions Entry Point
- *
- * This file re-exports from the extracted modules to avoid duplication:
- *   - usage.ts        — UsageComponent + data collection
- *   - tool-usage.ts   — ToolUsageComponent + data collection
- *   - shared.ts       — Formatting, column config, input handling
- */
-
 export { getSessionsDir, collectUsageData } from "./usage/data-collection";
 export { UsageComponent } from "./usage/component";
 export { loadAndDisplay } from "./usage/ui-loading";
 export { ToolUsageComponent } from "./tool-usage/component";
 export { collectToolStats } from "./tool-usage/data-collection";
-export {
-  formatCost,
-  formatTokens,
-  formatNumber,
-  padLeft,
-  padRight,
-} from "./shared/formatting";
+export { formatCost, formatTokens, formatNumber } from "./shared/formatters";
+export { padLeft, padRight } from "./shared/padding";
 export { handleUsageInput } from "./shared/input-handling";
 export {
   createBorderedContainer,

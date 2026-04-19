@@ -7,6 +7,7 @@ import type {
   GHRepoSearchResult,
 } from "./types";
 import type {
+  AgentToolUpdateCallback,
   ExtensionAPI,
   ExtensionContext,
   AgentToolResult,
@@ -17,18 +18,61 @@ import type { ToolRenderContext } from "./shared";
 import type { Static, TSchema } from "@sinclair/typebox";
 import { renderTextToolResult } from "../../shared/render-utils";
 
-/**
- * Search code using gh CLI
- */
+const QUALIFIER_MAP: ReadonlyArray<{
+  prefixes: string[];
+  flag: string;
+}> = [
+  { prefixes: ["repo:"], flag: "--repo=" },
+  { prefixes: ["owner:", "user:"], flag: "--owner=" },
+  { prefixes: ["extension:"], flag: "--extension=" },
+  { prefixes: ["filename:"], flag: "--filename=" },
+  { prefixes: ["language:"], flag: "--language=" },
+];
+
+function parseCodeSearchQualifiers(query: string): {
+  cleanQuery: string;
+  extraFlags: string[];
+} {
+  const extraFlags: string[] = [];
+  const parts: string[] = [];
+
+  for (const part of query.split(/\s+/)) {
+    if (!part) continue;
+
+    const matched = matchQualifier(part);
+    if (matched) {
+      extraFlags.push(matched);
+    } else {
+      parts.push(part);
+    }
+  }
+
+  return { cleanQuery: parts.join(" "), extraFlags };
+}
+
+function matchQualifier(part: string): string | null {
+  for (const { prefixes, flag } of QUALIFIER_MAP) {
+    const prefix = prefixes.find((p) => part.startsWith(p));
+    if (!prefix) continue;
+
+    const value = part.slice(prefix.length);
+    if (value) return `${flag}${value}`;
+  }
+  return null;
+}
+
 async function searchCode(
   query: string,
   limit = 20,
 ): Promise<{ query: string; results: GHCodeSearchResult[]; total: number }> {
+  const { cleanQuery, extraFlags } = parseCodeSearchQualifiers(query);
+
   const results = await ghCmdJson<GHCodeSearchResult[]>(
     [
       "search",
       "code",
-      query,
+      cleanQuery,
+      ...extraFlags,
       `--limit=${limit}`,
       "--json=repository,path,sha,textMatches,url",
       "--jq",
@@ -44,9 +88,6 @@ async function searchCode(
   };
 }
 
-/**
- * Search issues using gh CLI
- */
 async function searchIssues(
   query: string,
   limit = 20,
@@ -71,9 +112,6 @@ async function searchIssues(
   };
 }
 
-/**
- * Search PRs using gh CLI
- */
 async function searchPRs(
   query: string,
   limit = 20,
@@ -98,9 +136,6 @@ async function searchPRs(
   };
 }
 
-/**
- * Search repositories using gh CLI
- */
 async function searchRepos(
   query: string,
   limit = 20,
@@ -135,9 +170,10 @@ import {
   type Column,
 } from "../../shared/renderers";
 
-/**
- * Format search results into a table
- */
+function formatNumber(n: number): string {
+  return n.toLocaleString("en-US");
+}
+
 function formatSearchResults<T>(
   result: { query: string; results: T[]; total: number },
   columns: Column[],
@@ -174,8 +210,8 @@ function formatRepoSearchResult(result: {
   ];
 
   const rowMapper = (repo: GHRepoSearchResult) => ({
-    "󰓎": repo.stargazers_count.toLocaleString(),
-    "󰘬": repo.forks_count.toLocaleString(),
+    "󰓎": formatNumber(repo.stargazers_count),
+    "󰘬": formatNumber(repo.forks_count),
     repo: repo.full_name,
     description: repo.description || "",
     lang: repo.language || "",
@@ -184,7 +220,7 @@ function formatRepoSearchResult(result: {
   });
 
   return formatSearchResults(result, cols, rowMapper, (total) =>
-    countLabel(total.toLocaleString(), "repo"),
+    countLabel(formatNumber(total), "repo"),
   );
 }
 
@@ -218,7 +254,7 @@ function formatCodeSearchResult(result: {
   };
 
   return formatSearchResults(result, cols, rowMapper, (total) =>
-    countLabel(total.toLocaleString(), "result"),
+    countLabel(formatNumber(total), "result"),
   );
 }
 
@@ -280,7 +316,7 @@ function formatIssueSearchResult(result: {
     result,
     rowMapper,
     titleFormatter,
-    (total) => `${total.toLocaleString()} issues`,
+    (total) => `${formatNumber(total)} issues`,
   );
 }
 
@@ -320,13 +356,10 @@ function formatPRSearchResult(result: {
     result,
     rowMapper,
     titleFormatter,
-    (total) => `${total.toLocaleString()} PRs`,
+    (total) => `${formatNumber(total)} PRs`,
   );
 }
 
-/**
- * Create a search tool renderer with common patterns
- */
 function createSearchToolRenderer(toolName: string) {
   return {
     renderCall(
@@ -347,17 +380,11 @@ function createSearchToolRenderer(toolName: string) {
       theme: Theme,
       _context: ToolRenderContext<unknown, unknown>,
     ) {
-      return renderTextToolResult(
-        result as AgentToolResult<unknown>,
-        theme as any,
-      );
+      return renderTextToolResult(result as AgentToolResult<unknown>, theme);
     },
   };
 }
 
-/**
- * Options for registering a search tool
- */
 interface RegisterSearchToolOptions<TParams extends TSchema, TResult> {
   toolName: string;
   toolLabel: string;
@@ -367,9 +394,6 @@ interface RegisterSearchToolOptions<TParams extends TSchema, TResult> {
   formatFn: (result: TResult) => string;
 }
 
-/**
- * Register a search tool with common pattern
- */
 function registerSearchTool<TParams extends TSchema, TResult>(
   pi: ExtensionAPI,
   options: RegisterSearchToolOptions<TParams, TResult>,
@@ -388,22 +412,18 @@ function registerSearchTool<TParams extends TSchema, TResult>(
     label: toolLabel,
     description: toolDescription,
     parameters: paramsSchema,
+    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
-      params: Static<TParams> & { query: string; limit?: number },
+      params: Static<TParams>,
       _signal: AbortSignal | undefined,
-      _onUpdate:
-        | ((partialResult: AgentToolResult<unknown>) => void)
-        | undefined,
+      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       _ctx: ExtensionContext,
     ) {
       return await executeSearchTool(
         searchFn,
         formatFn,
-        params as unknown as Static<TParams> & {
-          query: string;
-          limit?: number;
-        },
+        params as { query: string; limit?: number },
       );
     },
     ...createSearchToolRenderer(toolName),

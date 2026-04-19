@@ -12,12 +12,12 @@ import {
 import duckduckgoExtension from "./index";
 import { disableThrottle } from "../../shared/throttle";
 
-/**
- * Helper to execute the search tool with fetch mocking
- */
-async function executeSearchTool(toolConfig: MockTool, mockFetch: unknown) {
+async function executeSearchTool(
+  toolConfig: MockTool,
+  mockFetch: typeof global.fetch,
+) {
   const originalFetch = global.fetch;
-  global.fetch = mockFetch as typeof global.fetch;
+  global.fetch = mockFetch;
   try {
     return await toolConfig.execute(
       "test-id",
@@ -43,22 +43,16 @@ describe("DuckDuckGo Extension", () => {
   });
 
   it("should register search-web tool", () => {
-    expect(mockPi.registerTool).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: "search-web",
-        label: "Search DuckDuckGo",
-        description: expect.stringContaining("Search using DuckDuckGo"),
-      }),
-    );
+    const call = mockPi.registerTool.mock.calls[0] as [MockTool];
+    expect(call[0].name).toBe("search-web");
+    expect(call[0].label).toBe("Search DuckDuckGo");
+    expect(call[0].description).toContain("Search using DuckDuckGo");
   });
 
   describe("Tool Execution", () => {
     it("should return error when search fails with network error", async () => {
-      const mockFetch = vi
-        .fn()
-        .mockRejectedValue(
-          new Error("Network error"),
-        ) as unknown as typeof global.fetch;
+      const mockFetch = vi.fn<typeof global.fetch>();
+      mockFetch.mockRejectedValue(new Error("Network error"));
       const result = await executeSearchTool(toolConfig, mockFetch);
 
       expect((result.content[0] as TextContent).text).toBe(

@@ -1,12 +1,7 @@
-import type { ChildProcess } from "node:child_process";
-import { spawn as nodeSpawn } from "node:child_process";
+import type { ChildProcess, spawn } from "node:child_process";
 
-/** Type of the child_process.spawn function */
-type SpawnFn = typeof nodeSpawn;
+type SpawnFn = typeof spawn;
 
-/**
- * Execute gh CLI command and return output
- */
 export async function ghCmd(
   args: string[],
   options?: { stdio?: "inherit" | "pipe" },
@@ -17,9 +12,6 @@ export async function ghCmd(
   });
 }
 
-/**
- * Collect stdout and stderr from a process stream
- */
 function collectProcessOutput(
   proc: ChildProcess,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
@@ -45,9 +37,6 @@ function collectProcessOutput(
   });
 }
 
-/**
- * Execute gh CLI command and collect output
- */
 function executeGhCommand(
   spawn: SpawnFn,
   args: string[],
@@ -59,9 +48,6 @@ function executeGhCommand(
   return collectProcessOutput(proc);
 }
 
-/**
- * Parse JSON output from gh CLI command
- */
 function parseGhJsonOutput<T>(
   result: { stdout: string; stderr: string; exitCode: number },
   commandName: string,
@@ -80,9 +66,6 @@ function parseGhJsonOutput<T>(
   }
 }
 
-/**
- * Execute gh CLI command and parse JSON output
- */
 export async function ghCmdJson<T>(
   args: string[],
   commandName: string,
@@ -91,9 +74,6 @@ export async function ghCmdJson<T>(
   return parseGhJsonOutput<T>(result, commandName);
 }
 
-/**
- * Execute gh CLI command with stdin input and parse JSON output
- */
 export async function ghCmdJsonWithInput<T>(
   args: string[],
   input: unknown,
@@ -104,9 +84,6 @@ export async function ghCmdJsonWithInput<T>(
   return parseGhJsonOutput<T>(result, commandName);
 }
 
-/**
- * Execute gh CLI command with stdin input and collect output
- */
 function executeGhCommandWithInput(
   spawn: SpawnFn,
   args: string[],

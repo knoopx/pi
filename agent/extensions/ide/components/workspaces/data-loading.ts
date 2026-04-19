@@ -1,13 +1,13 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import type { AgentWorkspace, FileChange, Change } from "../../types";
-import {
-  getRepoRoot,
-  getCurrentChangeId,
-  loadAgentWorkspaces,
-} from "../../workspace";
-import { loadChanges, loadChangedFiles, getRawDiff } from "../../jj";
-import { getTheme, renderDiffWithShiki } from "../../tools/diff";
-import { formatErrorMessage } from "../formatting-utils";
+import type { AgentWorkspace, FileChange, Change } from "../../lib/types";
+import { getCurrentChangeId, loadAgentWorkspaces } from "../../workspace";
+import { getRepoRoot } from "../../jj/files";
+import { renderDiffWithShiki } from "../../tools/diff";
+import { THEME } from "../../tools/shiki-constants";
+import { formatErrorMessage } from "../../lib/footer";
+import { loadChanges } from "../../jj/changes";
+import { loadChangedFiles } from "../../jj/files";
+import { getRawDiff } from "../../jj/files";
 
 export interface WorkspaceState {
   workspaces: AgentWorkspace[];
@@ -20,7 +20,7 @@ export interface WorkspaceState {
   loading: boolean;
 }
 
-interface WorkspaceCache {
+export interface WorkspaceCache {
   files: FileChange[];
   changes: Change[];
   diffs: Map<string, string[]>;
@@ -54,14 +54,6 @@ export function createCacheStore(): WorkspaceCacheStore {
   };
 }
 
-function invalidate(
-  state: WorkspaceState,
-  tui: { requestRender: () => void },
-): void {
-  // Caller manages cachedLines/cachedWidth via state if needed
-  tui.requestRender();
-}
-
 export async function loadWorkspacesList(
   pi: ExtensionAPI,
 ): Promise<AgentWorkspace[]> {
@@ -92,8 +84,7 @@ async function loadChangeDiff(
 
   try {
     const { diff } = await getRawDiff(pi, ws.path, changeId);
-    const thm = await getTheme(pi, ws.path);
-    const content = await renderDiffWithShiki(diff, thm);
+    const content = await renderDiffWithShiki(diff, THEME);
     cache.diffs.set(changeId, content);
     return content;
   } catch (error) {
@@ -113,13 +104,32 @@ async function loadFileDiff(
 
   try {
     const { diff } = await getRawDiff(pi, ws.path, "@", filePath);
-    const thm = await getTheme(pi, ws.path);
-    const content = await renderDiffWithShiki(diff, thm);
+    const content = await renderDiffWithShiki(diff, THEME);
     cache.diffs.set(diffKey, content);
     return content;
   } catch (error) {
     return [`Error: ${formatErrorMessage(error)}`];
   }
+}
+
+function applyCacheHit(state: WorkspaceState, diffContent: string[]): void {
+  state.diffContent = diffContent;
+  state.diffScroll = 0;
+}
+
+function ensureCache(
+  wsName: string,
+  cache: WorkspaceCache | undefined,
+  cacheStore: WorkspaceCacheStore,
+): WorkspaceCache {
+  if (cache) return cache;
+  const newCache: WorkspaceCache = {
+    files: [],
+    changes: [],
+    diffs: new Map(),
+  };
+  cacheStore.set(wsName, newCache);
+  return newCache;
 }
 
 export async function loadDefaultWorkspace(
@@ -128,38 +138,31 @@ export async function loadDefaultWorkspace(
   state: WorkspaceState,
   cacheStore: WorkspaceCacheStore,
 ): Promise<void> {
-  const cache = cacheStore.get(ws.name);
+  let cache = cacheStore.get(ws.name);
 
   if (cache && cache.changes.length > 0) {
-    state.files = [];
-    state.changes = cache.changes;
-    state.fileIndex = 0;
-    const diffKey = state.changes[0]?.changeId ?? "";
-    const cachedDiff = cache.diffs.get(diffKey);
+    applyCachedChanges(state, cache);
+    const cachedDiff = cache.diffs.get(state.changes[0]?.changeId ?? "");
     if (cachedDiff) {
-      state.diffContent = cachedDiff;
-      state.diffScroll = 0;
+      applyCacheHit(state, cachedDiff);
       return;
     }
   }
 
-  if (!cache || cache.changes.length === 0) {
-    state.changes = await loadChanges(pi, ws.path);
+  cache = ensureCache(ws.name, cache, cacheStore);
+  if (!hasCachedChanges(cache)) {
+    const changes = await loadChanges(pi, ws.path);
+    state.changes = changes;
     state.files = [];
-    const newCache: WorkspaceCache = {
-      files: [],
-      changes: state.changes,
-      diffs: new Map(),
-    };
-    cacheStore.set(ws.name, newCache);
+    cache.changes = changes;
   }
 
   state.fileIndex = 0;
   state.diffContent = await loadChangeDiff(
     pi,
     ws,
-    state.changes[0]?.changeId,
-    cacheStore.get(ws.name)!,
+    state.changes[0]?.changeId ?? "",
+    cache,
   );
 }
 
@@ -169,37 +172,48 @@ export async function loadWorkspaceFiles(
   state: WorkspaceState,
   cacheStore: WorkspaceCacheStore,
 ): Promise<void> {
-  const cache = cacheStore.get(ws.name);
+  let cache = cacheStore.get(ws.name);
 
   if (cache && cache.files.length > 0) {
-    state.files = cache.files;
-    state.changes = [];
-    state.fileIndex = 0;
-    const diffKey = state.files[0]?.path ?? "";
-    const cachedDiff = cache.diffs.get(diffKey);
+    applyCachedFiles(state, cache);
+    const cachedDiff = cache.diffs.get(state.files[0]?.path ?? "");
     if (cachedDiff) {
-      state.diffContent = cachedDiff;
-      state.diffScroll = 0;
+      applyCacheHit(state, cachedDiff);
       return;
     }
   }
 
-  if (!cache || cache.files.length === 0) {
-    state.files = await loadChangedFiles(pi, ws.path, ws.changeId);
+  cache = ensureCache(ws.name, cache, cacheStore);
+  if (!hasCachedFiles(cache)) {
+    const files = await loadChangedFiles(pi, ws.path, ws.changeId);
+    state.files = files;
     state.changes = [];
-    const newCache: WorkspaceCache = {
-      files: state.files,
-      changes: [],
-      diffs: new Map(),
-    };
-    cacheStore.set(ws.name, newCache);
+    cache.files = files;
   }
 
   state.fileIndex = 0;
-  state.diffContent = await loadFileDiff(
-    pi,
-    ws,
-    state.files[0]?.path,
-    cacheStore.get(ws.name)!,
-  );
+  state.diffContent = await loadFileDiff(pi, ws, state.files[0]?.path, cache);
+}
+
+function hasCachedChanges(cache: WorkspaceCache | undefined): boolean {
+  return !!cache && cache.changes.length > 0;
+}
+
+function hasCachedFiles(cache: WorkspaceCache | undefined): boolean {
+  return !!cache && cache.files.length > 0;
+}
+
+function applyCachedChanges(
+  state: WorkspaceState,
+  cache: WorkspaceCache,
+): void {
+  state.changes = cache.changes;
+  state.files = [];
+  state.fileIndex = 0;
+}
+
+function applyCachedFiles(state: WorkspaceState, cache: WorkspaceCache): void {
+  state.files = cache.files;
+  state.changes = [];
+  state.fileIndex = 0;
 }

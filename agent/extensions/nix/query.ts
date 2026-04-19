@@ -1,8 +1,23 @@
-import type { AgentToolResult } from "@mariozechner/pi-coding-agent";
 import { throttledFetch } from "../../shared/throttle";
 
+// GitHub base URL for nixpkgs source links.
+export const NIXPKGS_GITHUB_BASE =
+  "https://github.com/NixOS/nixpkgs/blob/nixos-unstable";
+
+// NixOS search index — points to the latest nixos-unstable snapshot.
+// To find the current index, run:
+//   curl -s -H "Authorization: Bearer $NIX_SEARCH_TOKEN" \
+//     "https://search.nixos.org/backend/_cat/indices" | grep nixos.*unstable
+// Pick the row with the highest group number (e.g. nixos-47-unstable-...).
+const SEARCH_URL =
+  "https://search.nixos.org/backend/nixos-47-unstable-b12141ef619e0a9c1c84dc8c684040326f27cdcc/_search";
+
+const AUTH_TOKEN =
+  process.env.NIX_SEARCH_TOKEN ??
+  "YVdWU0FMWHBadjpYOGdQSG56TDUyd0ZFZWt1eHNmUTljU2g=";
+
 interface NixPackage {
-  type: string;
+  type: "package";
   package_attr_name: string;
   package_attr_set: string;
   package_pname: string;
@@ -34,12 +49,12 @@ interface NixPackage {
     githubTeams: string[];
   }[];
   package_teams_set: string[];
-  package_description: string | null;
+  package_description: string;
   package_longDescription: string | null;
   package_hydra: Record<string, unknown> | null;
   package_system: string;
   package_homepage: string[];
-  package_position: string;
+  package_position?: string;
 }
 
 interface NixSearchResponse<T> {
@@ -48,18 +63,12 @@ interface NixSearchResponse<T> {
   };
 }
 
-const SEARCH_URL =
-  "https://search.nixos.org/backend/latest-45-nixos-unstable/_search";
-const AUTH_TOKEN =
-  process.env.NIX_SEARCH_TOKEN ??
-  "YVdWU0FMWHBadjpYOGdQSG56TDUyd0ZFZWt1eHNmUTljU2g=";
-
-function cleanText(text: string | null): string {
+export function cleanText(text: string | null): string {
   if (!text) return "";
   return text.replace(/<[^>]*>/g, "").trim();
 }
 
-function removeEmptyProperties<T extends Record<string, unknown>>(
+export function removeEmptyProperties<T extends Record<string, unknown>>(
   obj: T,
 ): Partial<T> {
   const result: Partial<T> = {};
@@ -80,22 +89,15 @@ const COMMON_HEADERS: Record<string, string> = {
   Authorization: `Bearer ${AUTH_TOKEN}`,
 };
 
-// Package search fields
-const PACKAGE_SOURCE_FIELDS = [
+// Fields searched for package queries
+export const PACKAGE_SEARCH_FIELDS = [
   "package_attr_name",
   "package_pname",
   "package_description",
 ];
 
-const PACKAGE_MUST_FIELDS = [
-  "package_attr_name",
-  "package_attr_set",
-  "package_pname",
-  "package_pversion",
-  "package_system",
-];
 
-function buildMultiMatchQuery(
+export function buildMultiMatchQuery(
   query: string,
   fields: string[],
 ): Record<string, unknown> {
@@ -108,21 +110,8 @@ function buildMultiMatchQuery(
   };
 }
 
-function buildWildcardQuery(
-  field: string,
-  pattern: string,
-): Record<string, unknown> {
-  return {
-    wildcard: {
-      [field]: {
-        value: `*${pattern}*`,
-        case_insensitive: true,
-      },
-    },
-  };
-}
 
-function buildDisMaxQuery(
+export function buildDisMaxQuery(
   queries: Record<string, unknown>[],
 ): Record<string, unknown> {
   return {
@@ -133,14 +122,13 @@ function buildDisMaxQuery(
   };
 }
 
-/** Generic Nix search function — used by both options and packages. */
+
 export async function searchNix<T>(
   buildQuery: (query: string) => Record<string, unknown>,
-  fetchFn: typeof fetch,
   query: string,
 ): Promise<T[]> {
   const body = buildQuery(query);
-  const response = await fetchFn(SEARCH_URL, {
+  const response = await throttledFetch(SEARCH_URL, {
     method: "POST",
     headers: COMMON_HEADERS,
     body: JSON.stringify(body),
@@ -154,12 +142,4 @@ export async function searchNix<T>(
   return data.hits.hits.map((hit) => hit._source);
 }
 
-export {
-  cleanText,
-  removeEmptyProperties,
-  buildMultiMatchQuery,
-  buildDisMaxQuery,
-  PACKAGE_SOURCE_FIELDS,
-  PACKAGE_MUST_FIELDS,
-  type NixPackage,
-};
+export { type NixPackage };

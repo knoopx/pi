@@ -1,22 +1,14 @@
-/**
- * Shared keyboard handling utilities for overlay components.
- *
- * Provides a declarative way to define keyboard shortcuts and reduces
- * boilerplate across list pickers, browsers, and form components.
- */
-
 import type { KeyId } from "@mariozechner/pi-tui";
 import { Key, matchesKey } from "@mariozechner/pi-tui";
-import type { KeyPattern } from "./types";
+import type { KeyPattern } from "./lib/types";
 
 export interface KeyBinding<TContext = void> {
-  /** Key pattern to match (e.g., Key.ctrl("d"), "escape", "enter") */
   key: KeyPattern;
-  /** Help label (e.g., "delete"). If provided, shown in help text. */
+
   label?: string;
-  /** Handler function - return true to stop propagation */
+
   handler: (ctx: TContext) => boolean | void | Promise<boolean | void>;
-  /** Optional condition to check before handling */
+
   when?: (ctx: TContext) => boolean;
 }
 
@@ -26,7 +18,6 @@ interface NavigationState {
   pageSize?: number;
 }
 
-/** Format a key pattern for display in help text */
 function formatKeyForHelp(key: KeyPattern): string {
   if (typeof key !== "string") return "";
   return key
@@ -38,7 +29,6 @@ function formatKeyForHelp(key: KeyPattern): string {
     .replace("escape", "esc");
 }
 
-/** Build help text from bindings that have labels */
 export function buildHelpFromBindings(bindings: KeyBinding[]): string {
   return bindings
     .filter((b) => b.label)
@@ -46,7 +36,6 @@ export function buildHelpFromBindings(bindings: KeyBinding[]): string {
     .join("  ");
 }
 
-/** Filter bindings to only include those with labels and passing the when condition */
 export function filterActiveBindings<TContext>(
   bindings: KeyBinding<TContext>[],
   ctx?: TContext,
@@ -59,40 +48,23 @@ export function filterActiveBindings<TContext>(
 }
 
 interface KeyboardHandlerConfig<TContext = void> {
-  /** Custom key bindings (checked first) */
   bindings?: KeyBinding<TContext>[];
-  /** Navigation state for arrow key handling */
+
   navigation?: () => NavigationState;
-  /** Callback when navigation index changes */
+
   onNavigate?: (newIndex: number) => void;
-  /** Callback for escape key */
+
   onEscape?: () => void;
-  /** Callback for enter key */
+
   onEnter?: () => void;
-  /** Callback for text input (printable characters) */
+
   onTextInput?: (char: string) => void;
-  /** Callback for backspace */
+
   onBackspace?: () => void;
-  /** Context passed to all handlers */
+
   getContext?: () => TContext;
 }
 
-/**
- * Creates a keyboard input handler with common patterns built-in.
- *
- * @example
- * ```ts
- * const handleInput = createKeyboardHandler({
- *   bindings: [
- *     { key: Key.ctrl("d"), handler: () => { deleteItem(); return true; } },
- *   ],
- *   navigation: () => ({ index: selectedIndex, maxIndex: items.length - 1 }),
- *   onNavigate: (i) => { selectedIndex = i; render(); },
- *   onEscape: () => done(),
- *   onEnter: () => selectItem(),
- * });
- * ```
- */
 function handleCustomBindings<TContext>(
   data: string,
   bindings: KeyBinding<TContext>[],
@@ -157,55 +129,89 @@ function isPrintableChar(data: string): boolean {
   return data.length === 1 && data >= " " && data <= "~";
 }
 
-export function createKeyboardHandler<TContext = void>(
+function buildEscapeHandler<TContext>(
   config: KeyboardHandlerConfig<TContext>,
 ): (data: string) => boolean {
-  return (data: string): boolean => {
-    const ctx = config.getContext?.() as TContext;
-
-    // 1. Check custom bindings first
-    if (config.bindings && handleCustomBindings(data, config.bindings, ctx))
-      return true;
-
-    // 2. Escape
+  return (data) => {
     if (matchesKey(data, "escape") && config.onEscape) {
       config.onEscape();
       return true;
     }
-
-    // 3. Enter
-    if (matchesKey(data, "enter") && config.onEnter) {
-      config.onEnter();
-      return true;
-    }
-
-    // 4. Navigation
-    if (config.navigation && config.onNavigate) {
-      if (handleNavigation(data, config.navigation(), config.onNavigate))
-        return true;
-    }
-
-    // 5. Backspace
-    if ((data === "\x7f" || data === "\b") && config.onBackspace) {
-      config.onBackspace();
-      return true;
-    }
-
-    // 6. Printable characters
-    if (isPrintableChar(data) && config.onTextInput) {
-      config.onTextInput(data);
-      return true;
-    }
-
     return false;
   };
 }
 
-/**
- * Standard action keys for overlay components.
- * Only truly universal actions that apply across all contexts.
- */
+function buildEnterHandler<TContext>(
+  config: KeyboardHandlerConfig<TContext>,
+): (data: string) => boolean {
+  return (data) => {
+    if (matchesKey(data, "enter") && config.onEnter) {
+      config.onEnter();
+      return true;
+    }
+    return false;
+  };
+}
+
+function buildNavigationHandler<TContext>(
+  config: KeyboardHandlerConfig<TContext>,
+): (data: string) => boolean {
+  return (data) => {
+    if (!config.navigation || !config.onNavigate) return false;
+    return handleNavigation(data, config.navigation(), config.onNavigate);
+  };
+}
+
+function buildBackspaceHandler<TContext>(
+  config: KeyboardHandlerConfig<TContext>,
+): (data: string) => boolean {
+  return (data) => {
+    if ((data === "\x7f" || data === "\b") && config.onBackspace) {
+      config.onBackspace();
+      return true;
+    }
+    return false;
+  };
+}
+
+function buildTextInputHandler<TContext>(
+  config: KeyboardHandlerConfig<TContext>,
+): (data: string) => boolean {
+  return (data) => {
+    if (isPrintableChar(data) && config.onTextInput) {
+      config.onTextInput(data);
+      return true;
+    }
+    return false;
+  };
+}
+
+export function createKeyboardHandler<TContext = void>(
+  config: KeyboardHandlerConfig<TContext>,
+): (data: string) => boolean {
+  const handlers: Array<(data: string) => boolean> = [];
+
+  if (config.bindings) {
+    const ctx = config.getContext?.() as TContext;
+    const bindings = config.bindings;
+    handlers.push((data) => handleCustomBindings(data, bindings, ctx));
+  }
+
+  if (config.onEscape) handlers.push(buildEscapeHandler(config));
+  if (config.onEnter) handlers.push(buildEnterHandler(config));
+  if (config.navigation && config.onNavigate)
+    handlers.push(buildNavigationHandler(config));
+  if (config.onBackspace) handlers.push(buildBackspaceHandler(config));
+  if (config.onTextInput) handlers.push(buildTextInputHandler(config));
+
+  return (data: string): boolean => {
+    for (const handler of handlers) {
+      if (handler(data)) return true;
+    }
+    return false;
+  };
+}
+
 export const ACTION_KEYS = {
-  /** Destructive action: delete, drop, forget, discard */
   delete: Key.ctrl("d") as KeyPattern,
 } as const;

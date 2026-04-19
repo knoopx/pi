@@ -65,33 +65,49 @@ function parseSessionEntry(
 ): { sessionId: string | null; toolCalls: ToolCall[] } {
   if (!line.trim()) return { sessionId, toolCalls: [] };
   try {
-    const raw = JSON.parse(line) as unknown;
-    const entry = raw as {
-      type?: string;
-      id?: string;
-      timestamp?: string;
-      message?: { content?: unknown };
-    };
-    if (entry.type === "session" && typeof entry.id === "string")
-      return { sessionId: entry.id, toolCalls: [] };
-    if (entry.type !== "message" || !entry.message?.content || !sessionId)
-      return { sessionId, toolCalls: [] };
+    const entry = JSON.parse(line) as SessionEntry;
 
-    const contents = Array.isArray(entry.message.content)
-      ? entry.message.content
-      : [entry.message.content];
+    if (entry.type === "session" && typeof entry.id === "string") {
+      return { sessionId: entry.id, toolCalls: [] };
+    }
+
+    if (
+      entry.type !== "message" ||
+      !entry.message?.content ||
+      sessionId === null
+    ) {
+      return { sessionId, toolCalls: [] };
+    }
+
+    const contents = normalizeContents(entry.message.content);
     return {
       sessionId,
       toolCalls: collectToolCallsFromContents(
         contents,
         sessionId,
-        entry.timestamp ? new Date(entry.timestamp).getTime() : 0,
+        parseTimestamp(entry.timestamp),
       ),
     };
   } catch {
     // Skip malformed lines
   }
   return { sessionId, toolCalls: [] };
+}
+
+interface SessionEntry {
+  type?: string;
+  id?: string;
+  timestamp?: string;
+  message?: { content?: unknown };
+}
+
+function normalizeContents(content: unknown): unknown[] {
+  return Array.isArray(content) ? content : [content];
+}
+
+function parseTimestamp(timestamp: string | undefined): number {
+  if (!timestamp) return 0;
+  return new Date(timestamp).getTime();
 }
 
 async function parseToolSession(

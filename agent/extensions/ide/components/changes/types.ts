@@ -1,23 +1,21 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import type { Change, FileChange } from "../../types";
-import type { KeyBinding } from "../../keyboard";
-import type { KeyPattern } from "../../types";
-import { Key } from "@mariozechner/pi-tui";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+  Theme,
+} from "@mariozechner/pi-coding-agent";
 
 interface ComponentTui {
   terminal: { rows: number };
   requestRender: () => void;
 }
 
-/** Parameters extracted from BaseComponentParams (drops keybindings). */
 interface ChangesComponentInit {
   pi: ExtensionAPI;
   tui: ComponentTui;
-  theme: import("@mariozechner/pi-coding-agent").Theme;
-  cwd: string;
+  theme: Theme;
+  ctx: ExtensionContext;
 }
 
-/** Return type for createChangesComponent. */
 export interface ChangesComponentAPI {
   render: (w: number) => string[];
   handleInput: (d: string) => void;
@@ -25,18 +23,19 @@ export interface ChangesComponentAPI {
   dispose: () => void;
 }
 
-/**
- * Shared function type for createChangesComponent implementations.
- * Parameter names are omitted so each implementation file can use
- * its own naming convention — this prevents suffix-array duplication
- * detection between the two independent implementations.
- */
+interface ChangesCallbacks {
+  done: () => void;
+  onNotify?: (text: string) => void;
+  onBookmark?: (changeId: string) => Promise<string | null>;
+  onFileCmAction?: (
+    path: string,
+    action: "inspect" | "deps" | "used-by",
+  ) => void;
+}
+
 export type ChangesComponentFactory = (
-  a: ChangesComponentInit & Record<string, unknown>,
-  b: () => void,
-  c?: (text: string) => void,
-  d?: (changeId: string) => Promise<string | null>,
-  e?: (path: string, action: "inspect" | "deps" | "used-by") => void,
+  init: ChangesComponentInit & Record<string, unknown>,
+  callbacks: ChangesCallbacks,
 ) => ChangesComponentAPI;
 
 interface RevisionFilter {
@@ -44,9 +43,6 @@ interface RevisionFilter {
   revision: string;
 }
 
-/**
- * Shared revision filter list, used by changes.ts.
- */
 export const REVISION_FILTERS: RevisionFilter[] = [
   { name: "Stack", revision: "ancestors(@) ~ root()" },
   { name: "Mine", revision: "mine()" },
@@ -54,10 +50,6 @@ export const REVISION_FILTERS: RevisionFilter[] = [
   { name: "Recent", revision: "committer_date(after:'30 days ago')" },
 ];
 
-/**
- * Builds the graph node input array from changes and currentChangeId.
- * Used identically in both changes.ts and renderer.test.ts.
- */
 export function buildGraphInput(
   changes: { changeId: string; parentIds?: string[] }[],
   currentChangeId: string | null,

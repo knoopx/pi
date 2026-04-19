@@ -47,7 +47,7 @@ export function emptyTimeFilteredStats(): {
   };
 }
 
-export interface TimeFilteredStats {
+interface TimeFilteredStats {
   providers: Map<string, ProviderStats>;
   totals: TotalStats;
 }

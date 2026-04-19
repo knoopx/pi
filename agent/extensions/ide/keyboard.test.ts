@@ -92,7 +92,7 @@ describe("createKeyboardHandler", () => {
     });
 
     describe("when handler returns a Promise", () => {
-      it("then treats the binding as successfully handled", async () => {
+      it("then treats the binding as successfully handled", () => {
         const handler = vi
           .fn()
           .mockReturnValue(
@@ -107,7 +107,7 @@ describe("createKeyboardHandler", () => {
         expect(result).toBe(true);
       });
 
-      it("then suppresses unhandled rejections", async () => {
+      it("then suppresses unhandled rejections", () => {
         const handler = vi
           .fn()
           .mockReturnValue(Promise.reject(new Error("fail")));

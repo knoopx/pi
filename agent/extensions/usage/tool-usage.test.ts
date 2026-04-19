@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import type { Theme } from "@mariozechner/pi-coding-agent";
 import { collectToolStats } from "./tool-usage/data-collection";
 import { ToolUsageComponent } from "./tool-usage/component";
 
@@ -18,9 +19,13 @@ describe("tool-usage", () => {
   describe("ToolUsageComponent", () => {
     it("then renders without crashing", () => {
       const theme = {
-        fg: (color: string, text: string) => text,
-        bold: (text: string) => text,
-      } as any;
+        fg(_color: string, text: string) {
+          return text;
+        },
+        bold(text: string) {
+          return text;
+        },
+      } as Theme;
       const data = {
         totalSessions: 0,
         totalToolCalls: 0,

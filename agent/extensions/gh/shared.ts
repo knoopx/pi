@@ -2,7 +2,6 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   AgentToolResult,
-  AgentToolUpdateCallback,
   Theme,
   ToolRenderResultOptions,
 } from "@mariozechner/pi-coding-agent";
@@ -29,8 +28,25 @@ import { renderTextToolResult } from "../../shared/render-utils";
 import { detail, table, type Column } from "../../shared/renderers";
 
 /**
- * Common params for GitHub list tools
+ * Creates the standard "#" + title columns used by GitHub list tools.
+ * @param titleFormatter - Function that formats a row's subtitle line (after the dot+title).
  */
+export function createBasicColumns(
+  titleFormatter: (r: Record<string, string>) => string,
+): Column[] {
+  return [
+    { key: "#", align: "right", minWidth: 5 },
+    {
+      key: "title",
+      format(_v: unknown, row: Record<string, unknown>) {
+        const r = row as Record<string, string>;
+        const dot = r.state === "OPEN" ? "●" : "○";
+        return `${dot} ${r.title}\n${titleFormatter(r)}`;
+      },
+    },
+  ];
+}
+
 export function createListParamsSchema(
   description: string,
   stateValues: string[],
@@ -62,9 +78,6 @@ export function createListParamsSchema(
   });
 }
 
-/**
- * Create a standardized error result for GitHub tools
- */
 export function createErrorResult<T extends Record<string, unknown>>(
   message: string,
 ): AgentToolResult<T> {
@@ -74,9 +87,6 @@ export function createErrorResult<T extends Record<string, unknown>>(
   };
 }
 
-/**
- * Create a renderResult function that uses renderTextToolResult
- */
 export function createTextResultRender() {
   return function renderResult(
     result: AgentToolResult<unknown>,
@@ -84,22 +94,24 @@ export function createTextResultRender() {
     theme: Theme,
     _context: ToolRenderContext<unknown, unknown>,
   ) {
-    return renderTextToolResult(result, theme as any);
+    return renderTextToolResult(result, theme);
   };
 }
 
-/**
- * Wrap a tool execute handler with error handling
- */
+// eslint-disable-next-line max-params -- SDK interface signature
+type ToolExecuteFn = (
+  id: string,
+  params: Record<string, unknown>,
+  signal: AbortSignal | undefined,
+  onUpdate:
+    | ((partialResult: AgentToolResult<Record<string, unknown>>) => void)
+    | undefined,
+  ctx: ExtensionContext,
+) => Promise<AgentToolResult<Record<string, unknown>>>;
+
 function createToolExecute<T extends Record<string, unknown>>(
   handler: (params: Record<string, unknown>) => Promise<AgentToolResult<T>>,
-): (
-  _id: string,
-  params: Record<string, unknown>,
-  _signal: AbortSignal | undefined,
-  _onUpdate: ((partialResult: AgentToolResult<T>) => void) | undefined,
-  _ctx: ExtensionContext,
-) => Promise<AgentToolResult<T>> {
+): ToolExecuteFn {
   return async (
     _id: string,
     params: Record<string, unknown>,
@@ -114,9 +126,6 @@ function createToolExecute<T extends Record<string, unknown>>(
   };
 }
 
-/**
- * Options for registering a list tool
- */
 interface RegisterListToolOptions<TItem> {
   toolName: string;
   toolLabel: string;
@@ -132,9 +141,6 @@ interface RegisterListToolOptions<TItem> {
   rowMapper: (item: TItem) => Record<string, unknown>;
 }
 
-/**
- * Register a list tool with common pattern
- */
 export function registerListTool<TItem>(
   pi: ExtensionAPI,
   options: RegisterListToolOptions<TItem>,
@@ -185,9 +191,6 @@ export function registerListTool<TItem>(
   });
 }
 
-/**
- * Options for registering a view tool
- */
 interface RegisterViewToolOptions<TItem> {
   toolName: string;
   toolLabel: string;
@@ -198,9 +201,6 @@ interface RegisterViewToolOptions<TItem> {
   includeBody?: boolean;
 }
 
-/**
- * Register a view tool with common pattern
- */
 export function registerViewTool<TItem>(
   pi: ExtensionAPI,
   options: RegisterViewToolOptions<TItem>,
@@ -247,9 +247,6 @@ export function registerViewTool<TItem>(
   });
 }
 
-/**
- * Create a renderCall function for GitHub list tools
- */
 export function createListRenderCall(toolName: string) {
   return function renderCall(args: Record<string, unknown>, theme: Theme) {
     return createGithubRenderCallContent(toolName, args, theme, (a) => {
@@ -261,9 +258,6 @@ export function createListRenderCall(toolName: string) {
   };
 }
 
-/**
- * Create a renderCall function for GitHub view tools
- */
 export function createViewRenderCall(toolName: string) {
   return function renderCall(args: Record<string, unknown>, theme: Theme) {
     return createGithubRenderCallContent(toolName, args, theme, (a) => {
@@ -285,9 +279,6 @@ function createGithubRenderCallContent(
   return new Text(text, 0, 0);
 }
 
-/**
- * Create a renderCall function for GitHub create tools
- */
 function createCreateRenderCall(toolName: string) {
   return function renderCall(
     args: unknown,
@@ -301,9 +292,6 @@ function createCreateRenderCall(toolName: string) {
   };
 }
 
-/**
- * Options for registering a create tool
- */
 interface RegisterCreateToolOptions<TParams extends TSchema> {
   toolName: string;
   toolLabel: string;
@@ -319,9 +307,6 @@ interface RegisterCreateToolOptions<TParams extends TSchema> {
   successMessagePrefix: string;
 }
 
-/**
- * Execute a create tool with confirmation
- */
 async function executeCreateTool<TParams extends TSchema>(
   ctx: ExtensionContext,
   params: Static<TParams>,
@@ -361,9 +346,6 @@ async function executeCreateTool<TParams extends TSchema>(
   }
 }
 
-/**
- * Register a create tool with common pattern
- */
 export function registerCreateTool<TParams extends TSchema>(
   pi: ExtensionAPI,
   options: RegisterCreateToolOptions<TParams>,
@@ -375,6 +357,7 @@ export function registerCreateTool<TParams extends TSchema>(
     label: toolLabel,
     description: toolDescription,
     parameters: paramsSchema,
+    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _id: string,
       params: Static<TParams>,

@@ -6,13 +6,11 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { table } from "./table";
+import { table } from "./table/renderer";
 import type { Column } from "./types";
 import { detail } from "./detail";
 import { dotJoin, sectionDivider, threadSeparator, stateDot } from "./header";
 import { actionLine } from "./action";
-
-const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
 
 describe("renderer snapshots", () => {
   describe("table", () => {
@@ -26,7 +24,7 @@ describe("renderer snapshots", () => {
         { name: "Bob", score: 42 },
         { name: "Charlie", score: 7 },
       ];
-      expect(stripAnsi(table(cols, rows))).toMatchSnapshot();
+      expect(table(cols, rows)).toMatchSnapshot();
     });
 
     it("renders a table with format function and multi-line cells", () => {
@@ -44,7 +42,7 @@ describe("renderer snapshots", () => {
         { "#": "1", title: "Example", url: "https://example.com" },
         { "#": "2", title: "GitHub", url: "https://github.com" },
       ];
-      expect(stripAnsi(table(cols, rows))).toMatchSnapshot();
+      expect(table(cols, rows)).toMatchSnapshot();
     });
 
     it("renders a table with indent", () => {
@@ -53,7 +51,7 @@ describe("renderer snapshots", () => {
         { item: "Apples", qty: 5 },
         { item: "Bananas", qty: 12 },
       ];
-      expect(stripAnsi(table(cols, rows, { indent: 4 }))).toMatchSnapshot();
+      expect(table(cols, rows, { indent: 4 })).toMatchSnapshot();
     });
 
     it("renders empty table", () => {
@@ -64,25 +62,21 @@ describe("renderer snapshots", () => {
   describe("detail", () => {
     it("renders key-value pairs with right-aligned labels", () => {
       expect(
-        stripAnsi(
-          detail([
-            { label: "name", value: "express" },
-            { label: "version", value: "5.2.1" },
-            { label: "license", value: "MIT" },
-            { label: "description", value: "Fast web framework" },
-          ]),
-        ),
+        detail([
+          { label: "name", value: "express" },
+          { label: "version", value: "5.2.1" },
+          { label: "license", value: "MIT" },
+          { label: "description", value: "Fast web framework" },
+        ]),
       ).toMatchSnapshot();
     });
 
     it("renders multi-line values", () => {
       expect(
-        stripAnsi(
-          detail([
-            { label: "tags", value: "web\nhttp\nserver\nframework" },
-            { label: "author", value: "TJ Holowaychuk" },
-          ]),
-        ),
+        detail([
+          { label: "tags", value: "web\nhttp\nserver\nframework" },
+          { label: "author", value: "TJ Holowaychuk" },
+        ]),
       ).toMatchSnapshot();
     });
 

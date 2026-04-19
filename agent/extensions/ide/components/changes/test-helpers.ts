@@ -1,17 +1,25 @@
+import type { ExpectStatic } from "vitest";
 import type { ChangesState } from "./state";
 import type { Renderer } from "./renderer";
-import { calculateGraphLayout } from "../graph";
+import { calculateGraphLayout } from "../../lib/graph";
 import { buildGraphInput } from "./types";
 import {
   TestTerminal,
   createMockChange,
   createMockTheme,
-  stripAnsi,
-} from "../test-utils";
+} from "../../lib/test-utils";
 
-export { createMockChange } from "../test-utils";
+export { createMockChange } from "../../lib/test-utils";
 
-/** Build graphLayout from changes + currentChangeId */
+export function expectDefaultSelection(
+  state: ChangesState,
+  expect: ExpectStatic,
+) {
+  expect(state.selectionState.selectedIndex).toBe(0);
+  expect(state.selectionState.fileIndex).toBe(0);
+  expect(state.selectionState.diffScroll).toBe(0);
+}
+
 function buildGraphLayout(
   changes: { changeId: string; parentIds?: string[] }[],
   currentChangeId: string | null,
@@ -20,7 +28,6 @@ function buildGraphLayout(
   return calculateGraphLayout(buildGraphInput(changes, currentChangeId));
 }
 
-/** Mock change for bookmark-related tests. */
 export function featureBookmarkChange() {
   return createMockChange({
     changeId: "abc",
@@ -30,7 +37,6 @@ export function featureBookmarkChange() {
   });
 }
 
-/** Default mock change used across rendering tests. */
 export function defaultMockChange() {
   return createMockChange({
     changeId: "a",
@@ -40,21 +46,25 @@ export function defaultMockChange() {
   });
 }
 
-/** Helper to configure a state with changes and empty files/diff. */
+export function wcPrevChanges(authorPrev = "Alice") {
+  return [
+    createMockChange({
+      changeId: "wc",
+      description: "work in progress",
+      author: "Alice",
+      parentIds: ["prev"],
+    }),
+    createMockChange({
+      changeId: "prev",
+      description: "previous commit",
+      author: authorPrev,
+      parentIds: [],
+    }),
+  ];
+}
+
 export function setMockChanges(
-  state: Pick<
-    ChangesState,
-    "changes" | "selectedChange" | "currentChangeId" | "files" | "diffContent"
-  > & {
-    selectionState?: any;
-    bookmarksByChange?: Map<string, string[]>;
-    graphLayout?: unknown;
-    loadingState?: any;
-    mode?: string;
-    moveOriginalIndex?: number;
-    selectedChangeIds?: Set<string>;
-    currentFilterIndex?: number;
-  },
+  state: ChangesState,
   changes: ReturnType<typeof createMockChange>[],
   selectedIdx = 0,
 ) {
@@ -67,7 +77,6 @@ export function setMockChanges(
 
 type StateConfig = (state: ChangesState) => void;
 
-/** Set up a test terminal and configure state for rendering tests. */
 async function createRendererForTest(
   width: number,
   configure: StateConfig,
@@ -89,15 +98,6 @@ async function createRendererForTest(
 }
 
 export async function renderSnapshot(
-  width: number,
-  configure: StateConfig,
-): Promise<string[]> {
-  const renderer = await createRendererForTest(width, configure);
-  return renderer.render(width, "").map(stripAnsi);
-}
-
-/** Render without stripping ANSI — for raw styling assertions. */
-export async function renderRawSnapshot(
   width: number,
   configure: StateConfig,
 ): Promise<string[]> {

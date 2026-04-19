@@ -25,7 +25,5 @@
   ],
   "exclude": [
     "node_modules",
-    "**/shared/**",
-    "eslint.config.js"
-  ]
+    "**/shared/**"]
 }

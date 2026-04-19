@@ -1,8 +1,6 @@
 import { matchesKey } from "@mariozechner/pi-tui";
 
-/**
- * Creates a key matcher function for input handling.
- */
+
 function createKeyMatcher(
   data: string,
 ): (key: Parameters<typeof matchesKey>[1]) => boolean {
@@ -11,9 +9,7 @@ function createKeyMatcher(
     matchesKey(data, key) || normalized === key;
 }
 
-/**
- * Handles escape/q key to close the component.
- */
+
 function handleEscape(
   matches: ReturnType<typeof createKeyMatcher>,
   done: () => void,
@@ -25,9 +21,7 @@ function handleEscape(
   return false;
 }
 
-/**
- * Helper to handle common key bindings for usage components.
- */
+
 export function handleUsageInput(
   data: string,
   opts: {

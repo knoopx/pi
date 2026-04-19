@@ -2,16 +2,8 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
-import type {
-  HookEvent,
-  HookInput,
-  HooksConfig,
-  HooksGroup,
-  HookRule,
-} from "./schema";
-import type { HookVariables, HookResult, HookProcessState } from "./types";
-import { runHook } from "./hook-execution";
-import { shouldBlock } from "./blocking-checks";
+import type { HookEvent, HooksConfig } from "./schema";
+import type { HookProcessState, HookVariables } from "./types";
 import { shouldExecuteRule, processHookExecution } from "./processing";
 import {
   getInputField,
@@ -40,7 +32,7 @@ interface BlockResult {
   reason: string;
 }
 
-export async function processHooks(
+export async function runEngineHooks(
   pi: ExtensionAPI,
   config: HooksConfig,
   input: ProcessHooksInput,
@@ -51,18 +43,17 @@ export async function processHooks(
     tool: input.toolInfo?.toolName,
     cwd: input.ctx.cwd,
   };
-  const hookInput = buildHookInput(
-    input.event,
-    input.ctx,
-    input.toolInfo?.toolName,
-    input.toolInfo?.input,
-    input.toolInfo?.toolCallId,
-    input.toolInfo?.toolResponse,
-  );
+  const hookInput = buildHookInput(input.event, input.ctx, {
+    toolName: input.toolInfo?.toolName,
+    input: input.toolInfo?.input,
+    toolCallId: input.toolInfo?.toolCallId,
+    toolResponse: input.toolInfo?.toolResponse,
+  });
   const state: HookProcessState = { results: [], additionalContexts: [] };
+  const ctx = input.ctx;
 
   await processHookGroupExecution(pi, state, config, async (rule, group) => {
-    if (!(await isGroupActive(group.pattern, input.ctx.cwd))) return undefined;
+    if (!(await isGroupActive(group.pattern, ctx.cwd))) return undefined;
     if (
       !shouldExecuteRule(
         rule,
@@ -73,10 +64,15 @@ export async function processHooks(
     )
       return undefined;
 
+     
     return processHookExecution(
       pi,
-      { rule, group, ctx: input.ctx, vars, hookInput },
-      { event: input.event, state, toolName: input.toolInfo?.toolName },
+      { rule, group, ctx, vars, hookInput },
+      {
+        event: input.event,
+        state,
+        toolName: input.toolInfo?.toolName,
+      },
     );
   });
 

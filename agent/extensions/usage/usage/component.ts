@@ -1,9 +1,9 @@
 import { truncateToWidth } from "@mariozechner/pi-tui";
-import type { Theme as ThemeType } from "../shared/types";
+import type { Theme } from "../shared/types";
 import type { BaseStats } from "../shared/types";
 import type { UsageData, TabName, ProviderStats } from "./types";
 import { handleUsageInput } from "../shared/input-handling";
-import { padRight, padLeft } from "../shared/formatting";
+import { padRight, padLeft } from "../shared/padding";
 import {
   NAME_COL_WIDTH,
   DATA_COLUMNS,
@@ -29,12 +29,12 @@ export class UsageComponent implements IUsageComponent {
   selectedIndex = 0;
   expanded = new Set<string>();
   providerOrder: string[] = [];
-  private theme: ThemeType;
+  private theme: Theme;
   private requestRender: () => void;
   private done: () => void;
 
   constructor(
-    theme: ThemeType,
+    theme: Theme,
     data: UsageData,
     requestRender: () => void,
     done: () => void,

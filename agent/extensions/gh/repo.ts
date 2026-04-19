@@ -12,9 +12,6 @@ import type { Column } from "../../shared/renderers";
 import { ghCmd, ghCmdJson } from "./utils";
 import { createErrorResult, createTextResultRender } from "./shared";
 
-/**
- * Create a renderCall function for repo tools with optional owner/repo/path
- */
 function createRepoRenderCall(toolName: string) {
   return (args: Record<string, unknown>, theme: Theme): Text => {
     const t = theme as {
@@ -33,9 +30,6 @@ function createRepoRenderCall(toolName: string) {
   };
 }
 
-/**
- * Create a successful result with formatted output
- */
 function createRepoResult<Details extends Record<string, unknown>>(
   output: string,
   details: Details,
@@ -46,9 +40,6 @@ function createRepoResult<Details extends Record<string, unknown>>(
   };
 }
 
-/**
- * Create an error result from an error
- */
 function createRepoErrorResult(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   return createErrorResult(message);
@@ -76,7 +67,7 @@ interface FileContentResult extends Record<string, unknown> {
   size?: number;
 }
 
-async function getRepoContents(
+function getRepoContents(
   owner: string,
   repo: string,
   path = "",
@@ -99,36 +90,61 @@ async function getFileContent(
   filePath: string,
   ref: string | undefined,
 ): Promise<FileContentResult> {
-  let endpoint = `/repos/${owner}/${repo}/contents/${filePath}`;
-  if (ref != null && ref.length > 0)
-    endpoint += `?ref=${encodeURIComponent(ref)}`;
-  const args = ["api", endpoint];
+  const endpoint = buildContentsEndpoint(owner, repo, filePath, ref);
+  const result = await ghCmd(["api", endpoint]);
 
-  const result = await ghCmd(args);
+  if (result.exitCode !== 0)
+    throwFileError({ result, owner, repo, filePath, ref });
 
-  if (result.exitCode !== 0) {
-    const errorMessage = result.stderr || result.stdout || "Unknown error";
-    if (errorMessage.includes("404") || errorMessage.includes("Not Found"))
-      throw new Error(
-        `File not found: ${owner}/${repo}/${filePath}${ref ? ` at ref ${ref}` : ""}`,
-      );
-    throw new Error(errorMessage);
-  }
-
-  const data: GHFile = JSON.parse(result.stdout);
-
-  if (!data.content || !data.encoding)
-    throw new Error(
-      `File is binary or too large to display. File size: ${data.size} bytes`,
-    );
+  const data = JSON.parse(result.stdout) as GHFile;
+  ensureDecodable(data);
 
   return {
     repo: `${owner}/${repo}`,
     path: filePath,
-    content: Buffer.from(data.content, "base64").toString("utf-8"),
+    content: Buffer.from(data.content ?? "", "base64").toString("utf-8"),
     type: data.type === "file" ? "file" : "directory",
     size: data.size,
   };
+}
+
+function buildContentsEndpoint(
+  owner: string,
+  repo: string,
+  filePath: string,
+  ref: string | undefined,
+): string {
+  let endpoint = `/repos/${owner}/${repo}/contents/${filePath}`;
+  if (ref) endpoint += `?ref=${encodeURIComponent(ref)}`;
+  return endpoint;
+}
+
+function throwFileError(opts: {
+  result: { exitCode: number; stderr: string; stdout: string };
+  owner: string;
+  repo: string;
+  filePath: string;
+  ref: string | undefined;
+}): never {
+  const message = opts.result.stderr || opts.result.stdout || "Unknown error";
+  if (isNotFound(message)) {
+    throw new Error(
+      `File not found: ${opts.owner}/${opts.repo}/${opts.filePath}${opts.ref ? ` at ref ${opts.ref}` : ""}`,
+    );
+  }
+  throw new Error(message);
+}
+
+function isNotFound(message: string): boolean {
+  return message.includes("404") || message.includes("Not Found");
+}
+
+function ensureDecodable(data: GHFile): void {
+  if (!data.content || !data.encoding) {
+    throw new Error(
+      `File is binary or too large to display. File size: ${data.size} bytes`,
+    );
+  }
 }
 
 interface ProcessRepoItemOpts {
@@ -356,6 +372,7 @@ Examples:
 - gh-repo-contents(owner='microsoft', repo='vscode')`,
     parameters: GetRepoContentsParams,
 
+    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
       params: GetRepoContentsParamsType,
@@ -395,6 +412,7 @@ Examples:
 - gh-file-content(owner='pytorch', repo='pytorch', path='setup.py', ref='main')`,
     parameters: GetFileContentParams,
 
+    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
       params: GetFileContentParamsType,
@@ -440,6 +458,7 @@ Examples:
 - gh-list-repo-files(owner='microsoft', repo='vscode', path='src', maxFiles=100)`,
     parameters: ListRepoFilesParams,
 
+    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
       params: ListRepoFilesParamsType,

@@ -1,7 +1,7 @@
 import { truncateToWidth } from "@mariozechner/pi-tui";
-import type { Theme as ThemeType } from "../shared/types";
+import type { Theme } from "../shared/types";
 import { handleUsageInput } from "../shared/input-handling";
-import { formatNumber } from "../shared/formatting";
+import { formatNumber } from "../shared/formatters";
 import type { ToolStats, ToolTabName } from "./types";
 
 const TOOL_TAB_LABELS: Record<ToolTabName, string> = {
@@ -16,12 +16,12 @@ class ToolUsageComponent {
   private activeTab: ToolTabName = "byTool";
   private data: ToolStats;
   private selectedIndex = 0;
-  private theme: ThemeType;
+  private theme: Theme;
   private requestRender: () => void;
   private done: () => void;
 
   constructor(
-    theme: ThemeType,
+    theme: Theme,
     data: ToolStats,
     requestRender: () => void,
     done: () => void,

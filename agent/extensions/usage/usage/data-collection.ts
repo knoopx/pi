@@ -9,8 +9,7 @@ import {
   emptyModelStats,
   accumulateStats,
 } from "./types";
-import type { UsageData, TimeFilteredStats, TabName } from "./types";
-import type { BaseStats } from "../shared/types";
+import type { UsageData, TabName } from "./types";
 
 export function getSessionsDir(): string {
   const agentDir =
@@ -93,29 +92,76 @@ function extractMessageFromEntry(
   if (!validateMessage(msg)) return null;
 
   const { usage } = msg;
-  const input = Number(usage.input) || 0;
-  const output = Number(usage.output) || 0;
-  const cacheRead = Number(usage.cacheRead) || 0;
-  const cacheWrite = Number(usage.cacheWrite) || 0;
-  const fallbackTs = entry.timestamp ? new Date(entry.timestamp).getTime() : 0;
-  const timestamp =
-    Number(msg.timestamp) || (Number.isNaN(fallbackTs) ? 0 : fallbackTs);
+  const tokens = extractTokenCounts(
+    usage as unknown as Record<string, unknown>,
+  );
+  const timestamp = resolveTimestamp(entry, msg);
 
-  const totalTokens = input + output + cacheRead + cacheWrite;
-  const hash = `${timestamp}:${totalTokens}`;
-  if (seenHashes.has(hash)) return null;
-  seenHashes.add(hash);
+  if (isDuplicate(tokens, timestamp, seenHashes)) return null;
+  markSeen(tokens, timestamp, seenHashes);
 
   return {
     provider: msg.provider,
     model: msg.model,
     cost: usage.cost.total || 0,
-    input,
-    output,
-    cacheRead,
-    cacheWrite,
+    input: tokens.input,
+    output: tokens.output,
+    cacheRead: tokens.cacheRead,
+    cacheWrite: tokens.cacheWrite,
     timestamp,
   };
+}
+
+function extractTokenCounts(usage: Record<string, unknown>): {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+} {
+  return {
+    input: Number(usage.input) || 0,
+    output: Number(usage.output) || 0,
+    cacheRead: Number(usage.cacheRead) || 0,
+    cacheWrite: Number(usage.cacheWrite) || 0,
+  };
+}
+
+function resolveTimestamp(entry: FileEntry, msg: AssistantMessage): number {
+  const msgTs = Number(msg.timestamp);
+  if (msgTs) return msgTs;
+  if (!entry.timestamp) return 0;
+  const fallbackTs = new Date(entry.timestamp).getTime();
+  return Number.isNaN(fallbackTs) ? 0 : fallbackTs;
+}
+
+function isDuplicate(
+  tokens: {
+    input: number;
+    output: number;
+    cacheRead: number;
+    cacheWrite: number;
+  },
+  timestamp: number,
+  seenHashes: Set<string>,
+): boolean {
+  const totalTokens =
+    tokens.input + tokens.output + tokens.cacheRead + tokens.cacheWrite;
+  return seenHashes.has(`${timestamp}:${totalTokens}`);
+}
+
+function markSeen(
+  tokens: {
+    input: number;
+    output: number;
+    cacheRead: number;
+    cacheWrite: number;
+  },
+  timestamp: number,
+  seenHashes: Set<string>,
+): void {
+  const totalTokens =
+    tokens.input + tokens.output + tokens.cacheRead + tokens.cacheWrite;
+  seenHashes.add(`${timestamp}:${totalTokens}`);
 }
 
 async function parseSessionFile(
@@ -125,30 +171,39 @@ async function parseSessionFile(
 ): Promise<{ sessionId: string; messages: SessionMessage[] } | null> {
   try {
     const content = await readFile(filePath, "utf8");
-    if (signal?.aborted) return null;
+    if (checkSignalAborted(signal)) return null;
     const lines = content.trim().split("\n");
-    const messages: SessionMessage[] = [];
-    let sessionId = "";
-
-    for (let i = 0; i < lines.length; i++) {
-      if (signal?.aborted) return null;
-      if (i % 500 === 0)
-        await new Promise<void>((resolve) => setImmediate(resolve));
-      const result = await parseSessionLine(lines[i], seenHashes);
-      if (result.sessionId) sessionId = result.sessionId;
-      if (result.message) messages.push(result.message);
-    }
-
-    return sessionId ? { sessionId, messages } : null;
+    const result = await parseSessionLines(lines, seenHashes, signal);
+    return result;
   } catch {
     return null;
   }
 }
 
-async function parseSessionLine(
+async function parseSessionLines(
+  lines: string[],
+  seenHashes: Set<string>,
+  signal?: AbortSignal,
+): Promise<{ sessionId: string; messages: SessionMessage[] } | null> {
+  const messages: SessionMessage[] = [];
+  let sessionId = "";
+
+  for (let i = 0; i < lines.length; i++) {
+    if (checkSignalAborted(signal)) return null;
+    if (i % 500 === 0)
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    const result = await parseSessionLine(lines[i], seenHashes);
+    if (result.sessionId) sessionId = result.sessionId;
+    if (result.message) messages.push(result.message);
+  }
+
+  return sessionId ? { sessionId, messages } : null;
+}
+
+function parseSessionLine(
   line: string,
   seenHashes: Set<string>,
-): Promise<{ sessionId?: string; message?: SessionMessage }> {
+): { sessionId?: string; message?: SessionMessage } {
   if (!line.trim()) return {};
   try {
     const raw = JSON.parse(line) as unknown;
@@ -229,10 +284,9 @@ function processMessage(
   const sessionContributed = { today: false, thisWeek: false, allTime: false };
 
   for (const period of periods) {
-    const rawData = opts.data as unknown as Record<string, unknown>;
-    const raw = rawData[period];
+    const raw = opts.data[period];
     if (!raw || typeof raw !== "object" || raw === null) continue;
-    const stats = raw as TimeFilteredStats;
+    const stats = raw;
     let providerStats = stats.providers.get(msg.provider);
     if (!providerStats) {
       providerStats = emptyProviderStats();
@@ -265,32 +319,54 @@ async function processSessionFile(
 ): Promise<void> {
   if (checkSignalAborted(signal)) return;
   const parsed = await parseSessionFile(filePath, opts.seenHashes, signal);
-  if (checkSignalAborted(signal)) return;
   if (!parsed) return;
 
+  const contributed = aggregateSessionContributions(parsed, opts, signal);
+  updateSessionCounts(opts.data, contributed);
+}
+
+function aggregateSessionContributions(
+  parsed: { sessionId: string; messages: SessionMessage[] },
+  opts: {
+    data: UsageData;
+    todayMs: number;
+    weekStartMs: number;
+  },
+  signal?: AbortSignal,
+): { today: boolean; thisWeek: boolean; allTime: boolean } {
   const { sessionId, messages } = parsed;
-  const sessionContributed = {
-    today: false,
-    thisWeek: false,
-    allTime: false,
-  };
+  const contributed = { today: false, thisWeek: false, allTime: false };
 
   for (const msg of messages) {
-    if (checkSignalAborted(signal)) return;
-    const contributed = processMessage(msg, {
+    if (checkSignalAborted(signal)) return contributed;
+    const msgContributed = processMessage(msg, {
       sessionId,
       data: opts.data,
       todayMs: opts.todayMs,
       weekStartMs: opts.weekStartMs,
     });
-    if (contributed.today) sessionContributed.today = true;
-    if (contributed.thisWeek) sessionContributed.thisWeek = true;
-    if (contributed.allTime) sessionContributed.allTime = true;
+    mergeContributions(contributed, msgContributed);
   }
 
-  if (sessionContributed.today) opts.data.today.totals.sessions++;
-  if (sessionContributed.thisWeek) opts.data.thisWeek.totals.sessions++;
-  if (sessionContributed.allTime) opts.data.allTime.totals.sessions++;
+  return contributed;
+}
+
+function mergeContributions(
+  target: { today: boolean; thisWeek: boolean; allTime: boolean },
+  source: { today: boolean; thisWeek: boolean; allTime: boolean },
+): void {
+  if (source.today) target.today = true;
+  if (source.thisWeek) target.thisWeek = true;
+  if (source.allTime) target.allTime = true;
+}
+
+function updateSessionCounts(
+  data: UsageData,
+  contributed: { today: boolean; thisWeek: boolean; allTime: boolean },
+): void {
+  if (contributed.today) data.today.totals.sessions++;
+  if (contributed.thisWeek) data.thisWeek.totals.sessions++;
+  if (contributed.allTime) data.allTime.totals.sessions++;
 }
 
 export async function collectUsageData(

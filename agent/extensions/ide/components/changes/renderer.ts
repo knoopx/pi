@@ -1,15 +1,12 @@
-/**
- * Renderer — split-panel rendering for the changes browser.
- * Composes ChangeListPane, FileListPane, and DiffPane into a split layout.
- */
 
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import type { ChangesState } from "./state";
-import { calculateDimensions, renderSplitPanel } from "../split-panel";
+import { calculateDimensions } from "../../lib/split-panel/layout";
+import { renderSplitPanel } from "../../lib/split-panel/border";
 import { REVISION_FILTERS } from "./types";
-import { ChangeListPane } from "../split-panel/change-list-pane";
-import { FileListPane } from "../split-panel/file-list-pane";
-import { DiffPane } from "../split-panel/diff-pane";
+import { ChangeListPane } from "../../lib/split-panel/change-list-pane";
+import { FileListPane } from "../../lib/split-panel/file-list-pane";
+import { DiffPane } from "../../lib/split-panel/diff-pane";
 import stringWidth from "string-width";
 
 export class Renderer {
