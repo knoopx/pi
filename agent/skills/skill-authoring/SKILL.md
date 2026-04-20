@@ -1,55 +1,91 @@
 ---
 name: skill-authoring
-description: "Writes effective pi skills with proper structure, concise content, and progressive disclosure. Use when creating new skills, improving existing skills, or reviewing skill quality."
+description: "Creates pi skills that teach the agent how to perform one or more use cases within a single domain. Use when creating or improving a pi skill."
 ---
 
-# Skill Authoring Best Practices
+# Pi Skills
 
-Create or refactor pi skills following the canonical spec at `agent/skills/pi/references/skills.md`.
+Skills are Markdown files (`SKILL.md`) that teach the agent how to do something it doesn't know by default. Each skill covers one or more use cases within a single domain — e.g., "NixOS configuration management" with sub-areas for system updates, home manager, and package search. The agent loads the full file when the user's request matches the trigger description.
 
-## Workflow
+## File Layout
 
-1. **Clarify scope**: Define what the skill does and the trigger phrases that load it. Write a one-sentence description starting with a verb (e.g., "Manages containers..." not "A skill for managing containers").
-2. **Plan resources**: Decide content placement:
-   - **SKILL.md**: Overview, decision points, minimal workflow instructions (target: under 80 lines of body content)
-   - **references/**: Deep guides, specs, domain docs read on demand
-   - **scripts/**: Deterministic code that should not be rewritten each invocation
-   - **assets/**: Templates, logos, files used in outputs
-3. **Write the skill**:
-   - Add frontmatter with `name` (kebab-case) and `description` (quoted string, starts with verb, includes "Use when..." clause)
-   - Write concise instructions with concrete examples — one inline example per key concept
-   - Link to references for deep content (one level deep only)
-4. **Validate**: Check against the criteria below, then test on a real task
+```
+my-skill/
+├── SKILL.md              # Frontmatter + workflow instructions (keep under 120 lines)
+├── references/           # Deep docs loaded on demand (API specs, advanced patterns)
+└── scripts/              # Helper scripts the agent runs directly
+```
 
-## Frontmatter Requirements
+Assets go in `assets/` for templates and files the agent uses in outputs. Scripts in `scripts/` are deterministic code — not rewritten each invocation.
+
+## Frontmatter
 
 ```yaml
 ---
-name: my-skill-name # kebab-case, matches directory name
-description: "Performs X by doing Y. Use when Z happens or user asks for W."
+name: my-skill-name # kebab-case, matches directory name exactly (max 64 chars)
+description: "Extracts text from PDF files using pdf-parse. Use when working with PDF documents."
 ---
 ```
 
-- `name`: Must be kebab-case and match the skill directory name
-- `description`: Quoted string. First sentence describes what the skill does (verb-first). Second sentence starts with "Use when" to define trigger conditions.
+- `name`: lowercase letters, numbers, hyphens only. No leading/trailing hyphens, no consecutive hyphens.
+- `description`: a quoted string with two sentences. First starts with a verb and describes what the skill does. Second starts with "Use when" to define trigger conditions.
+
+## Body Structure (under 120 lines)
+
+```markdown
+# Skill Name
+
+One-line summary of the domain this skill covers.
+
+## Workflow / Commands
+
+Step-by-step examples or command reference with inline code snippets.
+
+## Details
+
+Common variations, edge cases, or tricky parts specific to this domain.
+
+## Constraints / Best Practices
+
+Rules, gotchas, and things the agent must do (or not do).
+
+See [deep reference](references/DEEP.md) for API specs and advanced usage.
+```
+
+- **Workflow/Commands**: numbered steps with concrete inline examples — command, code snippet, or config.
+- **Details**: short context for variations on the main use cases.
+- Link to `references/` for anything deep. One level of linking only.
+
+## Examples from Existing Skills
+
+**Good — focused domain, multiple use cases:**
+
+```yaml
+# nh: one domain (Nix operations), three sub-domains (system updates, home manager, package search)
+description: "Switches NixOS/Home Manager configurations, cleans old generations, and performs system maintenance. Use when running os/home switch, pruning the Nix store, or managing system generations."
+```
+
+**Good — single use case within a domain:**
+
+```yaml
+# transcribe-audio: one domain (audio transcription), one primary use case
+description: "Transcribes audio files to text using whisper-cpp. Use when converting speech to text, transcribing podcasts, lectures, or meetings."
+```
 
 ## Validation Checklist
 
-Before finishing, verify every item:
-
-- [ ] `name` is kebab-case and matches directory name
+- [ ] `name` is kebab-case and matches the directory name exactly
 - [ ] `description` is a quoted string with verb-first sentence + "Use when..." clause
+- [ ] Body is under 120 lines (move excess to `references/`)
+- [ ] At least one concrete inline example per key concept
 - [ ] No duplicated content between SKILL.md and references
-- [ ] Body is under 80 lines (move excess to `references/`)
 - [ ] All file links resolve to existing paths
-- [ ] At least one concrete inline example (command, code snippet, or config)
-- [ ] No explanations of concepts the agent already knows
 - [ ] Workflow steps have explicit outputs or validation checkpoints
 
-## Red Flags to Fix
+## Common Mistakes
 
-- Duplicate information between SKILL.md and references — deduplicate, keep detail in references
-- Long explanations of obvious concepts — delete or move to references
-- Extra docs (README, changelog) that the agent will never read — remove
-- Description using `>` chevron instead of quoted string — convert to `"quoted"`
-- Missing "Use when..." clause in description — add trigger conditions
+- Description uses `>` chevron instead of `"quoted"` — convert to quoted string
+- Missing "Use when..." clause — add trigger conditions
+- Duplicate content between SKILL.md and references — keep detail only in references
+- Long explanations of concepts the agent already knows — delete them
+- Extra files the agent never reads (README, changelog) — remove them
