@@ -1,20 +1,18 @@
 {
-  "lastChangelogVersion": "0.67.68",
+  "lastChangelogVersion": "0.70.2",
   "defaultProvider": "local",
-  "defaultModel": "AesSedai/Qwen3.6-35B-A3B-GGUF",
+  "defaultModel": "unsloth/Qwen3.6-27B-GGUF",
   "theme": "custom",
   "enabledModels": [
     "github-copilot/grok-code-fast-1",
     "github-copilot/gpt-5.4",
     "github-copilot/claude-opus-4.6",
-    "local/unsloth/Qwen3.5-27B-GGUF",
     "zai-coding-plan/glm-5.1",
-    "zai-coding-plan/glm-5-turbo",
     "local/AesSedai/Qwen3.6-35B-A3B-GGUF",
-    "local/mudler/Qwen3.6-35B-A3B-APEX-GGUF"
+    "local/unsloth/Qwen3.6-27B-GGUF"
   ],
   "hideThinkingBlock": false,
-  "defaultThinkingLevel": "high",
+  "defaultThinkingLevel": "medium",
   "branchSummary": {
     "skipPrompt": true
   },
@@ -50,6 +48,9 @@
     ]
   },
   "guardrails": {
-    "enabled": false
+    "enabled": true
+  },
+  "notification": {
+    "tts": true
   }
 }

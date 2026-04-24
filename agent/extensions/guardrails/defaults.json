@@ -57,6 +57,12 @@
         "pattern": "nix ? . *",
         "action": "block",
         "reason": "`.` without `path:` prefix only includes tracked files. Use `path:.` instead (read skill: nix-flakes)"
+      },
+      {
+        "context": "command",
+        "pattern": "{nix-hash,nix-prefetch-url} *",
+        "action": "block",
+        "reason": "Do not pre-compute hashes. Set hash to `\"\"` and let the build report the correct one via `got:` errors (read skill: nix)"
       }
     ]
   },
@@ -83,13 +89,6 @@
     "group": "permission-gate",
     "pattern": "*",
     "rules": [
-      {
-        "context": "command",
-        "pattern": "rm *",
-        "scope": "external",
-        "action": "block",
-        "reason": "permanent file deletion on external files. Use `trash` instead for recoverable removal"
-      },
       {
         "context": "command",
         "pattern": "sudo *",
@@ -289,19 +288,6 @@
         "pattern": "gh {repo delete,repo archive,repo rename,release delete,issue delete,gist delete,run delete,label delete,secret delete,variable delete} *",
         "action": "block",
         "reason": "you are not allowed to manage github resources"
-      }
-    ]
-  },
-  {
-    "group": "data-exfiltration",
-    "pattern": "*",
-    "rules": [
-      {
-        "context": "command",
-        "pattern": "curl *",
-        "includes": "* {-X POST,-X PUT,-X PATCH,--data,--data-raw,--data-binary,--data-urlencode,-d ,-F ,--form,--upload-file} *",
-        "action": "confirm",
-        "reason": "curl is sending data to an external server. Verify the destination and payload"
       }
     ]
   }

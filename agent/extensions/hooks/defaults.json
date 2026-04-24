@@ -29,11 +29,11 @@
   },
   {
     "group": "eslint",
-    "pattern": "eslint.config.{js,mjs,cjs,ts,mts,cts}",
+    "pattern": "eslint.config.*",
     "hooks": [
       {
-        "event": "agent_end",
-        "command": "bunx eslint .",
+        "event": "tool_result",
+        "command": "bunx eslint \"%file%\""",
         "timeout": 120000,
         "notify": true
       }
