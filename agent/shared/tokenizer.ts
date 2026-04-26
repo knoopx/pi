@@ -30,14 +30,26 @@ export function tokenizeCommand(command: string): string[][] {
     return parts.length > 0 ? [parts] : [];
   }
 
+  const SEGMENT_SPLITTERS = new Set(["||", "&&", ";"]);
   const segments: string[][] = [];
   let current: string[] = [];
 
   for (const token of tokens) {
-    if (typeof token === "object" && token !== null && "op" in token) {
-      if (current.length > 0) {
-        segments.push(normalizeSegment(current));
-        current = [];
+    if (
+      typeof token === "object" &&
+      token !== null &&
+      "op" in token &&
+      typeof token.op === "string"
+    ) {
+      // Treat `|` as a literal token (patterns can match cross-pipeline).
+      // Split on `||`, `&&`, `;` only.
+      if (SEGMENT_SPLITTERS.has(token.op)) {
+        if (current.length > 0) {
+          segments.push(normalizeSegment(current));
+          current = [];
+        }
+      } else {
+        current.push(token.op);
       }
     } else if (typeof token === "string") current.push(token);
   }
