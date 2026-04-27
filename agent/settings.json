@@ -1,16 +1,8 @@
 {
-  "lastChangelogVersion": "0.70.2",
+  "lastChangelogVersion": "0.70.6",
   "defaultProvider": "local",
-  "defaultModel": "unsloth/Qwen3.6-27B-GGUF",
+  "defaultModel": "Qwen3.6-27B",
   "theme": "custom",
-  "enabledModels": [
-    "github-copilot/grok-code-fast-1",
-    "github-copilot/gpt-5.4",
-    "github-copilot/claude-opus-4.6",
-    "zai-coding-plan/glm-5.1",
-    "local/AesSedai/Qwen3.6-35B-A3B-GGUF",
-    "local/unsloth/Qwen3.6-27B-GGUF"
-  ],
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "medium",
   "branchSummary": {
