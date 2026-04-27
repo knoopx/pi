@@ -81,6 +81,14 @@ const defaults: HooksConfig = [
         timeout: 5000,
         notify: false,
       },
+      {
+        event: "tool_result",
+        context: "file_name",
+        pattern: "*.nix",
+        command: 'nix-instantiate --parse "%file%"',
+        timeout: 30000,
+        notify: true,
+      },
     ],
   },
   {
