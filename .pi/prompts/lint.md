@@ -2,7 +2,7 @@ Run ESLint on all extensions in parallel and parse results with jq:
 
 ```bash
 find agent/extensions -maxdepth 1 -mindepth 1 -type d -print0 | \
-  xargs -0 -P 0 -I{} sh -c '(cd "{}" && bun lint --format json --output-file /dev/stdout 2>/dev/null)' | \
+  xargs -0 -P 0 -I{} sh -c '(cd "{}" && bun lint --fix --format json --output-file /dev/stdout 2>/dev/null)' | \
   jq -r '.[] | .filePath as $fp | .messages[]? | "\($fp):\(.line):\(.column) \(.message)"'
 ```
 

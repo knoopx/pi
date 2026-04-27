@@ -22,7 +22,7 @@ interface ReadParams {
 }
 
 // pi framework requires 5-arg handler signature
-/* eslint-disable max-params */
+ 
 export function createReadExecute(
   orig: ToolExecuteFn,
 ): WrappedToolHandler<ReadParams> {
@@ -51,7 +51,7 @@ export function createReadExecute(
 
   return handler as WrappedToolHandler<ReadParams>;
 }
-/* eslint-enable max-params */
+ 
 
 function findImageBlock(
   content: (TextContent | ImageContent)[] | undefined,

@@ -1,3 +1,13 @@
-import { config as antislopConfig } from "eslint-antislop";
+import ts from "typescript-eslint";
 
-export default antislopConfig;
+export default ts.config(
+  { ignores: ["dist/**", "node_modules/**"] },
+  ...ts.configs.recommendedTypeChecked,
+  {
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+      },
+    },
+  },
+);

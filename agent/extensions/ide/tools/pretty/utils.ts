@@ -7,7 +7,7 @@ import { shortPath } from "../terminal-utils";
 // ─── Execute wrapper factory ──────────────────────────────────────────────
 // The pi framework calls tool execute handlers with 5 arguments.
 // These types and the handler below match that external contract.
-/* eslint-disable max-params -- pi framework requires 5-arg handler signature */
+ 
 
 export type ToolExecuteFn = (
   tid: string,
@@ -60,7 +60,7 @@ export function createExecuteWrapper<Params>(
     return handler as WrappedToolHandler<Params>;
   };
 }
-/* eslint-enable max-params */
+ 
 
 export function extractTextContent(
   content: AgentToolResult<unknown>["content"],
