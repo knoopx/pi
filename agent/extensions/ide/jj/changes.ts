@@ -1,8 +1,9 @@
-
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { Change } from "../lib/types";
 import { sanitizeDescription, parseStdoutLines } from "./core";
 
+const CHANGE_ID_TEMPLATE =
+  'change_id ++ coalesce(if(divergent, "/" ++ stringify(change_offset)), "")';
 
 export async function loadChanges(
   pi: ExtensionAPI,
@@ -17,7 +18,7 @@ export async function loadChanges(
       revision,
       "--no-graph",
       "-T",
-      'change_id.short() ++ "\\t" ++ commit_id.short() ++ "\\t" ++ if(empty, "empty", "changed") ++ "\\t" ++ if(immutable, "immutable", "mutable") ++ "\\t" ++ author.name() ++ "\\t" ++ author.timestamp().format("%Y-%m-%d %H:%M") ++ "\\t" ++ separate(",", parents.map(|p| p.change_id().short())) ++ "\\t" ++ description.first_line() ++ "\\n"',
+      `${CHANGE_ID_TEMPLATE} ++ "\\t" ++ commit_id.short() ++ "\\t" ++ if(empty, "empty", "changed") ++ "\\t" ++ if(immutable, "immutable", "mutable") ++ "\\t" ++ author.name() ++ "\\t" ++ author.timestamp().format("%Y-%m-%d %H:%M") ++ "\\t" ++ separate(",", parents.map(|p| p.change_id() ++ coalesce(if(p.divergent(), "/" ++ stringify(p.change_offset())), ""))) ++ "\\t" ++ description.first_line() ++ "\\n"`,
     ],
     { cwd },
   );
@@ -49,14 +50,13 @@ export async function loadChanges(
   });
 }
 
-
 export async function getCurrentChangeIdShort(
   pi: ExtensionAPI,
   cwd: string,
 ): Promise<string | null> {
   const result = await pi.exec(
     "jj",
-    ["log", "-r", "@", "--no-graph", "-T", 'change_id.short() ++ "\\n"'],
+    ["log", "-r", "@", "--no-graph", "-T", `${CHANGE_ID_TEMPLATE} ++ "\\n"`],
     { cwd },
   );
 
@@ -65,7 +65,6 @@ export async function getCurrentChangeIdShort(
   const changeId = result.stdout.trim();
   return changeId || null;
 }
-
 
 export async function hasFileChanges(
   pi: ExtensionAPI,
@@ -87,7 +86,6 @@ export async function hasFileChanges(
   return result.stdout.trim() === "changed";
 }
 
-
 export async function createNewChange(
   pi: ExtensionAPI,
   cwd: string,
@@ -105,7 +103,7 @@ export async function createNewChange(
   if (result.code === 0) {
     const changeResult = await pi.exec(
       "jj",
-      ["log", "-r", "@", "--no-graph", "-T", 'change_id.short() ++ "\n"'],
+      ["log", "-r", "@", "--no-graph", "-T", `${CHANGE_ID_TEMPLATE} ++ "\n"`],
       { cwd },
     );
     if (changeResult.code === 0) {
@@ -146,7 +144,7 @@ export async function getVcsLabel(
   // Fall back to change ID
   const changeResult = await pi.exec(
     "jj",
-    ["log", "-r", "@", "--no-graph", "-T", 'change_id.short() ++ "\\n"'],
+    ["log", "-r", "@", "--no-graph", "-T", `${CHANGE_ID_TEMPLATE} ++ "\\n"`],
     { cwd },
   );
 
