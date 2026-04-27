@@ -9,7 +9,7 @@ import {
   formatTokensPerSecond,
   formatAggregateOutput,
 } from "./index";
-import type { AggregateStats } from "./index";
+import type { AgentRunStats } from "./index";
 
 function createUsage(partial: Partial<Usage>): Usage {
   const cost = {
@@ -820,8 +820,8 @@ describe("Turn Stats Extension Integration", () => {
   });
 
   function makeAggregateStats(
-    overrides: Partial<AggregateStats> = {},
-  ): AggregateStats {
+    overrides: Partial<AgentRunStats> = {},
+  ): AgentRunStats {
     return {
       turns: 1,
       totalOutputTokens: 500,
@@ -836,11 +836,12 @@ describe("Turn Stats Extension Integration", () => {
         cacheWrite: 0,
         total: 0.03,
       },
+      totalGenerationMs: 0,
       ...overrides,
     };
   }
 
-  const noCost: AggregateStats["totalCost"] = {
+  const noCost: AgentRunStats["totalCost"] = {
     input: 0,
     output: 0,
     cacheRead: 0,
