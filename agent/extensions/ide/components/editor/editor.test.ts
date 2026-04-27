@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { Editor } from "./editor";
 
+const SNAPSHOT_CONTENT = `function hello(name: string): string {
+  const greeting = "Hello, " + name;
+  return greeting;
+}`;
 
 function setupUndoState(): Editor {
   const editor = new Editor("hello");
@@ -492,6 +496,21 @@ describe("Editor", () => {
         expect(editor.undo()).toBe(false);
       });
     });
+
+    describe("when setting multiline TypeScript content", () => {
+      it("then produces expected line structure", () => {
+        const editor = new Editor(SNAPSHOT_CONTENT);
+
+        expect(editor.getLines()).toEqual([
+          "function hello(name: string): string {",
+          '  const greeting = "Hello, " + name;',
+          "  return greeting;",
+          "}",
+        ]);
+        expect(editor.getLines().length).toBe(4);
+        expect(editor.getContent()).toMatchSnapshot();
+      });
+    });
   });
 
   describe("given scroll adjustment", () => {
@@ -503,6 +522,79 @@ describe("Editor", () => {
         expect(editor.getTopLine()).toBe(0);
 
         editor.setContent(lines(20));
+      });
+    });
+  });
+
+  describe("given multiline operations", () => {
+    describe("when inserting text across multiple lines", () => {
+      it("then produces correct result", () => {
+        const editor = new Editor("line1\nline2\nline3");
+        editor.setCursor(1, 0);
+        editor.insertText("inserted");
+
+        expect(editor.getLines()).toEqual(["line1", "insertedline2", "line3"]);
+        expect(editor.getContent()).toMatchSnapshot();
+      });
+    });
+
+    describe("when deleting a line in the middle", () => {
+      it("then joins remaining lines correctly", () => {
+        const editor = new Editor("a\nb\nc\nd");
+        editor.setCursor(2, 0);
+        editor.deleteLine();
+
+        expect(editor.getLines()).toEqual(["a", "b", "d"]);
+        expect(editor.getContent()).toMatchSnapshot();
+      });
+    });
+
+    describe("when selecting and replacing multiline text", () => {
+      it("then replaces correctly", () => {
+        const editor = new Editor("hello\nworld\nfoo");
+        editor.setSelection({ line: 0, col: 2 }, { line: 1, col: 3 });
+        editor.replaceSelection("replaced");
+
+        expect(editor.getContent()).toMatchSnapshot();
+      });
+    });
+  });
+
+  describe("given undo with multiline content", () => {
+    describe("when undoing multiple operations", () => {
+      it("then restores each state correctly", () => {
+        const editor = new Editor(SNAPSHOT_CONTENT);
+        editor.insertChar("x");
+        editor.undo();
+
+        expect(editor.getContent()).toBe(SNAPSHOT_CONTENT);
+        expect(editor.getContent()).toMatchSnapshot();
+      });
+    });
+  });
+
+  describe("given toggle comment on multiline selection", () => {
+    describe("when commenting multiple lines", () => {
+      it("then adds comment prefix", () => {
+        const editor = new Editor("const a = 1;\nconst b = 2;");
+        editor.toggleComment();
+
+        expect(editor.getLines()[0]).toContain("//");
+        expect(editor.getContent()).toMatchSnapshot();
+      });
+    });
+  });
+
+  describe("given pair insertion with multiline content", () => {
+    describe("when inserting pairs in TypeScript code", () => {
+      it("then places cursor correctly", () => {
+        const editor = new Editor("function foo() {");
+        editor.setCursor(0, 15);
+        editor.insertPair("(", ")");
+
+        expect(editor.getContent()).toBe("function foo() (){");
+        expect(editor.getCursor()).toEqual({ line: 0, col: 16 });
+        expect(editor.getContent()).toMatchSnapshot();
       });
     });
   });

@@ -18,6 +18,8 @@ import {
   formatHelpWithStatus,
   type StatusMessageState,
 } from "../../lib/ui/status";
+import { highlightCode } from "../../tools/shiki/highlight";
+import { lang } from "../../tools/language";
 
 export interface EditorResult {
   saved: boolean;
@@ -46,7 +48,7 @@ class EditorComponent implements Component, Focusable {
   private cachedWidth?: number;
   private cachedLines?: string[];
   private saved = false;
-  private hlCache = new Map<string, string[]>();
+  private hlCache = new Map<string, readonly string[]>();
   private keyboardHandler: (data: string) => boolean;
   private bindings: KeyBinding[];
   private statusState: StatusMessageState = { message: null, timeout: null };
@@ -269,6 +271,97 @@ class EditorComponent implements Component, Focusable {
     notifier(message, type);
   }
 
+  private computeHlKey(lines: readonly string[]): string {
+    return `${this.filePath}\0${lines.join("\n")}`;
+  }
+
+  private getCachedDisplayLines(hlKey: string): readonly string[] | undefined {
+    return this.hlCache.get(hlKey);
+  }
+
+  private getEditorState(): {
+    cursor: { line: number; col: number };
+    topLine: number;
+    selection: {
+      start: { line: number; col: number };
+      end: { line: number; col: number };
+    } | null;
+  } {
+    return {
+      cursor: this.editor.getCursor(),
+      topLine: this.editor.getTopLine(),
+      selection: this.editor.hasSelection() ? this.editor.getSelection() : null,
+    };
+  }
+
+  private resolveDisplayLinesSync(lines: readonly string[]): readonly string[] {
+    const hlKey = this.computeHlKey(lines);
+    const cached = this.getCachedDisplayLines(hlKey);
+    if (cached) return cached;
+
+    this.hlCache.set(hlKey, lines);
+    return lines;
+  }
+
+  private async tryHighlight(
+    source: string,
+  ): Promise<readonly string[] | null> {
+    try {
+      const language = lang(this.filePath);
+      return await highlightCode(source, language, undefined);
+    } catch {
+      return null;
+    }
+  }
+
+  private async resolveDisplayLinesAsync(
+    lines: readonly string[],
+  ): Promise<readonly string[]> {
+    const hlKey = this.computeHlKey(lines);
+    const cached = this.getCachedDisplayLines(hlKey);
+    if (cached) return cached;
+
+    const highlighted = await this.tryHighlight(lines.join("\n"));
+    if (highlighted) {
+      this.hlCache.set(hlKey, highlighted);
+      return highlighted;
+    }
+
+    this.hlCache.set(hlKey, lines);
+    return lines;
+  }
+
+  private renderEditorContentSync(
+    innerWidth: number,
+    height: number,
+  ): { lines: string[] } {
+    const lines = this.editor.getLines();
+    const displayLines = this.resolveDisplayLinesSync(lines);
+    const { cursor, topLine, selection } = this.getEditorState();
+
+    return this.renderWithDisplayLines({
+      displayLines,
+      innerWidth,
+      height,
+      cursor,
+      topLine,
+      selection,
+    });
+  }
+
+  private async updateHighlightCache(): Promise<void> {
+    const lines = this.editor.getLines();
+    const hlKey = this.computeHlKey(lines);
+
+    if (this.hlCache.has(hlKey)) return;
+
+    const highlighted = await this.tryHighlight(lines.join("\n"));
+    if (highlighted) {
+      this.hlCache.set(hlKey, highlighted);
+      this.requestRender();
+    }
+  }
+
   render(width: number): string[] {
     if (this.cachedLines && this.cachedWidth === width) {
       return this.cachedLines;
@@ -276,7 +369,7 @@ class EditorComponent implements Component, Focusable {
 
     const innerWidth = width - 2;
     const contentHeight = this.tui.terminal.rows - 4;
-    const result = this.renderEditorContent(innerWidth, contentHeight);
+    const result = this.renderEditorContentSync(innerWidth, contentHeight);
 
     const output = [
       ...this.renderHeader(innerWidth),
@@ -286,25 +379,46 @@ class EditorComponent implements Component, Focusable {
 
     this.cachedWidth = width;
     this.cachedLines = output;
+
+    void this.updateHighlightCache();
+
     return output;
   }
 
-  private renderEditorContent(
+  private async renderEditorContent(
     innerWidth: number,
     height: number,
-  ): { lines: string[] } {
+  ): Promise<{ lines: string[] }> {
     const lines = this.editor.getLines();
-    const cursor = this.editor.getCursor();
-    const topLine = this.editor.getTopLine();
-    const selection = this.editor.hasSelection()
-      ? this.editor.getSelection()
-      : null;
+    const displayLines = await this.resolveDisplayLinesAsync(lines);
+    const { cursor, topLine, selection } = this.getEditorState();
 
-    const hlKey = `${this.filePath}\0${lines.join("\n")}`;
-    const displayLines = this.hlCache.get(hlKey) ?? lines.map((l) => l);
+    return this.renderWithDisplayLines({
+      displayLines,
+      innerWidth,
+      height,
+      cursor,
+      topLine,
+      selection,
+    });
+  }
+
+  private renderWithDisplayLines(opts: {
+    displayLines: readonly string[];
+    innerWidth: number;
+    height: number;
+    cursor: { line: number; col: number };
+    topLine: number;
+    selection: {
+      start: { line: number; col: number };
+      end: { line: number; col: number };
+    } | null;
+  }): { lines: string[] } {
+    const { displayLines, innerWidth, height, cursor, topLine, selection } =
+      opts;
 
     const renderOpts: RenderOptions = {
-      lines: displayLines,
+      lines: [...displayLines],
       width: innerWidth - 1,
       height,
       cursor,
@@ -338,10 +452,12 @@ class EditorComponent implements Component, Focusable {
     contentLines: string[],
     innerWidth: number,
   ): string[] {
+    const rightBorder = this.theme.fg("border", BOX.vertical);
     return contentLines.map(
       (line) =>
         this.theme.fg("border", BOX.vertical) +
-        ensureWidth(line, innerWidth - 1),
+        ensureWidth(line, innerWidth - 2) +
+        rightBorder,
     );
   }
 

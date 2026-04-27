@@ -9,7 +9,7 @@ const _cache = createLRUCache<string, string[]>(CACHE_LIMIT);
 export async function highlightCode(
   code: string,
   language: BundledLanguage | undefined,
-  mutedColor: string,
+  mutedColor = "\x1b[38;2;187;187;187m",
 ): Promise<string[]> {
   if (!code) return [""];
   if (!language || code.length > MAX_HL_CHARS) return code.split("\n");

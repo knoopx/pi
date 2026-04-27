@@ -1,0 +1,39 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Editor > given multiline operations > when deleting a line in the middle > then joins remaining lines correctly 1`] = `
+"a
+b
+d"
+`;
+
+exports[`Editor > given multiline operations > when inserting text across multiple lines > then produces correct result 1`] = `
+"line1
+insertedline2
+line3"
+`;
+
+exports[`Editor > given multiline operations > when selecting and replacing multiline text > then replaces correctly 1`] = `
+"hereplacedld
+foo"
+`;
+
+exports[`Editor > given pair insertion with multiline content > when inserting pairs in TypeScript code > then places cursor correctly 1`] = `"function foo() (){"`;
+
+exports[`Editor > given set content > when setting multiline TypeScript content > then produces expected line structure 1`] = `
+"function hello(name: string): string {
+  const greeting = "Hello, " + name;
+  return greeting;
+}"
+`;
+
+exports[`Editor > given toggle comment on multiline selection > when commenting multiple lines > then adds comment prefix 1`] = `
+"// const a = 1;
+const b = 2;"
+`;
+
+exports[`Editor > given undo with multiline content > when undoing multiple operations > then restores each state correctly 1`] = `
+"function hello(name: string): string {
+  const greeting = "Hello, " + name;
+  return greeting;
+}"
+`;
