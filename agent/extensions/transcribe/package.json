@@ -1,0 +1,33 @@
+{
+  "name": "transcribe",
+  "version": "1.0.0",
+  "description": "Convert files and web content to Markdown",
+  "scripts": {
+    "lint": "bun ./node_modules/eslint/bin/eslint.js"
+  },
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "^0.70.2",
+    "@sinclair/typebox": "^0.34.9",
+    "@types/hast": "^3.0.4",
+    "@types/mdast": "^4.0.4",
+    "hast-util-from-html": "^2.0.3",
+    "hast-util-to-mdast": "^10.1.2",
+    "mdast-util-from-markdown": "^2.0.3",
+    "mdast-util-gfm": "^3.1.0",
+    "mdast-util-to-markdown": "^2.1.2",
+    "unist": "^3.0.0",
+    "unist-util-visit": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "eslint": "^10.2.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  }
+}

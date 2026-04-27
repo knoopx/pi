@@ -58,7 +58,7 @@ Run shell commands at specific lifecycle points (session start/stop, tool calls,
 - **GitHub** — search repos, code, issues, PRs; browse contents and files
 - **Guardrails** — security hooks for dangerous operations
 - **Hooks** — lifecycle commands (session start/stop, tool calls, model switches)
-- **Markitdown** — convert files and URLs to markdown
+- **Transcribe** — convert files and URLs to markdown
 - **Nix** — search NixOS packages, options, and Home Manager config
 - **Notification** — desktop notifications via notify-send
 - **npm** — search packages, get info and versions
