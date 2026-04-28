@@ -59,7 +59,8 @@ const defaults: GuardrailsConfig = [
     rules: [
       {
         context: "command",
-        pattern: "{nix,node,python,uv,tsc,bun,cargo} * | {head,tail,grep} *",
+        pattern:
+          "{nix,node,python,uv,tsc,bun,cargo,cmake} * | {head,tail,grep} *",
         action: "block",
         reason:
           "piping stdout through head/tail/grep hides errors and failures. Run the command raw so the user can see the output",
@@ -239,7 +240,7 @@ const defaults: GuardrailsConfig = [
       {
         context: "command",
         pattern: "git *",
-        excludes: "* {log,diff} *",
+        excludes: "* {log,diff,clone} *",
         action: "block",
         reason:
           "this project uses Jujutsu, not Git. Use jj equivalents (read skill: jujutsu)",
