@@ -104,16 +104,11 @@ Browse and restore/undo jujutsu operations.
 
 Rich status footer displaying working directory, VCS state (jujutsu change ID/bookmark), session name, model, API quota usage (Anthropic, OpenAI, Gemini, GitHub Copilot, Z.AI), session cost, and context window percentage. Quota refreshes every 5 minutes with color coding (green <70%, yellow 70-90%, red >90%).
 
-### Session Fork Integration
-
-`/fork` automatically creates a new jj workspace branched from the current change, spawns a pi subagent in the new workspace via tmux, and monitors for completion.
-
 ## Guardrails
 
 Security rules that block or confirm risky tool calls (destructive shell commands, force pushes, etc.). Rules match on `command`, `file_name`, or `file_content` context with optional `scope` filtering (`project`/`external`). Actions are `block` or `confirm`.
 
-- `/guardrails on` / `/guardrails off` — toggle guardrails
-- `/guardrails:audit` — validate patterns and list active rules
+- `/guardrails` — audit config (default), or toggle with `on`/`off`
 
 ## Hooks
 
