@@ -8,37 +8,6 @@
   "branchSummary": {
     "skipPrompt": true
   },
-  "ide": {
-    "jujutsuChangeTracking": false,
-    "readonlyTools": [
-      "transcribe",
-      "gh-search-repos",
-      "gh-search-code",
-      "gh-search-issues",
-      "gh-search-prs",
-      "gh-repo-contents",
-      "gh-file-content",
-      "gh-list-gists",
-      "gh-get-gist",
-      "gh-list-prs",
-      "gh-view-pr",
-      "gh-list-issues",
-      "gh-view-issue",
-      "gh-list-releases",
-      "gh-view-release",
-      "gh-list-workflows",
-      "gh-list-runs",
-      "gh-list-repo-files",
-      "search-npm-packages",
-      "npm-package-info",
-      "npm-package-versions",
-      "search-pypi-packages",
-      "pypi-package-info",
-      "search-nix-packages",
-      "search-nix-options",
-      "search-home-manager-options"
-    ]
-  },
   "guardrails": {
     "enabled": true
   },
