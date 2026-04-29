@@ -12,7 +12,7 @@ Find and refactor duplicate code in the project using `jscpd`.
 Run jscpd to detect copy-pasted code:
 
 ```bash
-bunx jscpd --reporters console --ignore "**/node_modules/**,**/dist/**" $1 ${@:1}
+bunx jscpd --reporters console --ignore "**/node_modules/**,**/.venv/**,**/dist/**" $1 ${@:1}
 ```
 
 ## 2. Refactor
