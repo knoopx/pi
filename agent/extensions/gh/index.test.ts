@@ -15,6 +15,21 @@ function createSpawnResult(data: unknown) {
   };
 }
 
+/** Execute a search-code tool with given params and return the CLI args. */
+async function executeSearchCode(
+  mockPi: MockExtensionAPI,
+  params: Record<string, unknown>,
+): Promise<string[]> {
+  const ghCmdJson = (await import("./utils")).ghCmdJson as ReturnType<
+    typeof vi.fn
+  >;
+  ghCmdJson.mockClear();
+  spawnResult = createSpawnResult(codeData);
+  const tool = getToolByName(mockPi, "gh-search-code");
+  await tool.execute("tool1", params, undefined, undefined, {});
+  return ghCmdJson.mock.calls[0][0] as string[];
+}
+
 const repoData = [
   {
     name: "react",
@@ -61,22 +76,6 @@ function getToolByName(mockPi: MockExtensionAPI, name: string): MockTool {
   );
   if (!found) throw new Error(`Tool ${name} not found`);
   return found[0] as MockTool;
-}
-
-async function executeSearchCode(
-  mock: MockExtensionAPI,
-  query: string,
-): Promise<string[]> {
-  const ghCmdJson = (await import("./utils")).ghCmdJson as ReturnType<
-    typeof vi.fn
-  >;
-  ghCmdJson.mockClear();
-  const tool = getToolByName(mock, "gh-search-code");
-  spawnResult = createSpawnResult(codeData);
-
-  await tool.execute("tool1", { query }, undefined, undefined, {});
-
-  return ghCmdJson.mock.calls[0][0] as string[];
 }
 
 vi.mock("./utils", async (importOriginal) => {
@@ -186,7 +185,7 @@ describe("GH Extension", () => {
 
       const result = await tool.execute(
         "tool1",
-        { query: "function main repo:owner/repo" },
+        { query: "function main" },
         undefined,
         undefined,
         {},
@@ -195,31 +194,30 @@ describe("GH Extension", () => {
       expect((result.content[0] as TextContent).text).toMatchSnapshot();
     });
 
-    it("then it should convert repo: qualifier to --repo flag", async () => {
-      const callArgs = await executeSearchCode(
-        mockPi,
-        "wrapGAppsHook4 extension:nix repo:NixOS/nixpkgs",
-      );
-      expect(callArgs).toContain("--repo=NixOS/nixpkgs");
-      expect(callArgs).toContain("--extension=nix");
-      const queryArg = callArgs.find(
-        (arg: string) =>
-          !arg.startsWith("-") && arg !== "search" && arg !== "code",
-      );
-      expect(queryArg).toBe("wrapGAppsHook4");
+    it("then it should pass repo as --repo flag", async () => {
+      const args = await executeSearchCode(mockPi, {
+        query: "wrapGAppsHook4",
+        repo: ["NixOS/nixpkgs"],
+        extension: "nix",
+      });
+      expect(args).toContain("--repo=NixOS/nixpkgs");
+      expect(args).toContain("--extension=nix");
     });
 
-    it("then it should convert owner: qualifier to --owner flag", async () => {
-      const callArgs = await executeSearchCode(mockPi, "cli owner:microsoft");
-      expect(callArgs).toContain("--owner=microsoft");
+    it("then it should pass owner as --owner flag", async () => {
+      const args = await executeSearchCode(mockPi, {
+        query: "cli",
+        owner: ["microsoft"],
+      });
+      expect(args).toContain("--owner=microsoft");
     });
 
-    it("then it should convert filename: qualifier to --filename flag", async () => {
-      const callArgs = await executeSearchCode(
-        mockPi,
-        "lint filename:package.json",
-      );
-      expect(callArgs).toContain("--filename=package.json");
+    it("then it should pass filename as --filename flag", async () => {
+      const args = await executeSearchCode(mockPi, {
+        query: "lint",
+        filename: "package.json",
+      });
+      expect(args).toContain("--filename=package.json");
     });
   });
 });

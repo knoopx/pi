@@ -8,7 +8,7 @@ import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 import { disableThrottle } from "../../shared/throttle";
 
-// eslint-disable-next-line max-lines-per-function -- large test suite
+ 
 describe("PyPI Extension", () => {
   let mockPi: MockExtensionAPI;
   let originalFetch: typeof globalThis.fetch;

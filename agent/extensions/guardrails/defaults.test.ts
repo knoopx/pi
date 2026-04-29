@@ -49,7 +49,7 @@ function fileContentGroupMatches(groupName: string, content: string): boolean {
     .some((r) => matchContentPattern(content, r.pattern));
 }
 
-// eslint-disable-next-line max-lines-per-function -- large test suite
+ 
 describe("defaults.json", () => {
   describe("given structure", () => {
     it("then is non-empty array with unique group names", () => {

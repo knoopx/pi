@@ -159,7 +159,7 @@ describe("isGroupActive", () => {
   });
 });
 
-// eslint-disable-next-line max-lines-per-function -- large test suite
+ 
 describe("guardrails extension", () => {
   beforeEach(() => vi.clearAllMocks());
 

@@ -13,9 +13,11 @@ import {
 } from "../../shared/renderers";
 import { ghCmd } from "./utils";
 import {
+  createErrorResult,
   createListRenderCall,
   createTextResultRender,
   createViewRenderCall,
+  TypeBoxFields,
 } from "./shared";
 
 interface GHRelease {
@@ -97,39 +99,15 @@ async function viewRelease(
   return release;
 }
 
-function createErrorResult(
-  message: string,
-): AgentToolResult<{ error?: string }> {
-  return {
-    content: [{ type: "text", text: `Error: ${message}` }],
-    details: { error: message },
-  };
-}
-
 const ListReleasesParams = Type.Object({
-  owner: Type.String({
-    description: "Repository owner (e.g., 'facebook')",
-  }),
-  repo: Type.String({
-    description: "Repository name (e.g., 'react')",
-  }),
-  limit: Type.Optional(
-    Type.Integer({
-      minimum: 1,
-      maximum: 100,
-      default: 30,
-      description: "Maximum number of releases to return (max 100)",
-    }),
-  ),
+  owner: TypeBoxFields.owner,
+  repo: TypeBoxFields.repoName,
+  limit: TypeBoxFields.listLimit,
 });
 
 const ViewReleaseParams = Type.Object({
-  owner: Type.String({
-    description: "Repository owner (e.g., 'facebook')",
-  }),
-  repo: Type.String({
-    description: "Repository name (e.g., 'react')",
-  }),
+  owner: TypeBoxFields.owner,
+  repo: TypeBoxFields.repoName,
   tag: Type.String({
     description: "Release tag name (e.g., 'v1.0.0', 'v2.1.3')",
   }),
@@ -155,7 +133,7 @@ Examples:
 - gh-list-releases(owner='microsoft', repo='vscode', limit=50)
 - gh-list-releases(owner='golang', repo='go', limit=10)`,
     parameters: ListReleasesParams,
-    // eslint-disable-next-line max-params -- SDK interface signature
+
     async execute(
       _id: string,
       params: ListReleasesParamsType,
@@ -273,7 +251,7 @@ Examples:
 - gh-view-release(owner='microsoft', repo='vscode', tag='1.85.0')
 - gh-view-release(owner='golang', repo='go', tag='go1.21.0')`,
     parameters: ViewReleaseParams,
-    // eslint-disable-next-line max-params -- SDK interface signature
+
     async execute(
       _id: string,
       params: ViewReleaseParamsType,

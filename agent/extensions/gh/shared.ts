@@ -5,27 +5,94 @@ import type {
   Theme,
   ToolRenderResultOptions,
 } from "@mariozechner/pi-coding-agent";
-import type { Component } from "@mariozechner/pi-tui";
 
-// Local type for ToolRenderContext (not exported from SDK)
-export interface ToolRenderContext<TState = unknown, TArgs = unknown> {
-  args: TArgs;
-  toolCallId: string;
-  invalidate: () => void;
-  lastComponent: Component | undefined;
-  state: TState;
-  cwd: string;
-  executionStarted: boolean;
-  argsComplete: boolean;
-  isPartial: boolean;
-  expanded: boolean;
-  setExpanded?: (expanded: boolean) => void;
-}
 import { Type, type Static, type TSchema } from "@sinclair/typebox";
+import { detail, table, type Column } from "../../shared/renderers";
 import { Text } from "@mariozechner/pi-tui";
 import { dangerousOperationConfirmation } from "../../shared/tool-utils";
 import { renderTextToolResult } from "../../shared/render-utils";
-import { detail, table, type Column } from "../../shared/renderers";
+
+// --- Shared TypeBox field definitions for search schemas ---
+
+export const TypeBoxFields = {
+  owner: Type.String({
+    description: "Repository owner (e.g., 'facebook')",
+  }),
+  repoName: Type.String({
+    description: "Repository name (e.g., 'react')",
+  }),
+  path: Type.Optional(
+    Type.String({
+      description: "Path within repository (default: root)",
+    }),
+  ),
+  ref: Type.Optional(
+    Type.String({
+      description: "Branch or commit reference (optional)",
+    }),
+  ),
+  searchQuery: Type.String({
+    description: "Search query keywords",
+  }),
+  searchLimit: Type.Optional(
+    Type.Integer({
+      minimum: 1,
+      maximum: 100,
+      default: 20,
+      description: "Maximum number of results (max 100)",
+    }),
+  ),
+  listLimit: Type.Optional(
+    Type.Integer({
+      minimum: 1,
+      maximum: 100,
+      default: 30,
+      description: "Maximum number of items to return (max 100)",
+    }),
+  ),
+  ownerFilter: Type.Optional(
+    Type.Array(Type.String(), {
+      description: "Filter on owner",
+    }),
+  ),
+  repoFilter: Type.Optional(
+    Type.Array(Type.String(), {
+      description: "Filter on repository",
+    }),
+  ),
+  stateFilter: Type.Optional(
+    Type.Union([Type.Literal("open"), Type.Literal("closed")], {
+      description: "Filter based on state",
+    }),
+  ),
+  labelFilter: Type.Optional(
+    Type.Array(Type.String(), {
+      description: "Filter on label",
+    }),
+  ),
+  authorFilter: Type.Optional(
+    Type.String({
+      description: "Filter by author",
+    }),
+  ),
+  assigneeFilter: Type.Optional(
+    Type.String({
+      description: "Filter by assignee",
+    }),
+  ),
+  viewNumber: Type.Integer({
+    description: "Item number (e.g., 123)",
+  }),
+};
+
+/**
+ * Standard params schema for viewing a single numbered item (issue, PR, etc.).
+ */
+export const ViewParamsSchema = Type.Object({
+  owner: TypeBoxFields.owner,
+  repo: TypeBoxFields.repoName,
+  number: TypeBoxFields.viewNumber,
+});
 
 /**
  * Creates the standard "#" + title columns used by GitHub list tools.
@@ -87,18 +154,57 @@ export function createErrorResult<T extends Record<string, unknown>>(
   };
 }
 
+/**
+ * Push `--flag=value` for each element of an array argument.
+ */
+export function pushArrayFlag(
+  args: string[],
+  values: string[] | undefined,
+  flagName: string,
+): void {
+  if (values) {
+    for (const v of values) args.push(`--${flagName}=${v}`);
+  }
+}
+
+/**
+ * Builds CLI args for GitHub search commands that track issues or PRs.
+ * Handles owner/repo arrays and optional single-value filters.
+ */
+export function buildFilterArgs(
+  command: string,
+  limit: number,
+  query?: string,
+  owner?: string[],
+  repo?: string[],
+  state?: "open" | "closed",
+  label?: string[],
+  author?: string,
+  assignee?: string,
+): string[] {
+  const args: string[] = ["search", command, `--limit=${limit}`];
+
+  if (query) args.push(query);
+  pushArrayFlag(args, owner, "owner");
+  pushArrayFlag(args, repo, "repo");
+  if (state) args.push(`--state=${state}`);
+  pushArrayFlag(args, label, "label");
+  if (author) args.push(`--author=${author}`);
+  if (assignee) args.push(`--assignee=${assignee}`);
+
+  return args;
+}
+
 export function createTextResultRender() {
   return function renderResult(
     result: AgentToolResult<unknown>,
     _options: ToolRenderResultOptions,
     theme: Theme,
-    _context: ToolRenderContext<unknown, unknown>,
   ) {
     return renderTextToolResult(result, theme);
   };
 }
 
-// eslint-disable-next-line max-params -- SDK interface signature
 type ToolExecuteFn = (
   id: string,
   params: Record<string, unknown>,
@@ -224,12 +330,12 @@ export function registerViewTool<TItem>(
     if (!item || typeof item !== "object")
       throw new Error(`Invalid response from ${toolName}`);
     const itemFields = fields(item);
-    const output = [
-      detail(itemFields),
+    const bodyValue =
       includeBody && "body" in item
-        ? `\n${(item as Record<string, unknown>).body}`
-        : "",
-    ].join("");
+        ? (item as Record<string, unknown>).body
+        : undefined;
+    const bodyStr = typeof bodyValue === "string" ? `\n${bodyValue}` : "";
+    const output = [detail(itemFields), bodyStr].filter(Boolean).join("");
     return {
       content: [{ type: "text", text: output }],
       details: { [toolName.replace("gh-", "")]: item },
@@ -251,8 +357,11 @@ export function createListRenderCall(toolName: string) {
   return function renderCall(args: Record<string, unknown>, theme: Theme) {
     return createGithubRenderCallContent(toolName, args, theme, (a) => {
       let text = "";
-      if (a.owner && a.repo) text += theme.fg("muted", ` ${a.owner}/${a.repo}`);
-      if (a.state) text += theme.fg("dim", ` --state=${a.state}`);
+      const owner = typeof a.owner === "string" ? a.owner : undefined;
+      const repo = typeof a.repo === "string" ? a.repo : undefined;
+      if (owner && repo) text += theme.fg("muted", ` ${owner}/${repo}`);
+      const state = typeof a.state === "string" ? a.state : undefined;
+      if (state) text += theme.fg("dim", ` --state=${state}`);
       return text;
     });
   };
@@ -261,8 +370,14 @@ export function createListRenderCall(toolName: string) {
 export function createViewRenderCall(toolName: string) {
   return function renderCall(args: Record<string, unknown>, theme: Theme) {
     return createGithubRenderCallContent(toolName, args, theme, (a) => {
-      if (a.owner && a.repo)
-        return theme.fg("muted", ` ${a.owner}/${a.repo}#${a.number}`);
+      const owner = typeof a.owner === "string" ? a.owner : undefined;
+      const repo = typeof a.repo === "string" ? a.repo : undefined;
+      const number =
+        typeof a.number === "number" || typeof a.number === "string"
+          ? String(a.number)
+          : undefined;
+      if (owner && repo && number)
+        return theme.fg("muted", ` ${owner}/${repo}#${number}`);
       return "";
     });
   };
@@ -280,14 +395,11 @@ function createGithubRenderCallContent(
 }
 
 function createCreateRenderCall(toolName: string) {
-  return function renderCall(
-    args: unknown,
-    theme: Theme,
-    _context: ToolRenderContext<unknown, unknown>,
-  ) {
+  return function renderCall(args: unknown, theme: Theme) {
     const typedArgs = args as { title?: string };
     let text = theme.fg("toolTitle", theme.bold(toolName));
-    if (typedArgs.title) text += theme.fg("muted", ` "${typedArgs.title}"`);
+    if (typedArgs.title)
+      text += theme.fg("muted", ` "${String(typedArgs.title)}"`);
     return new Text(text, 0, 0);
   };
 }
@@ -357,7 +469,7 @@ export function registerCreateTool<TParams extends TSchema>(
     label: toolLabel,
     description: toolDescription,
     parameters: paramsSchema,
-    // eslint-disable-next-line max-params -- SDK interface signature
+
     async execute(
       _id: string,
       params: Static<TParams>,

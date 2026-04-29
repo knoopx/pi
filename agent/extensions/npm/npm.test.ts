@@ -100,7 +100,7 @@ function testErrorHandling(
   });
 }
 
-// eslint-disable-next-line max-lines-per-function -- large test suite
+ 
 describe("NPM Extension", () => {
   let mockPi: MockExtensionAPI;
   let originalFetch: typeof globalThis.fetch;

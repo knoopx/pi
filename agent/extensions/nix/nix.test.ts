@@ -18,7 +18,7 @@ function assertFormattedOptionResults(
 }
 
 // Extension Registration
-// eslint-disable-next-line max-lines-per-function -- large test suite
+ 
 describe("Nix Extension", () => {
   let mockPi: MockExtensionAPI;
   let originalFetch: typeof globalThis.fetch;

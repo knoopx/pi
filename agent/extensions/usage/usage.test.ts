@@ -276,7 +276,7 @@ describe("padRight", () => {
 
 // Usage Component Tests
 
-// eslint-disable-next-line max-lines-per-function -- large test suite
+ 
 describe("UsageComponent", () => {
   let component: UsageComponent;
   let mockData: UsageData;

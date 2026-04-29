@@ -288,7 +288,7 @@ describe("substituteVariables", () => {
   });
 });
 
-// eslint-disable-next-line max-lines-per-function -- large test suite
+ 
 describe("doesRuleMatch", () => {
   describe("given rule without context", () => {
     const rule = { event: "tool_result" as const, command: "echo test" };

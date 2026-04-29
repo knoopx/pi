@@ -1,5 +1,10 @@
 import { ghCmdJson } from "./utils";
-import { createErrorResult } from "./shared";
+import {
+  createErrorResult,
+  buildFilterArgs,
+  pushArrayFlag,
+  TypeBoxFields,
+} from "./shared";
 import type {
   GHCodeSearchResult,
   GHIssueSearchResult,
@@ -14,144 +19,154 @@ import type {
   Theme,
   ToolRenderResultOptions,
 } from "@mariozechner/pi-coding-agent";
-import type { ToolRenderContext } from "./shared";
+
 import type { Static, TSchema } from "@sinclair/typebox";
 import { renderTextToolResult } from "../../shared/render-utils";
 
-const QUALIFIER_MAP: ReadonlyArray<{
-  prefixes: string[];
-  flag: string;
-}> = [
-  { prefixes: ["repo:"], flag: "--repo=" },
-  { prefixes: ["owner:", "user:"], flag: "--owner=" },
-  { prefixes: ["extension:"], flag: "--extension=" },
-  { prefixes: ["filename:"], flag: "--filename=" },
-  { prefixes: ["language:"], flag: "--language=" },
-];
-
-function parseCodeSearchQualifiers(query: string): {
-  cleanQuery: string;
-  extraFlags: string[];
-} {
-  const extraFlags: string[] = [];
-  const parts: string[] = [];
-
-  for (const part of query.split(/\s+/)) {
-    if (!part) continue;
-
-    const matched = matchQualifier(part);
-    if (matched) {
-      extraFlags.push(matched);
-    } else {
-      parts.push(part);
-    }
-  }
-
-  return { cleanQuery: parts.join(" "), extraFlags };
-}
-
-function matchQualifier(part: string): string | null {
-  for (const { prefixes, flag } of QUALIFIER_MAP) {
-    const prefix = prefixes.find((p) => part.startsWith(p));
-    if (!prefix) continue;
-
-    const value = part.slice(prefix.length);
-    if (value) return `${flag}${value}`;
-  }
-  return null;
+interface CodeSearchParams {
+  query: string;
+  limit?: number;
+  extension?: string;
+  filename?: string;
+  language?: string;
+  owner?: string[];
+  repo?: string[];
 }
 
 async function searchCode(
-  query: string,
-  limit = 20,
+  params: CodeSearchParams,
 ): Promise<{ query: string; results: GHCodeSearchResult[]; total: number }> {
-  const { cleanQuery, extraFlags } = parseCodeSearchQualifiers(query);
+  const {
+    query,
+    limit = 20,
+    extension,
+    filename,
+    language,
+    owner,
+    repo,
+  } = params;
+  const args: string[] = ["search", "code", query, `--limit=${limit}`];
 
-  const results = await ghCmdJson<GHCodeSearchResult[]>(
-    [
-      "search",
-      "code",
-      cleanQuery,
-      ...extraFlags,
-      `--limit=${limit}`,
-      "--json=repository,path,sha,textMatches,url",
-      "--jq",
-      '[.[] | {repo: ((.repository.nameWithOwner // "") | split("/") | .[1] // ""), owner: ((.repository.nameWithOwner // "") | split("/") | .[0] // ""), name: (.path | split("/") | .[-1]), path, html_url: .url, text_matches: [.textMatches[]? | {snippet: .fragment, matches: [.matches[]? | .text]}]}]',
-    ],
-    "search code",
+  if (extension) args.push(`--extension=${extension}`);
+  if (filename) args.push(`--filename=${filename}`);
+  if (language) args.push(`--language=${language}`);
+  pushArrayFlag(args, owner, "owner");
+  pushArrayFlag(args, repo, "repo");
+
+  args.push(
+    "--json=repository,path,sha,textMatches,url",
+    "--jq",
+    '[.[] | {repo: ((.repository.nameWithOwner // "") | split("/") | .[1] // ""), owner: ((.repository.nameWithOwner // "") | split("/") | .[0] // ""), name: (.path | split("/") | .[-1]), path, html_url: .url, text_matches: [.textMatches[]? | {snippet: .fragment, matches: [.matches[]? | .text]}]}]',
   );
+
+  const results = await ghCmdJson<GHCodeSearchResult[]>(args, "search code");
 
   return {
     query,
     results,
     total: results.length,
   };
+}
+
+interface SearchParams {
+  query?: string;
+  limit?: number;
+  owner?: string[];
+  repo?: string[];
+  state?: "open" | "closed";
+  label?: string[];
+  author?: string;
+  assignee?: string;
+}
+
+async function searchWithFilters<T>(
+  command: "issues" | "prs",
+  params: SearchParams,
+  jsonFields: string,
+  jqFilter: string,
+): Promise<{ query: string; results: T[]; total: number }> {
+  const {
+    query = "",
+    limit = 20,
+    owner,
+    repo,
+    state,
+    label,
+    author,
+    assignee,
+  } = params;
+
+  const args = buildFilterArgs(
+    command,
+    limit,
+    query,
+    owner,
+    repo,
+    state,
+    label,
+    author,
+    assignee,
+  );
+
+  args.push(`--json=${jsonFields}`, "--jq", jqFilter);
+
+  const results = await ghCmdJson<T[]>(args, `search ${command}`);
+
+  return { query: query || "", results, total: results.length };
 }
 
 async function searchIssues(
-  query: string,
-  limit = 20,
+  params: SearchParams,
 ): Promise<{ query: string; results: GHIssueSearchResult[]; total: number }> {
-  const results = await ghCmdJson<GHIssueSearchResult[]>(
-    [
-      "search",
-      "issues",
-      query,
-      `--limit=${limit}`,
-      "--json=number,title,state,repository,createdAt,labels,url",
-      "--jq",
-      '[.[] | {number, title, state, repo: (.repository.name // ""), owner: (.repository.owner // ""), createdAt, labels: [.labels[:5][]? | {name}], url}]',
-    ],
-    "search issues",
+  return searchWithFilters<GHIssueSearchResult>(
+    "issues",
+    params,
+    "number,title,state,repository,createdAt,labels,url",
+    '[.[] | {number, title, state, repo: (.repository.name // ""), owner: (.repository.owner // ""), createdAt, labels: [.labels[:5][]? | {name}], url}]',
   );
-
-  return {
-    query,
-    results,
-    total: results.length,
-  };
 }
 
 async function searchPRs(
-  query: string,
-  limit = 20,
+  params: SearchParams,
 ): Promise<{ query: string; results: GHPRSearchResult[]; total: number }> {
-  const results = await ghCmdJson<GHPRSearchResult[]>(
-    [
-      "search",
-      "prs",
-      query,
-      `--limit=${limit}`,
-      "--json=number,title,state,repository,createdAt,updatedAt,labels,url",
-      "--jq",
-      '[.[] | {number, title, state, repo: (.repository.name // ""), owner: (.repository.owner // ""), createdAt, updatedAt, labels: [.labels[:5][]? | {name}], url, mergeable: ""}]',
-    ],
-    "search prs",
+  return searchWithFilters<GHPRSearchResult>(
+    "prs",
+    params,
+    "number,title,state,repository,createdAt,updatedAt,labels,url",
+    '[.[] | {number, title, state, repo: (.repository.name // ""), owner: (.repository.owner // ""), createdAt, updatedAt, labels: [.labels[:5][]? | {name}], url, mergeable: ""}]',
   );
+}
 
-  return {
-    query,
-    results,
-    total: results.length,
-  };
+interface RepoSearchParams {
+  query: string;
+  limit?: number;
+  owner?: string[];
+  language?: string;
+  topic?: string[];
+  stars?: string;
+  forks?: string;
 }
 
 async function searchRepos(
-  query: string,
-  limit = 20,
+  params: RepoSearchParams,
 ): Promise<{ query: string; results: GHRepoSearchResult[]; total: number }> {
-  const results = await ghCmdJson<GHRepoSearchResult[]>(
-    [
-      "search",
-      "repos",
-      query,
-      `--limit=${limit}`,
-      "--json=name,fullName,description,url,language,stargazersCount,forksCount",
-      "--jq",
-      "[.[] | {name, full_name: .fullName, description, html_url: .url, language, stargazers_count: .stargazersCount, forks_count: .forksCount}]",
-    ],
-    "search repos",
+  const { query, limit = 20, owner, language, topic, stars, forks } = params;
+  const args: string[] = ["search", "repos", `--limit=${limit}`];
+
+  if (query) args.push(query);
+  pushArrayFlag(args, owner, "owner");
+  if (language) args.push(`--language=${language}`);
+  pushArrayFlag(args, topic, "topic");
+  if (stars) args.push(`--stars=${stars}`);
+  if (forks) args.push(`--forks=${forks}`);
+
+  args.push(
+    "--json=name,fullName,description,url,language,stargazersCount,forksCount",
+    "--jq",
+    "[.[] | {name, full_name: .fullName, description, html_url: .url, language, stargazers_count: .stargazersCount, forks_count: .forksCount}]",
   );
+
+  const results = await ghCmdJson<GHRepoSearchResult[]>(args, "search repos");
 
   return {
     query,
@@ -258,7 +273,7 @@ function formatCodeSearchResult(result: {
   );
 }
 
-interface IssueLikeRow extends Record<string, unknown> {
+interface SearchResultRow extends Record<string, unknown> {
   "#": string;
   title: string;
   state: string;
@@ -271,7 +286,7 @@ interface IssueLikeRow extends Record<string, unknown> {
   mergeable?: string;
 }
 
-function formatIssueLikeSearchResult<TItem, TRow extends IssueLikeRow>(
+function formatSearchResult<TItem, TRow extends SearchResultRow>(
   result: { query: string; results: TItem[]; total: number },
   rowMapper: (item: TItem, index: number) => TRow,
   titleFormatter: (row: TRow) => string,
@@ -288,97 +303,119 @@ function formatIssueLikeSearchResult<TItem, TRow extends IssueLikeRow>(
   return formatSearchResults(result, cols, rowMapper, countLabelFn);
 }
 
-function formatIssueSearchResult(result: {
-  query: string;
-  results: GHIssueSearchResult[];
-  total: number;
-}): string {
-  const rowMapper = (issue: GHIssueSearchResult) => ({
-    "#": `#${issue.number}`,
-    title: issue.title,
-    state: issue.state,
-    repo: `${issue.owner}/${issue.repo}`,
-    date: new Date(issue.createdAt).toLocaleDateString(),
-    labels: issue.labels.map((l: { name: string }) => l.name).join(", "),
-    url: issue.url,
-  });
-
-  const titleFormatter = (row: IssueLikeRow) => {
-    const dot = row.state === "open" ? stateDot("on") : stateDot("off");
-    const lines = [`${dot} ${row.title}`];
-    lines.push(`${row.repo} · ${row.date}`);
-    if (row.labels) lines.push(row.labels);
-    lines.push(row.url);
-    return lines.join("\n");
-  };
-
-  return formatIssueLikeSearchResult(
-    result,
-    rowMapper,
-    titleFormatter,
-    (total) => `${formatNumber(total)} issues`,
-  );
+interface GHListItemResult {
+  number: number;
+  title: string;
+  state: string;
+  owner: string;
+  repo: string;
+  createdAt: string;
+  labels: Array<{ name: string }>;
+  url: string;
 }
 
-function formatPRSearchResult(result: {
-  query: string;
-  results: GHPRSearchResult[];
-  total: number;
-}): string {
-  const rowMapper = (pr: GHPRSearchResult) => ({
-    "#": `#${pr.number}`,
-    title: pr.title,
-    state: pr.state,
+interface ListItemFormatOptions<Item extends GHListItemResult> {
+  countLabel: (total: number) => string;
+  titleBadge?: (row: SearchResultRow) => string;
+  subtitleLine?: (row: SearchResultRow) => string;
+  additionalFields?: (item: Item) => Record<string, string>;
+}
+
+function createListItemFormatter<Item extends GHListItemResult>(
+  options: ListItemFormatOptions<Item>,
+): (result: { query: string; results: Item[]; total: number }) => string {
+  return (result) => {
+    const rowMapper = (item: Item) => ({
+      "#": `#${item.number}`,
+      title: item.title,
+      state: item.state,
+      repo: `${item.owner}/${item.repo}`,
+      labels: item.labels.map((l) => l.name).join(", "),
+      url: item.url,
+      ...(options.additionalFields?.(item) ?? {}),
+    });
+
+    const titleFormatter = (row: SearchResultRow) => {
+      const dot = row.state === "open" ? stateDot("on") : stateDot("off");
+      const badge = options.titleBadge?.(row) ?? "";
+      const subtitle =
+        options.subtitleLine?.(row) ?? `${row.repo} · ${row.date}`;
+      const lines = [`${dot} ${row.title}${badge ? ` ${badge}` : ""}`];
+      lines.push(subtitle);
+      if (row.labels) lines.push(row.labels);
+      lines.push(row.url);
+      return lines.join("\n");
+    };
+
+    return formatSearchResult(
+      result,
+      rowMapper,
+      titleFormatter,
+      options.countLabel,
+    );
+  };
+}
+
+const formatIssueSearchResult = createListItemFormatter<GHIssueSearchResult>({
+  countLabel: (total) => `${formatNumber(total)} issues`,
+});
+
+const formatPRSearchResult = createListItemFormatter<GHPRSearchResult>({
+  countLabel: (total) => `${formatNumber(total)} PRs`,
+  additionalFields: (pr) => ({
     mergeable: pr.mergeable,
-    repo: `${pr.owner}/${pr.repo}`,
     created: new Date(pr.createdAt).toLocaleDateString(),
     updated: new Date(pr.updatedAt).toLocaleDateString(),
-    labels: pr.labels.map((l: { name: string }) => l.name).join(", "),
-    url: pr.url,
-  });
-
-  const titleFormatter = (row: IssueLikeRow) => {
-    const dot = row.state === "open" ? stateDot("on") : stateDot("off");
+  }),
+  titleBadge: (row) => {
     const merge =
       row.mergeable === "MERGEABLE"
         ? "✓"
         : row.mergeable === "CONFLICTING"
           ? "✗"
           : "?";
-    const lines = [`${dot} ${row.title} ${merge}`];
-    lines.push(`${row.repo} · ${row.created} – ${row.updated}`);
-    if (row.labels) lines.push(row.labels);
-    lines.push(row.url);
-    return lines.join("\n");
-  };
+    return merge;
+  },
+  subtitleLine: (row) => `${row.repo} · ${row.created} - ${row.updated}`,
+});
 
-  return formatIssueLikeSearchResult(
-    result,
-    rowMapper,
-    titleFormatter,
-    (total) => `${formatNumber(total)} PRs`,
-  );
+function formatSearchParamValue(raw: unknown): string | undefined {
+  if (Array.isArray(raw)) {
+    const strings = raw.filter((v) => typeof v === "string");
+    return strings.length ? strings.join(",") : undefined;
+  }
+  return typeof raw === "string" ? raw : undefined;
 }
 
 function createSearchToolRenderer(toolName: string) {
+  const FILTER_KEYS = [
+    "extension",
+    "filename",
+    "language",
+    "owner",
+    "repo",
+    "state",
+    "label",
+  ] as const;
+
   return {
-    renderCall(
-      args: unknown,
-      theme: Theme,
-      _context: ToolRenderContext<unknown, unknown>,
-    ) {
-      const typedArgs = args as { query?: string; limit?: number };
+    renderCall(args: unknown, theme: Theme) {
+      const a = args as Record<string, unknown>;
       let text = theme.fg("toolTitle", theme.bold(toolName));
-      if (typedArgs.query) text += theme.fg("muted", ` "${typedArgs.query}"`);
-      if (typedArgs.limit)
-        text += theme.fg("dim", ` (limit=${typedArgs.limit})`);
+      const query = typeof a.query === "string" ? a.query : undefined;
+      if (query) text += theme.fg("muted", ` "${query}"`);
+      const limit = typeof a.limit === "number" ? a.limit : undefined;
+      if (limit != null) text += theme.fg("dim", ` (limit=${limit})`);
+      for (const key of FILTER_KEYS) {
+        const val = formatSearchParamValue(a[key]);
+        if (val) text += theme.fg("dim", ` ${key}=${val}`);
+      }
       return new Text(text, 0, 0);
     },
     renderResult(
       result: unknown,
       _options: ToolRenderResultOptions,
       theme: Theme,
-      _context: ToolRenderContext<unknown, unknown>,
     ) {
       return renderTextToolResult(result as AgentToolResult<unknown>, theme);
     },
@@ -390,7 +427,7 @@ interface RegisterSearchToolOptions<TParams extends TSchema, TResult> {
   toolLabel: string;
   toolDescription: string;
   paramsSchema: TParams;
-  searchFn: (query: string, limit?: number) => Promise<TResult>;
+  searchFn: (params: Static<TParams>) => Promise<TResult>;
   formatFn: (result: TResult) => string;
 }
 
@@ -412,31 +449,27 @@ function registerSearchTool<TParams extends TSchema, TResult>(
     label: toolLabel,
     description: toolDescription,
     parameters: paramsSchema,
-    // eslint-disable-next-line max-params -- SDK interface signature
+
     async execute(
-      _toolCallId: string,
+      __toolCallId: string,
       params: Static<TParams>,
-      _signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-      _ctx: ExtensionContext,
+      __signal: AbortSignal | undefined,
+      __onUpdate: AgentToolUpdateCallback<unknown> | undefined,
+      __ctx: ExtensionContext,
     ) {
-      return await executeSearchTool(
-        searchFn,
-        formatFn,
-        params as { query: string; limit?: number },
-      );
+      return await executeSearchTool(searchFn, formatFn, params);
     },
     ...createSearchToolRenderer(toolName),
   });
 }
 
 async function executeSearchTool<TParams extends TSchema, TResult>(
-  searchFn: (query: string, limit?: number) => Promise<TResult>,
+  searchFn: (params: Static<TParams>) => Promise<TResult>,
   formatFn: (result: TResult) => string,
-  params: Static<TParams> & { query: string; limit?: number },
+  params: Static<TParams>,
 ): Promise<AgentToolResult<unknown>> {
   try {
-    const result = await searchFn(params.query, params.limit);
+    const result = await searchFn(params);
     const output = formatFn(result);
     return {
       content: [{ type: "text", text: output }],
@@ -450,69 +483,68 @@ async function executeSearchTool<TParams extends TSchema, TResult>(
 }
 
 const SearchReposParams = Type.Object({
-  query: Type.String({
-    description: "Search query (e.g., 'language:typescript stars:>1000')",
-  }),
-  limit: Type.Optional(
-    Type.Integer({
-      minimum: 1,
-      maximum: 100,
-      default: 20,
-      description: "Maximum number of results (max 100)",
+  query: TypeBoxFields.searchQuery,
+  limit: TypeBoxFields.searchLimit,
+  owner: TypeBoxFields.ownerFilter,
+  language: Type.Optional(
+    Type.String({
+      description: "Filter based on the coding language",
+    }),
+  ),
+  topic: Type.Optional(
+    Type.Array(Type.String(), {
+      description: "Filter on topic",
+    }),
+  ),
+  stars: Type.Optional(
+    Type.String({
+      description: "Filter on number of stars (e.g., '>1000')",
+    }),
+  ),
+  forks: Type.Optional(
+    Type.String({
+      description: "Filter on number of forks (e.g., '>100')",
     }),
   ),
 });
 
 const SearchCodeParams = Type.Object({
-  query: Type.String({
-    description: `GitHub code search query. Use qualifiers to filter results:
-    - extension:ext - Filter by file extension (e.g., extension:nix, extension:ts)
-    - filename:pattern - Search specific filenames (e.g., filename:flake.nix)
-    - user:username or owner:username - Limit to a specific user
-    - repo:owner/name - Limit to a specific repository
-    - language:Lang - Filter by programming language
-    
-    Examples:
-    - 'extension:nix programs.vim' - Find .nix files mentioning vim
-    - 'flake.nix user:nixos' - Find flake.nix in nixos user's repos
-    - 'filename:configuration.nix extension:nix' - Find NixOS configs`,
-  }),
-  limit: Type.Optional(
-    Type.Integer({
-      minimum: 1,
-      maximum: 100,
-      default: 20,
-      description: "Maximum number of results (max 100)",
+  query: TypeBoxFields.searchQuery,
+  limit: TypeBoxFields.searchLimit,
+  extension: Type.Optional(
+    Type.String({
+      description: "Filter on file extension",
     }),
   ),
+  filename: Type.Optional(
+    Type.String({
+      description: "Filter on filename",
+    }),
+  ),
+  language: Type.Optional(
+    Type.String({
+      description: "Filter results by language",
+    }),
+  ),
+  owner: TypeBoxFields.ownerFilter,
+  repo: TypeBoxFields.repoFilter,
 });
 
-const SearchIssuesParams = Type.Object({
+const SearchParamsSchema = Type.Object({
   query: Type.String({
-    description: "Issues search query (e.g., 'is:open label:bug')",
+    description: "Search query keywords (optional, use filters instead)",
   }),
-  limit: Type.Optional(
-    Type.Integer({
-      minimum: 1,
-      maximum: 100,
-      default: 20,
-      description: "Maximum number of results (max 100)",
+  limit: TypeBoxFields.searchLimit,
+  owner: Type.Optional(
+    Type.Array(Type.String(), {
+      description: "Filter on repository owner",
     }),
   ),
-});
-
-const SearchPRsParams = Type.Object({
-  query: Type.String({
-    description: "PRs search query (e.g., 'is:open review:required')",
-  }),
-  limit: Type.Optional(
-    Type.Integer({
-      minimum: 1,
-      maximum: 100,
-      default: 20,
-      description: "Maximum number of results (max 100)",
-    }),
-  ),
+  repo: TypeBoxFields.repoFilter,
+  state: TypeBoxFields.stateFilter,
+  label: TypeBoxFields.labelFilter,
+  author: TypeBoxFields.authorFilter,
+  assignee: TypeBoxFields.assigneeFilter,
 });
 
 function createSearchReposTool() {
@@ -528,12 +560,12 @@ Use this to:
 - Find repos by owner or organization
 
 Examples:
-- gh-search-repos(query='language:typescript stars:>1000')
 - gh-search-repos(query='react framework', limit=10)
-- gh-search-repos(query='owner:microsoft')`,
+- gh-search-repos(query='cli shell', owner=['microsoft'])
+- gh-search-repos(query='vim plugin', language='go', stars='>1000')`,
     paramsSchema: SearchReposParams,
-    searchFn: searchRepos,
-    formatFn: formatRepoSearchResult,
+    searchFn: searchRepos as (params: unknown) => Promise<unknown>,
+    formatFn: formatRepoSearchResult as (result: unknown) => string,
   };
 }
 
@@ -541,7 +573,7 @@ function createSearchCodeTool() {
   return {
     toolName: "gh-search-code",
     toolLabel: "Search Code",
-    toolDescription: `Search for code across GitHub repositories using gh CLI and GitHub's code search syntax.
+    toolDescription: `Search for code across GitHub repositories using gh CLI.
 
 Use this to:
 - Find code snippets and patterns across all of GitHub
@@ -550,29 +582,14 @@ Use this to:
 - Find specific file types (e.g., Nix configs, package.json files)
 - Search within specific users' or organizations' repositories
 
-Query syntax:
-- extension:ext — Filter by file extension (e.g., extension:nix, extension:ts, extension:json)
-- filename:pattern — Match specific filenames (e.g., filename:flake.nix, filename:package.json)
-- user:username or owner:username — Limit search to a specific user's repositories
-- repo:owner/name — Limit search to a specific repository
-- language:Lang — Filter by programming language
-
 Examples:
-- Search Nix configurations:
-  gh-search-code(query='extension:nix programs.vim.enable')
-  gh-search-code(query='filename:flake.nix inputs.nixpkgs')
-  gh-search-code(query='user:nixos filename:configuration.nix')
-
-- Search by file type:
-  gh-search-code(query='extension:ts import React')
-  gh-search-code(query='filename:package.json dependencies')
-
-- Search within specific repos/users:
-  gh-search-code(query='owner:microsoft extension:ts')
-  gh-search-code(query='repo:facebook/react extension:tsx')`,
+- gh-search-code(query='programs.vim', extension='nix')
+- gh-search-code(query='inputs.nixpkgs', filename='flake.nix')
+- gh-search-code(query='import React', language='typescript', owner=['microsoft'])
+- gh-search-code(query='lint', filename='package.json', repo=['facebook/react'])`,
     paramsSchema: SearchCodeParams,
-    searchFn: searchCode,
-    formatFn: formatCodeSearchResult,
+    searchFn: searchCode as (params: unknown) => Promise<unknown>,
+    formatFn: formatCodeSearchResult as (result: unknown) => string,
   };
 }
 
@@ -589,12 +606,12 @@ Use this to:
 - Find issues by state
 
 Examples:
-- gh-search-issues(query='is:open label:bug')
-- gh-search-issues(query='author:@me is:closed')
-- gh-search-issues(query='state:open assigned:@me', limit=50)`,
-    paramsSchema: SearchIssuesParams,
-    searchFn: searchIssues,
-    formatFn: formatIssueSearchResult,
+- gh-search-issues(query='bug', state='open', label=['bug'])
+- gh-search-issues(query='crash', author='@me')
+- gh-search-issues(query='feature request', repo=['facebook/react'], limit=50)`,
+    paramsSchema: SearchParamsSchema,
+    searchFn: searchIssues as (params: unknown) => Promise<unknown>,
+    formatFn: formatIssueSearchResult as (result: unknown) => string,
   };
 }
 
@@ -611,12 +628,12 @@ Use this to:
 - Find PRs with specific labels
 
 Examples:
-- gh-search-prs(query='is:open review:required')
-- gh-search-prs(query='author:@me is:merged')
-- gh-search-prs(query='status:success', limit=30)`,
-    paramsSchema: SearchPRsParams,
-    searchFn: searchPRs,
-    formatFn: formatPRSearchResult,
+- gh-search-prs(query='fix', state='open')
+- gh-search-prs(query='refactor', author='@me')
+- gh-search-prs(query='test', repo=['facebook/react'], limit=30)`,
+    paramsSchema: SearchParamsSchema,
+    searchFn: searchPRs as (params: unknown) => Promise<unknown>,
+    formatFn: formatPRSearchResult as (result: unknown) => string,
   };
 }
 

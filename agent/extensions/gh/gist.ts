@@ -55,11 +55,7 @@ interface Gist {
   } | null;
 }
 
-async function listGists(
-  userId?: string,
-  limit = 30,
-  _since?: Date,
-): Promise<Gist[]> {
+async function listGists(userId?: string, limit = 30): Promise<Gist[]> {
   if (userId && userId !== "@me") {
     const endpoint = `/users/${userId}/gists?per_page=${limit}`;
     return ghCmdJson<Gist[]>(
@@ -222,11 +218,6 @@ const ListGistsParams = Type.Object({
       description: "Number of gists to return (max 100)",
     }),
   ),
-  since: Type.Optional(
-    Type.String({
-      description: "Only show gists updated after this date (ISO 8601 format)",
-    }),
-  ),
 });
 
 const GetGistParams = Type.Object({
@@ -313,7 +304,6 @@ Examples:
 - gh-list-gists(userId='octocat', limit=10)`,
     parameters: ListGistsParams,
 
-    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
       params: ListGistsParamsType,
@@ -331,10 +321,11 @@ Examples:
       }
     },
 
-    renderCall(args: unknown, theme: Theme, _context: unknown) {
+    renderCall(args: unknown, theme: Theme) {
       const a = args as Record<string, unknown>;
       let text = theme.fg("toolTitle", theme.bold("gh-list-gists"));
-      if (a.userId) text += theme.fg("muted", ` user=${a.userId}`);
+      const userId = typeof a.userId === "string" ? a.userId : undefined;
+      if (userId) text += theme.fg("muted", ` user=${userId}`);
       return new Text(text, 0, 0);
     },
 
@@ -358,7 +349,6 @@ Examples:
 - gh-get-gist(gistId='0123456789abcdef')`,
     parameters: GetGistParams,
 
-    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
       params: GetGistParamsType,
@@ -377,10 +367,11 @@ Examples:
       }
     },
 
-    renderCall(args: unknown, theme: Theme, _context: unknown) {
+    renderCall(args: unknown, theme: Theme) {
       const a = args as Record<string, unknown>;
       let text = theme.fg("toolTitle", theme.bold("gh-get-gist"));
-      if (a.gistId) text += theme.fg("muted", ` ${a.gistId}`);
+      const gistId = typeof a.gistId === "string" ? a.gistId : undefined;
+      if (gistId) text += theme.fg("muted", ` ${gistId}`);
       return new Text(text, 0, 0);
     },
 
@@ -405,7 +396,6 @@ Examples:
 - gh-create-gist(files={'main.ts': {content: 'consoleLog("hi")'}}, description='My test gist', public=true)`,
     parameters: CreateGistParams,
 
-    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
       params: CreateGistParamsType,
@@ -425,12 +415,14 @@ Examples:
       return await executeCreateGist(params);
     },
 
-    renderCall(args: unknown, theme: Theme, _context: unknown) {
+    renderCall(args: unknown, theme: Theme) {
       const a = args as Record<string, unknown>;
       let text = theme.fg("toolTitle", theme.bold("gh-create-gist"));
       const fileCount = Object.keys(a.files || {}).length;
       if (fileCount > 0) text += theme.fg("muted", ` ${fileCount} file(s)`);
-      if (a.description) text += theme.fg("dim", ` "${a.description}"`);
+      const description =
+        typeof a.description === "string" ? a.description : undefined;
+      if (description) text += theme.fg("dim", ` "${description}"`);
       return new Text(text, 0, 0);
     },
 
@@ -441,10 +433,9 @@ Examples:
 async function executeListGists(
   params: ListGistsParamsType,
 ): Promise<AgentToolResult<{ gists: Gist[] }>> {
-  const since = params.since ? new Date(params.since) : undefined;
   const userId = params.userId;
   const limit = params.limit;
-  const gists = await listGists(userId, limit, since);
+  const gists = await listGists(userId, limit);
 
   const lines = gists
     .map((gist) => [
@@ -507,7 +498,6 @@ Examples:
 - gh-update-gist(gistId='abc123', description='Updated description')`,
     parameters: UpdateGistParams,
 
-    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
       params: UpdateGistParamsType,
@@ -531,15 +521,18 @@ Examples:
       return await executeUpdateGist(params);
     },
 
-    renderCall(args: unknown, theme: Theme, _context: unknown) {
+    renderCall(args: unknown, theme: Theme) {
       const a = args as Record<string, unknown>;
       let text = theme.fg("toolTitle", theme.bold("gh-update-gist"));
-      if (a.gistId) text += theme.fg("muted", ` ${a.gistId}`);
+      const gistId = typeof a.gistId === "string" ? a.gistId : undefined;
+      if (gistId) text += theme.fg("muted", ` ${gistId}`);
       if (a.files) {
         const fileCount = Object.keys(a.files).length;
         text += theme.fg("dim", ` ${fileCount} file(s) updated`);
       }
-      if (a.description) text += theme.fg("dim", ` desc="${a.description}"`);
+      const description =
+        typeof a.description === "string" ? a.description : undefined;
+      if (description) text += theme.fg("dim", ` desc="${description}"`);
       return new Text(text, 0, 0);
     },
 

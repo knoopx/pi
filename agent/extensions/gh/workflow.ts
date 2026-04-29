@@ -7,7 +7,12 @@ import { type Static, Type } from "@sinclair/typebox";
 import { dotJoin, stateDot, table, type Column } from "../../shared/renderers";
 
 import { ghCmd } from "./utils";
-import { createListRenderCall, createTextResultRender } from "./shared";
+import {
+  createErrorResult,
+  createListRenderCall,
+  createTextResultRender,
+  TypeBoxFields,
+} from "./shared";
 
 interface GHWorkflow {
   name: string;
@@ -81,53 +86,22 @@ function listWorkflowRuns(
   return ghList<GHWorkflowRun>(args, "gh run list");
 }
 
-function createErrorResult(
-  message: string,
-): AgentToolResult<{ error?: string }> {
-  return {
-    content: [{ type: "text", text: `Error: ${message}` }],
-    details: { error: message },
-  };
-}
-
 const ListWorkflowsParams = Type.Object({
-  owner: Type.String({
-    description: "Repository owner (e.g., 'facebook')",
-  }),
-  repo: Type.String({
-    description: "Repository name (e.g., 'react')",
-  }),
-  limit: Type.Optional(
-    Type.Integer({
-      minimum: 1,
-      maximum: 100,
-      default: 30,
-      description: "Maximum number of workflows to return (max 100)",
-    }),
-  ),
+  owner: TypeBoxFields.owner,
+  repo: TypeBoxFields.repoName,
+  limit: TypeBoxFields.listLimit,
 });
 
 const ListRunsParams = Type.Object({
-  owner: Type.String({
-    description: "Repository owner (e.g., 'facebook')",
-  }),
-  repo: Type.String({
-    description: "Repository name (e.g., 'react')",
-  }),
+  owner: TypeBoxFields.owner,
+  repo: TypeBoxFields.repoName,
   workflow: Type.Optional(
     Type.String({
       description:
         "Filter by workflow ID (numeric) or workflow filename (e.g., 'ci.yml')",
     }),
   ),
-  limit: Type.Optional(
-    Type.Integer({
-      minimum: 1,
-      maximum: 100,
-      default: 30,
-      description: "Maximum number of workflow runs to return (max 100)",
-    }),
-  ),
+  limit: TypeBoxFields.listLimit,
 });
 
 type ListWorkflowsParamsType = Static<typeof ListWorkflowsParams>;
@@ -150,7 +124,7 @@ Examples:
 - gh-list-workflows(owner='microsoft', repo='vscode', limit=50)
 - gh-list-workflows(owner='golang', repo='go', limit=20)`,
     parameters: ListWorkflowsParams,
-    // eslint-disable-next-line max-params -- SDK interface signature
+
     async execute(
       _id: string,
       params: ListWorkflowsParamsType,
@@ -232,7 +206,7 @@ Examples:
 - gh-list-runs(owner='microsoft', repo='vscode', workflow='ci.yml', limit=50)
 - gh-list-runs(owner='golang', repo='go', limit=20)`,
     parameters: ListRunsParams,
-    // eslint-disable-next-line max-params -- SDK interface signature
+
     async execute(
       _id: string,
       params: ListRunsParamsType,

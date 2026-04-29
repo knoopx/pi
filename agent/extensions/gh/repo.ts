@@ -10,7 +10,11 @@ import { dotJoin, table } from "../../shared/renderers";
 import type { Column } from "../../shared/renderers";
 
 import { ghCmd, ghCmdJson } from "./utils";
-import { createErrorResult, createTextResultRender } from "./shared";
+import {
+  createErrorResult,
+  createTextResultRender,
+  TypeBoxFields,
+} from "./shared";
 
 function createRepoRenderCall(toolName: string) {
   return (args: Record<string, unknown>, theme: Theme): Text => {
@@ -253,48 +257,24 @@ function formatRepoFilesList(result: {
 }
 
 const GetRepoContentsParams = Type.Object({
-  owner: Type.String({
-    description: "Repository owner (e.g., 'facebook')",
-  }),
-  repo: Type.String({
-    description: "Repository name (e.g., 'react')",
-  }),
-  path: Type.Optional(
-    Type.String({
-      description: "Path within repository (default: root)",
-    }),
-  ),
+  owner: TypeBoxFields.owner,
+  repo: TypeBoxFields.repoName,
+  path: TypeBoxFields.path,
 });
 
 const GetFileContentParams = Type.Object({
-  owner: Type.String({
-    description: "Repository owner (e.g., 'facebook')",
-  }),
-  repo: Type.String({
-    description: "Repository name (e.g., 'react')",
-  }),
+  owner: TypeBoxFields.owner,
+  repo: TypeBoxFields.repoName,
   path: Type.String({
     description: "File path within repository (e.g., 'README.md')",
   }),
-  ref: Type.Optional(
-    Type.String({
-      description: "Branch or commit reference (optional)",
-    }),
-  ),
+  ref: TypeBoxFields.ref,
 });
 
 const ListRepoFilesParams = Type.Object({
-  owner: Type.String({
-    description: "Repository owner (e.g., 'facebook')",
-  }),
-  repo: Type.String({
-    description: "Repository name (e.g., 'react')",
-  }),
-  path: Type.Optional(
-    Type.String({
-      description: "Path within repository (default: root)",
-    }),
-  ),
+  owner: TypeBoxFields.owner,
+  repo: TypeBoxFields.repoName,
+  path: TypeBoxFields.path,
   maxFiles: Type.Optional(
     Type.Integer({
       minimum: 1,
@@ -372,7 +352,6 @@ Examples:
 - gh-repo-contents(owner='microsoft', repo='vscode')`,
     parameters: GetRepoContentsParams,
 
-    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
       params: GetRepoContentsParamsType,
@@ -412,7 +391,6 @@ Examples:
 - gh-file-content(owner='pytorch', repo='pytorch', path='setup.py', ref='main')`,
     parameters: GetFileContentParams,
 
-    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
       params: GetFileContentParamsType,
@@ -431,9 +409,13 @@ Examples:
 
     renderCall(args: Record<string, unknown>, theme: Theme) {
       let text = theme.fg("toolTitle", theme.bold("gh-file-content"));
-      if (args.owner && args.repo && args.path)
-        text += theme.fg("muted", ` (${args.owner}/${args.repo}/${args.path})`);
-      if (args.ref) text += theme.fg("dim", ` @${args.ref}`);
+      const owner = typeof args.owner === "string" ? args.owner : undefined;
+      const repo = typeof args.repo === "string" ? args.repo : undefined;
+      const path = typeof args.path === "string" ? args.path : undefined;
+      if (owner && repo && path)
+        text += theme.fg("muted", ` (${owner}/${repo}/${path})`);
+      const ref = typeof args.ref === "string" ? args.ref : undefined;
+      if (ref) text += theme.fg("dim", ` @${ref}`);
       return new Text(text, 0, 0);
     },
 
@@ -458,7 +440,6 @@ Examples:
 - gh-list-repo-files(owner='microsoft', repo='vscode', path='src', maxFiles=100)`,
     parameters: ListRepoFilesParams,
 
-    // eslint-disable-next-line max-params -- SDK interface signature
     async execute(
       _toolCallId: string,
       params: ListRepoFilesParamsType,

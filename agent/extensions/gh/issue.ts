@@ -9,6 +9,7 @@ import {
   registerListTool,
   registerViewTool,
   registerCreateTool,
+  ViewParamsSchema,
 } from "./shared";
 
 interface GHIssue {
@@ -99,18 +100,6 @@ const ListIssuesParams = createListParamsSchema(
   ["open", "closed", "all"],
   "issues",
 );
-
-const ViewIssueParams = Type.Object({
-  owner: Type.String({
-    description: "Repository owner (e.g., 'facebook')",
-  }),
-  repo: Type.String({
-    description: "Repository name (e.g., 'react')",
-  }),
-  number: Type.Integer({
-    description: "Issue number (e.g., 123)",
-  }),
-});
 
 const CreateIssueParams = Type.Object({
   owner: Type.String({
@@ -212,7 +201,7 @@ Use this to:
 Examples:
 - gh-view-issue(owner='facebook', repo='react', number=123)
 - gh-view-issue(owner='microsoft', repo='vscode', number=456)`,
-    paramsSchema: ViewIssueParams,
+    paramsSchema: ViewParamsSchema,
     viewFn: viewIssue,
     fields: createIssueFields(),
     includeBody: true,

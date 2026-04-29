@@ -9,6 +9,7 @@ import {
   registerListTool,
   registerViewTool,
   registerCreateTool,
+  ViewParamsSchema,
 } from "./shared";
 
 interface GHPR {
@@ -103,18 +104,6 @@ const ListPRsParams = createListParamsSchema(
   ["open", "closed", "merged", "all"],
   "PRs",
 );
-
-const ViewPRParams = Type.Object({
-  owner: Type.String({
-    description: "Repository owner (e.g., 'facebook')",
-  }),
-  repo: Type.String({
-    description: "Repository name (e.g., 'react')",
-  }),
-  number: Type.Integer({
-    description: "PR number (e.g., 123)",
-  }),
-});
 
 const CreatePRParams = Type.Object({
   owner: Type.String({
@@ -222,7 +211,7 @@ Use this to:
 Examples:
 - gh-view-pr(owner='facebook', repo='react', number=123)
 - gh-view-pr(owner='microsoft', repo='vscode', number=456)`,
-    paramsSchema: ViewPRParams,
+    paramsSchema: ViewParamsSchema,
     viewFn: viewPR,
     fields: createPrFields(),
     includeBody: true,

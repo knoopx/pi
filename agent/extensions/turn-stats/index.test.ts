@@ -602,7 +602,7 @@ describe("formatSimpleOutput", () => {
   });
 });
 
-// eslint-disable-next-line max-lines-per-function -- large test suite
+ 
 describe("Turn Stats Extension Integration", () => {
   describe("given a complete turn with all metrics", () => {
     const outputTokens = 1900;
