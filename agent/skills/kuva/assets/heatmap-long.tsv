@@ -1,0 +1,5 @@
+gene	sample	expr
+BRCA1	S1	0.5
+BRCA1	S2	0.8
+TP53	S1	0.3
+TP53	S2	0.6

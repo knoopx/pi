@@ -1,0 +1,7 @@
+source	target	value
+Search	Homepage	350
+Search	Product	280
+Homepage	Product	190
+Homepage	Cart	45
+Product	Cart	160
+Cart	Checkout	120
