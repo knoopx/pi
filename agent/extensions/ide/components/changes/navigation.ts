@@ -116,6 +116,9 @@ export class Navigation {
   cycleFilter(direction: 1 | -1, totalFilters: number): void {
     this.state.currentFilterIndex =
       (this.state.currentFilterIndex + direction + totalFilters) % totalFilters;
+    this.state.selectionState.selectedIndex = 0;
+    this.state.selectionState.fileIndex = 0;
+    this.state.selectionState.diffScroll = 0;
   }
 
   moveChange(dir: "up" | "down"): void {

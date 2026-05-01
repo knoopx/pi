@@ -6,7 +6,6 @@ describe("cleanTree", () => {
   describe("handles nodes without children gracefully", () => {
     it("does not crash on paragraph with no children", () => {
       const tree = markdownToMdast("# Title\n\n");
-      // Manually inject a paragraph node without children to test the guard
       const para = tree.children.find((c) => c.type === "paragraph");
       if (para && Array.isArray(para.children)) {
         para.children.length = 0;
@@ -135,12 +134,29 @@ describe("cleanTree", () => {
     });
   });
 
-  describe("empty anchor links in headings", () => {
-    it("preserves headings with non-empty links", () => {
+  describe("anchor-only links", () => {
+    it("removes anchor links from headings", () => {
       const md = `# [Heading](#heading)`;
       const tree = cleanTree(markdownToMdast(md));
       const text = JSON.stringify(tree);
-      expect(text).toContain("Heading");
+      expect(text).not.toContain("#heading");
+    });
+
+    it("removes skip links from paragraphs", () => {
+      const md = `[Skip to main content](#page-content) Some text`;
+      const tree = cleanTree(markdownToMdast(md));
+      const text = JSON.stringify(tree);
+      expect(text).not.toContain("#page-content");
+      expect(text).not.toContain("Skip to main content");
+      expect(text).toContain("Some text");
+    });
+
+    it("keeps links with real URLs", () => {
+      const md = `[Google](https://google.com)`;
+      const tree = cleanTree(markdownToMdast(md));
+      const text = JSON.stringify(tree);
+      expect(text).toContain("Google");
+      expect(text).toContain("https://google.com");
     });
   });
 });

@@ -177,7 +177,7 @@ const defaults: GuardrailsConfig = [
   },
   {
     group: "linting",
-    pattern: "eslint.config.*",
+    pattern: "eslint-config.*",
     rules: [
       {
         context: "file_content",
@@ -319,7 +319,7 @@ const defaults: GuardrailsConfig = [
       {
         context: "file_name",
         pattern: "*.js",
-        excludes: "eslint.config.js",
+        excludes: "eslint-config.js",
         action: "block",
         reason: "this project uses TypeScript. Create `.ts` files instead",
       },

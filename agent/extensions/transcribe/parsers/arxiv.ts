@@ -1,10 +1,7 @@
+import { FETCH_OPTIONS } from "../lib/constants";
 import { defineParser } from "../lib/parser-utils";
 import { retry } from "../lib/retry";
 const API_BASE = "https://export.arxiv.org/api/query";
-const FETCH_OPTIONS: Parameters<typeof retry>[1] = {
-  maxRetries: 2,
-  retryDelay: 500,
-};
 interface ArxivEntry {
   id: string;
   title: string;
@@ -38,7 +35,6 @@ function parseArxivUrl(url: string): ArxivPath | null {
   return null;
 }
 function tryParsePaperPath(rest: string): ArxivPath | null {
-  // /abs/<id>, /pdf/<id>, or /html/<id>
   const match = rest.match(/^(?:abs|pdf|html)\/([^/]+)$/);
   if (match) return { type: "paper", id: match[1].replace(/\.pdf$/, "") };
   return null;

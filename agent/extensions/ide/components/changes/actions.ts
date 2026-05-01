@@ -10,7 +10,6 @@ interface ActionHandlersOptions {
   finish: () => void;
   refreshAfterMutation: () => Promise<void>;
   restoreSelection: (prevIndex: number) => Promise<void>;
-  loadFilesAndDiff: (change: Change) => Promise<void>;
   notify: (msg: string, type?: string) => void;
   onBookmark?: (changeId: string) => Promise<string | null>;
   onFileCmAction?: (
@@ -190,7 +189,6 @@ interface SquashDropOptions {
   state: ChangesState;
   refreshAfterMutation: () => Promise<void>;
   restoreSelection: (prevIndex: number) => Promise<void>;
-  loadFilesAndDiff: (change: Change) => Promise<void>;
 }
 
 async function handleSquash(options: SquashDropOptions) {
@@ -223,14 +221,10 @@ async function handleDrop(options: SquashDropOptions) {
 }
 
 async function runMutationFlow(options: SquashDropOptions) {
-  const { refreshAfterMutation, restoreSelection, loadFilesAndDiff, state } =
-    options;
+  const { refreshAfterMutation, restoreSelection, state } = options;
   const prevIndex = state.selectionState.selectedIndex;
   await refreshAfterMutation();
   await restoreSelection(prevIndex);
-  if (state.selectedChange) {
-    await loadFilesAndDiff(state.selectedChange);
-  }
 }
 
 async function handleNew(
@@ -291,15 +285,8 @@ function handleInspectChange(
 export function createActionHandlers(
   options: ActionHandlersOptions,
 ): ActionHandlers {
-  const {
-    pi,
-    cwd,
-    state,
-    finish,
-    refreshAfterMutation,
-    restoreSelection,
-    loadFilesAndDiff,
-  } = options;
+  const { pi, cwd, state, finish, refreshAfterMutation, restoreSelection } =
+    options;
 
   return {
     handleDescribe: () => handleDescribe(pi, cwd, state, finish),
@@ -312,7 +299,6 @@ export function createActionHandlers(
         state,
         refreshAfterMutation,
         restoreSelection,
-        loadFilesAndDiff,
       }),
     handleDrop: () =>
       handleDrop({
@@ -321,7 +307,6 @@ export function createActionHandlers(
         state,
         refreshAfterMutation,
         restoreSelection,
-        loadFilesAndDiff,
       }),
     handleNew: () => handleNew(pi, cwd, state, refreshAfterMutation),
     handleRevert: () => handleRevert(pi, cwd, state, refreshAfterMutation),

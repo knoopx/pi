@@ -28,6 +28,6 @@
       ]
     }
   },
-  "include": ["*.ts", "renderers/**/*.ts"],
+  "include": ["*.ts", "components/**/*.ts", "renderers/**/*.ts"],
   "exclude": ["node_modules"]
 }

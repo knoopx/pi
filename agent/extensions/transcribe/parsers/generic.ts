@@ -4,17 +4,10 @@ import { gfmFromMarkdown } from "mdast-util-gfm";
 import type { Parser } from "../lib/types";
 import { htmlToMdast, isHtmlContent } from "../lib/html-utils";
 import { cleanTree } from "../lib/mdast-utils";
-import { fetchWithRetry } from "../lib/retry";
-import { BROWSER_HEADERS } from "../lib/constants";
+import { createRetryFetchText } from "../lib/parser-utils";
 import { visit } from "unist-util-visit";
 
-async function fetchContent(
-  url: string,
-  signal?: AbortSignal,
-): Promise<string> {
-  const res = await fetchWithRetry(url, { headers: BROWSER_HEADERS, signal });
-  return res.text();
-}
+const fetchContent = createRetryFetchText({ apiName: "Generic" });
 
 async function readLocalFile(path: string): Promise<string> {
   const { readFile } = await import("node:fs/promises");
@@ -42,6 +35,7 @@ function convertHtmlNodes(tree: MdastRoot): void {
         }
       }
     } catch {
+      // Failed to convert HTML snippet; remove the raw html node
       const siblings = (parent as { children?: Node[] }).children;
       if (siblings) {
         siblings.splice(index, 1);

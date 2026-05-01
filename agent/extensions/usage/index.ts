@@ -6,24 +6,20 @@ export { collectToolStats } from "./tool-usage/data-collection";
 export { formatCost, formatTokens, formatNumber } from "./shared/formatters";
 export { padLeft, padRight } from "./shared/padding";
 export { handleUsageInput } from "./shared/input-handling";
-export {
-  createBorderedContainer,
-  NAME_COL_WIDTH,
-  DATA_COLUMNS,
-  TABLE_WIDTH,
-} from "./shared/ui-helpers";
+export { NAME_COL_WIDTH, DATA_COLUMNS, TABLE_WIDTH } from "./shared/ui-helpers";
 export type { UsageData } from "./usage/types";
 export type { ToolStats } from "./tool-usage/types";
 export type { BaseStats } from "./shared/types";
 
 // Extension entry point — registers commands using the extracted components
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { createBorderedContainer } from "./shared/ui-helpers";
+import { BorderedView } from "./shared/bordered-view";
 import { loadAndDisplay } from "./usage/ui-loading";
 import { UsageComponent } from "./usage/component";
 import { collectUsageData } from "./usage/data-collection";
 import { ToolUsageComponent } from "./tool-usage/component";
 import { collectToolStats } from "./tool-usage/data-collection";
+
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("tool-usage", {
     description: "Show tool usage statistics dashboard",
@@ -33,29 +29,16 @@ export default function (pi: ExtensionAPI) {
       if (!data) return;
 
       await ctx.ui.custom<void>((tui, theme, _keybindings, done) => {
-        const container = createBorderedContainer(theme);
+        const requestRender = () =>
+          (tui as { requestRender: () => void }).requestRender();
+        const component = new ToolUsageComponent(
+          theme,
+          data,
+          requestRender,
+          done,
+        );
 
-        return {
-          render(w: number) {
-            const borderLines = container.render(w);
-            const componentLines = data
-              ? new ToolUsageComponent(theme, data, () => {}, done).render()
-              : [theme.fg("dim", "No data")];
-            const bottomBorder = theme.fg("border", "─".repeat(w));
-            return [...borderLines, ...componentLines, "", bottomBorder];
-          },
-          invalidate() {
-            container.invalidate();
-          },
-          handleInput(input: string) {
-            if (data) {
-              new ToolUsageComponent(theme, data, () => {}, done).handleInput(
-                input,
-              );
-            }
-          },
-          dispose() {},
-        };
+        return new BorderedView(theme, component, requestRender, done);
       });
     },
   });

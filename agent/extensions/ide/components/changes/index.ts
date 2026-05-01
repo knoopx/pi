@@ -140,7 +140,6 @@ class ChangesComponent implements Component {
       restoreSelection: async (prevIndex: number) => {
         this.restoreSelection(prevIndex);
       },
-      loadFilesAndDiff: (change: Change) => this.loadFilesAndDiff(change),
       notify,
       onBookmark: this.onBookmark,
       onFileCmAction: this.onFileCmAction,
@@ -343,26 +342,33 @@ class ChangesComponent implements Component {
     return this.state.files[this.state.selectionState.fileIndex];
   }
 
-  private async discardFile(): Promise<void> {
-    const file = this.getSelectedFile();
-    if (!file || !this.state.selectedChange) return;
+  private buildRestoreMessage(file: { path: string }): string {
+    const id = this.state.selectedChange!.changeId.slice(0, 8);
+    return `Restored file ${file.path} in change ${id}`;
+  }
 
-    const prevFileIndex = this.state.selectionState.fileIndex;
-    let restoreOutput: string | undefined;
-
+  private async tryRestoreFile(file: FileChange): Promise<string | undefined> {
     try {
-      restoreOutput = await this.restoreAndClearCache(file);
+      return await this.restoreAndClearCache(file);
     } catch (error) {
       this.notify(
         `Failed to discard file: ${formatErrorMessage(error)}`,
         "error",
       );
-      return;
+      return undefined;
     }
+  }
+
+  private async discardFile(): Promise<void> {
+    const file = this.getSelectedFile();
+    if (!file || !this.state.selectedChange) return;
+
+    const prevFileIndex = this.state.selectionState.fileIndex;
+    const restoreOutput = await this.tryRestoreFile(file);
+    if (restoreOutput === undefined) return;
 
     await this.refreshFilesAndSelection(prevFileIndex);
-    const msg = `Restored file ${file.path} in change ${this.state.selectedChange!.changeId.slice(0, 8)}`;
-    notifyMutation(this.pi, msg, restoreOutput ?? "");
+    notifyMutation(this.pi, this.buildRestoreMessage(file), restoreOutput);
   }
 
   private async restoreAndClearCache(
@@ -450,8 +456,21 @@ class ChangesComponent implements Component {
     splitResult: { stderr: string; stdout: string },
     msg: string,
   ): Promise<void> {
-    const currentSelected = this.state.selectedChange;
-    if (currentSelected) await this.loadFilesAndDiff(currentSelected);
+    const prevFileIndex = this.state.selectionState.fileIndex;
+    this.state.files = await this.service.loadChangedFiles(
+      this.state.selectedChange!.changeId,
+    );
+    const adjustedIndex = Math.max(
+      0,
+      Math.min(prevFileIndex, this.state.files.length - 1),
+    );
+    this.state.selectionState.fileIndex = adjustedIndex;
+    const selectedFile = this.state.files[adjustedIndex];
+    if (selectedFile) {
+      await this.loadDiff(this.state.selectedChange!, selectedFile.path);
+    } else {
+      this.state.diffContent = [];
+    }
     this.tui.requestRender();
     notifyMutation(this.pi, msg, splitResult.stderr || splitResult.stdout);
   }

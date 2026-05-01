@@ -1,10 +1,8 @@
-import { BROWSER_HEADERS } from "../lib/constants";
-import { defineParser } from "../lib/parser-utils";
-import { retry } from "../lib/retry";
-const FETCH_OPTIONS: Parameters<typeof retry>[1] = {
-  maxRetries: 2,
-  retryDelay: 500,
-};
+import {
+  createRetryFetch,
+  createRetryFetchText,
+  defineParser,
+} from "../lib/parser-utils";
 interface HFRepo {
   kind: "model" | "dataset" | "space";
   owner: string;
@@ -79,31 +77,20 @@ function parseDiscussionPath(base: HFPath, parts: string[]): HFPath {
   return { ...base, type: "discussions" };
 }
 
-async function fetchJSON<T>(
-  endpoint: string,
-  signal?: AbortSignal,
-): Promise<T> {
-  return retry(async () => {
-    const url = `${API}/${endpoint}`;
-    const res = await fetch(url, { headers: BROWSER_HEADERS, signal });
-    if (!res.ok) throw new Error(`HF API ${res.status}: ${res.statusText}`);
-    return res.json() as T;
-  }, FETCH_OPTIONS);
+const hfFetchOpts = { apiName: "HuggingFace" };
+
+function fetchJSON<T>(endpoint: string, signal?: AbortSignal): Promise<T> {
+  return createRetryFetch(hfFetchOpts)(`${API}/${endpoint}`, signal);
 }
 
-async function fetchRaw(
+function fetchRaw(
   repo: HFRepo,
   revision: string,
   filePath: string,
   signal?: AbortSignal,
 ): Promise<string> {
   const url = `${BASE}/${repo.owner}/${repo.name}/resolve/${revision}/${filePath}`;
-  return retry(async () => {
-    const res = await fetch(url, { headers: BROWSER_HEADERS, signal });
-    if (!res.ok)
-      throw new Error(`Fetch failed ${res.status}: ${res.statusText}`);
-    return res.text();
-  }, FETCH_OPTIONS);
+  return createRetryFetchText(hfFetchOpts)(url, signal);
 }
 interface HFTreeEntry {
   type: "file" | "directory";
@@ -121,7 +108,6 @@ function formatBytes(bytes: number): string {
   return `${i > 0 ? bytes.toFixed(1) : bytes} ${units[i]}`;
 }
 function tagToBullet(tag: string): string {
-  // e.g. "license:mit" → "license: mit", "language:en" → "language: en"
   const colon = tag.indexOf(":");
   if (colon > 0) return `${tag.slice(0, colon)}: ${tag.slice(colon + 1)}`;
   return tag;
@@ -143,7 +129,9 @@ async function fetchReadme(
     if (readmeEntry) {
       return await fetchRaw(parsed, "main", "README.md", signal);
     }
-  } catch {}
+  } catch {
+    // No README found or fetch failed; return empty string
+  }
   return "";
 }
 interface MetaFields {
@@ -200,25 +188,27 @@ function appendReadme(parts: string[], readme: string): void {
   }
 }
 
+interface RepoBodyOptions {
+  tags?: string[];
+  downloads?: number;
+  likes?: number;
+  lastModified?: string;
+  gated?: boolean | string;
+  tagFilter?: (tag: string) => boolean;
+  tagLimit?: number;
+  extraDescription?: string;
+}
+
 async function renderRepoBody(
   parts: string[],
-  info: {
-    tags?: string[];
-    downloads?: number;
-    likes?: number;
-    lastModified?: string;
-    gated?: boolean | string;
-  },
+  opts: RepoBodyOptions,
   parsed: HFPath,
   signal: AbortSignal | undefined,
-  tagFilter?: (tag: string) => boolean,
-  tagLimit?: number,
-  extraDescription?: string,
 ): Promise<void> {
-  if (info.tags?.length) {
-    renderTags(parts, info.tags, tagFilter, tagLimit);
+  if (opts.tags?.length) {
+    renderTags(parts, opts.tags, opts.tagFilter, opts.tagLimit);
   }
-  const metaStr = buildMeta(info);
+  const metaStr = buildMeta(opts);
   if (metaStr) {
     parts.push("");
     parts.push(metaStr);
@@ -226,9 +216,9 @@ async function renderRepoBody(
   const readme = await fetchReadme(parsed, signal);
   if (readme) {
     appendReadme(parts, readme);
-  } else if (extraDescription) {
+  } else if (opts.extraDescription) {
     parts.push("");
-    parts.push(extraDescription);
+    parts.push(opts.extraDescription);
   }
 }
 function addKindSpecificHeader(
@@ -236,10 +226,10 @@ function addKindSpecificHeader(
   kind: HFRepo["kind"],
   info: Record<string, unknown>,
 ): void {
-  if (kind === "model" && info.pipeline_tag) {
-    parts.push(`**Pipeline:** ${info.pipeline_tag as string}`);
-  } else if (kind === "space" && info.sdk) {
-    parts.push(`**SDK:** ${info.sdk as string}`);
+  if (kind === "model" && typeof info.pipeline_tag === "string") {
+    parts.push(`**Pipeline:** ${info.pipeline_tag}`);
+  } else if (kind === "space" && typeof info.sdk === "string") {
+    parts.push(`**SDK:** ${info.sdk}`);
   }
 }
 function makeTagFilter(
@@ -256,9 +246,43 @@ function makeTagFilter(
 function extractDatasetDescription(
   info: Record<string, unknown>,
 ): string | undefined {
-  const raw = info.description as string | undefined;
-  if (!raw) return undefined;
+  const raw = info.description;
+  if (typeof raw !== "string" || !raw) return undefined;
   return raw.replace(/\t+/g, "").replace(/>\s*/g, ">").trim();
+}
+
+function extractRepoTags(info: Record<string, unknown>): string[] | undefined {
+  if (!Array.isArray(info.tags)) return undefined;
+  return info.tags.filter((t): t is string => typeof t === "string");
+}
+
+function safeNumber(val: unknown, fallback?: number): number | undefined {
+  return typeof val === "number" ? val : fallback;
+}
+
+function safeString(val: unknown, fallback?: string): string | undefined {
+  return typeof val === "string" ? val : fallback;
+}
+
+function buildRepoBodyOptions(
+  info: Record<string, unknown>,
+  parsed: HFPath,
+): RepoBodyOptions {
+  const datasetDesc =
+    parsed.kind === "dataset" ? extractDatasetDescription(info) : undefined;
+  return {
+    tags: extractRepoTags(info),
+    downloads: safeNumber(info.downloads),
+    likes: safeNumber(info.likes),
+    lastModified: safeString(info.lastModified),
+    gated:
+      typeof info.gated === "boolean" || typeof info.gated === "string"
+        ? info.gated
+        : undefined,
+    tagFilter: makeTagFilter(parsed.kind),
+    tagLimit: parsed.kind === "dataset" ? 20 : undefined,
+    extraDescription: datasetDesc,
+  };
 }
 
 async function handleRepo(
@@ -269,25 +293,15 @@ async function handleRepo(
     repoApiPath(parsed),
     signal,
   );
-  const parts: string[] = [`# ${info.id as string}`];
+  const title = safeString(info.id, "unknown")!;
+  const parts: string[] = [`# ${title}`];
   addKindSpecificHeader(parts, parsed.kind, info);
-  const datasetDesc =
-    parsed.kind === "dataset" ? extractDatasetDescription(info) : undefined;
 
   await renderRepoBody(
     parts,
-    info as {
-      tags?: string[];
-      downloads?: number;
-      likes?: number;
-      lastModified?: string;
-      gated?: boolean | string;
-    },
+    buildRepoBodyOptions(info, parsed),
     parsed,
     signal,
-    makeTagFilter(parsed.kind),
-    parsed.kind === "dataset" ? 20 : undefined,
-    datasetDesc,
   );
   return parts.join("\n");
 }
@@ -306,12 +320,8 @@ async function handleFile(
       repoApiPath(parsed),
       signal,
     );
-    content = await fetchRaw(
-      parsed,
-      (info.sha as string) ?? "main",
-      parsed.path,
-      signal,
-    );
+    const sha = typeof info.sha === "string" ? info.sha : "main";
+    content = await fetchRaw(parsed, sha, parsed.path, signal);
   }
 
   return `# ${parsed.path}\n\n\`${parsed.owner}/${parsed.name}@${revision}\`\n\n${content}`;

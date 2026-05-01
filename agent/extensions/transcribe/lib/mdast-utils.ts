@@ -33,18 +33,15 @@ function hasOnlyEmptyText(node: unknown): boolean {
   }
   return true;
 }
-function isEmptyAnchorLink(node: unknown): boolean {
+function isAnchorLink(node: unknown): boolean {
   const n = node as { type?: string; url?: string };
-  return (
-    n.type === "link" && (n.url ?? "").startsWith("#") && hasOnlyEmptyText(node)
-  );
+  return n.type === "link" && (n.url ?? "").startsWith("#");
 }
 function isEmptyListItem(node: unknown): boolean {
   const n = node as { children?: unknown[] };
   const children = n.children;
   if (!Array.isArray(children) || children.length === 0) return true;
   for (const child of children) {
-    // A list item with any non-empty paragraph is not empty
     const c = child as { type?: string; children?: unknown[] };
     if (c.type === "paragraph" && !hasOnlyEmptyText(c)) return false;
     if (c.type !== "paragraph") return false;
@@ -60,7 +57,6 @@ function cleanLists(tree: MdastRoot): void {
   });
   removeNodesByIndex(toRemoveItems);
 
-  // Second pass: remove lists that are now empty
   const toRemoveLists: Array<{ parent: Node; index: number }> = [];
   visit(tree, "list", (node, index, parent) => {
     const listNode = node as { children?: unknown[] };
@@ -80,15 +76,16 @@ function isNonEmptyContent(child: unknown): boolean {
   if (c.type === "text") return (c.value ?? "").trim().length > 0;
   return Array.isArray((child as { children?: unknown[] })?.children);
 }
-function cleanHeadings(tree: MdastRoot): void {
-  visit(tree, "heading", (node) => {
-    const heading = node as { children?: unknown[] };
-    const children = heading.children;
-    if (!Array.isArray(children)) return;
-    heading.children = children.filter(
-      (child): child is Node => !isEmptyAnchorLink(child),
-    );
+function removeAnchorLinks(tree: MdastRoot): void {
+  const toRemove: Array<{ parent: Node; index: number }> = [];
+
+  visit(tree, "link", (node, index, parent) => {
+    if (isAnchorLink(node) && parent && typeof index === "number") {
+      toRemove.push({ parent, index });
+    }
   });
+
+  removeNodesByIndex(toRemove);
 }
 function getParagraphText(
   children: Array<{ type?: string; value?: string }> | undefined,
@@ -122,9 +119,8 @@ function cleanParagraphs(tree: MdastRoot): void {
     if (fullText.length === 0) {
       if (parent && typeof index === "number") toRemove.push({ parent, index });
     } else {
-      const cleaned = children.filter(
-        (child): child is Node =>
-          isNonEmptyContent(child) && !isEmptyAnchorLink(child),
+      const cleaned = children.filter((child): child is Node =>
+        isNonEmptyContent(child),
       );
       if (cleaned.length !== children.length) {
         para.children = cleaned;
@@ -136,7 +132,7 @@ function cleanParagraphs(tree: MdastRoot): void {
 }
 export function cleanTree(tree: MdastRoot): MdastRoot {
   removeEmbeddedCode(tree);
-  cleanHeadings(tree);
+  removeAnchorLinks(tree);
   cleanParagraphs(tree);
   cleanLists(tree);
   return tree;

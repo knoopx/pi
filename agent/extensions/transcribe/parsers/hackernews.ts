@@ -1,7 +1,14 @@
-import { BROWSER_HEADERS, FETCH_OPTIONS } from "../lib/constants";
-import { formatAge, formatNumber, stripHtml } from "../lib/formatters";
-import { defineParser } from "../lib/parser-utils";
-import { retry } from "../lib/retry";
+import {
+  createRetryFetch,
+  createRetryFetchText,
+  defineParser,
+} from "../lib/parser-utils";
+import {
+  formatAge,
+  formatDate,
+  formatNumber,
+  stripHtml,
+} from "../lib/formatters";
 const FIREBASE = "https://hacker-news.firebaseio.com/v0";
 const HN_BASE = "https://news.ycombinator.com";
 const ALGOLIA = "https://hn.algolia.com/api/v1";
@@ -46,7 +53,7 @@ interface ParsedHNUrl {
 }
 function formatTime(timestamp: number): string {
   const d = new Date(timestamp * 1000);
-  return d.toLocaleDateString("en-US", {
+  return d.toLocaleString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -55,27 +62,9 @@ function formatTime(timestamp: number): string {
   });
 }
 
-async function fetchWithAuth(
-  url: string,
-  signal?: AbortSignal,
-): Promise<Response> {
-  return retry(async () => {
-    const res = await fetch(url, {
-      headers: BROWSER_HEADERS,
-      signal,
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    return res;
-  }, FETCH_OPTIONS);
-}
-
-async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
-  return (await fetchWithAuth(url, signal)).json() as T;
-}
-
-async function fetchText(url: string, signal?: AbortSignal): Promise<string> {
-  return (await fetchWithAuth(url, signal)).text();
-}
+const hnFetchOpts = { apiName: "HackerNews" };
+const fetchJson = createRetryFetch(hnFetchOpts);
+const fetchText = createRetryFetchText(hnFetchOpts);
 
 async function fetchItem(
   id: number,
@@ -491,14 +480,7 @@ function buildSearchMeta(fields: {
   ];
   if (fields.author) meta.push(`by: ${fields.author}`);
   if (fields.createdAt) {
-    const d = new Date(fields.createdAt);
-    meta.push(
-      d.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-    );
+    meta.push(formatDate(fields.createdAt));
   }
   return meta.join(" \u2022 ");
 }
@@ -518,7 +500,6 @@ async function handleFirebasePath(
   const kind = tryParseStoryKind(path);
   if (kind) return handleStories(kind, 20, signal);
 
-  // Fallback: fetch raw JSON and display it
   const data = await fetchJson<unknown>(`${FIREBASE}/${path}`, signal);
   const jsonBlock = "\`\`\`json\n" + JSON.stringify(data, null, 2) + "\n\`\`\`";
   return `# Firebase API: /v0/${path}\n\n${jsonBlock}`;

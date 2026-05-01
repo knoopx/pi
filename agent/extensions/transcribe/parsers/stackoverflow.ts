@@ -1,7 +1,5 @@
-import { BROWSER_HEADERS, FETCH_OPTIONS } from "../lib/constants";
+import { createRetryFetch, defineParser } from "../lib/parser-utils";
 import { formatAge, formatNumber, stripHtml } from "../lib/formatters";
-import { defineParser } from "../lib/parser-utils";
-import { retry } from "../lib/retry";
 const BASE = "https://stackoverflow.com";
 const API = "https://api.stackexchange.com/2.3";
 const SO_FILTER = "!)3nIZKx6WpNKLbI7rOJ]GqFyHlAeLXvT4MR1YjUuQ0oCmDfE2gSb5t8w";
@@ -118,6 +116,8 @@ function tryParseUsersPath(parts: string[]): ParsedSoUrl | null {
   return { kind: "users" };
 }
 
+const soFetch = createRetryFetch({ apiName: "StackOverflow" });
+
 async function fetchSoApi<T>(
   endpoint: string,
   params: Record<string, string> = {},
@@ -127,16 +127,8 @@ async function fetchSoApi<T>(
   for (const [k, v] of Object.entries(params)) {
     url.searchParams.set(k, v);
   }
-  const fetchWithRetryInner = async (): Promise<SoApiPage<T>> => {
-    const res = await fetch(url.toString(), {
-      headers: BROWSER_HEADERS,
-      signal,
-    });
-    if (!res.ok) throw new Error(`SO API ${res.status}: ${res.statusText}`);
-    return res.json() as unknown as SoApiPage<T>;
-  };
 
-  return retry(fetchWithRetryInner, FETCH_OPTIONS);
+  return soFetch<SoApiPage<T>>(url.toString(), signal);
 }
 function formatTags(tags: string[]): string {
   return tags.map((t) => `[${t}]`).join(" ");

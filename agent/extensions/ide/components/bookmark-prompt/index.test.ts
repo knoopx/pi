@@ -226,6 +226,7 @@ describe("bookmark-prompt", () => {
         doneFn,
       );
 
+      component.handleInput?.("\x1b");
       expect(doneFn).toHaveBeenCalledWith(null);
     });
 
@@ -233,6 +234,7 @@ describe("bookmark-prompt", () => {
       const doneFn = vi.fn();
       const { component } = await createFixture("", undefined, doneFn);
 
+      component.handleInput?.("\r");
       expect(doneFn).toHaveBeenCalledWith(null);
     });
   });

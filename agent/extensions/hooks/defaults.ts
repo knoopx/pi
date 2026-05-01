@@ -30,7 +30,7 @@ const defaults: HooksConfig = [
   },
   {
     group: "eslint",
-    pattern: "eslint.config.*",
+    pattern: "eslint-config.*",
     hooks: [
       {
         event: "tool_result",

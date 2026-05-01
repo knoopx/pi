@@ -1,10 +1,5 @@
+import { createRetryFetch } from "../lib/parser-utils";
 import type { Parser } from "../lib/types";
-import { BROWSER_HEADERS } from "../lib/constants";
-import { retry } from "../lib/retry";
-const FETCH_OPTIONS: Parameters<typeof retry>[1] = {
-  maxRetries: 2,
-  retryDelay: 500,
-};
 const EXTRACT_MAX_LEN = 300;
 const SNIPPET_MAX_LEN = 120;
 type WikiPathType = "article" | "search";
@@ -63,23 +58,7 @@ function tryParseWikiSearch(rest: string, lang: string): WikiPath | null {
   return buildSearchResult(searchParams, lang);
 }
 
-async function wikiFetch(
-  lang: string,
-  path: string,
-  signal?: AbortSignal,
-): Promise<unknown> {
-  const url = `https://${lang}.wikipedia.org${path}`;
-  return retry(async () => {
-    const resp = await fetch(url, {
-      headers: BROWSER_HEADERS,
-      signal,
-    });
-    if (!resp.ok) {
-      throw new Error(`Wikipedia API HTTP ${resp.status}: ${resp.statusText}`);
-    }
-    return resp.json();
-  }, FETCH_OPTIONS);
-}
+const wikiFetch = createRetryFetch({ apiName: "Wikipedia" });
 interface SummaryData {
   title: string;
   description?: string;
@@ -100,11 +79,10 @@ async function handleArticle(
   signal?: AbortSignal,
 ): Promise<string> {
   const encoded = encodeURIComponent(title.replace(/ /g, "_"));
-  const data = (await wikiFetch(
-    lang,
-    `/api/rest_v1/page/summary/${encoded}`,
+  const data = await wikiFetch<SummaryData>(
+    `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encoded}`,
     signal,
-  )) as SummaryData;
+  );
 
   if (!data?.title) return renderArticleNotFound(title, lang);
   const parts: string[] = [`# ${data.title}`, ""];
@@ -155,11 +133,10 @@ async function handleSearch(
 ): Promise<string> {
   const clamped = Math.max(1, Math.min(limit, 30));
   const encoded = encodeURIComponent(query);
-  const data = (await wikiFetch(
-    lang,
-    `/w/api.php?action=query&list=search&srsearch=${encoded}&srlimit=${clamped}&format=json&utf8=1`,
+  const data = await wikiFetch<{ query?: { search?: SearchResult[] } }>(
+    `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encoded}&srlimit=${clamped}&format=json&utf8=1`,
     signal,
-  )) as { query?: { search?: SearchResult[] } };
+  );
   const results = data?.query?.search;
   if (!results?.length) {
     return `# Wikipedia Search: "${query}"\n\nNo articles found. Try a different search term.`;

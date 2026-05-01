@@ -265,7 +265,7 @@ describe("defaults.json", () => {
   describe("given typescript-only group", () => {
     it("then blocks .js files, excepts eslint config", () => {
       expect(fileNameGroupMatches("typescript-only", "foo.js")).toBe(true);
-      expect(fileNameGroupMatches("typescript-only", "eslint.config.js")).toBe(
+      expect(fileNameGroupMatches("typescript-only", "eslint-config.js")).toBe(
         false,
       );
       expect(fileNameGroupMatches("typescript-only", "foo.ts")).toBe(false);

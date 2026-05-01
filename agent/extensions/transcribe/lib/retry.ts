@@ -38,7 +38,12 @@ export async function retry<T>(
   const maxDelay = options?.maxDelay ?? 5000;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    await runAttempt(fn, attempt, { maxRetries, retryDelay, maxDelay });
+    const result = await runAttempt(fn, attempt, {
+      maxRetries,
+      retryDelay,
+      maxDelay,
+    });
+    if (result !== undefined) return result;
   }
   throw new Error("Retry loop completed without error");
 }
@@ -47,13 +52,11 @@ async function runAttempt<T>(
   fn: () => Promise<T>,
   attempt: number,
   opts: { maxRetries: number; retryDelay: number; maxDelay: number },
-): Promise<void> {
-  let lastError: Error | undefined;
-
+): Promise<T | undefined> {
   try {
-    await fn();
+    return await fn();
   } catch (error) {
-    lastError = error instanceof Error ? error : new Error(String(error));
+    const lastError = error instanceof Error ? error : new Error(String(error));
     const decision = determineAction(lastError, attempt, opts.maxRetries);
     switch (decision) {
       case "throw":
@@ -65,27 +68,9 @@ async function runAttempt<T>(
             computeDelay(attempt, opts.retryDelay, opts.maxDelay),
           ),
         );
-        return; // continue to next loop iteration
+        return undefined;
       case "abort":
-        break;
+        throw lastError;
     }
   }
-}
-
-export async function fetchWithRetry(
-  url: string,
-  init?: RequestInit & { signal?: AbortSignal },
-  options?: RetryOptions,
-): Promise<{ ok: boolean; status: number; text: () => Promise<string> }> {
-  return retry(async () => {
-    const res = await fetch(url, init);
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-    return {
-      ok: true,
-      status: res.status,
-      text: () => res.text(),
-    };
-  }, options);
 }

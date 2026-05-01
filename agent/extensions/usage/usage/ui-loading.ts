@@ -1,47 +1,7 @@
-import { CancellableLoader, Container, Spacer } from "@mariozechner/pi-tui";
-import { DynamicBorder } from "@mariozechner/pi-coding-agent";
+import { CancellableLoader } from "@mariozechner/pi-tui";
 import type { ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
+import { BorderedView } from "../shared/bordered-view";
 import type { Theme } from "../shared/types";
-function createBorderedCustomUI<
-  T extends {
-    render(): string[];
-    handleInput(input: string): void;
-  },
->(
-  tui: unknown,
-  theme: {
-    fg(c: string, s: string): string;
-  },
-  done: () => void,
-  createComponent: () => T,
-): {
-  render: (w: number) => string[];
-  invalidate: () => void;
-  handleInput: (input: string) => void;
-  dispose: () => void;
-} {
-  const container = new Container();
-  container.addChild(new Spacer(1));
-  container.addChild(new DynamicBorder((s: string) => theme.fg("border", s)));
-  container.addChild(new Spacer(1));
-  const component = createComponent();
-
-  return {
-    render(w: number) {
-      const borderLines = container.render(w);
-      const componentLines = component.render();
-      const bottomBorder = theme.fg("border", "─".repeat(w));
-      return [...borderLines, ...componentLines, "", bottomBorder];
-    },
-    invalidate() {
-      container.invalidate();
-    },
-    handleInput(input: string) {
-      component.handleInput(input);
-    },
-    dispose() {},
-  };
-}
 export async function loadAndDisplay<
   TData,
   TComponent extends {
@@ -90,8 +50,12 @@ export async function loadAndDisplay<
   if (!data) return;
 
   await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
-    return createBorderedCustomUI(tui, theme, done, () =>
-      createComponent(theme, data),
+    const component = createComponent(theme, data!);
+    return new BorderedView(
+      theme,
+      component,
+      () => (tui as { requestRender: () => void }).requestRender(),
+      done,
     );
   });
 }

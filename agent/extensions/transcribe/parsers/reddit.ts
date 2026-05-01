@@ -1,7 +1,5 @@
-import { BROWSER_HEADERS, FETCH_OPTIONS } from "../lib/constants";
+import { createRetryFetch, defineParser } from "../lib/parser-utils";
 import { formatAge, formatNumber, stripHtml } from "../lib/formatters";
-import { defineParser } from "../lib/parser-utils";
-import { retry } from "../lib/retry";
 const BASE = "https://www.reddit.com";
 type RedditKind =
   | "subreddit"
@@ -118,6 +116,8 @@ interface RedditThreadResponse {
   };
 }
 
+const redditFetch = createRetryFetch({ apiName: "Reddit" });
+
 async function fetchRedditJson<T>(
   path: string,
   params?: Record<string, string>,
@@ -130,14 +130,7 @@ async function fetchRedditJson<T>(
     }
   }
 
-  return retry(async () => {
-    const res = await fetch(url.toString(), {
-      headers: BROWSER_HEADERS,
-      signal,
-    });
-    if (!res.ok) throw new Error(`Reddit API ${res.status}: ${res.statusText}`);
-    return res.json() as T;
-  }, FETCH_OPTIONS);
+  return redditFetch(url.toString(), signal);
 }
 function extractDomain(url: string): string {
   try {

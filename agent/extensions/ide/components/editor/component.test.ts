@@ -174,6 +174,7 @@ describe("createEditorComponent", () => {
     describe("when pressing escape", () => {
       it("then calls done with result", async () => {
         const comp = createComponent();
+        comp.handleInput("\x1b");
 
         await new Promise((r) => setTimeout(r, 0));
         expect(doneFn).toHaveBeenCalled();
@@ -183,6 +184,7 @@ describe("createEditorComponent", () => {
     describe("when pressing enter", () => {
       it("then inserts a newline and requests render", () => {
         const comp = createComponent();
+        comp.handleInput("\r");
 
         expect(tui.requestRender).toHaveBeenCalled();
         const lines = comp.render(120);
@@ -193,6 +195,7 @@ describe("createEditorComponent", () => {
     describe("when pressing backspace", () => {
       it("then deletes character backward", () => {
         const comp = createComponent();
+        comp.handleInput("\x7f");
 
         expect(tui.requestRender).toHaveBeenCalled();
       });
@@ -201,6 +204,7 @@ describe("createEditorComponent", () => {
     describe("when pressing ctrl+s", () => {
       it("then saves and shows status notification", () => {
         const comp = createComponent();
+        comp.handleInput("\x13");
 
         expect(tui.requestRender).toHaveBeenCalled();
       });
@@ -209,6 +213,7 @@ describe("createEditorComponent", () => {
     describe("when pressing arrow up", () => {
       it("then moves cursor up", () => {
         const comp = createComponent();
+        comp.handleInput("\x1b[A");
 
         expect(tui.requestRender).toHaveBeenCalled();
       });
@@ -217,6 +222,7 @@ describe("createEditorComponent", () => {
     describe("when pressing arrow down", () => {
       it("then moves cursor down", () => {
         const comp = createComponent();
+        comp.handleInput("\x1b[B");
 
         expect(tui.requestRender).toHaveBeenCalled();
       });
@@ -225,6 +231,7 @@ describe("createEditorComponent", () => {
     describe("when pressing page up", () => {
       it("then scrolls page up", () => {
         const comp = createComponent();
+        comp.handleInput("\x1b[5~");
 
         expect(tui.requestRender).toHaveBeenCalled();
       });
@@ -233,6 +240,7 @@ describe("createEditorComponent", () => {
     describe("when pressing page down", () => {
       it("then scrolls page down", () => {
         const comp = createComponent();
+        comp.handleInput("\x1b[6~");
 
         expect(tui.requestRender).toHaveBeenCalled();
       });
@@ -241,6 +249,7 @@ describe("createEditorComponent", () => {
     describe("when pressing home", () => {
       it("then moves to line start", () => {
         const comp = createComponent();
+        comp.handleInput("\x1b[H");
 
         expect(tui.requestRender).toHaveBeenCalled();
       });
@@ -249,6 +258,7 @@ describe("createEditorComponent", () => {
     describe("when pressing end", () => {
       it("then moves to line end", () => {
         const comp = createComponent();
+        comp.handleInput("\x1b[F");
 
         expect(tui.requestRender).toHaveBeenCalled();
       });

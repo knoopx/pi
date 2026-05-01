@@ -217,28 +217,50 @@ class ToolUsageComponent {
     return [this.theme.fg("dim", "[Tab/←→] view  [↑↓] select  [q] close")];
   }
 
-  handleInput(data: string): void {
+  private handleTabCycle(data: string, dir: number): boolean {
     const matches = (key: Parameters<typeof matchesKey>[1]) =>
       matchesKey(data, key);
-    if (matches("tab") || matches("right")) {
+    if (dir === 1 && (matches("tab") || matches("right"))) {
       this.activeTab = this.cycleTab(this.activeTab, 1);
-    } else if (matches("shift+tab") || matches("left")) {
+      return true;
+    }
+    if (dir === -1 && (matches("shift+tab") || matches("left"))) {
       this.activeTab = this.cycleTab(this.activeTab, -1);
-    } else if (data === "\u001b[A" || data === "k" || data === "K") {
+      return true;
+    }
+    return false;
+  }
+
+  private handleCursorMove(data: string): boolean {
+    if (data === "\u001b[A" || data === "k" || data === "K") {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
-    } else if (data === "\u001b[B" || data === "j" || data === "J") {
+      return true;
+    }
+    if (data === "\u001b[B" || data === "j" || data === "J") {
       this.selectedIndex = Math.min(
         this.getRowCount() - 1,
         this.selectedIndex + 1,
       );
-    } else if (
-      matches("escape") ||
-      data === "\x1b" ||
-      data === "q" ||
-      data === "Q"
-    ) {
-      this.done();
+      return true;
     }
+    return false;
+  }
+
+  private handleQuit(data: string): boolean {
+    const matches = (key: Parameters<typeof matchesKey>[1]) =>
+      matchesKey(data, key);
+    if (matches("escape") || data === "\x1b" || data === "q" || data === "Q") {
+      this.done();
+      return true;
+    }
+    return false;
+  }
+
+  handleInput(data: string): void {
+    if (this.handleTabCycle(data, 1)) return;
+    if (this.handleTabCycle(data, -1)) return;
+    if (this.handleCursorMove(data)) return;
+    this.handleQuit(data);
   }
 
   private cycleTab(tab: ToolTabName, dir: number): ToolTabName {

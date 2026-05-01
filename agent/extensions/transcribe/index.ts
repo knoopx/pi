@@ -1,37 +1,18 @@
-import type {
-  ExtensionAPI,
-  AgentToolResult,
-} from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import type { Static } from "@sinclair/typebox";
-import { gfmToMarkdown } from "mdast-util-gfm";
 import { toMarkdown } from "mdast-util-to-markdown";
+import { gfmToMarkdown } from "mdast-util-gfm";
 import { parse } from "./lib/registry";
-const Params = Type.Object({
+
+const TranscribeParams = Type.Object({
   source: Type.String({
     description: "URL or file path to transcribe into human-readable text",
   }),
 });
-type ParamsType = Static<typeof Params>;
-function buildSuccessResult(
-  source: string,
-  markdown: string,
-): AgentToolResult<Record<string, unknown>> {
-  return {
-    content: [{ type: "text" as const, text: markdown }],
-    details: { source, converted: true },
-  };
-}
-function buildErrorResult(
-  source: string,
-  error: unknown,
-): AgentToolResult<{ source: string }> {
-  const message = error instanceof Error ? error.message : String(error);
-  return {
-    content: [{ type: "text" as const, text: `Conversion failed: ${message}` }],
-    details: { source },
-  };
-}
+
+type TranscribeParamsType = Static<typeof TranscribeParams>;
+
 export default function (pi: ExtensionAPI): void {
   pi.registerTool({
     name: "transcribe",
@@ -45,40 +26,27 @@ Use this to:
 - Process various file formats
 
 Supports URLs and local files.`,
-    parameters: Params,
-    async execute(
-      _toolCallId: string,
-      params: ParamsType,
-      signal: AbortSignal | undefined,
-      onUpdate?,
-    ): Promise<AgentToolResult<{ source: string }>> {
-      const { source } = params;
+    parameters: TranscribeParams,
 
-      try {
-        onUpdate?.({
-          content: [
-            {
-              type: "text" as const,
-              text: `Converting ${source} to Markdown...`,
-            },
-          ],
+    async execute(_toolCallId, params, _signal) {
+      const { source } = params as TranscribeParamsType;
+      const result = await parse(source);
+
+      if (typeof result === "string") {
+        return {
+          content: [{ type: "text", text: result }],
           details: { source },
-        });
-        const result = await parse(source, signal);
-        let markdown: string;
-        if (typeof result === "string") {
-          markdown = result.trim();
-        } else {
-          markdown = toMarkdown(result, {
-            extensions: [gfmToMarkdown()],
-          }).trim();
-        }
-        return buildSuccessResult(source, markdown) as AgentToolResult<{
-          source: string;
-        }>;
-      } catch (error) {
-        return buildErrorResult(source, error);
+        };
       }
+
+      const markdown = toMarkdown(result, {
+        extensions: [gfmToMarkdown()],
+      });
+
+      return {
+        content: [{ type: "text", text: markdown }],
+        details: { source },
+      };
     },
   });
 }

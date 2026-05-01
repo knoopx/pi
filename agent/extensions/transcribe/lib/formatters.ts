@@ -8,6 +8,22 @@ export function formatAge(timestamp: number): string {
   const ageMonths = Math.floor(ageDays / 30);
   return `${ageMonths}mo ago`;
 }
+
+export function formatDate(date: string | Date): string {
+  return new Date(date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+export function formatShortDate(date: string | Date): string {
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 export function formatNumber(n: number): string {
   return n.toLocaleString();
 }
