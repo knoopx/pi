@@ -128,7 +128,7 @@ function makeNotifyTool(isTtsEnabledRef: { value: boolean }, pi: ExtensionAPI) {
     name: "notify",
     label: "Send Notification",
     description:
-      "Send a desktop notification using notify-send. Supports urgency, expiration, app name, icon, and category.",
+      "Send a desktop notification using notify-send. Mandatory to use on phase changes, long-running operations, and task completion — never skip sending notifications when these events occur. Supports urgency, expiration, app name, icon, and category.",
     parameters: Type.Object({
       summary: Type.String({ description: "Notification summary/title" }),
       body: Type.Optional(
