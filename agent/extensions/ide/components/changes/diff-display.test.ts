@@ -11,7 +11,7 @@ describe("diff states", () => {
       setMockChanges(state, [defaultMockChange()]);
       state.diffContent = [];
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders diff content with lines", async () => {
@@ -35,7 +35,7 @@ describe("diff states", () => {
         " line 3",
       ];
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders diff with scroll offset", async () => {
@@ -56,6 +56,6 @@ describe("diff states", () => {
         "line 7",
       ];
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 });

@@ -13,7 +13,7 @@ export type { BaseStats } from "./shared/types";
 
 // Extension entry point — registers commands using the extracted components
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { BorderedView } from "./shared/bordered-view";
+import { BorderedView } from "../../shared/components";
 import { loadAndDisplay } from "./usage/ui-loading";
 import { UsageComponent } from "./usage/component";
 import { collectUsageData } from "./usage/data-collection";

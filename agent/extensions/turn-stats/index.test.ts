@@ -10,24 +10,7 @@ import {
   formatAggregateOutput,
 } from "./index";
 import type { AgentRunStats } from "./index";
-function createUsage(partial: Partial<Usage>): Usage {
-  const cost = {
-    input: 0,
-    output: 0,
-    cacheRead: 0,
-    cacheWrite: 0,
-    total: 0,
-    ...partial.cost,
-  };
-  return {
-    input: partial.input ?? 0,
-    output: partial.output ?? 0,
-    cacheRead: partial.cacheRead ?? 0,
-    cacheWrite: partial.cacheWrite ?? 0,
-    totalTokens: partial.totalTokens ?? 0,
-    cost,
-  };
-}
+import { createUsage } from "./test-helpers";
 function testFormatCost(costTotal: number, expected: string) {
   expect(
     formatCost({

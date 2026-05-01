@@ -91,7 +91,7 @@ describe("createEditorComponent", () => {
         const helpLine = lines[lines.length - 2];
         expect(helpLine).toContain("esc quit");
 
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -109,7 +109,7 @@ describe("createEditorComponent", () => {
         expect(lines[1]).toContain("myfile.tsx");
         expect(lines[1]).not.toContain("/some/deep/path/");
 
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -121,7 +121,7 @@ describe("createEditorComponent", () => {
         const contentLine = lines[contentStart];
         expect(contentLine).toContain("│");
 
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -135,7 +135,7 @@ describe("createEditorComponent", () => {
         expect(helpLine).toContain("ctrl+s save");
         expect(helpLine).toContain("ctrl+z undo");
 
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -167,7 +167,7 @@ describe("createEditorComponent", () => {
 
         expect(tui.requestRender).toHaveBeenCalled();
         const lines = comp.render(120);
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -188,7 +188,7 @@ describe("createEditorComponent", () => {
 
         expect(tui.requestRender).toHaveBeenCalled();
         const lines = comp.render(120);
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -273,7 +273,7 @@ describe("createEditorComponent", () => {
 
         expect(tui.requestRender).toHaveBeenCalled();
         const lines = comp.render(120);
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -284,7 +284,7 @@ describe("createEditorComponent", () => {
 
         expect(tui.requestRender).toHaveBeenCalled();
         const lines = comp.render(120);
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -295,7 +295,7 @@ describe("createEditorComponent", () => {
 
         expect(tui.requestRender).toHaveBeenCalled();
         const lines = comp.render(120);
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
   });
@@ -309,7 +309,7 @@ describe("createEditorComponent", () => {
         const helpLine = lines[lines.length - 2];
         expect(helpLine).toContain("Saved");
 
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
   });
@@ -322,7 +322,7 @@ describe("createEditorComponent", () => {
         const contentLine = lines[3];
         expect(contentLine).toContain(CURSOR_MARKER);
 
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -336,7 +336,7 @@ describe("createEditorComponent", () => {
           expect(lines[i]).not.toContain(CURSOR_MARKER);
         }
 
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
   });
@@ -368,7 +368,7 @@ describe("createEditorComponent", () => {
         const lines = comp.render(120);
         expect(lines[1]).toContain("empty.txt");
 
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
   });

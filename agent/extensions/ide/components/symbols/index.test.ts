@@ -1,4 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
+import type * as fsPromises from "node:fs/promises";
+
+type ImportOriginal = () => Promise<typeof fsPromises>;
+vi.mock("node:fs/promises", async (importOriginal: ImportOriginal) => {
+  const actual = await importOriginal();
+  const { mockReadFileImplementation } = await import("../files/test-helpers");
+  return {
+    ...actual,
+    readFile: vi.fn().mockImplementation(mockReadFileImplementation),
+  };
+});
+
 import type { ExecResult } from "@mariozechner/pi-coding-agent";
 import type {
   ExtensionAPI,
@@ -13,12 +25,14 @@ import {
 } from "../../lib/test-utils";
 const theme = createMockTheme();
 const SYMBY_TYPE: Record<string, string> = {
-  class: "Animal|c|./src/models.ts|1-30\nPlant|c|./src/models.ts|32-60",
+  class:
+    "ListPickerComponent|c|./agent/extensions/ide/lib/list-picker.ts|45-120\nSplitPanel|c|./agent/extensions/ide/lib/split-panel/index.ts|30-90",
   function:
-    "parseInput|f|./src/utils.ts|1-15\nformatOutput|f|./src/utils.ts|17-40",
-  method: "render|m|./src/view.ts|5-20\nupdate|m|./src/view.ts|22-35",
-  enum: "Status|e|./src/types.ts|1-8\nRole|e|./src/types.ts|10-16",
-  all: "Animal|c|./src/models.ts|1-30\nparseInput|f|./src/utils.ts|1-15\nrender|m|./src/view.ts|5-20\nStatus|e|./src/types.ts|1-8",
+    "createFilesComponent|f|./agent/extensions/ide/components/files/component.ts|28-60\ncreateSymbolsComponent|f|./agent/extensions/ide/components/symbols/component.ts|35-70",
+  method:
+    "render|m|./agent/extensions/ide/lib/split-panel/renderer.ts|15-40\nhandleInput|m|./agent/extensions/ide/lib/list-picker.ts|130-165",
+  enum: "SymbolType|e|./agent/extensions/ide/components/symbols/types.ts|1-8\nFocusState|e|./agent/extensions/ide/components/changes/state.ts|10-16",
+  all: "ListPickerComponent|c|./agent/extensions/ide/lib/list-picker.ts|45-120\ncreateFilesComponent|f|./agent/extensions/ide/components/files/component.ts|28-60\nrender|m|./agent/extensions/ide/lib/split-panel/renderer.ts|15-40\nSymbolType|e|./agent/extensions/ide/components/symbols/types.ts|1-8",
 };
 function resolveCmOutput(args: string[]): string {
   const typeIdx = args.indexOf("--type");
@@ -77,7 +91,6 @@ async function createPicker(options?: { cmStdout?: string }): Promise<{
   tui: ReturnType<typeof createMockTui>;
 }> {
   const execMock = createExecMock(options);
-  // File previews use fs.readFile directly, no cat mock needed
   const pi: ExtensionAPI = { ...createMockPi(), exec: execMock };
   const tui = createMockTui();
   const ctx = { cwd: "/tmp/test-project" } as ExtensionContext;
@@ -92,6 +105,8 @@ async function createPicker(options?: { cmStdout?: string }): Promise<{
   });
 
   await waitForLoaded(picker);
+  // Allow preview pane to load (async readFile + Shiki highlighting via createFilePreviewLoader)
+  await new Promise((r) => setTimeout(r, 200));
   return { picker, execMock, tui };
 }
 
@@ -162,25 +177,33 @@ describe("symbols component", () => {
       // No cmStdout — uses dynamic resolveCmOutput per --type
       const { picker } = await createPicker({});
 
-      expect(picker.render(80)).toMatchSnapshot("initial - class filter");
+      expect(picker.render(80).join("\n")).toMatchSnapshot(
+        "initial - class filter",
+      );
 
       picker.handleInput(CTRL_SLASH);
       await waitForLoaded(picker);
-      expect(picker.render(80)).toMatchSnapshot(
+      expect(picker.render(80).join("\n")).toMatchSnapshot(
         "after cycle - function filter",
       );
 
       picker.handleInput(CTRL_SLASH);
       await waitForLoaded(picker);
-      expect(picker.render(80)).toMatchSnapshot("after cycle - method filter");
+      expect(picker.render(80).join("\n")).toMatchSnapshot(
+        "after cycle - method filter",
+      );
 
       picker.handleInput(CTRL_SLASH);
       await waitForLoaded(picker);
-      expect(picker.render(80)).toMatchSnapshot("after cycle - enum filter");
+      expect(picker.render(80).join("\n")).toMatchSnapshot(
+        "after cycle - enum filter",
+      );
 
       picker.handleInput(CTRL_SLASH);
       await waitForLoaded(picker);
-      expect(picker.render(80)).toMatchSnapshot("after cycle - all filter");
+      expect(picker.render(80).join("\n")).toMatchSnapshot(
+        "after cycle - all filter",
+      );
     });
   });
 

@@ -19,7 +19,7 @@ describe("files — list row rendering", () => {
     it("renders file rows with consistent padding across different path lengths", async () => {
       const { component } = await createFilesFixture(makeFilesMockPi());
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("renders rows with leading space before file icons", async () => {
@@ -29,7 +29,7 @@ describe("files — list row rendering", () => {
         ),
       );
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("renders file rows with mixed extensions and consistent left alignment", async () => {
@@ -46,7 +46,7 @@ describe("files — list row rendering", () => {
         ),
       );
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -71,7 +71,7 @@ describe("files — list row rendering", () => {
       ].join("\n");
       const { component } = await createFilesFixture(makeFilesMockPi(files));
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("maintains consistent row padding when terminal height is smaller than file count", async () => {
@@ -86,7 +86,7 @@ describe("files — list row rendering", () => {
       (tui.terminal as unknown as TestTerminal).columns = 80;
       (tui.terminal as unknown as TestTerminal).rows = 15;
       const result = component.render(80);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -96,7 +96,7 @@ describe("files — list row rendering", () => {
         makeFilesMockPi("index.ts\napp.tsx\nconfig.mts\nutils.cts\n"),
       );
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("renders rows consistently for YAML/Nix files", async () => {
@@ -104,7 +104,7 @@ describe("files — list row rendering", () => {
         makeFilesMockPi("flake.nix\ndocker-compose.yml\nconfig.yaml\n.env\n"),
       );
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("renders rows consistently for various file types in mixed list", async () => {
@@ -125,7 +125,7 @@ describe("files — list row rendering", () => {
         ),
       );
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -133,7 +133,7 @@ describe("files — list row rendering", () => {
     it("renders the no items message with consistent padding", async () => {
       const { component } = await createFilesFixture(makeFilesMockPi(""));
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -150,7 +150,7 @@ describe("files — list row rendering", () => {
 
       await new Promise((r) => setTimeout(r, 50));
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -169,7 +169,7 @@ describe("files — list row rendering", () => {
         "agent",
       );
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -180,7 +180,7 @@ describe("files — list row rendering", () => {
       );
       (tui.terminal as unknown as TestTerminal).columns = 60;
       const result = component.render(60);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("renders with consistent padding at wide width", async () => {
@@ -189,7 +189,7 @@ describe("files — list row rendering", () => {
       );
       (tui.terminal as unknown as TestTerminal).columns = 160;
       const result = component.render(160);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
   });
 

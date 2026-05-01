@@ -11,7 +11,7 @@ describe("loading state", () => {
     const visibleLines = await renderSnapshot(120, (state) => {
       state.loadingState.loading = true;
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 });
 
@@ -20,19 +20,62 @@ describe("focus switching", () => {
     const visibleLines = await renderSnapshot(120, (state) => {
       setMockChanges(state, [defaultMockChange()]);
       state.files = [
-        { status: "A", path: "src/main.tsx", insertions: 10, deletions: 0 },
+        {
+          status: "M",
+          path: "agent/extensions/ide/components/files/component.ts",
+          insertions: 42,
+          deletions: 18,
+        },
+      ];
+      state.selectionState.fileIndex = 0;
+      state.diffContent = [
+        "diff --git a/agent/extensions/ide/components/files/component.ts b/agent/extensions/ide/components/files/component.ts",
+        "index e3b0c44..a1b2c3d 100644",
+        "--- a/agent/extensions/ide/components/files/component.ts",
+        "+++ b/agent/extensions/ide/components/files/component.ts",
+        "@@ -1,5 +1,7 @@",
+        " import { Component } from '@mariozechner/pi-tui';",
+        "+import type { FileInfo } from '../../lib/types';",
+        "+",
+        "  export class FilesComponent extends Component {",
+        "-    private items: string[] = [];",
+        "+    private items: FileInfo[] = [];",
+        "+    private selectedPaths: Set<string> = new Set();",
       ];
       state.selectionState.focus = "right";
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders left focus indicator when focused on changes", async () => {
     const visibleLines = await renderSnapshot(120, (state) => {
       setMockChanges(state, [defaultMockChange()]);
+      state.files = [
+        { status: "A", path: "src/login.tsx", insertions: 50, deletions: 0 },
+        { status: "M", path: "src/App.tsx", insertions: 12, deletions: 4 },
+        { status: "D", path: "src/old-page.tsx", insertions: 0, deletions: 35 },
+      ];
+      state.selectionState.fileIndex = 0;
+      state.diffContent = [
+        "diff --git a/src/login.tsx b/src/login.tsx",
+        "new file mode 100644",
+        "index 0000000..a3f2c1d",
+        "--- /dev/null",
+        "+++ b/src/login.tsx",
+        "@@ -0,0 +1,8 @@",
+        "+import { useState } from 'react';",
+        "+",
+        "+export function LoginForm() {",
+        "+  const [email, setEmail] = useState('');",
+        "+  const handleSubmit = (e: React.FormEvent) => {",
+        "+    e.preventDefault();",
+        "+  };",
+        "+  return <form onSubmit={handleSubmit}>Sign in</form>;",
+        "+}",
+      ];
       state.selectionState.focus = "left";
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 });
 
@@ -42,21 +85,21 @@ describe("move mode", () => {
       setMockChanges(state, [
         createMockChange({
           changeId: "a",
-          description: "change a",
-          author: "Alice",
+          description: "feat(ide): add split panel preview for file explorer",
+          author: "knoopx",
           parentIds: [],
         }),
         createMockChange({
           changeId: "b",
-          description: "change b",
-          author: "Bob",
+          description: "fix(tui): resolve race condition in list-picker update",
+          author: "knoopx",
           parentIds: ["a"],
         }),
       ]);
       state.mode = "move";
       state.moveOriginalIndex = 1;
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 });
 
@@ -66,8 +109,8 @@ describe("ANSI styling", () => {
       setMockChanges(state, [
         createMockChange({
           changeId: "x",
-          description: "marked change",
-          author: "Alice",
+          description: "feat(ide): add split panel preview for file explorer",
+          author: "knoopx",
           parentIds: [],
         }),
       ]);
@@ -82,8 +125,9 @@ describe("ANSI styling", () => {
       setMockChanges(state, [
         createMockChange({
           changeId: "imm",
-          description: "immutable commit",
-          author: "Alice",
+          description:
+            "chore: initial commit - scaffold pi coding agent project",
+          author: "knoopx",
           immutable: true,
           parentIds: [],
         }),
@@ -98,8 +142,8 @@ describe("ANSI styling", () => {
       setMockChanges(state, [
         createMockChange({
           changeId: "wc",
-          description: "work in progress",
-          author: "Alice",
+          description: "feat(ide): WIP integrate pi-tui component architecture",
+          author: "knoopx",
           parentIds: [],
         }),
       ]);

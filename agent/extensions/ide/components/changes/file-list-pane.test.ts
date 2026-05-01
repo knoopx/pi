@@ -20,7 +20,7 @@ describe("file list states", () => {
       ]);
       state.files = [];
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders file list with status icons", async () => {
@@ -50,7 +50,7 @@ describe("file list states", () => {
       ];
       state.selectionState.fileIndex = 0;
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders selected file with different index", async () => {
@@ -63,6 +63,6 @@ describe("file list states", () => {
       ];
       state.selectionState.fileIndex = 2;
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 });

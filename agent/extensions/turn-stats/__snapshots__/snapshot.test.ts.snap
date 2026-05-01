@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`turn-stats aggregate output > renders end-of-run aggregate single turn 1`] = `"󰍩 1 turn · ↑2.4K ↓890 ·  15s ·  74.2 tok/s · $0.03"`;
+
+exports[`turn-stats aggregate output > renders end-of-run aggregate with all fields 1`] = `"󰍩 5 turns · ↑12.4K ↓45.2K ·  2m 15s ·  34.2 tok/s · $0.28"`;
+
+exports[`turn-stats aggregate output > renders end-of-run aggregate with long duration 1`] = `"󰍩 12 turns · ↑500.0K ↓1.2M ·  2h 0m 0s ·  333.3 tok/s · $8.45"`;
+
+exports[`turn-stats aggregate output > renders end-of-run aggregate without cost 1`] = `"󰍩 3 turns · ↑800 ↓200 ·  8s ·  40.0 tok/s"`;
+
+exports[`turn-stats per-turn output > renders per-turn stats with N/A output 1`] = `"↓N/A |  2s"`;
+
+exports[`turn-stats per-turn output > renders per-turn stats with cost 1`] = `"↓1.9K |  36s |  52.4 tok/s | $0.12"`;
+
+exports[`turn-stats per-turn output > renders per-turn stats with large token count 1`] = `"↓125.0K |  2m 15s |  520.8 tok/s | $1.50"`;
+
+exports[`turn-stats per-turn output > renders per-turn stats without cost (below threshold) 1`] = `"↓500 |  5s |  111.1 tok/s"`;

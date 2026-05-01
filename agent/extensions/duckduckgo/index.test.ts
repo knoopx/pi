@@ -64,9 +64,29 @@ describe("DuckDuckGo Extension", () => {
     it("should format search results correctly", async () => {
       const mockHtmlWithResults = `
         <div class="result">
-          <a class="result__a" href="https://example.com">Example Title</a>
-          <div class="result__snippet">Example description</div>
-          <div class="result__url">example.com</div>
+          <a class="result__a" href="https://bun.sh/">Bun – JavaScript, TypeScript, and Dart runtime</a>
+          <div class="result__snippet">An extremely fast JavaScript runtime, transpiler, and package manager. Built in Zig for sub-millisecond cold starts and a SQLite-based local cache.</div>
+          <div class="result__url">bun.sh</div>
+        </div>
+        <div class="result">
+          <a class="result__a" href="https://deno.land/">Deno – A secure runtime for JavaScript and TypeScript</a>
+          <div class="result__snippet">A modern runtime for JavaScript, TypeScript, and WebAssembly. Uses V8, built with Rust, and secured by default with a permission system.</div>
+          <div class="result__url">deno.land</div>
+        </div>
+        <div class="result">
+          <a class="result__a" href="https://nodejs.org/en">node.js – JavaScript runtime</a>
+          <div class="result__snippet">Node.js is a free, open-source, cross-platform JavaScript runtime environment. Built on V8 and used for server-side networking APIs.</div>
+          <div class="result__url">nodejs.org</div>
+        </div>
+        <div class="result">
+          <a class="result__a" href="https://www.typescriptlang.org/">TypeScript: The Language for Application Scale</a>
+          <div class="result__snippet">TypeScript extends JavaScript by adding types to the language. It compiles to clean, readable JavaScript and powers modern tooling.</div>
+          <div class="result__url">www.typescriptlang.org</div>
+        </div>
+        <div class="result">
+          <a class="result__a" href="https://github.com/oven-sh/bun">oven-sh/bun: An extremely fast JavaScript runtime, bundler, transpiler, and package manager</a>
+          <div class="result__snippet">Bun is an all-in-one toolchain including a JS runtime, bundler, transpiler, and package manager. It's written in Zig and focuses on speed.</div>
+          <div class="result__url">github.com</div>
         </div>
       `;
       let fetchCallCount = 0;

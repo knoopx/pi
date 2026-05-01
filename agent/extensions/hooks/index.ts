@@ -256,7 +256,7 @@ async function auditHooksConfig(
 
   return { lines, errors };
 }
-function renderGroupHeader(
+export function renderGroupHeader(
   fg: (color: ThemeColor, text: string) => string,
   group: { group: string; pattern: string },
   isActive: boolean,
@@ -265,7 +265,7 @@ function renderGroupHeader(
   const statusColor = isActive ? "success" : "error";
   return `${fg(statusColor, statusIcon)} ${group.group} (${group.pattern})`;
 }
-function renderHookLine(hook: {
+export function renderHookLine(hook: {
   event: string;
   context?: string;
   pattern?: string;

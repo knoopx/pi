@@ -100,8 +100,8 @@ describe("Reverse History Search Extension", () => {
 
         await handler(mockCtx);
 
-        expect(mockCtx.ui.notify.bind(mockCtx.ui)).not.toHaveBeenCalled();
-        expect(mockCtx.ui.custom.bind(mockCtx.ui)).not.toHaveBeenCalled();
+        expect(mockCtx.ui.notify).not.toHaveBeenCalled();
+        expect(mockCtx.ui.custom).not.toHaveBeenCalled();
       });
     });
 
@@ -109,11 +109,11 @@ describe("Reverse History Search Extension", () => {
       it("then it should notify user that no history is found", async () => {
         await handler(mockCtx);
 
-        expect(mockCtx.ui.notify.bind(mockCtx.ui)).toHaveBeenCalledWith(
+        expect(mockCtx.ui.notify).toHaveBeenCalledWith(
           "No history found",
           "warning",
         );
-        expect(mockCtx.ui.custom.bind(mockCtx.ui)).not.toHaveBeenCalled();
+        expect(mockCtx.ui.custom).not.toHaveBeenCalled();
       });
     });
 

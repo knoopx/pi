@@ -163,12 +163,31 @@ function change(
   };
 }
 const defaultChanges = [
-  change("abc", "feat: add login", "Alice"),
-  change("def", "fix: typo", "Bob", ["abc"]),
+  change(
+    "abc",
+    "feat(ide): add split panel preview for file explorer",
+    "knoopx",
+  ),
+  change(
+    "def",
+    "fix(tui): resolve race condition in list-picker update",
+    "knoopx",
+    ["abc"],
+  ),
 ];
 const SHARED_FILES = [
-  { status: "A" as const, path: "src/new.ts", insertions: 10, deletions: 0 },
-  { status: "M" as const, path: "src/main.ts", insertions: 5, deletions: 2 },
+  {
+    status: "A" as const,
+    path: "agent/extensions/ide/components/files/component.ts",
+    insertions: 42,
+    deletions: 0,
+  },
+  {
+    status: "M" as const,
+    path: "agent/extensions/ide/lib/split-panel/index.ts",
+    insertions: 15,
+    deletions: 8,
+  },
 ];
 const BASE_VIEW_PROPS = {
   workspaces: [] as AgentWorkspace[],
@@ -210,7 +229,7 @@ describe("workspace view rendering states", () => {
       loading: true,
     });
 
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders workspace list with focused right panel", async () => {
@@ -227,7 +246,7 @@ describe("workspace view rendering states", () => {
       focus: "right",
     });
 
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders selected workspace with file list and diff", async () => {
@@ -252,7 +271,7 @@ describe("workspace view rendering states", () => {
       selectedIndex: 1,
     });
 
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders default workspace with changes list", async () => {
@@ -267,7 +286,7 @@ describe("workspace view rendering states", () => {
       focus: "right",
     });
 
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders empty workspace list", async () => {
@@ -275,7 +294,7 @@ describe("workspace view rendering states", () => {
       diffContent: ["No workspaces found"],
     });
 
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders no content when diff is empty", async () => {
@@ -285,7 +304,7 @@ describe("workspace view rendering states", () => {
       focus: "right",
     });
 
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders error message in diff pane", async () => {
@@ -296,7 +315,7 @@ describe("workspace view rendering states", () => {
       focus: "right",
     });
 
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders scrolled diff content", async () => {
@@ -318,7 +337,7 @@ describe("workspace view rendering states", () => {
       focus: "right",
     });
 
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders default workspace with second change selected", async () => {
@@ -331,7 +350,7 @@ describe("workspace view rendering states", () => {
       focus: "right",
     });
 
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders workspace with multiple files and second file selected", async () => {
@@ -352,7 +371,7 @@ describe("workspace view rendering states", () => {
       focus: "right",
     });
 
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders workspace with no changed files", async () => {
@@ -362,6 +381,6 @@ describe("workspace view rendering states", () => {
       focus: "right",
     });
 
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 });

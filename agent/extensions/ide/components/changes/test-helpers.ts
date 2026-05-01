@@ -26,30 +26,31 @@ function buildGraphLayout(
 export function featureBookmarkChange() {
   return createMockChange({
     changeId: "abc",
-    description: "feature commit",
-    author: "Alice",
+    description: "feat(ide): add split panel preview for file explorer",
+    author: "knoopx",
     parentIds: [],
   });
 }
 export function defaultMockChange() {
   return createMockChange({
     changeId: "a",
-    description: "change a",
-    author: "Alice",
+    description:
+      "feat(ide): add split panel preview for file explorer component",
+    author: "knoopx",
     parentIds: [],
   });
 }
-export function wcPrevChanges(authorPrev = "Alice") {
+export function wcPrevChanges(authorPrev = "knoopx") {
   return [
     createMockChange({
       changeId: "wc",
-      description: "work in progress",
-      author: "Alice",
+      description: "feat(ide): WIP integrate pi-tui component architecture",
+      author: "knoopx",
       parentIds: ["prev"],
     }),
     createMockChange({
       changeId: "prev",
-      description: "previous commit",
+      description: "refactor(ide): simplify component rendering pipeline",
       author: authorPrev,
       parentIds: [],
     }),

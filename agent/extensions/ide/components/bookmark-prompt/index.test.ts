@@ -75,7 +75,7 @@ describe("bookmark-prompt", () => {
         cwd: "/home/user/project",
       });
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
 
       resolveLoadRef.current?.();
     });
@@ -89,7 +89,7 @@ describe("bookmark-prompt", () => {
         stderr: "bookmark 'list' is not a jj command",
       });
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("renders a generic error message when stderr is empty", async () => {
@@ -99,7 +99,7 @@ describe("bookmark-prompt", () => {
         stderr: "",
       });
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -107,7 +107,7 @@ describe("bookmark-prompt", () => {
     it("renders empty state when no bookmarks exist", async () => {
       const { component } = await createFixture("");
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -115,7 +115,7 @@ describe("bookmark-prompt", () => {
     it("renders a single bookmark", async () => {
       const { component } = await createFixture("main\n");
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("renders multiple bookmarks with consistent padding", async () => {
@@ -123,7 +123,7 @@ describe("bookmark-prompt", () => {
         "main\nfeature-login\nfix-bug-42\ndocs/readme\nrelease/v1.0\nhotfix/critical\n",
       );
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("deduplicates bookmarks", async () => {
@@ -131,7 +131,7 @@ describe("bookmark-prompt", () => {
         "main\nmain\nfeature-a\nfeature-b\nmain\n",
       );
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("filters bookmarks by search query and shows unmatched as create option", async () => {
@@ -144,7 +144,7 @@ describe("bookmark-prompt", () => {
       component.handleInput?.("a");
       component.handleInput?.("t");
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("shows all bookmarks when query is empty", async () => {
@@ -153,7 +153,7 @@ describe("bookmark-prompt", () => {
       component.handleInput?.("a");
       component.handleInput?.("\x7f"); // backspace
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("shows create-only option when query matches no bookmarks", async () => {
@@ -161,7 +161,7 @@ describe("bookmark-prompt", () => {
 
       component.handleInput?.("xyz-nonexistent");
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("shows bookmark count indicator when there are many bookmarks", async () => {
@@ -171,7 +171,7 @@ describe("bookmark-prompt", () => {
       ).join("\n");
       const { component } = await createFixture(bookmarks);
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -182,7 +182,7 @@ describe("bookmark-prompt", () => {
       component.handleInput?.("\x1b[B");
       component.handleInput?.("\x1b[B");
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("moves selection up on arrow-up key", async () => {
@@ -192,7 +192,7 @@ describe("bookmark-prompt", () => {
       component.handleInput?.("\x1b[B");
       component.handleInput?.("\x1b[A");
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("clamps selection to max when pressing down at end", async () => {
@@ -201,7 +201,7 @@ describe("bookmark-prompt", () => {
       component.handleInput?.("\x1b[B");
       component.handleInput?.("\x1b[B");
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("calls done with selected bookmark on enter", async () => {
@@ -261,7 +261,7 @@ describe("bookmark-prompt", () => {
       component.handleInput?.("t");
       component.handleInput?.("\x7f");
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("handles typed new bookmark name for creation", async () => {
@@ -270,7 +270,7 @@ describe("bookmark-prompt", () => {
 
       component.handleInput?.("new-feature");
       const result = component.render(120);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -281,7 +281,7 @@ describe("bookmark-prompt", () => {
       );
       (tui.terminal as unknown as TestTerminal).columns = 60;
       const result = component.render(60);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("renders at wide width", async () => {
@@ -290,7 +290,7 @@ describe("bookmark-prompt", () => {
       );
       (tui.terminal as unknown as TestTerminal).columns = 160;
       const result = component.render(160);
-      expect(result).toMatchSnapshot();
+      expect(result.join("\n")).toMatchSnapshot();
     });
   });
 });

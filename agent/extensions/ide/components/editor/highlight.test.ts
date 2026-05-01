@@ -40,7 +40,7 @@ describe("syntax highlighting", () => {
         );
 
         expect(hasAnsiColorCodes).toBe(true);
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -50,7 +50,7 @@ describe("syntax highlighting", () => {
         const comp = createComponent(code, "/tmp/test.ts");
         const lines = comp.render(120);
 
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -60,7 +60,7 @@ describe("syntax highlighting", () => {
         const comp = createComponent(code, "/tmp/test.ts");
         const lines = comp.render(120);
 
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -70,7 +70,7 @@ describe("syntax highlighting", () => {
         const comp = createComponent(code, "/tmp/test.ts");
         const lines = comp.render(120);
 
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
   });
@@ -82,7 +82,7 @@ describe("syntax highlighting", () => {
         const comp = createComponent(code, "/tmp/test.js");
         const lines = comp.render(120);
 
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
   });
@@ -94,7 +94,7 @@ describe("syntax highlighting", () => {
         const comp = createComponent(content, "/tmp/readme.txt");
         const lines = comp.render(120);
 
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
   });
@@ -120,7 +120,7 @@ describe("syntax highlighting", () => {
         comp.handleInput?.("2");
         const lines = comp.render(120);
 
-        expect(lines).toMatchSnapshot();
+        expect(lines.join("\n")).toMatchSnapshot();
       });
     });
   });

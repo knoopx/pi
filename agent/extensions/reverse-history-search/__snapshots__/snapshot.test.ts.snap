@@ -1,0 +1,57 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`reverse-history-search — list row rendering > renders at narrow width > renders at narrow width 1`] = `
+"────────────────────────────────────────────────────────────────────────────────
+[1-8 of 8]
+$ bun run build                                                                 
+󰆉 Fix the rendering issue in the split panel component
+$ cm map agent/extensions --level 2 --format ai
+󰆉 Update the README with new extension features
+$ jj log --no-graph
+󰆉 Can you help me debug this TypeScript error?
+$ bunx vitest run agent/extensions/ide/components/changes/
+󰆉 Add snapshot tests for all components
+────────────────────────────────────────────────────────────────────────────────"
+`;
+
+exports[`reverse-history-search — list row rendering > renders empty results when no matches > renders empty results when no matches 1`] = `
+"────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+nonexistenttermxyz • [1-0 of 0]
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────"
+`;
+
+exports[`reverse-history-search — list row rendering > renders filtered results matching query > renders filtered results matching query 1`] = `
+"────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+bun • [1-2 of 2]
+$ bun run build
+$ bunx vitest run agent/extensions/ide/components/changes/                                                              
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────"
+`;
+
+exports[`reverse-history-search — list row rendering > renders history search results with query filter > renders history search results with query filter 1`] = `
+"────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[1-8 of 8]
+$ bun run build                                                                                                         
+󰆉 Fix the rendering issue in the split panel component
+$ cm map agent/extensions --level 2 --format ai
+󰆉 Update the README with new extension features
+$ jj log --no-graph
+󰆉 Can you help me debug this TypeScript error?
+$ bunx vitest run agent/extensions/ide/components/changes/
+󰆉 Add snapshot tests for all components
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────"
+`;
+
+exports[`reverse-history-search — list row rendering > renders selected item with highlight indicator > renders selected item with highlight indicator 1`] = `
+"────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[1-8 of 8]
+$ bun run build
+󰆉 Fix the rendering issue in the split panel component
+$ cm map agent/extensions --level 2 --format ai
+󰆉 Update the README with new extension features                                                                        
+$ jj log --no-graph
+󰆉 Can you help me debug this TypeScript error?
+$ bunx vitest run agent/extensions/ide/components/changes/
+󰆉 Add snapshot tests for all components
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────"
+`;

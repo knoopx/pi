@@ -1,6 +1,6 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { applySelectionBackground, truncateAnsi } from "../text-utils";
-import { Row } from "./row";
+import { Row } from "../../../../shared/components/row";
 interface ListRowProps {
   text: string;
   width: number;

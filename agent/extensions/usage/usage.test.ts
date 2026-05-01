@@ -10,6 +10,7 @@ import {
   padRight,
   type UsageData,
 } from "./index";
+import { emptyTimeFilteredStats } from "./usage/types";
 
 // Helper Functions
 function createMockUsageData(): UsageData {
@@ -78,16 +79,10 @@ function createMockUsageData(): UsageData {
   };
 }
 function createEmptyUsageData(): UsageData {
-  const emptyTotals = {
-    sessions: 0,
-    messages: 0,
-    cost: 0,
-    tokens: { total: 0, input: 0, output: 0, cache: 0 },
-  };
   return {
-    today: { providers: new Map(), totals: emptyTotals },
-    thisWeek: { providers: new Map(), totals: emptyTotals },
-    allTime: { providers: new Map(), totals: emptyTotals },
+    today: emptyTimeFilteredStats(),
+    thisWeek: emptyTimeFilteredStats(),
+    allTime: emptyTimeFilteredStats(),
   };
 }
 

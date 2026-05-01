@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`tool-usage component rendering > renders empty tool usage when no tools 1`] = `
+"Tool Usage Statistics
+
+Sessions: NaN  |  Tool Calls: NaN
+
+[By Tool]   By Date    By Session 
+
+  No tool usage data
+──────────────────────────────────────────────────────────────────────
+
+  Avg per session: NaN  |  Unique tools: 0
+
+[Tab/←→] view  [↑↓] select  [q] close"
+`;
+
+exports[`tool-usage component rendering > renders tool usage dashboard with per-tool stats 1`] = `
+"Tool Usage Statistics
+
+Sessions: 5  |  Tool Calls: 66
+
+[By Tool]   By Date    By Session 
+
+  bash            25  ( 37.9%)  ██████████████████████████████
+  read            15  ( 22.7%)  ██████████████████
+  edit            12  ( 18.2%)  ██████████████
+  grep             8  ( 12.1%)  ██████████
+  write            6  (  9.1%)  ███████
+
+──────────────────────────────────────────────────────────────────────
+
+  Most used: bash (25 calls, 37.9%)
+  Avg per session: 13.2  |  Unique tools: 5
+
+[Tab/←→] view  [↑↓] select  [q] close"
+`;

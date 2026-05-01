@@ -24,7 +24,7 @@ describe("renderEditorView", () => {
         expect(result.lines[0]).toContain(CURSOR_MARKER);
         expect(result.lines.length).toBe(10);
 
-        expect(result.lines).toMatchSnapshot();
+        expect(result.lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -39,7 +39,7 @@ describe("renderEditorView", () => {
           expect(line).not.toContain(CURSOR_MARKER);
         }
 
-        expect(result.lines).toMatchSnapshot();
+        expect(result.lines.join("\n")).toMatchSnapshot();
       });
     });
   });
@@ -54,7 +54,7 @@ describe("renderEditorView", () => {
         expect(result.lines[1]).toContain("2");
         expect(result.lines[2]).toContain("3");
 
-        expect(result.lines).toMatchSnapshot();
+        expect(result.lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -69,7 +69,7 @@ describe("renderEditorView", () => {
 
         expect(result.lines[0]).toContain("1");
 
-        expect(result.lines).toMatchSnapshot();
+        expect(result.lines.join("\n")).toMatchSnapshot();
       });
     });
   });
@@ -87,7 +87,7 @@ describe("renderEditorView", () => {
 
         expect(result.lines.length).toBe(3);
 
-        expect(result.lines).toMatchSnapshot();
+        expect(result.lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -102,7 +102,7 @@ describe("renderEditorView", () => {
         expect(result.lines.length).toBe(5);
         expect(result.lines[1]).toBe("");
 
-        expect(result.lines).toMatchSnapshot();
+        expect(result.lines.join("\n")).toMatchSnapshot();
       });
     });
   });
@@ -120,7 +120,7 @@ describe("renderEditorView", () => {
 
         expect(result.lines[0]).toContain("\x1b[48;");
 
-        expect(result.lines).toMatchSnapshot();
+        expect(result.lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -137,7 +137,7 @@ describe("renderEditorView", () => {
         expect(result.lines[0]).toContain("\x1b[48;");
         expect(result.lines[2]).toContain("\x1b[48;");
 
-        expect(result.lines).toMatchSnapshot();
+        expect(result.lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -152,7 +152,7 @@ describe("renderEditorView", () => {
           expect(line).not.toContain("\x1b[48;");
         }
 
-        expect(result.lines).toMatchSnapshot();
+        expect(result.lines.join("\n")).toMatchSnapshot();
       });
     });
   });
@@ -186,7 +186,7 @@ describe("renderEditorView", () => {
           expect(line.trim()).toBe("");
         }
 
-        expect(result.lines).toMatchSnapshot();
+        expect(result.lines.join("\n")).toMatchSnapshot();
       });
     });
   });
@@ -202,7 +202,7 @@ describe("renderEditorView", () => {
 
         expect(result.lines[0]).toContain(CURSOR_MARKER);
 
-        expect(result.lines).toMatchSnapshot();
+        expect(result.lines.join("\n")).toMatchSnapshot();
       });
     });
 
@@ -216,7 +216,7 @@ describe("renderEditorView", () => {
 
         expect(result.lines[0]).toContain(CURSOR_MARKER);
 
-        expect(result.lines).toMatchSnapshot();
+        expect(result.lines.join("\n")).toMatchSnapshot();
       });
     });
   });

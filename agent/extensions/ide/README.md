@@ -12,7 +12,7 @@ A development environment extension for pi that provides code browsing, Codemapp
 - **Move mode for changes** - Reorder mutable changes in the stack (`Ctrl+M`, then `↑/↓`, `Enter`)
 - **Workspace management** - Create isolated jj workspaces and spawn subagents
 - **Pull request browser** - Browse GitHub PRs with diff preview, checkout, approve, and merge
-- **Skill browser** - Browse local/remote skills and install or insert `/skill:<name>`
+- **Symbol reference analysis** - Browse callers, callees, tests, types, schema, and dependencies for any symbol via Codemapper
 - **Command palette** - Fuzzy-search slash commands and shortcuts from one overlay
 - **Rich diffs** - Colorized diffs via delta
 - **Quick navigation** - Keyboard shortcuts for fast access
@@ -178,22 +178,24 @@ Review all workspaces and their changes.
 | `Shift+PgUp/PgDn` | Scroll diff  |
 | `Esc`             | Exit         |
 
-### `/skills [query]`
+### Symbol References (from `/symbols`)
 
-Browse local and remote skills, preview files, install remote skills, or insert local skill invocation.
+From the symbols picker, press action keys to open a split-panel overlay showing callers, callees, tests, types, schema, or file dependencies for any symbol. Uses `cm` (Codemapper) for AST-level code analysis.
 
-![Skills](../../../screenshots/skills.png)
+![Symbol References](../../../screenshots/symbol-references.png)
 
-| Key               | Action                                           |
-| ----------------- | ------------------------------------------------ |
-| `↑/↓`             | Navigate (focused pane)                          |
-| `Tab`             | Switch skills/files pane                         |
-| `Ctrl+/`          | Toggle local/remote view                         |
-| `Enter`           | Install (remote) or insert `/skill:name` (local) |
-| `Ctrl+D`          | Delete local skill                               |
-| `Shift+PgUp/PgDn` | Scroll preview                                   |
-| `Type`            | Filter skills                                    |
-| `Esc`             | Exit                                             |
+| Key      | Action                             |
+| -------- | ---------------------------------- |
+| `Ctrl+T` | Show callers of focused symbol     |
+| `Ctrl+L` | Show callees of focused symbol     |
+| `Ctrl+J` | Show tests for focused symbol      |
+| `Ctrl+Y` | Show types used by focused symbol  |
+| `Ctrl+S` | Show schema of focused symbol      |
+| `Ctrl+E` | Open file in VS Code               |
+| `↑/↓`    | Navigate                           |
+| `PgUp`   | Scroll                             |
+| `Enter`  | Select / drill into sub-references |
+| `Esc`    | Exit                               |
 
 ### `/pull-requests`
 
@@ -236,7 +238,6 @@ Create a new jj workspace from the current change and spawn a pi subagent in tha
 | `Ctrl+J` | Open workspaces        |
 | `Ctrl+K` | Open changes           |
 | `Ctrl+O` | Open operation log     |
-| `Ctrl+S` | Open skill browser     |
 | `Ctrl+G` | Open pull requests     |
 
 ## Automatic Change Tracking

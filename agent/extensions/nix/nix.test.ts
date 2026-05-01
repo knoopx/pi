@@ -77,13 +77,31 @@ describe("Nix Extension", () => {
             type: "package",
             package_attr_name: "hello",
             package_pname: "hello",
-            package_pversion: "2.12.1",
-            package_description: "A simple hello world program",
-            package_longDescription: "GNU Hello prints a friendly greeting.",
+            package_pversion: "2.12",
+            package_description: "A program that produces a friendly greeting",
+            package_longDescription:
+              'GNU Hello is a program that prints "Hello, world!" when run. It supports multiple languages, demonstrating internationalization.',
             package_homepage: ["https://www.gnu.org/software/hello/"],
-            package_maintainers: [{ name: "John Doe" }],
+            package_maintainers: [
+              { name: "NixOS maintainers" },
+              { name: "Wjamesh" },
+            ],
             package_license_set: ["GPL-3.0-or-later"],
-            package_position: "/pkgs/applications/misc/hello/default.nix:35",
+            package_position:
+              "/pkgs/applications/misc/gnu-hello/default.nix:42",
+          },
+          {
+            type: "package",
+            package_attr_name: "hello-builder",
+            package_pname: "hello-builder",
+            package_pversion: "0.3.1",
+            package_description: "A simple build tool for hello-world projects",
+            package_longDescription:
+              "Hello Builder automates the creation of basic project scaffolds with configurable templates.",
+            package_homepage: ["https://github.com/example/hello-builder"],
+            package_maintainers: [{ name: "example-user" }],
+            package_license_set: ["MIT"],
+            package_position: "/pkgs/tools/build/hello-builder/default.nix:18",
           },
         ];
         const mockFetch: unknown = vi.fn().mockImplementation((..._args) => ({
@@ -108,7 +126,7 @@ describe("Nix Extension", () => {
       it("then it should return formatted package results", () => {
         expect((result.content[0] as TextContent).text).toMatchSnapshot();
         expect(result.details.query).toBe("hello");
-        expect(result.details.totalFound).toBe(1);
+        expect(result.details.totalFound).toBe(2);
       });
     });
 

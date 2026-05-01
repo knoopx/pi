@@ -43,11 +43,20 @@ async function renderSnapshot(
   );
   return renderer.render(width, "");
 }
+const REALISTIC_DESCRIPTIONS = [
+  "feat(ide): add split panel preview for file explorer",
+  "fix(tui): resolve race condition in list-picker update",
+  "refactor(ide): simplify component rendering pipeline",
+  "docs: update README with installation guide",
+  "chore: bump version to 0.4.0 and update deps",
+];
+
 function makeChanges(count: number, startDesc = 0) {
   return Array.from({ length: count }, (_, i) =>
     createMockChange({
       changeId: `c${i}`,
-      description: `change ${startDesc + i}`,
+      description:
+        REALISTIC_DESCRIPTIONS[(startDesc + i) % REALISTIC_DESCRIPTIONS.length],
       author: "Alice",
       parentIds: i > 0 ? [`c${i - 1}`] : [],
     }),
@@ -88,7 +97,7 @@ describe("changes/move-mode rendering", () => {
         120,
         setupMoveMode({ selectedIndex: 1 }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
 
     it("then renders move indicator with bookmarks on cursor change", async () => {
@@ -99,7 +108,7 @@ describe("changes/move-mode rendering", () => {
           custom: (state) => state.bookmarksByChange.set("c0", ["main"]),
         }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -109,7 +118,7 @@ describe("changes/move-mode rendering", () => {
         120,
         setupMoveMode({ selectedIndex: 1, direction: "down" }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
 
     it("then renders at bottom of list when moved to last position", async () => {
@@ -117,7 +126,7 @@ describe("changes/move-mode rendering", () => {
         120,
         setupMoveMode({ selectedIndex: 3, direction: "down" }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
 
     it("then renders swap with marked change", async () => {
@@ -129,7 +138,7 @@ describe("changes/move-mode rendering", () => {
           custom: (state) => state.selectedChangeIds.add("c2"),
         }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -139,7 +148,7 @@ describe("changes/move-mode rendering", () => {
         120,
         setupMoveMode({ selectedIndex: 3, direction: "up" }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
 
     it("then renders at top of list when moved to first position", async () => {
@@ -147,7 +156,7 @@ describe("changes/move-mode rendering", () => {
         120,
         setupMoveMode({ selectedIndex: 1, direction: "up" }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -157,7 +166,7 @@ describe("changes/move-mode rendering", () => {
         120,
         setupMoveMode({ selectedIndex: 0, direction: "up" }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
 
     it("then does not move down from last position", async () => {
@@ -165,7 +174,7 @@ describe("changes/move-mode rendering", () => {
         120,
         setupMoveMode({ selectedIndex: 4, direction: "down" }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
 
     it("then does not move working copy change", async () => {
@@ -179,7 +188,7 @@ describe("changes/move-mode rendering", () => {
           },
         }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
 
     it("then does not move working copy even when cursor is on different change", async () => {
@@ -193,7 +202,7 @@ describe("changes/move-mode rendering", () => {
           },
         }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -219,7 +228,7 @@ describe("changes/move-mode rendering", () => {
 
     it("then restores original order and selection", async () => {
       const visibleLines = await cancelMove();
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
 
     it("then restores after multiple moves", async () => {
@@ -227,7 +236,7 @@ describe("changes/move-mode rendering", () => {
         index: 2,
         moves: ["down", "down"],
       });
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -243,7 +252,7 @@ describe("changes/move-mode rendering", () => {
           },
         }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -253,7 +262,7 @@ describe("changes/move-mode rendering", () => {
         60,
         setupMoveMode({ selectedIndex: 2, direction: "down" }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -291,7 +300,7 @@ describe("changes/move-mode rendering", () => {
 
         makeNav(state).moveChange("down");
       });
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -318,7 +327,7 @@ describe("changes/move-mode rendering", () => {
           ],
         }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -338,7 +347,7 @@ describe("changes/move-mode rendering", () => {
           },
         }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -354,7 +363,7 @@ describe("changes/move-mode rendering", () => {
           },
         }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -390,7 +399,7 @@ describe("changes/move-mode rendering", () => {
           },
         }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -400,7 +409,7 @@ describe("changes/move-mode rendering", () => {
         120,
         setupMoveMode({ count: 2, selectedIndex: 0, direction: "down" }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -409,7 +418,7 @@ describe("changes/move-mode rendering", () => {
       const visibleLines = await renderSnapshot(120, (state) => {
         state.loadingState.loading = true;
       });
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -425,7 +434,7 @@ describe("changes/move-mode rendering", () => {
         state.mode = "move";
         state.moveOriginalIndex = -1;
       });
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -463,7 +472,7 @@ describe("changes/move-mode rendering", () => {
 
         makeNav(state).moveChange("down");
       });
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -489,7 +498,7 @@ describe("changes/move-mode rendering", () => {
           ],
         }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 
@@ -515,7 +524,7 @@ describe("changes/move-mode rendering", () => {
           ],
         }),
       );
-      expect(visibleLines).toMatchSnapshot();
+      expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });
 

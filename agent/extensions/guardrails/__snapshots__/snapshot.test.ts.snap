@@ -1,0 +1,31 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`guardrails audit output > renders audit output with active groups and rules > renders audit output with active groups and rules 1`] = `
+"✓ jj-not-git (*.gitignore)
+  󰳛 [command] git add
+  󰳛 [command] git commit
+✓ permission-gate (*.{js,ts})
+  󰳛 [command] sudo *
+  󰳛 [command] chmod 777
+✓ interactive (*.nix)
+  󰀪 [command] node
+  󰳛 [command] python -i
+  󰳛 [command] npm run dev
+✓ lock-files (*.lock)
+  󰳛 [file_name] *package-lock.json
+  󰳛 [file_name] *pnpm-lock.yaml
+  󰳛 [file_name] *yarn.lock"
+`;
+
+exports[`guardrails audit output > renders mixed block and confirm actions > renders mixed block and confirm actions 1`] = `
+"✓ jj (*.gitignore)
+  󰳛 [command] jj restore
+  󰀪 [command] jj git push
+  󰳛 [command] jj undo"
+`;
+
+exports[`guardrails audit output > renders single group with file_name context rules > renders single group with file_name context rules 1`] = `
+"✓ testing (*.{ts,tsx})
+  󰳛 [file_content] skip\\(true\\)
+  󰳛 [file_content] \\.only\\("
+`;

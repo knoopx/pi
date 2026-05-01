@@ -64,7 +64,7 @@ describe("linear chain graph renders with tree structure", () => {
         }),
       ]);
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders working copy icon for current change", async () => {
@@ -72,7 +72,7 @@ describe("linear chain graph renders with tree structure", () => {
       setMockChanges(state, wcPrevChanges(), 0);
       state.currentChangeId = "wc";
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders merge graph with branch symbols", async () => {
@@ -104,7 +104,7 @@ describe("linear chain graph renders with tree structure", () => {
         }),
       ]);
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders bookmarks in change rows", async () => {
@@ -119,14 +119,14 @@ describe("linear chain graph renders with tree structure", () => {
       ]);
       state.bookmarksByChange.set("abc", ["main", "release"]);
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders with empty changes and no graph", async () => {
     const visibleLines = await renderSnapshot(120, (state) => {
       setMockChanges(state, []);
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders full split-panel layout for selected change", async () => {
@@ -153,7 +153,7 @@ describe("linear chain graph renders with tree structure", () => {
         "+}",
       ];
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders correctly at narrow width with clipping", async () => {
@@ -168,7 +168,7 @@ describe("linear chain graph renders with tree structure", () => {
         }),
       ]);
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders multiple changes with graph layout and descriptions", async () => {
@@ -208,7 +208,7 @@ describe("linear chain graph renders with tree structure", () => {
         }),
       ]);
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders immutable commits with dim styling", async () => {
@@ -230,7 +230,7 @@ describe("linear chain graph renders with tree structure", () => {
         }),
       ]);
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 });
 
@@ -253,7 +253,7 @@ describe("selected / marked changes", () => {
       ]);
       state.selectedChangeIds.add("b");
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders marked background for selected change", async () => {
@@ -268,7 +268,7 @@ describe("selected / marked changes", () => {
       ]);
       state.selectedChangeIds.add("x");
     });
-    expect(rawLines).toMatchSnapshot();
+    expect(rawLines.join("\n")).toMatchSnapshot();
   });
 
   it("then extends marked background to full row width for empty description", async () => {
@@ -283,7 +283,7 @@ describe("selected / marked changes", () => {
       ]);
       state.selectedChangeIds.add("empty");
     });
-    expect(rawLines).toMatchSnapshot();
+    expect(rawLines.join("\n")).toMatchSnapshot();
   });
 });
 
@@ -305,7 +305,7 @@ describe("author formatting", () => {
         }),
       ]);
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then omits author column when no author", async () => {
@@ -319,7 +319,7 @@ describe("author formatting", () => {
         }),
       ]);
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 });
 
@@ -335,7 +335,7 @@ describe("edge cases", () => {
         }),
       ]);
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then handles very long descriptions with truncation", async () => {
@@ -350,7 +350,7 @@ describe("edge cases", () => {
         }),
       ]);
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders filter name in left title", async () => {
@@ -358,7 +358,7 @@ describe("edge cases", () => {
       setMockChanges(state, [defaultMockChange()]);
       state.currentFilterIndex = 1;
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then handles change with empty description", async () => {
@@ -372,7 +372,7 @@ describe("edge cases", () => {
         }),
       ]);
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders working copy as selected change", async () => {
@@ -380,7 +380,7 @@ describe("edge cases", () => {
       setMockChanges(state, wcPrevChanges("Bob"));
       state.currentChangeId = "wc";
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders change at bottom of list", async () => {
@@ -407,7 +407,7 @@ describe("edge cases", () => {
       ]);
       state.selectionState.selectedIndex = 2;
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders change with multiple bookmarks", async () => {
@@ -415,7 +415,7 @@ describe("edge cases", () => {
       setMockChanges(state, [featureBookmarkChange()]);
       state.bookmarksByChange.set("abc", ["main", "develop", "release"]);
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
   it("then renders change with single bookmark", async () => {
@@ -423,7 +423,7 @@ describe("edge cases", () => {
       setMockChanges(state, [featureBookmarkChange()]);
       state.bookmarksByChange.set("abc", ["main"]);
     });
-    expect(visibleLines).toMatchSnapshot();
+    expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 });
 
@@ -446,22 +446,22 @@ describe("side prop controls focus indicator", () => {
 
   it("then shows focused cursor when side is left and focus is left", async () => {
     const lines = await renderSide("left", "left");
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 
   it("then shows unfocused cursor when side is left but focus is right", async () => {
     const lines = await renderSide("right", "left");
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 
   it("then shows focused cursor when side is right and focus is right", async () => {
     const lines = await renderSide("right", "right");
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 
   it("then shows unfocused cursor when side is right but focus is left", async () => {
     const lines = await renderSide("left", "right");
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 
   it("then defaults to left side when side prop is omitted", async () => {
@@ -487,6 +487,6 @@ describe("side prop controls focus indicator", () => {
       height: 5,
       theme,
     }).render(60);
-    expect(lines).toMatchSnapshot();
+    expect(lines.join("\n")).toMatchSnapshot();
   });
 });
