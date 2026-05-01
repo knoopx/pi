@@ -13,7 +13,6 @@ import { getChangeIcon } from "../../lib/changes-formatting";
 import { notifyMutation } from "../../jj/core";
 import { loadOpLog, getOpShow, restoreOp, undoOp } from "../../jj/oplog";
 import type { OpLogItem } from "./types";
-
 function formatError(error: string | undefined): string {
   return `Failed: ${error ?? "Unknown error"}`;
 }
@@ -36,7 +35,6 @@ async function getCurrentAndTargetOpIds(
     targetOpId: entries[1]?.opId,
   };
 }
-
 function formatRestoreMessage(
   currentOpId: string | undefined,
   targetOpId: string,
@@ -46,7 +44,6 @@ function formatRestoreMessage(
   }
   return `Restored operation -> ${targetOpId}`;
 }
-
 interface OpLogComponentOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };
@@ -55,7 +52,6 @@ interface OpLogComponentOptions {
   done: (result: OpLogItem | null) => void;
   cwd: string;
 }
-
 function formatUndoMessage(
   currentOpId: string | undefined,
   targetOpId: string | undefined,
@@ -68,7 +64,6 @@ function formatUndoMessage(
   }
   return "Undid operation";
 }
-
 function buildOpLogActions(options: {
   pi: ExtensionAPI;
   cwd: string;
@@ -86,7 +81,6 @@ function buildOpLogActions(options: {
           notify("Already at this operation", "info");
           return;
         }
-
         const currentOpId = await getCurrentOpId(pi, cwd);
         const result = await restoreOp(pi, cwd, item.opId);
 
@@ -108,7 +102,6 @@ function buildOpLogActions(options: {
           pi,
           cwd,
         );
-
         const result = await undoOp(pi, cwd);
         if (result.success) {
           const msg = formatUndoMessage(currentOpId, targetOpId);
@@ -121,16 +114,13 @@ function buildOpLogActions(options: {
     },
   ];
 }
-
 export function createOpLogComponent(
   options: OpLogComponentOptions,
 ): ListPickerComponent {
   const { pi, tui, theme, keybindings, done, cwd } = options;
   let notify: (message: string, type?: "info" | "error") => void = () => {};
   const pickerRef: { current: ListPickerComponent | null } = { current: null };
-
   const actions = buildOpLogActions({ pi, cwd, notify, pickerRef });
-
   const picker = createListPicker<OpLogItem>({
     pi,
     tui,

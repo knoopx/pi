@@ -1,11 +1,8 @@
 import { basename, extname } from "node:path";
-
 const ICONS_MODE = (process.env.PRETTY_ICONS ?? "nerd").toLowerCase();
 const USE_ICONS = ICONS_MODE !== "none" && ICONS_MODE !== "off";
-
 const NF_DIR = "\ue5ff";
 const NF_DEFAULT = "\uf15b";
-
 const EXT_ICON: Record<string, string> = {
   ts: "\ue628",
   tsx: "\ue7ba",
@@ -59,7 +56,6 @@ const EXT_ICON: Record<string, string> = {
   graphql: "\ue662",
   dockerfile: "\ue7b0",
 };
-
 const NAME_ICON: Record<string, string> = {
   "package.json": "\ue71e",
   "package-lock.json": "\ue71e",
@@ -78,7 +74,6 @@ const NAME_ICON: Record<string, string> = {
   "go.mod": "\ue724",
   "pyproject.toml": "\ue73c",
 };
-
 export function fileIconGlyph(fp: string): string {
   if (!USE_ICONS) return "";
   const base = basename(fp).toLowerCase();
@@ -86,7 +81,6 @@ export function fileIconGlyph(fp: string): string {
   const ext = extname(fp).slice(1).toLowerCase();
   return EXT_ICON[ext] ? `${EXT_ICON[ext]} ` : `${NF_DEFAULT} `;
 }
-
 export function dirIconGlyph(): string {
   return USE_ICONS ? `${NF_DIR} ` : "";
 }

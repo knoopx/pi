@@ -2,7 +2,6 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { loadFilePreviewWithShiki } from "./file-preview";
-
 export function createFilePreviewLoader(
   cwd: string,
   theme: Theme,

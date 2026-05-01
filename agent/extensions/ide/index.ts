@@ -2,7 +2,8 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
-import { Key, type KeyId } from "@mariozechner/pi-tui";
+import { Key } from "@mariozechner/pi-tui";
+import type { KeyId } from "@mariozechner/pi-tui";
 
 import { createFooter } from "./lib/footer";
 import {
@@ -26,7 +27,6 @@ import { openTodosBrowser } from "./components/todos/overlay";
 import { monitorWorkspace } from "./workspace";
 import { FULL_OVERLAY_OPTIONS } from "./lib/overlay-utils";
 import { createNewChange } from "./jj/changes";
-
 function reportWorkspaceError(ctx: ExtensionContext, msg: string): void {
   if (ctx.hasUI) ctx.ui.notify(msg, "error");
 }
@@ -42,7 +42,6 @@ async function spawnWorkspaceAgent(options: {
   const { pi, ctx, workspacePath, workspaceName, description, sessionFile } =
     options;
   const { spawnAgent, forkSessionToWorkspace } = await import("./workspace");
-
   const newSessionFile = forkSessionToWorkspace(sessionFile, workspacePath);
 
   await spawnAgent({
@@ -58,7 +57,6 @@ async function spawnWorkspaceAgent(options: {
 
   monitorWorkspace(pi, workspaceName, ctx);
 }
-
 const promptAndSetBookmark = (
   pi: ExtensionAPI,
 ): ((ctx: ExtensionContext, changeId: string) => Promise<string | null>) => {
@@ -67,7 +65,6 @@ const promptAndSetBookmark = (
     changeId: string,
   ): Promise<string | null> => {
     if (!ctx.hasUI) return null;
-
     const bookmarkName = await ctx.ui.custom<string | null>(
       (tui, _theme, _keybindings, done) => {
         return createBookmarkPromptComponent({
@@ -95,9 +92,6 @@ const promptAndSetBookmark = (
     return bookmarkName;
   };
 };
-
-// --- Event handlers ---
-
 function handleSessionStart(pi: ExtensionAPI, ctx: ExtensionContext): void {
   const footer = createFooter(pi, ctx);
   footer.register();
@@ -107,9 +101,13 @@ function handleSessionStart(pi: ExtensionAPI, ctx: ExtensionContext): void {
     .then((changeResult) => {
       handleCreateChangeResult(changeResult, ctx);
     })
-    .catch(() => {});
+    .catch((error) => {
+      ctx.ui.notify(
+        `Failed to create jj change: ${error instanceof Error ? error.message : String(error)}`,
+        "warning",
+      );
+    });
 }
-
 function notifyChangeResult(opts: {
   success: boolean;
   created: boolean;
@@ -125,7 +123,6 @@ function notifyChangeResult(opts: {
     opts.ui.notify(`New jj change: ${opts.changeId ?? "(no id)"}`, "info");
   }
 }
-
 function handleCreateChangeResult(
   changeResult: {
     success: boolean;
@@ -144,13 +141,11 @@ function handleCreateChangeResult(
     ui: ctx.ui,
   });
 }
-
 function handleModelSelect(pi: ExtensionAPI, ctx: ExtensionContext): void {
   const footer = createFooter(pi, ctx);
   footer.register();
   void footer.refresh();
 }
-
 function handleSessionFork(
   pi: ExtensionAPI,
   _event: { entryId: string },
@@ -182,7 +177,6 @@ function handleSessionFork(
       reportWorkspaceError(ctx, `Failed to create workspace on fork: ${msg}`);
     });
 }
-
 function handleWorkspaceCommand(
   pi: ExtensionAPI,
   args: string,
@@ -215,9 +209,11 @@ function handleWorkspaceCommand(
           reportWorkspaceError(ctx, `Failed to create workspace: ${msg}`);
         }),
     )
-    .catch(() => {});
+    .catch((error) => {
+      const msg = error instanceof Error ? error.message : String(error);
+      ctx.ui.notify(`Workspace setup failed: ${msg}`, "warning");
+    });
 }
-
 function handleWorkspacesCommand(
   pi: ExtensionAPI,
   ctx: ExtensionContext,
@@ -229,7 +225,6 @@ function handleWorkspacesCommand(
     FULL_OVERLAY_OPTIONS,
   );
 }
-
 function handleSymbolsCommand(
   pi: ExtensionAPI,
   args: string,
@@ -238,7 +233,6 @@ function handleSymbolsCommand(
   if (!ctx.hasUI) return;
   void openSymbolsPicker(pi, ctx, args);
 }
-
 function handleFilesCommand(
   pi: ExtensionAPI,
   args: string,
@@ -247,22 +241,18 @@ function handleFilesCommand(
   if (!ctx.hasUI) return;
   void openFilesPicker(pi, ctx, args);
 }
-
 function handleBookmarksCommand(pi: ExtensionAPI, ctx: ExtensionContext): void {
   if (!ctx.hasUI) return;
   void openBookmarksBrowser(pi, ctx);
 }
-
 function handleChangeCommand(pi: ExtensionAPI, ctx: ExtensionContext): void {
   if (!ctx.hasUI) return;
   void openChangesBrowser(pi, ctx, (cid) => promptAndSetBookmark(pi)(ctx, cid));
 }
-
 function handleOplogCommand(pi: ExtensionAPI, ctx: ExtensionContext): void {
   if (!ctx.hasUI) return;
   void openOpLogBrowser(pi, ctx);
 }
-
 function handlePullRequestsCommand(
   pi: ExtensionAPI,
   ctx: ExtensionContext,
@@ -270,7 +260,6 @@ function handlePullRequestsCommand(
   if (!ctx.hasUI) return;
   void openPullRequestsBrowser(pi, ctx);
 }
-
 function handleTodosCommand(
   pi: ExtensionAPI,
   args: string,
@@ -279,15 +268,11 @@ function handleTodosCommand(
   if (!ctx.hasUI) return;
   void openTodosBrowser(pi, ctx, args);
 }
-
-// --- Registration ---
-
 interface ShortcutDef {
   key: KeyId;
   description: string;
   handler: (ctx: ExtensionContext) => void;
 }
-
 function registerShortcuts(pi: ExtensionAPI): void {
   const shortcuts: ShortcutDef[] = [
     {
@@ -353,7 +338,6 @@ function registerShortcuts(pi: ExtensionAPI): void {
     });
   }
 }
-
 function registerCommands(pi: ExtensionAPI): void {
   pi.registerCommand("workspace", {
     description:
@@ -421,7 +405,6 @@ function registerCommands(pi: ExtensionAPI): void {
     },
   });
 }
-
 export default function ideExtension(pi: ExtensionAPI): void {
   pi.on("session_start", (_event, ctx) => {
     handleSessionStart(pi, ctx);

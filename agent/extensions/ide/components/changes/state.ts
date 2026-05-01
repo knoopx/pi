@@ -1,22 +1,18 @@
 import type { Change, FileChange } from "../../lib/types";
 import type { GraphLayout } from "../../lib/graph";
-
 interface SelectionState {
   selectedIndex: number;
   fileIndex: number;
   diffScroll: number;
   focus: "left" | "right";
 }
-
 interface LoadingState {
   loading: boolean;
 }
-
 interface ChangeCacheEntry {
   files: FileChange[];
   diffs: Map<string, string[]>;
 }
-
 export class ChangesState {
   selectionState: SelectionState = {
     selectedIndex: 0,

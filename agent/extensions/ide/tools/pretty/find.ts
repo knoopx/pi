@@ -10,13 +10,11 @@ import {
   type WrappedToolHandler,
 } from "./utils";
 import type { ToolRenderContext } from "./types";
-
 interface FindParams {
   pattern: string;
   path?: string;
   limit?: number;
 }
-
 export function createFindExecute(
   orig: ToolExecuteFn,
 ): WrappedToolHandler<FindParams> {
@@ -29,7 +27,6 @@ export function createFindExecute(
     };
   })(orig);
 }
-
 export function createFindRenderCall(
   cwd: string,
   home: string,
@@ -48,7 +45,6 @@ export function createFindRenderCall(
       ctx,
     });
 }
-
 export function createFindRenderResult(): (
   result: AgentToolResult<{ text: string }>,
   options: { expanded: boolean; isPartial: boolean },

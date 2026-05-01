@@ -6,8 +6,6 @@ import setupNixExtension from "./index";
 import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 import { disableThrottle } from "../../shared/throttle";
-
-
 function assertFormattedOptionResults(
   result: AgentToolResult<Record<string, unknown>>,
   query: string,
@@ -17,8 +15,6 @@ function assertFormattedOptionResults(
   expect(result.details.totalFound).toBe(1);
 }
 
-// Extension Registration
- 
 describe("Nix Extension", () => {
   let mockPi: MockExtensionAPI;
   let originalFetch: typeof globalThis.fetch;
@@ -90,7 +86,6 @@ describe("Nix Extension", () => {
             package_position: "/pkgs/applications/misc/hello/default.nix:35",
           },
         ];
-
         const mockFetch: unknown = vi.fn().mockImplementation((..._args) => ({
           ok: true,
           json: () =>
@@ -123,7 +118,6 @@ describe("Nix Extension", () => {
           .fn()
           .mockRejectedValue(new Error("Network error")) as unknown;
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
-
         const result = await registeredTool.execute(
           "tool1",
           { query: "test" },
@@ -149,7 +143,6 @@ describe("Nix Extension", () => {
             }) as unknown,
         );
         globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
-
         const result = await registeredTool.execute(
           "tool1",
           { query: "test" },
@@ -191,7 +184,6 @@ describe("Nix Extension", () => {
               "nixos/modules/services/web-servers/apache-httpd/default.nix",
           },
         ];
-
         const mockFetch = vi.fn().mockImplementation(
           (..._args) =>
             ({
@@ -264,7 +256,6 @@ describe("Nix Extension", () => {
             ],
           },
         ];
-
         const mockFetch = vi.fn().mockImplementation(
           (..._args) =>
             ({

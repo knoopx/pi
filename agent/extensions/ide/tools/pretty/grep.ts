@@ -9,7 +9,6 @@ import {
   type WrappedToolHandler,
 } from "./utils";
 import type { ToolRenderContext } from "./types";
-
 interface GrepParams {
   pattern: string;
   path?: string;
@@ -19,7 +18,6 @@ interface GrepParams {
   context?: number;
   limit?: number;
 }
-
 export function createGrepExecute(
   orig: ToolExecuteFn,
 ): WrappedToolHandler<GrepParams> {
@@ -33,7 +31,6 @@ export function createGrepExecute(
     };
   })(orig);
 }
-
 function countGrepMatches(textContent: string | null): number {
   if (!textContent) return 0;
   const lines = textContent.trim().split("\n");
@@ -44,7 +41,6 @@ function countGrepMatches(textContent: string | null): number {
   }
   return count;
 }
-
 export function createGrepRenderCall(
   cwd: string,
   home: string,
@@ -69,7 +65,6 @@ export function createGrepRenderCall(
       },
     });
 }
-
 export function createGrepRenderResult(): (
   result: AgentToolResult<{ text: string }>,
   options: { expanded: boolean; isPartial: boolean },

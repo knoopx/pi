@@ -1,13 +1,5 @@
-/**
- * Shared utilities for tool result rendering
- */
-
 import type { AgentToolResult, Theme } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
-
-/**
- * Standard render function for tool results with error handling
- */
 export function renderTextToolResult<T = unknown>(
   result: AgentToolResult<T>,
   theme: Theme,

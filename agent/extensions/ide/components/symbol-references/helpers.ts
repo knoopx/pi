@@ -1,5 +1,4 @@
 import type { SymbolReferenceCommandDef, SymbolReferenceItem } from "./types";
-
 export function makeCommandDef(
   title: string,
   command: string,
@@ -7,7 +6,6 @@ export function makeCommandDef(
 ): SymbolReferenceCommandDef {
   return { titleFn: (t) => title.replace("{}", t), command, argsFn };
 }
-
 function filterOutputLines(output: string): string[] {
   return output.split("\n").filter((line) => {
     if (!line.trim()) return false;
@@ -19,7 +17,6 @@ function filterOutputLines(output: string): string[] {
     return true;
   });
 }
-
 function extractExtraInfo(parts: string[]): {
   signature: string | undefined;
   callLine: number | undefined;
@@ -35,7 +32,6 @@ function extractExtraInfo(parts: string[]): {
 
   return { signature, callLine };
 }
-
 function parseLocation(
   locationPart: string,
   headerFile: string | undefined,
@@ -57,7 +53,6 @@ function parseLocation(
   }
   return { path: locationPart, startLine: 1, endLine: 1 };
 }
-
 function normalizeName(name: string, path: string): string {
   if (/^\d+$/.test(name)) {
     const basename = path.split("/").pop() ?? path;
@@ -65,33 +60,27 @@ function normalizeName(name: string, path: string): string {
   }
   return name;
 }
-
 export function parseSymbolReferenceOutput(
   output: string,
 ): SymbolReferenceItem[] {
   const fileMatch = /\[FILE:([^\]]+)\]/.exec(output);
   const headerFile = fileMatch?.[1];
-
   const lines = filterOutputLines(output);
   const items: SymbolReferenceItem[] = [];
 
   for (const line of lines) {
     const parts = line.split("|");
     if (parts.length < 3) continue;
-
     const name = parts[0].trim();
     const type = parts[1].trim();
     const locationPart = parts[2].trim();
-
     const { signature, callLine } = extractExtraInfo(parts);
 
     if (locationPart.includes("<external>")) continue;
-
     const { path, startLine, endLine } = parseLocation(
       locationPart,
       headerFile,
     );
-
     const normalized = normalizeName(name, path);
 
     items.push({

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parser as hnParser } from "./hackernews";
+import { hackernewsParser } from "./hackernews";
 
 describe("Hacker News parser", () => {
   describe("matches", () => {
@@ -19,20 +19,22 @@ describe("Hacker News parser", () => {
       "https://hacker-news.firebaseio.com/v0/topstories.json",
       "https://hacker-news.firebaseio.com/v0/item/12345.json",
     ])("matches %s", (url) => {
-      expect(hnParser.matches(url)).toBe(true);
+      expect(hackernewsParser.matches(url)).toBe(true);
     });
 
     it.each([
       "https://hn.algolia.com/?q=test",
       "https://example.com/news.ycombinator.com/item",
     ])("does not match %s", (url) => {
-      expect(hnParser.matches(url)).toBe(false);
+      expect(hackernewsParser.matches(url)).toBe(false);
     });
 
     it("is case-insensitive for domains", () => {
-      expect(hnParser.matches("https://NEWS.YCOMBINATOR.COM/")).toBe(true);
+      expect(hackernewsParser.matches("https://NEWS.YCOMBINATOR.COM/")).toBe(
+        true,
+      );
       expect(
-        hnParser.matches(
+        hackernewsParser.matches(
           "https://HACKER-NEWS.FIREBASEIO.COM/v0/topstories.json",
         ),
       ).toBe(true);
@@ -41,89 +43,114 @@ describe("Hacker News parser", () => {
 
   describe("path types via matches", () => {
     it("matches frontpage", () => {
-      expect(hnParser.matches("https://news.ycombinator.com/")).toBe(true);
-      // Trailing slash is required by the regex
-      expect(hnParser.matches("https://news.ycombinator.com")).toBe(false);
+      expect(hackernewsParser.matches("https://news.ycombinator.com/")).toBe(
+        true,
+      );
+      expect(hackernewsParser.matches("https://news.ycombinator.com")).toBe(
+        false,
+      );
     });
 
     it("matches top stories path", () => {
-      expect(hnParser.matches("https://news.ycombinator.com/")).toBe(true);
-    });
-
-    it("matches newest stories path", () => {
-      expect(hnParser.matches("https://news.ycombinator.com/newest")).toBe(
+      expect(hackernewsParser.matches("https://news.ycombinator.com/")).toBe(
         true,
       );
     });
 
+    it("matches newest stories path", () => {
+      expect(
+        hackernewsParser.matches("https://news.ycombinator.com/newest"),
+      ).toBe(true);
+    });
+
     it("matches best stories path", () => {
-      expect(hnParser.matches("https://news.ycombinator.com/best")).toBe(true);
+      expect(
+        hackernewsParser.matches("https://news.ycombinator.com/best"),
+      ).toBe(true);
     });
 
     it("matches ask HN path", () => {
-      expect(hnParser.matches("https://news.ycombinator.com/ask")).toBe(true);
+      expect(hackernewsParser.matches("https://news.ycombinator.com/ask")).toBe(
+        true,
+      );
     });
 
     it("matches show HN path", () => {
-      expect(hnParser.matches("https://news.ycombinator.com/show")).toBe(true);
+      expect(
+        hackernewsParser.matches("https://news.ycombinator.com/show"),
+      ).toBe(true);
     });
 
     it("matches jobs path", () => {
-      expect(hnParser.matches("https://news.ycombinator.com/jobs")).toBe(true);
+      expect(
+        hackernewsParser.matches("https://news.ycombinator.com/jobs"),
+      ).toBe(true);
     });
 
     it("matches item URL with id param", () => {
       expect(
-        hnParser.matches("https://news.ycombinator.com/item?id=39427851"),
+        hackernewsParser.matches(
+          "https://news.ycombinator.com/item?id=39427851",
+        ),
       ).toBe(true);
     });
 
     it("matches user profile URL", () => {
-      expect(hnParser.matches("https://news.ycombinator.com/user?id=pg")).toBe(
-        true,
-      );
+      expect(
+        hackernewsParser.matches("https://news.ycombinator.com/user?id=pg"),
+      ).toBe(true);
     });
 
     it("matches saved stories URL", () => {
       expect(
-        hnParser.matches("https://news.ycombinator.com/saved?id=patio11"),
+        hackernewsParser.matches(
+          "https://news.ycombinator.com/saved?id=patio11",
+        ),
       ).toBe(true);
     });
 
     it("matches upvoted stories URL", () => {
       expect(
-        hnParser.matches("https://news.ycombinator.com/upvoted?id=user"),
+        hackernewsParser.matches(
+          "https://news.ycombinator.com/upvoted?id=user",
+        ),
       ).toBe(true);
     });
 
     it("matches submitted stories URL", () => {
       expect(
-        hnParser.matches("https://news.ycombinator.com/submitted?id=patio11"),
+        hackernewsParser.matches(
+          "https://news.ycombinator.com/submitted?id=patio11",
+        ),
       ).toBe(true);
     });
 
     it("matches search URL", () => {
       expect(
-        hnParser.matches("https://news.ycombinator.com/search?q=typescript"),
+        hackernewsParser.matches(
+          "https://news.ycombinator.com/search?q=typescript",
+        ),
       ).toBe(true);
       expect(
-        hnParser.matches("https://news.ycombinator.com/?query=react"),
+        hackernewsParser.matches("https://news.ycombinator.com/?query=react"),
       ).toBe(true);
     });
 
     it("matches Firebase API URLs", () => {
       expect(
-        hnParser.matches(
+        hackernewsParser.matches(
           "https://hacker-news.firebaseio.com/v0/topstories.json",
         ),
       ).toBe(true);
       expect(
-        hnParser.matches(
+        hackernewsParser.matches(
           "https://hacker-news.firebaseio.com/v0/item/39427851.json",
         ),
       ).toBe(true);
       expect(
-        hnParser.matches("https://hacker-news.firebaseio.com/v0/user/pg.json"),
+        hackernewsParser.matches(
+          "https://hacker-news.firebaseio.com/v0/user/pg.json",
+        ),
       ).toBe(true);
     });
   });
@@ -131,7 +158,7 @@ describe("Hacker News parser", () => {
   describe("edge cases", () => {
     it("handles Firebase URLs with .json extension", () => {
       expect(
-        hnParser.matches(
+        hackernewsParser.matches(
           "https://hacker-news.firebaseio.com/v0/newstories.json",
         ),
       ).toBe(true);
@@ -139,12 +166,16 @@ describe("Hacker News parser", () => {
 
     it("handles Firebase URLs without .json extension", () => {
       expect(
-        hnParser.matches("https://hacker-news.firebaseio.com/v0/topstories"),
+        hackernewsParser.matches(
+          "https://hacker-news.firebaseio.com/v0/topstories",
+        ),
       ).toBe(true);
     });
 
     it("rejects Algolia search API URLs", () => {
-      expect(hnParser.matches("https://hn.algolia.com/?q=test")).toBe(false);
+      expect(hackernewsParser.matches("https://hn.algolia.com/?q=test")).toBe(
+        false,
+      );
     });
   });
 });

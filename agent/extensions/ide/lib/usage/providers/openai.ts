@@ -1,9 +1,7 @@
 import type { BaseDependencies, ProviderConfig } from "../types";
 import { createGenericProvider, loadTokenFromPiAuthJson } from "../util";
-
 const loadOpenAIToken = (deps: BaseDependencies) =>
   loadTokenFromPiAuthJson(deps, "openai-codex");
-
 const openaiConfig: ProviderConfig = {
   provider: "openai",
   displayName: "OpenAI",
@@ -36,5 +34,4 @@ const openaiConfig: ProviderConfig = {
     },
   ],
 };
-
 export const fetchOpenAIUsage = await createGenericProvider(openaiConfig);

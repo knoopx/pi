@@ -3,14 +3,12 @@ import { ListRow } from "../../lib/split-panel/list-row";
 import type { AgentWorkspace } from "../../lib/types";
 import { formatFileStats } from "../../lib/formatters";
 import { ensureWidth } from "../../lib/text-utils";
-
 const STATUS_TEXT: Record<string, string> = {
   running: "running",
   completed: "done",
   failed: "failed",
   idle: "",
 };
-
 interface WorkspaceListPaneProps {
   workspaces: AgentWorkspace[];
   selectedIndex: number;
@@ -19,8 +17,6 @@ interface WorkspaceListPaneProps {
   width: number;
   theme: Theme;
 }
-
-
 export class WorkspaceListPane {
   constructor(private readonly props: WorkspaceListPaneProps) {}
 

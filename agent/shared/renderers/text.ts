@@ -1,9 +1,5 @@
-/**
- * Wrap plain text to lines of maxWidth, breaking at word boundaries.
- */
 export function wrapPlain(text: string, maxWidth: number): string[] {
   if (maxWidth <= 0 || text.length <= maxWidth) return [text];
-
   const words = text.split(" ");
   const lines: string[] = [];
   let current = "";
@@ -12,7 +8,7 @@ export function wrapPlain(text: string, maxWidth: number): string[] {
     if (current.length === 0) {
       current = word;
     } else if (current.length + 1 + word.length <= maxWidth) {
-      current += ` ${  word}`;
+      current += ` ${word}`;
     } else {
       lines.push(current);
       current = word;

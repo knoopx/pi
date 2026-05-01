@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Mock } from "vitest";
-import { createEditorComponent, type EditorResult } from "./component";
+import { createEditorComponent } from "./component";
+import type { EditorResult } from "./component";
 import {
   createMockTheme,
   createMockTui,
@@ -17,7 +18,6 @@ describe("syntax highlighting", () => {
     theme = createMockTheme();
     doneFn = vi.fn() as unknown as typeof doneFn;
   });
-
   const createComponent = (content: string, filePath: string) =>
     createEditorComponent({
       pi: createMockPi(),
@@ -34,13 +34,11 @@ describe("syntax highlighting", () => {
         const code = "const x = 42;\nfunction foo() { return x; }";
         const comp = createComponent(code, "/tmp/test.ts");
         const lines = comp.render(120);
-
         const contentLines = lines.slice(3, 5);
         const hasAnsiColorCodes = contentLines.some((line) =>
           line.includes("\x1b[38;"),
         );
 
-        // Syntax highlighting should apply different colors to keywords
         expect(hasAnsiColorCodes).toBe(true);
         expect(lines).toMatchSnapshot();
       });

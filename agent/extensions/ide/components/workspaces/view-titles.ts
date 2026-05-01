@@ -1,12 +1,9 @@
 import type { AgentWorkspace, FileChange, Change } from "../../lib/types";
-
 interface WorkspaceViewTitles {
   leftTitle: string;
   rightTopTitle: string;
   rightBottomTitle: string;
 }
-
-
 export function computeWorkspaceViewTitles(
   selectedWorkspace: AgentWorkspace | null,
   files: FileChange[],
@@ -16,7 +13,6 @@ export function computeWorkspaceViewTitles(
   const isDefault = selectedWorkspace?.name === "default";
   const leftTitle = " Workspaces";
   const rightTopTitle = isDefault ? " Changes" : " Files";
-
   let rightBottomTitle: string;
   if (!selectedWorkspace) {
     rightBottomTitle = " Diff";

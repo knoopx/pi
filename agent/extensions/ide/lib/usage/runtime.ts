@@ -3,19 +3,16 @@ import * as http from "node:http";
 import * as https from "node:https";
 import * as os from "node:os";
 import type { BaseDependencies } from "./types";
-
 interface FetchOptions {
   method?: string;
   headers?: Record<string, string>;
   body?: string;
 }
-
 interface HttpResponse {
   ok: boolean;
   status: number | undefined;
   json(): Promise<unknown>;
 }
-
 function safeFsOperation<T>(operation: () => T, fallback: T): T {
   try {
     return operation();
@@ -23,7 +20,6 @@ function safeFsOperation<T>(operation: () => T, fallback: T): T {
     return fallback;
   }
 }
-
 function handleResponse(
   res: http.IncomingMessage,
   data: string,
@@ -45,7 +41,6 @@ function handleResponse(
     resolve({ ok, status: res.statusCode, json: () => Promise.resolve({}) });
   }
 }
-
 function nodeFetch(
   url: string,
   options: FetchOptions = {},
@@ -53,7 +48,6 @@ function nodeFetch(
   return new Promise((resolve, reject) => {
     const parsedUrl = new URL(url);
     const isHttps = parsedUrl.protocol === "https:";
-
     const requestOptions = {
       hostname: parsedUrl.hostname,
       port: parsedUrl.port || (isHttps ? 443 : 80),
@@ -62,7 +56,6 @@ function nodeFetch(
       headers: options.headers || {},
       timeout: 10_000,
     };
-
     const req = (isHttps ? https : http).request(requestOptions, (res) => {
       let data = "";
       res.on("data", (chunk) => {
@@ -86,7 +79,6 @@ function nodeFetch(
     req.end();
   });
 }
-
 export function createDefaultDependencies(): BaseDependencies {
   return {
     homedir: () => os.homedir(),

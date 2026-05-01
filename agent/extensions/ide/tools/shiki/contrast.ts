@@ -1,5 +1,4 @@
 const ANSI_CAPTURE_RE = /\x1b\[([0-9;]*)m/g;
-
 function isLowContrastShikiFg(params: string): boolean {
   if (params === "30" || params === "90") return true;
   if (params === "38;5;0" || params === "38;5;8") return true;
@@ -11,7 +10,6 @@ function isLowContrastShikiFg(params: string): boolean {
   const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
   return luminance < 72;
 }
-
 export function normalizeShikiContrast(
   ansi: string,
   mutedColor: string,

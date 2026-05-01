@@ -8,7 +8,6 @@ import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 import { disableThrottle } from "../../shared/throttle";
 
- 
 describe("PyPI Extension", () => {
   let mockPi: MockExtensionAPI;
   let originalFetch: typeof globalThis.fetch;
@@ -184,7 +183,6 @@ describe("PyPI Extension", () => {
     });
   });
 
-  // PyPI Package Info
   describe("pypi-package-info", () => {
     let registeredTool: MockTool;
 
@@ -260,7 +258,6 @@ describe("PyPI Extension", () => {
               preconnect: vi.fn(),
             }) as unknown,
         );
-
         const result = await registeredTool.execute(
           "tool1",
           { package: "big-package" },
@@ -314,7 +311,6 @@ describe("PyPI Extension", () => {
               preconnect: vi.fn(),
             }) as unknown,
         );
-
         const result = await registeredTool.execute(
           "tool1",
           { package: "requests" },
@@ -334,7 +330,6 @@ describe("PyPI Extension", () => {
         globalThis.fetch = vi
           .fn()
           .mockRejectedValue(new Error("Network error"));
-
         const result = await registeredTool.execute(
           "tool1",
           { package: "requests" },
@@ -354,7 +349,6 @@ describe("PyPI Extension", () => {
         globalThis.fetch = vi
           .fn()
           .mockRejectedValue(new Error("Something went wrong"));
-
         const result = await registeredTool.execute(
           "tool1",
           { package: "requests" },

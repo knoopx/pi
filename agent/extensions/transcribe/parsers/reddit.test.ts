@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parser as redditParser } from "./reddit";
+import { redditParser } from "./reddit";
 
 describe("Reddit parser", () => {
   describe("matches", () => {
@@ -75,7 +75,6 @@ describe("Reddit parser", () => {
 
     it("matches frontpage", () => {
       expect(redditParser.matches("https://www.reddit.com/")).toBe(true);
-      // Trailing slash is required by the regex
       expect(redditParser.matches("https://reddit.com/")).toBe(true);
     });
   });

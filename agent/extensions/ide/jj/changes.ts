@@ -1,10 +1,8 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { Change } from "../lib/types";
 import { sanitizeDescription, parseStdoutLines } from "./core";
-
 const CHANGE_ID_TEMPLATE =
   'change_id ++ coalesce(if(divergent, "/" ++ stringify(change_offset)), "")';
-
 export async function loadChanges(
   pi: ExtensionAPI,
   cwd: string,
@@ -49,7 +47,6 @@ export async function loadChanges(
     return change.changeId ? change : null;
   });
 }
-
 export async function getCurrentChangeIdShort(
   pi: ExtensionAPI,
   cwd: string,
@@ -61,11 +58,9 @@ export async function getCurrentChangeIdShort(
   );
 
   if (result.code !== 0) return null;
-
   const changeId = result.stdout.trim();
   return changeId || null;
 }
-
 export async function hasFileChanges(
   pi: ExtensionAPI,
   cwd: string,
@@ -85,7 +80,6 @@ export async function hasFileChanges(
   if (result.code !== 0) return false;
   return result.stdout.trim() === "changed";
 }
-
 export async function createNewChange(
   pi: ExtensionAPI,
   cwd: string,
@@ -117,7 +111,6 @@ export async function createNewChange(
   }
   return { success: false, error: result.stderr, created: false };
 }
-
 export async function getVcsLabel(
   pi: ExtensionAPI,
   cwd: string,
@@ -137,7 +130,6 @@ export async function getVcsLabel(
   );
 
   if (result.code !== 0) return null;
-
   const bookmarks = result.stdout.trim();
   if (bookmarks) return `󰃀 ${bookmarks}`;
 

@@ -6,8 +6,6 @@ import { WorkspaceListPane } from "./list-pane";
 import { computeWorkspaceViewTitles } from "./view-titles";
 import { createRightPanes } from "./right-panes";
 import type { WorkspaceViewProps } from "./view-types";
-
-
 export class WorkspaceView implements Component {
   constructor(
     private readonly props: WorkspaceViewProps,
@@ -29,14 +27,12 @@ export class WorkspaceView implements Component {
       rightSplit: true,
       rightTopRatio: 0.3,
     });
-
     const titles = computeWorkspaceViewTitles(
       this.props.selectedWorkspace,
       this.props.files,
       this.props.changes,
       this.props.fileIndex,
     );
-
     const leftPane = new WorkspaceListPane({
       workspaces: this.props.workspaces,
       selectedIndex: this.props.selectedIndex,
@@ -45,10 +41,8 @@ export class WorkspaceView implements Component {
       width: dims.leftW,
       theme: this.theme,
     });
-
     const rightTopH = dims.rightTopH ?? 5;
     const rightBottomH = dims.rightBottomH ?? 10;
-
     const { rightTop, rightBottom } = createRightPanes({
       selectedWorkspace: this.props.selectedWorkspace,
       files: this.props.files,

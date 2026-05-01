@@ -1,7 +1,5 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { ensureWidth } from "../text-utils";
-
-
 export const BOX = {
   topLeft: "╭",
   topRight: "╮",
@@ -15,8 +13,6 @@ export const BOX = {
   teeUp: "┴",
   cross: "┼",
 } as const;
-
-
 export function borderedLine(
   theme: Theme,
   content: string,
@@ -25,8 +21,6 @@ export function borderedLine(
   const inner = ensureWidth(content, innerWidth);
   return `${theme.fg("dim", BOX.vertical)}${inner}${theme.fg("dim", BOX.vertical)}`;
 }
-
-
 export function topBorderWithTitle(
   theme: Theme,
   title: string,
@@ -41,8 +35,6 @@ export function topBorderWithTitle(
     theme.fg("dim", BOX.horizontal.repeat(rightPad) + BOX.topRight)
   );
 }
-
-
 export function horizontalSeparator(theme: Theme, innerWidth: number): string {
   return (
     theme.fg("dim", BOX.teeLeft) +
@@ -50,8 +42,6 @@ export function horizontalSeparator(theme: Theme, innerWidth: number): string {
     theme.fg("dim", BOX.teeRight)
   );
 }
-
-
 export function bottomBorder(theme: Theme, innerWidth: number): string {
   return (
     theme.fg("dim", BOX.bottomLeft) +

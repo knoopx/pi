@@ -1,15 +1,10 @@
-
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-
 export function sanitizeDescription(rawDescription: string): string {
   const asciiOnly = rawDescription.replace(/[^\p{ASCII}]/gu, "");
   const normalizedWhitespace = asciiOnly.replace(/\s+/g, " ").trim();
   return normalizedWhitespace || "(no description)";
 }
-
-
-export 
-function parseStdoutLines<T>(
+export function parseStdoutLines<T>(
   stdout: string,
   mapper: (line: string) => T | null,
 ): T[] {
@@ -20,7 +15,6 @@ function parseStdoutLines<T>(
     .map(mapper)
     .filter((item): item is T => item !== null);
 }
-
 export function notifyMutation(
   pi: ExtensionAPI,
   customType: string,
@@ -34,8 +28,6 @@ export function notifyMutation(
     display: true,
   });
 }
-
-
 export async function updateStaleWorkspace(
   pi: ExtensionAPI,
   cwd?: string,

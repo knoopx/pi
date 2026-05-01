@@ -1,12 +1,8 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
-
-
 export interface StatusMessageState {
   message: { text: string; type: "info" | "error" } | null;
   timeout: ReturnType<typeof setTimeout> | null;
 }
-
-
 export function createStatusNotifier(
   state: StatusMessageState,
   onUpdate: () => void,
@@ -22,8 +18,6 @@ export function createStatusNotifier(
     }, duration);
   };
 }
-
-
 export function formatHelpWithStatus(
   theme: Theme,
   statusMessage: { text: string; type: "info" | "error" } | null,

@@ -9,20 +9,16 @@ import {
   DATA_COLUMNS,
   TABLE_WIDTH,
 } from "../shared/ui-helpers";
-
 interface IUsageComponent {
   render(): string[];
   handleInput(data: string): void;
 }
-
 const TAB_LABELS: Record<TabName, string> = {
   today: "Today",
   thisWeek: "This Week",
   allTime: "All Time",
 };
-
 const TAB_ORDER: TabName[] = ["today", "thisWeek", "allTime"];
-
 export class UsageComponent implements IUsageComponent {
   activeTab: TabName = "today";
   private data: UsageData;
@@ -46,7 +42,7 @@ export class UsageComponent implements IUsageComponent {
     this.updateProviderOrder();
   }
 
-  private updateProviderOrder(): void {
+  updateProviderOrder(): void {
     const statsData = this.data[this.activeTab];
     const providersWithUsage = Array.from(statsData.providers.entries())
       .filter(([_, providerStats]) => {
@@ -108,8 +104,9 @@ export class UsageComponent implements IUsageComponent {
   toggleProvider(): void {
     const provider = this.providerOrder[this.selectedIndex];
     if (!provider) return;
-    if (this.expanded.has(provider)) this.expanded.delete(provider);
-    else {
+    if (this.expanded.has(provider)) {
+      this.expanded.delete(provider);
+    } else {
       this.expanded.add(provider);
     }
     this.requestRender();
@@ -144,7 +141,6 @@ export class UsageComponent implements IUsageComponent {
 
   private renderHeader(): string[] {
     const th = this.theme;
-
     let headerLine = padRight("Provider / Model", NAME_COL_WIDTH);
     for (const col of DATA_COLUMNS) {
       const label = padLeft(col.label, col.width);
@@ -164,7 +160,6 @@ export class UsageComponent implements IUsageComponent {
   ): string {
     const th = this.theme;
     const { indent = 0, selected = false, dimAll = false } = options;
-
     const indentStr = " ".repeat(indent);
     const nameWidth = NAME_COL_WIDTH - indent;
     const truncName = truncateToWidth(name, nameWidth - 1);
@@ -173,7 +168,6 @@ export class UsageComponent implements IUsageComponent {
       : dimAll
         ? th.fg("dim", truncName)
         : truncName;
-
     let row = indentStr + padRight(styledName, nameWidth);
 
     for (const col of DATA_COLUMNS) {
@@ -202,7 +196,6 @@ export class UsageComponent implements IUsageComponent {
       const providerStats = stats.providers.get(providerName);
       const isSelected = i === this.selectedIndex;
       const isExpanded = this.expanded.has(providerName);
-
       const arrow = isExpanded ? "▾" : "▸";
       const prefix = isSelected
         ? th.fg("accent", `${arrow} `)
@@ -236,7 +229,6 @@ export class UsageComponent implements IUsageComponent {
   private renderTotals(): string[] {
     const th = this.theme;
     const stats = this.data[this.activeTab];
-
     let totalRow = padRight(th.bold("Total"), NAME_COL_WIDTH);
     for (const col of DATA_COLUMNS) {
       const value = col.getValue(stats.totals);

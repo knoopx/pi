@@ -18,7 +18,6 @@ describe("files — list row rendering", () => {
   describe("given a list of files", () => {
     it("renders file rows with consistent padding across different path lengths", async () => {
       const { component } = await createFilesFixture(makeFilesMockPi());
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -29,7 +28,6 @@ describe("files — list row rendering", () => {
           "a.ts\nagent/extensions/ide/components/list-picker.test.ts\nagent/extensions/nix/nix.test.ts\n",
         ),
       );
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -47,7 +45,6 @@ describe("files — list row rendering", () => {
           ].join("\n"),
         ),
       );
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -72,9 +69,7 @@ describe("files — list row rendering", () => {
         "__tests__/test.test.ts",
         ".gitignore",
       ].join("\n");
-
       const { component } = await createFilesFixture(makeFilesMockPi(files));
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -85,13 +80,11 @@ describe("files — list row rendering", () => {
         (_, i) =>
           `agent/extensions/ide/components/file-${String(i).padStart(3, "0")}.ts`,
       ).join("\n");
-
       const { component, tui } = await createFilesFixture(
         makeFilesMockPi(files),
       );
-      (tui.terminal as TestTerminal).columns = 80;
-      (tui.terminal as TestTerminal).rows = 15;
-
+      (tui.terminal as unknown as TestTerminal).columns = 80;
+      (tui.terminal as unknown as TestTerminal).rows = 15;
       const result = component.render(80);
       expect(result).toMatchSnapshot();
     });
@@ -102,7 +95,6 @@ describe("files — list row rendering", () => {
       const { component } = await createFilesFixture(
         makeFilesMockPi("index.ts\napp.tsx\nconfig.mts\nutils.cts\n"),
       );
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -111,7 +103,6 @@ describe("files — list row rendering", () => {
       const { component } = await createFilesFixture(
         makeFilesMockPi("flake.nix\ndocker-compose.yml\nconfig.yaml\n.env\n"),
       );
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -133,7 +124,6 @@ describe("files — list row rendering", () => {
           ].join("\n"),
         ),
       );
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -142,7 +132,6 @@ describe("files — list row rendering", () => {
   describe("given an empty file list", () => {
     it("renders the no items message with consistent padding", async () => {
       const { component } = await createFilesFixture(makeFilesMockPi(""));
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -157,11 +146,9 @@ describe("files — list row rendering", () => {
           stderr: "rg: command not found",
         }),
       });
-
       const { component } = await createFilesFixture(mockPi);
 
       await new Promise((r) => setTimeout(r, 50));
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -181,7 +168,6 @@ describe("files — list row rendering", () => {
         ),
         "agent",
       );
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -192,8 +178,7 @@ describe("files — list row rendering", () => {
       const { component, tui } = await createFilesFixture(
         makeFilesMockPi("a.ts\nlong-file-name-here.ts\nc.ts\n"),
       );
-      (tui.terminal as TestTerminal).columns = 60;
-
+      (tui.terminal as unknown as TestTerminal).columns = 60;
       const result = component.render(60);
       expect(result).toMatchSnapshot();
     });
@@ -202,8 +187,7 @@ describe("files — list row rendering", () => {
       const { component, tui } = await createFilesFixture(
         makeFilesMockPi("a.ts\nb.ts\nc.ts\n"),
       );
-      (tui.terminal as TestTerminal).columns = 160;
-
+      (tui.terminal as unknown as TestTerminal).columns = 160;
       const result = component.render(160);
       expect(result).toMatchSnapshot();
     });
@@ -214,7 +198,6 @@ describe("files — list row rendering", () => {
       const { component } = await createFilesFixture(
         makeFilesMockPi("file-a.ts\nfile-b.ts\nfile-c.ts\n"),
       );
-
       const result1 = component.render(120);
       const result2 = component.render(120);
 

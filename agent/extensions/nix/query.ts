@@ -11,11 +11,9 @@ export const NIXPKGS_GITHUB_BASE =
 // Pick the row with the highest group number (e.g. nixos-47-unstable-...).
 const SEARCH_URL =
   "https://search.nixos.org/backend/nixos-47-unstable-b12141ef619e0a9c1c84dc8c684040326f27cdcc/_search";
-
 const AUTH_TOKEN =
   process.env.NIX_SEARCH_TOKEN ??
   "YVdWU0FMWHBadjpYOGdQSG56TDUyd0ZFZWt1eHNmUTljU2g=";
-
 interface NixPackage {
   type: "package";
   package_attr_name: string;
@@ -56,18 +54,15 @@ interface NixPackage {
   package_homepage: string[];
   package_position?: string;
 }
-
 interface NixSearchResponse<T> {
   hits: {
     hits: { _source: T }[];
   };
 }
-
 export function cleanText(text: string | null): string {
   if (!text) return "";
   return text.replace(/<[^>]*>/g, "").trim();
 }
-
 export function removeEmptyProperties<T extends Record<string, unknown>>(
   obj: T,
 ): Partial<T> {
@@ -83,7 +78,6 @@ export function removeEmptyProperties<T extends Record<string, unknown>>(
   }
   return result;
 }
-
 const COMMON_HEADERS: Record<string, string> = {
   "Content-Type": "application/json",
   Authorization: `Bearer ${AUTH_TOKEN}`,
@@ -95,8 +89,6 @@ export const PACKAGE_SEARCH_FIELDS = [
   "package_pname",
   "package_description",
 ];
-
-
 export function buildMultiMatchQuery(
   query: string,
   fields: string[],
@@ -109,8 +101,6 @@ export function buildMultiMatchQuery(
     },
   };
 }
-
-
 export function buildDisMaxQuery(
   queries: Record<string, unknown>[],
 ): Record<string, unknown> {
@@ -121,8 +111,6 @@ export function buildDisMaxQuery(
     },
   };
 }
-
-
 export async function searchNix<T>(
   buildQuery: (query: string) => Record<string, unknown>,
   query: string,
@@ -137,9 +125,7 @@ export async function searchNix<T>(
   if (!response.ok) {
     throw new Error(`HTTP ${response.status} from Nix search API`);
   }
-
   const data = (await response.json()) as NixSearchResponse<T>;
   return data.hits.hits.map((hit) => hit._source);
 }
-
 export { type NixPackage };

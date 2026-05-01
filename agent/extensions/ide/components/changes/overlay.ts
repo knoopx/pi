@@ -10,7 +10,6 @@ import type {
 } from "../symbol-references/types";
 import { SYMBOL_REFERENCE_COMMANDS } from "../symbol-references/types";
 import { FULL_OVERLAY_OPTIONS } from "../../lib/overlay-utils";
-
 export async function openChangesBrowser(
   pi: ExtensionAPI,
   ctx: ExtensionContext,
@@ -41,7 +40,6 @@ export async function openChangesBrowser(
     const cmAction = await showChanges();
 
     if (!cmAction) break;
-
     const cmDef = SYMBOL_REFERENCE_COMMANDS[cmAction.action];
     if (cmDef)
       await ctx.ui.custom<SymbolReferenceResult | null>(

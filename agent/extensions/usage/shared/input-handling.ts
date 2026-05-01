@@ -1,6 +1,4 @@
 import { matchesKey } from "@mariozechner/pi-tui";
-
-
 function createKeyMatcher(
   data: string,
 ): (key: Parameters<typeof matchesKey>[1]) => boolean {
@@ -8,8 +6,6 @@ function createKeyMatcher(
   return (key: Parameters<typeof matchesKey>[1]) =>
     matchesKey(data, key) || normalized === key;
 }
-
-
 function handleEscape(
   matches: ReturnType<typeof createKeyMatcher>,
   done: () => void,
@@ -20,8 +16,6 @@ function handleEscape(
   }
   return false;
 }
-
-
 export function handleUsageInput(
   data: string,
   opts: {

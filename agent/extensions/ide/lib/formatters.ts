@@ -1,6 +1,4 @@
 import type { AgentWorkspace } from "./types";
-
-
 export function formatFileStats(ws: AgentWorkspace): string {
   if (!ws.fileStats) return "";
   const { added, modified, deleted } = ws.fileStats;
@@ -10,8 +8,6 @@ export function formatFileStats(ws: AgentWorkspace): string {
   if (deleted > 0) parts.push(`-${deleted}`);
   return parts.length > 0 ? `[${parts.join(" ")}]` : "";
 }
-
-
 export function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();

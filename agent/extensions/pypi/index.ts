@@ -1,9 +1,10 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import { Type, type Static } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
+import type { Static } from "@sinclair/typebox";
 import { textResult } from "../../shared/tool-utils";
 import { throttledFetch } from "../../shared/throttle";
-import { detail } from "../../shared/renderers";
+import { detail } from "../../shared/renderers/detail";
 import {
   formatPackageSearchResults,
   createPackageErrorResult,
@@ -23,13 +24,11 @@ const SearchPyPIPackagesParams = Type.Object({
     }),
   ),
 });
-
 const PyPIPackageInfoParams = Type.Object({
   package: Type.String({
     description: "Name of the package to show information for",
   }),
 });
-
 type SearchPyPIPackagesParamsType = Static<typeof SearchPyPIPackagesParams>;
 type PyPIPackageInfoParamsType = Static<typeof PyPIPackageInfoParams>;
 
@@ -50,17 +49,14 @@ interface PyPIPackageInfo {
   project_urls?: Record<string, string>;
   keywords?: string;
 }
-
 interface PyPIPackageResponse {
   info: PyPIPackageInfo;
 }
-
 interface PyPISearchResult extends PackageSearchResult {
   name: string;
   version: string;
   description: string;
 }
-
 function extractBetween(source: string, start: string, end: string): string {
   const startIndex = source.indexOf(start);
   if (startIndex === -1) return "";
@@ -69,7 +65,6 @@ function extractBetween(source: string, start: string, end: string): string {
   if (endIndex === -1) return "";
   return source.slice(contentStart, endIndex).trim();
 }
-
 function parseSearchResultsFromHtml(
   html: string,
   limit: number,
@@ -80,10 +75,8 @@ function parseSearchResultsFromHtml(
   while (packages.length < limit) {
     const anchorStart = html.indexOf('<a class="package-snippet"', offset);
     if (anchorStart === -1) break;
-
     const anchorEnd = html.indexOf("</a>", anchorStart);
     if (anchorEnd === -1) break;
-
     const block = html.slice(anchorStart, anchorEnd + 4);
     const name = extractBetween(
       block,
@@ -113,7 +106,6 @@ function parseSearchResultsFromHtml(
 
   return packages;
 }
-
 function createPypiErrorResult(
   message: string,
   packageName: string,
@@ -130,7 +122,6 @@ async function tryDirectPackageLookup(
     );
 
     if (!response.ok) return null;
-
     const text = await response.text();
     const data = JSON.parse(text) as PyPIPackageResponse;
     const { info } = data;
@@ -164,7 +155,6 @@ async function executeSearchPackages(
       const directResult = await tryDirectPackageLookup(query);
       return directResult ?? createPypiErrorResult(`No packages found.`, query);
     }
-
     const html = await response.text();
     const packages = parseSearchResultsFromHtml(html, limit);
 
@@ -172,7 +162,6 @@ async function executeSearchPackages(
       const directResult = await tryDirectPackageLookup(query);
       return directResult ?? createPypiErrorResult(`No packages found.`, query);
     }
-
     const output = formatPackageSearchResults(
       packages,
       packages.length,
@@ -191,7 +180,6 @@ async function executeSearchPackages(
     );
   }
 }
-
 function buildPackageInfoFields(
   info: PyPIPackageInfo,
 ): Array<{ label: string; value: string }> {
@@ -206,17 +194,14 @@ function buildPackageInfoFields(
       value: strOrDefault(info.home_page, info.project_url),
     },
   ];
-
   const deps = getDependenciesField(info);
   if (deps) fields.push(deps);
 
   return fields.filter((f) => f.value && f.value !== "-");
 }
-
 function strOrDefault(...values: (string | undefined)[]): string {
   return values.find(Boolean) || "-";
 }
-
 function getDependenciesField(
   info: PyPIPackageInfo,
 ): { label: string; value: string } | null {
@@ -248,7 +233,6 @@ async function executePackageInfo(
         packageName,
       );
     }
-
     const data = (await response.json()) as PyPIPackageResponse;
     const { info } = data;
     const fields = buildPackageInfoFields(info);
@@ -262,7 +246,6 @@ async function executePackageInfo(
     );
   }
 }
-
 function createSearchTool() {
   return {
     name: "search-pypi-packages",
@@ -280,7 +263,6 @@ Returns matching packages with metadata.`,
     execute: executeSearchPackages,
   };
 }
-
 function createPackageInfoTool() {
   return {
     name: "pypi-package-info",
@@ -298,7 +280,6 @@ Shows comprehensive package details from PyPI.`,
     execute: executePackageInfo,
   };
 }
-
 export default function (pi: ExtensionAPI): void {
   pi.registerTool(createSearchTool());
   pi.registerTool(createPackageInfoTool());

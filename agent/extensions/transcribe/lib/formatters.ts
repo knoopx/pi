@@ -1,5 +1,3 @@
-// Shared formatting utilities used across parsers
-
 export function formatAge(timestamp: number): string {
   const ageMinutes = Math.floor((Date.now() / 1000 - timestamp) / 60);
   if (ageMinutes < 60) return `${ageMinutes}m ago`;
@@ -10,11 +8,9 @@ export function formatAge(timestamp: number): string {
   const ageMonths = Math.floor(ageDays / 30);
   return `${ageMonths}mo ago`;
 }
-
 export function formatNumber(n: number): string {
   return n.toLocaleString();
 }
-
 export function stripHtml(html: string): string {
   return html
     .replace(/<br\s*\/?>/gi, "\n")

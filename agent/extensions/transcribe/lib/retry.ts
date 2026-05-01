@@ -1,17 +1,10 @@
 export interface RetryOptions {
-  /** Maximum number of retries (default: 2) */
   maxRetries?: number;
-  /** Delay before retrying (default: 500ms) */
   retryDelay?: number;
-  /** Maximum delay cap in milliseconds (default: 5000) */
   maxDelay?: number;
 }
-
-type Action = "throw" | "break" | "delay";
-type Outcome =
-  | { action: "throw" }
-  | { action: "break" }
-  | { action: "delay"; delay: number };
+type Outcome = { action: "throw" } | { action: "break" };
+type RetryDecision = "throw" | "retry" | "abort";
 
 function classifyError(error: Error): Outcome | null {
   if (error.message.includes("Aborted")) return { action: "throw" };
@@ -21,11 +14,21 @@ function classifyError(error: Error): Outcome | null {
   return null;
 }
 
-/**
- * Retry an async operation with exponential backoff.
- * Retries on transient errors (network failures, 5xx HTTP responses).
- * Does not retry on client errors (4xx), aborts, or non-retryable errors.
- */
+function determineAction(
+  error: Error,
+  attempt: number,
+  maxRetries: number,
+): RetryDecision {
+  const classified = classifyError(error);
+  if (classified?.action === "throw") return "throw";
+  if (attempt >= maxRetries) return "abort";
+  return "retry";
+}
+
+function computeDelay(attempt: number, baseDelay: number, cap: number): number {
+  return Math.min(baseDelay * 2 ** attempt, cap);
+}
+
 export async function retry<T>(
   fn: () => Promise<T>,
   options?: RetryOptions,
@@ -34,47 +37,41 @@ export async function retry<T>(
   const retryDelay = options?.retryDelay ?? 500;
   const maxDelay = options?.maxDelay ?? 5000;
 
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    await runAttempt(fn, attempt, { maxRetries, retryDelay, maxDelay });
+  }
+  throw new Error("Retry loop completed without error");
+}
+
+async function runAttempt<T>(
+  fn: () => Promise<T>,
+  attempt: number,
+  opts: { maxRetries: number; retryDelay: number; maxDelay: number },
+): Promise<void> {
   let lastError: Error | undefined;
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      const action = getRetryAction(lastError, attempt, maxRetries);
-      if (action === "throw") throw lastError;
-      if (action === "break") break;
-      await new Promise((resolve) =>
-        setTimeout(resolve, getDelay(attempt, retryDelay, maxDelay)),
-      );
+  try {
+    await fn();
+  } catch (error) {
+    lastError = error instanceof Error ? error : new Error(String(error));
+    const decision = determineAction(lastError, attempt, opts.maxRetries);
+    switch (decision) {
+      case "throw":
+        throw lastError;
+      case "retry":
+        await new Promise((resolve) =>
+          setTimeout(
+            resolve,
+            computeDelay(attempt, opts.retryDelay, opts.maxDelay),
+          ),
+        );
+        return; // continue to next loop iteration
+      case "abort":
+        break;
     }
   }
-
-  throw lastError!;
 }
 
-function getRetryAction(
-  error: Error,
-  attempt: number,
-  maxRetries: number,
-): Action {
-  const classified = classifyError(error);
-  if (classified) return "throw";
-  if (attempt >= maxRetries) return "break";
-  return "delay";
-}
-
-function getDelay(
-  attempt: number,
-  retryDelay: number,
-  maxDelay: number,
-): number {
-  return Math.min(retryDelay * 2 ** attempt, maxDelay);
-}
-
-/**
- * Wrapper for fetch that adds retry logic and returns text.
- */
 export async function fetchWithRetry(
   url: string,
   init?: RequestInit & { signal?: AbortSignal },

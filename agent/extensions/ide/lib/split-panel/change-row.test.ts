@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import type { GraphLayout } from "../graph";
-import { ChangeRow, type ChangeRowFlags } from "./change-row";
+import { ChangeRow } from "./change-row";
+import type { ChangeRowFlags } from "./change-row";
 import { createEmptyChangeRow } from "./empty-rows";
 import { createMockTheme } from "../../lib/test-utils";
-
 const mockLayout = {
   positions: new Map([
     ["a", { x: 0, y: 0 }],
@@ -13,7 +13,6 @@ const mockLayout = {
   edges: [[], [], []],
   maxX: 4,
 } as unknown as GraphLayout;
-
 const defaultFlags: ChangeRowFlags = {
   isCursor: false,
   isMarked: false,
@@ -21,7 +20,6 @@ const defaultFlags: ChangeRowFlags = {
   isWorkingCopy: false,
   isMoving: false,
 };
-
 interface MakeRowOpts {
   desc?: string;
   author?: string;
@@ -29,7 +27,6 @@ interface MakeRowOpts {
   layout?: GraphLayout | null;
   bookmarks?: string[];
 }
-
 function makeRow(opts: MakeRowOpts = {}): ChangeRow {
   const {
     desc = "feat: add login",
@@ -52,8 +49,6 @@ function makeRow(opts: MakeRowOpts = {}): ChangeRow {
     layout,
   });
 }
-
-// ─── Snapshot tests — normal rows ────────────────────────────────────────────
 
 describe("ChangeRow snapshots", () => {
   it("normal change with graph and author", () => {
@@ -135,15 +130,11 @@ describe("ChangeRow snapshots", () => {
     expect(line).toMatchSnapshot();
   });
 });
-
-// ─── Shared row snapshot test runner ────────────────────────────────────────
-
 interface RowSnapshotsConfig {
   makeRowFn: (desc: string, author: string, extra?: MakeRowOpts) => ChangeRow;
   baseFlags: Partial<typeof defaultFlags>;
   baseOpts?: MakeRowOpts;
 }
-
 function runRowSnapshots(config: RowSnapshotsConfig): void {
   const { makeRowFn: rowFn, baseFlags, baseOpts = {} } = config;
 
@@ -308,9 +299,6 @@ function runRowSnapshots(config: RowSnapshotsConfig): void {
     expect(line).toMatchSnapshot();
   });
 }
-
-// ─── Snapshot tests — focused rows (cursor on change) ────────────────────────
-
 const FOCUSED_FLAGS: Partial<typeof defaultFlags> = {
   isCursor: true,
   isFocused: true,
@@ -338,9 +326,6 @@ describe("ChangeRow focused snapshots", () => {
     expect(line).toMatchSnapshot();
   });
 });
-
-// ─── Snapshot tests — marked rows ──────────────────────────────────────────
-
 const MARKED_FLAGS: Partial<typeof defaultFlags> = {
   isMarked: true,
 };
@@ -352,8 +337,6 @@ describe("ChangeRow marked snapshots", () => {
     baseFlags: MARKED_FLAGS,
   });
 });
-
-// ─── Snapshot tests — empty change row ───────────────────────────────────────
 
 describe("createEmptyChangeRow snapshots", () => {
   it("renders 'No changes' in dim color", () => {

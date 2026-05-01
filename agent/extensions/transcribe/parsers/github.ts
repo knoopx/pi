@@ -1,6 +1,5 @@
 import { spawn } from "node:child_process";
 import type { Parser } from "../lib/types";
-
 interface GitHubPath {
   owner: string;
   repo: string;
@@ -17,19 +16,16 @@ interface GitHubPath {
   path?: string;
   number?: number;
 }
-
 function parseGitHubUrl(url: string): GitHubPath | null {
   const match = url.match(
     /^https?:\/\/github\.com\/([^/]+)\/([^/]+)(?:\/(.+))?$/,
   );
   if (!match) return null;
-
   const [, owner, repo, rest] = match;
   if (!rest) return { owner, repo, type: "repo" };
 
   return parsePathSegments(owner, repo, rest);
 }
-
 function parsePathSegments(
   owner: string,
   repo: string,
@@ -58,7 +54,6 @@ function parsePathSegments(
     return { owner, repo, type: "compare", ref: parts.slice(1).join("..") };
   return parseNumberedPath(owner, repo, first, parts);
 }
-
 function tryParsePullOrIssue(
   owner: string,
   repo: string,
@@ -73,7 +68,6 @@ function tryParsePullOrIssue(
     number: parseInt(parts[1], 10),
   };
 }
-
 function tryParseRelease(
   owner: string,
   repo: string,
@@ -82,7 +76,6 @@ function tryParseRelease(
   if (parts[1] !== "tag" || !parts[2]) return null;
   return { owner, repo, type: "release", ref: parts[2] };
 }
-
 function tryParseCommit(
   owner: string,
   repo: string,
@@ -91,7 +84,6 @@ function tryParseCommit(
   if (!parts[1]) return null;
   return { owner, repo, type: "commit", ref: parts[1] };
 }
-
 function parseNumberedPath(
   owner: string,
   repo: string,
@@ -109,20 +101,17 @@ function parseNumberedPath(
   }
   return null;
 }
-
 function spawnGh(args: string[], signal?: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
       return reject(new Error((signal.reason as string) ?? "Aborted"));
     }
-
     const child = spawn("gh", args, { stdio: ["pipe", "pipe", "pipe"] });
 
     signal?.addEventListener("abort", () => {
       child.kill("SIGTERM");
       reject(new Error("Aborted"));
     });
-
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (chunk: Buffer) => {
@@ -143,7 +132,6 @@ function spawnGh(args: string[], signal?: AbortSignal): Promise<string> {
     child.on("error", reject);
   });
 }
-
 function buildRefArgs(ref: string): string[] {
   return ref !== "HEAD" ? ["-f", `ref=${ref}`] : [];
 }
@@ -188,17 +176,17 @@ async function handleCompare(
   parsed: GitHubPath,
   signal?: AbortSignal,
 ): Promise<string> {
+  if (!parsed.ref) throw new Error("Missing compare ref");
   const diff = await spawnGh(
     [
       "diff",
       "--repo",
       `${parsed.owner}/${parsed.repo}`,
-      parsed.ref!,
+      parsed.ref,
       "--unified=3",
     ],
     signal,
   );
-
   const mdLines: string[] = [];
   let inHunk = false;
 
@@ -217,7 +205,6 @@ async function handleCompare(
 
   return `# Compare: ${parsed.ref}\n\n${mdLines.join("\n")}`;
 }
-
 function handleDiffHeader(line: string, mdLines: string[]): void {
   const m = line.match(/diff --git a\/(.+) b\/(.+)/);
   if (!m) return;
@@ -227,11 +214,9 @@ function handleDiffHeader(line: string, mdLines: string[]): void {
       : `\n## Changes in \`${m[1]}\``,
   );
 }
-
 function handleHunkStart(mdLines: string[]): void {
   mdLines.push("");
 }
-
 function processDiffLine(line: string, inHunk: boolean): string | null {
   if (line.startsWith("+")) return `+ ${line.slice(1)}`;
   if (line.startsWith("-")) return `- ${line.slice(1)}`;
@@ -275,11 +260,12 @@ async function handleRelease(
   parsed: GitHubPath,
   signal?: AbortSignal,
 ): Promise<string> {
+  if (!parsed.ref) throw new Error("Missing release ref");
   const raw = await spawnGh(
     [
       "release",
       "view",
-      parsed.ref!,
+      parsed.ref,
       "--repo",
       `${parsed.owner}/${parsed.repo}`,
       "--json",
@@ -326,13 +312,10 @@ async function handleRepo(
       signal,
     );
     readme = Buffer.from(b64, "base64").toString("utf-8");
-  } catch {
-    /* no README */
-  }
+  } catch {}
   return readme || info;
 }
-
-export const parser: Parser = {
+export const githubParser: Parser = {
   matches(url: string): boolean {
     return /^https?:\/\/github\.com\//i.test(url);
   },
@@ -340,7 +323,6 @@ export const parser: Parser = {
   async convert(url: string, signal?: AbortSignal): Promise<string> {
     const parsed = parseGitHubUrl(url);
     if (!parsed) throw new Error(`Unable to parse GitHub URL: ${url}`);
-
     const handlers: Record<GitHubPath["type"], () => Promise<string>> = {
       file: () => handleFile(parsed, signal),
       tree: () => handleTree(parsed, signal),

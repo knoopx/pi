@@ -1,7 +1,6 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { HooksGroup, HookRule, HookOutput } from "./schema";
 import { SKIP_TOOLS } from "./constants";
-
 interface HookResult {
   success: boolean;
   exitCode: number;
@@ -11,7 +10,6 @@ interface HookResult {
   group: string;
   command: string;
 }
-
 function groupHookResults(results: HookResult[]): Map<string, HookResult[]> {
   const grouped = new Map<string, HookResult[]>();
   for (const r of results) {
@@ -21,7 +19,6 @@ function groupHookResults(results: HookResult[]): Map<string, HookResult[]> {
   }
   return grouped;
 }
-
 function shouldShowOutput(r: HookResult): boolean {
   if (r.success) return false;
   const displayOutput = r.stderr || r.stdout;
@@ -29,7 +26,6 @@ function shouldShowOutput(r: HookResult): boolean {
   const isJson = displayOutput.trim().startsWith("{");
   return !isJson;
 }
-
 function formatHookResult(r: HookResult): string[] {
   const lines: string[] = [];
   const icon = r.success ? "✓" : "✗";
@@ -42,7 +38,6 @@ function formatHookResult(r: HookResult): string[] {
 
   return lines;
 }
-
 function sendHookResults(pi: ExtensionAPI, results: HookResult[]): void {
   const grouped = groupHookResults(results);
   const lines: string[] = [];
@@ -59,7 +54,6 @@ function sendHookResults(pi: ExtensionAPI, results: HookResult[]): void {
     { triggerTurn: false },
   );
 }
-
 export async function processHookGroupExecution(
   pi: ExtensionAPI,
   state: { results: HookResult[]; additionalContexts: string[] },
@@ -88,7 +82,6 @@ export async function processHookGroupExecution(
 
   if (state.results.length > 0) sendHookResults(pi, state.results);
 }
-
 export function getSkipTools(): ReadonlySet<string> {
   return SKIP_TOOLS;
 }

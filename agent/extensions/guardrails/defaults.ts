@@ -1,5 +1,4 @@
 import type { GuardrailsConfig } from "./config";
-
 const defaults: GuardrailsConfig = [
   {
     group: "no-npm",
@@ -340,5 +339,4 @@ const defaults: GuardrailsConfig = [
     ],
   },
 ];
-
 export default defaults;

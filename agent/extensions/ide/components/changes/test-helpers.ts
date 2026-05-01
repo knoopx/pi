@@ -8,9 +8,6 @@ import {
   createMockChange,
   createMockTheme,
 } from "../../lib/test-utils";
-
-export { createMockChange } from "../../lib/test-utils";
-
 export function expectDefaultSelection(
   state: ChangesState,
   expect: ExpectStatic,
@@ -19,7 +16,6 @@ export function expectDefaultSelection(
   expect(state.selectionState.fileIndex).toBe(0);
   expect(state.selectionState.diffScroll).toBe(0);
 }
-
 function buildGraphLayout(
   changes: { changeId: string; parentIds?: string[] }[],
   currentChangeId: string | null,
@@ -27,7 +23,6 @@ function buildGraphLayout(
   if (changes.length === 0) return null;
   return calculateGraphLayout(buildGraphInput(changes, currentChangeId));
 }
-
 export function featureBookmarkChange() {
   return createMockChange({
     changeId: "abc",
@@ -36,7 +31,6 @@ export function featureBookmarkChange() {
     parentIds: [],
   });
 }
-
 export function defaultMockChange() {
   return createMockChange({
     changeId: "a",
@@ -45,7 +39,6 @@ export function defaultMockChange() {
     parentIds: [],
   });
 }
-
 export function wcPrevChanges(authorPrev = "Alice") {
   return [
     createMockChange({
@@ -62,7 +55,6 @@ export function wcPrevChanges(authorPrev = "Alice") {
     }),
   ];
 }
-
 export function setMockChanges(
   state: ChangesState,
   changes: ReturnType<typeof createMockChange>[],
@@ -74,7 +66,6 @@ export function setMockChanges(
   state.files = [];
   state.diffContent = [];
 }
-
 type StateConfig = (state: ChangesState) => void;
 
 async function createRendererForTest(
@@ -96,7 +87,6 @@ async function createRendererForTest(
   }
   return new Renderer(state, { terminal, requestRender: () => {} }, theme);
 }
-
 export async function renderSnapshot(
   width: number,
   configure: StateConfig,

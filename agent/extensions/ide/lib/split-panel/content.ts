@@ -4,7 +4,6 @@ import { highlightCodeLines } from "../file-preview";
 import { FileChangeRow } from "./file-change-row";
 import { DiffRow } from "./diff-row";
 import { createEmptyDiffRow, createEmptyFileChangeRow } from "./empty-rows";
-
 export function renderSourceRows(options: {
   lines: string[];
   width: number;
@@ -18,7 +17,6 @@ export function renderSourceRows(options: {
     const empty = createEmptyDiffRow(" No preview available", theme);
     return empty.render(width);
   }
-
   const visible = lines.slice(scroll, scroll + scroll + height);
   const rows: string[] = [];
 
@@ -28,7 +26,6 @@ export function renderSourceRows(options: {
       highlightRange &&
       lineNum >= highlightRange.start &&
       lineNum <= highlightRange.end;
-
     const styledLine = highlightCodeLines(
       visible[i],
       theme,
@@ -44,7 +41,6 @@ export function renderSourceRows(options: {
 
   return rows;
 }
-
 export function renderDiffLinesToRows(
   lines: string[],
   width: number,
@@ -60,7 +56,6 @@ export function renderDiffLinesToRows(
   }
   return rows;
 }
-
 export function renderFileChangeRows(options: {
   files: {
     status: string;
@@ -86,11 +81,9 @@ export function renderFileChangeRows(options: {
     const empty = createEmptyFileChangeRow(emptyMessage, theme);
     return empty.render(width);
   }
-
   const visibleCount = height;
   let startIdx = 0;
   if (fileIndex >= visibleCount) startIdx = fileIndex - visibleCount + 1;
-
   const rows: string[] = [];
   for (let i = 0; i < visibleCount && startIdx + i < files.length; i++) {
     const idx = startIdx + i;

@@ -14,9 +14,7 @@ async function collectToolSessionFiles(
       if (file.endsWith(".jsonl"))
         result.push({ dir, file: join(dirPath, file) });
     }
-  } catch {
-    // Skip non-directories
-  }
+  } catch {}
   return result;
 }
 
@@ -32,12 +30,9 @@ async function findToolSessionFiles(
       const files = await collectToolSessionFiles(dirPath, dir);
       results.push(...files);
     }
-  } catch {
-    // Skip directories we can't read
-  }
+  } catch {}
   return results;
 }
-
 function collectToolCallsFromContents(
   contents: unknown[],
   sessionId: string,
@@ -58,7 +53,6 @@ function collectToolCallsFromContents(
   }
   return toolCalls;
 }
-
 function parseSessionEntry(
   line: string,
   sessionId: string | null,
@@ -78,7 +72,6 @@ function parseSessionEntry(
     ) {
       return { sessionId, toolCalls: [] };
     }
-
     const contents = normalizeContents(entry.message.content);
     return {
       sessionId,
@@ -88,23 +81,18 @@ function parseSessionEntry(
         parseTimestamp(entry.timestamp),
       ),
     };
-  } catch {
-    // Skip malformed lines
-  }
+  } catch {}
   return { sessionId, toolCalls: [] };
 }
-
 interface SessionEntry {
   type?: string;
   id?: string;
   timestamp?: string;
   message?: { content?: unknown };
 }
-
 function normalizeContents(content: unknown): unknown[] {
   return Array.isArray(content) ? content : [content];
 }
-
 function parseTimestamp(timestamp: string | undefined): number {
   if (!timestamp) return 0;
   return new Date(timestamp).getTime();
@@ -127,7 +115,6 @@ async function parseToolSession(
   }
   return { sessionId, toolCalls };
 }
-
 function aggregateToolStats(
   allToolCalls: ToolCall[],
   sessionCount: number,
@@ -148,7 +135,6 @@ function aggregateToolStats(
     stats.bySession[call.sessionId].count++;
     stats.bySession[call.sessionId].tools[call.name] =
       (stats.bySession[call.sessionId].tools[call.name] || 0) + 1;
-
     const date = call.timestamp?.split("T")[0] || "unknown";
     if (!stats.byDate[date]) stats.byDate[date] = { count: 0, tools: {} };
     stats.byDate[date].count++;
@@ -158,14 +144,12 @@ function aggregateToolStats(
 
   return stats;
 }
-
 export async function collectToolStats(
   signal?: AbortSignal,
 ): Promise<ToolStats | null> {
   const sessionsDir = getSessionsDir();
   const sessionFiles = await findToolSessionFiles(sessionsDir);
   if (signal?.aborted) return null;
-
   const allToolCalls: ToolCall[] = [];
   let sessionCount = 0;
 
@@ -175,9 +159,7 @@ export async function collectToolStats(
       const { sessionId, toolCalls } = await parseToolSession(file);
       if (sessionId) sessionCount++;
       allToolCalls.push(...toolCalls);
-    } catch {
-      // Skip files that can't be parsed
-    }
+    } catch {}
     await new Promise<void>((resolve) => setImmediate(resolve));
   }
 

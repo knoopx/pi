@@ -2,19 +2,16 @@ import type {
   ExtensionCommandContext,
   ThemeColor,
 } from "@mariozechner/pi-coding-agent";
-
 interface AuditResult {
   lines: string[];
   errors: number;
 }
-
 export function createThemeFg(
   theme: ExtensionCommandContext["ui"]["theme"],
 ): (color: ThemeColor, text: string) => string {
   return (color, text) =>
     theme && typeof theme.fg === "function" ? theme.fg(color, text) : text;
 }
-
 export function notifyAuditResult(
   ctx: ExtensionCommandContext,
   auditResult: AuditResult,

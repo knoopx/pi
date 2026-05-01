@@ -1,14 +1,5 @@
-/**
- * Shared types for testing pi extensions
- */
-
 import { vi } from "vitest";
 import type { AgentToolResult } from "@mariozechner/pi-coding-agent";
-
-/**
- * Mock tool interface for testing extension tool registration
- * Execute signature: (toolCallId, params, signal, onUpdate, ctx)
- */
 export interface MockTool {
   name: string;
   label?: string;
@@ -23,11 +14,6 @@ export interface MockTool {
     ctx: unknown,
   ) => Promise<AgentToolResult<Record<string, unknown>>>;
 }
-
-/**
- * Mock ExtensionAPI interface for testing.
- * Extends the real ExtensionAPI with all methods as vi.fn() spies.
- */
 export interface MockExtensionAPI {
   on: ReturnType<typeof vi.fn>;
   registerTool: ReturnType<typeof vi.fn>;
@@ -55,10 +41,6 @@ export interface MockExtensionAPI {
   events: unknown;
   [key: string]: unknown;
 }
-
-/**
- * Create a basic mock ExtensionAPI for testing
- */
 export function createMockExtensionAPI(): MockExtensionAPI {
   return {
     on: vi.fn(),
@@ -86,57 +68,4 @@ export function createMockExtensionAPI(): MockExtensionAPI {
     getCommands: vi.fn(),
     events: {},
   };
-}
-
-/**
- * Create a mock fetch that returns a resolved HTTP response.
- */
-function mockFetchResponse({
-  ok,
-  status,
-  statusText,
-  json,
-}: {
-  ok: boolean;
-  status?: number;
-  statusText?: string;
-  json?: () => Promise<unknown>;
-}): Response {
-  const init: ResponseInit = {
-    status: status ?? (ok ? 200 : 400),
-    statusText: statusText ?? "",
-  };
-  if (json) {
-    return new Response(JSON.stringify(json()), {
-      ...init,
-      headers: { "content-type": "application/json" },
-    });
-  }
-  return new Response(null, init);
-}
-
-/**
- * Replace globalThis.fetch with a mock that resolves to the given response.
- */
-function setupMockFetch(
-  responses: Array<{
-    url?: string | RegExp;
-    response: Response;
-  }>,
-): void {
-  const original = globalThis.fetch;
-  globalThis.fetch = vi.fn(async (input: string | URL, _init?: RequestInit) => {
-    const url = typeof input === "string" ? input : String(input);
-    for (const { url: expectedUrl, response } of responses) {
-      if (
-        !expectedUrl ||
-        (expectedUrl instanceof RegExp
-          ? expectedUrl.test(url)
-          : url.includes(expectedUrl))
-      ) {
-        return response;
-      }
-    }
-    return original(url, _init);
-  }) as unknown as typeof globalThis.fetch;
 }

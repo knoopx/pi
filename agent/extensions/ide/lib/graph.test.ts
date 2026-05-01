@@ -6,7 +6,6 @@ import {
   type Edge,
   type GraphNode,
 } from "./graph";
-
 function fullRender(nodes: GraphNode[], isWC: boolean[]): string[] {
   const layout = calculateGraphLayout(nodes);
   return nodes.map((n, i) => {
@@ -21,8 +20,6 @@ function fullRender(nodes: GraphNode[], isWC: boolean[]): string[] {
     });
   });
 }
-
-
 function node(
   id: string,
   parentIds: string[] = [],
@@ -30,8 +27,6 @@ function node(
 ): GraphNode {
   return { id, parentIds, isWorkingCopy };
 }
-
-
 function mergeTopology(
   tipId: string,
   mergeId: string,
@@ -47,17 +42,15 @@ function mergeTopology(
     { id: baseId, parentIds: [], isWorkingCopy: false },
   ];
 }
-
-
-function edgeRow(
-  edges: Edge[],
-  laneX: number,
-  maxX: number,
-) {
-  return renderGraphRow({ edges, commitX: laneX, isWorkingCopy: false, isEmpty: false, maxX });
+function edgeRow(edges: Edge[], laneX: number, maxX: number) {
+  return renderGraphRow({
+    edges,
+    commitX: laneX,
+    isWorkingCopy: false,
+    isEmpty: false,
+    maxX,
+  });
 }
-
-
 function edge(
   type: EdgeType,
   posX: number,
@@ -70,7 +63,6 @@ function edge(
 describe("graph", () => {
   it("linear chain renders as single column of icons", () => {
     const nodes: GraphNode[] = [node("C", ["B"]), node("B", ["A"]), node("A")];
-
     const rows = fullRender(nodes, [false, false, false]);
     expect(rows).toMatchSnapshot();
   });
@@ -81,7 +73,6 @@ describe("graph", () => {
       node("B", ["A"]),
       node("A"),
     ];
-
     const rows = fullRender(nodes, [true, false, false]);
     expect(rows).toMatchSnapshot();
   });
@@ -93,7 +84,6 @@ describe("graph", () => {
       node("B", ["root"]),
       node("root"),
     ];
-
     const rows = fullRender(nodes, [false, false, false, false]);
     expect(rows).toMatchSnapshot();
   });
@@ -111,7 +101,6 @@ describe("graph", () => {
       node("C3", ["parent"]),
       { id: "parent", parentIds: [], isWorkingCopy: false },
     ];
-
     const rows = fullRender(nodes, [false, false, false, false]);
     expect(rows).toMatchSnapshot();
   });
@@ -123,7 +112,6 @@ describe("graph", () => {
       node("left", ["shared"]),
       node("shared"),
     ];
-
     const rows = fullRender(nodes, [true, false, false, false]);
     expect(rows).toMatchSnapshot();
   });
@@ -139,13 +127,20 @@ describe("graph", () => {
     const rows = nodes.flatMap((n, i) => {
       const pos = layout.positions.get(n.id);
       if (pos === undefined) return [];
-      return [renderGraphRow({ edges: layout.edges[i], commitX: pos.x, isWorkingCopy: false, isEmpty: true, maxX: layout.maxX })];
+      return [
+        renderGraphRow({
+          edges: layout.edges[i],
+          commitX: pos.x,
+          isWorkingCopy: false,
+          isEmpty: true,
+          maxX: layout.maxX,
+        }),
+      ];
     });
     expect(rows).toMatchSnapshot();
   });
 
   it("real-world-like topology with merge and linear history", () => {
-    // Simulates a repo where some commits branch off and merge back
     const nodes = mergeTopology("tip", "merge1", "feature", "main", "base");
     const rows = fullRender(nodes, [true, false, false, false, false]);
     expect(rows).toMatchSnapshot();
@@ -153,7 +148,6 @@ describe("graph", () => {
 
   it("single root commit", () => {
     const nodes: GraphNode[] = [node("root")];
-
     const rows = fullRender(nodes, [false]);
     expect(rows).toMatchSnapshot();
   });
@@ -184,10 +178,7 @@ describe("graph", () => {
 
     it("renders vertical line alongside commit in another lane", () => {
       const result = edgeRow(
-        [
-          edge(EdgeType.Vertical, 0, 0),
-          edge(EdgeType.Vertical, 1, 1, true),
-        ],
+        [edge(EdgeType.Vertical, 0, 0), edge(EdgeType.Vertical, 1, 1, true)],
         1,
         1,
       );
@@ -251,10 +242,7 @@ describe("graph", () => {
 
     it("renders left branch-out (LeftDown)", () => {
       const result = edgeRow(
-        [
-          edge(EdgeType.LeftDown, 0, 0),
-          edge(EdgeType.Vertical, 1, 1, true),
-        ],
+        [edge(EdgeType.LeftDown, 0, 0), edge(EdgeType.Vertical, 1, 1, true)],
         1,
         1,
       );
@@ -388,7 +376,6 @@ describe("graph", () => {
       ];
       const layout = calculateGraphLayout(nodes);
 
-      // base should reuse lane 0 after merge branches have been placed
       expect(layout.positions.get("base")?.x).toBe(0);
     });
   });

@@ -26,7 +26,8 @@ import { openEditor } from "../../lib/editor-utils";
 
 import { DataService } from "./service";
 import { ChangesState } from "./state";
-import { Navigation, type NavigationCallbacks } from "./navigation";
+import { Navigation } from "./navigation";
+import type { NavigationCallbacks } from "./navigation";
 import { Renderer } from "./renderer";
 import { createActionHandlers } from "./actions";
 import {
@@ -36,13 +37,10 @@ import {
 } from "./types";
 import { notifyMutation } from "../../jj/core";
 import { restoreFile } from "../../jj/files";
-
 function pluralize(count: number, singular: string, plural: string): string {
   return count === 1 ? singular : plural;
 }
-
 const REFRESH_INTERVAL_MS = 2000;
-
 export interface ChangesComponentOptions {
   init: Parameters<NonNullable<ChangesComponentFactory>>[0];
   finish: () => void;
@@ -53,7 +51,6 @@ export interface ChangesComponentOptions {
     action: "inspect" | "deps" | "used-by",
   ) => void;
 }
-
 export function createChangesComponent(
   options: ChangesComponentOptions,
 ): ChangesComponentAPI {
@@ -68,7 +65,7 @@ class ChangesComponent implements Component {
   private notify: (message: string, type?: "info" | "error") => void;
   private tui: { requestRender: () => void };
   private pi: ExtensionAPI;
-  private ctx!: ExtensionContext;
+  private ctx: ExtensionContext;
 
   private navigation: Navigation;
   private renderer: Renderer;
@@ -103,7 +100,6 @@ class ChangesComponent implements Component {
     this.tui = tui;
     this.ctx = init.ctx;
 
-    // Infrastructure
     this.service = new DataService(pi, init.ctx.cwd);
     this.state = new ChangesState();
     this.statusState = { message: null, timeout: null };
@@ -118,7 +114,7 @@ class ChangesComponent implements Component {
           this.state.changes[this.state.selectionState.selectedIndex];
         if (!change) return;
         this.state.selectedChange = change;
-        await this.loadFilesAndDiff(change).catch(() => {});
+        await this.loadFilesAndDiff(change);
       },
       onFileSelected: async (filePath) => {
         if (!this.state.selectedChange) return;
@@ -132,7 +128,6 @@ class ChangesComponent implements Component {
 
     this.renderer = new Renderer(this.state, tui, theme);
     this.renderer.setStatusMsg(null);
-
     const notify: (msg: string, type?: string) => void = (msg, _type) => {
       this.notify(msg);
     };
@@ -150,7 +145,6 @@ class ChangesComponent implements Component {
       onBookmark: this.onBookmark,
       onFileCmAction: this.onFileCmAction,
     });
-
     const globalBindings = this.getGlobalBindings();
     const leftPaneBindings = this.getLeftPaneBindings();
     const rightPaneBindings = this.getRightPaneBindings();
@@ -167,8 +161,6 @@ class ChangesComponent implements Component {
     void this.reloadChanges();
     this.startAutoRefresh();
   }
-
-  // ── Data loading ────────────────────────────────────────────────────────
 
   private buildGraphInput(): {
     id: string;
@@ -326,8 +318,6 @@ class ChangesComponent implements Component {
     return { hit: true, files, cachedDiff: cache.diffs.get(diffKey) };
   }
 
-  // ── Action helpers ──────────────────────────────────────────────────────
-
   private async refreshAfterMutation(): Promise<void> {
     await this.reloadChanges();
   }
@@ -356,39 +346,52 @@ class ChangesComponent implements Component {
   private async discardFile(): Promise<void> {
     const file = this.getSelectedFile();
     if (!file || !this.state.selectedChange) return;
+
     const prevFileIndex = this.state.selectionState.fileIndex;
+    let restoreOutput: string | undefined;
+
     try {
-      const restoreOutput = await restoreFile(
-        this.pi,
-        this.ctx.cwd,
-        this.state.selectedChange.changeId,
-        file.path,
-      );
-      this.state.changeCache.delete(this.state.selectedChange.changeId);
-
-      // Reload files and restore selection index (adjusted for removed file)
-      this.state.files = await this.service.loadChangedFiles(
-        this.state.selectedChange.changeId,
-      );
-      const adjustedIndex = Math.max(
-        0,
-        Math.min(prevFileIndex, this.state.files.length - 1),
-      );
-      this.state.selectionState.fileIndex = adjustedIndex;
-      const selectedFile = this.state.files[adjustedIndex];
-      if (selectedFile) {
-        await this.loadDiff(this.state.selectedChange, selectedFile.path);
-      } else {
-        this.state.diffContent = [];
-      }
-
-      const msg = `Restored file ${file.path} in change ${this.state.selectedChange.changeId.slice(0, 8)}`;
-      notifyMutation(this.pi, msg, restoreOutput);
+      restoreOutput = await this.restoreAndClearCache(file);
     } catch (error) {
       this.notify(
         `Failed to discard file: ${formatErrorMessage(error)}`,
         "error",
       );
+      return;
+    }
+
+    await this.refreshFilesAndSelection(prevFileIndex);
+    const msg = `Restored file ${file.path} in change ${this.state.selectedChange!.changeId.slice(0, 8)}`;
+    notifyMutation(this.pi, msg, restoreOutput ?? "");
+  }
+
+  private async restoreAndClearCache(
+    file: FileChange,
+  ): Promise<string | undefined> {
+    const { changeId } = this.state.selectedChange!;
+    const restoreOutput = await restoreFile(
+      this.pi,
+      this.ctx.cwd,
+      changeId,
+      file.path,
+    );
+    this.state.changeCache.delete(changeId);
+    return restoreOutput;
+  }
+
+  private async refreshFilesAndSelection(prevIndex: number): Promise<void> {
+    const { changeId } = this.state.selectedChange!;
+    this.state.files = await this.service.loadChangedFiles(changeId);
+    const adjustedIndex = Math.max(
+      0,
+      Math.min(prevIndex, this.state.files.length - 1),
+    );
+    this.state.selectionState.fileIndex = adjustedIndex;
+    const selectedFile = this.state.files[adjustedIndex];
+    if (selectedFile) {
+      await this.loadDiff(this.state.selectedChange!, selectedFile.path);
+    } else {
+      this.state.diffContent = [];
     }
   }
 
@@ -562,7 +565,6 @@ class ChangesComponent implements Component {
     if (this.state.mode !== "move") {
       return;
     }
-
     const currentIndex = this.state.selectionState.selectedIndex;
     if (currentIndex === this.state.moveOriginalIndex) {
       this.state.mode = "normal";
@@ -585,7 +587,6 @@ class ChangesComponent implements Component {
     if (!this.state.selectedChange) return;
     const plan = this.resolveRebasePlan();
     if (!plan) return;
-
     const change = this.state.selectedChange;
     const result = await this.pi.exec(
       "jj",
@@ -647,8 +648,6 @@ class ChangesComponent implements Component {
     void this.reloadChanges();
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   render(width: number): string[] {
     this.helpText = this.buildHelpText();
     return this.renderer.render(width, this.helpText);
@@ -660,8 +659,6 @@ class ChangesComponent implements Component {
     return buildHelpFromBindings(activeBindings);
   }
 
-  // ── Keyboard input ────────────────────────────────────────────────────────
-
   private navigateMove(direction: "up" | "down"): void {
     try {
       this.navigation.moveChange(direction);
@@ -671,11 +668,19 @@ class ChangesComponent implements Component {
         this.state.selectedChange = change;
         const result = this.navigation.onChangeSelected(change.changeId);
         if (result instanceof Promise) {
-          void result.catch(() => {});
+          void result.catch((error) => {
+            this.notify(
+              `onChangeSelected failed: ${formatErrorMessage(error)}`,
+              "error",
+            );
+          });
         }
       }
-    } catch {
-      // Silently ignore - render will show error state if needed
+    } catch (error) {
+      this.notify(
+        `Changes component update failed: ${formatErrorMessage(error)}`,
+        "error",
+      );
     }
     this.tui.requestRender();
   }
@@ -1035,8 +1040,6 @@ class ChangesComponent implements Component {
     handler(data);
   }
 
-  // ── Lifecycle ─────────────────────────────────────────────────────────────
-
   private startAutoRefresh(): void {
     this.refreshInterval = setInterval(() => {
       if (this.state.mode === "normal") {
@@ -1058,14 +1061,12 @@ class ChangesComponent implements Component {
 
   invalidate(): void {}
 }
-
 function buildSplitMessage(
   file: { path: string },
   change: { changeId: string },
 ): string {
   return `Moved ${file.path} from change ${change.changeId.slice(0, 8)} to a new change`;
 }
-
 function pickOutput(stderr: string, stdout: string): string {
   if (stderr) return stderr;
   return stdout || "";

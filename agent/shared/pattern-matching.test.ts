@@ -19,7 +19,10 @@ describe("pattern-matching", () => {
     describe("given pipelines and logical operators", () => {
       it("then splits into command segments", () => {
         const segments = tokenizeCommand("cd /tmp && npm install | cat");
-        expect(segments).toEqual([["cd", "/tmp"], ["npm", "install"], ["cat"]]);
+        expect(segments).toEqual([
+          ["cd", "/tmp"],
+          ["npm", "install", "|", "cat"],
+        ]);
       });
     });
 

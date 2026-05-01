@@ -5,7 +5,6 @@ import type {
   Theme,
 } from "@mariozechner/pi-coding-agent";
 import type { ListPickerComponent } from "./list-picker";
-
 interface ComponentCreatorOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };
@@ -15,11 +14,9 @@ interface ComponentCreatorOptions {
   cwd: string;
   onInsert?: (text: string) => void;
 }
-
 type ComponentCreator = (
   options: ComponentCreatorOptions,
 ) => ListPickerComponent;
-
 export const FULL_OVERLAY_OPTIONS = {
   overlay: true,
   overlayOptions: {
@@ -27,7 +24,6 @@ export const FULL_OVERLAY_OPTIONS = {
     anchor: "center" as const,
   },
 };
-
 export async function openBrowserOverlay(
   pi: ExtensionAPI,
   ctx: ExtensionContext,

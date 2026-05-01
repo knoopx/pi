@@ -9,7 +9,6 @@ import {
   loadAgentWorkspaces,
 } from "./workspace";
 import { createMockExecPi, createMockExecPiWithRoutes } from "./lib/test-utils";
-
 const { execMock, pi } = createMockExecPi();
 beforeEach(() => execMock.mockReset());
 
@@ -33,7 +32,6 @@ describe("workspace module", () => {
           "invalid line without separators",
           "ide-def: abc123 ♻️   refactor  parser",
         ].join("\n");
-
         const result = parseWorkspaceList(output);
 
         expect(result).toEqual([
@@ -54,7 +52,6 @@ describe("workspace module", () => {
     describe("when description contains only unicode symbols", () => {
       it("then uses fallback description", () => {
         const output = "ide-abc: znvxvkwopwql ✨🐛";
-
         const result = parseWorkspaceList(output);
 
         expect(result[0]?.description).toBe("(no description)");
@@ -71,7 +68,6 @@ describe("workspace module", () => {
           " src/old.ts | 2 --",
           " 3 files changed, 6 insertions(+), 5 deletions(-)",
         ].join("\n");
-
         const result = parseDiffStats(output);
 
         expect(result.files).toEqual([
@@ -99,7 +95,6 @@ describe("workspace module", () => {
     describe("when tmux session does not exist", () => {
       it("then reports completed status", async () => {
         execMock.mockResolvedValueOnce({ code: 1, stdout: "", stderr: "" });
-
         const result = await getTmuxSessionStatus(pi, "ide-abc");
 
         expect(result).toBe("completed");
@@ -111,7 +106,6 @@ describe("workspace module", () => {
         execMock
           .mockResolvedValueOnce({ code: 0, stdout: "", stderr: "" })
           .mockResolvedValueOnce({ code: 0, stdout: "bun\n", stderr: "" });
-
         const result = await getTmuxSessionStatus(pi, "ide-abc");
 
         expect(result).toBe("running");
@@ -123,7 +117,6 @@ describe("workspace module", () => {
         execMock
           .mockResolvedValueOnce({ code: 0, stdout: "", stderr: "" })
           .mockResolvedValueOnce({ code: 1, stdout: "", stderr: "failed" });
-
         const result = await getTmuxSessionStatus(pi, "ide-abc");
 
         expect(result).toBe("idle");
@@ -150,7 +143,6 @@ describe("workspace module", () => {
             stdout: "diff output",
             stderr: "",
           });
-
         const result = await getRawDiff(
           pi,
           "/repo/.jj/workspaces/ide-abc",
@@ -266,7 +258,6 @@ describe("workspace module", () => {
             },
           },
         ]);
-
         const result = await loadAgentWorkspaces(pi);
 
         expect(result).toHaveLength(1);

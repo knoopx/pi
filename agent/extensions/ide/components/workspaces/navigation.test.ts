@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentWorkspace, FileChange, Change } from "../../lib/types";
 import { TestTerminal, createMockTheme } from "../../lib/test-utils";
-import { createWorkspaceState, type WorkspaceState } from "./data-loading";
-
+import { createWorkspaceState } from "./data-loading";
+import type { WorkspaceState } from "./data-loading";
 function createMockWorkspace(
   overrides?: Partial<AgentWorkspace>,
 ): AgentWorkspace {
@@ -18,7 +18,6 @@ function createMockWorkspace(
     ...overrides,
   };
 }
-
 function createDefaultWorkspace(): AgentWorkspace {
   return {
     name: "default",
@@ -31,7 +30,6 @@ function createDefaultWorkspace(): AgentWorkspace {
     fileStats: undefined,
   };
 }
-
 function setupTwoWorkspaces(
   s: WorkspaceState,
   nameA: string,
@@ -45,7 +43,6 @@ function setupTwoWorkspaces(
   s.selectedWorkspace = ws[0];
   return ws;
 }
-
 function makeFiles(count: number) {
   return Array.from({ length: count }, (_, i) => ({
     status: "M" as const,
@@ -78,7 +75,6 @@ describe("workspace navigation state", () => {
       "+ old content from workspace a",
     ];
 
-    // Simulate navigateWorkspace: switch to ws-b, reset state before render
     state.selectedWorkspace = state.workspaces[1];
     state.fileIndex = 0;
     state.diffScroll = 0;
@@ -107,8 +103,6 @@ describe("workspace navigation state", () => {
     setupTwoWorkspaces(state, "ws-a", "ws-b");
     state.diffContent = ["existing diff content from ws-a"];
     state.diffScroll = 5;
-
-    // Simulate the synchronous part of navigateWorkspace
     const targetWorkspace = state.workspaces[1];
     state.selectedWorkspace = targetWorkspace;
     state.fileIndex = 0;
@@ -137,7 +131,6 @@ describe("workspace navigation state", () => {
     state.diffScroll = 5;
     state.diffContent = ["diff for a.ts"];
 
-    // Simulate navigateFile down
     state.fileIndex = 1;
     state.diffScroll = 0;
     state.diffContent = ["Loading..."];
@@ -147,15 +140,11 @@ describe("workspace navigation state", () => {
     expect(state.diffContent).toEqual(["Loading..."]);
   });
 });
-
-// ─── Fixture factories for renderView tests ──────────────────────────────
-
 function wsName(name: string): AgentWorkspace {
   return name === "default"
     ? createDefaultWorkspace()
     : createMockWorkspace({ name });
 }
-
 function change(
   id: string,
   desc: string,
@@ -173,17 +162,14 @@ function change(
     parentIds,
   };
 }
-
 const defaultChanges = [
   change("abc", "feat: add login", "Alice"),
   change("def", "fix: typo", "Bob", ["abc"]),
 ];
-
 const SHARED_FILES = [
   { status: "A" as const, path: "src/new.ts", insertions: 10, deletions: 0 },
   { status: "M" as const, path: "src/main.ts", insertions: 5, deletions: 2 },
 ];
-
 const BASE_VIEW_PROPS = {
   workspaces: [] as AgentWorkspace[],
   selectedWorkspace: null as AgentWorkspace | null,
@@ -203,7 +189,6 @@ async function renderView(
   const { WorkspaceView } = await import("./view");
   const theme = createMockTheme();
   const terminal = new TestTerminal(120, 30);
-
   const view = new WorkspaceView(
     { ...BASE_VIEW_PROPS, ...props },
     { terminal, requestRender: vi.fn() },

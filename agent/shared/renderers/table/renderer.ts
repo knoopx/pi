@@ -1,36 +1,17 @@
-/**
- * Pattern A: List — columnar table with box-drawing.
- *
- * Numbers right-aligned, text left-aligned. Long fields wrap
- * to continuation lines indented 4 spaces from the cell's left edge.
- * One blank line between rows when continuation lines exist.
- */
-
 import { visibleWidth } from "@mariozechner/pi-tui";
 import { wrapPlain } from "../text";
 import type { Column, MeasuredColumn } from "../types";
 import { cellStr, padEnd, padStart } from "./cells";
-
-/**
- * Render a list of rows as a table following the design system.
- *
- * @param columns   Column definitions (order determines display order)
- * @param rows      Data rows
- * @param options   Optional config
- */
 export function table(
   columns: Column[],
   rows: Record<string, unknown>[],
   options: { indent?: number; maxTableWidth?: number } = {},
 ): string {
   if (rows.length === 0) return "";
-
   const indent = options.indent ?? 0;
   const indentStr = " ".repeat(indent);
   const maxTableWidth =
     options.maxTableWidth ?? process.stdout.columns ?? Infinity;
-
-  // Format all cells (store both display and plain versions)
   const formatted: string[][] = rows.map((row) =>
     columns.map((col) => {
       const raw = row[col.key];
@@ -77,7 +58,6 @@ export function table(
     const flexTotal = flexIndices.reduce((s, i) => s + measured[i].width, 0);
 
     if (flexBudget > 0 && flexTotal > flexBudget) {
-      // Distribute proportionally, respecting minWidth and header width
       for (const i of flexIndices) {
         const col = measured[i];
         const share = Math.max(
@@ -88,10 +68,7 @@ export function table(
       }
     }
   }
-
   const sep = " │ ";
-
-  // ── Header ──
   const headerCells = measured.map((col, i) => {
     const isLast = i === measured.length - 1;
     const aligned =
@@ -103,22 +80,15 @@ export function table(
     return aligned;
   });
   const headerLine = indentStr + headerCells.join(sep);
-
-  // ── Separator ──
   const separatorParts = measured.map((col) => "─".repeat(col.width));
   const separatorLine = "─".repeat(indent) + separatorParts.join("─┼─");
-
-  // ── Rows ──
   const rowLines: string[] = [];
   for (const cells of formatted) {
-    // Split on embedded newlines, then word-wrap each segment
     const wrappedCells: string[][] = cells.map((cell, ci) => {
       const col = measured[ci];
       const segments = cell.split("\n").filter((s) => s !== "");
 
-      // Handle empty cells (all newlines filtered out)
       if (segments.length === 0) return [""];
-
       const wrapSegment = (seg: string): string[] => {
         const plain = seg;
         if (plain.length <= col.width) return [seg];
@@ -130,14 +100,12 @@ export function table(
         if (lines.length <= 1) return lines;
         return [lines[0], ...lines.slice(1).map((l) => `    ${l}`)];
       }
-      // Multi-line cell — wrap each segment, join with newlines, then re-split
       const wrappedSegments = segments.map((seg) =>
         wrapSegment(seg).join("\n"),
       );
       const joined = wrappedSegments.join("\n");
       return joined.split("\n");
     });
-
     const maxLines = Math.max(...wrappedCells.map((wc) => wc.length));
 
     for (let lineIdx = 0; lineIdx < maxLines; lineIdx++) {

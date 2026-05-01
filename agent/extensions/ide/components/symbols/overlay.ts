@@ -5,12 +5,10 @@ import type {
 import type { SymbolResult } from "./types";
 import { runNavigationStack } from "../symbol-references/navigation";
 import { createSymbolsComponent } from "./component";
-
 const OVERLAY_OPTIONS = {
   overlay: true,
   overlayOptions: { width: "95%" as const, anchor: "center" as const },
 };
-
 export async function openSymbolsPicker(
   pi: ExtensionAPI,
   ctx: ExtensionContext,

@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import defaultsConfig from "./defaults";
 
+function expectDefaultActive(config: {
+  load(): void;
+  getConfig(): unknown;
+}): void {
+  config.load();
+  expect(config.getConfig()).toEqual(defaultsConfig);
+}
+
 describe("configLoader", () => {
   describe("given configuration is not loaded yet", () => {
     describe("when reading resolved config", () => {
@@ -16,10 +24,7 @@ describe("configLoader", () => {
   describe("when loading", () => {
     it("then resolves defaults as active config", async () => {
       const { configLoader } = await import("./config");
-
-      configLoader.load();
-
-      expect(configLoader.getConfig()).toEqual(defaultsConfig);
+      expectDefaultActive(configLoader);
     });
   });
 });

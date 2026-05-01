@@ -1,11 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { Editor } from "./editor";
-
 const SNAPSHOT_CONTENT = `function hello(name: string): string {
   const greeting = "Hello, " + name;
   return greeting;
 }`;
-
 function setupUndoState(): Editor {
   const editor = new Editor("hello");
   editor.insertChar("!");
@@ -166,8 +164,6 @@ describe("Editor", () => {
         editor.setCursor(0, 7);
         editor.insertNewline();
 
-        // beforeCursor="  hello" -> indent="  ", afterCursor=" world"
-        // So line 1 = "  " + " world" = "   world"
         expect(editor.getLines()).toEqual(["  hello", "   world"]);
         expect(editor.getCursor()).toEqual({ line: 1, col: 2 });
       });
@@ -318,7 +314,6 @@ describe("Editor", () => {
     describe("when typing and undoing", () => {
       it("then restores previous content", () => {
         const editor = new Editor("hello");
-        // Cursor is at 0,0 after setContent, so insert adds at beginning
         editor.insertChar("!");
         expect(editor.getContent()).toBe("!hello");
 
@@ -351,7 +346,6 @@ describe("Editor", () => {
       it("then clears the redo stack", () => {
         const editor = setupUndoState();
         expect(editor.getContent()).toBe("hello");
-        // New insert at col 0
         editor.insertChar("?");
         expect(editor.getContent()).toBe("?hello");
         const redoResult = editor.redo();
@@ -409,7 +403,6 @@ describe("Editor", () => {
       });
     });
   });
-
   const lines = (count: number) =>
     Array.from({ length: count }, (_, i) => `line${i}`).join("\n");
 
@@ -444,8 +437,6 @@ describe("Editor", () => {
         editor.setCursor(0, 8);
         editor.moveWordLeft(false);
 
-        // From col 8: skipNonWord backward from 7 -> stays at 7 (word char)
-        // then skipSameBackward from 7 for 'word' type -> goes to 7
         expect(editor.getCursor().col).toBe(7);
       });
     });

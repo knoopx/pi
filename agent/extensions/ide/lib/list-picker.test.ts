@@ -5,19 +5,22 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { createListPicker } from "./list-picker";
-import type { ListPickerItem } from "./list-picker";
+import type {
+  ListPickerItem,
+  ListPickerConfig,
+  ListPickerComponent,
+} from "./list-picker";
 import { createMockTheme } from "./test-utils";
-
 const theme = createMockTheme();
-
 function createMockTui(rows = 30) {
   return {
     terminal: { rows },
     requestRender: vi.fn(),
   };
 }
-
-function createBaseConfig<T extends ListPickerItem>(overrides?: Partial<any>) {
+function createBaseConfig<T extends ListPickerItem>(
+  overrides?: Partial<ListPickerConfig<T>>,
+) {
   return {
     title: "Test Picker",
     loadItems: vi.fn().mockResolvedValue([] as T[]),
@@ -30,14 +33,16 @@ function createBaseConfig<T extends ListPickerItem>(overrides?: Partial<any>) {
   };
 }
 
-async function waitForLoaded(picker: any) {
+async function waitForLoaded(picker: ListPickerComponent) {
   await vi.waitFor(() => {
     const lines = picker.render(80);
     return !lines.some((l: string) => l.includes("Loading"));
   });
 }
 
-async function createPicker(configOverrides: Partial<any>) {
+async function createPicker(
+  configOverrides: Partial<ListPickerConfig<ListPickerItem>>,
+) {
   const tui = createMockTui();
   const config = createBaseConfig<ListPickerItem>(configOverrides);
   const picker = createListPicker({
@@ -52,7 +57,6 @@ async function createPicker(configOverrides: Partial<any>) {
   await waitForLoaded(picker);
   return { picker, tui };
 }
-
 function setup(
   items: ListPickerItem[],
   overrides?: Record<string, unknown>,
@@ -65,13 +69,18 @@ function setup(
     ...overrides,
   });
 }
-
-function focusItem(picker: any, tui: any, index: number) {
+function focusItem(
+  picker: ListPickerComponent & {
+    focusedIndex?: number;
+    invalidate: () => void;
+  },
+  tui: { requestRender: () => void },
+  index: number,
+) {
   picker.focusedIndex = index;
   picker.invalidate();
   tui.requestRender();
 }
-
 function createItems(count: number, labelPrefix: string): ListPickerItem[] {
   return Array.from({ length: count }, (_, i) => ({
     id: String(i),
@@ -85,7 +94,6 @@ describe("list-picker — list row rendering", () => {
       const { picker } = await createPicker({
         loadItems: vi.fn().mockResolvedValue([]),
       });
-
       const result = picker.render(80);
       expect(result).toMatchSnapshot();
     });
@@ -96,7 +104,6 @@ describe("list-picker — list row rendering", () => {
       const { picker } = await createPicker({
         loadItems: vi.fn().mockReturnValue(new Promise(() => {})),
       });
-
       const result = picker.render(80);
       expect(result).toMatchSnapshot();
     });
@@ -108,7 +115,6 @@ describe("list-picker — list row rendering", () => {
       const { picker } = await createPicker({
         loadItems: vi.fn().mockRejectedValue(new Error("Failed to load")),
       });
-
       const result = picker.render(80);
       expect(result).toMatchSnapshot();
     });
@@ -118,7 +124,6 @@ describe("list-picker — list row rendering", () => {
     describe("when rendering with a single item", () => {
       it("renders the item row consistently padded", async () => {
         const { picker } = await setup([{ id: "a", label: "single-file.txt" }]);
-
         const result = picker.render(80);
         expect(result).toMatchSnapshot();
       });
@@ -134,7 +139,6 @@ describe("list-picker — list row rendering", () => {
             label: "this-is-a-very-long-file-name-that-needs-truncation.ts",
           },
         ]);
-
         const result = picker.render(80);
         expect(result).toMatchSnapshot();
       });
@@ -147,12 +151,9 @@ describe("list-picker — list row rendering", () => {
           { id: "b", label: "file-b.ts" },
           { id: "c", label: "file-c.ts" },
         ];
-
         const { picker, tui } = await setup(items);
 
-        // Focus second item
         focusItem(picker, tui, 1);
-
         const result = picker.render(80);
         expect(result).toMatchSnapshot();
       });
@@ -166,12 +167,9 @@ describe("list-picker — list row rendering", () => {
           { id: "c", label: "gamma.ts" },
           { id: "d", label: "delta.ts" },
         ];
-
         const { picker, tui } = await setup(items);
 
-        // Focus last item
         focusItem(picker, tui, 3);
-
         const result = picker.render(80);
         expect(result).toMatchSnapshot();
       });
@@ -184,12 +182,10 @@ describe("list-picker — list row rendering", () => {
           { id: "b", label: "modified-file.ts" },
           { id: "c", label: "deleted-file.ts" },
         ];
-
         const { picker } = await setup(items, {
           formatItem: (item: ListPickerItem) => `[★] ${item.label}`,
           loadPreview: vi.fn().mockResolvedValue([]),
         });
-
         const result = picker.render(80);
         expect(result).toMatchSnapshot();
       });
@@ -198,7 +194,6 @@ describe("list-picker — list row rendering", () => {
     describe("when terminal height is smaller than item count", () => {
       it("renders only visible rows with consistent padding", async () => {
         const { picker } = await setup(createItems(15, "file-"));
-
         const result = picker.render(80);
         expect(result).toMatchSnapshot();
       });
@@ -214,9 +209,7 @@ describe("list-picker — list row rendering", () => {
           },
         );
 
-        // Focus item at index 12
         focusItem(picker, tui, 12);
-
         const result = picker.render(80);
         expect(result).toMatchSnapshot();
       });
@@ -229,7 +222,6 @@ describe("list-picker — list row rendering", () => {
           { id: "b", label: "αρχείο.ts" },
           { id: "c", label: "ファイル.ts" },
         ]);
-
         const result = picker.render(80);
         expect(result).toMatchSnapshot();
       });
@@ -241,7 +233,6 @@ describe("list-picker — list row rendering", () => {
           { id: "a", label: "normal.ts" },
           { id: "b", label: "typescript.ts" },
         ];
-
         const { picker } = await createPicker({
           loadItems: vi.fn().mockResolvedValue(items),
           filterItems: (items: ListPickerItem[]) => items,
@@ -249,7 +240,6 @@ describe("list-picker — list row rendering", () => {
             th.fg("accent", `[icon] ${item.label}`),
           loadPreview: vi.fn().mockResolvedValue([]),
         });
-
         const result = picker.render(80);
         expect(result).toMatchSnapshot();
       });
@@ -262,9 +252,7 @@ describe("list-picker — list row rendering", () => {
         { id: "a", label: "short.ts" },
         { id: "b", label: "a-very-long-file-name-here.ts" },
       ];
-
       const { picker } = await setup(items);
-
       const result = picker.render(40);
       expect(result).toMatchSnapshot();
     });
@@ -274,9 +262,7 @@ describe("list-picker — list row rendering", () => {
         { id: "a", label: "short.ts" },
         { id: "b", label: "medium-file.ts" },
       ];
-
       const { picker } = await setup(items);
-
       const result = picker.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -288,12 +274,9 @@ describe("list-picker — list row rendering", () => {
         { id: "a", label: "file-a.ts" },
         { id: "b", label: "file-b.ts" },
       ];
-
       const { picker, tui } = await setup(items);
 
-      // Focus second item
       focusItem(picker, tui, 1);
-
       const result1 = picker.render(80);
       const result2 = picker.render(80);
 
@@ -308,13 +291,11 @@ describe("list-picker — onKey reload callback", () => {
       expect(typeof onReload).toBe("function");
       return false;
     });
-
     const { picker } = await createPicker({
       loadItems: vi.fn().mockResolvedValue([{ id: "a", label: "test.ts" }]),
       onKey,
     });
 
-    // Simulate a key press that onKey handles
     picker.handleInput("x");
 
     expect(onKey).toHaveBeenCalledWith("x", expect.any(Function));
@@ -323,9 +304,7 @@ describe("list-picker — onKey reload callback", () => {
   it("calling the reload callback triggers loadItems to refetch data", async () => {
     const loadItemsMock = vi.fn();
     loadItemsMock.mockResolvedValueOnce([{ id: "a", label: "v1.ts" }]);
-
     let capturedReload: (() => void) | undefined;
-
     const { picker } = await createPicker({
       loadItems: loadItemsMock,
       onKey: (_data: string, onReload?: () => void) => {
@@ -336,16 +315,12 @@ describe("list-picker — onKey reload callback", () => {
 
     expect(loadItemsMock).toHaveBeenCalledTimes(1);
 
-    // Simulate a key press to capture the reload callback
     picker.handleInput("x");
 
-    // Prepare next load result
     loadItemsMock.mockResolvedValueOnce([{ id: "b", label: "v2.ts" }]);
 
-    // Trigger reload via captured callback
     capturedReload?.();
 
-    // Wait for reload to complete
     await vi.waitFor(() => {
       expect(loadItemsMock).toHaveBeenCalledTimes(2);
     });
@@ -353,7 +328,6 @@ describe("list-picker — onKey reload callback", () => {
 
   it("onKey returning false falls through to default key handling", async () => {
     const onKey = vi.fn(() => false);
-
     const { picker } = await createPicker({
       loadItems: vi.fn().mockResolvedValue([
         { id: "a", label: "file-a.ts" },
@@ -362,13 +336,10 @@ describe("list-picker — onKey reload callback", () => {
       onKey,
     });
 
-    // Type a character — onKey returns false, so default handler adds it to search
     picker.handleInput("f");
 
     expect(onKey).toHaveBeenCalledWith("f", expect.any(Function));
-    // Default handler should have processed the input too (search query updated)
     const lines = picker.render(80);
-    // Should show filtered results (items containing 'f')
     expect(lines.some((l: string) => l.includes("file-"))).toBe(true);
   });
 });

@@ -1,15 +1,12 @@
-import { truncateToWidth } from "@mariozechner/pi-tui";
-import type { Theme } from "../shared/types";
-import { handleUsageInput } from "../shared/input-handling";
+import { matchesKey, truncateToWidth } from "@mariozechner/pi-tui";
+import type { Theme } from "@mariozechner/pi-coding-agent";
 import { formatNumber } from "../shared/formatters";
 import type { ToolStats, ToolTabName } from "./types";
-
 const TOOL_TAB_LABELS: Record<ToolTabName, string> = {
   byTool: "By Tool",
   byDate: "By Date",
   bySession: "By Session",
 };
-
 const TOOL_TAB_ORDER: ToolTabName[] = ["byTool", "byDate", "bySession"];
 
 class ToolUsageComponent {
@@ -43,41 +40,6 @@ class ToolUsageComponent {
       default:
         return 0;
     }
-  }
-
-  handleInput(data: string): void {
-    handleUsageInput(data, {
-      done: this.done,
-      onTabForward: () => {
-        this.cycleToolTab(1);
-      },
-      onTabBackward: () => {
-        this.cycleToolTab(-1);
-      },
-      onUp: () => {
-        if (this.selectedIndex > 0) {
-          this.selectedIndex--;
-          this.requestRender();
-        }
-      },
-      onDown: () => {
-        const maxIdx = this.getRowCount() - 1;
-        if (this.selectedIndex < maxIdx) {
-          this.selectedIndex++;
-          this.requestRender();
-        }
-      },
-    });
-  }
-
-  private cycleToolTab(direction: number): void {
-    const idx = TOOL_TAB_ORDER.indexOf(this.activeTab);
-    this.activeTab =
-      TOOL_TAB_ORDER[
-        (idx + direction + TOOL_TAB_ORDER.length) % TOOL_TAB_ORDER.length
-      ];
-    this.selectedIndex = 0;
-    this.requestRender();
   }
 
   render(): string[] {
@@ -135,7 +97,6 @@ class ToolUsageComponent {
       lines.push(th.fg("dim", "  No tool usage data"));
       return lines;
     }
-
     const maxNameLen = Math.max(
       ...sortedTools.map(([name]) => name.length),
       10,
@@ -149,7 +110,6 @@ class ToolUsageComponent {
       const barLen = Math.round((count / maxCount) * barWidth);
       const bar = "█".repeat(barLen);
       const isSelected = i === this.selectedIndex;
-
       const nameStr = isSelected
         ? th.fg("accent", name.padEnd(maxNameLen))
         : name.padEnd(maxNameLen);
@@ -183,7 +143,6 @@ class ToolUsageComponent {
         .slice(0, 5)
         .map(([t, c]) => `${t}(${c})`)
         .join(", ");
-
       const isSelected = i === this.selectedIndex;
       const dateStr = isSelected ? th.fg("accent", date) : date;
       const countStr = String(data.count).padStart(5);
@@ -219,7 +178,6 @@ class ToolUsageComponent {
         .slice(0, 3)
         .map(([t, c]) => `${t}(${c})`)
         .join(", ");
-
       const isSelected = i === this.selectedIndex;
       const nameStr = isSelected
         ? th.fg("accent", padRight(shortName, 42))
@@ -235,7 +193,6 @@ class ToolUsageComponent {
   private renderInsights(): string[] {
     const th = this.theme;
     const lines: string[] = [th.fg("border", "─".repeat(70)), ""];
-
     const sortedTools = Object.entries(this.data.byTool).sort(
       ([, a], [, b]) => b - a,
     );
@@ -246,7 +203,6 @@ class ToolUsageComponent {
         `  Most used: ${th.fg("accent", topTool[0])} (${topTool[1]} calls, ${pct}%)`,
       );
     }
-
     const avgPerSession = (
       this.data.totalToolCalls / this.data.totalSessions
     ).toFixed(1);
@@ -260,12 +216,40 @@ class ToolUsageComponent {
   private renderHelp(): string[] {
     return [this.theme.fg("dim", "[Tab/←→] view  [↑↓] select  [q] close")];
   }
-}
 
+  handleInput(data: string): void {
+    const matches = (key: Parameters<typeof matchesKey>[1]) =>
+      matchesKey(data, key);
+    if (matches("tab") || matches("right")) {
+      this.activeTab = this.cycleTab(this.activeTab, 1);
+    } else if (matches("shift+tab") || matches("left")) {
+      this.activeTab = this.cycleTab(this.activeTab, -1);
+    } else if (data === "\u001b[A" || data === "k" || data === "K") {
+      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+    } else if (data === "\u001b[B" || data === "j" || data === "J") {
+      this.selectedIndex = Math.min(
+        this.getRowCount() - 1,
+        this.selectedIndex + 1,
+      );
+    } else if (
+      matches("escape") ||
+      data === "\x1b" ||
+      data === "q" ||
+      data === "Q"
+    ) {
+      this.done();
+    }
+  }
+
+  private cycleTab(tab: ToolTabName, dir: number): ToolTabName {
+    const order = TOOL_TAB_ORDER;
+    const idx = order.indexOf(tab);
+    return order[(idx + dir + order.length) % order.length];
+  }
+}
 function padRight(s: string, len: number): string {
   const visibleWidth = s.length;
   if (visibleWidth >= len) return s;
   return s + " ".repeat(len - visibleWidth);
 }
-
 export { ToolUsageComponent };

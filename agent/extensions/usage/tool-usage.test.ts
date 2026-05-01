@@ -4,9 +4,6 @@ import { collectToolStats } from "./tool-usage/data-collection";
 import { ToolUsageComponent } from "./tool-usage/component";
 
 describe("tool-usage", () => {
-  // Tool usage component tests would go here.
-  // Currently untested: the data collection path for tool calls
-  // requires real session files on disk.
   describe("collectToolStats", () => {
     it("then returns null when signal is aborted immediately", async () => {
       const controller = new AbortController();

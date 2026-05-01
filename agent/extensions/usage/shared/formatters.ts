@@ -9,7 +9,6 @@ export function formatCost(cost: number): string {
   }
   return `$${Math.round(cost)}`;
 }
-
 export function formatTokens(count: number): string {
   if (count === 0) return "-";
   if (count < 1000) return count.toString();
@@ -23,7 +22,6 @@ export function formatTokens(count: number): string {
   if (count < 10000000000) return `${(count / 1000000000).toFixed(1)}B`;
   return `${Math.round(count / 1000000000)}B`;
 }
-
 export function formatNumber(n: number): string {
   if (n === 0) return "-";
   return new Intl.NumberFormat("en-US").format(n);

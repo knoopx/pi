@@ -1,8 +1,6 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { ListPickerComponent } from "../../lib/list-picker";
 import { notifyMutation } from "../../jj/core";
-
-
 export async function executeGhCommand(options: {
   pi: ExtensionAPI;
   args: string[];
@@ -21,7 +19,6 @@ export async function executeGhCommand(options: {
   notifyMutation(pi, "error", result.stderr || errorMsg);
   return false;
 }
-
 export async function openPrInBrowser(
   pi: ExtensionAPI,
   prNumber: number,

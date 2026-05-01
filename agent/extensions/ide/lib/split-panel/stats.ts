@@ -1,9 +1,7 @@
-
 interface FileStats {
   text: string;
   isPositive: boolean;
 }
-
 export function formatFileStats(
   insertions: number | undefined,
   deletions: number | undefined,

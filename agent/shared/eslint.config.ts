@@ -1,5 +1,5 @@
 import ts from "typescript-eslint";
-
+import importPlugin from "eslint-plugin-import-x";
 export default ts.config(
   { ignores: ["dist/**", "node_modules/**"] },
   ...ts.configs.recommendedTypeChecked,
@@ -9,11 +9,15 @@ export default ts.config(
         projectService: true,
       },
     },
+    plugins: {
+      import: importPlugin,
+    },
     rules: {
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_" },
       ],
+      "import/extensions": ["error", "never"],
     },
   },
 );

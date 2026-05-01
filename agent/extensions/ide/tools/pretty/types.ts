@@ -1,5 +1,4 @@
 import type { Component } from "@mariozechner/pi-tui";
-
 export interface ToolRenderContext<TState, TArgs> {
   args: TArgs;
   toolCallId: string;

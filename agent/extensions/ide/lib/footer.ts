@@ -5,10 +5,9 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
 
-import { detectAndFetchUsage, type UsageSnapshot } from "./usage/shared";
+import { detectAndFetchUsage } from "./usage/shared";
+import type { UsageSnapshot } from "./usage/shared";
 import { getVcsLabel } from "../jj/changes";
-
-
 function calculateTotalCost(
   sessionManager: ExtensionContext["sessionManager"],
 ): number {
@@ -20,16 +19,12 @@ function calculateTotalCost(
     return sum + cost;
   }, 0);
 }
-
-
 function formatCostText(totalCost: number, ctx: ExtensionContext): string {
   const usingSubscription = ctx.model
     ? ctx.modelRegistry.isUsingOAuth(ctx.model)
     : false;
   return `$${totalCost.toFixed(3)}${usingSubscription ? " (sub)" : ""}`;
 }
-
-
 function buildContextText(
   percent: number | null,
   contextWindow: number,
@@ -38,8 +33,6 @@ function buildContextText(
   if (percent === null) return `?/${windowStr} (auto)`;
   return `${percent.toFixed(1)}%/${windowStr} (auto)`;
 }
-
-
 function colorizePercent(
   text: string,
   percent: number | null,
@@ -50,8 +43,6 @@ function colorizePercent(
   if (percent > 70) return theme.fg("warning", text);
   return text;
 }
-
-
 function formatCompactQuota(
   usage: UsageSnapshot | undefined,
   theme: Theme,
@@ -69,15 +60,11 @@ function formatCompactQuota(
     })
     .join(theme.fg("dim", ", "));
 }
-
-
 interface FooterState {
   ctx: ExtensionContext;
   vcsLabel: string | null;
   usage: UsageSnapshot | undefined;
 }
-
-
 function buildCenterText(
   ctx: ExtensionContext,
   pi: ExtensionAPI,
@@ -91,8 +78,6 @@ function buildCenterText(
   const quotaText = formatCompactQuota(usage, theme);
   return quotaText ? `${modelText} ${quotaText}` : modelText;
 }
-
-
 function buildRightText(
   ctx: ExtensionContext,
   pi: ExtensionAPI,
@@ -100,7 +85,6 @@ function buildRightText(
 ): string {
   const totalCost = calculateTotalCost(ctx.sessionManager);
   const costText = formatCostText(totalCost, ctx);
-
   const usage = ctx.getContextUsage();
   const window = usage?.contextWindow ?? ctx.model?.contextWindow ?? 0;
   const percent = usage?.percent ?? null;
@@ -112,8 +96,6 @@ function buildRightText(
 
   return `${theme.fg("dim", costText)} ${contextText}`;
 }
-
-
 function buildLeftText(
   ctx: ExtensionContext,
   vcsLabel: string | null,
@@ -125,8 +107,6 @@ function buildLeftText(
   if (sessionName) parts.push(theme.fg("dim", sessionName));
   return parts.join(" ");
 }
-
-
 function renderFooterLine(
   pi: ExtensionAPI,
   state: FooterState,
@@ -136,19 +116,15 @@ function renderFooterLine(
   const left = buildLeftText(state.ctx, state.vcsLabel, theme);
   const center = buildCenterText(state.ctx, pi, state.usage, theme);
   const right = buildRightText(state.ctx, pi, theme);
-
   const line = padLine(left, center, right, width);
   return truncateToWidth(line, width);
 }
-
-
 export function createFooter(
   pi: ExtensionAPI,
   ctx: ExtensionContext,
 ): {
-  
   register(): () => void;
-  
+
   refresh(): Promise<void>;
 } {
   const state: FooterState = {
@@ -156,7 +132,6 @@ export function createFooter(
     vcsLabel: null,
     usage: undefined,
   };
-
   let requestRender: (() => void) | undefined;
 
   async function refreshData(): Promise<void> {
@@ -167,12 +142,9 @@ export function createFooter(
       ]);
       state.vcsLabel = vcsLabel;
       state.usage = usage;
-    } catch {
-      // Best-effort refresh
-    }
+    } catch {}
     requestRender?.();
   }
-
   function register(): () => void {
     if (!ctx.hasUI) return () => {};
 
@@ -180,11 +152,9 @@ export function createFooter(
       requestRender = () => {
         tui.requestRender();
       };
-
       const unsubscribe = footerData.onBranchChange(() => {
         tui.requestRender();
       });
-
       const refreshTimer = setInterval(() => {
         tui.requestRender();
       }, 60_000);
@@ -207,15 +177,11 @@ export function createFooter(
 
   return { register, refresh: refreshData };
 }
-
-
 function formatTokenCount(value: number): string {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}m`;
   if (value >= 1_000) return `${Math.round(value / 1_000)}k`;
   return String(value);
 }
-
-
 function shortenHomePath(cwd: string): string {
   const home = process.env.HOME ?? undefined;
   if (home === undefined) return cwd;
@@ -223,8 +189,6 @@ function shortenHomePath(cwd: string): string {
   if (cwd.startsWith(`${home}/`)) return `~${cwd.slice(home.length)}`;
   return cwd;
 }
-
-
 function padLine(
   left: string,
   center: string,
@@ -234,18 +198,14 @@ function padLine(
   const leftWidth = visibleWidth(left);
   const centerWidth = visibleWidth(center);
   const rightWidth = visibleWidth(right);
-
   const totalContent = leftWidth + centerWidth + rightWidth;
   if (totalContent >= width) return `${left} ${center} ${right}`;
-
   const availableSpace = width - totalContent;
   const leftPad = Math.floor(availableSpace / 2);
   const rightPad = availableSpace - leftPad;
 
   return left + " ".repeat(leftPad) + center + " ".repeat(rightPad) + right;
 }
-
-
 function colorizeUsagePercent(
   theme: { fg(color: string, text: string): string },
   usedPercent: number,
@@ -255,8 +215,6 @@ function colorizeUsagePercent(
   if (usedPercent > 70) return theme.fg("warning", percentText);
   return theme.fg("dim", percentText);
 }
-
-
 export function formatErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return String(error);

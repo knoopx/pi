@@ -12,7 +12,6 @@ export interface GHRepoSearchResult {
   pushed_at: string;
   private: boolean;
 }
-
 export interface GHCodeSearchResult {
   repo: string;
   owner: string;
@@ -24,7 +23,6 @@ export interface GHCodeSearchResult {
     matches: string[];
   }[];
 }
-
 export interface GHIssueSearchResult {
   number: number;
   title: string;
@@ -35,7 +33,6 @@ export interface GHIssueSearchResult {
   labels: { name: string }[];
   url: string;
 }
-
 export interface GHPRSearchResult {
   number: number;
   title: string;

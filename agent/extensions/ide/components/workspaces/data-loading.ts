@@ -8,7 +8,6 @@ import { formatErrorMessage } from "../../lib/footer";
 import { loadChanges } from "../../jj/changes";
 import { loadChangedFiles } from "../../jj/files";
 import { getRawDiff } from "../../jj/files";
-
 export interface WorkspaceState {
   workspaces: AgentWorkspace[];
   selectedWorkspace: AgentWorkspace | null;
@@ -19,13 +18,11 @@ export interface WorkspaceState {
   diffScroll: number;
   loading: boolean;
 }
-
 export interface WorkspaceCache {
   files: FileChange[];
   changes: Change[];
   diffs: Map<string, string[]>;
 }
-
 export function createWorkspaceState(): WorkspaceState {
   return {
     workspaces: [],
@@ -38,13 +35,11 @@ export function createWorkspaceState(): WorkspaceState {
     loading: true,
   };
 }
-
 export interface WorkspaceCacheStore {
   get(name: string): WorkspaceCache | undefined;
   set(name: string, cache: WorkspaceCache): void;
   delete(name: string): void;
 }
-
 export function createCacheStore(): WorkspaceCacheStore {
   const store = new Map<string, WorkspaceCache>();
   return {
@@ -53,7 +48,6 @@ export function createCacheStore(): WorkspaceCacheStore {
     delete: (name) => store.delete(name),
   };
 }
-
 export async function loadWorkspacesList(
   pi: ExtensionAPI,
 ): Promise<AgentWorkspace[]> {
@@ -111,12 +105,10 @@ async function loadFileDiff(
     return [`Error: ${formatErrorMessage(error)}`];
   }
 }
-
 function applyCacheHit(state: WorkspaceState, diffContent: string[]): void {
   state.diffContent = diffContent;
   state.diffScroll = 0;
 }
-
 function ensureCache(
   wsName: string,
   cache: WorkspaceCache | undefined,
@@ -131,7 +123,6 @@ function ensureCache(
   cacheStore.set(wsName, newCache);
   return newCache;
 }
-
 export async function loadDefaultWorkspace(
   pi: ExtensionAPI,
   ws: AgentWorkspace,
@@ -165,7 +156,6 @@ export async function loadDefaultWorkspace(
     cache,
   );
 }
-
 export async function loadWorkspaceFiles(
   pi: ExtensionAPI,
   ws: AgentWorkspace,
@@ -194,15 +184,12 @@ export async function loadWorkspaceFiles(
   state.fileIndex = 0;
   state.diffContent = await loadFileDiff(pi, ws, state.files[0]?.path, cache);
 }
-
 function hasCachedChanges(cache: WorkspaceCache | undefined): boolean {
   return !!cache && cache.changes.length > 0;
 }
-
 function hasCachedFiles(cache: WorkspaceCache | undefined): boolean {
   return !!cache && cache.files.length > 0;
 }
-
 function applyCachedChanges(
   state: WorkspaceState,
   cache: WorkspaceCache,
@@ -211,7 +198,6 @@ function applyCachedChanges(
   state.files = [];
   state.fileIndex = 0;
 }
-
 function applyCachedFiles(state: WorkspaceState, cache: WorkspaceCache): void {
   state.files = cache.files;
   state.changes = [];

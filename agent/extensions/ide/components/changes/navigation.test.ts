@@ -3,26 +3,16 @@ import { createMockChange } from "../../lib/test-utils";
 import { Navigation } from "./navigation";
 import { ChangesState } from "./state";
 import { expectDefaultSelection } from "./test-helpers";
-
-// ─── Shared assertions ────────────────────────────────────────────────────
-
-
 function expectMovedOrder(state: ChangesState) {
   expect(state.changes[0].changeId).toBe("a");
   expect(state.changes[1].changeId).toBe("c");
   expect(state.changes[2].changeId).toBe("b");
 }
-
-
 function expectOriginalOrder(state: ChangesState) {
   expect(state.changes[0].changeId).toBe("a");
   expect(state.changes[1].changeId).toBe("b");
   expect(state.changes[2].changeId).toBe("c");
 }
-
-// ─── Shared test factories ────────────────────────────────────────────────
-
-
 function createMoveModeState() {
   const state = new ChangesState();
   state.changes = [
@@ -34,16 +24,12 @@ function createMoveModeState() {
   state.selectionState.selectedIndex = 1;
   return state;
 }
-
-
 function makeTwoChangesState() {
   const state = new ChangesState();
   state.changes = [makeChange("a", "x"), makeChange("b", "y")];
   state.selectedChange = state.changes[0];
   return state;
 }
-
-
 function makePagedState(startIndex: number) {
   const state = new ChangesState();
   state.changes = Array.from({ length: 50 }, (_, i) =>
@@ -52,9 +38,6 @@ function makePagedState(startIndex: number) {
   state.selectedChange = state.changes[startIndex];
   return state;
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────
-
 const makeChange = (id: string, desc: string) =>
   createMockChange({
     changeId: id,
@@ -63,7 +46,6 @@ const makeChange = (id: string, desc: string) =>
     author: "Test",
     timestamp: "2024-01-01 00:00",
   });
-
 function makeNavigation(state: ChangesState) {
   return new Navigation(
     state,
@@ -74,8 +56,6 @@ function makeNavigation(state: ChangesState) {
     },
   );
 }
-
-// ─── Tests ────────────────────────────────────────────────────────────────
 
 describe("changes/navigation", () => {
   describe("given an empty change list", () => {
@@ -155,11 +135,9 @@ describe("changes/navigation", () => {
       const state = makeTwoChangesState();
       const nav = makeNavigation(state);
 
-      // Already at start, up stays
       nav.navigateChanges("up");
       expect(state.selectionState.selectedIndex).toBe(0);
 
-      // At end, down stays
       state.selectionState.selectedIndex = 1;
       nav.navigateChanges("down");
       expect(state.selectionState.selectedIndex).toBe(1);
@@ -209,12 +187,10 @@ describe("changes/navigation", () => {
       nav.cycleFilter(-1, 4);
       expect(state.currentFilterIndex).toBe(1);
 
-      // Wrap from last to first
       state.currentFilterIndex = 3;
       nav.cycleFilter(1, 4);
       expect(state.currentFilterIndex).toBe(0);
 
-      // Wrap from first backwards
       state.currentFilterIndex = 0;
       nav.cycleFilter(-1, 4);
       expect(state.currentFilterIndex).toBe(3);
@@ -227,7 +203,6 @@ describe("changes/navigation", () => {
       state.selectionState.selectedIndex = 5;
       state.selectionState.fileIndex = 3;
       state.selectionState.diffScroll = 10;
-
       const nav = makeNavigation(state);
       nav.cycleFilter(1, 4);
 
@@ -242,7 +217,6 @@ describe("changes/navigation", () => {
         { status: "M", path: "b.ts", insertions: 2, deletions: 1 },
         { status: "D", path: "c.ts", insertions: 0, deletions: 3 },
       ];
-
       const nav = makeNavigation(state);
       nav.navigateFiles("down");
       expect(state.selectionState.fileIndex).toBe(1);
@@ -250,7 +224,6 @@ describe("changes/navigation", () => {
       nav.navigateFiles("down");
       expect(state.selectionState.fileIndex).toBe(2);
 
-      // Clamped at end
       nav.navigateFiles("down");
       expect(state.selectionState.fileIndex).toBe(2);
 
@@ -260,7 +233,6 @@ describe("changes/navigation", () => {
       nav.navigateFiles("up");
       expect(state.selectionState.fileIndex).toBe(0);
 
-      // Clamped at start
       nav.navigateFiles("up");
       expect(state.selectionState.fileIndex).toBe(0);
     });
@@ -268,7 +240,6 @@ describe("changes/navigation", () => {
     it("then scrollDiff increments and decrements diff scroll", () => {
       const state = new ChangesState();
       state.diffContent = Array.from({ length: 30 }, (_, i) => `line ${i}`);
-
       const nav = makeNavigation(state);
       expect(state.selectionState.diffScroll).toBe(0);
 
@@ -278,7 +249,6 @@ describe("changes/navigation", () => {
       nav.scrollDiff("up");
       expect(state.selectionState.diffScroll).toBeLessThan(10);
 
-      // Clamped at start
       state.selectionState.diffScroll = 0;
       nav.scrollDiff("up");
       expect(state.selectionState.diffScroll).toBe(0);
@@ -312,7 +282,7 @@ describe("changes/navigation", () => {
       const nav = makeNavigation(state);
       nav.enterMoveMode();
       nav.moveChange("down");
-      nav.moveChange("down"); // now at end
+      nav.moveChange("down");
 
       expect(state.mode).toBe("move");
       expect(state.changes[0].changeId).toBe("a");
@@ -323,14 +293,12 @@ describe("changes/navigation", () => {
 
       expect(state.mode).toBe("normal");
       expect(state.selectionState.selectedIndex).toBe(1);
-      // Original order restored
       expectOriginalOrder(state);
     });
 
     it("then moveChange does nothing for current change", () => {
       const state = makeTwoChangesState();
       state.currentChangeId = "a";
-
       const nav = makeNavigation(state);
       nav.enterMoveMode();
       nav.moveChange("down");
@@ -340,14 +308,11 @@ describe("changes/navigation", () => {
 
     it("then moveChange respects boundaries", () => {
       const state = makeTwoChangesState();
-
       const nav = makeNavigation(state);
       nav.enterMoveMode();
-      // Can't move up from index 0
       nav.moveChange("up");
       expect(state.selectionState.selectedIndex).toBe(0);
 
-      // Can't move down from last index
       state.selectionState.selectedIndex = 1;
       nav.moveChange("down");
       expect(state.selectionState.selectedIndex).toBe(1);

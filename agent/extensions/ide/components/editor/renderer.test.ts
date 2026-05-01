@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { CURSOR_MARKER } from "@mariozechner/pi-tui";
-import { renderEditorView, type RenderOptions } from "./renderer";
+import { renderEditorView } from "./renderer";
+import type { RenderOptions } from "./renderer";
 import { createMockTheme } from "../../lib/test-utils";
-
 const theme = createMockTheme();
 
 describe("renderEditorView", () => {
@@ -22,7 +22,7 @@ describe("renderEditorView", () => {
         const result = renderEditorView(theme, baseOpts);
 
         expect(result.lines[0]).toContain(CURSOR_MARKER);
-        expect(result.lines.length).toBe(10); // padded to height
+        expect(result.lines.length).toBe(10);
 
         expect(result.lines).toMatchSnapshot();
       });
@@ -35,7 +35,6 @@ describe("renderEditorView", () => {
           showCursor: false,
         });
 
-        // No cursor marker on any line
         for (const line of result.lines) {
           expect(line).not.toContain(CURSOR_MARKER);
         }
@@ -50,8 +49,7 @@ describe("renderEditorView", () => {
       it("then shows line numbers with dim color prefix", () => {
         const result = renderEditorView(theme, baseOpts);
 
-        // Line numbers are styled with theme.fg("dim", ...) so they have ANSI codes
-        expect(result.lines[0]).toMatch(/\x1b\[/); // has ANSI styling
+        expect(result.lines[0]).toMatch(/\x1b\[/);
         expect(result.lines[0]).toContain("1");
         expect(result.lines[1]).toContain("2");
         expect(result.lines[2]).toContain("3");
@@ -69,7 +67,6 @@ describe("renderEditorView", () => {
           height: 5,
         });
 
-        // Line numbers should show multi-digit numbers
         expect(result.lines[0]).toContain("1");
 
         expect(result.lines).toMatchSnapshot();
@@ -121,7 +118,7 @@ describe("renderEditorView", () => {
           },
         });
 
-        expect(result.lines[0]).toContain("\x1b[48;"); // background ANSI code
+        expect(result.lines[0]).toContain("\x1b[48;");
 
         expect(result.lines).toMatchSnapshot();
       });
@@ -137,9 +134,7 @@ describe("renderEditorView", () => {
           },
         });
 
-        // First line should have bg from col 3 onward
         expect(result.lines[0]).toContain("\x1b[48;");
-        // Last line should have bg up to col 2
         expect(result.lines[2]).toContain("\x1b[48;");
 
         expect(result.lines).toMatchSnapshot();
@@ -172,7 +167,6 @@ describe("renderEditorView", () => {
           width: 40,
         });
 
-        // Each line should not exceed the specified width (accounting for ANSI codes)
         expect(result.lines[0].length).toBeLessThanOrEqual(200);
       });
     });

@@ -1,19 +1,13 @@
 import type { Parser } from "../lib/types";
 import { BROWSER_HEADERS } from "../lib/constants";
 import { retry } from "../lib/retry";
-
 const FETCH_OPTIONS: Parameters<typeof retry>[1] = {
   maxRetries: 2,
   retryDelay: 500,
 };
-
 const EXTRACT_MAX_LEN = 300;
 const SNIPPET_MAX_LEN = 120;
-
-// --- URL parsing ---
-
 type WikiPathType = "article" | "search";
-
 interface WikiPath {
   type: WikiPathType;
   title?: string;
@@ -21,7 +15,6 @@ interface WikiPath {
   lang: string;
   limit?: number;
 }
-
 function buildSearchResult(
   searchParams: URLSearchParams,
   lang: string,
@@ -29,7 +22,6 @@ function buildSearchResult(
 ): WikiPath | null {
   const search = searchParams.get(searchKey) ?? searchParams.get("title") ?? "";
   if (!search || searchParams.get("action")) return null;
-
   const limit = parseInt(searchParams.get("limit") ?? "10", 10);
   return {
     type: "search",
@@ -38,26 +30,19 @@ function buildSearchResult(
     limit: isNaN(limit) ? 10 : limit,
   };
 }
-
 function parseWikiUrl(url: string): WikiPath | null {
   const match = url.match(/^https?:\/\/([a-z]{2})\.wikipedia\.org\/(.+)$/i);
   if (!match) return null;
-
   const lang = match[1].toLowerCase();
   const rest = match[2].replace(/\/+$/, "");
   if (!rest) return null;
-
-  // /wiki/Article_Title — article page
   const articleResult = tryParseArticlePath(rest, lang);
   if (articleResult) return articleResult;
-
-  // /w/index.php?search=... or special search URLs
   const wikiSearchResult = tryParseWikiSearch(rest, lang);
   if (wikiSearchResult) return wikiSearchResult;
 
   return null;
 }
-
 function tryParseArticlePath(rest: string, lang: string): WikiPath | null {
   const match = rest.match(/^wiki\/(.+)$/);
   if (!match) return null;
@@ -67,7 +52,6 @@ function tryParseArticlePath(rest: string, lang: string): WikiPath | null {
     lang,
   };
 }
-
 function tryParseWikiSearch(rest: string, lang: string): WikiPath | null {
   const prefix = rest.startsWith("w/index.php")
     ? "w/index.php/"
@@ -78,8 +62,6 @@ function tryParseWikiSearch(rest: string, lang: string): WikiPath | null {
   const searchParams = new URLSearchParams(rest.replace(prefix, ""));
   return buildSearchResult(searchParams, lang);
 }
-
-// --- API fetch ---
 
 async function wikiFetch(
   lang: string,
@@ -98,9 +80,6 @@ async function wikiFetch(
     return resp.json();
   }, FETCH_OPTIONS);
 }
-
-// --- Handlers ---
-
 interface SummaryData {
   title: string;
   description?: string;
@@ -128,7 +107,6 @@ async function handleArticle(
   )) as SummaryData;
 
   if (!data?.title) return renderArticleNotFound(title, lang);
-
   const parts: string[] = [`# ${data.title}`, ""];
   parts.push(...renderArticleDescription(data));
   parts.push(...renderArticleExtract(data));
@@ -136,16 +114,13 @@ async function handleArticle(
 
   return parts.join("\n");
 }
-
 function renderArticleNotFound(title: string, lang: string): string {
   return `# Article Not Found\n\nCould not find an article titled "${title}" on ${lang}.wikipedia.org.\n\nTry searching instead.`;
 }
-
 function renderArticleDescription(data: SummaryData): string[] {
   if (!data.description) return [];
   return [`> ${data.description}`, ""];
 }
-
 function renderArticleExtract(data: SummaryData): string[] {
   if (!data.extract) return [];
   const extract =
@@ -154,7 +129,6 @@ function renderArticleExtract(data: SummaryData): string[] {
       : data.extract;
   return [extract, ""];
 }
-
 function renderArticleLink(
   data: SummaryData,
   lang: string,
@@ -165,7 +139,6 @@ function renderArticleLink(
     `https://${lang}.wikipedia.org/wiki/${encoded}`;
   return `[Read full article on Wikipedia](${pageUrl})`;
 }
-
 interface SearchResult {
   title: string;
   snippet?: string;
@@ -187,12 +160,10 @@ async function handleSearch(
     `/w/api.php?action=query&list=search&srsearch=${encoded}&srlimit=${clamped}&format=json&utf8=1`,
     signal,
   )) as { query?: { search?: SearchResult[] } };
-
   const results = data?.query?.search;
   if (!results?.length) {
     return `# Wikipedia Search: "${query}"\n\nNo articles found. Try a different search term.`;
   }
-
   const parts: string[] = [
     `# Wikipedia — "${query}"`,
     "",
@@ -205,7 +176,6 @@ async function handleSearch(
 
   return parts.join("\n");
 }
-
 function renderSearchResult(r: SearchResult, lang: string): string[] {
   const pageUrl = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, "_"))}`;
   const lines: string[] = [`## [${r.title}](${pageUrl})`, ""];
@@ -221,10 +191,7 @@ function renderSearchResult(r: SearchResult, lang: string): string[] {
 
   return lines;
 }
-
-// --- Parser export ---
-
-export const parser: Parser = {
+export const wikipediaParser: Parser = {
   matches(url: string): boolean {
     return /^https?:\/\/[a-z]{2}\.wikipedia\.org\//i.test(url);
   },
@@ -235,7 +202,8 @@ export const parser: Parser = {
 
     switch (parsed.type) {
       case "article":
-        return handleArticle(parsed.title!, parsed.lang, signal);
+        if (!parsed.title) throw new Error("Missing Wikipedia article title");
+        return handleArticle(parsed.title, parsed.lang, signal);
       case "search":
         return handleSearch(
           parsed.query ?? "",

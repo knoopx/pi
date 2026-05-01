@@ -12,34 +12,28 @@ import type {
 import { getRepoRoot } from "./jj/files";
 import { sanitizeDescription, updateStaleWorkspace } from "./jj/core";
 import { formatFileStats } from "./lib/formatters";
-
 const WORKSPACE_PREFIX = "ide-";
 const CHECK_INTERVAL = 5000;
 const MAX_WAIT = 3600000;
-
 export function generateWorkspaceName(): string {
   const timestamp = Date.now().toString(36);
   const random = Math.random().toString(36).substring(2, 6);
   return `${WORKSPACE_PREFIX}${timestamp}-${random}`;
 }
-
 function isIdeWorkspace(name: string): boolean {
   return name.startsWith(WORKSPACE_PREFIX);
 }
-
 export async function getCurrentChangeId(
   pi: ExtensionAPI,
   cwd?: string,
 ): Promise<string> {
   await updateStaleWorkspace(pi, cwd);
-
   const args = ["log", "-r", "@", "--no-graph", "-T", "change_id"];
   const result = await pi.exec("jj", args, cwd ? { cwd } : undefined);
   if (result.code !== 0)
     throw new Error(`Failed to get current change ID: ${result.stderr}`);
   return result.stdout.trim();
 }
-
 export function parseWorkspaceList(output: string): WorkspaceListEntry[] {
   const entries: WorkspaceListEntry[] = [];
   const lines = output.trim().split("\n").filter(Boolean);
@@ -63,7 +57,6 @@ async function listWorkspaces(pi: ExtensionAPI): Promise<WorkspaceListEntry[]> {
     throw new Error(`Failed to list workspaces: ${result.stderr}`);
   return parseWorkspaceList(result.stdout);
 }
-
 export async function createWorkspace(
   pi: ExtensionAPI,
   name: string,
@@ -105,12 +98,10 @@ async function getDiffStats(
 
   return parseDiffStats(result.stdout);
 }
-
 export function parseDiffStats(output: string): DiffStats {
   const files: DiffStats["files"] = [];
   let totalInsertions = 0;
   let totalDeletions = 0;
-
   const lines = output.trim().split("\n");
   for (const line of lines) {
     // Match file lines like: "src/file.ts | 10 +++++-----"
@@ -119,7 +110,6 @@ export function parseDiffStats(output: string): DiffStats {
       const path = fileMatch[1].trim();
       const insertions = (fileMatch[3].match(/\+/g) || []).length;
       const deletions = (fileMatch[3].match(/-/g) || []).length;
-
       let status: "added" | "modified" | "deleted" = "modified";
       if (deletions === 0 && insertions > 0) status = "added";
       if (insertions === 0 && deletions > 0) status = "deleted";
@@ -140,7 +130,6 @@ async function tmuxSessionExists(
   const result = await pi.exec("tmux", ["has", "-t", sessionName]);
   return result.code === 0;
 }
-
 export async function getTmuxSessionStatus(
   pi: ExtensionAPI,
   sessionName: string,
@@ -156,9 +145,7 @@ export async function getTmuxSessionStatus(
   ]);
 
   if (result.code !== 0) return "idle";
-
   const command = result.stdout.trim();
-  // If pi or node is running, agent is active
   if (
     command.includes("pi") ||
     command.includes("node") ||
@@ -168,27 +155,15 @@ export async function getTmuxSessionStatus(
 
   return "idle";
 }
-
-/**
- * Fork the current session to a workspace directory.
- * This allows the subagent to continue with the full conversation context.
- *
- * @param sourceSessionPath Path to the current session file
- * @param workspacePath Path to the workspace directory (new cwd for subagent)
- * @returns Path to the forked session file, or undefined if source is ephemeral
- */
 export function forkSessionToWorkspace(
   sourceSessionPath: string | undefined,
   workspacePath: string,
 ): string | undefined {
   if (!sourceSessionPath) {
-    // No session to fork (ephemeral session)
     return undefined;
   }
 
   try {
-    // Fork the session to the workspace directory
-    // The forked session will have parentSession pointing to the original
     const forkedSession = SessionManager.forkFrom(
       sourceSessionPath,
       workspacePath,
@@ -200,16 +175,6 @@ export function forkSessionToWorkspace(
     return newSession.getSessionFile();
   }
 }
-
-/**
- * Spawn a pi subagent in a tmux session with session context
- *
- * @param pi Extension API
- * @param workspacePath Path to the workspace directory
- * @param sessionName Tmux session name (also workspace name)
- * @param task Task description to send to the agent
- * @param forkedSessionPath Optional path to a forked session file for context
- */
 export async function spawnAgent(options: {
   pi: ExtensionAPI;
   workspacePath: string;
@@ -220,7 +185,6 @@ export async function spawnAgent(options: {
   const { pi, workspacePath, sessionName, task, forkedSessionPath } = options;
   let piCmd = "pi";
   if (forkedSessionPath) piCmd += ` --session "${forkedSessionPath}"`;
-
   const escapedTask = task.replace(/"/g, '\\"');
   piCmd += ` "${escapedTask}"`;
   const result = await pi.exec("tmux", [
@@ -238,21 +202,18 @@ export async function spawnAgent(options: {
   if (result.code !== 0)
     throw new Error(`Failed to spawn agent: ${result.stderr}`);
 }
-
 export async function killTmuxSession(
   pi: ExtensionAPI,
   sessionName: string,
 ): Promise<void> {
   await pi.exec("tmux", ["kill-session", "-t", sessionName]);
 }
-
 export async function loadAgentWorkspaces(
   pi: ExtensionAPI,
 ): Promise<AgentWorkspace[]> {
   const workspaces = await listWorkspaces(pi);
   const ideWorkspaces = workspaces.filter((w) => isIdeWorkspace(w.name));
   const repoRoot = await getRepoRoot(pi);
-
   const result: AgentWorkspace[] = [];
 
   for (const ws of ideWorkspaces) {
@@ -287,28 +248,23 @@ async function cleanupWorkspaceDir(
   const workspacePath = `${repoRoot}/.jj/workspaces/${workspaceName}`;
   await pi.exec("rm", ["-rf", workspacePath]);
 }
-
 export async function forgetWorkspace(
   pi: ExtensionAPI,
   workspaceName: string,
 ): Promise<void> {
-  // Kill tmux session if running
   await killTmuxSession(pi, workspaceName);
-
   const result = await pi.exec("jj", ["workspace", "forget", workspaceName]);
   if (result.code !== 0)
     throw new Error(`Failed to forget workspace: ${result.stderr}`);
 
   await cleanupWorkspaceDir(pi, workspaceName);
 }
-
 export function monitorWorkspace(
   pi: ExtensionAPI,
   workspaceName: string,
   ctx: ExtensionContext,
 ): void {
   const startTime = Date.now();
-
   const check = async (): Promise<void> => {
     if (Date.now() - startTime > MAX_WAIT) return;
 
@@ -330,11 +286,9 @@ export function monitorWorkspace(
 
   setTimeout(() => void check(), CHECK_INTERVAL);
 }
-
 function scheduleNextCheck(check: () => Promise<void>): void {
   setTimeout(() => void check(), CHECK_INTERVAL);
 }
-
 function formatStatusText(status: string): string {
   return status === "completed" ? "completed" : status;
 }

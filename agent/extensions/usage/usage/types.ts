@@ -1,9 +1,7 @@
 import type { BaseStats } from "../shared/types";
-
 interface ModelStats extends BaseStats {
   sessions: Set<string>;
 }
-
 export function emptyModelStats(): ModelStats {
   return {
     sessions: new Set(),
@@ -12,12 +10,10 @@ export function emptyModelStats(): ModelStats {
     tokens: { total: 0, input: 0, output: 0, cache: 0 },
   };
 }
-
 export interface ProviderStats extends BaseStats {
   sessions: Set<string>;
   models: Map<string, ModelStats>;
 }
-
 export function emptyProviderStats(): ProviderStats {
   return {
     sessions: new Set(),
@@ -27,11 +23,9 @@ export function emptyProviderStats(): ProviderStats {
     models: new Map(),
   };
 }
-
 interface TotalStats extends BaseStats {
   sessions: number;
 }
-
 export function emptyTimeFilteredStats(): {
   providers: Map<string, ProviderStats>;
   totals: TotalStats;
@@ -46,12 +40,10 @@ export function emptyTimeFilteredStats(): {
     },
   };
 }
-
 interface TimeFilteredStats {
   providers: Map<string, ProviderStats>;
   totals: TotalStats;
 }
-
 export function accumulateStats(
   target: BaseStats,
   cost: number,
@@ -64,11 +56,9 @@ export function accumulateStats(
   target.tokens.output += tokens.output;
   target.tokens.cache += tokens.cache;
 }
-
 export interface UsageData {
   today: TimeFilteredStats;
   thisWeek: TimeFilteredStats;
   allTime: TimeFilteredStats;
 }
-
 export type TabName = "today" | "thisWeek" | "allTime";

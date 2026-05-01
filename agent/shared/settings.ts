@@ -1,9 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
-
 const SETTINGS_PATH = resolve(homedir(), ".pi/agent/settings.json");
-
 function isMissingFileError(error: unknown): boolean {
   return (
     typeof error === "object" &&
@@ -28,10 +26,6 @@ async function readSettingsOrEmpty(): Promise<Record<string, unknown>> {
     );
   }
 }
-
-/**
- * Load a boolean-enabled setting from settings.json under the given key.
- */
 export async function loadEnabledSetting<T extends { enabled: boolean }>(
   key: string,
   defaults: T,
@@ -45,7 +39,6 @@ export async function loadEnabledSetting<T extends { enabled: boolean }>(
 
   if (typeof raw !== "object" || raw === null)
     throw new Error(`Invalid ${key} settings format in settings.json`);
-
   const rawRecord = raw as Record<string, unknown>;
 
   return {
@@ -56,10 +49,6 @@ export async function loadEnabledSetting<T extends { enabled: boolean }>(
         : defaults.enabled,
   };
 }
-
-/**
- * Save a boolean-enabled setting to settings.json under the given key.
- */
 export async function saveEnabledSetting<T extends { enabled: boolean }>(
   key: string,
   updates: Partial<T>,
@@ -71,7 +60,6 @@ export async function saveEnabledSetting<T extends { enabled: boolean }>(
     ...current,
     ...updates,
   };
-
   const currentValue = existingSettings[key];
   const record =
     typeof currentValue === "object" &&

@@ -56,10 +56,8 @@ describe("Generic parser", () => {
         "</tbody>",
         "</table>",
       ].join("\n");
-
       const output = await writeAndParse("table.md", raw);
       expect(output).not.toContain("<table>");
-      // GFM table columns may have variable widths
       expect(output).toMatch(/\|\s*Name\s*\|\s*Score\s*\|/);
       expect(output).toMatch(/\|\s*Model A\s*\|\s*95\s*\|/);
       expect(output).toMatch(/\|\s*Model B\s*\|\s*87\s*\|/);
@@ -73,7 +71,6 @@ describe("Generic parser", () => {
         "",
         "After the quote.",
       ].join("\n");
-
       const output = await writeAndParse("blockquote.md", raw);
       expect(output).not.toContain("<blockquote>");
       expect(output).toContain("> A great quote");
@@ -91,7 +88,6 @@ describe("Generic parser", () => {
         "",
         "<blockquote>A great quote</blockquote>",
       ].join("\n");
-
       const output = await writeAndParse("mixed.md", raw);
       expect(output).not.toContain("<img");
       expect(output).not.toContain("<tr>");

@@ -6,7 +6,6 @@ import { lang } from "./language";
 let addBg: string | null = null;
 let removeBg: string | null = null;
 let currentTheme: BundledTheme | null = null;
-
 function readTerminalResponse(): Buffer {
   let response = Buffer.alloc(0);
   for (;;) {
@@ -20,14 +19,12 @@ function readTerminalResponse(): Buffer {
   }
   return response;
 }
-
 function parseColorResponse(response: Buffer): [number, number, number] | null {
   const str = response.toString("utf8");
   const match = str.match(
     /\x1b\]11;(rgb:[0-9a-f]+\/[0-9a-f]+\/[0-9a-f]+)(?:\x1b\\|\x07)/,
   );
   if (!match) return null;
-
   const [, color] = match;
   const [r, g, b] = color
     .slice(4)
@@ -35,7 +32,6 @@ function parseColorResponse(response: Buffer): [number, number, number] | null {
     .map((x: string) => parseInt(x, 16) >> 8);
   return [r, g, b];
 }
-
 function getTerminalBgColor(): [number, number, number] | null {
   if (!process.stdout.isTTY || !process.stdin.isTTY) return null;
 
@@ -56,7 +52,6 @@ function getTerminalBgColor(): [number, number, number] | null {
 
 async function initShiki(theme: BundledTheme): Promise<void> {
   if (addBg && removeBg && currentTheme === theme) return;
-
   const themeModule = await bundledThemes[theme]?.();
   const themeData = themeModule?.default;
   const colors = themeData?.colors || {};
@@ -89,10 +84,8 @@ async function initShiki(theme: BundledTheme): Promise<void> {
       Math.round(fgB * fgAlpha + bgB * oneMinusAlpha),
     ];
   };
-
   const [greenR, greenG, greenB, greenAlpha] = hexToRGBA(green);
   const [redR, redG, redB, redAlpha] = hexToRGBA(red);
-
   const terminalBg = getTerminalBgColor() ?? [0, 0, 0];
   const [addBgR, addBgG, addBgB] = blend(
     [greenR, greenG, greenB, greenAlpha],
@@ -103,12 +96,10 @@ async function initShiki(theme: BundledTheme): Promise<void> {
     terminalBg,
   );
 
-  // Use blended colors as backgrounds
   addBg = `\x1b[48;2;${addBgR};${addBgG};${addBgB}m`;
   removeBg = `\x1b[48;2;${removeBgR};${removeBgG};${removeBgB}m`;
   currentTheme = theme;
 }
-
 const CACHE_LIMIT = 64;
 const _cache = createLRUCache<string, string[]>(CACHE_LIMIT);
 
@@ -117,25 +108,21 @@ interface DiffHunk {
   file: string;
   hunks: DiffHunkBlock[];
 }
-
 interface DiffHunkBlock {
   header: string;
   lines: DiffLine[];
 }
-
 interface DiffLine {
   type: "add" | "remove" | "context" | "header" | "empty";
   content: string;
   lineNo?: number;
 }
-
 function extractFileNameFromDiffLine(line: string): string | null {
   const match = line.match(/diff --git "?(a\/)?(.+?)"?"?"?( b\/.+)?$/);
   if (!match) return null;
   const fileName = match[2]?.replace(/^a\//, "").replace(/^b\//, "");
   return fileName ?? null;
 }
-
 function parseHunkHeader(line: string): {
   removeLineNo: number;
   addLineNo: number;
@@ -147,7 +134,6 @@ function parseHunkHeader(line: string): {
     addLineNo: parseInt(match[3], 10),
   };
 }
-
 function parseAddedLine(
   line: string,
   addLineNo: number | null,
@@ -163,7 +149,6 @@ function parseAddedLine(
     };
   return null;
 }
-
 function parseRemovedLine(
   line: string,
   removeLineNo: number | null,
@@ -179,7 +164,6 @@ function parseRemovedLine(
     };
   return null;
 }
-
 function parseContextLine(
   line: string,
   addLineNo: number | null,
@@ -201,11 +185,9 @@ function parseContextLine(
     };
   return null;
 }
-
 function parseEmptyLine(): { line: DiffLine } | null {
   return { line: { type: "empty", content: "" } };
 }
-
 function parseDiffLine(
   line: string,
   addLineNo: number | null,
@@ -227,7 +209,6 @@ function parseDiffLine(
   const context = parseContextLine(line, addLineNo, removeLineNo);
   if (context) return context;
 
-  // Try parsing as empty line
   if (line === "") {
     const empty = parseEmptyLine();
     if (empty) {
@@ -237,7 +218,6 @@ function parseDiffLine(
 
   return null;
 }
-
 function isMetadataLine(line: string): boolean {
   return (
     line.startsWith("index ") ||
@@ -245,7 +225,6 @@ function isMetadataLine(line: string): boolean {
     line.startsWith("+++ ")
   );
 }
-
 function handleGitLine(
   line: string,
   result: DiffHunk[],
@@ -273,7 +252,6 @@ function handleGitLine(
     removeLineNo: null,
   };
 }
-
 function handleHunkHeader(
   line: string,
   currentFile: DiffHunk | null,
@@ -292,7 +270,6 @@ function handleHunkHeader(
   }
   return { currentHunk: null, addLineNo: null, removeLineNo: null };
 }
-
 function handleDiffLine(
   line: string,
   currentHunk: DiffHunkBlock | null,
@@ -310,7 +287,6 @@ function handleDiffLine(
   }
   return { addLineNo, removeLineNo };
 }
-
 function parseGitDiff(diff: string): DiffHunk[] {
   const result: DiffHunk[] = [];
   const lines = diff.split("\n");
@@ -327,7 +303,6 @@ function parseGitDiff(diff: string): DiffHunk[] {
       addLineNo = state.addLineNo;
       removeLineNo = state.removeLineNo;
     } else if (isMetadataLine(line)) {
-      // Skip metadata lines
     } else if (line.startsWith("@@")) {
       const state = handleHunkHeader(line, currentFile);
       currentHunk = state.currentHunk;
@@ -342,7 +317,6 @@ function parseGitDiff(diff: string): DiffHunk[] {
 
   return result;
 }
-
 function _touch(k: string, v: string[]): string[] {
   return _cache.touch(k, v);
 }
@@ -353,7 +327,6 @@ async function highlightLine(
   theme: BundledTheme,
 ): Promise<string> {
   if (!language || !content) return content;
-
   const k = `${theme}\0${language}\0${content}`;
   const hit = _cache.get(k);
   if (hit) return _touch(k, hit).join("\n");
@@ -366,7 +339,6 @@ async function highlightLine(
     return content;
   }
 }
-
 function colorDiffLine(line: DiffLine, highlightedContent: string): string {
   if (line.type === "add" && addBg)
     return `${addBg + highlightedContent}\x1b[0m`;
@@ -374,7 +346,6 @@ function colorDiffLine(line: DiffLine, highlightedContent: string): string {
     return `${removeBg + highlightedContent}\x1b[0m`;
   return highlightedContent;
 }
-
 interface ProcessHunkOptions {
   hunk: DiffHunkBlock;
   file: DiffHunk;
@@ -399,7 +370,6 @@ async function processHunk(options: ProcessHunkOptions): Promise<void> {
     output.push(colorDiffLine(line, highlighted));
   }
 }
-
 export async function renderDiffWithShiki(
   diff: string,
   theme: BundledTheme,

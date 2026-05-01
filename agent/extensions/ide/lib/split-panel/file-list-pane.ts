@@ -1,7 +1,6 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { FileChangeRow } from "./file-change-row";
 import { ensureWidth, getVisibleItems } from "../text-utils";
-
 interface FileListPaneProps {
   files: Array<{
     status: string;
@@ -15,8 +14,6 @@ interface FileListPaneProps {
   focus: "left" | "right";
   theme: Theme;
 }
-
-
 export class FileListPane {
   constructor(private readonly props: FileListPaneProps) {}
 
@@ -26,13 +23,11 @@ export class FileListPane {
         ensureWidth(this.props.theme.fg("dim", " No files changed"), width),
       ];
     }
-
     const visibleItems = getVisibleItems(
       this.props.files,
       this.props.selectedIndex,
       this.props.height,
     );
-
     const rows: string[] = [];
     for (const { item: file, index: idx } of visibleItems) {
       const isSelected = idx === this.props.selectedIndex;

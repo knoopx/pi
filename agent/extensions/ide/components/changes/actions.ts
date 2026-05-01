@@ -3,7 +3,6 @@ import type { ChangesState } from "./state";
 import { getRepoRoot } from "../../jj/files";
 import type { Change } from "../../lib/types";
 import { notifyMutation } from "../../jj/core";
-
 interface ActionHandlersOptions {
   pi: ExtensionAPI;
   cwd: string;
@@ -19,7 +18,6 @@ interface ActionHandlersOptions {
     action: "inspect" | "deps" | "used-by",
   ) => void;
 }
-
 interface ActionHandlers {
   handleDescribe: () => Promise<void>;
   handleEdit: () => Promise<void>;
@@ -31,7 +29,6 @@ interface ActionHandlers {
   handleInspectChange: () => Promise<void>;
   getSelectedChanges: () => Change[];
 }
-
 function getSelectedChanges(state: ChangesState): Change[] {
   if (state.selectedChangeIds.size > 0)
     return state.changes.filter((c) => state.selectedChangeIds.has(c.changeId));
@@ -49,15 +46,12 @@ async function handleDescribe(
 
   finish();
   const ids = selectedChanges.map((target) => target.changeId);
-
   const workflowLines = ids
     .map((id, index) => {
       return `${String(index + 1)}. Get git hash: \`jj log -r ${id} -T 'commit_id' --no-graph\`\n   Check semantic changes: \`sem diff --commit <hash-from-step-1>\` (use the hash, NOT parent!)\n   Check changed files: \`jj diff --name-only -r ${id}\`\n   If needed for context, inspect patch: \`jj diff --git --color never -r ${id}\`\n   Describe: \`jj desc -r ${id} -m "<type>(<scope>): <description>"\``;
     })
     .join("\n");
-
   const repoRoot = await getRepoRoot(pi, cwd);
-
   const task = `Describe jujutsu changes ${ids.join(", ")} using Conventional Commits format.
 
 <context>
@@ -146,7 +140,6 @@ async function handleSplit(
   if (!state.selectedChange) return;
   finish();
   const repoRoot = await getRepoRoot(pi, cwd);
-
   const task = `Split jujutsu change ${state.selectedChange.changeId} into semantically logical commits.
 
 <context>
@@ -191,7 +184,6 @@ Use the **conventional-commits** skill for commit message format.
 Use the **sem** skill to understand actual code changes vs cosmetic modifications.`;
   pi.sendUserMessage(task);
 }
-
 interface SquashDropOptions {
   pi: ExtensionAPI;
   cwd: string;
@@ -279,7 +271,6 @@ async function handleRevert(
     revertResult.stderr || revertResult.stdout,
   );
 }
-
 function handleInspectChange(
   pi: ExtensionAPI,
   state: ChangesState,
@@ -297,7 +288,6 @@ function handleInspectChange(
 </workflow>`;
   pi.sendUserMessage(task);
 }
-
 export function createActionHandlers(
   options: ActionHandlersOptions,
 ): ActionHandlers {

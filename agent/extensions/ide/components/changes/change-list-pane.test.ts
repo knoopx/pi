@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { createMockChange } from "../../lib/test-utils";
 import {
-  createMockChange,
   renderSnapshot,
   defaultMockChange,
   featureBookmarkChange,
@@ -173,7 +173,6 @@ describe("linear chain graph renders with tree structure", () => {
 
   it("then renders multiple changes with graph layout and descriptions", async () => {
     const visibleLines = await renderSnapshot(120, (state) => {
-      // Simulates the actual repo: linear chain with parentIds matching
       setMockChanges(state, [
         createMockChange({
           changeId: "sxopy",

@@ -9,12 +9,10 @@ import type {
 } from "./types";
 import { SYMBOL_REFERENCE_COMMANDS } from "./types";
 import { createSymbolReferenceComponent } from "./component";
-
 const OVERLAY_OPTIONS = {
   overlay: true,
   overlayOptions: { width: "95%" as const, anchor: "center" as const },
 };
-
 type ScreenFactory<T> = (
   pi: ExtensionAPI,
   ctx: ExtensionContext,
@@ -23,7 +21,6 @@ type ScreenFactory<T> = (
   action?: SymbolReferenceActionType;
   target?: string;
 }>;
-
 interface NavScreen {
   factory: ScreenFactory<unknown>;
 }
@@ -43,7 +40,6 @@ async function handleDeleteAction(
     );
   }
 }
-
 function createSymbolReferenceCommandScreen(
   cmDef: (typeof SYMBOL_REFERENCE_COMMANDS)[SymbolReferenceActionType],
   target: string,
@@ -75,7 +71,6 @@ function createSymbolReferenceCommandScreen(
     };
   };
 }
-
 export async function runNavigationStack<T>(
   pi: ExtensionAPI,
   ctx: ExtensionContext,
@@ -88,14 +83,12 @@ export async function runNavigationStack<T>(
   while (stack.length > 0) {
     const current = stack[stack.length - 1];
     const navResult = await current.factory(pi, ctx);
-
     const navigation = await handleNavigationStep(navResult, pi, ctx, stack);
     if (navigation.isFinal) return navigation.result as T;
   }
 
   return null;
 }
-
 function handleNavigationStep(
   navResult: {
     result: unknown;
@@ -117,19 +110,16 @@ function handleNavigationStep(
 
   return handleAction(action, target, { pi, ctx, stack });
 }
-
 interface NavigationCtx {
   pi: ExtensionAPI;
   ctx: ExtensionContext;
   stack: NavScreen[];
 }
-
 function notFinal(
   result: unknown,
 ): Promise<{ isFinal: boolean; result: unknown }> {
   return Promise.resolve({ isFinal: false, result });
 }
-
 function final(
   result: unknown,
 ): Promise<{ isFinal: boolean; result: unknown }> {
@@ -145,7 +135,6 @@ async function handleAction(
     await handleDeleteAction(ctx.pi, ctx.ctx, target);
     return notFinal(null);
   }
-
   const cmDef = SYMBOL_REFERENCE_COMMANDS[action as SymbolReferenceActionType];
   if (cmDef) {
     ctx.stack.push({

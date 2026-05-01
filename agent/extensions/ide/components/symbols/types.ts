@@ -1,6 +1,5 @@
 import type { ListPickerItem } from "../../lib/list-picker";
 import type { SymbolReferenceActionType } from "../symbol-references/types";
-
 export interface SymbolInfo extends ListPickerItem {
   name: string;
   type: string;
@@ -8,7 +7,6 @@ export interface SymbolInfo extends ListPickerItem {
   startLine: number;
   endLine: number;
 }
-
 export interface SymbolResult {
   symbol: SymbolInfo;
   action?: SymbolReferenceActionType;
@@ -23,5 +21,4 @@ export const SYMBOL_TYPES = [
   "enum",
   "all",
 ] as const;
-
 export type SymbolTypeFilter = (typeof SYMBOL_TYPES)[number];

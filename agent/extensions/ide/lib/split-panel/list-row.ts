@@ -1,7 +1,6 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { applySelectionBackground, truncateAnsi } from "../text-utils";
 import { Row } from "./row";
-
 interface ListRowProps {
   text: string;
   width: number;
@@ -9,8 +8,6 @@ interface ListRowProps {
   isCurrent?: boolean;
   theme?: Theme;
 }
-
-
 export class ListRow extends Row<Omit<ListRowProps, "width">> {
   protected renderLine(width: number): string {
     const truncated = truncateAnsi(this.props.text, width);

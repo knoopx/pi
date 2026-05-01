@@ -1,14 +1,7 @@
-/**
- * Shared utilities for package registry tools (npm, pypi, etc.)
- */
-
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import { dotJoin, countLabel, table } from "./renderers";
-import type { Column } from "./renderers";
-
-/**
- * Base interface for package search results
- */
+import { dotJoin, countLabel } from "./renderers/header";
+import { table } from "./renderers/table/renderer";
+import type { Column } from "./renderers/types";
 export interface PackageSearchResult {
   name: string;
   version: string;
@@ -16,10 +9,6 @@ export interface PackageSearchResult {
   keywords?: string[];
   author?: string;
 }
-
-/**
- * Format package search results into a table
- */
 export function formatPackageSearchResults(
   packages: PackageSearchResult[],
   totalCount: number,
@@ -28,7 +17,6 @@ export function formatPackageSearchResults(
   if (packages.length === 0) {
     return `No ${unit}s found.`;
   }
-
   const cols: Column[] = [
     { key: "#", align: "right", minWidth: 3 },
     { key: "version", minWidth: 7 },
@@ -49,7 +37,6 @@ export function formatPackageSearchResults(
       },
     },
   ];
-
   const rows = packages.map((p, i) => ({
     "#": String(i + 1),
     version: p.version,
@@ -63,10 +50,6 @@ export function formatPackageSearchResults(
     "\n",
   );
 }
-
-/**
- * Create a standardized error result for package operations
- */
 export function createPackageErrorResult(
   message: string,
   packageName?: string,

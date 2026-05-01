@@ -6,8 +6,9 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
-import { dotJoin, table } from "../../shared/renderers";
-import type { Column } from "../../shared/renderers";
+import { dotJoin } from "../../shared/renderers/header";
+import { table } from "../../shared/renderers/table/renderer";
+import type { Column } from "../../shared/renderers/types";
 
 import { ghCmd, ghCmdJson } from "./utils";
 import {
@@ -15,7 +16,6 @@ import {
   createTextResultRender,
   TypeBoxFields,
 } from "./shared";
-
 function createRepoRenderCall(toolName: string) {
   return (args: Record<string, unknown>, theme: Theme): Text => {
     const t = theme as {
@@ -33,7 +33,6 @@ function createRepoRenderCall(toolName: string) {
     return new Text(text, 0, 0);
   };
 }
-
 function createRepoResult<Details extends Record<string, unknown>>(
   output: string,
   details: Details,
@@ -43,12 +42,10 @@ function createRepoResult<Details extends Record<string, unknown>>(
     details,
   };
 }
-
 function createRepoErrorResult(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   return createErrorResult(message);
 }
-
 interface GHFile {
   name: string;
   path: string;
@@ -62,7 +59,6 @@ interface GHFile {
   content?: string;
   encoding?: string;
 }
-
 interface FileContentResult extends Record<string, unknown> {
   repo: string;
   path: string;
@@ -70,7 +66,6 @@ interface FileContentResult extends Record<string, unknown> {
   type: "file" | "directory";
   size?: number;
 }
-
 function getRepoContents(
   owner: string,
   repo: string,
@@ -99,7 +94,6 @@ async function getFileContent(
 
   if (result.exitCode !== 0)
     throwFileError({ result, owner, repo, filePath, ref });
-
   const data = JSON.parse(result.stdout) as GHFile;
   ensureDecodable(data);
 
@@ -111,7 +105,6 @@ async function getFileContent(
     size: data.size,
   };
 }
-
 function buildContentsEndpoint(
   owner: string,
   repo: string,
@@ -122,7 +115,6 @@ function buildContentsEndpoint(
   if (ref) endpoint += `?ref=${encodeURIComponent(ref)}`;
   return endpoint;
 }
-
 function throwFileError(opts: {
   result: { exitCode: number; stderr: string; stdout: string };
   owner: string;
@@ -138,11 +130,9 @@ function throwFileError(opts: {
   }
   throw new Error(message);
 }
-
 function isNotFound(message: string): boolean {
   return message.includes("404") || message.includes("Not Found");
 }
-
 function ensureDecodable(data: GHFile): void {
   if (!data.content || !data.encoding) {
     throw new Error(
@@ -150,7 +140,6 @@ function ensureDecodable(data: GHFile): void {
     );
   }
 }
-
 interface ProcessRepoItemOpts {
   item: GHFile;
   owner: string;
@@ -199,7 +188,6 @@ async function listRepoFiles(
 
   return { files, count: files.length };
 }
-
 function formatRepoContents(
   owner: string,
   repo: string,
@@ -207,7 +195,6 @@ function formatRepoContents(
   contents: GHFile[],
 ): string {
   const lines: string[] = [];
-
   const sorted = [...contents].sort((a, b) => {
     if (a.type === b.type) return a.name.localeCompare(b.name);
     return a.type === "dir" ? -1 : 1;
@@ -223,11 +210,9 @@ function formatRepoContents(
 
   return lines.join("\n");
 }
-
 function formatFileContent(result: FileContentResult): string {
   return result.content;
 }
-
 function formatRepoFilesList(result: {
   files: GHFile[];
   count: number;
@@ -240,13 +225,11 @@ function formatRepoFilesList(result: {
     { key: "size", align: "right", minWidth: 8 },
     { key: "name" },
   ];
-
   const rows = result.files.map((f) => ({
     type: f.type === "dir" ? "󰉋" : "󰈙",
     size: f.type === "file" ? `${f.size.toLocaleString()} B` : "",
     name: f.name,
   }));
-
   const lines: string[] = [
     dotJoin(`${result.count} files`),
     "",
@@ -255,13 +238,11 @@ function formatRepoFilesList(result: {
 
   return lines.join("\n");
 }
-
 const GetRepoContentsParams = Type.Object({
   owner: TypeBoxFields.owner,
   repo: TypeBoxFields.repoName,
   path: TypeBoxFields.path,
 });
-
 const GetFileContentParams = Type.Object({
   owner: TypeBoxFields.owner,
   repo: TypeBoxFields.repoName,
@@ -270,7 +251,6 @@ const GetFileContentParams = Type.Object({
   }),
   ref: TypeBoxFields.ref,
 });
-
 const ListRepoFilesParams = Type.Object({
   owner: TypeBoxFields.owner,
   repo: TypeBoxFields.repoName,
@@ -284,7 +264,6 @@ const ListRepoFilesParams = Type.Object({
     }),
   ),
 });
-
 type GetRepoContentsParamsType = Static<typeof GetRepoContentsParams>;
 type GetFileContentParamsType = Static<typeof GetFileContentParams>;
 type ListRepoFilesParamsType = Static<typeof ListRepoFilesParams>;
@@ -334,7 +313,6 @@ async function executeListRepoFiles(
   });
   return createRepoResult(output, result);
 }
-
 function createRepoContentsTool() {
   return {
     name: "gh-repo-contents",
@@ -372,7 +350,6 @@ Examples:
     renderResult: createTextResultRender(),
   };
 }
-
 function createFileContentTool() {
   return {
     name: "gh-file-content",
@@ -422,7 +399,6 @@ Examples:
     renderResult: createTextResultRender(),
   };
 }
-
 function createListRepoFilesTool() {
   return {
     name: "gh-list-repo-files",
@@ -460,7 +436,6 @@ Examples:
     renderResult: createTextResultRender(),
   };
 }
-
 export function registerRepoTools(pi: ExtensionAPI): void {
   pi.registerTool(createRepoContentsTool());
   pi.registerTool(createFileContentTool());

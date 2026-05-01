@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { createMockChange } from "../../lib/test-utils";
 import {
-  createMockChange,
   renderSnapshot,
   defaultMockChange,
   setMockChanges,

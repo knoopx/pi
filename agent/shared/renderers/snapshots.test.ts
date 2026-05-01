@@ -1,10 +1,3 @@
-/**
- * Snapshot tests for renderer output patterns.
- *
- * Locks down the exact visual format of table, detail, header, and action renderers
- * so layout regressions are caught immediately.
- */
-
 import { describe, expect, it } from "vitest";
 import { table } from "./table/renderer";
 import type { Column } from "./types";

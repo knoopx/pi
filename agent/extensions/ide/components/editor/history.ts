@@ -1,5 +1,4 @@
 import type { EditorState } from "./types";
-
 export class History {
   private past: EditorState[] = [];
   private future: EditorState[] = [];

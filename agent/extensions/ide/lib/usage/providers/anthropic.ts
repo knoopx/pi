@@ -4,10 +4,8 @@ import {
   formatRemainingDuration,
   loadTokenFromPiAuthJson,
 } from "../util";
-
 const loadAnthropicToken = (deps: BaseDependencies) =>
   loadTokenFromPiAuthJson(deps, "anthropic");
-
 const anthropicConfig: ProviderConfig = {
   provider: "anthropic",
   displayName: "Anthropic (Claude)",
@@ -32,7 +30,6 @@ const anthropicConfig: ProviderConfig = {
       };
     };
     const data = rawData as DataType;
-
     const windows = [
       {
         path: "five_hour",
@@ -50,7 +47,6 @@ const anthropicConfig: ProviderConfig = {
       .map((window) => {
         const windowData = data[window.path];
         if (!windowData) return null;
-
         const usedPercent =
           windowData.utilization || windowData.used_percent || 0;
         const resetAt = windowData.resets_at || windowData.reset_at;
@@ -78,5 +74,4 @@ const anthropicConfig: ProviderConfig = {
     return windows;
   },
 };
-
 export const fetchAnthropicUsage = await createGenericProvider(anthropicConfig);

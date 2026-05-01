@@ -1,6 +1,5 @@
 import { basename, extname } from "node:path";
 import type { BundledLanguage } from "shiki";
-
 const EXT_LANG: Record<string, BundledLanguage> = {
   ts: "typescript",
   tsx: "tsx",
@@ -53,7 +52,6 @@ const EXT_LANG: Record<string, BundledLanguage> = {
   erb: "erb",
   hbs: "handlebars",
 };
-
 export function lang(fp: string): BundledLanguage | undefined {
   const base = basename(fp).toLowerCase();
   if (base === "dockerfile") return "dockerfile";

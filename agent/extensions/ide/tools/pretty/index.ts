@@ -33,7 +33,6 @@ import {
   createGrepRenderCall,
   createGrepRenderResult,
 } from "./grep";
-
 interface ToolDefinition {
   label: string;
   description: string;
@@ -44,7 +43,6 @@ interface ToolDefinition {
   prepareArguments: unknown;
   execute: ToolExecuteFn;
 }
-
 interface ToolRegistryEntry {
   name: string;
   createOrigFn: (cwd: string) => unknown;
@@ -57,7 +55,6 @@ interface ToolRegistryEntry {
   ) => (...args: unknown[]) => Component;
   createRenderResult: () => (...args: unknown[]) => Component;
 }
-
 function registerTool(
   pi: ExtensionAPI,
   entry: ToolRegistryEntry,
@@ -78,7 +75,6 @@ function registerTool(
     renderResult: entry.createRenderResult(),
   } as unknown as Parameters<typeof pi.registerTool>[0]);
 }
-
 const TOOL_REGISTRY = [
   {
     name: "read",
@@ -109,7 +105,6 @@ const TOOL_REGISTRY = [
     createRenderResult: createGrepRenderResult,
   },
 ] as ToolRegistryEntry[];
-
 export default function piPrettyExtension(pi: ExtensionAPI): void {
   const cwd = process.cwd();
   for (const entry of TOOL_REGISTRY) {

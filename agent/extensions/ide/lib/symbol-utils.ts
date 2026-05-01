@@ -1,5 +1,4 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
-
 const SYMBOL_TYPE_ICONS: Record<string, string> = {
   f: "󰊕",
   m: "󰆧",
@@ -23,11 +22,9 @@ const SYMBOL_TYPE_ICONS: Record<string, string> = {
   namespace: "󰅩",
   struct: "󰙅",
 };
-
 function getSymbolIcon(type: string): string {
   return SYMBOL_TYPE_ICONS[type] || "󰈚";
 }
-
 export function formatSymbolListEntry(
   theme: Theme,
   opts: {

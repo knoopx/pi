@@ -10,7 +10,8 @@ import {
   type KeyBinding,
 } from "../../keyboard";
 import { Editor } from "./editor";
-import { renderEditorView, type RenderOptions } from "./renderer";
+import { renderEditorView } from "./renderer";
+import type { RenderOptions } from "./renderer";
 import { BOX } from "../../lib/ui/frame";
 import { ensureWidth, pad } from "../../lib/text-utils";
 import {
@@ -20,11 +21,9 @@ import {
 } from "../../lib/ui/status";
 import { highlightCode } from "../../tools/shiki/highlight";
 import { lang } from "../../tools/language";
-
 export interface EditorResult {
   saved: boolean;
 }
-
 interface CreateEditorOptions {
   pi: ExtensionAPI;
   tui: TUI;
@@ -34,7 +33,6 @@ interface CreateEditorOptions {
   content: string;
   cursorLine?: number;
 }
-
 export function createEditorComponent(
   opts: CreateEditorOptions,
 ): Component & Focusable {
@@ -320,7 +318,6 @@ class EditorComponent implements Component, Focusable {
     const hlKey = this.computeHlKey(lines);
     const cached = this.getCachedDisplayLines(hlKey);
     if (cached) return cached;
-
     const highlighted = await this.tryHighlight(lines.join("\n"));
     if (highlighted) {
       this.hlCache.set(hlKey, highlighted);
@@ -354,7 +351,6 @@ class EditorComponent implements Component, Focusable {
     const hlKey = this.computeHlKey(lines);
 
     if (this.hlCache.has(hlKey)) return;
-
     const highlighted = await this.tryHighlight(lines.join("\n"));
     if (highlighted) {
       this.hlCache.set(hlKey, highlighted);
@@ -366,11 +362,9 @@ class EditorComponent implements Component, Focusable {
     if (this.cachedLines && this.cachedWidth === width) {
       return this.cachedLines;
     }
-
     const innerWidth = width - 2;
     const contentHeight = this.tui.terminal.rows - 4;
     const result = this.renderEditorContentSync(innerWidth, contentHeight);
-
     const output = [
       ...this.renderHeader(innerWidth),
       ...this.renderContentRows(result.lines, innerWidth),
@@ -416,7 +410,6 @@ class EditorComponent implements Component, Focusable {
   }): { lines: string[] } {
     const { displayLines, innerWidth, height, cursor, topLine, selection } =
       opts;
-
     const renderOpts: RenderOptions = {
       lines: [...displayLines],
       width: innerWidth - 1,
@@ -504,7 +497,6 @@ class EditorComponent implements Component, Focusable {
       "[": ["[", "]"],
       "{": ["{", "}"],
     };
-
     const pair = pairMap[char];
     if (pair) {
       this.editor.insertPair(pair[0], pair[1]);
@@ -519,9 +511,7 @@ class EditorComponent implements Component, Focusable {
       const { writeFileSync } = await import("node:fs");
       writeFileSync(this.opts.filePath, this.editor.getContent());
       this.saved = true;
-    } catch {
-      // silent
-    }
+    } catch {}
   }
 
   private async quit(): Promise<void> {

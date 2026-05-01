@@ -1,41 +1,33 @@
-
 import { getChangeIcon } from "./changes-formatting";
-
 export interface GraphNode {
   id: string;
   parentIds: string[];
   isWorkingCopy: boolean;
 }
-
 interface GraphPosition {
   x: number;
   y: number;
 }
-
 export enum EdgeType {
   Vertical = "vertical",
   Horizontal = "horizontal",
-  RightDown = "rightDown", // ╮
-  LeftDown = "leftDown", // ╭
-  RightUp = "rightUp", // ╯
-  LeftUp = "leftUp", // ╰
+  RightDown = "rightDown",
+  LeftDown = "leftDown",
+  RightUp = "rightUp",
+  LeftUp = "leftUp",
 }
-
 export interface Edge {
   type: EdgeType;
   posX: number;
   colorIndex: number;
-  
+
   hasParentBelow?: boolean;
 }
-
 export interface GraphLayout {
   positions: Map<string, GraphPosition>;
   edges: Edge[][];
   maxX: number;
 }
-
-
 function findChildLanes(nodeId: string, lanes: (string | null)[]): number[] {
   const result: number[] = [];
   for (let i = 0; i < lanes.length; i++) {
@@ -43,8 +35,6 @@ function findChildLanes(nodeId: string, lanes: (string | null)[]): number[] {
   }
   return result;
 }
-
-
 function addMergeLaneEdges(
   lane: number,
   targetX: number,
@@ -70,8 +60,6 @@ function addMergeLaneEdges(
     }
   }
 }
-
-
 function processChildLanes(
   node: GraphNode,
   lanes: (string | null)[],
@@ -88,8 +76,6 @@ function processChildLanes(
   lanes[x] = node.id;
   return x;
 }
-
-
 function findOrCreateLane(nodeId: string, lanes: (string | null)[]): number {
   const existingNull = lanes.findIndex((l) => l === null);
   if (existingNull !== -1) {
@@ -99,8 +85,6 @@ function findOrCreateLane(nodeId: string, lanes: (string | null)[]): number {
   lanes.push(nodeId);
   return lanes.length - 1;
 }
-
-
 function addVerticalEdges(
   lanes: (string | null)[],
   commitX: number,
@@ -115,15 +99,12 @@ function addVerticalEdges(
       });
   }
 }
-
-
 function findOrCreateParentLane(
   parentId: string,
   lanes: (string | null)[],
 ): number {
   const existingId = lanes.findIndex((l) => l === parentId);
   if (existingId !== -1) return existingId;
-
   const existingNull = lanes.findIndex((l) => l === null);
   if (existingNull !== -1) {
     lanes[existingNull] = parentId;
@@ -132,8 +113,6 @@ function findOrCreateParentLane(
   lanes.push(parentId);
   return lanes.length - 1;
 }
-
-
 function addBranchRight(commitX: number, parentLane: number, rowEdges: Edge[]) {
   rowEdges.push({
     type: EdgeType.RightDown,
@@ -153,8 +132,6 @@ function addBranchRight(commitX: number, parentLane: number, rowEdges: Edge[]) {
     colorIndex: parentLane % 8,
   });
 }
-
-
 function addBranchLeft(commitX: number, parentLane: number, rowEdges: Edge[]) {
   rowEdges.push({
     type: EdgeType.LeftDown,
@@ -174,8 +151,6 @@ function addBranchLeft(commitX: number, parentLane: number, rowEdges: Edge[]) {
     colorIndex: parentLane % 8,
   });
 }
-
-
 function processMergeEdges(
   node: GraphNode,
   commitX: number,
@@ -194,8 +169,6 @@ function processMergeEdges(
   }
   return maxX;
 }
-
-
 export function calculateGraphLayout(nodes: GraphNode[]): GraphLayout {
   const positions = new Map<string, GraphPosition>();
   const edges: Edge[][] = [];
@@ -204,7 +177,6 @@ export function calculateGraphLayout(nodes: GraphNode[]): GraphLayout {
 
   for (const node of nodes) {
     const rowEdges: Edge[] = [];
-
     const hasChildren = findChildLanes(node.id, lanes).length > 0;
     const x = hasChildren
       ? processChildLanes(node, lanes, rowEdges)
@@ -230,8 +202,6 @@ export function calculateGraphLayout(nodes: GraphNode[]): GraphLayout {
 
   return { positions, edges, maxX };
 }
-
-
 const GRAPH_CHARS = {
   vertical: "│",
   horizontal: "─",
@@ -241,8 +211,6 @@ const GRAPH_CHARS = {
   leftUp: "╰",
   space: " ",
 };
-
-
 function groupEdgesByPos(edges: Edge[]): Map<number, Edge[]> {
   const edgesByPos = new Map<number, Edge[]>();
   for (const edge of edges) {
@@ -252,13 +220,9 @@ function groupEdgesByPos(edges: Edge[]): Map<number, Edge[]> {
   }
   return edgesByPos;
 }
-
-
 function hasBranchRight(edges: Edge[], commitX: number): boolean {
   return edges.some((e) => e.posX === commitX && e.type === EdgeType.RightDown);
 }
-
-
 function getEdgeFlags(posEdges: Edge[]): {
   hasVertical: boolean;
   hasRightDown: boolean;
@@ -276,8 +240,6 @@ function getEdgeFlags(posEdges: Edge[]): {
     hasHorizontal: posEdges.some((e) => e.type === EdgeType.Horizontal),
   };
 }
-
-
 const EDGE_CHAR_RULES: Array<
   (f: ReturnType<typeof getEdgeFlags>) => [boolean, string]
 > = [
@@ -290,7 +252,6 @@ const EDGE_CHAR_RULES: Array<
   (f) => [f.hasLeftUp, GRAPH_CHARS.leftUp],
   (f) => [f.hasHorizontal, GRAPH_CHARS.horizontal],
 ];
-
 function getEdgeChar(flags: ReturnType<typeof getEdgeFlags>): string {
   for (const check of EDGE_CHAR_RULES) {
     const [match, char] = check(flags);
@@ -298,8 +259,6 @@ function getEdgeChar(flags: ReturnType<typeof getEdgeFlags>): string {
   }
   return " ";
 }
-
-
 export function renderGraphRow(options: {
   edges: Edge[];
   commitX: number;

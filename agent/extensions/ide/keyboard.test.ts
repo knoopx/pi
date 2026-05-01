@@ -13,8 +13,7 @@ describe("createKeyboardHandler", () => {
         const keyHandler = createKeyboardHandler({
           bindings: [{ key: "ctrl+d", handler }],
         });
-
-        const result = keyHandler("\x04"); // Ctrl+D
+        const result = keyHandler("\x04");
         expect(handler).toHaveBeenCalled();
         expect(result).toBe(true);
       });
@@ -49,7 +48,6 @@ describe("createKeyboardHandler", () => {
             },
           ],
         });
-
         const result = keyHandler("\x04");
         expect(handler).not.toHaveBeenCalled();
         expect(result).toBe(false);
@@ -77,10 +75,8 @@ describe("createKeyboardHandler", () => {
         interface TestContext {
           value: number;
         }
-
         const handler = vi.fn().mockReturnValue(true);
         const context: TestContext = { value: 42 };
-
         const keyHandler = createKeyboardHandler<TestContext>({
           bindings: [{ key: "enter", handler }],
           getContext: () => context,
@@ -101,7 +97,6 @@ describe("createKeyboardHandler", () => {
         const keyHandler = createKeyboardHandler({
           bindings: [{ key: "enter", handler }],
         });
-
         const result = keyHandler("\r");
         expect(handler).toHaveBeenCalled();
         expect(result).toBe(true);
@@ -115,7 +110,6 @@ describe("createKeyboardHandler", () => {
           bindings: [{ key: "enter", handler }],
         });
 
-        // Should not throw - the rejection is caught internally
         expect(() => keyHandler("\r")).not.toThrow();
       });
     });
@@ -126,7 +120,6 @@ describe("createKeyboardHandler", () => {
       it("then calls onEscape", () => {
         const onEscape = vi.fn();
         const keyHandler = createKeyboardHandler({ onEscape });
-
         const result = keyHandler("\x1b");
         expect(onEscape).toHaveBeenCalled();
         expect(result).toBe(true);
@@ -139,7 +132,6 @@ describe("createKeyboardHandler", () => {
       it("then calls onEnter", () => {
         const onEnter = vi.fn();
         const keyHandler = createKeyboardHandler({ onEnter });
-
         const result = keyHandler("\r");
         expect(onEnter).toHaveBeenCalled();
         expect(result).toBe(true);
@@ -156,7 +148,7 @@ describe("createKeyboardHandler", () => {
           onNavigate,
         });
 
-        keyHandler("\x1b[A"); // Up arrow
+        keyHandler("\x1b[A");
         expect(onNavigate).toHaveBeenCalledWith(4);
       });
 
@@ -166,7 +158,6 @@ describe("createKeyboardHandler", () => {
           navigation: () => ({ index: 0, maxIndex: 10 }),
           onNavigate,
         });
-
         const result = keyHandler("\x1b[A");
         expect(onNavigate).not.toHaveBeenCalled();
         expect(result).toBe(false);
@@ -181,7 +172,7 @@ describe("createKeyboardHandler", () => {
           onNavigate,
         });
 
-        keyHandler("\x1b[B"); // Down arrow
+        keyHandler("\x1b[B");
         expect(onNavigate).toHaveBeenCalledWith(6);
       });
 
@@ -191,7 +182,6 @@ describe("createKeyboardHandler", () => {
           navigation: () => ({ index: 10, maxIndex: 10 }),
           onNavigate,
         });
-
         const result = keyHandler("\x1b[B");
         expect(onNavigate).not.toHaveBeenCalled();
         expect(result).toBe(false);
@@ -206,7 +196,7 @@ describe("createKeyboardHandler", () => {
           onNavigate,
         });
 
-        keyHandler("\x1b[5~"); // Page Up
+        keyHandler("\x1b[5~");
         expect(onNavigate).toHaveBeenCalledWith(5);
       });
 
@@ -241,7 +231,7 @@ describe("createKeyboardHandler", () => {
           onNavigate,
         });
 
-        keyHandler("\x1b[6~"); // Page Down
+        keyHandler("\x1b[6~");
         expect(onNavigate).toHaveBeenCalledWith(15);
       });
 
@@ -263,7 +253,6 @@ describe("createKeyboardHandler", () => {
       it("then calls onBackspace for DEL character", () => {
         const onBackspace = vi.fn();
         const keyHandler = createKeyboardHandler({ onBackspace });
-
         const result = keyHandler("\x7f");
         expect(onBackspace).toHaveBeenCalled();
         expect(result).toBe(true);
@@ -272,7 +261,6 @@ describe("createKeyboardHandler", () => {
       it("then calls onBackspace for BS character", () => {
         const onBackspace = vi.fn();
         const keyHandler = createKeyboardHandler({ onBackspace });
-
         const result = keyHandler("\b");
         expect(onBackspace).toHaveBeenCalled();
         expect(result).toBe(true);
@@ -285,7 +273,6 @@ describe("createKeyboardHandler", () => {
       it("then calls onTextInput with character", () => {
         const onTextInput = vi.fn();
         const keyHandler = createKeyboardHandler({ onTextInput });
-
         const result = keyHandler("a");
         expect(onTextInput).toHaveBeenCalledWith("a");
         expect(result).toBe(true);
@@ -316,8 +303,7 @@ describe("createKeyboardHandler", () => {
       it("then does not call onTextInput", () => {
         const onTextInput = vi.fn();
         const keyHandler = createKeyboardHandler({ onTextInput });
-
-        const result = keyHandler("\x01"); // Ctrl+A
+        const result = keyHandler("\x01");
         expect(onTextInput).not.toHaveBeenCalled();
         expect(result).toBe(false);
       });
@@ -343,7 +329,6 @@ describe("buildHelpFromBindings", () => {
           { key: "ctrl+d", label: "delete", handler: () => {} },
           { key: "enter", label: "select", handler: () => {} },
         ];
-
         const help = buildHelpFromBindings(bindings);
         expect(help).toContain("ctrl+d delete");
         expect(help).toContain("enter select");
@@ -356,9 +341,8 @@ describe("buildHelpFromBindings", () => {
       it("then excludes unlabeled bindings", () => {
         const bindings: KeyBinding[] = [
           { key: "ctrl+d", label: "delete", handler: () => {} },
-          { key: "ctrl+x", handler: () => {} }, // No label
+          { key: "ctrl+x", handler: () => {} },
         ];
-
         const help = buildHelpFromBindings(bindings);
         expect(help).toContain("delete");
         expect(help).not.toContain("ctrl+x");
@@ -373,7 +357,6 @@ describe("buildHelpFromBindings", () => {
           { key: "up", label: "up", handler: () => {} },
           { key: "down", label: "down", handler: () => {} },
         ];
-
         const help = buildHelpFromBindings(bindings);
         expect(help).toContain("↑");
         expect(help).toContain("↓");
@@ -384,7 +367,6 @@ describe("buildHelpFromBindings", () => {
           { key: "pageUp", label: "page", handler: () => {} },
           { key: "pageDown", label: "page", handler: () => {} },
         ];
-
         const help = buildHelpFromBindings(bindings);
         expect(help).toContain("pgup");
         expect(help).toContain("pgdn");
@@ -394,7 +376,6 @@ describe("buildHelpFromBindings", () => {
         const bindings: KeyBinding[] = [
           { key: "escape", label: "exit", handler: () => {} },
         ];
-
         const help = buildHelpFromBindings(bindings);
         expect(help).toContain("esc");
       });

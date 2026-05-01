@@ -6,7 +6,6 @@ import {
   createMockTui,
   createMockTheme,
 } from "../../lib/test-utils";
-
 const REPO = "/home/user/project";
 
 async function createComponentFromExec(execReturn: {
@@ -19,7 +18,6 @@ async function createComponentFromExec(execReturn: {
   });
   const tui = createMockTui();
   const theme = createMockTheme();
-
   const component = createBookmarkPromptComponent({
     pi: mockPi,
     tui,
@@ -43,7 +41,6 @@ async function createFixture(
   });
   const tui = createMockTui();
   const theme = createMockTheme();
-
   const component = createBookmarkPromptComponent({
     pi: mockPi,
     tui,
@@ -65,13 +62,11 @@ describe("bookmark-prompt", () => {
       const loadPromise = new Promise<void>((resolve) => {
         resolveLoadRef.current = resolve;
       });
-
       const mockPi = createMockPi({
         exec: vi.fn().mockReturnValue(loadPromise),
       });
       const tui = createMockTui();
       const theme = createMockTheme();
-
       const component = createBookmarkPromptComponent({
         pi: mockPi,
         tui,
@@ -79,7 +74,6 @@ describe("bookmark-prompt", () => {
         done: () => {},
         cwd: "/home/user/project",
       });
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
 
@@ -94,7 +88,6 @@ describe("bookmark-prompt", () => {
         stdout: "",
         stderr: "bookmark 'list' is not a jj command",
       });
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -105,7 +98,6 @@ describe("bookmark-prompt", () => {
         stdout: "",
         stderr: "",
       });
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -114,7 +106,6 @@ describe("bookmark-prompt", () => {
   describe("empty state", () => {
     it("renders empty state when no bookmarks exist", async () => {
       const { component } = await createFixture("");
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -123,7 +114,6 @@ describe("bookmark-prompt", () => {
   describe("bookmark list rendering", () => {
     it("renders a single bookmark", async () => {
       const { component } = await createFixture("main\n");
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -132,7 +122,6 @@ describe("bookmark-prompt", () => {
       const { component } = await createFixture(
         "main\nfeature-login\nfix-bug-42\ndocs/readme\nrelease/v1.0\nhotfix/critical\n",
       );
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -141,7 +130,6 @@ describe("bookmark-prompt", () => {
       const { component } = await createFixture(
         "main\nmain\nfeature-a\nfeature-b\nmain\n",
       );
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -151,12 +139,10 @@ describe("bookmark-prompt", () => {
         "main\nfeature-login\nfix-auth\n",
       );
 
-      // Simulate typing "feat" — should match feature-login and show "new feat" as create option
       component.handleInput?.("f");
       component.handleInput?.("e");
       component.handleInput?.("a");
       component.handleInput?.("t");
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -164,10 +150,8 @@ describe("bookmark-prompt", () => {
     it("shows all bookmarks when query is empty", async () => {
       const { component } = await createFixture("alpha\nbeta\ngamma\n");
 
-      // Type and delete to ensure query is empty
       component.handleInput?.("a");
       component.handleInput?.("\x7f"); // backspace
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -175,9 +159,7 @@ describe("bookmark-prompt", () => {
     it("shows create-only option when query matches no bookmarks", async () => {
       const { component } = await createFixture("main\nfeature-a\n");
 
-      // Type something that matches nothing
       component.handleInput?.("xyz-nonexistent");
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -187,9 +169,7 @@ describe("bookmark-prompt", () => {
         { length: 8 },
         (_, i) => `bookmark-${String(i).padStart(3, "0")}`,
       ).join("\n");
-
       const { component } = await createFixture(bookmarks);
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -199,10 +179,8 @@ describe("bookmark-prompt", () => {
     it("moves selection down on arrow-down key", async () => {
       const { component } = await createFixture("alpha\nbeta\ngamma\n");
 
-      // Press down arrow twice to select gamma
       component.handleInput?.("\x1b[B");
       component.handleInput?.("\x1b[B");
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -210,11 +188,9 @@ describe("bookmark-prompt", () => {
     it("moves selection up on arrow-up key", async () => {
       const { component } = await createFixture("alpha\nbeta\ngamma\n");
 
-      // Select gamma first (down twice), then up once to beta
       component.handleInput?.("\x1b[B");
       component.handleInput?.("\x1b[B");
       component.handleInput?.("\x1b[A");
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -222,10 +198,8 @@ describe("bookmark-prompt", () => {
     it("clamps selection to max when pressing down at end", async () => {
       const { component } = await createFixture("alpha\nbeta\n");
 
-      // Press down beyond the end
       component.handleInput?.("\x1b[B");
       component.handleInput?.("\x1b[B");
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -238,7 +212,6 @@ describe("bookmark-prompt", () => {
         doneFn,
       );
 
-      // Select beta (down once), then enter
       component.handleInput?.("\x1b[B");
       component.handleInput?.("\r");
 
@@ -253,16 +226,12 @@ describe("bookmark-prompt", () => {
         doneFn,
       );
 
-      component.handleInput?.("\x1b"); // Escape
-
       expect(doneFn).toHaveBeenCalledWith(null);
     });
 
     it("calls done with null when enter pressed with no candidates", async () => {
       const doneFn = vi.fn();
       const { component } = await createFixture("", undefined, doneFn);
-
-      component.handleInput?.("\r"); // Enter with no candidates
 
       expect(doneFn).toHaveBeenCalledWith(null);
     });
@@ -274,27 +243,21 @@ describe("bookmark-prompt", () => {
 
       component.handleInput?.("\x1b[B");
       component.handleInput?.("\x1b[B");
-
       const resultBefore = component.render(120);
 
-      // Type a new query — should reset selection to first match
       component.handleInput?.("g");
-
       const resultAfter = component.render(120);
 
-      // The focused item should be different (gamma is now at index 0)
       expect(resultBefore).not.toEqual(resultAfter);
     });
 
     it("handles backspace in the input", async () => {
       const { component } = await createFixture("alpha\nbeta\ngamma\n");
 
-      // Type "bet" then backspace to "be"
       component.handleInput?.("b");
       component.handleInput?.("e");
       component.handleInput?.("t");
       component.handleInput?.("\x7f");
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -303,9 +266,7 @@ describe("bookmark-prompt", () => {
       // When query doesn't match any existing bookmark, the last item is "new <query>"
       const { component } = await createFixture("main\nfeature-a\n");
 
-      // Type a name that doesn't exist
       component.handleInput?.("new-feature");
-
       const result = component.render(120);
       expect(result).toMatchSnapshot();
     });
@@ -316,8 +277,7 @@ describe("bookmark-prompt", () => {
       const { component, tui } = await createFixture(
         "main\nfeature-a\nfix-bug\n",
       );
-      (tui.terminal as TestTerminal).columns = 60;
-
+      (tui.terminal as unknown as TestTerminal).columns = 60;
       const result = component.render(60);
       expect(result).toMatchSnapshot();
     });
@@ -326,8 +286,7 @@ describe("bookmark-prompt", () => {
       const { component, tui } = await createFixture(
         "main\nfeature-a\nfix-bug\n",
       );
-      (tui.terminal as TestTerminal).columns = 160;
-
+      (tui.terminal as unknown as TestTerminal).columns = 160;
       const result = component.render(160);
       expect(result).toMatchSnapshot();
     });

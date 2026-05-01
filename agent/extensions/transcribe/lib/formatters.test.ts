@@ -85,7 +85,6 @@ describe("stripHtml", () => {
   });
 
   it("decodes HTML entities in tag content", () => {
-    // &amp; inside a tag is decoded to &
     expect(stripHtml("<p>&amp;</p>")).toBe("&");
   });
 

@@ -2,8 +2,6 @@ import { describe, it, expect } from "vitest";
 import { createMockChange } from "../../lib/test-utils";
 import { expectDefaultSelection } from "./test-helpers";
 
-// ─── Tests ────────────────────────────────────────────────────────────────
-
 describe("changes/state", () => {
   describe("given a new ChangesState instance", () => {
     it("then selectionState has correct defaults", async () => {
@@ -46,7 +44,6 @@ describe("changes/state", () => {
     it("then selectedChange and selectedIndex are updated", async () => {
       const { ChangesState } = await import("./state");
       const state = new ChangesState();
-
       const change1 = createMockChange({
         changeId: "abc123",
         commitId: "def456",
@@ -201,7 +198,6 @@ describe("changes/state", () => {
     it("then changeCache stores and retrieves entries", async () => {
       const { ChangesState } = await import("./state");
       const state = new ChangesState();
-
       const entry = { files: [], diffs: new Map() };
       entry.diffs.set("src/main.ts", ["line 1", "line 2"]);
 
@@ -273,7 +269,6 @@ describe("changes/state", () => {
 
       expect(state.loadingState.loading).toBe(false);
 
-      // Simulate loading started
       state.loadingState.loading = true;
 
       expect(state.loadingState.loading).toBe(true);

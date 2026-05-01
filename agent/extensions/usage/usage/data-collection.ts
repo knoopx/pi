@@ -10,7 +10,6 @@ import {
   accumulateStats,
 } from "./types";
 import type { UsageData, TabName } from "./types";
-
 export function getSessionsDir(): string {
   const agentDir =
     process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi", "agent");
@@ -30,12 +29,9 @@ async function getAllSessionFiles(signal?: AbortSignal): Promise<string[]> {
         if (signal?.aborted) return result;
         if (file.endsWith(".jsonl")) result.push(join(cwdPath, file));
       }
-    } catch {
-      // Skip directories we can't read
-    }
+    } catch {}
     return result;
   }
-
   const files: string[] = [];
 
   try {
@@ -47,13 +43,10 @@ async function getAllSessionFiles(signal?: AbortSignal): Promise<string[]> {
       const sessionFiles = await collectSessionFiles(cwdPath, signal);
       files.push(...sessionFiles);
     }
-  } catch {
-    // Skip directories we can't read
-  }
+  } catch {}
 
   return files;
 }
-
 interface SessionMessage {
   provider: string;
   model: string;
@@ -64,13 +57,11 @@ interface SessionMessage {
   cacheWrite: number;
   timestamp: number;
 }
-
 function validateEntry(
   entry: FileEntry,
 ): entry is Extract<SessionEntry, { type: "message" }> {
   return entry.type === "message";
 }
-
 function validateMessage(msg: unknown): msg is AssistantMessage {
   if (!msg || typeof msg !== "object") return false;
   const m = msg as Record<string, unknown>;
@@ -82,7 +73,6 @@ function validateMessage(msg: unknown): msg is AssistantMessage {
     typeof m.model === "string"
   );
 }
-
 function extractMessageFromEntry(
   entry: FileEntry,
   seenHashes: Set<string>,
@@ -90,7 +80,6 @@ function extractMessageFromEntry(
   if (!validateEntry(entry)) return null;
   const msg = entry.message;
   if (!validateMessage(msg)) return null;
-
   const { usage } = msg;
   const tokens = extractTokenCounts(
     usage as unknown as Record<string, unknown>,
@@ -111,7 +100,6 @@ function extractMessageFromEntry(
     timestamp,
   };
 }
-
 function extractTokenCounts(usage: Record<string, unknown>): {
   input: number;
   output: number;
@@ -125,7 +113,6 @@ function extractTokenCounts(usage: Record<string, unknown>): {
     cacheWrite: Number(usage.cacheWrite) || 0,
   };
 }
-
 function resolveTimestamp(entry: FileEntry, msg: AssistantMessage): number {
   const msgTs = Number(msg.timestamp);
   if (msgTs) return msgTs;
@@ -133,7 +120,6 @@ function resolveTimestamp(entry: FileEntry, msg: AssistantMessage): number {
   const fallbackTs = new Date(entry.timestamp).getTime();
   return Number.isNaN(fallbackTs) ? 0 : fallbackTs;
 }
-
 function isDuplicate(
   tokens: {
     input: number;
@@ -148,7 +134,6 @@ function isDuplicate(
     tokens.input + tokens.output + tokens.cacheRead + tokens.cacheWrite;
   return seenHashes.has(`${timestamp}:${totalTokens}`);
 }
-
 function markSeen(
   tokens: {
     input: number;
@@ -192,14 +177,13 @@ async function parseSessionLines(
     if (checkSignalAborted(signal)) return null;
     if (i % 500 === 0)
       await new Promise<void>((resolve) => setImmediate(resolve));
-    const result = await parseSessionLine(lines[i], seenHashes);
+    const result = parseSessionLine(lines[i], seenHashes);
     if (result.sessionId) sessionId = result.sessionId;
     if (result.message) messages.push(result.message);
   }
 
   return sessionId ? { sessionId, messages } : null;
 }
-
 function parseSessionLine(
   line: string,
   seenHashes: Set<string>,
@@ -221,21 +205,16 @@ function parseSessionLine(
       seenHashes,
     );
     if (message) return { message };
-  } catch {
-    // Skip malformed lines
-  }
+  } catch {}
   return {};
 }
-
 function checkSignalAborted(signal?: AbortSignal): boolean {
   return signal?.aborted === true;
 }
-
 function calculateTimeBoundaries(): { todayMs: number; weekStartMs: number } {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
   const todayMs = startOfToday.getTime();
-
   const startOfWeek = new Date();
   const dayOfWeek = startOfWeek.getDay();
   const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
@@ -245,7 +224,6 @@ function calculateTimeBoundaries(): { todayMs: number; weekStartMs: number } {
 
   return { todayMs, weekStartMs };
 }
-
 function createEmptyUsageData(): UsageData {
   return {
     today: emptyTimeFilteredStats(),
@@ -253,7 +231,6 @@ function createEmptyUsageData(): UsageData {
     allTime: emptyTimeFilteredStats(),
   };
 }
-
 function getTimePeriods(
   timestamp: number,
   todayMs: number,
@@ -264,7 +241,6 @@ function getTimePeriods(
   if (timestamp >= weekStartMs) periods.push("thisWeek");
   return periods;
 }
-
 function processMessage(
   msg: SessionMessage,
   opts: {
@@ -320,11 +296,9 @@ async function processSessionFile(
   if (checkSignalAborted(signal)) return;
   const parsed = await parseSessionFile(filePath, opts.seenHashes, signal);
   if (!parsed) return;
-
   const contributed = aggregateSessionContributions(parsed, opts, signal);
   updateSessionCounts(opts.data, contributed);
 }
-
 function aggregateSessionContributions(
   parsed: { sessionId: string; messages: SessionMessage[] },
   opts: {
@@ -350,7 +324,6 @@ function aggregateSessionContributions(
 
   return contributed;
 }
-
 function mergeContributions(
   target: { today: boolean; thisWeek: boolean; allTime: boolean },
   source: { today: boolean; thisWeek: boolean; allTime: boolean },
@@ -359,7 +332,6 @@ function mergeContributions(
   if (source.thisWeek) target.thisWeek = true;
   if (source.allTime) target.allTime = true;
 }
-
 function updateSessionCounts(
   data: UsageData,
   contributed: { today: boolean; thisWeek: boolean; allTime: boolean },
@@ -368,13 +340,11 @@ function updateSessionCounts(
   if (contributed.thisWeek) data.thisWeek.totals.sessions++;
   if (contributed.allTime) data.allTime.totals.sessions++;
 }
-
 export async function collectUsageData(
   signal?: AbortSignal,
 ): Promise<UsageData | null> {
   const { todayMs, weekStartMs } = calculateTimeBoundaries();
   const data = createEmptyUsageData();
-
   const sessionFiles = await getAllSessionFiles(signal);
   if (checkSignalAborted(signal)) return null;
   const seenHashes = new Set<string>();

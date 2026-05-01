@@ -9,7 +9,6 @@ import {
   type Mock,
 } from "vitest";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-
 let guardrailsExtension: (pi: ExtensionAPI) => Promise<void>;
 let isGroupActive: (
   pattern: string,
@@ -33,15 +32,12 @@ beforeAll(async () => {
     loadGuardrailsSettings: vi.fn().mockResolvedValue({ enabled: true }),
     saveGuardrailsSettings: vi.fn().mockResolvedValue({ enabled: true }),
   }));
-
   const globMock = vi.fn();
   glob = globMock as unknown as Mock;
   vi.doMock("tinyglobby", () => ({ glob: globMock }));
-
   const mod = await import("./index");
   guardrailsExtension = mod.default;
   isGroupActive = mod.isGroupActive;
-
   const configModule = await import("./config");
   configLoader = configModule.configLoader as unknown as typeof configLoader;
   loadGuardrailsSettings =
@@ -55,7 +51,6 @@ afterAll(() => {
   vi.doUnmock("tinyglobby");
   vi.resetModules();
 });
-
 function makeCtx(overrides: Record<string, unknown> = {}) {
   return {
     cwd: "/test/project",
@@ -75,7 +70,6 @@ async function setupHandler(
   configLoader.load.mockReturnValue(undefined);
   configLoader.getConfig.mockReturnValue(config);
   glob.mockResolvedValue(["package.json"]);
-
   const pi = { on: vi.fn(), registerCommand: vi.fn() };
   await guardrailsExtension(pi as unknown as ExtensionAPI);
   const handler = pi.on.mock.calls.find((c) => c[0] === "tool_call")?.[1] as (
@@ -159,7 +153,6 @@ describe("isGroupActive", () => {
   });
 });
 
- 
 describe("guardrails extension", () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -167,7 +160,6 @@ describe("guardrails extension", () => {
     it("then loads config and registers tool_call hook", async () => {
       configLoader.load.mockReturnValue(undefined);
       configLoader.getConfig.mockReturnValue([]);
-
       const pi = { on: vi.fn(), registerCommand: vi.fn() };
       await guardrailsExtension(pi as unknown as ExtensionAPI);
 
@@ -183,10 +175,8 @@ describe("guardrails extension", () => {
       configLoader.load.mockReturnValue(undefined);
       configLoader.getConfig.mockReturnValue([]);
       glob.mockResolvedValue(["package.json"]);
-
       const pi = { on: vi.fn(), registerCommand: vi.fn() };
       await guardrailsExtension(pi as unknown as ExtensionAPI);
-
       const command = pi.registerCommand.mock.calls.find(
         (c) => c[0] === "guardrails",
       )?.[1] as {
@@ -195,7 +185,6 @@ describe("guardrails extension", () => {
           ctx: ReturnType<typeof makeCtx>,
         ) => Promise<void>;
       };
-
       const ctx = makeCtx();
       await command.handler("off", ctx);
       await command.handler("on", ctx);
@@ -221,7 +210,6 @@ describe("guardrails extension", () => {
           ],
         },
       ]);
-
       const result = await handler(
         { toolName: "bash", input: { command: "npm install" } },
         makeCtx(),
@@ -245,7 +233,6 @@ describe("guardrails extension", () => {
           ],
         },
       ]);
-
       const result = await handler(
         { toolName: "bash", input: { command: "bun install" } },
         makeCtx(),
@@ -269,7 +256,6 @@ describe("guardrails extension", () => {
           ],
         },
       ]);
-
       const result = await handler(
         {
           toolName: "bash",
@@ -299,7 +285,6 @@ describe("guardrails extension", () => {
           ],
         },
       ]);
-
       const blocked = await handler(
         { toolName: "bash", input: { command: "find . --delete" } },
         makeCtx(),
@@ -332,7 +317,6 @@ describe("guardrails extension", () => {
           ],
         },
       ]);
-
       const blocked = await handler(
         { toolName: "bash", input: { command: "jj squash" } },
         makeCtx(),
@@ -363,7 +347,6 @@ describe("guardrails extension", () => {
           ],
         },
       ]);
-
       const c = makeCtx();
       const result = await handler(
         { toolName: "bash", input: { command: "rm -rf /tmp" } },
@@ -389,7 +372,6 @@ describe("guardrails extension", () => {
           ],
         },
       ]);
-
       const c = makeCtx();
       (c.ui as { confirm: Mock }).confirm.mockResolvedValue(false);
       const result = await handler(
@@ -420,7 +402,6 @@ describe("guardrails extension", () => {
           ],
         },
       ]);
-
       const result = await handler(
         {
           toolName: "edit",
@@ -449,7 +430,6 @@ describe("guardrails extension", () => {
           ],
         },
       ]);
-
       const result = await handler(
         {
           toolName: "write",
@@ -569,7 +549,6 @@ describe("guardrails extension", () => {
         if (pattern === ".jj") return [".jj"];
         return [];
       });
-
       const result = await handler(
         { toolName: "bash", input: { command: "nix build ." } },
         makeCtx(),
@@ -594,7 +573,6 @@ describe("guardrails extension", () => {
           ],
         },
       ]);
-
       const result = await handler(
         { toolName: "read", input: { path: "any" } },
         makeCtx(),
@@ -620,7 +598,6 @@ describe("guardrails extension", () => {
           ],
         },
       ]);
-
       const ctx = makeCtx({ cwd: "/test/project" });
 
       // Should block project file
@@ -663,7 +640,6 @@ describe("guardrails extension", () => {
           ],
         },
       ]);
-
       const ctx = makeCtx({ cwd: "/test/project" });
 
       // Should allow project file
@@ -705,7 +681,6 @@ describe("guardrails extension", () => {
           ],
         },
       ]);
-
       const ctx = makeCtx({ cwd: "/test/project" });
 
       // Should block project file
@@ -751,7 +726,6 @@ describe("guardrails extension", () => {
           ],
         },
       ]);
-
       const ctx = makeCtx({ cwd: "/test/project" });
 
       // Should block absolute path within project

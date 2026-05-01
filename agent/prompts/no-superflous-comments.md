@@ -32,14 +32,72 @@ Section dividers made of punctuation (`---`, `===`, `___`) are a code smell indi
 grep -rn --exclude-dir=node_modules '// [=-]\{3,\}' <dir>
 ```
 
-## Rule 3: No Block Comments Without JSDoc Tags
+## Rule 3: JSDoc Documents the API, Not Functionality
 
-Block comments using `/** ... */` must contain valid JSDoc tags (`@param`, `@returns`, `@throws`, `@example`) or be deleted. Single-line field descriptions on type/interface properties are exempt — they serve as inline documentation for the field itself.
+JSDoc (`/** ... */`) must document the **API contract** — what arguments a function accepts and what it returns. It must NOT describe what the code does internally or at a high level. TypeScript types already convey parameter/return information; JSDoc adds nothing by repeating them as prose.
 
-```bash
-# Find multi-line block comments
-grep -rn '/\*\*[^/][^*]*\*/' --include='*.ts' <dir> | grep -v node_modules
+### What JSDoc should document (the API)
+
+```ts
+// ✅ GOOD: @param/@returns match the type signature — they exist only to
+//    describe behavior not expressible in types (e.g., error conditions).
+/**
+ * @throws If the server is unreachable.
+ */
+export function fetchUser(id: number): Promise<User> { ... }
+
+/**
+ * @example
+ *   truncate("hello world", 5) // "hello"
+ */
+export function truncate(text: string, max: number): string { ... }
 ```
+
+### What JSDoc should NOT document (functionality descriptions)
+
+```ts
+// ❌ BAD: Describes what the function does — code and types already show this.
+/**
+ * LRU cache utility for storing computed values.
+ */
+export function createLRUCache<K, V>(limit: number) { ... }
+
+// ❌ BAD: Describes behavior in prose instead of documenting the contract.
+/**
+ * Push `--flag=value` for each element of an array argument.
+ */
+export function pushArrayFlag(args: string[], values?: string[], flagName: string): void { ... }
+
+// ❌ BAD: Explains internal algorithm and context — not part of the API.
+/**
+ * Test whether a rule matches the current tool call.
+ * For "command" context, `pattern` uses AST-like token matching...
+ * For "file_name" context, `pattern` uses glob matching...
+ */
+function matchCommandRule(rule: GuardrailsRule, toolName: string, input: unknown): ... { ... }
+
+// ❌ BAD: Module-level description — functionality, not an API contract.
+/**
+ * Shared utilities for package registry tools (npm, pypi, etc.).
+ */
+```
+
+### Single-line field descriptions are exempt
+
+Single-line `/** */` comments on type/interface properties serve as inline documentation and are exempt from this rule:
+
+```ts
+interface Column {
+  /** Column header label */
+  key: string;
+  /** Right-align values (for numbers) */
+  align?: "left" | "right";
+}
+```
+
+### Deletion is the fix
+
+If a `/** ... */` block describes functionality rather than documenting an API contract, **delete it entirely**. Do not replace with `//` comments or add empty @tags. The code and TypeScript types are the documentation.
 
 ## Audit Process
 
@@ -96,7 +154,11 @@ It properly excludes:
 - Comments preceding `const`, `let`, `var` declarations
 - Comments before imports/exports/interfaces/types/enums
 
-#### Step 1b: Section dividers
+#### Step 1b: Find functionality-describing JSDoc blocks
+
+Any `/** */` block on a declaration (function, const, interface) that lacks `@param`, `@returns`, `@return`, or `@throws` tags describes functionality rather than the API contract. These should be deleted. Single-line field descriptions on type/interface properties are exempt.
+
+#### Step 1c: Section dividers
 
 ```bash
 grep -rn --exclude-dir=node_modules '// [=-]\{3,\}' <dir>
@@ -116,7 +178,7 @@ For each match, read the surrounding code and decide:
 
 ### Phase 3: Fix All Violations
 
-Remove each superfluous comment, section divider, or invalid block comment. Do NOT replace with alternatives — deletion is the fix.
+Remove each superfluous comment, section divider, or invalid JSDoc block. Do NOT replace with alternatives — deletion is the fix.
 
 Apply fixes file by file. After each file:
 
@@ -141,5 +203,5 @@ Does the comment explain WHY something is done?     → KEEP (rationale, busines
 Does the comment explain HOW to do an external task? → KEEP (maintenance instructions)
 Does the comment say WHAT code does?                → DELETE (code says it)
 Does the comment describe TEST FLOW step-by-step?   → DELETE (test code shows it)
-Is /** ... */ missing JSDoc tags?                   → DELETE (or add tags if meaningful)
+Is /** ... */ describing functionality, not API?    → DELETE (code + types are the docs)
 ```

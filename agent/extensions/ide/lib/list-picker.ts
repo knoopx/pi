@@ -5,23 +5,16 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { Key } from "@mariozechner/pi-tui";
-import {
-  createKeyboardHandler,
-  buildHelpFromBindings,
-  type KeyBinding,
-} from "../keyboard";
+import { createKeyboardHandler, buildHelpFromBindings } from "../keyboard";
+import type { KeyBinding } from "../keyboard";
 import { truncateAnsi, ensureWidth, pad } from "./text-utils";
 import { applyFocusedStyle } from "./style-utils";
 import { calculateDimensions } from "./split-panel/layout";
 import { renderSplitPanel } from "./split-panel/border";
 import { renderSourceRows } from "./split-panel/content";
 
-import {
-  createStatusNotifier,
-  formatHelpWithStatus,
-  type StatusMessageState,
-} from "./ui/status";
-
+import { createStatusNotifier, formatHelpWithStatus } from "./ui/status";
+import type { StatusMessageState } from "./ui/status";
 export interface ListPickerItem {
   id: string;
   label: string;
@@ -29,14 +22,12 @@ export interface ListPickerItem {
   startLine?: number;
   endLine?: number;
 }
-
 export interface ListPickerAction<T extends ListPickerItem> {
   key: string;
   label: string;
   handler: (item: T) => Promise<void> | void;
 }
-
-interface ListPickerConfig<T extends ListPickerItem> {
+export interface ListPickerConfig<T extends ListPickerItem> {
   title: string | (() => string);
 
   loadItems: (query: string) => Promise<T[]>;
@@ -52,12 +43,10 @@ interface ListPickerConfig<T extends ListPickerItem> {
 
   onKey?: (key: string, onReload?: () => void) => boolean;
 }
-
 interface ListPickerTui {
   terminal: { rows: number };
   requestRender: () => void;
 }
-
 interface TitleContext<T extends ListPickerItem> {
   config: ListPickerConfig<T>;
   searchQuery: string;
@@ -67,12 +56,10 @@ interface TitleContext<T extends ListPickerItem> {
   leftW: number;
   rightW: number;
 }
-
 interface PickerTitles {
   leftTitle: string;
   rightTitle: string;
 }
-
 function buildPickerTitles<T extends ListPickerItem>(
   ctx: TitleContext<T>,
 ): PickerTitles {
@@ -85,7 +72,6 @@ function buildPickerTitles<T extends ListPickerItem>(
     leftW,
     rightW,
   } = ctx;
-
   const titleText =
     typeof config.title === "function" ? config.title() : config.title;
   const searchDisplay = searchQuery
@@ -93,7 +79,6 @@ function buildPickerTitles<T extends ListPickerItem>(
     : ` ${titleText}`;
   const itemCount = `(${String(filteredCount)}/${String(totalCount)})`;
   const leftTitle = truncateAnsi(`${searchDisplay} ${itemCount}`, leftW);
-
   const previewTitleText = focusedItem
     ? (config.previewTitle?.(focusedItem) ?? focusedItem.path)
     : undefined;
@@ -103,7 +88,6 @@ function buildPickerTitles<T extends ListPickerItem>(
 
   return { leftTitle, rightTitle };
 }
-
 export interface ListPickerComponent {
   render: (width: number) => string[];
   handleInput: (data: string) => void;
@@ -114,8 +98,8 @@ export interface ListPickerComponent {
   notify?: (message: string, type?: "info" | "error") => void;
   getSearchQuery?: () => string;
   clearSearchQuery?: () => void;
+  focusedIndex?: number;
 }
-
 interface ListPickerOptions<T extends ListPickerItem> {
   pi: ExtensionAPI;
   tui: ListPickerTui;
@@ -125,7 +109,6 @@ interface ListPickerOptions<T extends ListPickerItem> {
   initialQuery: string;
   config: ListPickerConfig<T>;
 }
-
 export function createListPicker<T extends ListPickerItem>(
   options: ListPickerOptions<T>,
 ): ListPickerComponent {
@@ -152,7 +135,7 @@ class ListPickerImpl<T extends ListPickerItem> implements Component {
   private reloadTimeout: ReturnType<typeof setTimeout> | null = null;
 
   private keyboardHandler: (data: string) => void;
-  private notify!: (message: string, type?: "info" | "error") => void;
+  private notify = (_message: string) => {};
 
   constructor(options: ListPickerOptions<T>) {
     const { tui, theme, done, initialQuery, config } = options;
@@ -166,7 +149,6 @@ class ListPickerImpl<T extends ListPickerItem> implements Component {
       this.invalidate();
       this.tui.requestRender();
     });
-
     const actionBindings = this.getActionBindings();
     const coreBindings = this.getCoreBindings();
     const allBindings = [...coreBindings, ...actionBindings];
@@ -218,8 +200,9 @@ class ListPickerImpl<T extends ListPickerItem> implements Component {
   }
 
   private filterItems(): void {
-    if (!this.searchQuery) this.filteredItems = this.items;
-    else {
+    if (!this.searchQuery) {
+      this.filteredItems = this.items;
+    } else {
       const lower = this.searchQuery.toLowerCase();
       this.filteredItems = this.config.filterItems(this.items, lower);
     }
@@ -276,7 +259,6 @@ class ListPickerImpl<T extends ListPickerItem> implements Component {
       rows.push(this.theme.fg("dim", pad(" No items found", width)));
       return rows;
     }
-
     let startIdx = 0;
     if (this.focusedIndex >= height) startIdx = this.focusedIndex - height + 1;
 
@@ -311,7 +293,6 @@ class ListPickerImpl<T extends ListPickerItem> implements Component {
     });
 
     this.listHeight = dims.contentH;
-
     const focusedItem = this.getFocusedItem();
     const { leftTitle, rightTitle } = buildPickerTitles({
       config: this.config,
@@ -322,7 +303,6 @@ class ListPickerImpl<T extends ListPickerItem> implements Component {
       leftW: dims.leftW,
       rightW: dims.rightW,
     });
-
     const itemRows = this.getItemRows(dims.leftW, dims.contentH);
     const sourceRows = renderSourceRows({
       lines: this.sourceLines,
@@ -335,7 +315,6 @@ class ListPickerImpl<T extends ListPickerItem> implements Component {
           ? { start: focusedItem.startLine, end: focusedItem.endLine }
           : undefined,
     });
-
     const helpText = formatHelpWithStatus(
       this.theme,
       this.statusState.message,

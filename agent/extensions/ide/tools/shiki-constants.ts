@@ -2,12 +2,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { BundledTheme } from "shiki";
 import { getAgentDir } from "@mariozechner/pi-coding-agent";
-
 const DEFAULT_THEME: BundledTheme = "github-dark";
 const IDE_SETTINGS_KEY = "ide";
-
 export let THEME: BundledTheme = DEFAULT_THEME;
-
 const MAX_HL_CHARS =
   Number.parseInt(process.env.PRETTY_MAX_HL_CHARS ?? "", 10) || 80_000;
 export const MAX_PREVIEW_LINES =
@@ -26,6 +23,6 @@ async function loadIdeTheme(): Promise<void> {
   }
 }
 
+// Best-effort: falls back to DEFAULT_THEME if settings cannot be loaded.
 void loadIdeTheme().catch(() => {});
-
 export { MAX_HL_CHARS, CACHE_LIMIT };

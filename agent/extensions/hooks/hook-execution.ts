@@ -6,7 +6,6 @@ import type { HookInput, HooksGroup, HookRule } from "./schema";
 import { parseHookOutput } from "./schema";
 import type { HookResult, HookVariables } from "./types";
 import { substituteVariables } from "./pattern-matching";
-
 export async function runHook(
   pi: ExtensionAPI,
   hookRunContext: {
@@ -22,7 +21,6 @@ export async function runHook(
     hookRunContext.vars,
   );
 
-  // Skip if placeholders weren't substituted
   if (/%[A-Za-z_][A-Za-z0-9_]*%/.test(command))
     return {
       success: true,
@@ -33,7 +31,6 @@ export async function runHook(
       group: hookRunContext.group.group,
       command,
     };
-
   const timeout = hookRunContext.rule.timeout ?? 30000;
   const cwd = hookRunContext.ctx.cwd;
   const stdinInput = JSON.stringify(hookRunContext.hookInput);
@@ -47,7 +44,6 @@ export async function runHook(
       ],
       { timeout, cwd },
     );
-
     const stdout = result.stdout?.trim() ?? "";
     const stderr = result.stderr?.trim() ?? "";
     const output = result.code === 0 ? parseHookOutput(stdout) : undefined;

@@ -1,6 +1,5 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { Change, FileChange } from "../../lib/types";
-
 function filterBookmarksByChange(
   entries: { bookmark: string; changeId: string }[],
   changeId: string,
@@ -16,7 +15,6 @@ import { loadChanges } from "../../jj/changes";
 import { getCurrentChangeIdShort } from "../../jj/changes";
 import { loadChangedFiles } from "../../jj/files";
 import { getRawDiff } from "../../jj/files";
-
 export class DataService {
   constructor(
     public readonly pi: ExtensionAPI,

@@ -24,7 +24,6 @@ import {
   truncateTitle,
   formatReviewIcon,
 } from "./helpers";
-
 interface PullRequestsComponentOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };
@@ -34,14 +33,12 @@ interface PullRequestsComponentOptions {
   cwd: string;
   onInsert?: (text: string) => void;
 }
-
 const PR_STATES: ("open" | "closed" | "merged" | "all")[] = [
   "open",
   "closed",
   "merged",
   "all",
 ];
-
 function formatPrForInsert(item: PullRequest): string {
   return [
     `#${item.number}: ${item.title}`,
@@ -54,7 +51,6 @@ function formatPrForInsert(item: PullRequest): string {
     .filter(Boolean)
     .join("\n");
 }
-
 function buildPrActions(options: {
   pi: ExtensionAPI;
   cwd: string;
@@ -76,7 +72,6 @@ function buildPrActions(options: {
     makeInsertPrAction(onInsert, done),
   ];
 }
-
 function makeOpenPrAction(
   pi: ExtensionAPI,
   cwd: string,
@@ -89,7 +84,6 @@ function makeOpenPrAction(
     },
   };
 }
-
 function makeCheckoutPrAction(
   pi: ExtensionAPI,
   cwd: string,
@@ -110,7 +104,6 @@ function makeCheckoutPrAction(
     },
   };
 }
-
 function makeApprovePrAction(
   pi: ExtensionAPI,
   cwd: string,
@@ -131,7 +124,6 @@ function makeApprovePrAction(
     },
   };
 }
-
 function makeMergePrAction(
   pi: ExtensionAPI,
   cwd: string,
@@ -158,7 +150,6 @@ function makeMergePrAction(
     },
   };
 }
-
 function makeCycleStateAction(
   notify: (msg: string, type?: "info" | "error") => void,
   currentStateRef: { value: "open" | "closed" | "merged" | "all" },
@@ -175,7 +166,6 @@ function makeCycleStateAction(
     },
   };
 }
-
 function makeInsertPrAction(
   onInsert: ((text: string) => void) | undefined,
   done: (result: PullRequest | null) => void,
@@ -191,12 +181,10 @@ function makeInsertPrAction(
     },
   };
 }
-
 function formatPrItem(item: PullRequest, width: number, theme: Theme): string {
   const stateColor = resolvePrStateColor(item.state, item.isDraft);
   const icon = getPrIcon(item.state, item.isDraft);
   const reviewIcon = getReviewIcon(item.reviewDecision);
-
   const fixedParts = buildPrFixedParts({
     icon,
     reviewIcon,
@@ -215,7 +203,6 @@ function formatPrItem(item: PullRequest, width: number, theme: Theme): string {
     width,
   );
 }
-
 function loadPrPreview(item: PullRequest, theme: Theme): string[] {
   const mdParts = [
     "| Field | Value |",
@@ -232,7 +219,6 @@ function loadPrPreview(item: PullRequest, theme: Theme): string[] {
   const md = new Markdown(mdParts.join("\n"), 0, 0, createMarkdownTheme(theme));
   return md.render(100);
 }
-
 function buildPrPickerOptions(options: {
   pi: ExtensionAPI;
   cwd: string;
@@ -260,7 +246,6 @@ function buildPrPickerOptions(options: {
       Promise.resolve(loadPrPreview(item, theme)),
   };
 }
-
 export function createPullRequestsComponent(
   options: PullRequestsComponentOptions,
 ): ListPickerComponent {
@@ -270,7 +255,6 @@ export function createPullRequestsComponent(
   const currentStateRef = {
     value: "open" as "open" | "closed" | "merged" | "all",
   };
-
   const actions = buildPrActions({
     pi,
     cwd,
@@ -287,7 +271,6 @@ export function createPullRequestsComponent(
     currentStateRef,
     actions,
   });
-
   const picker = createListPicker<PullRequest>({
     pi,
     tui,

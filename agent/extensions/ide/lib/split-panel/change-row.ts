@@ -3,7 +3,6 @@ import type { GraphLayout, Edge } from "../graph";
 import { renderGraphRow } from "../graph";
 import { formatChangeRow, visibleLength } from "../changes-formatting";
 import { ensureWidth, truncateAnsi } from "../text-utils";
-
 export interface ChangeRowFlags {
   isCursor: boolean;
   isMarked: boolean;
@@ -11,7 +10,6 @@ export interface ChangeRowFlags {
   isWorkingCopy: boolean;
   isMoving: boolean;
 }
-
 interface ChangeRowProps {
   change: {
     changeId: string;
@@ -26,8 +24,6 @@ interface ChangeRowProps {
   theme: Theme;
   layout: GraphLayout | null;
 }
-
-
 export class ChangeRow {
   private readonly props: Omit<ChangeRowProps, "width">;
 
@@ -48,7 +44,6 @@ export class ChangeRow {
       theme: this.props.theme,
       immutable: this.props.change.immutable,
     });
-
     const { leftText, rightText } = formatChangeRow(this.props.theme, {
       isImmutable: this.props.change.immutable,
       isSelected: this.props.flags.isMarked,
@@ -70,8 +65,6 @@ export class ChangeRow {
     });
   }
 }
-
-
 function renderGraphPrefix(options: {
   layout: GraphLayout | null;
   changeId: string;
@@ -82,10 +75,8 @@ function renderGraphPrefix(options: {
 }): string {
   const { layout, changeId, idx, isWorkingCopy, theme, immutable } = options;
   if (!layout) return "";
-
   const pos = layout.positions.get(changeId);
   if (!pos) return "";
-
   const edges = layout.edges[idx] ?? ([] as Edge[]);
   const graphLine = renderGraphRow({
     edges,
@@ -99,8 +90,6 @@ function renderGraphPrefix(options: {
   if (immutable) return theme.fg("dim", graphLine + " ");
   return graphLine + " ";
 }
-
-
 function assembleChangeRow(options: {
   graphPrefix: string;
   leftText: string;
@@ -111,17 +100,23 @@ function assembleChangeRow(options: {
   isMarked: boolean;
   padLeft?: boolean;
 }): string {
-  const { graphPrefix, leftText, rightText, width, theme, isFocused, isMarked, padLeft = false } = options;
-
+  const {
+    graphPrefix,
+    leftText,
+    rightText,
+    width,
+    theme,
+    isFocused,
+    isMarked,
+    padLeft = false,
+  } = options;
   const graphWidth = visibleLength(graphPrefix);
   const rightLen = visibleLength(rightText);
   const availableLeftWidth = Math.max(1, width - rightLen - graphWidth);
-
   const leftTruncated = truncateAnsi(leftText, availableLeftWidth);
   const leftPadded = padLeft
     ? ensureWidth(leftTruncated, availableLeftWidth)
     : leftTruncated;
-
   const line = graphPrefix + leftPadded + rightText;
 
   if (isFocused || isMarked) {

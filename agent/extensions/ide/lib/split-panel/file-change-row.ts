@@ -9,7 +9,6 @@ import {
   getFileIconColor,
 } from "../file-icons";
 import { formatFileStats } from "./stats";
-
 interface FileChangeRowProps {
   file: {
     status: string;
@@ -20,8 +19,6 @@ interface FileChangeRowProps {
   isSelected: boolean;
   theme: Theme;
 }
-
-
 export class FileChangeRow implements Component {
   constructor(private readonly props: FileChangeRowProps) {}
 
@@ -34,7 +31,6 @@ export class FileChangeRow implements Component {
 
   private renderLine(width: number): string {
     const { file, isSelected, theme } = this.props;
-
     const statusIcon = getFileStatusIcon(file.status);
     const fileIcon = getFileIcon(file.path);
     const iconHex = getFileIconColor(file.path);
@@ -42,14 +38,12 @@ export class FileChangeRow implements Component {
       iconHex !== null && /^#[0-9a-f]{6}$/i.test(iconHex)
         ? hexColor(iconHex, fileIcon)
         : fileIcon;
-
     const statusColor: "toolDiffAdded" | "toolDiffRemoved" | "warning" =
       file.status === "A"
         ? "toolDiffAdded"
         : file.status === "D"
           ? "toolDiffRemoved"
           : "warning";
-
     const styledPath = theme.fg(statusColor, file.path);
     const stats = formatFileStats(file.insertions, file.deletions);
     const statsCount = stats.text ? stats.text.replace(/[+\-] /, "") : "";
@@ -57,7 +51,6 @@ export class FileChangeRow implements Component {
       statsCount && parseInt(statsCount) > 0
         ? theme.fg(statusColor, `${statusIcon} ${statsCount}`)
         : theme.fg(statusColor, ` ${statusIcon}`);
-
     const prefixWidth = visibleWidth(coloredFileIcon + " ");
     const rightWidth = visibleWidth(statusCountStr);
     const availablePathWidth = Math.max(

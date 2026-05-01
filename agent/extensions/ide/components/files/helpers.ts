@@ -1,6 +1,5 @@
 import type { StatSyncFn } from "node:fs";
 import type { FileInfo } from "./types";
-
 export function getMtimeSorter(
   cwd: string,
   statSync: StatSyncFn,
@@ -11,14 +10,10 @@ export function getMtimeSorter(
     let mtimeB = 0;
     try {
       mtimeA = statSync(join(cwd, a.path)).mtimeMs;
-    } catch {
-      /* use default */
-    }
+    } catch {}
     try {
       mtimeB = statSync(join(cwd, b.path)).mtimeMs;
-    } catch {
-      /* use default */
-    }
+    } catch {}
     return mtimeB - mtimeA;
   };
 }

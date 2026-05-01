@@ -1,9 +1,11 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import { Type, type Static } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
+import type { Static } from "@sinclair/typebox";
 import { textResult } from "../../shared/tool-utils";
 import { throttledFetch } from "../../shared/throttle";
-import { detail, dotJoin, countLabel } from "../../shared/renderers";
+import { detail } from "../../shared/renderers/detail";
+import { dotJoin, countLabel } from "../../shared/renderers/header";
 import { formatPackageSearchResults } from "../../shared/package-registry";
 
 // Parameter schemas
@@ -13,15 +15,12 @@ const SearchNpmPackagesParams = Type.Object({
     Type.Number({ description: "Number of results (default 10, max 100)" }),
   ),
 });
-
 const GetNpmPackageInfoParams = Type.Object({
   package: Type.String({ description: "npm package name" }),
 });
-
 const GetNpmPackageVersionsParams = Type.Object({
   package: Type.String({ description: "npm package name" }),
 });
-
 type SearchNpmPackagesParamsType = Static<typeof SearchNpmPackagesParams>;
 type GetNpmPackageInfoParamsType = Static<typeof GetNpmPackageInfoParams>;
 type GetNpmPackageVersionsParamsType = Static<
@@ -38,21 +37,17 @@ interface NpmSearchObject {
     author?: { name?: string };
   };
 }
-
 interface NpmSearchResponse {
   objects: NpmSearchObject[];
 }
-
 interface NpmMaintainer {
   name?: string;
 }
-
 interface NpmPackageVersion {
   license?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
 }
-
 interface NpmPackageResponse {
   name?: string;
   description?: string;
@@ -81,14 +76,12 @@ async function fetchNpmPackage(
       return response.status === 404
         ? buildNotFoundResult(pkg)
         : buildHttpErrorResult(pkg, errorContext, response);
-
     const data = (await response.json()) as NpmPackageResponse;
     return { ok: true, data };
   } catch (error) {
     return buildFetchErrorResult(pkg, errorContext, error);
   }
 }
-
 function buildNotFoundResult(pkg: string): {
   ok: false;
   result: AgentToolResult<Record<string, unknown>>;
@@ -101,7 +94,6 @@ function buildNotFoundResult(pkg: string): {
     } as AgentToolResult<Record<string, unknown>>,
   };
 }
-
 function buildHttpErrorResult(
   pkg: string,
   errorContext: string,
@@ -120,7 +112,6 @@ function buildHttpErrorResult(
     }),
   };
 }
-
 function buildTextContent(
   text: string,
   details: Record<string, unknown>,
@@ -130,7 +121,6 @@ function buildTextContent(
     details,
   } as AgentToolResult<Record<string, unknown>>;
 }
-
 function buildFetchErrorResult(
   pkg: string,
   errorContext: string,
@@ -142,7 +132,6 @@ function buildFetchErrorResult(
     result: buildTextContent(text, { package: pkg }),
   };
 }
-
 function extractStringOrProperty(
   value: Record<string, string> | string | undefined,
   property: string,
@@ -151,7 +140,6 @@ function extractStringOrProperty(
   if (typeof value === "object" && value !== null) return value[property] ?? "";
   return "";
 }
-
 export default function (pi: ExtensionAPI): void {
   pi.registerTool({
     name: "search-npm-packages",
@@ -236,7 +224,6 @@ async function searchNpmPackages(
         statusText: response.statusText,
       });
     }
-
     const data = (await response.json()) as NpmSearchResponse;
     const packages = (data.objects ?? []).map((obj: NpmSearchObject) => ({
       name: obj.package.name,
@@ -248,7 +235,6 @@ async function searchNpmPackages(
 
     if (packages.length === 0)
       return textResult("No packages found.", { query, count: 0, packages });
-
     const text = formatPackageSearchResults(
       packages,
       packages.length,
@@ -260,13 +246,11 @@ async function searchNpmPackages(
     return buildTextContent(text, { query });
   }
 }
-
 function extractNpmAuthor(
   author: { name?: string } | string | undefined,
 ): string {
   return extractStringOrProperty(author, "name") || "Unknown";
 }
-
 function extractNpmMaintainers(
   maintainers: NpmMaintainer[] | undefined,
 ): string {
@@ -278,22 +262,18 @@ function extractNpmMaintainers(
       .join(", ") || "Unknown"
   );
 }
-
 function extractNpmKeywords(keywords: string[] | undefined): string {
   return Array.isArray(keywords) ? keywords.join(", ") : "None";
 }
-
 function countDependencies(deps: Record<string, string> | undefined): number {
   return deps ? Object.keys(deps).length : 0;
 }
-
 function countDeps(
   info: NpmPackageVersion | undefined,
   key: "dependencies" | "devDependencies",
 ): number {
   return countDependencies(info?.[key]);
 }
-
 function extractNpmPackageInfo(
   data: NpmPackageResponse,
   pkg: string,
@@ -315,26 +295,21 @@ function extractNpmPackageInfo(
     devDependencies: countDeps(latestInfo, "devDependencies"),
   };
 }
-
 function getLatestVersion(data: NpmPackageResponse): string {
   return data?.["dist-tags"]?.latest ?? "";
 }
-
 function getLatestVersionInfo(
   data: NpmPackageResponse,
   latestVersion: string,
 ): NpmPackageVersion | undefined {
   return data?.versions?.[latestVersion];
 }
-
 function getName(data: NpmPackageResponse, pkg: string): string {
   return data?.name ?? pkg;
 }
-
 function getLicense(latestInfo: NpmPackageVersion | undefined): string {
   return latestInfo?.license ?? "Unknown";
 }
-
 function buildNpmPackageFields(
   info: Record<string, unknown>,
 ): { label: string; value: string }[] {
@@ -349,7 +324,7 @@ function buildNpmPackageFields(
     { label: "keywords", value: String(info.keywords) },
     {
       label: "dependencies",
-      value: `${info.dependencies} deps · ${info.devDependencies} devDeps`,
+      value: `${Number(info.dependencies)} deps · ${Number(info.devDependencies)} devDeps`,
     },
   ].filter((f) => f.value);
 }
@@ -359,7 +334,6 @@ async function getNpmPackageInfo(
 ): Promise<AgentToolResult<Record<string, unknown>>> {
   const fetchResult = await fetchNpmPackage(pkg, "get package info");
   if (fetchResult.ok === false) return fetchResult.result;
-
   const info = extractNpmPackageInfo(fetchResult.data, pkg);
   const fields = buildNpmPackageFields(info);
   const sections = [detail(fields)];
@@ -372,11 +346,9 @@ async function getNpmPackageVersions(
 ): Promise<AgentToolResult<Record<string, unknown>>> {
   const fetchResult = await fetchNpmPackage(pkg, "get package versions");
   if (fetchResult.ok === false) return fetchResult.result;
-
   const { data } = fetchResult;
   const versions = Object.keys(data?.versions ?? {});
   const distTags = data?.["dist-tags"] ?? {};
-
   const fields = [
     ...Object.entries(distTags).map(([tag, version]) => ({
       label: tag,
@@ -384,7 +356,6 @@ async function getNpmPackageVersions(
     })),
     { label: "versions", value: versions.join(", ") },
   ];
-
   const sections = [
     dotJoin(countLabel(versions.length, "version")),
     "",

@@ -2,7 +2,6 @@ import { CancellableLoader, Container, Spacer } from "@mariozechner/pi-tui";
 import { DynamicBorder } from "@mariozechner/pi-coding-agent";
 import type { ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "../shared/types";
-
 function createBorderedCustomUI<
   T extends {
     render(): string[];
@@ -25,7 +24,6 @@ function createBorderedCustomUI<
   container.addChild(new Spacer(1));
   container.addChild(new DynamicBorder((s: string) => theme.fg("border", s)));
   container.addChild(new Spacer(1));
-
   const component = createComponent();
 
   return {
@@ -44,7 +42,6 @@ function createBorderedCustomUI<
     dispose() {},
   };
 }
-
 export async function loadAndDisplay<
   TData,
   TComponent extends {
@@ -58,7 +55,6 @@ export async function loadAndDisplay<
   createComponent: (theme: Theme, data: TData) => TComponent,
 ): Promise<void> {
   if (!ctx.hasUI) return;
-
   const data = await ctx.ui.custom<TData | null>(
     (tui, theme, keybindings, done) => {
       const loader = new CancellableLoader(

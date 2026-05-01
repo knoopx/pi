@@ -4,13 +4,11 @@ import type {
   AgentToolResult,
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
-import {
-  dotJoin,
-  table,
-  detail,
-  stateDot,
-  type Column,
-} from "../../shared/renderers";
+import { dotJoin } from "../../shared/renderers/header";
+import { table } from "../../shared/renderers/table/renderer";
+import { detail } from "../../shared/renderers/detail";
+import { stateDot } from "../../shared/renderers/header";
+import type { Column } from "../../shared/renderers/types";
 import { ghCmd } from "./utils";
 import {
   createErrorResult,
@@ -19,7 +17,6 @@ import {
   createViewRenderCall,
   TypeBoxFields,
 } from "./shared";
-
 interface GHRelease {
   tagName: string;
   name: string;
@@ -50,14 +47,12 @@ async function listReleases(
     "--jq",
     '[.[] | {tagName, name, publishedAt, url: "", draft: .isDraft, isPrerelease, assets: []}]',
   ];
-
   const result = await ghCmd(args);
 
   if (result.exitCode !== 0)
     throw new Error(
       `gh release list failed: ${result.stderr || result.stdout}`,
     );
-
   let releases: GHRelease[];
   try {
     releases = JSON.parse(result.stdout) as GHRelease[];
@@ -88,7 +83,6 @@ async function viewRelease(
     throw new Error(
       `gh release view failed: ${result.stderr || result.stdout}`,
     );
-
   let release: GHRelease;
   try {
     release = JSON.parse(result.stdout) as GHRelease;
@@ -98,13 +92,11 @@ async function viewRelease(
 
   return release;
 }
-
 const ListReleasesParams = Type.Object({
   owner: TypeBoxFields.owner,
   repo: TypeBoxFields.repoName,
   limit: TypeBoxFields.listLimit,
 });
-
 const ViewReleaseParams = Type.Object({
   owner: TypeBoxFields.owner,
   repo: TypeBoxFields.repoName,
@@ -112,10 +104,8 @@ const ViewReleaseParams = Type.Object({
     description: "Release tag name (e.g., 'v1.0.0', 'v2.1.3')",
   }),
 });
-
 type ListReleasesParamsType = Static<typeof ListReleasesParams>;
 type ViewReleaseParamsType = Static<typeof ViewReleaseParams>;
-
 function createListReleasesTool() {
   return {
     name: "gh-list-releases",
@@ -233,7 +223,6 @@ async function executeViewRelease(
     details: { release },
   };
 }
-
 function createViewReleaseTool() {
   return {
     name: "gh-view-release",
@@ -273,7 +262,6 @@ Examples:
     renderResult: createTextResultRender(),
   };
 }
-
 export function registerReleaseTools(pi: ExtensionAPI) {
   pi.registerTool(createListReleasesTool());
   pi.registerTool(createViewReleaseTool());

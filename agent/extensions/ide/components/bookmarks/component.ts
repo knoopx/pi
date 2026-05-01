@@ -25,7 +25,6 @@ import {
   formatBookmarkLine,
   filterBookmarksByMode,
 } from "./helpers";
-
 interface BookmarksComponentOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };
@@ -35,7 +34,6 @@ interface BookmarksComponentOptions {
   cwd: string;
   onInsert?: (text: string) => void;
 }
-
 function buildBookmarkActions(options: {
   pi: ExtensionAPI;
   cwd: string;
@@ -44,7 +42,6 @@ function buildBookmarkActions(options: {
   pickerRef: { current: ListPickerComponent | null };
 }): ListPickerAction<BookmarkEntry>[] {
   const { pi, cwd, done, onInsert, pickerRef } = options;
-
   const newAction = makeNewBookmarkAction(pi, cwd, done);
   const deleteAction = makeDeleteBookmarkAction(pi, cwd, pickerRef);
   const fetchAction = makeFetchAction(pi, cwd, pickerRef);
@@ -53,7 +50,6 @@ function buildBookmarkActions(options: {
 
   return [newAction, deleteAction, fetchAction, pushAction, insertAction];
 }
-
 function makeNewBookmarkAction(
   pi: ExtensionAPI,
   cwd: string,
@@ -70,7 +66,6 @@ function makeNewBookmarkAction(
     },
   };
 }
-
 function handleNewBookmarkResult(
   pi: ExtensionAPI,
   item: BookmarkEntry,
@@ -89,16 +84,13 @@ function handleNewBookmarkResult(
     done(null);
     return;
   }
-
   const errorMsg = buildNewBookmarkError(result.stderr, shortId);
   notifyMutation(pi, "error", errorMsg);
 }
-
 function buildNewBookmarkError(stderr: string, shortId: string): string {
   if (stderr) return stderr;
   return `Failed to start work from change ${shortId}`;
 }
-
 function makeDeleteBookmarkAction(
   pi: ExtensionAPI,
   cwd: string,
@@ -120,7 +112,6 @@ function makeDeleteBookmarkAction(
     },
   };
 }
-
 function makeFetchAction(
   pi: ExtensionAPI,
   cwd: string,
@@ -140,7 +131,6 @@ function makeFetchAction(
     },
   };
 }
-
 function makePushAction(
   pi: ExtensionAPI,
   cwd: string,
@@ -160,7 +150,6 @@ function makePushAction(
     },
   };
 }
-
 function makeInsertBookmarkAction(
   onInsert: ((text: string) => void) | undefined,
   done: (result: BookmarkEntry | null) => void,
@@ -176,7 +165,6 @@ function makeInsertBookmarkAction(
     },
   };
 }
-
 function buildBookmarkPickerOptions(
   pi: ExtensionAPI,
   cwd: string,
@@ -203,14 +191,12 @@ function buildBookmarkPickerOptions(
     },
   };
 }
-
 export function createBookmarksComponent(
   options: BookmarksComponentOptions,
 ): ListPickerComponent {
   const { pi, tui, theme, keybindings, done, cwd, onInsert } = options;
   const pickerRef: { current: ListPickerComponent | null } = { current: null };
   const filterModeRef = { value: "all" as BookmarkFilterMode };
-
   const actions = buildBookmarkActions({ pi, cwd, done, onInsert, pickerRef });
   const pickerOptions = buildBookmarkPickerOptions(
     pi,
@@ -218,7 +204,6 @@ export function createBookmarksComponent(
     filterModeRef,
     actions,
   );
-
   const picker = createListPicker<BookmarkEntry>({
     pi,
     tui,

@@ -10,12 +10,10 @@ import {
   type WrappedToolHandler,
 } from "./utils";
 import type { ToolRenderContext } from "./types";
-
 interface LsParams {
   path?: string;
   limit?: number;
 }
-
 export function createLsExecute(
   orig: ToolExecuteFn,
 ): WrappedToolHandler<LsParams> {
@@ -28,7 +26,6 @@ export function createLsExecute(
     };
   })(orig);
 }
-
 export function createLsRenderCall(
   cwd: string,
   home: string,
@@ -51,7 +48,6 @@ export function createLsRenderCall(
       },
     });
 }
-
 export function createLsRenderResult(): (
   result: AgentToolResult<{ text: string }>,
   options: { expanded: boolean; isPartial: boolean },

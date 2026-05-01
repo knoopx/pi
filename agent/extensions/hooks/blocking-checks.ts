@@ -1,7 +1,6 @@
 import type { HookEvent } from "./schema";
 import type { HookResult } from "./types";
 import { NON_BLOCKING_TOOLS } from "./constants";
-
 function checkExitCodeBlock(
   result: HookResult,
 ): { block: true; reason: string } | null {
@@ -13,7 +12,6 @@ function checkExitCodeBlock(
     };
   return null;
 }
-
 function checkJsonBlock(
   result: HookResult,
   event: HookEvent,
@@ -29,7 +27,6 @@ function checkJsonBlock(
 
   return null;
 }
-
 function checkContinueBlock(
   output: NonNullable<HookResult["output"]>,
 ): { block: true; reason: string } | null {
@@ -39,14 +36,12 @@ function checkContinueBlock(
     reason: output.stopReason || "Hook stopped processing",
   };
 }
-
 function checkDecisionBlock(
   output: NonNullable<HookResult["output"]>,
 ): { block: true; reason: string } | null {
   if (output.decision !== "block" || !output.reason) return null;
   return { block: true, reason: output.reason };
 }
-
 function checkPermissionBlock(
   hookOutput: NonNullable<HookResult["output"]>["hookSpecificOutput"],
 ): { block: true; reason: string } | null {
@@ -56,7 +51,6 @@ function checkPermissionBlock(
     reason: hookOutput.permissionDecisionReason || "Hook denied permission",
   };
 }
-
 function checkErrorBlock(
   result: HookResult,
   event: HookEvent,
@@ -75,7 +69,6 @@ function checkErrorBlock(
   }
   return null;
 }
-
 export function shouldBlock(
   result: HookResult,
   event: HookEvent,
@@ -83,10 +76,8 @@ export function shouldBlock(
 ): { block: boolean; reason: string } {
   const exitBlock = checkExitCodeBlock(result);
   if (exitBlock) return exitBlock;
-
   const jsonBlock = checkJsonBlock(result, event);
   if (jsonBlock) return jsonBlock;
-
   const errorBlock = checkErrorBlock(result, event, toolName);
   if (errorBlock) return errorBlock;
 

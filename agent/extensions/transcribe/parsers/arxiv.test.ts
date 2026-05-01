@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parser as arxivParser } from "./arxiv";
+import { arxivParser } from "./arxiv";
 
 describe("arXiv parser", () => {
   describe("matches", () => {

@@ -49,7 +49,6 @@ describe("utils", () => {
             throw new Error("test");
           }),
         } as unknown as Theme;
-
         const result = await loadFilePreviewWithShiki(
           "test.ts",
           content,
@@ -151,7 +150,6 @@ describe("utils", () => {
         const terminalWidth = 295;
         const problematicContent =
           "[48;2;30;19;60m [38;2;250;208;0m- [39m[38;2;248;248;248m[1m[32magent/extens[0m]8;;";
-
         const result = ensureWidth(problematicContent, terminalWidth);
         const actualWidth = stringWidth(result);
 

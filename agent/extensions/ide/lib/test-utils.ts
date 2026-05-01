@@ -5,7 +5,6 @@ import type { TUI, Terminal } from "@mariozechner/pi-tui";
 import { parseHexRgb } from "./split-panel/utils";
 import type { Change } from "./types";
 import { createMockExtensionAPI } from "../../../shared/test-utils";
-
 interface ChalkStyler {
   bold(t: string): string;
   italic(t: string): string;
@@ -17,20 +16,16 @@ interface ChalkStyler {
 // Real Theme delegates to chalk, which silently passes through on non-TTY.
 // Force truecolor so mock output matches TTY behavior.
 const c = chalk.constructor({ level: 3 }) as ChalkStyler;
-
-// ─── Test terminal (implements Terminal interface) ────────────────────────
-
 export class TestTerminal implements Terminal {
   private _columns: number;
   private _rows: number;
-  public written: string[] = [];
-  private inputCallback?: (data: string) => void;
 
   constructor(columns = 120, rows = 30) {
     this._columns = columns;
     this._rows = rows;
   }
 
+  // fallow-ignore-next-line unused-class-members — accessed via type assertion in tests
   get columns(): number {
     return this._columns;
   }
@@ -39,6 +34,7 @@ export class TestTerminal implements Terminal {
     this._columns = value;
   }
 
+  // fallow-ignore-next-line unused-class-members — accessed via type assertion in tests
   get rows(): number {
     return this._rows;
   }
@@ -47,24 +43,13 @@ export class TestTerminal implements Terminal {
     this._rows = value;
   }
 
+  start(_onInput: (data: string) => void, _onResize: () => void): void {}
+  stop(): void {}
+  async drainInput(): Promise<void> {}
+  write(_data: string): void {}
   get kittyProtocolActive(): boolean {
     return false;
   }
-
-  start(onInput: (data: string) => void, _onResize: () => void): void {
-    this.inputCallback = onInput;
-  }
-
-  stop(): void {}
-
-  drainInput(_maxMs?: number, _idleMs?: number): Promise<void> {
-    return Promise.resolve();
-  }
-
-  write(data: string): void {
-    this.written.push(data);
-  }
-
   moveBy(_lines: number): void {}
   hideCursor(): void {}
   showCursor(): void {}
@@ -74,9 +59,6 @@ export class TestTerminal implements Terminal {
   setTitle(_title: string): void {}
   setProgress(_active: boolean): void {}
 }
-
-// ─── Mock data helpers ────────────────────────────────────────────────────
-
 export function createMockChange(overrides?: Partial<Change>): Change {
   return {
     changeId: "a",
@@ -90,9 +72,6 @@ export function createMockChange(overrides?: Partial<Change>): Change {
     ...overrides,
   };
 }
-
-// ─── Mock theme helpers ────────────────────────────────────────────────────
-
 function resolveColor(
   value: string | number,
   vars: Record<string, string | number>,
@@ -110,17 +89,14 @@ function resolveColor(
   }
   return resolveColor(resolved, vars);
 }
-
 function fgAnsi(hex: string): string {
   const [r, g, b] = parseHexRgb(hex);
   return `\x1b[38;2;${r};${g};${b}m`;
 }
-
 function bgAnsi(hex: string): string {
   const [r, g, b] = parseHexRgb(hex);
   return `\x1b[48;2;${r};${g};${b}m`;
 }
-
 const BG_KEYS = new Set([
   "selectedBg",
   "userMessageBg",
@@ -129,7 +105,6 @@ const BG_KEYS = new Set([
   "toolSuccessBg",
   "toolErrorBg",
 ]);
-
 export function createMockTheme(): Theme {
   // Inline the custom.json palette so tests stay fully self-contained.
   const vars: Record<string, string> = {
@@ -150,7 +125,6 @@ export function createMockTheme(): Theme {
     base0E: "#faefa5",
     base0F: "#fb94ff",
   };
-
   const rawColors: Record<string, string> = {
     accent: "base0D",
     bashMode: "base08",
@@ -204,12 +178,10 @@ export function createMockTheme(): Theme {
     userMessageText: "base05",
     warning: "base0A",
   };
-
   const resolved: Record<string, string> = {};
   for (const [key, value] of Object.entries(rawColors)) {
     resolved[key] = resolveColor(value, vars) as string;
   }
-
   const fgMap = new Map<string, string>();
   const bgMap = new Map<string, string>();
 
@@ -250,9 +222,6 @@ export function createMockTheme(): Theme {
     },
   } as unknown as Theme;
 }
-
-// ─── Mock ExtensionAPI helpers ─────────────────────────────────────────────
-
 export function createMockPi(overrides?: Partial<ExtensionAPI>): ExtensionAPI {
   return {
     ...createMockExtensionAPI(),
@@ -265,7 +234,6 @@ export function createMockPi(overrides?: Partial<ExtensionAPI>): ExtensionAPI {
     ...overrides,
   } as unknown as ExtensionAPI;
 }
-
 export function createMockTui() {
   const terminal = new TestTerminal(120, 30);
   return {
@@ -274,22 +242,17 @@ export function createMockTui() {
     setFocus: vi.fn(),
   } as unknown as TUI;
 }
-
-// ─── Mock exec setup helper ──────────────────────────────────────────────
-
 interface ExecResult {
   code: number;
   stdout: string;
   stderr: string;
 }
-
 interface MockExecPi {
   pi: ExtensionAPI;
   execMock: ReturnType<
     typeof vi.fn<(...args: unknown[]) => Promise<ExecResult>>
   >;
 }
-
 export function createMockExecPi(): MockExecPi {
   const execMock = vi.fn<(...args: unknown[]) => Promise<ExecResult>>();
   return {
@@ -297,13 +260,11 @@ export function createMockExecPi(): MockExecPi {
     pi: { exec: execMock } as unknown as ExtensionAPI,
   };
 }
-
 interface ExecRoute {
   command: string;
   args: string[];
   result: ExecResult;
 }
-
 export function createMockExecPiWithRoutes(routes: ExecRoute[]): MockExecPi {
   const execMock = vi
     .fn<(...args: unknown[]) => Promise<ExecResult>>()

@@ -1,8 +1,5 @@
-
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { sanitizeDescription } from "./core";
-
-
 export async function loadOpLog(
   pi: ExtensionAPI,
   cwd: string,
@@ -36,8 +33,6 @@ export async function loadOpLog(
     })
     .filter((e) => e.opId);
 }
-
-
 export async function getOpShow(
   pi: ExtensionAPI,
   cwd: string,
@@ -49,8 +44,6 @@ export async function getOpShow(
   if (result.code === 0) return result.stdout.split("\n");
   return [`Error: ${result.stderr}`];
 }
-
-
 export async function restoreOp(
   pi: ExtensionAPI,
   cwd: string,
@@ -61,8 +54,6 @@ export async function restoreOp(
     return { success: true, output: result.stderr || result.stdout };
   return { success: false, error: result.stderr };
 }
-
-
 export async function undoOp(
   pi: ExtensionAPI,
   cwd: string,
@@ -72,8 +63,6 @@ export async function undoOp(
     return { success: true, output: result.stderr || result.stdout };
   return { success: false, error: result.stderr };
 }
-
-
 export interface OpLogEntry {
   opId: string;
   description: string;

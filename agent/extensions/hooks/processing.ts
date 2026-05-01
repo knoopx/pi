@@ -7,7 +7,6 @@ import { doesRuleMatch } from "./pattern-matching";
 import type { HookProcessState, HookVariables, HookResult } from "./types";
 import { runHook } from "./hook-execution";
 import { shouldBlock } from "./blocking-checks";
-
 export function shouldExecuteRule(
   rule: HookRule,
   event: HookEvent,
@@ -18,7 +17,6 @@ export function shouldExecuteRule(
   if (!doesRuleMatch(rule, toolName, input)) return false;
   return true;
 }
-
 export async function processHookExecution(
   pi: ExtensionAPI,
   hookRunContext: {
@@ -36,7 +34,6 @@ export async function processHookExecution(
 ): Promise<{ block: true; reason: string } | undefined> {
   const result = await runHook(pi, hookRunContext);
   executionContext.state.results.push(result);
-
   const blockCheck = shouldBlock(
     result,
     executionContext.event,
@@ -56,7 +53,6 @@ export async function processHookExecution(
     }
     return { block: true, reason: blockCheck.reason };
   }
-
   const additionalContext = getAdditionalContext(result);
   if (additionalContext)
     executionContext.state.additionalContexts.push(additionalContext);
@@ -73,7 +69,6 @@ export async function processHookExecution(
 
   return undefined;
 }
-
 function getAdditionalContext(result: HookResult): string | undefined {
   return result.output?.hookSpecificOutput?.additionalContext;
 }

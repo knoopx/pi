@@ -1,5 +1,4 @@
 import type { HooksConfig } from "./schema";
-
 const defaults: HooksConfig = [
   {
     group: "javascript",
@@ -106,5 +105,4 @@ const defaults: HooksConfig = [
     ],
   },
 ];
-
 export default defaults;

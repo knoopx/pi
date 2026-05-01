@@ -1,8 +1,5 @@
-
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { sanitizeDescription } from "./core";
-
-
 export async function setBookmarkToChange(
   pi: ExtensionAPI,
   cwd: string,
@@ -11,7 +8,6 @@ export async function setBookmarkToChange(
 ): Promise<void> {
   const normalizedBookmarkName = bookmarkName.split("@")[0]?.trim();
   if (!normalizedBookmarkName) throw new Error("Bookmark name is required");
-
   const result = await pi.exec(
     "jj",
     [
@@ -30,8 +26,6 @@ export async function setBookmarkToChange(
   if (result.code !== 0)
     throw new Error(result.stderr || "Failed to set bookmark");
 }
-
-
 export async function listBookmarksByChange(
   pi: ExtensionAPI,
   cwd: string,
@@ -50,7 +44,6 @@ export async function listBookmarksByChange(
   );
 
   if (result.code !== 0) return [];
-
   const seen = new Set<string>();
   const entries: {
     bookmark: string;
@@ -74,8 +67,6 @@ export async function listBookmarksByChange(
 
   return entries;
 }
-
-
 export async function forgetBookmark(
   pi: ExtensionAPI,
   cwd: string,
@@ -83,7 +74,6 @@ export async function forgetBookmark(
 ): Promise<string> {
   const bookmarkName = bookmarkRef.split("@")[0]?.trim();
   if (!bookmarkName) return "";
-
   const result = await pi.exec(
     "jj",
     ["bookmark", "forget", "--include-remotes", bookmarkName],

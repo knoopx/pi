@@ -25,7 +25,6 @@ describe("retry", () => {
         .mockRejectedValueOnce(new Error("Network error"))
         .mockRejectedValueOnce(new Error("Timeout"))
         .mockResolvedValue(42);
-
       const result = await retry(fn, { maxRetries: 3, retryDelay: 1 });
       expect(result).toBe(42);
       expect(fn).toHaveBeenCalledTimes(3);
@@ -36,7 +35,6 @@ describe("retry", () => {
         .fn()
         .mockRejectedValueOnce(new Error("HTTP 503: Service Unavailable"))
         .mockResolvedValue("ok");
-
       const result = await retry(fn, { maxRetries: 2, retryDelay: 1 });
       expect(result).toBe("ok");
       expect(fn).toHaveBeenCalledTimes(2);

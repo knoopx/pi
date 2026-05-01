@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
+import type { ExecResult } from "@mariozechner/pi-coding-agent";
 import type {
+  ExtensionAPI,
   ExtensionContext,
   KeybindingsManager,
 } from "@mariozechner/pi-coding-agent";
@@ -9,9 +11,7 @@ import {
   createMockPi,
   createMockTui,
 } from "../../lib/test-utils";
-
 const theme = createMockTheme();
-
 const SYMBY_TYPE: Record<string, string> = {
   class: "Animal|c|./src/models.ts|1-30\nPlant|c|./src/models.ts|32-60",
   function:
@@ -20,20 +20,21 @@ const SYMBY_TYPE: Record<string, string> = {
   enum: "Status|e|./src/types.ts|1-8\nRole|e|./src/types.ts|10-16",
   all: "Animal|c|./src/models.ts|1-30\nparseInput|f|./src/utils.ts|1-15\nrender|m|./src/view.ts|5-20\nStatus|e|./src/types.ts|1-8",
 };
-
 function resolveCmOutput(args: string[]): string {
   const typeIdx = args.indexOf("--type");
   if (typeIdx === -1 || typeIdx + 1 >= args.length)
     return SYMBY_TYPE["all"] ?? "";
   const typeFilter = args[typeIdx + 1];
-  // For "all", return everything
   if (typeFilter === "all") return Object.values(SYMBY_TYPE).join("\n");
   return SYMBY_TYPE[typeFilter] ?? "";
 }
-
-function createExecMock(options?: {
-  cmStdout?: string;
-}): ReturnType<typeof vi.fn> {
+interface ExecMock {
+  (command: string, args?: string[]): Promise<ExecResult>;
+  mock: {
+    calls: unknown[][];
+  };
+}
+function createExecMock(options?: { cmStdout?: string }): ExecMock {
   const { cmStdout = "" } = options ?? {};
   return vi.fn().mockImplementation((command: string, args?: string[]) => {
     if (command === "cm")
@@ -45,7 +46,6 @@ function createExecMock(options?: {
     return { code: 1, stdout: "", stderr: `unexpected command: ${command}` };
   });
 }
-
 const CTRL_SLASH = "\x1b[27;5;47~";
 
 async function waitForLoaded(
@@ -59,7 +59,7 @@ async function waitForLoaded(
 
 async function cycleFilter(
   picker: ReturnType<typeof createSymbolsComponent>,
-  execMock: ReturnType<typeof vi.fn>,
+  execMock: ExecMock,
   expectedCallCount: number,
 ) {
   picker.handleInput(CTRL_SLASH);
@@ -67,23 +67,20 @@ async function cycleFilter(
     expect(getCmCalls(execMock)).toHaveLength(expectedCallCount);
   });
 }
-
-function getCmCalls(execMock: ReturnType<typeof vi.fn>) {
+function getCmCalls(execMock: ExecMock) {
   return execMock.mock.calls.filter(([cmd]) => cmd === "cm");
 }
 
 async function createPicker(options?: { cmStdout?: string }): Promise<{
   picker: ReturnType<typeof createSymbolsComponent>;
-  execMock: ReturnType<typeof vi.fn>;
+  execMock: ExecMock;
   tui: ReturnType<typeof createMockTui>;
 }> {
   const execMock = createExecMock(options);
   // File previews use fs.readFile directly, no cat mock needed
-  const pi = { ...createMockPi(), exec: execMock } as unknown as any;
+  const pi: ExtensionAPI = { ...createMockPi(), exec: execMock };
   const tui = createMockTui();
-
   const ctx = { cwd: "/tmp/test-project" } as ExtensionContext;
-
   const picker = createSymbolsComponent({
     pi,
     tui,
@@ -104,11 +101,9 @@ describe("symbols component", () => {
       const { picker, execMock } = await createPicker({
         cmStdout: "MyClass|c|./src/MyClass.ts|1-20",
       });
-
       let cmCalls = getCmCalls(execMock);
       expect(cmCalls).toHaveLength(1);
 
-      // Press ctrl+/ - should cycle to "function" and reload
       picker.handleInput(CTRL_SLASH);
 
       await vi.waitFor(() => {
@@ -119,7 +114,6 @@ describe("symbols component", () => {
       expect(cmCalls[1][1]).toContain("--type");
       expect(cmCalls[1][1]).toContain("function");
 
-      // Press ctrl+/ again - should cycle to "method" and reload
       picker.handleInput(CTRL_SLASH);
 
       await vi.waitFor(() => {
@@ -135,13 +129,11 @@ describe("symbols component", () => {
         cmStdout: "Test|f|./src/test.ts|1-5",
       });
 
-      // Cycle through all filter types and wrap back to class
-      await cycleFilter(picker, execMock, 2); // class -> function
-      await cycleFilter(picker, execMock, 3); // function -> method
-      await cycleFilter(picker, execMock, 4); // method -> enum
-      await cycleFilter(picker, execMock, 5); // enum -> all
-      await cycleFilter(picker, execMock, 6); // all -> class (wraps)
-
+      await cycleFilter(picker, execMock, 2);
+      await cycleFilter(picker, execMock, 3);
+      await cycleFilter(picker, execMock, 4);
+      await cycleFilter(picker, execMock, 5);
+      await cycleFilter(picker, execMock, 6);
       const cmCalls = getCmCalls(execMock);
       const wrapCall = cmCalls[5];
       expect(wrapCall[1]).toContain("--type");
@@ -159,10 +151,8 @@ describe("symbols component", () => {
 
       (tui.requestRender as ReturnType<typeof vi.fn>).mockClear();
 
-      // Press ctrl+/
       picker.handleInput(CTRL_SLASH);
 
-      // Wait for reload to trigger requestRender
       await vi.waitFor(() => {
         expect(tui.requestRender).toHaveBeenCalled();
       });
@@ -174,24 +164,20 @@ describe("symbols component", () => {
 
       expect(picker.render(80)).toMatchSnapshot("initial - class filter");
 
-      // Cycle to function, wait for reload
       picker.handleInput(CTRL_SLASH);
       await waitForLoaded(picker);
       expect(picker.render(80)).toMatchSnapshot(
         "after cycle - function filter",
       );
 
-      // Cycle to method, wait for reload
       picker.handleInput(CTRL_SLASH);
       await waitForLoaded(picker);
       expect(picker.render(80)).toMatchSnapshot("after cycle - method filter");
 
-      // Cycle to enum, wait for reload
       picker.handleInput(CTRL_SLASH);
       await waitForLoaded(picker);
       expect(picker.render(80)).toMatchSnapshot("after cycle - enum filter");
 
-      // Cycle to all (shown as *), wait for reload
       picker.handleInput(CTRL_SLASH);
       await waitForLoaded(picker);
       expect(picker.render(80)).toMatchSnapshot("after cycle - all filter");
@@ -223,13 +209,10 @@ describe("symbols component", () => {
         cmStdout: "TestClass|c|./src/Test.ts|1-5",
       });
 
-      // Cycle through to "all" (class -> function -> method -> enum -> all)
       await cycleFilter(picker, execMock, 2);
       await cycleFilter(picker, execMock, 3);
       await cycleFilter(picker, execMock, 4);
       await cycleFilter(picker, execMock, 5);
-
-      // The "all" cm call should NOT contain --type
       const cmCalls = getCmCalls(execMock);
       const allCall = cmCalls[4];
       expect(allCall[1]).not.toContain("--type");

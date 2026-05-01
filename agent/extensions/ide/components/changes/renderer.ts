@@ -1,4 +1,3 @@
-
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import type { ChangesState } from "./state";
 import { calculateDimensions } from "../../lib/split-panel/layout";
@@ -8,7 +7,6 @@ import { ChangeListPane } from "../../lib/split-panel/change-list-pane";
 import { FileListPane } from "../../lib/split-panel/file-list-pane";
 import { DiffPane } from "../../lib/split-panel/diff-pane";
 import stringWidth from "string-width";
-
 export class Renderer {
   private statusText: string | null = null;
 
@@ -32,12 +30,10 @@ export class Renderer {
       rightSplit: true,
       rightTopRatio: 0.3,
     });
-
     const filterName =
       REVISION_FILTERS[this.state.currentFilterIndex % REVISION_FILTERS.length]
         ?.name ?? "Stack";
     const helpTextWithStatus = this.formatHelpText(helpText);
-
     const leftTitle = ` ${filterName} (${this.state.changes.length})`;
     const rightTopTitle = this.renderRightTopTitle(dims.rightW);
     const rightBottomTitle = this.renderRightBottomTitle();
@@ -58,7 +54,6 @@ export class Renderer {
       height: dims.contentH,
       theme: this.theme,
     });
-
     const filePane = new FileListPane({
       files: this.state.files,
       selectedIndex: this.state.selectionState.fileIndex,
@@ -67,7 +62,6 @@ export class Renderer {
       focus: this.state.selectionState.focus,
       theme: this.theme,
     });
-
     const diffPane = new DiffPane({
       lines: this.state.diffContent,
       scroll: this.state.selectionState.diffScroll,
@@ -112,8 +106,6 @@ export class Renderer {
       ? ` ${this.theme.fg("dim", this.state.selectedChange.author)}`
       : "";
 
-    // ANSI-aware padding: expand spaces between desc and author so the
-    // author is pushed to the right edge of the title row.
     const idStr = this.theme.fg("dim", id);
     const visibleLen = stringWidth(idStr) + desc.length + stringWidth(author);
     const padLen = Math.max(0, width - 2 - visibleLen);

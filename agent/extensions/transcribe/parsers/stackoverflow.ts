@@ -1,14 +1,10 @@
-import { BROWSER_HEADERS, FETCH_OPTIONS } from "../lib/constants.js";
-import { formatAge, formatNumber, stripHtml } from "../lib/formatters.js";
-import { defineParser } from "../lib/parser-utils.js";
-import { retry } from "../lib/retry.js";
-
+import { BROWSER_HEADERS, FETCH_OPTIONS } from "../lib/constants";
+import { formatAge, formatNumber, stripHtml } from "../lib/formatters";
+import { defineParser } from "../lib/parser-utils";
+import { retry } from "../lib/retry";
 const BASE = "https://stackoverflow.com";
 const API = "https://api.stackexchange.com/2.3";
 const SO_FILTER = "!)3nIZKx6WpNKLbI7rOJ]GqFyHlAeLXvT4MR1YjUuQ0oCmDfE2gSb5t8w";
-
-// --- Types ---
-
 interface SoQuestion {
   question_id: number;
   title: string;
@@ -29,7 +25,6 @@ interface SoQuestion {
   snippet?: string;
   accepted_answer_id?: number;
 }
-
 interface SoAnswer {
   answer_id: number;
   score: number;
@@ -43,16 +38,13 @@ interface SoAnswer {
   body?: string;
   title?: string;
 }
-
 interface SoApiPage<T> {
   items: T[];
   has_more: boolean;
   quota_remaining: number;
   total: number;
 }
-
 type SoKind = "question" | "questions" | "search" | "tagged" | "users" | "user";
-
 interface ParsedSoUrl {
   kind: SoKind;
   questionId?: number;
@@ -62,18 +54,13 @@ interface ParsedSoUrl {
   userId?: number;
   userName?: string;
 }
-
-// --- URL parsing ---
-
 function parseStackOverflowUrl(url: string): ParsedSoUrl | null {
   const match = url.match(
     /^https?:\/\/(?:www\.)?stackoverflow\.com(?:\/(.+))?$/,
   );
   if (!match) return null;
-
   const fullPath = match[1]?.replace(/\/+$/, "") || "";
   if (!fullPath) return { kind: "questions" };
-
   const [pathPart, queryString] = fullPath.split("?");
   const parts = pathPart.split("/").filter(Boolean);
   const params = new URLSearchParams(queryString || "");
@@ -81,7 +68,6 @@ function parseStackOverflowUrl(url: string): ParsedSoUrl | null {
 
   return dispatchSoPath(first, parts, params);
 }
-
 function dispatchSoPath(
   first: string,
   parts: string[],
@@ -92,7 +78,6 @@ function dispatchSoPath(
   if (first === "users") return tryParseUsersPath(parts);
   return null;
 }
-
 function tryParseSearch(params: URLSearchParams): ParsedSoUrl {
   const q = params.get("q") || "";
   const tab = params.get("tab") || "relevance";
@@ -104,7 +89,6 @@ function tryParseSearch(params: URLSearchParams): ParsedSoUrl {
   };
   return { kind: "search", query: q, sort: sortMap[tab] || "relevance" };
 }
-
 function tryParseQuestionsPath(
   parts: string[],
   params: URLSearchParams,
@@ -113,20 +97,17 @@ function tryParseQuestionsPath(
     const tab = params.get("tab") || "votes";
     return { kind: "tagged", tag: parts[2], sort: tab };
   }
-
   const idResult = tryParseQuestionId(parts);
   if (idResult) return idResult;
 
   return { kind: "questions" };
 }
-
 function tryParseQuestionId(parts: string[]): ParsedSoUrl | null {
   if (!parts[1]) return null;
   const id = parseInt(parts[1], 10);
   if (!isNaN(id)) return { kind: "question", questionId: id };
   return null;
 }
-
 function tryParseUsersPath(parts: string[]): ParsedSoUrl | null {
   if (parts[1]) {
     const id = parseInt(parts[1], 10);
@@ -137,8 +118,6 @@ function tryParseUsersPath(parts: string[]): ParsedSoUrl | null {
   return { kind: "users" };
 }
 
-// --- API helpers ---
-
 async function fetchSoApi<T>(
   endpoint: string,
   params: Record<string, string> = {},
@@ -148,27 +127,20 @@ async function fetchSoApi<T>(
   for (const [k, v] of Object.entries(params)) {
     url.searchParams.set(k, v);
   }
-
   const fetchWithRetryInner = async (): Promise<SoApiPage<T>> => {
     const res = await fetch(url.toString(), {
-      headers: {
-        ...BROWSER_HEADERS,
-      },
+      headers: BROWSER_HEADERS,
       signal,
     });
     if (!res.ok) throw new Error(`SO API ${res.status}: ${res.statusText}`);
-    return (await res.json()) as SoApiPage<T>;
+    return res.json() as unknown as SoApiPage<T>;
   };
 
-  const result = retry(fetchWithRetryInner, FETCH_OPTIONS);
-  return result as unknown as Promise<SoApiPage<T>>;
+  return retry(fetchWithRetryInner, FETCH_OPTIONS);
 }
-
 function formatTags(tags: string[]): string {
   return tags.map((t) => `[${t}]`).join(" ");
 }
-
-// --- Question detail view ---
 
 async function handleQuestion(
   questionId: number,
@@ -179,10 +151,8 @@ async function handleQuestion(
     { filter: SO_FILTER },
     signal,
   );
-
   const question = qData.items[0];
   if (!question) throw new Error(`Question ${questionId} not found`);
-
   const parts: string[] = [`# ${question.title}`];
   if (question.tags.length) parts.push(formatTags(question.tags));
   parts.push(buildQuestionMeta(question), buildQuestionStats(question));
@@ -197,7 +167,6 @@ async function handleQuestion(
   parts.push(`[View on Stack Overflow](${question.link})`);
   return parts.join("\n");
 }
-
 function buildQuestionMeta(q: SoQuestion): string {
   const meta: string[] = [];
   if (q.owner) {
@@ -208,7 +177,6 @@ function buildQuestionMeta(q: SoQuestion): string {
   if (q.creation_date) meta.push(formatAge(q.creation_date));
   return meta.join(" \u2022 ");
 }
-
 function buildQuestionStats(q: SoQuestion): string {
   return [
     `${formatNumber(q.score)} votes`,
@@ -227,7 +195,6 @@ async function appendAnswers(
     { sort: "votes", order: "desc", filter: SO_FILTER },
     signal,
   );
-
   const answers = answersData.items;
   if (!answers.length) return;
 
@@ -242,7 +209,6 @@ async function appendAnswers(
     parts.push("", `... and ${answers.length - 5} more answers`);
   }
 }
-
 function renderAnswer(a: SoAnswer): string[] {
   const acceptedBadge = a.is_accepted ? "\u2713 " : "";
   const lines: string[] = [
@@ -262,9 +228,6 @@ function renderAnswer(a: SoAnswer): string[] {
 
   return lines;
 }
-
-// --- Question listing (search, tagged, latest) ---
-
 function renderQuestionList(title: string, questions: SoQuestion[]): string[] {
   const lines: string[] = [`# ${title}`, ""];
 
@@ -275,7 +238,6 @@ function renderQuestionList(title: string, questions: SoQuestion[]): string[] {
 
   return lines;
 }
-
 function renderQuestionItem(rank: number, q: SoQuestion): string[] {
   const meta: string[] = [
     `${formatNumber(q.score)} votes`,
@@ -284,7 +246,6 @@ function renderQuestionItem(rank: number, q: SoQuestion): string[] {
   ];
   if (q.owner) meta.push(`by ${q.owner.display_name}`);
   if (q.last_activity_date) meta.push(formatAge(q.last_activity_date));
-
   const lines: string[] = [`**${rank}. ${q.title}**`, meta.join(" \u2022 ")];
   if (q.tags.length) lines.push(formatTags(q.tags));
 
@@ -313,7 +274,6 @@ async function handleSearch(
     },
     signal,
   );
-
   const lines = renderQuestionList(
     `Stack Overflow — Search "${query}"`,
     data.items,
@@ -334,7 +294,6 @@ async function handleTagged(
     frequent: "frequent",
     votes: "votes",
   };
-
   const data = await fetchSoApi<SoQuestion>(
     `questions/tagged/${tag}`,
     {
@@ -345,7 +304,6 @@ async function handleTagged(
     },
     signal,
   );
-
   const lines = renderQuestionList(
     `Stack Overflow — Tagged [${tag}] (${data.total} questions)`,
     data.items,
@@ -364,25 +322,28 @@ async function handleQuestions(signal?: AbortSignal): Promise<string> {
     },
     signal,
   );
-
   const lines = renderQuestionList(
     "Stack Overflow — Latest Questions",
     data.items,
   );
   return lines.join("\n");
 }
-
-// --- Parser export ---
-
 function dispatchSo(
   parsed: ParsedSoUrl,
   signal?: AbortSignal,
 ): Promise<string> {
   const handlers: Record<SoKind, () => Promise<string>> = {
-    question: () => handleQuestion(parsed.questionId!, signal),
+    question: () => {
+      if (!parsed.questionId)
+        throw new Error("Missing Stack Overflow question id");
+      return handleQuestion(parsed.questionId, signal);
+    },
     search: () =>
       handleSearch(parsed.query || "", parsed.sort || "relevance", signal),
-    tagged: () => handleTagged(parsed.tag!, parsed.sort || "votes", signal),
+    tagged: () => {
+      if (!parsed.tag) throw new Error("Missing Stack Overflow tag");
+      return handleTagged(parsed.tag, parsed.sort || "votes", signal);
+    },
     questions: () => handleQuestions(signal),
     users: () => {
       throw new Error("Stack Overflow users listing is not supported");
@@ -393,8 +354,7 @@ function dispatchSo(
   };
   return handlers[parsed.kind]();
 }
-
-export const parser = defineParser(
+export const stackoverflowParser = defineParser(
   "Stack Overflow",
   (url) => /^https?:\/\/(?:www\.)?stackoverflow\.com\//i.test(url),
   parseStackOverflowUrl,

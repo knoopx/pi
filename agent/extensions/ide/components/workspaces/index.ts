@@ -26,7 +26,6 @@ import {
   type WorkspaceCacheStore,
   type WorkspaceCache,
 } from "./data-loading";
-
 function calculateNavigationTarget(
   currentIndex: number,
   maxIndex: number,
@@ -52,7 +51,6 @@ import {
   generateWorkspaceName,
 } from "../../workspace";
 import { openEditor } from "../../lib/editor-utils";
-
 export interface WorkspacesComponentOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };
@@ -61,14 +59,12 @@ export interface WorkspacesComponentOptions {
   done: (result?: void) => void;
   ctx: ExtensionContext;
 }
-
 export function createWorkspacesComponent(
   options: WorkspacesComponentOptions,
 ): WorkspacesComponentAPI {
   const component = new WorkspaceComponent(options);
   return component as unknown as WorkspacesComponentAPI;
 }
-
 interface WorkspacesComponentAPI {
   render(width: number): string[];
   handleInput(data: string): void;
@@ -102,7 +98,6 @@ class WorkspaceComponent implements Component {
     this.ctx = ctx;
     this.state = createWorkspaceState();
     this.cacheStore = createCacheStore();
-
     const globalBindings = this.getGlobalBindings();
     const workspaceActionBindings = this.getWorkspaceActionBindings();
     const leftPaneBindings = this.getLeftPaneBindings();
@@ -393,7 +388,6 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
       changes: this.state.changes,
       diffs: new Map(),
     }));
-
     const changeId = this.state.changes[this.state.fileIndex]?.changeId;
     if (!changeId) {
       this.setDiffContent([]);
@@ -413,13 +407,11 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
       changes: [],
       diffs: new Map(),
     }));
-
     const file = this.state.files[this.state.fileIndex];
     if (!file) {
       this.setDiffContent([]);
       return;
     }
-
     const diffKey = file.path ?? "";
     await this.loadCachedOrFetchDiff(cache, diffKey, async () => {
       const { diff } = await getRawDiff(this.pi, ws.path, "@", file.path);

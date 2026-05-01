@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
-import type { Column } from "../../shared/renderers";
+import type { Column } from "../../shared/renderers/types";
 
 import { ghCmd, ghCmdJson } from "./utils";
 import {
@@ -11,7 +11,6 @@ import {
   registerCreateTool,
   ViewParamsSchema,
 } from "./shared";
-
 interface GHPR {
   number: number;
   title: string;
@@ -26,7 +25,6 @@ interface GHPR {
   mergeable: string;
   reviewDecision: string;
 }
-
 function listPRs(
   owner: string,
   repo: string,
@@ -49,7 +47,6 @@ function listPRs(
 
   return ghCmdJson<GHPR[]>(args, "pr list");
 }
-
 function viewPR(owner: string, repo: string, prNumber: number): Promise<GHPR> {
   return ghCmdJson<GHPR>(
     [
@@ -65,7 +62,6 @@ function viewPR(owner: string, repo: string, prNumber: number): Promise<GHPR> {
     "pr view",
   );
 }
-
 interface CreatePROpts {
   owner: string;
   repo: string;
@@ -75,7 +71,6 @@ interface CreatePROpts {
   base?: string;
   draft?: boolean;
 }
-
 function createPR({
   owner,
   repo,
@@ -98,13 +93,11 @@ function createPR({
 
   return ghCmd(args);
 }
-
 const ListPRsParams = createListParamsSchema(
   "List pull requests in a GitHub repository",
   ["open", "closed", "merged", "all"],
   "PRs",
 );
-
 const CreatePRParams = Type.Object({
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
@@ -138,15 +131,12 @@ const CreatePRParams = Type.Object({
     }),
   ),
 });
-
 type CreatePRParamsType = Static<typeof CreatePRParams>;
-
 function createPrColumns(): Column[] {
   return createBasicColumns(
     (r) => `${r.base} ← ${r.head} · ${r.author} · ${r.date}\n${r.url}`,
   );
 }
-
 function createPrRowMapper() {
   return (pr: GHPR) => ({
     "#": `#${pr.number}`,
@@ -159,7 +149,6 @@ function createPrRowMapper() {
     url: pr.html_url,
   });
 }
-
 function createPrFields() {
   return (pr: GHPR) => [
     { label: "title", value: `#${pr.number} ${pr.title}` },
@@ -172,7 +161,6 @@ function createPrFields() {
     { label: "url", value: pr.html_url },
   ];
 }
-
 function createListPRsTool() {
   return {
     toolName: "gh-list-prs",
@@ -195,7 +183,6 @@ Examples:
     rowMapper: createPrRowMapper(),
   };
 }
-
 function createViewPRTool() {
   return {
     toolName: "gh-view-pr",
@@ -217,7 +204,6 @@ Examples:
     includeBody: true,
   };
 }
-
 function createCreatePRTool() {
   return {
     toolName: "gh-create-pr",
@@ -260,7 +246,6 @@ Examples:
     successMessagePrefix: "✓ PR created",
   };
 }
-
 export function registerPRTools(pi: ExtensionAPI) {
   registerListTool(pi, createListPRsTool());
   registerViewTool(pi, createViewPRTool());

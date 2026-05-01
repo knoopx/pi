@@ -1,6 +1,5 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import type { MarkdownTheme } from "@mariozechner/pi-tui";
-
 export function createMarkdownTheme(theme: Theme): MarkdownTheme {
   return {
     heading: (text) => theme.fg("mdHeading", theme.bold(text)),

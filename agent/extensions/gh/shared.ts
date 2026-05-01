@@ -6,14 +6,14 @@ import type {
   ToolRenderResultOptions,
 } from "@mariozechner/pi-coding-agent";
 
-import { Type, type Static, type TSchema } from "@sinclair/typebox";
-import { detail, table, type Column } from "../../shared/renderers";
+import { Type } from "@sinclair/typebox";
+import type { Static, TSchema } from "@sinclair/typebox";
+import { detail } from "../../shared/renderers/detail";
+import { table } from "../../shared/renderers/table/renderer";
+import type { Column } from "../../shared/renderers/types";
 import { Text } from "@mariozechner/pi-tui";
 import { dangerousOperationConfirmation } from "../../shared/tool-utils";
 import { renderTextToolResult } from "../../shared/render-utils";
-
-// --- Shared TypeBox field definitions for search schemas ---
-
 export const TypeBoxFields = {
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
@@ -84,20 +84,11 @@ export const TypeBoxFields = {
     description: "Item number (e.g., 123)",
   }),
 };
-
-/**
- * Standard params schema for viewing a single numbered item (issue, PR, etc.).
- */
 export const ViewParamsSchema = Type.Object({
   owner: TypeBoxFields.owner,
   repo: TypeBoxFields.repoName,
   number: TypeBoxFields.viewNumber,
 });
-
-/**
- * Creates the standard "#" + title columns used by GitHub list tools.
- * @param titleFormatter - Function that formats a row's subtitle line (after the dot+title).
- */
 export function createBasicColumns(
   titleFormatter: (r: Record<string, string>) => string,
 ): Column[] {
@@ -113,7 +104,6 @@ export function createBasicColumns(
     },
   ];
 }
-
 export function createListParamsSchema(
   description: string,
   stateValues: string[],
@@ -144,7 +134,6 @@ export function createListParamsSchema(
     ),
   });
 }
-
 export function createErrorResult<T extends Record<string, unknown>>(
   message: string,
 ): AgentToolResult<T> {
@@ -153,10 +142,6 @@ export function createErrorResult<T extends Record<string, unknown>>(
     details: { error: message } as unknown as T,
   };
 }
-
-/**
- * Push `--flag=value` for each element of an array argument.
- */
 export function pushArrayFlag(
   args: string[],
   values: string[] | undefined,
@@ -166,11 +151,6 @@ export function pushArrayFlag(
     for (const v of values) args.push(`--${flagName}=${v}`);
   }
 }
-
-/**
- * Builds CLI args for GitHub search commands that track issues or PRs.
- * Handles owner/repo arrays and optional single-value filters.
- */
 export function buildFilterArgs(
   command: string,
   limit: number,
@@ -194,7 +174,6 @@ export function buildFilterArgs(
 
   return args;
 }
-
 export function createTextResultRender() {
   return function renderResult(
     result: AgentToolResult<unknown>,
@@ -204,7 +183,6 @@ export function createTextResultRender() {
     return renderTextToolResult(result, theme);
   };
 }
-
 type ToolExecuteFn = (
   id: string,
   params: Record<string, unknown>,
@@ -214,7 +192,6 @@ type ToolExecuteFn = (
     | undefined,
   ctx: ExtensionContext,
 ) => Promise<AgentToolResult<Record<string, unknown>>>;
-
 function createToolExecute<T extends Record<string, unknown>>(
   handler: (params: Record<string, unknown>) => Promise<AgentToolResult<T>>,
 ): ToolExecuteFn {
@@ -231,7 +208,6 @@ function createToolExecute<T extends Record<string, unknown>>(
     }
   };
 }
-
 interface RegisterListToolOptions<TItem> {
   toolName: string;
   toolLabel: string;
@@ -246,7 +222,6 @@ interface RegisterListToolOptions<TItem> {
   columns: Column[];
   rowMapper: (item: TItem) => Record<string, unknown>;
 }
-
 export function registerListTool<TItem>(
   pi: ExtensionAPI,
   options: RegisterListToolOptions<TItem>,
@@ -260,7 +235,6 @@ export function registerListTool<TItem>(
     columns,
     rowMapper,
   } = options;
-
   const executeHandler = createToolExecute(async (params) => {
     const state = params.state as
       | "open"
@@ -296,7 +270,6 @@ export function registerListTool<TItem>(
     renderResult: createTextResultRender(),
   });
 }
-
 interface RegisterViewToolOptions<TItem> {
   toolName: string;
   toolLabel: string;
@@ -306,7 +279,6 @@ interface RegisterViewToolOptions<TItem> {
   fields: (item: TItem) => { label: string; value: string }[];
   includeBody?: boolean;
 }
-
 export function registerViewTool<TItem>(
   pi: ExtensionAPI,
   options: RegisterViewToolOptions<TItem>,
@@ -320,7 +292,6 @@ export function registerViewTool<TItem>(
     fields,
     includeBody = true,
   } = options;
-
   const executeHandler = createToolExecute(async (params) => {
     const item = await viewFn(
       params.owner as string,
@@ -352,7 +323,6 @@ export function registerViewTool<TItem>(
     renderResult: createTextResultRender(),
   });
 }
-
 export function createListRenderCall(toolName: string) {
   return function renderCall(args: Record<string, unknown>, theme: Theme) {
     return createGithubRenderCallContent(toolName, args, theme, (a) => {
@@ -366,7 +336,6 @@ export function createListRenderCall(toolName: string) {
     });
   };
 }
-
 export function createViewRenderCall(toolName: string) {
   return function renderCall(args: Record<string, unknown>, theme: Theme) {
     return createGithubRenderCallContent(toolName, args, theme, (a) => {
@@ -382,7 +351,6 @@ export function createViewRenderCall(toolName: string) {
     });
   };
 }
-
 function createGithubRenderCallContent(
   toolName: string,
   args: Record<string, unknown>,
@@ -393,7 +361,6 @@ function createGithubRenderCallContent(
     theme.fg("toolTitle", theme.bold(toolName)) + formatArgs(args, theme);
   return new Text(text, 0, 0);
 }
-
 function createCreateRenderCall(toolName: string) {
   return function renderCall(args: unknown, theme: Theme) {
     const typedArgs = args as { title?: string };
@@ -403,7 +370,6 @@ function createCreateRenderCall(toolName: string) {
     return new Text(text, 0, 0);
   };
 }
-
 interface RegisterCreateToolOptions<TParams extends TSchema> {
   toolName: string;
   toolLabel: string;
@@ -457,7 +423,6 @@ async function executeCreateTool<TParams extends TSchema>(
     );
   }
 }
-
 export function registerCreateTool<TParams extends TSchema>(
   pi: ExtensionAPI,
   options: RegisterCreateToolOptions<TParams>,

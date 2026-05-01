@@ -6,7 +6,6 @@ import { registerPRTools } from "./pr";
 import { registerIssueTools } from "./issue";
 import { registerReleaseTools } from "./release";
 import { registerWorkflowTools } from "./workflow";
-
 export default function ghExtension(pi: ExtensionAPI): void {
   registerSearchTools(pi);
   registerRepoTools(pi);

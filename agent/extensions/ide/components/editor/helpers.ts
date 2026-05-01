@@ -7,7 +7,6 @@ function skipCharsBackward(
   while (pos > 0 && pattern.test(line[pos - 1])) pos--;
   return pos;
 }
-
 function skipCharsForward(
   line: string,
   from: number,
@@ -18,7 +17,6 @@ function skipCharsForward(
   while (pos < maxPos && pattern.test(line[pos])) pos++;
   return pos;
 }
-
 export function findWordBoundaryBackward(
   line: string,
   startCol: number,
@@ -27,7 +25,6 @@ export function findWordBoundaryBackward(
   pos = skipCharsBackward(line, pos, /\w/);
   return pos;
 }
-
 export function findWordBoundaryForward(
   line: string,
   startCol: number,
@@ -37,37 +34,31 @@ export function findWordBoundaryForward(
   pos = skipCharsForward(line, pos, lineLen, /\s/);
   return pos;
 }
-
 function getCharType(char: string): "word" | "punct" | "space" | "none" {
   if (!char) return "none";
   if (/\s/.test(char)) return "space";
   if (/\w/.test(char)) return "word";
   return "punct";
 }
-
 function isWhitespace(line: string, index: number): boolean {
   if (index < 0 || index >= line.length) return false;
   return /\s/.test(line[index] ?? "");
 }
-
 function skipWhitespaceBackward(line: string, from: number): number {
   let pos = from;
   while (pos > 0 && isWhitespace(line, pos - 1)) pos--;
   return pos + 1;
 }
-
 function skipWhitespaceForward(line: string, from: number): number {
   let pos = from;
   while (pos < line.length && isWhitespace(line, pos)) pos++;
   return pos;
 }
-
 function skipNonWord(line: string, from: number, backward: boolean): number {
   return backward
     ? skipWhitespaceBackward(line, from)
     : skipWhitespaceForward(line, from);
 }
-
 function skipSameBackward(
   line: string,
   from: number,
@@ -77,7 +68,6 @@ function skipSameBackward(
   while (pos > 0 && getCharType(line[pos - 1] ?? "") === charType) pos--;
   return pos + 1;
 }
-
 function skipSameForward(
   line: string,
   from: number,
@@ -87,7 +77,6 @@ function skipSameForward(
   while (pos < line.length && getCharType(line[pos] ?? "") === charType) pos++;
   return pos;
 }
-
 function skipSameType(
   line: string,
   from: number,
@@ -98,26 +87,22 @@ function skipSameType(
     ? skipSameBackward(line, from, charType)
     : skipSameForward(line, from, charType);
 }
-
 function moveToNextWordBoundary(line: string, fromCol: number): number {
   const charType = getCharType(line[fromCol] ?? "");
   return skipSameType(line, fromCol, charType, false);
 }
-
 export function moveWordLeftOnLine(
   lines: string[],
   cursor: { line: number; col: number },
 ): void {
   const line = lines[cursor.line] ?? "";
   if (cursor.col === 0) return;
-
   let col = cursor.col - 1;
   col = skipNonWord(line, col, true);
   const charType = getCharType(line[col] ?? "");
   col = skipSameType(line, col, charType, true);
   cursor.col = col;
 }
-
 export function moveWordRightOnLine(
   lines: string[],
   cursor: { line: number; col: number },
@@ -125,14 +110,12 @@ export function moveWordRightOnLine(
   const line = lines[cursor.line] ?? "";
 
   if (cursor.col >= line.length) return;
-
   let col = skipNonWord(line, cursor.col, false);
   if (col < line.length) {
     col = moveToNextWordBoundary(line, col);
   }
   cursor.col = col;
 }
-
 export function clampCol(
   lines: string[],
   cursor: { line: number; col: number },
@@ -142,7 +125,6 @@ export function clampCol(
     cursor.col = maxCol;
   }
 }
-
 export function getLeadingWhitespace(text: string): string {
   return text.match(/^\s*/)?.[0] ?? "";
 }

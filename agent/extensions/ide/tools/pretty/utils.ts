@@ -3,12 +3,6 @@ import { Text } from "@mariozechner/pi-tui";
 import type { Component } from "@mariozechner/pi-tui";
 import type { ToolRenderContext } from "./types";
 import { shortPath } from "../terminal-utils";
-
-// ─── Execute wrapper factory ──────────────────────────────────────────────
-// The pi framework calls tool execute handlers with 5 arguments.
-// These types and the handler below match that external contract.
- 
-
 export type ToolExecuteFn = (
   tid: string,
   params: unknown,
@@ -25,7 +19,6 @@ export type WrappedToolHandler<P> = (
   upd: ((details: Record<string, unknown>) => void) | undefined,
   ctx: unknown,
 ) => Promise<unknown>;
-
 interface ToolResult {
   content: (AgentToolResult<unknown> extends {
     content: infer C;
@@ -35,7 +28,6 @@ interface ToolResult {
     Array<{ type?: string }>;
   details?: Record<string, unknown>;
 }
-
 export function createExecuteWrapper<Params>(
   postProcess: (
     result: ToolResult,
@@ -60,8 +52,6 @@ export function createExecuteWrapper<Params>(
     return handler as WrappedToolHandler<Params>;
   };
 }
- 
-
 export function extractTextContent(
   content: AgentToolResult<unknown>["content"],
 ): string {
@@ -72,11 +62,9 @@ export function extractTextContent(
       .join("\n") ?? ""
   );
 }
-
 function getErrorText(content: AgentToolResult<unknown>["content"]): string {
   return extractTextContent(content) || "Error";
 }
-
 export function renderError(
   content: AgentToolResult<unknown>["content"],
   theme: Theme,
@@ -86,11 +74,9 @@ export function renderError(
   text.setText(`\n${theme.fg("error", errorText)}`);
   return text;
 }
-
 export function countLines(text: string): number {
   return text.trim().split("\n").filter(Boolean).length;
 }
-
 export function getTextComponent(
   ctx: { lastComponent: Component | undefined },
   TextComponent: typeof Text,
@@ -103,7 +89,6 @@ export function getTextComponent(
     setText: (s: string) => void;
   };
 }
-
 interface BuildRenderCallOptions {
   cwd: string;
   home: string;
@@ -113,14 +98,14 @@ interface BuildRenderCallOptions {
   ctx: ToolRenderContext<unknown, unknown>;
   suffix?: (args: Record<string, unknown>, theme: Theme) => string;
 }
-
 export function buildRenderCall(options: BuildRenderCallOptions): Component {
   const { cwd, home, toolName, args, theme, suffix } = options;
   const text = new Text("", 0, 0);
   let pathStr = "";
   const pathArg = args.path as string | undefined;
-  if (pathArg) pathStr = shortPath(cwd, home, pathArg);
-  else {
+  if (pathArg) {
+    pathStr = shortPath(cwd, home, pathArg);
+  } else {
     const pattern = args.pattern as string | undefined;
     if (pattern) pathStr = theme.fg("accent", pattern);
   }
@@ -133,7 +118,6 @@ export function buildRenderCall(options: BuildRenderCallOptions): Component {
   );
   return text;
 }
-
 function applyRenderedContent(
   rendered: string | Promise<string>,
   text: { setText: (s: string) => void },
@@ -147,7 +131,6 @@ function applyRenderedContent(
     text.setText(`${rendered}\n${footer}`);
   }
 }
-
 export function buildRenderResult<DetailsType extends string, Args>(
   toolName: string,
   detailType: DetailsType,
@@ -162,7 +145,6 @@ export function buildRenderResult<DetailsType extends string, Args>(
   return (result, _options, theme, ctx) => {
     const text = new Text("", 0, 0);
     if (ctx.isError) return renderError(result.content, theme, text);
-
     const detailResult = tryRenderDetail({
       details: result.details,
       detailType,
@@ -172,13 +154,11 @@ export function buildRenderResult<DetailsType extends string, Args>(
       theme,
     });
     if (detailResult) return detailResult;
-
     const fallbackText = getFallbackText(result.content, toolName, theme);
     text.setText(fallbackText);
     return text;
   };
 }
-
 function tryRenderDetail(opts: {
   details: Record<string, unknown> | undefined;
   detailType: string;
@@ -199,7 +179,6 @@ function tryRenderDetail(opts: {
   );
   return text;
 }
-
 function getFallbackText(
   content: AgentToolResult<unknown>["content"] | undefined,
   toolName: string,

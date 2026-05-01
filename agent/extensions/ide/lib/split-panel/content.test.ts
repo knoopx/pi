@@ -1,18 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { renderFileChangeRows } from "./content";
 import { createMockTheme } from "../../lib/test-utils";
-
 const theme = createMockTheme();
 const width = 80;
 const height = 10;
-
 interface FileChange {
   status: string;
   path: string;
   insertions: number;
   deletions: number;
 }
-
 function renderHighlighted(files: FileChange[]): void {
   const result = renderFileChangeRows({
     files,
@@ -23,7 +20,6 @@ function renderHighlighted(files: FileChange[]): void {
   });
   expect(result).toMatchSnapshot();
 }
-
 function renderUnhighlighted(files: FileChange[]): void {
   const result = renderFileChangeRows({
     files,
@@ -34,7 +30,6 @@ function renderUnhighlighted(files: FileChange[]): void {
   });
   expect(result).toMatchSnapshot();
 }
-
 function selectedAndFocused(
   files: {
     status: string;
@@ -76,8 +71,6 @@ describe("renderFileChangeRows — status icon and file icon layout", () => {
     });
   });
 
-  // ── Added files (status A → toolDiffAdded color) ───────────────────────
-
   describe("given added files", () => {
     const short = [
       { status: "A" as const, path: "new.ts", insertions: 10, deletions: 0 },
@@ -111,8 +104,6 @@ describe("renderFileChangeRows — status icon and file icon layout", () => {
       });
     });
   });
-
-  // ── Modified files (status M → warning color) ────────────────────────
 
   describe("given modified files", () => {
     const short = [
@@ -148,8 +139,6 @@ describe("renderFileChangeRows — status icon and file icon layout", () => {
     });
   });
 
-  // ── Deleted files (status D → toolDiffRemoved color) ──────────────────
-
   describe("given deleted files", () => {
     const short = [
       { status: "D" as const, path: "gone.ts", insertions: 0, deletions: 15 },
@@ -183,8 +172,6 @@ describe("renderFileChangeRows — status icon and file icon layout", () => {
       });
     });
   });
-
-  // ── Renamed files (status R → warning color) ─────────────────────────
 
   describe("given renamed files", () => {
     const short = [
@@ -220,8 +207,6 @@ describe("renderFileChangeRows — status icon and file icon layout", () => {
     });
   });
 
-  // ── Exists files (status E → warning color) ──────────────────────────
-
   describe("given exists files", () => {
     const short = [
       {
@@ -246,8 +231,6 @@ describe("renderFileChangeRows — status icon and file icon layout", () => {
     selectedAndFocused(short);
   });
 
-  // ── Unknown status (status ? → warning color) ────────────────────────
-
   describe("given unknown-status files", () => {
     const short = [
       {
@@ -271,8 +254,6 @@ describe("renderFileChangeRows — status icon and file icon layout", () => {
 
     selectedAndFocused(short);
   });
-
-  // ── Layout verification: status icon at far right ────────────────────
 
   describe("given files with various path lengths", () => {
     const files = [
@@ -331,8 +312,6 @@ describe("renderFileChangeRows — status icon and file icon layout", () => {
     });
   });
 
-  // ── Stats display: positive vs negative net changes ──────────────────
-
   describe("given files with different net change directions", () => {
     const files = [
       {
@@ -366,8 +345,6 @@ describe("renderFileChangeRows — status icon and file icon layout", () => {
       expect(result).toMatchSnapshot();
     });
   });
-
-  // ── Scrolling: visible count smaller than total ───────────────────────
 
   describe("when terminal height is smaller than file count", () => {
     const statuses = ["A", "M", "D", "R"];
@@ -430,8 +407,6 @@ describe("renderFileChangeRows — status icon and file icon layout", () => {
       });
     });
   });
-
-  // ── Mixed real-world scenario ────────────────────────────────────────
 
   describe("given a realistic mixed change set", () => {
     const files = [
@@ -532,8 +507,6 @@ describe("renderFileChangeRows — status icon and file icon layout", () => {
       });
     });
   });
-
-  // ── Edge case: zero insertions and deletions (no stats) ──────────────
 
   describe("given files with no changes at all", () => {
     const files = [

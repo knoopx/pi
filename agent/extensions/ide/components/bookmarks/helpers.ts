@@ -1,7 +1,6 @@
 import type { BookmarkEntry } from "./types";
 import { Key } from "@mariozechner/pi-tui";
 import type { BookmarkFilterMode } from "../../lib/types";
-
 const BOOKMARK_FILTER_MODES = [
   "all",
   "bookmarks",
@@ -10,7 +9,6 @@ const BOOKMARK_FILTER_MODES = [
 ] as const;
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { formatBookmarkReference } from "../../lib/changes-formatting";
-
 function parseBookmark(bookmark: string): { name: string; remote: string } {
   const atIndex = bookmark.lastIndexOf("@");
   if (atIndex === -1) return { name: bookmark, remote: "" };
@@ -19,7 +17,6 @@ function parseBookmark(bookmark: string): { name: string; remote: string } {
     remote: bookmark.slice(atIndex + 1),
   };
 }
-
 export function groupBookmarksByChange(
   entries: {
     bookmark: string;
@@ -35,8 +32,9 @@ export function groupBookmarksByChange(
 
   for (const entry of entries) {
     const existing = byChange.get(entry.changeId);
-    if (existing) existing.bookmarks.push(entry.bookmark);
-    else {
+    if (existing) {
+      existing.bookmarks.push(entry.bookmark);
+    } else {
       byChange.set(entry.changeId, {
         bookmarks: [entry.bookmark],
         description: entry.description,
@@ -69,7 +67,6 @@ export function groupBookmarksByChange(
     },
   );
 }
-
 export function createToggleFilterBinding(filterRef: {
   value: BookmarkFilterMode;
 }) {
@@ -82,7 +79,6 @@ export function createToggleFilterBinding(filterRef: {
     },
   };
 }
-
 export function formatBookmarkLine(
   item: BookmarkEntry,
   width: number,
@@ -103,14 +99,12 @@ export function formatBookmarkLine(
     item.description.length > maxDescLen
       ? `${item.description.slice(0, maxDescLen - 1)}…`
       : item.description;
-
   const styledSep = theme.fg("dim", sep);
   const styledDesc = theme.fg("dim", desc);
   const styledAuthor = author ? theme.fg("dim", author) : "";
   const parts = [bookmarkLabels, styledDesc, styledAuthor].filter(Boolean);
   return parts.join(styledSep);
 }
-
 export function filterBookmarksByMode(
   items: BookmarkEntry[],
   query: string,

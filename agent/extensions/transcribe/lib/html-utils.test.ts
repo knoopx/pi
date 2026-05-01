@@ -75,7 +75,6 @@ describe("stripHtmlComments", () => {
   it("removes standard HTML comments", () => {
     const input = "Hello <!-- comment --> World";
     const result = stripHtmlComments(input);
-    // Comment replacement adds a space for the entire <!-- ... --> block
     expect(result).toContain("Hello");
     expect(result).toContain("World");
   });
@@ -106,8 +105,6 @@ describe("stripHtmlComments", () => {
   });
 
   it("preserves comment-like patterns inside code blocks", () => {
-    // This is an edge case - HTML comment stripping happens before markdown parsing
-    // so code block content may be affected, which is acceptable for the generic parser
     const input = "```\n// this is a comment\n```";
     const result = stripHtmlComments(input);
     expect(result).toBe("```\n// this is a comment\n```");

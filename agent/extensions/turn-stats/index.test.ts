@@ -10,7 +10,6 @@ import {
   formatAggregateOutput,
 } from "./index";
 import type { AgentRunStats } from "./index";
-
 function createUsage(partial: Partial<Usage>): Usage {
   const cost = {
     input: 0,
@@ -29,7 +28,6 @@ function createUsage(partial: Partial<Usage>): Usage {
     cost,
   };
 }
-
 function testFormatCost(costTotal: number, expected: string) {
   expect(
     formatCost({
@@ -48,7 +46,6 @@ function testFormatCost(costTotal: number, expected: string) {
     }),
   ).toBe(expected);
 }
-
 function testFormatCostWithComponents(cost: Usage["cost"], expected: string) {
   expect(
     formatCost({
@@ -602,7 +599,6 @@ describe("formatSimpleOutput", () => {
   });
 });
 
- 
 describe("Turn Stats Extension Integration", () => {
   describe("given a complete turn with all metrics", () => {
     const outputTokens = 1900;
@@ -818,7 +814,6 @@ describe("Turn Stats Extension Integration", () => {
       });
     });
   });
-
   function makeAggregateStats(
     overrides: Partial<AgentRunStats> = {},
   ): AgentRunStats {
@@ -840,7 +835,6 @@ describe("Turn Stats Extension Integration", () => {
       ...overrides,
     };
   }
-
   const noCost: AgentRunStats["totalCost"] = {
     input: 0,
     output: 0,

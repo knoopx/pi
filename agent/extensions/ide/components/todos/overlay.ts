@@ -4,12 +4,10 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { createTodosComponent } from "./component";
 import type { TodoItem } from "./types";
-
 const OVERLAY_OPTIONS = {
   overlay: true,
   overlayOptions: { width: "95%" as const, anchor: "center" as const },
 };
-
 export async function openTodosBrowser(
   pi: ExtensionAPI,
   ctx: ExtensionContext,

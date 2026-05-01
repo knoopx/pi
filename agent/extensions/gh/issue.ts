@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
-import type { Column } from "../../shared/renderers";
+import type { Column } from "../../shared/renderers/types";
 
 import { ghCmd, ghCmdJson } from "./utils";
 import {
@@ -11,7 +11,6 @@ import {
   registerCreateTool,
   ViewParamsSchema,
 } from "./shared";
-
 interface GHIssue {
   number: number;
   title: string;
@@ -24,7 +23,6 @@ interface GHIssue {
   labels: { name: string; description: string; color: string }[];
   milestone: { title: string; description: string; dueOn: string } | null;
 }
-
 function listIssues(
   owner: string,
   repo: string,
@@ -47,7 +45,6 @@ function listIssues(
 
   return ghCmdJson<GHIssue[]>(args, "issue list");
 }
-
 function viewIssue(
   owner: string,
   repo: string,
@@ -67,7 +64,6 @@ function viewIssue(
     "issue view",
   );
 }
-
 interface CreateIssueOpts {
   owner: string;
   repo: string;
@@ -75,7 +71,6 @@ interface CreateIssueOpts {
   body?: string;
   labels?: string[];
 }
-
 function createIssue({
   owner,
   repo,
@@ -94,13 +89,11 @@ function createIssue({
 
   return ghCmd(args);
 }
-
 const ListIssuesParams = createListParamsSchema(
   "List issues in a GitHub repository",
   ["open", "closed", "all"],
   "issues",
 );
-
 const CreateIssueParams = Type.Object({
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",
@@ -122,9 +115,7 @@ const CreateIssueParams = Type.Object({
     }),
   ),
 });
-
 type CreateIssueParamsType = Static<typeof CreateIssueParams>;
-
 function createIssueColumns(): Column[] {
   return createBasicColumns((r) => {
     const parts = [`${r.author} · ${r.date}`, r.url];
@@ -132,7 +123,6 @@ function createIssueColumns(): Column[] {
     return parts.join("\n");
   });
 }
-
 function createIssueRowMapper() {
   return (issue: GHIssue) => ({
     "#": `#${issue.number}`,
@@ -144,7 +134,6 @@ function createIssueRowMapper() {
     url: issue.html_url,
   });
 }
-
 function createIssueFields() {
   return (issue: GHIssue) => [
     { label: "title", value: `#${issue.number} ${issue.title}` },
@@ -162,7 +151,6 @@ function createIssueFields() {
     { label: "url", value: issue.html_url },
   ];
 }
-
 function createListIssuesTool() {
   return {
     toolName: "gh-list-issues",
@@ -185,7 +173,6 @@ Examples:
     rowMapper: createIssueRowMapper(),
   };
 }
-
 function createViewIssueTool() {
   return {
     toolName: "gh-view-issue",
@@ -207,7 +194,6 @@ Examples:
     includeBody: true,
   };
 }
-
 function createCreateIssueTool() {
   return {
     toolName: "gh-create-issue",
@@ -248,7 +234,6 @@ Examples:
     successMessagePrefix: "✓ Issue created",
   };
 }
-
 export function registerIssueTools(pi: ExtensionAPI) {
   registerListTool(pi, createListIssuesTool());
   registerViewTool(pi, createViewIssueTool());

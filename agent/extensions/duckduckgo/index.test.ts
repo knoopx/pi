@@ -69,18 +69,15 @@ describe("DuckDuckGo Extension", () => {
           <div class="result__url">example.com</div>
         </div>
       `;
-
       let fetchCallCount = 0;
       const mockFetch = vi.fn().mockImplementation(() => {
         fetchCallCount++;
         if (fetchCallCount === 1) {
-          // First call - GET request for search page
           return Promise.resolve({
             ok: true,
             text: () => Promise.resolve("<html>No preload</html>"),
           });
         }
-        // Subsequent calls - POST requests for results
         return Promise.resolve({
           ok: true,
           text: () =>
@@ -89,7 +86,6 @@ describe("DuckDuckGo Extension", () => {
             ),
         });
       });
-
       const result = await executeSearchTool(toolConfig, mockFetch);
 
       expect((result.content[0] as TextContent).text).toMatchSnapshot();

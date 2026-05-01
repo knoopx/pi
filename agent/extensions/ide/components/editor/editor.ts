@@ -8,16 +8,13 @@ import {
   moveWordRightOnLine,
 } from "./helpers";
 import type { Cursor, EditorState } from "./types";
-
 function cursorsEqual(a: Cursor, b: Cursor): boolean {
   return a.line === b.line && a.col === b.col;
 }
-
 function compareCursor(a: Cursor, b: Cursor): number {
   if (a.line !== b.line) return a.line - b.line;
   return a.col - b.col;
 }
-
 export class Editor {
   private lines: string[] = [""];
   private cursor: Cursor = { line: 0, col: 0 };
@@ -110,7 +107,6 @@ export class Editor {
       this.setSelection(newStart, newEnd);
       return;
     }
-
     const insertOffset = this.offsetFromCursor(this.cursor);
     this.insertText(`${open}${close}`);
     const newCursor = this.cursorFromOffset(insertOffset + 1);
@@ -134,7 +130,6 @@ export class Editor {
       this.replaceSelection(text);
       return;
     }
-
     const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
     const parts = normalized.split("\n");
     const line = this.currentLine();
@@ -162,7 +157,6 @@ export class Editor {
     this.saveState();
     const first = parts[0] ?? "";
     this.lines[this.cursor.line] = before + first;
-
     const middle = parts.slice(1, -1);
     const last = parts[parts.length - 1] ?? "";
     const insertLines = [...middle, last + after];
@@ -281,16 +275,13 @@ export class Editor {
 
   replaceRange(start: Cursor, end: Cursor, text: string): void {
     this.saveState();
-
     const content = this.getContent();
     const startOffset = this.offsetFromCursor(start);
     const endOffset = this.offsetFromCursor(end);
     const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-
     const nextContent =
       content.slice(0, startOffset) + normalized + content.slice(endOffset);
     this.lines = nextContent.split("\n");
-
     const newOffset = startOffset + normalized.length;
     const newCursor = this.cursorFromOffset(newOffset);
     this.cursor = newCursor;
@@ -354,13 +345,11 @@ export class Editor {
       this.deleteSelection();
       return;
     }
-
     const line = this.currentLine() ?? "";
     const col = this.cursor.col;
 
     if (this.atFileStart()) return;
     if (this.joinLineBackward(line)) return;
-
     const deleteEnd = findWordBoundaryBackward(line, col);
     if (deleteEnd < col) {
       this.deleteRangeInLine(deleteEnd, col);
@@ -383,14 +372,12 @@ export class Editor {
       this.deleteSelection();
       return;
     }
-
     const line = this.currentLine() ?? "";
     const col = this.cursor.col;
     const lineLen = line.length;
 
     if (this.atFileEnd(lineLen)) return;
     if (this.joinLineForward(line)) return;
-
     const deleteEnd = findWordBoundaryForward(line, col, lineLen);
     if (deleteEnd > col) {
       this.deleteRangeInLine(col, deleteEnd);
@@ -459,7 +446,6 @@ export class Editor {
 
   toggleComment(): void {
     this.saveState();
-
     const line = this.currentLine();
     const trimmed = line.trim();
 
@@ -546,7 +532,6 @@ export class Editor {
   cursorFromOffset(offset: number): Cursor {
     const found = this.findLineForOffset(Math.max(0, offset));
     if (found) return found;
-
     const lastLine = Math.max(0, this.lines.length - 1);
     return { line: lastLine, col: this.lines[lastLine]?.length ?? 0 };
   }

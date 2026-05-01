@@ -1,20 +1,16 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
-
 export function formatBookmarkReference(
   theme: Theme,
   bookmark: string,
 ): string {
   return theme.inverse(theme.fg("accent", ` 󰃀 ${bookmark} `));
 }
-
 function formatBookmarkLabels(theme: Theme, bookmarks: string[]): string {
   if (bookmarks.length === 0) return "";
   return `${bookmarks
     .map((bookmark) => formatBookmarkReference(theme, bookmark))
     .join(" ")} `;
 }
-
-
 export function getChangeIcon(
   isWorkingCopy: boolean,
   isEmpty: boolean,
@@ -22,7 +18,6 @@ export function getChangeIcon(
   if (isWorkingCopy) return isEmpty ? "◎" : "◉";
   return isEmpty ? "○" : "◆";
 }
-
 export function formatChangeRow(
   theme: Theme,
   opts: {
@@ -35,11 +30,9 @@ export function formatChangeRow(
   },
 ): { leftText: string; rightText: string } {
   const selectMarker = opts.isSelected ? theme.fg("accent", "✓ ") : "";
-
   const bookmarkLabel = opts.isImmutable
     ? theme.fg("dim", formatBookmarkLabels(theme, opts.bookmarks))
     : formatBookmarkLabels(theme, opts.bookmarks);
-
   const moveIndicator = opts.isMoving ? theme.fg("warning", "↕ ") : "";
   const description = opts.isMoving
     ? theme.fg("warning", theme.bold(opts.description))
@@ -52,8 +45,6 @@ export function formatChangeRow(
 
   return { leftText, rightText: "" };
 }
-
-
 export function visibleLength(str: string): number {
   return str.replace(/\x1b\[[0-9;]*m/g, "").length;
 }

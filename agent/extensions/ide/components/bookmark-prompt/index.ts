@@ -12,14 +12,12 @@ import {
   bottomBorder,
 } from "../../lib/ui/frame";
 import { fuzzySort } from "../../../../shared/fuzzy";
-
 function filterBookmarkCandidates(
   bookmarks: string[],
   query: string,
 ): string[] {
   return fuzzySort(bookmarks, query, (b) => b);
 }
-
 interface BookmarkPromptOptions {
   pi: ExtensionAPI;
   tui: { requestRender: () => void };
@@ -27,7 +25,6 @@ interface BookmarkPromptOptions {
   done: (result: string | null) => void;
   cwd: string;
 }
-
 export function createBookmarkPromptComponent(
   options: BookmarkPromptOptions,
 ): Component {
@@ -66,14 +63,11 @@ class BookmarkPrompt implements Component {
     return this.options.cwd;
   }
 
-  // ── Data loading ────────────────────────────────────────────────────────
-
   async loadBookmarks(): Promise<void> {
     try {
       this.loading = true;
       this.error = null;
       this.tui.requestRender();
-
       const result = await this.pi.exec(
         "jj",
         ["bookmark", "list", "-T", 'self.name() ++ "\\n"'],
@@ -85,7 +79,6 @@ class BookmarkPrompt implements Component {
         this.bookmarks = [];
         return;
       }
-
       const seen = new Set<string>();
       const loaded: string[] = [];
 
@@ -113,8 +106,6 @@ class BookmarkPrompt implements Component {
     if (query.length > 0) return [query];
     return [];
   }
-
-  // ── Rendering helpers ───────────────────────────────────────────────────
 
   private renderFooter(innerWidth: number, helpParts: string[]): string[] {
     const helpText = buildHelpText(...helpParts);
@@ -195,19 +186,16 @@ class BookmarkPrompt implements Component {
     let startIdx = 0;
     if (this.selectedIndex >= maxVisible)
       startIdx = this.selectedIndex - maxVisible + 1;
-
     const visibleCount = Math.min(maxVisible, candidates.length - startIdx);
 
     for (let i = 0; i < visibleCount; i++) {
       const idx = startIdx + i;
       const candidate = candidates[idx];
       const isFocused = idx === this.selectedIndex;
-
       const isCreateOption =
         query.length > 0 &&
         candidate === query &&
         !this.bookmarks.includes(candidate);
-
       let rowContent: string;
       if (isCreateOption) {
         const icon = this.theme.fg("warning", "󰐕");
@@ -245,15 +233,12 @@ class BookmarkPrompt implements Component {
     return lines;
   }
 
-  // ── Component interface ────────────────────────────────────────────────
-
   render(width: number): string[] {
     const lines: string[] = [];
     const innerWidth = width - 2;
     const query = this.input.getValue().trim();
 
     lines.push(topBorderWithTitle(this.theme, " Set Bookmark ", innerWidth));
-
     const inputValue = this.input.getValue();
     const cursor = this.theme.fg("accent", "▏");
     lines.push(
@@ -268,7 +253,6 @@ class BookmarkPrompt implements Component {
         ...lines,
         ...this.renderEmptyState(innerWidth, "error", this.error),
       ];
-
     const candidates = this.getCandidates();
     this.selectedIndex = Math.min(
       this.selectedIndex,
@@ -314,7 +298,6 @@ class BookmarkPrompt implements Component {
 
   handleInput(data: string): void {
     if (this.keyboardHandler(data)) return;
-
     const before = this.input.getValue();
     this.input.handleInput(data);
     if (before !== this.input.getValue()) this.selectedIndex = 0;

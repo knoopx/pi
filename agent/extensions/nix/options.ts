@@ -1,6 +1,7 @@
 import type { AgentToolResult } from "@mariozechner/pi-coding-agent";
-import { dotJoin, countLabel, table } from "../../shared/renderers";
-import type { Column } from "../../shared/renderers";
+import { dotJoin, countLabel } from "../../shared/renderers/header";
+import { table } from "../../shared/renderers/table/renderer";
+import type { Column } from "../../shared/renderers/types";
 import {
   cleanText,
   removeEmptyProperties,
@@ -8,7 +9,6 @@ import {
   NIXPKGS_GITHUB_BASE,
   searchNix,
 } from "./query";
-
 interface NixOption {
   type: string;
   option_name: string;
@@ -19,7 +19,6 @@ interface NixOption {
   option_example?: string;
   option_source?: string;
 }
-
 interface HomeManagerOption {
   title: string;
   description: string;
@@ -33,15 +32,12 @@ interface HomeManagerOption {
   loc: string[];
   readOnly: boolean;
 }
-
 interface HomeManagerOptionResponse {
   last_update: string;
   options: HomeManagerOption[];
 }
-
 const HOME_MANAGER_OPTIONS_URL =
   "https://home-manager-options.extranix.com/data/options-master.json";
-
 function buildSearchResult<T>(
   results: T[],
   query: string,
@@ -56,7 +52,6 @@ function buildSearchResult<T>(
     details: { query, totalFound: results.length },
   };
 }
-
 export function buildOptionTableRenderer(
   includeDeclarations = false,
 ): (res: Record<string, string>[]) => string {
@@ -79,7 +74,6 @@ export function buildOptionTableRenderer(
         },
       },
     ];
-
     const rows = res.map((item, i) => ({
       "#": String(i + 1),
       type: item.type || "",
@@ -98,7 +92,6 @@ export function buildOptionTableRenderer(
     ].join("\n");
   };
 }
-
 function buildOptionQuery(query: string): Record<string, unknown> {
   return {
     _source: [
@@ -120,11 +113,9 @@ function buildOptionQuery(query: string): Record<string, unknown> {
     size: 100,
   };
 }
-
 export async function searchNixOptions(query: string): Promise<NixOption[]> {
   return await searchNix(buildOptionQuery, query);
 }
-
 export async function searchHomeManagerOptions(
   query: string,
 ): Promise<HomeManagerOption[]> {
@@ -133,7 +124,6 @@ export async function searchHomeManagerOptions(
   if (!response.ok) {
     throw new Error(`HTTP ${response.status} from HM options API`);
   }
-
   const data = (await response.json()) as HomeManagerOptionResponse;
 
   return data.options.filter(
@@ -144,7 +134,6 @@ export async function searchHomeManagerOptions(
         option.description.toLowerCase().includes(query.toLowerCase())),
   );
 }
-
 export async function executeSearchTool<T, U extends Record<string, string>>(
   searchFn: (q: string) => Promise<T[]>,
   mapper: (item: T) => U,
@@ -163,7 +152,6 @@ export async function executeSearchTool<T, U extends Record<string, string>>(
     };
   }
 }
-
 export function mapNixOption(opt: NixOption): Record<string, string> {
   const sourceUrl = opt.option_source
     ? `${NIXPKGS_GITHUB_BASE}/${opt.option_source}`
@@ -177,7 +165,6 @@ export function mapNixOption(opt: NixOption): Record<string, string> {
     sourceUrl: sourceUrl ?? "",
   });
 }
-
 export function mapHomeManagerOption(
   opt: HomeManagerOption,
 ): Record<string, string> {

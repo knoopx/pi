@@ -6,7 +6,6 @@ import {
 } from "@mariozechner/pi-tui";
 
 import type { Cursor } from "./types";
-
 export interface RenderOptions {
   lines: string[];
   width: number;
@@ -16,15 +15,12 @@ export interface RenderOptions {
   showCursor: boolean;
   selection: { start: Cursor; end: Cursor } | null;
 }
-
 interface RenderResult {
   lines: string[];
 }
-
 function formatLineNumber(num: number, width: number): string {
   return num.toString().padStart(width - 1, " ") + " ";
 }
-
 function getSelectionCols(
   selection: { start: Cursor; end: Cursor },
   lineIndex: number,
@@ -33,7 +29,6 @@ function getSelectionCols(
   const sLine = Math.min(selection.start.line, selection.end.line);
   const eLine = Math.max(selection.start.line, selection.end.line);
   if (lineIndex < sLine || lineIndex > eLine) return null;
-
   let startCol = 0;
   let endCol = lineLen;
 
@@ -44,7 +39,6 @@ function getSelectionCols(
     endCol = selection.end.col;
   }
 
-  // When selection spans multiple lines and ends at col 0, the previous line is fully selected
   if (
     lineIndex === sLine &&
     selection.end.line > selection.start.line &&
@@ -55,20 +49,17 @@ function getSelectionCols(
 
   return startCol < endCol ? { start: startCol, end: endCol } : null;
 }
-
 function applySelectionHighlighting(
   lineContent: string,
   selCols: { start: number; end: number } | null,
   theme: Theme,
 ): string {
   if (!selCols) return lineContent;
-
   const before = lineContent.slice(0, selCols.start);
   const selected = lineContent.slice(selCols.start, selCols.end);
   const after = lineContent.slice(selCols.end);
   return before + theme.bg("selectedBg", selected) + after;
 }
-
 function skipLeadingAnsiEscapes(text: string): {
   leading: string;
   rest: string;
@@ -84,19 +75,16 @@ function skipLeadingAnsiEscapes(text: string): {
   }
   return { leading: text.slice(0, ansiLen), rest: text.slice(ansiLen) };
 }
-
 interface GraphemeInfo {
   index: number;
   length: number;
 }
-
 function getFirstGrapheme(text: string): GraphemeInfo | null {
   const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
   const first = Array.from(segmenter.segment(text))[0];
   if (!first) return null;
   return { index: first.index, length: first.segment.length };
 }
-
 function insertCursorMarker(
   output: string,
   cursorCol: number,
@@ -109,7 +97,6 @@ function insertCursorMarker(
   if (after.length === 0) {
     return before + CURSOR_MARKER + "\x1b[7m \x1b[0m";
   }
-
   const { leading: leadingAnsi, rest: remaining } =
     skipLeadingAnsiEscapes(after);
 
@@ -130,11 +117,8 @@ function insertCursorMarker(
       );
     }
   }
-
-  // No valid grapheme found — place cursor at end with space
   return before + CURSOR_MARKER + after + "\x1b[7m \x1b[0m";
 }
-
 interface SingleLineRenderOptions {
   lineIndex: number;
   lineContent: string;
@@ -145,7 +129,6 @@ interface SingleLineRenderOptions {
   showCursor: boolean;
   selection: { start: Cursor; end: Cursor } | null;
 }
-
 function renderSingleLine(opts: SingleLineRenderOptions): string {
   const {
     lineIndex,
@@ -157,15 +140,12 @@ function renderSingleLine(opts: SingleLineRenderOptions): string {
     showCursor,
     selection,
   } = opts;
-
   const lnText = formatLineNumber(lineIndex + 1, lineNumWidth);
   const prefix = theme.fg("dim", lnText);
-
   const selCols = selection
     ? getSelectionCols(selection, lineIndex, visibleWidth(lineContent))
     : null;
   const content = applySelectionHighlighting(lineContent, selCols, theme);
-
   let output = prefix + content;
 
   if (lineIndex === cursor.line && showCursor) {
@@ -175,7 +155,6 @@ function renderSingleLine(opts: SingleLineRenderOptions): string {
 
   return truncateToWidth(output, width, "", true);
 }
-
 export function renderEditorView(
   theme: Theme,
   opts: RenderOptions,
@@ -205,7 +184,6 @@ export function renderEditorView(
 
   return { lines: result };
 }
-
 function findInsertPosition(line: string, column: number): number {
   let currentWidth = 0;
   let i = 0;
@@ -218,7 +196,6 @@ function findInsertPosition(line: string, column: number): number {
         continue;
       }
     }
-
     const segmenter = new Intl.Segmenter(undefined, {
       granularity: "grapheme",
     });

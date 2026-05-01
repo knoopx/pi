@@ -21,7 +21,6 @@ describe("detail", () => {
     expect(lines[0]).toContain("line1");
     expect(lines[1]).toContain("line2");
     expect(lines[2]).toContain("line3");
-    // All lines should have │
     for (const line of lines) {
       expect(line).toContain("│");
     }

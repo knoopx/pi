@@ -1,12 +1,8 @@
-import { BROWSER_HEADERS, FETCH_OPTIONS } from "../lib/constants.js";
-import { formatAge, formatNumber, stripHtml } from "../lib/formatters.js";
-import { defineParser } from "../lib/parser-utils.js";
-import { retry } from "../lib/retry.js";
-
+import { BROWSER_HEADERS, FETCH_OPTIONS } from "../lib/constants";
+import { formatAge, formatNumber, stripHtml } from "../lib/formatters";
+import { defineParser } from "../lib/parser-utils";
+import { retry } from "../lib/retry";
 const BASE = "https://www.reddit.com";
-
-// --- URL parsing ---
-
 type RedditKind =
   | "subreddit"
   | "thread"
@@ -14,7 +10,6 @@ type RedditKind =
   | "user"
   | "frontpage"
   | "multi";
-
 interface ParsedRedditUrl {
   kind: RedditKind;
   sub?: string;
@@ -26,22 +21,18 @@ interface ParsedRedditUrl {
   limit?: number;
   subs?: string[];
 }
-
 function parseRedditUrl(url: string): ParsedRedditUrl | null {
   const match = url.match(
     /^https?:\/\/(?:www\.|old\.)?reddit\.com(?:\/(.+))?$/,
   );
   if (!match) return null;
-
   const path = match[1]?.replace(/\/+$/, "") || "";
   if (!path) return { kind: "frontpage" };
-
   const parts = path.split("/").filter(Boolean);
   const first = parts[0].toLowerCase();
 
   return dispatchRedditPath(first, parts);
 }
-
 function dispatchRedditPath(
   first: string,
   parts: string[],
@@ -56,13 +47,10 @@ function dispatchRedditPath(
   const handler = handlers[first];
   return handler ? handler() : null;
 }
-
 function parseSubredditPath(parts: string[]): ParsedRedditUrl {
   if (parts.length === 0) return { kind: "frontpage" };
-
   const sub = parts[0];
   if (parts.length === 1) return { kind: "subreddit", sub, sort: "hot" };
-
   const second = parts[1].toLowerCase();
   const threadResult = tryParseThreadPath(second, parts);
   if (threadResult) return threadResult;
@@ -71,7 +59,6 @@ function parseSubredditPath(parts: string[]): ParsedRedditUrl {
 
   return { kind: "subreddit", sub, sort: tryParseSortKind(second) || "hot" };
 }
-
 function tryParseThreadPath(
   second: string,
   parts: string[],
@@ -79,16 +66,12 @@ function tryParseThreadPath(
   if (second !== "comments" || !parts[2]) return null;
   return { kind: "thread", sub: "", id: parts[2] };
 }
-
 function tryParseSortKind(segment: string): string | null {
   const sortKinds = new Set(["hot", "new", "top", "rising", "controversial"]);
   if (sortKinds.has(segment)) return segment;
   if (segment === "submitted") return "top";
   return null;
 }
-
-// --- Data fetching ---
-
 interface RedditPostData {
   id: string;
   title: string;
@@ -107,14 +90,12 @@ interface RedditPostData {
   media?: Record<string, unknown>;
   post_hint?: string;
 }
-
 interface RedditListing {
   data: {
     children: Array<{ data: RedditPostData }>;
     after?: string;
   };
 }
-
 interface RedditCommentData {
   id: string;
   author: string;
@@ -131,7 +112,6 @@ interface RedditCommentData {
     };
   };
 }
-
 interface RedditThreadResponse {
   data: {
     children: Array<{ data: RedditPostData | RedditCommentData }>;
@@ -159,7 +139,6 @@ async function fetchRedditJson<T>(
     return res.json() as T;
   }, FETCH_OPTIONS);
 }
-
 function extractDomain(url: string): string {
   try {
     return new URL(url).hostname.replace("www.", "");
@@ -167,27 +146,19 @@ function extractDomain(url: string): string {
     return url;
   }
 }
-
 function makePermalink(permalink: string): string {
   return permalink.startsWith("http") ? permalink : `${BASE}${permalink}`;
 }
-
-// --- Listing renderer ---
-
 interface RenderListingOptions {
-  /** Extra lines to insert before posts (e.g. section headers). */
   preamble?: string[];
-  /** Message shown when the listing is empty. */
   emptyMessage?: string;
 }
-
 function renderListing(
   header: string,
   listing: RedditListing,
   opts: RenderListingOptions = {},
 ): string {
   const parts: string[] = [header, ``];
-
   const posts = listing.data.children;
   if (!posts.length && opts.emptyMessage) {
     parts.push(opts.emptyMessage);
@@ -206,24 +177,21 @@ function renderListing(
   return parts.join("\n");
 }
 
-// --- Handlers ---
-
 async function handleSubreddit(
   parsed: ParsedRedditUrl,
   signal?: AbortSignal,
 ): Promise<string> {
-  const sub = parsed.sub!;
+  if (!parsed.sub) throw new Error("Missing subreddit");
+  const sub = parsed.sub;
   const sort = parsed.sort || "hot";
   const limit = parsed.limit ?? 25;
   const params: Record<string, string> = { limit: String(limit) };
   if (parsed.time && sort === "top") params.t = parsed.time;
-
   const data = await fetchRedditJson<RedditListing>(
     `/r/${sub}/${sort}.json`,
     params,
     signal,
   );
-
   const sortLabel = sort.charAt(0).toUpperCase() + sort.slice(1);
   return renderListing(`# r/${sub} — ${sortLabel}`, data);
 }
@@ -242,16 +210,15 @@ async function handleThread(
   parsed: ParsedRedditUrl,
   signal?: AbortSignal,
 ): Promise<string> {
-  const id = parsed.id!;
+  if (!parsed.id) throw new Error("Missing thread id");
+  const id = parsed.id;
   const limit = parsed.limit ?? 50;
   const sort = parsed.sort || "best";
-
   const data = await fetchRedditJson<RedditThreadResponse>(
     `/comments/${id}.json`,
     { limit: String(limit), sort },
     signal,
   );
-
   const postData = data.data.children[0].data as RedditPostData;
   const parts: string[] = [];
   parts.push(`# ${postData.title}`);
@@ -263,28 +230,23 @@ async function handleThread(
 
   return parts.join("\n");
 }
-
 function extractUrlLink(url: string | undefined, isSelf?: boolean): string[] {
   if (!url || isSelf) return [];
   const domain = extractDomain(url);
   return [`[${domain}](${url})`];
 }
-
 function renderThreadLink(post: RedditPostData): string[] {
   return extractUrlLink(post.url, post.is_self);
 }
-
 function renderThreadBody(post: RedditPostData): string[] {
   if (!post.selftext) return [];
   const clean = stripHtml(post.selftext);
   if (!clean) return [];
   return ["", clean];
 }
-
 function renderRedditLink(post: RedditPostData): string {
   return `[View on Reddit](${makePermalink(post.permalink)})`;
 }
-
 function buildThreadMeta(post: RedditPostData): string {
   const meta: string[] = [];
   if (post.author) meta.push(`by u/${post.author}`);
@@ -294,7 +256,6 @@ function buildThreadMeta(post: RedditPostData): string {
   if (post.created_utc) meta.push(formatAge(post.created_utc));
   return meta.join(" \u2022 ");
 }
-
 function appendThreadComments(
   parts: string[],
   comments: Array<{ data: RedditPostData | RedditCommentData }>,
@@ -316,11 +277,11 @@ async function handleSearch(
   parsed: ParsedRedditUrl,
   signal?: AbortSignal,
 ): Promise<string> {
-  const sub = parsed.sub!;
+  if (!parsed.sub) throw new Error("Missing subreddit for search");
+  const sub = parsed.sub;
   const query = parsed.query || "";
   const sort = parsed.sort || "relevance";
   const limit = parsed.limit ?? 25;
-
   const data = await fetchRedditJson<RedditListing>(
     `/r/${sub}/search.json`,
     {
@@ -339,8 +300,8 @@ async function handleUser(
   parsed: ParsedRedditUrl,
   signal?: AbortSignal,
 ): Promise<string> {
-  const user = parsed.user!;
-
+  if (!parsed.user) throw new Error("Missing username");
+  const user = parsed.user;
   const data = await fetchRedditJson<RedditListing>(
     `/user/${user}/submitted.json`,
     { limit: "25" },
@@ -352,12 +313,8 @@ async function handleUser(
     emptyMessage: `No posts found for u/${user}.`,
   });
 }
-
-// --- Rendering ---
-
 function renderPost(post: RedditPostData): string[] {
   const lines: string[] = [];
-
   let title = post.title;
   if (post.link_flair_text) title = `[${post.link_flair_text}] ${title}`;
   lines.push(`**${title}**`);
@@ -368,7 +325,6 @@ function renderPost(post: RedditPostData): string[] {
 
   return lines;
 }
-
 function buildPostMeta(post: RedditPostData): string {
   const meta: string[] = [
     `r/${post.subreddit}`,
@@ -379,7 +335,6 @@ function buildPostMeta(post: RedditPostData): string {
   ].filter(Boolean);
   return meta.join(" \u2022 ");
 }
-
 function buildPostLink(post: RedditPostData): string[] {
   const link = extractUrlLink(post.url, post.is_self);
   if (link.length) return link;
@@ -395,7 +350,6 @@ function buildPostLink(post: RedditPostData): string[] {
 
   return [];
 }
-
 function renderComment(comment: RedditCommentData, depth: number): string[] {
   const indent = "  ".repeat(depth);
   const lines: string[] = [];
@@ -413,7 +367,6 @@ function renderComment(comment: RedditCommentData, depth: number): string[] {
 
   return lines;
 }
-
 function buildCommentHeader(
   comment: RedditCommentData,
   indent: string,
@@ -422,7 +375,6 @@ function buildCommentHeader(
   const score = comment.score > 0 ? ` (${formatNumber(comment.score)})` : "";
   return `${indent}**${author}**${score}`;
 }
-
 function buildCommentBody(
   comment: RedditCommentData,
   indent: string,
@@ -431,9 +383,6 @@ function buildCommentBody(
   if (!body) return [`${indent}[deleted]`];
   return body.split("\n").map((line) => `${indent}${line}`);
 }
-
-// --- Parser export ---
-
 function dispatchReddit(
   parsed: ParsedRedditUrl,
   signal?: AbortSignal,
@@ -450,8 +399,7 @@ function dispatchReddit(
   };
   return handlers[parsed.kind]();
 }
-
-export const parser = defineParser(
+export const redditParser = defineParser(
   "Reddit",
   (url) => /^https?:\/\/(?:www\.|old\.)?reddit\.com\//i.test(url),
   parseRedditUrl,

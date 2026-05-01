@@ -1,31 +1,24 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { formatRelativeTime } from "../../lib/formatters";
 import type { PrStateColor } from "./types";
-
-
 const PR_STATE_ICONS: Record<string, string> = {
   OPEN: "󰐊",
   CLOSED: "󰅖",
   MERGED: "󰘬",
 };
-
-
 const REVIEW_ICONS: Record<string, string> = {
   APPROVED: "󰄬",
   CHANGES_REQUESTED: "󰌑",
   REVIEW_REQUIRED: "󰈈",
 };
-
 export function getPrIcon(state: string, isDraft: boolean): string {
   if (isDraft) return "󰽾";
   return PR_STATE_ICONS[state] || "󰐊";
 }
-
 export function getReviewIcon(decision: string | null): string {
   if (!decision) return "";
   return REVIEW_ICONS[decision] || "";
 }
-
 export function resolvePrStateColor(
   state: string,
   isDraft: boolean,
@@ -35,7 +28,6 @@ export function resolvePrStateColor(
   if (isDraft) return "dim";
   return "success";
 }
-
 export function buildPrStats(
   theme: Theme,
   additions: number,
@@ -45,7 +37,6 @@ export function buildPrStats(
   const delText = theme.fg("error", `-${deletions}`);
   return `${addText}/${delText}`;
 }
-
 export function buildPrFixedParts(options: {
   icon: string;
   reviewIcon: string;
@@ -56,7 +47,16 @@ export function buildPrFixedParts(options: {
   deletions: number;
   updatedAt: string;
 }): string {
-  const { icon, reviewIcon, number, headRefName, author, additions, deletions, updatedAt } = options;
+  const {
+    icon,
+    reviewIcon,
+    number,
+    headRefName,
+    author,
+    additions,
+    deletions,
+    updatedAt,
+  } = options;
   return [
     `${icon} `,
     `#${number} `,
@@ -67,12 +67,10 @@ export function buildPrFixedParts(options: {
     ` ${formatRelativeTime(updatedAt)}`,
   ].join("");
 }
-
 export function truncateTitle(title: string, maxWidth: number): string {
   if (title.length <= maxWidth) return title;
   return `${title.slice(0, maxWidth - 1)}…`;
 }
-
 export function formatReviewIcon(
   reviewIcon: string,
   decision: string | null,

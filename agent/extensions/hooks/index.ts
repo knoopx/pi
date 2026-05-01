@@ -12,19 +12,18 @@ import { createThemeFg, notifyAuditResult } from "../../shared/audit-utils";
 
 import { configLoader, loadHooksSettings, saveHooksSettings } from "./config";
 import type { HookEvent, HooksConfig } from "./schema";
-import { getSkipTools } from "./results.js";
+import { getSkipTools } from "./results";
 import {
   isAbortedToolResult,
   isAbortedTurnEnd,
   isAbortedAgentEnd,
-} from "./abort-detection.js";
-import { isGroupActive } from "./pattern-matching.js";
+} from "./abort-detection";
+import { isGroupActive } from "./pattern-matching";
 import {
   matchCommandPattern,
   matchFileNamePattern,
 } from "../../shared/pattern-matching";
-import { runEngineHooks } from "./engine.js";
-
+import { runEngineHooks } from "./engine";
 function registerSessionHandlers(
   pi: ExtensionAPI,
   getConfig: () => Promise<HooksConfig>,
@@ -61,7 +60,6 @@ function registerSessionHandlers(
     });
   });
 }
-
 function registerToolHandlers(
   pi: ExtensionAPI,
   getConfig: () => Promise<HooksConfig>,
@@ -133,7 +131,6 @@ function registerToolHandlers(
     });
   });
 }
-
 function registerTurnHandlers(
   pi: ExtensionAPI,
   getConfig: () => Promise<HooksConfig>,
@@ -166,13 +163,11 @@ function registerTurnHandlers(
     });
   });
 }
-
 export default async function hooksExtension(pi: ExtensionAPI): Promise<void> {
   const getConfig = (): Promise<HooksConfig> => {
     configLoader.load();
     return Promise.resolve(configLoader.getConfig());
   };
-
   const hooksEnabledRef = {
     value: (await loadHooksSettings()).enabled,
   };
@@ -180,12 +175,10 @@ export default async function hooksExtension(pi: ExtensionAPI): Promise<void> {
   registerEventHandlers(pi, getConfig, () => hooksEnabledRef.value);
   registerCommands(pi, hooksEnabledRef);
 }
-
 interface BlockResult {
   block: true;
   reason: string;
 }
-
 interface ProcessHooksParams {
   pi: ExtensionAPI;
   config: HooksConfig;
@@ -202,7 +195,6 @@ interface ProcessHooksParams {
     };
   };
 }
-
 function runProcessHooks(
   params: ProcessHooksParams,
 ): Promise<BlockResult | undefined> {
@@ -212,7 +204,6 @@ function runProcessHooks(
     toolInfo: params.toolInfo,
   });
 }
-
 function registerEventHandlers(
   pi: ExtensionAPI,
   getConfig: () => Promise<HooksConfig>,
@@ -235,12 +226,10 @@ async function handleHooksAudit(
     ctx.ui?.notify("No hooks configured", "info");
     return;
   }
-
   const fg = createThemeFg(ctx.ui.theme);
   const auditResult = await auditHooksConfig(config, ctx.cwd, fg);
   notifyAuditResult(ctx, auditResult, fg);
 }
-
 interface AuditResult {
   lines: string[];
   errors: number;
@@ -267,7 +256,6 @@ async function auditHooksConfig(
 
   return { lines, errors };
 }
-
 function renderGroupHeader(
   fg: (color: ThemeColor, text: string) => string,
   group: { group: string; pattern: string },
@@ -277,7 +265,6 @@ function renderGroupHeader(
   const statusColor = isActive ? "success" : "error";
   return `${fg(statusColor, statusIcon)} ${group.group} (${group.pattern})`;
 }
-
 function renderHookLine(hook: {
   event: string;
   context?: string;
@@ -287,13 +274,11 @@ function renderHookLine(hook: {
   const context = hook.context ? ` [${hook.context}: ${hook.pattern}]` : "";
   return `  → ${hook.event}${context}: ${hook.command}`;
 }
-
 interface PatternValidationCtx {
   index: number;
   fg: (color: ThemeColor, text: string) => string;
   lines: string[];
 }
-
 function validateHookPattern(
   hook: NonNullable<
     ReturnType<typeof configLoader.getConfig>
@@ -303,7 +288,6 @@ function validateHookPattern(
   if (!hook.context || !hook.pattern) return 0;
   return validatePatternWithContext(hook.context, hook.pattern, ctx);
 }
-
 function validatePatternWithContext(
   context: string,
   pattern: string,
@@ -318,7 +302,6 @@ function validatePatternWithContext(
   }
   return 0;
 }
-
 function buildPatternMatcher(
   context: string,
   pattern: string,
@@ -328,7 +311,6 @@ function buildPatternMatcher(
   }
   return (input: string) => matchCommandPattern(input, pattern);
 }
-
 function tryValidate(
   matcher: (input: string) => void,
   input: string,
@@ -344,7 +326,6 @@ function tryValidate(
     return false;
   }
 }
-
 function createHooksHandler(ref: { value: boolean }) {
   return async function handler(
     args: string,
@@ -366,11 +347,9 @@ function createHooksHandler(ref: { value: boolean }) {
       return;
     }
 
-    // No argument — run audit
     await handleHooksAudit(args, ctx);
   };
 }
-
 function registerCommands(
   pi: ExtensionAPI,
   hooksEnabledRef: { value: boolean },

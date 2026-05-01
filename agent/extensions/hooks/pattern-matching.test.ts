@@ -288,7 +288,6 @@ describe("substituteVariables", () => {
   });
 });
 
- 
 describe("doesRuleMatch", () => {
   describe("given rule without context", () => {
     const rule = { event: "tool_result" as const, command: "echo test" };

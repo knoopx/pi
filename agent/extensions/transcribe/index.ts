@@ -2,18 +2,17 @@ import type {
   ExtensionAPI,
   AgentToolResult,
 } from "@mariozechner/pi-coding-agent";
-import { Type, type Static } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
+import type { Static } from "@sinclair/typebox";
 import { gfmToMarkdown } from "mdast-util-gfm";
 import { toMarkdown } from "mdast-util-to-markdown";
 import { parse } from "./lib/registry";
-
 const Params = Type.Object({
   source: Type.String({
     description: "URL or file path to transcribe into human-readable text",
   }),
 });
 type ParamsType = Static<typeof Params>;
-
 function buildSuccessResult(
   source: string,
   markdown: string,
@@ -23,7 +22,6 @@ function buildSuccessResult(
     details: { source, converted: true },
   };
 }
-
 function buildErrorResult(
   source: string,
   error: unknown,
@@ -34,7 +32,6 @@ function buildErrorResult(
     details: { source },
   };
 }
-
 export default function (pi: ExtensionAPI): void {
   pi.registerTool({
     name: "transcribe",
@@ -67,7 +64,6 @@ Supports URLs and local files.`,
           ],
           details: { source },
         });
-
         const result = await parse(source, signal);
         let markdown: string;
         if (typeof result === "string") {

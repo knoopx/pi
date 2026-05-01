@@ -29,7 +29,6 @@ describe("formatRemainingDuration", () => {
       it("then returns 'resetting...'", () => {
         const now = new Date("2024-01-15T12:00:00Z");
         vi.setSystemTime(now);
-
         const pastTime = "2024-01-15T11:00:00Z";
         expect(formatRemainingDuration(pastTime)).toBe("resetting...");
       });
@@ -41,7 +40,6 @@ describe("formatRemainingDuration", () => {
       it("then returns minutes format", () => {
         const now = new Date("2024-01-15T12:00:00Z");
         vi.setSystemTime(now);
-
         const resetTime = "2024-01-15T12:30:00Z";
         expect(formatRemainingDuration(resetTime)).toBe("30m");
       });
@@ -53,7 +51,6 @@ describe("formatRemainingDuration", () => {
       it("then returns hours and minutes format", () => {
         const now = new Date("2024-01-15T12:00:00Z");
         vi.setSystemTime(now);
-
         const resetTime = "2024-01-15T14:30:00Z";
         expect(formatRemainingDuration(resetTime)).toBe("2h 30m");
       });
@@ -65,7 +62,6 @@ describe("formatRemainingDuration", () => {
       it("then returns days and hours format", () => {
         const now = new Date("2024-01-15T12:00:00Z");
         vi.setSystemTime(now);
-
         const resetTime = "2024-01-17T18:00:00Z";
         expect(formatRemainingDuration(resetTime)).toBe("2d 6h");
       });
@@ -99,7 +95,6 @@ describe("createRateLimitProcessor", () => {
             usedPercentPath: "used_percent",
           },
         ];
-
         const processor = createRateLimitProcessor(windows);
         const data = {
           rate_limit: {
@@ -108,7 +103,6 @@ describe("createRateLimitProcessor", () => {
             },
           },
         };
-
         const result = processor(data);
         expect(result).toHaveLength(1);
         expect(result[0]).toEqual({
@@ -122,10 +116,8 @@ describe("createRateLimitProcessor", () => {
     describe("when path does not exist", () => {
       it("then skips the window", () => {
         const windows = [{ path: "missing.path", label: "Missing" }];
-
         const processor = createRateLimitProcessor(windows);
         const data = { other: {} };
-
         const result = processor(data);
         expect(result).toHaveLength(0);
       });
@@ -142,7 +134,6 @@ describe("createRateLimitProcessor", () => {
             },
           },
         ];
-
         const processor = createRateLimitProcessor(windows);
         const data = {
           window: {
@@ -150,7 +141,6 @@ describe("createRateLimitProcessor", () => {
             utilization: 30,
           },
         };
-
         const result = processor(data);
         expect(result[0]?.label).toBe("5h");
       });
@@ -166,10 +156,8 @@ describe("createRateLimitProcessor", () => {
             usedPercentTransform: (val: number) => val * 100,
           },
         ];
-
         const processor = createRateLimitProcessor(windows);
         const data = { window: { ratio: 0.75 } };
-
         const result = processor(data);
         expect(result[0]?.usedPercent).toBe(75);
       });
@@ -179,7 +167,6 @@ describe("createRateLimitProcessor", () => {
       it("then resolves from root data", () => {
         vi.useFakeTimers();
         vi.setSystemTime(new Date("2024-01-15T12:00:00Z"));
-
         const windows = [
           {
             path: "window",
@@ -187,13 +174,11 @@ describe("createRateLimitProcessor", () => {
             resetPath: "/global_reset",
           },
         ];
-
         const processor = createRateLimitProcessor(windows);
         const data = {
           global_reset: "2024-01-15T13:00:00Z",
           window: { utilization: 50 },
         };
-
         const result = processor(data);
         expect(result[0]?.resetDescription).toBe("1h 0m");
 
@@ -205,7 +190,6 @@ describe("createRateLimitProcessor", () => {
       it("then resolves from window data", () => {
         vi.useFakeTimers();
         vi.setSystemTime(new Date("2024-01-15T12:00:00Z"));
-
         const windows = [
           {
             path: "window",
@@ -213,7 +197,6 @@ describe("createRateLimitProcessor", () => {
             resetPath: "reset_time",
           },
         ];
-
         const processor = createRateLimitProcessor(windows);
         const data = {
           window: {
@@ -221,7 +204,6 @@ describe("createRateLimitProcessor", () => {
             reset_time: "2024-01-15T12:30:00Z",
           },
         };
-
         const result = processor(data);
         expect(result[0]?.resetDescription).toBe("30m");
 
@@ -244,7 +226,6 @@ describe("loadTokenFromPiAuthJson", () => {
             }),
           fetch: vi.fn(),
         };
-
         const token = loadTokenFromPiAuthJson(mockDeps, "anthropic");
         expect(token).toBe("test-token-123");
       });
@@ -259,7 +240,6 @@ describe("loadTokenFromPiAuthJson", () => {
             }),
           fetch: vi.fn(),
         };
-
         const token = loadTokenFromPiAuthJson(mockDeps, "anthropic");
         expect(token).toBe("refresh-token");
       });
@@ -275,7 +255,6 @@ describe("loadTokenFromPiAuthJson", () => {
           readFile: () => undefined,
           fetch: vi.fn(),
         };
-
         const token = loadTokenFromPiAuthJson(mockDeps, "anthropic");
         expect(token).toBeUndefined();
       });
@@ -294,7 +273,6 @@ describe("loadTokenFromPiAuthJson", () => {
             }),
           fetch: vi.fn(),
         };
-
         const token = loadTokenFromPiAuthJson(mockDeps, "custom", (data) => {
           const d = data as { nested?: { key?: string } };
           return d.nested?.key;
@@ -339,7 +317,6 @@ describe("createGenericProvider", () => {
         };
       }),
     });
-
     const config: ProviderConfig = {
       provider: "test",
       displayName: "Test Provider",
@@ -425,7 +402,6 @@ describe("createGenericProvider", () => {
           windows: undefined,
           customProcessor: () => [{ label: "Custom", usedPercent: 99 }],
         };
-
         const deps = createMockDeps("token", {
           ok: true,
           status: 200,

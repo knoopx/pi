@@ -1,4 +1,3 @@
-
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import {
@@ -13,7 +12,6 @@ import {
 } from "./index";
 
 // Helper Functions
-
 function createMockUsageData(): UsageData {
   return {
     today: {
@@ -79,7 +77,6 @@ function createMockUsageData(): UsageData {
     },
   };
 }
-
 function createEmptyUsageData(): UsageData {
   const emptyTotals = {
     sessions: 0,
@@ -99,8 +96,6 @@ const mockTheme = {
   fg: (_name: string, text: string) => text,
   bold: (text: string) => text,
 } as Theme;
-
-// Session Directory Tests
 
 describe("getSessionsDir", () => {
   const originalEnv = process.env.PI_CODING_AGENT_DIR;
@@ -274,9 +269,6 @@ describe("padRight", () => {
   });
 });
 
-// Usage Component Tests
-
- 
 describe("UsageComponent", () => {
   let component: UsageComponent;
   let mockData: UsageData;
@@ -314,7 +306,6 @@ describe("UsageComponent", () => {
 
       mockData.today.providers.set("zero-usage-provider", emptyProviderStats);
 
-      // @ts-expect-error - accessing private method for testing
       component.updateProviderOrder();
 
       expect(component.providerOrder).not.toContain("zero-usage-provider");
@@ -324,12 +315,11 @@ describe("UsageComponent", () => {
       mockData.today.providers.set("provider2", {
         sessions: new Set(["session2"]),
         messages: 1,
-        cost: 0.01, // Higher cost
+        cost: 0.05,
         tokens: { total: 1000, input: 600, output: 400, cache: 0 },
         models: new Map(),
       });
 
-      // @ts-expect-error - accessing private method for testing
       component.updateProviderOrder();
 
       expect(component.providerOrder[0]).toBe("provider2");
@@ -453,9 +443,6 @@ describe("UsageComponent", () => {
       component.providerOrder = [provider];
       component.selectedIndex = 0;
 
-      component.handleInput("enter"); // Expand
-      component.handleInput("enter"); // Collapse
-
       expect(component.expanded.has(provider)).toBe(false);
     });
   });
@@ -503,14 +490,12 @@ describe("UsageComponent", () => {
   describe("render - Empty data", () => {
     it("then renders empty state message", () => {
       const emptyData = createEmptyUsageData();
-
       const emptyComponent = new UsageComponent(
         mockTheme,
         emptyData,
         mockRequestRender as () => void,
         mockDone as () => void,
       );
-
       const lines = emptyComponent.render();
 
       expect(lines.some((line) => line.includes("No usage data"))).toBe(true);
@@ -547,7 +532,6 @@ describe("UsageComponent", () => {
       component.providerOrder = ["provider1"];
       component.selectedIndex = 0;
       component.expanded.add("provider1");
-
       const lines = component.render();
 
       expect(lines.some((line) => line.includes("model1"))).toBe(true);

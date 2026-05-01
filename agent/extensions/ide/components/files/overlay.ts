@@ -5,12 +5,10 @@ import type {
 import { createFilesComponent } from "./component";
 import { runNavigationStack } from "../symbol-references/navigation";
 import type { FileResult } from "./types";
-
 const OVERLAY_OPTIONS = {
   overlay: true,
   overlayOptions: { width: "95%" as const, anchor: "center" as const },
 };
-
 export async function openFilesPicker(
   pi: ExtensionAPI,
   ctx: ExtensionContext,

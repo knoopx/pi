@@ -1,6 +1,5 @@
 import type { BaseDependencies, ProviderConfig } from "../types";
 import { createGenericProvider, loadTokenFromPiAuthJson } from "../util";
-
 function loadGithubToken(deps: BaseDependencies): string | undefined {
   return loadTokenFromPiAuthJson(deps, "github-copilot", (data) => {
     const copilot = data["github-copilot"] as
@@ -9,7 +8,6 @@ function loadGithubToken(deps: BaseDependencies): string | undefined {
     return copilot?.refresh || copilot?.access;
   });
 }
-
 const copilotConfig: ProviderConfig = {
   provider: "copilot",
   displayName: "GitHub Copilot",
@@ -32,5 +30,4 @@ const copilotConfig: ProviderConfig = {
     },
   ],
 };
-
 export const fetchCopilotUsage = await createGenericProvider(copilotConfig);

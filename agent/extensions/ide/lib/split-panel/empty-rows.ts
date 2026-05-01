@@ -7,8 +7,6 @@ import {
   renderEmptyRowWithReset,
   truncateAnsi,
 } from "../text-utils";
-
-
 export function createEmptyChangeRow(message: string, theme: Theme): Component {
   return {
     render(width: number): string[] {
@@ -18,8 +16,6 @@ export function createEmptyChangeRow(message: string, theme: Theme): Component {
     invalidate(): void {},
   };
 }
-
-
 export function createEmptyDiffRow(message: string, theme: Theme): Component {
   return {
     render(width: number): string[] {
@@ -28,8 +24,6 @@ export function createEmptyDiffRow(message: string, theme: Theme): Component {
     invalidate(): void {},
   };
 }
-
-
 export function createEmptyFileChangeRow(
   message: string,
   theme: Theme,
@@ -41,7 +35,6 @@ export function createEmptyFileChangeRow(
     invalidate(): void {},
   };
 }
-
 function renderEmptyFileChangeLine(
   message: string,
   width: number,

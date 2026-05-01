@@ -1,12 +1,9 @@
-
 import type { ChangesState } from "./state";
-
 export interface NavigationCallbacks {
   onChangeSelected: (changeId: string) => void | Promise<void>;
   onFileSelected?: (filePath: string) => void | Promise<void>;
   onSwitchFocus?: (focus: "left" | "right") => void;
 }
-
 export class Navigation {
   // Page offset for page-based navigation — set dynamically by caller
   scrollPageOffset = 10;
@@ -21,12 +18,9 @@ export class Navigation {
     return this.callbacks.onChangeSelected(changeId);
   }
 
-  // ─── Changes list navigation ──────────────────────────────────────────
-
   navigateChanges(dir: "up" | "down" | "pageUp" | "pageDown"): void {
     const { changes } = this.state;
     if (changes.length === 0) return;
-
     const maxIndex = changes.length - 1;
     const pageOffset =
       this.state.rightListHeight > 1
@@ -46,12 +40,9 @@ export class Navigation {
     }
   }
 
-  // ─── Files list navigation ────────────────────────────────────────────
-
   navigateFiles(dir: "up" | "down" | "pageUp" | "pageDown"): void {
     const { files, selectedChange } = this.state;
     if (files.length === 0 || !selectedChange) return;
-
     const maxIndex = files.length - 1;
     const pageOffset =
       this.state.rightListHeight > 1
@@ -69,8 +60,6 @@ export class Navigation {
       void this.callbacks.onFileSelected?.(files[newIndex].path);
     }
   }
-
-  // ─── Diff scroll ──────────────────────────────────────────────────────
 
   scrollDiff(dir: "up" | "down"): void {
     const offset =
@@ -91,15 +80,11 @@ export class Navigation {
     }
   }
 
-  // ─── Focus switching ──────────────────────────────────────────────────
-
   switchFocus(): void {
     this.state.selectionState.focus =
       this.state.selectionState.focus === "left" ? "right" : "left";
     this.callbacks.onSwitchFocus?.(this.state.selectionState.focus);
   }
-
-  // ─── Multi-select ─────────────────────────────────────────────────────
 
   toggleSelection(): void {
     if (!this.state.selectedChange) return;
@@ -110,8 +95,6 @@ export class Navigation {
       this.state.selectedChangeIds.add(id);
     }
   }
-
-  // ─── Move mode ────────────────────────────────────────────────────────
 
   enterMoveMode(): void {
     if (!this.state.selectedChange || this.state.changes.length < 2) return;
@@ -130,12 +113,16 @@ export class Navigation {
     this.state.moveOriginalChanges = [];
   }
 
+  cycleFilter(direction: 1 | -1, totalFilters: number): void {
+    this.state.currentFilterIndex =
+      (this.state.currentFilterIndex + direction + totalFilters) % totalFilters;
+  }
+
   moveChange(dir: "up" | "down"): void {
     const currentIndex = this.state.selectionState.selectedIndex;
     const targetIndex = dir === "up" ? currentIndex - 1 : currentIndex + 1;
 
     if (targetIndex < 0 || targetIndex >= this.state.changes.length) return;
-
     const current = this.state.changes[currentIndex];
     const isWorkingCopy =
       this.state.currentChangeId !== null &&
@@ -144,25 +131,12 @@ export class Navigation {
       return;
     }
 
-    // Swap in the mutable array
     [this.state.changes[currentIndex], this.state.changes[targetIndex]] = [
       this.state.changes[targetIndex],
       this.state.changes[currentIndex],
     ];
     this.state.selectionState.selectedIndex = targetIndex;
   }
-
-  // ─── Filter cycling ───────────────────────────────────────────────────
-
-  cycleFilter(dir: 1 | -1, count: number): void {
-    this.state.currentFilterIndex =
-      (this.state.currentFilterIndex + dir + count) % count;
-    this.state.selectionState.selectedIndex = 0;
-    this.state.selectionState.fileIndex = 0;
-    this.state.selectionState.diffScroll = 0;
-  }
-
-  // ─── Private helpers ──────────────────────────────────────────────────
 
   private calcNewIndex(
     current: number,

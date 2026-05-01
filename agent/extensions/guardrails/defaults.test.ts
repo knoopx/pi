@@ -6,16 +6,12 @@ import {
   matchContentPattern,
   matchFileNamePattern,
 } from "../../shared/pattern-matching";
-
 const typedDefaults: GuardrailsConfig = defaults;
-
 function getGroup(name: string): GuardrailsConfig[number] {
   const group = typedDefaults.find((g) => g.group === name);
   if (!group) throw new Error(`Group not found: ${name}`);
   return group;
 }
-
-
 function groupMatches(groupName: string, command: string): boolean {
   const group = getGroup(groupName);
   return group.rules
@@ -27,8 +23,6 @@ function groupMatches(groupName: string, command: string): boolean {
       return true;
     });
 }
-
-
 function fileNameGroupMatches(groupName: string, filePath: string): boolean {
   const group = getGroup(groupName);
   return group.rules
@@ -40,8 +34,6 @@ function fileNameGroupMatches(groupName: string, filePath: string): boolean {
       return true;
     });
 }
-
-
 function fileContentGroupMatches(groupName: string, content: string): boolean {
   const group = getGroup(groupName);
   return group.rules
@@ -49,7 +41,6 @@ function fileContentGroupMatches(groupName: string, content: string): boolean {
     .some((r) => matchContentPattern(content, r.pattern));
 }
 
- 
 describe("defaults.json", () => {
   describe("given structure", () => {
     it("then is non-empty array with unique group names", () => {
@@ -92,7 +83,6 @@ describe("defaults.json", () => {
       expect(groupMatches("no-npm", "npm install")).toBe(true);
       expect(groupMatches("no-npm", "npm run")).toBe(true);
       expect(groupMatches("no-npm", "npm")).toBe(true);
-      // bun commands are not blocked by this rule
       expect(groupMatches("no-npm", "bun install")).toBe(false);
     });
   });
@@ -238,7 +228,6 @@ describe("defaults.json", () => {
         groupMatches("jj", "jj restore --file Records/Bookmarks.csv"),
       ).toBe(false);
       expect(groupMatches("jj", "jj restore --file src/test.ts")).toBe(false);
-      // but blocks restore without --file
       expect(groupMatches("jj", "jj restore")).toBe(true);
       expect(groupMatches("jj", "jj restore src/")).toBe(true);
     });

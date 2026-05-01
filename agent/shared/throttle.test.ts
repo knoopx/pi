@@ -34,7 +34,6 @@ describe("acquireSlot", () => {
     const order: number[] = [];
 
     await acquireSlot("q.com", interval);
-
     const p1 = acquireSlot("q.com", interval).then(() => order.push(1));
     const p2 = acquireSlot("q.com", interval).then(() => order.push(2));
     const p3 = acquireSlot("q.com", interval).then(() => order.push(3));

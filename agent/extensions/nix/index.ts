@@ -2,7 +2,8 @@ import type {
   AgentToolResult,
   ExtensionAPI,
 } from "@mariozechner/pi-coding-agent";
-import { Type, type Static } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
+import type { Static } from "@sinclair/typebox";
 import { searchNixPackages, mapPackage, formatPackageTable } from "./packages";
 import {
   searchNixOptions,
@@ -18,21 +19,16 @@ const SearchQueryParams = Type.Object({
     description: "Search query (option name or description)",
   }),
 });
-
 type SearchQueryParamsType = Static<typeof SearchQueryParams>;
-
 type NixToolExecute = (
   _toolCallId: string,
   params: SearchQueryParamsType,
 ) => Promise<AgentToolResult<Record<string, unknown>>>;
-
 interface CreateToolMeta {
   name: string;
   label: string;
   description: string;
 }
-
-
 function createTool<T>(
   meta: CreateToolMeta,
   searchFn: (q: string) => Promise<T[]>,
@@ -64,7 +60,6 @@ function createTool<T>(
     },
   };
 }
-
 export default function (pi: ExtensionAPI): void {
   pi.registerTool(
     createTool(

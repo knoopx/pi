@@ -4,9 +4,7 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 import type * as utilsTypes from "./utils";
-
 let spawnResult = { stdout: "", stderr: "", exitCode: 0 };
-
 function createSpawnResult(data: unknown) {
   return {
     stdout: JSON.stringify(data),
@@ -15,7 +13,6 @@ function createSpawnResult(data: unknown) {
   };
 }
 
-/** Execute a search-code tool with given params and return the CLI args. */
 async function executeSearchCode(
   mockPi: MockExtensionAPI,
   params: Record<string, unknown>,
@@ -29,7 +26,6 @@ async function executeSearchCode(
   await tool.execute("tool1", params, undefined, undefined, {});
   return ghCmdJson.mock.calls[0][0] as string[];
 }
-
 const repoData = [
   {
     name: "react",
@@ -41,7 +37,6 @@ const repoData = [
     forks_count: 45000,
   },
 ];
-
 const codeData = [
   {
     repo: "repo",
@@ -57,19 +52,16 @@ const codeData = [
     ],
   },
 ];
-
 const expectedDetails = {
   query: "react",
   results: repoData,
   total: 1,
 };
-
 const errorSpawnResult = {
   stdout: "",
   stderr: "gh: not authenticated",
   exitCode: 1,
 };
-
 function getToolByName(mockPi: MockExtensionAPI, name: string): MockTool {
   const found = mockPi.registerTool.mock.calls.find(
     (call) => (call[0] as MockTool).name === name,
@@ -147,7 +139,6 @@ describe("GH Extension", () => {
     it("then it should return formatted repo list", async () => {
       const tool = getToolByName(mockPi, "gh-search-repos");
       spawnResult = createSpawnResult(repoData);
-
       const result = await tool.execute(
         "tool1",
         { query: "react", limit: 1 },
@@ -163,7 +154,6 @@ describe("GH Extension", () => {
     it("then it should return error result", async () => {
       const tool = getToolByName(mockPi, "gh-search-repos");
       spawnResult = errorSpawnResult;
-
       const result = await tool.execute(
         "tool1",
         { query: "react" },
@@ -182,7 +172,6 @@ describe("GH Extension", () => {
     it("then it should return formatted results", async () => {
       const tool = getToolByName(mockPi, "gh-search-code");
       spawnResult = createSpawnResult(codeData);
-
       const result = await tool.execute(
         "tool1",
         { query: "function main" },

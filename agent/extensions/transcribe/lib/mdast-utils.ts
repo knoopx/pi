@@ -1,17 +1,14 @@
 import type { Root as MdastRoot } from "mdast";
 import type { Node } from "unist";
 import { gfmFromMarkdown } from "mdast-util-gfm";
-import { removeNodesByIndex } from "./tree-utils.js";
+import { removeNodesByIndex } from "./tree-utils";
 import { fromMarkdown } from "mdast-util-from-markdown";
 import { visit } from "unist-util-visit";
-
 export function markdownToMdast(text: string): MdastRoot {
   return fromMarkdown(text, undefined, {
     mdastExtensions: [gfmFromMarkdown()],
   });
 }
-
-/** Remove script and style nodes from the tree. */
 function removeEmbeddedCode(tree: MdastRoot): void {
   const toRemove: Array<{ parent: Node; index: number }> = [];
 
@@ -23,14 +20,11 @@ function removeEmbeddedCode(tree: MdastRoot): void {
 
   removeNodesByIndex(toRemove);
 }
-
 function isEmptyTextNode(node: unknown): boolean {
   if (typeof node !== "object" || node === null) return false;
   const n = node as { type?: string; value?: string };
   return n.type === "text" && (n.value ?? "").trim().length === 0;
 }
-
-/** Check if a node contains only empty text. */
 function hasOnlyEmptyText(node: unknown): boolean {
   const children = (node as { children?: unknown[] })?.children;
   if (!Array.isArray(children)) return true;
@@ -39,25 +33,53 @@ function hasOnlyEmptyText(node: unknown): boolean {
   }
   return true;
 }
-
-/** Check if a node is an empty anchor link like [ ](#heading-id). */
 function isEmptyAnchorLink(node: unknown): boolean {
   const n = node as { type?: string; url?: string };
   return (
     n.type === "link" && (n.url ?? "").startsWith("#") && hasOnlyEmptyText(node)
   );
 }
+function isEmptyListItem(node: unknown): boolean {
+  const n = node as { children?: unknown[] };
+  const children = n.children;
+  if (!Array.isArray(children) || children.length === 0) return true;
+  for (const child of children) {
+    // A list item with any non-empty paragraph is not empty
+    const c = child as { type?: string; children?: unknown[] };
+    if (c.type === "paragraph" && !hasOnlyEmptyText(c)) return false;
+    if (c.type !== "paragraph") return false;
+  }
+  return true;
+}
+function cleanLists(tree: MdastRoot): void {
+  const toRemoveItems: Array<{ parent: Node; index: number }> = [];
+  visit(tree, "listItem", (node, index, parent) => {
+    if (parent && typeof index === "number" && isEmptyListItem(node)) {
+      toRemoveItems.push({ parent, index });
+    }
+  });
+  removeNodesByIndex(toRemoveItems);
 
-/** Check if a text child should be kept in a surviving paragraph. */
+  // Second pass: remove lists that are now empty
+  const toRemoveLists: Array<{ parent: Node; index: number }> = [];
+  visit(tree, "list", (node, index, parent) => {
+    const listNode = node as { children?: unknown[] };
+    if (
+      parent &&
+      typeof index === "number" &&
+      (!listNode.children || listNode.children.length === 0)
+    ) {
+      toRemoveLists.push({ parent, index });
+    }
+  });
+  removeNodesByIndex(toRemoveLists);
+}
 function isNonEmptyContent(child: unknown): boolean {
   if (typeof child !== "object" || child === null) return false;
   const c = child as { type?: string; value?: string };
   if (c.type === "text") return (c.value ?? "").trim().length > 0;
-  // Keep non-text nodes that have children (e.g. links, strong)
   return Array.isArray((child as { children?: unknown[] })?.children);
 }
-
-/** Remove empty anchor links from heading children. */
 function cleanHeadings(tree: MdastRoot): void {
   visit(tree, "heading", (node) => {
     const heading = node as { children?: unknown[] };
@@ -68,8 +90,6 @@ function cleanHeadings(tree: MdastRoot): void {
     );
   });
 }
-
-/** Extract text content from paragraph children, including text inside links. */
 function getParagraphText(
   children: Array<{ type?: string; value?: string }> | undefined,
 ): string {
@@ -86,8 +106,6 @@ function getParagraphText(
   }
   return parts.join("").trim();
 }
-
-/** Remove empty paragraphs and clean paragraph children. */
 function cleanParagraphs(tree: MdastRoot): void {
   const toRemove: Array<{ parent: Node; index: number }> = [];
 
@@ -116,11 +134,10 @@ function cleanParagraphs(tree: MdastRoot): void {
 
   removeNodesByIndex(toRemove);
 }
-
-/** Clean an mdast tree: remove scripts, styles, empty anchors, empty paragraphs. */
 export function cleanTree(tree: MdastRoot): MdastRoot {
   removeEmbeddedCode(tree);
   cleanHeadings(tree);
   cleanParagraphs(tree);
+  cleanLists(tree);
   return tree;
 }

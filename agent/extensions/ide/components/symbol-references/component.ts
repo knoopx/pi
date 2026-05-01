@@ -27,7 +27,6 @@ const SYMBOL_ACTION_DEFS: [string, SymbolReferenceActionType][] = [
   [Key.ctrl("y"), "types"],
   [Key.ctrl("k"), "schema"],
 ];
-
 interface SymbolReferenceComponentOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };
@@ -36,7 +35,6 @@ interface SymbolReferenceComponentOptions {
   done: (result: SymbolReferenceResult | null) => void;
   config: SymbolReferenceConfig;
 }
-
 function buildSymbolActions(
   doneWithAction: (item: SymbolReferenceItem | null) => void,
 ): ListPickerAction<SymbolReferenceItem>[] {
@@ -57,7 +55,6 @@ function buildSymbolActions(
     })),
   ];
 }
-
 function buildSymbolPickerOptions(
   pi: ExtensionAPI,
   theme: Theme,
@@ -108,21 +105,18 @@ function buildSymbolPickerOptions(
     },
   };
 }
-
 export function createSymbolReferenceComponent(
   options: SymbolReferenceComponentOptions,
 ): ListPickerComponent & { invalidate: () => void } {
   const { pi, tui, theme, keybindings, done, config } = options;
   let pendingAction: SymbolReferenceActionType | undefined;
   let pendingInsertType: "name" | "path" | undefined;
-
   function doneWithAction(item: SymbolReferenceItem | null): void {
     const result = resolveDoneResult(item, pendingAction, pendingInsertType);
     done(result);
     pendingAction = undefined;
     pendingInsertType = undefined;
   }
-
   function resolveDoneResult(
     item: SymbolReferenceItem | null,
     action: SymbolReferenceActionType | undefined,
@@ -137,10 +131,8 @@ export function createSymbolReferenceComponent(
     if (insertType) return { item, insertType };
     return { item };
   }
-
   const actions = buildSymbolActions(doneWithAction);
   const pickerOptions = buildSymbolPickerOptions(pi, theme, config, actions);
-
   const internalDone = (item: SymbolReferenceItem | null) => {
     if (item) done({ item });
     else done(null);

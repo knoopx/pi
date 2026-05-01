@@ -6,9 +6,7 @@ import type {
   SplitPanelDimensions,
   SplitPanelRows,
 } from "./layout";
-
 type BorderColor = "border" | "borderAccent";
-
 interface PanelRowArgs {
   leftContent: string;
   rightContent: string;
@@ -19,7 +17,6 @@ interface PanelRowArgs {
   mb: BorderColor;
   border: (color: BorderColor, s: string) => string;
 }
-
 interface BorderRowArgs {
   leftColor: BorderColor;
   middleColor: BorderColor;
@@ -31,7 +28,6 @@ interface BorderRowArgs {
   rightEnd: string;
   border: (color: BorderColor, s: string) => string;
 }
-
 interface FocusedRowArgs {
   leftStart: string;
   leftContent: string;
@@ -39,7 +35,6 @@ interface FocusedRowArgs {
   rightContent: string;
   rightEnd: string;
 }
-
 interface TopBorderArgs {
   leftW: number;
   rightW: number;
@@ -47,7 +42,6 @@ interface TopBorderArgs {
   rightFocus: boolean | undefined;
   theme: Theme;
 }
-
 interface TitleRowArgs {
   leftTitle: string;
   rightTitle: string;
@@ -57,7 +51,6 @@ interface TitleRowArgs {
   rightFocus: boolean | undefined;
   theme: Theme;
 }
-
 interface SeparatorRowArgs {
   leftW: number;
   rightW: number;
@@ -65,7 +58,6 @@ interface SeparatorRowArgs {
   rightFocus: boolean | undefined;
   theme: Theme;
 }
-
 interface BottomBorderArgs {
   leftW: number;
   rightW: number;
@@ -74,7 +66,6 @@ interface BottomBorderArgs {
   rightFocus: boolean | undefined;
   theme: Theme;
 }
-
 interface SplitRightPanelArgs {
   leftRows: string[];
   rightTopRows: string[];
@@ -88,7 +79,6 @@ interface SplitRightPanelArgs {
   rightBottomTitle: string;
   theme: Theme;
 }
-
 interface SimplePanelArgs {
   leftRows: string[];
   rightRows: string[];
@@ -99,24 +89,20 @@ interface SimplePanelArgs {
   rightFocus: boolean | undefined;
   theme: Theme;
 }
-
 function createBorderFn(
   theme: Theme,
 ): (color: BorderColor, s: string) => string {
   return (color, s) => theme.fg(color, s);
 }
-
 function getBorderColor(focus: boolean | undefined): BorderColor {
   return focus ? "borderAccent" : "border";
 }
-
 function getCenterBorderColor(
   leftFocus: boolean | undefined,
   rightFocus: boolean | undefined,
 ): BorderColor {
   return leftFocus || rightFocus ? "borderAccent" : "border";
 }
-
 function renderPanelRow(args: PanelRowArgs): string {
   const { leftContent, rightContent, leftW, rightW, lb, rb, mb, border } = args;
   return (
@@ -127,7 +113,6 @@ function renderPanelRow(args: PanelRowArgs): string {
     border(rb, BOX.vertical)
   );
 }
-
 function renderBorderRow(args: BorderRowArgs): string {
   const {
     leftColor,
@@ -148,7 +133,6 @@ function renderBorderRow(args: BorderRowArgs): string {
     border(rightColor, rightEnd)
   );
 }
-
 function createFocusedRowRenderer(
   leftFocus: boolean | undefined,
   rightFocus: boolean | undefined,
@@ -168,7 +152,6 @@ function createFocusedRowRenderer(
       border,
     });
 }
-
 function renderTopBorder(args: TopBorderArgs): string {
   const { leftW, rightW, leftFocus, rightFocus, theme } = args;
   const renderRow = createFocusedRowRenderer(leftFocus, rightFocus, theme);
@@ -180,7 +163,6 @@ function renderTopBorder(args: TopBorderArgs): string {
     rightEnd: BOX.topRight,
   });
 }
-
 function renderTitleRow(args: TitleRowArgs): string {
   const { leftTitle, rightTitle, leftW, rightW, leftFocus, rightFocus, theme } =
     args;
@@ -193,7 +175,6 @@ function renderTitleRow(args: TitleRowArgs): string {
     rightEnd: BOX.vertical,
   });
 }
-
 function renderSeparatorRow(args: SeparatorRowArgs): string {
   const { leftW, rightW, leftFocus, rightFocus, theme } = args;
   const renderRow = createFocusedRowRenderer(leftFocus, rightFocus, theme);
@@ -205,26 +186,22 @@ function renderSeparatorRow(args: SeparatorRowArgs): string {
     rightEnd: BOX.teeRight,
   });
 }
-
 function renderBottomBorder(args: BottomBorderArgs): string[] {
   const { leftW, rightW, helpText, leftFocus, rightFocus, theme } = args;
   const border = createBorderFn(theme);
   const lb = getBorderColor(leftFocus);
   const rb = getBorderColor(rightFocus);
   const separatorMb = getCenterBorderColor(leftFocus, rightFocus);
-
   const separator =
     border(lb, BOX.teeLeft) +
     border(lb, BOX.horizontal.repeat(leftW)) +
     border(separatorMb, BOX.teeUp) +
     border(rb, BOX.horizontal.repeat(rightW)) +
     border(rb, BOX.teeRight);
-
   const helpRow =
     border("border", BOX.vertical) +
     theme.fg("dim", pad(` ${helpText}`, leftW + rightW + 1)) +
     border("border", BOX.vertical);
-
   const bottomRow =
     border("border", BOX.bottomLeft) +
     border("border", BOX.horizontal.repeat(leftW + rightW + 1)) +
@@ -232,7 +209,6 @@ function renderBottomBorder(args: BottomBorderArgs): string[] {
 
   return [separator, helpRow, bottomRow];
 }
-
 function getPanelBorderConfig(
   leftFocus: boolean | undefined,
   rightFocus: boolean | undefined,
@@ -243,7 +219,6 @@ function getPanelBorderConfig(
   const border = (color: BorderColor, s: string) => theme.fg(color, s);
   return { lb, rb, border };
 }
-
 function renderSplitRightPanel(args: SplitRightPanelArgs): string[] {
   const {
     leftRows,
@@ -258,7 +233,6 @@ function renderSplitRightPanel(args: SplitRightPanelArgs): string[] {
     rightBottomTitle,
     theme,
   } = args;
-
   const { lb, rb, border } = getPanelBorderConfig(leftFocus, rightFocus, theme);
   const mb = getCenterBorderColor(leftFocus, rightFocus);
   const ctx = { leftW, rightW, lb, rb, mb, border, leftRows };
@@ -281,7 +255,6 @@ function renderSplitRightPanel(args: SplitRightPanelArgs): string[] {
     ...renderRightBottomSection(rightBottomRows, rightBottomH, rightTopH, ctx),
   ];
 }
-
 function renderRightTopSection(
   rightTopRows: string[],
   rightTopH: number,
@@ -299,7 +272,6 @@ function renderRightTopSection(
   }
   return lines;
 }
-
 function renderRightBottomSection(
   rightBottomRows: string[],
   rightBottomH: number,
@@ -319,7 +291,6 @@ function renderRightBottomSection(
   }
   return lines;
 }
-
 function renderSplitSeparator(rightTopH: number, ctx: PanelRenderCtx): string {
   const { leftRows, leftW, rightW, lb, rb, mb, border } = ctx;
   return (
@@ -330,7 +301,6 @@ function renderSplitSeparator(rightTopH: number, ctx: PanelRenderCtx): string {
     border(rb, BOX.teeRight)
   );
 }
-
 function renderBottomTitleLine(opts: {
   leftRows: string[];
   idx: number;
@@ -353,7 +323,6 @@ function renderBottomTitleLine(opts: {
     border(rb, BOX.vertical)
   );
 }
-
 function renderBottomSeparatorLine(
   leftRows: string[],
   idx: number,
@@ -368,7 +337,6 @@ function renderBottomSeparatorLine(
     border(rb, BOX.teeRight)
   );
 }
-
 interface PanelRenderCtx {
   leftRows: string[];
   leftW: number;
@@ -378,11 +346,9 @@ interface PanelRenderCtx {
   mb: BorderColor;
   border: (color: BorderColor, s: string) => string;
 }
-
 function getOrPad(row: string | undefined, width: number): string {
   return row || pad("", width);
 }
-
 function renderSimplePanel(args: SimplePanelArgs): string[] {
   const {
     leftRows,
@@ -415,7 +381,6 @@ function renderSimplePanel(args: SimplePanelArgs): string[] {
 
   return lines;
 }
-
 function renderPanelContent(
   theme: Theme,
   config: SplitPanelConfig,
@@ -451,7 +416,6 @@ function renderPanelContent(
     theme,
   });
 }
-
 function renderHeader(
   theme: Theme,
   config: SplitPanelConfig,
@@ -484,7 +448,6 @@ function renderHeader(
     }),
   ];
 }
-
 export function renderSplitPanel(
   theme: Theme,
   config: SplitPanelConfig,

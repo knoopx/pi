@@ -13,19 +13,15 @@ interface MessageStartEvent {
   type: "message_start";
   message: unknown;
 }
-
 interface MessageUpdateEvent {
   type: "message_update";
   message: unknown;
 }
-
 interface MessageEndEvent {
   type: "message_end";
   message: unknown;
 }
-
 const STALL_THRESHOLD_MS = 500;
-
 export function formatDuration(ms: number): string {
   const totalSeconds = ms / 1000;
   const hours = Math.floor(totalSeconds / 3600);
@@ -38,14 +34,12 @@ export function formatDuration(ms: number): string {
   if (seconds < 1) return `${seconds.toFixed(2)}s`;
   return `${String(Math.floor(seconds))}s`;
 }
-
 export function formatTokens(tokens: number | undefined | null): string {
   if (tokens === undefined || tokens === null) return "N/A";
   if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M`;
   if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}K`;
   return tokens.toString();
 }
-
 export function formatInputOutputTokens(
   input: number | undefined,
   output: number | undefined,
@@ -60,14 +54,12 @@ export function formatInputOutputTokens(
 
   return directionStr;
 }
-
 export function formatCost(usage: Usage | undefined | null): string {
   if (!usage) return "";
   const { total } = usage.cost;
   if (total < 0.005) return "";
   return `$${total.toFixed(2)}`;
 }
-
 export function formatTokensPerSecond(
   tokens: number | undefined,
   generationMs: number | undefined,
@@ -77,7 +69,6 @@ export function formatTokensPerSecond(
   const tokensPerSecond = tokens / (generationMs / 1000);
   return `${tokensPerSecond.toFixed(1)} tok/s`;
 }
-
 export interface AgentRunStats {
   turns: number;
   totalOutputTokens: number;
@@ -88,7 +79,6 @@ export interface AgentRunStats {
   totalCost: Usage["cost"];
   totalGenerationMs: number;
 }
-
 export function formatAggregateOutput(
   stats: AgentRunStats,
   durationMs: number,
@@ -107,7 +97,6 @@ export function formatAggregateOutput(
   );
   const costStr =
     stats.totalCost.total < 0.005 ? "" : `$${stats.totalCost.total.toFixed(2)}`;
-
   const parts = [turnsStr];
   if (tokensStr) parts.push(tokensStr);
   parts.push(` ${durationStr}`);
@@ -116,7 +105,6 @@ export function formatAggregateOutput(
 
   return parts.join(" · ");
 }
-
 export function formatSimpleOutput(
   output: number | undefined,
   durationMs: number,
@@ -127,13 +115,11 @@ export function formatSimpleOutput(
   const durationStr = formatDuration(durationMs);
   const tokPerSecStr = formatTokensPerSecond(output, generationMs);
   const costStr = formatCost(usage);
-
   let result = `↓${outputStr} |  ${durationStr}`;
   if (tokPerSecStr) result += ` |  ${tokPerSecStr}`;
   if (costStr) result += ` | ${costStr}`;
   return result;
 }
-
 interface TurnTiming {
   turnStartMs: number;
   lastUpdateMs: number;
@@ -144,7 +130,6 @@ interface TurnTiming {
   stallCount: number;
   inStall: boolean;
 }
-
 function isAssistantMessage(message: unknown): boolean {
   if (!message || typeof message !== "object") return false;
   const msg = message as Record<string, unknown>;
@@ -152,7 +137,6 @@ function isAssistantMessage(message: unknown): boolean {
   if (typeof msg.usage !== "object" || msg.usage === null) return false;
   return true;
 }
-
 function createTurnStartHandler(currentTiming: {
   value: TurnTiming | null;
 }): (event: TurnStartEvent) => void {
@@ -169,48 +153,37 @@ function createTurnStartHandler(currentTiming: {
     };
   };
 }
-
 function createMessageStartHandler(currentTiming: {
   value: TurnTiming | null;
 }): (event: MessageStartEvent) => void {
   return (event: MessageStartEvent) => {
     if (!currentTiming.value) return;
     if (!isAssistantMessage(event.message)) return;
-
     const now = Date.now();
     const timing = currentTiming.value;
 
-    // Track when THIS message started streaming (for generation TPS)
     timing.currentMessageStartMs = now;
 
-    // messages don't get counted as inference stalls.
     timing.lastUpdateMs = now;
     timing.inStall = false;
   };
 }
-
 function createMessageUpdateHandler(currentTiming: {
   value: TurnTiming | null;
 }): (event: MessageUpdateEvent) => void {
   return (event: MessageUpdateEvent) => {
     if (!currentTiming.value) return;
     if (!isAssistantMessage(event.message)) return;
-
     const timing = currentTiming.value;
     const now = Date.now();
 
-    // First token: capture TTFT and seed stall timing, then bail.
-    // No stall detection on this event — the gap from message_start to
-    // first message_update is provider parsing overhead, not a stall.
     if (timing.firstTokenMs === null) {
       timing.firstTokenMs = now;
       timing.lastUpdateMs = now;
       return;
     }
-
     const gap = now - timing.lastUpdateMs;
 
-    // time — the threshold is a detection gate, not a duration discount.
     if (gap >= STALL_THRESHOLD_MS) {
       if (!timing.inStall) {
         timing.stallCount++;
@@ -224,18 +197,15 @@ function createMessageUpdateHandler(currentTiming: {
     timing.lastUpdateMs = now;
   };
 }
-
 function createMessageEndHandler(currentTiming: {
   value: TurnTiming | null;
 }): (event: MessageEndEvent) => void {
   return (event: MessageEndEvent) => {
     if (!currentTiming.value) return;
     if (!isAssistantMessage(event.message)) return;
-
     const timing = currentTiming.value;
     const now = Date.now();
 
-    // Accumulate ACTUAL streaming time for this message (true generation time)
     if (timing.currentMessageStartMs) {
       const messageGenerationMs = now - timing.currentMessageStartMs;
       timing.totalGenerationMs += messageGenerationMs;
@@ -245,7 +215,6 @@ function createMessageEndHandler(currentTiming: {
     timing.lastUpdateMs = now;
   };
 }
-
 function createTurnEndHandler(
   currentTiming: { value: TurnTiming | null },
   agentState: {
@@ -259,18 +228,14 @@ function createTurnEndHandler(
 
     if (!timing) return;
     if (event.message.role !== "assistant") return;
-
     const turnEndTimestamp = Date.now();
     agentState.lastTurnEndTimestamp = turnEndTimestamp;
-
     const durationMs = Math.max(0, turnEndTimestamp - timing.turnStartMs);
     const generationMs =
       timing.totalGenerationMs > 0 ? timing.totalGenerationMs : undefined;
 
-    // Accumulate generation time for session-level stats
     agentState.totalGenerationMs =
       (agentState.totalGenerationMs ?? 0) + timing.totalGenerationMs;
-
     const notificationStr = formatSimpleOutput(
       event.message.usage.output,
       durationMs,
@@ -280,7 +245,6 @@ function createTurnEndHandler(
     ctx.ui.notify(notificationStr, "info");
   };
 }
-
 function computeAgentRunStats(messages: AgentEndEvent["messages"]): {
   turns: number;
   totalOutputTokens: number;
@@ -315,7 +279,6 @@ function computeAgentRunStats(messages: AgentEndEvent["messages"]): {
 
   return { turns, totalOutputTokens, totalInputTokens, totalCost };
 }
-
 function createAgentEndHandler(agentState: {
   agentStartTime: number | null;
   lastTurnEndTimestamp?: number | null;
@@ -323,13 +286,10 @@ function createAgentEndHandler(agentState: {
 }) {
   return (event: AgentEndEvent, ctx: ExtensionContext): void => {
     if (agentState.agentStartTime === null) return;
-
     const endTimestamp = agentState.lastTurnEndTimestamp ?? Date.now();
     const totalDurationMs = endTimestamp - agentState.agentStartTime;
-
     const stats = computeAgentRunStats(event.messages);
     if (!stats) return;
-
     const agentRunStats: AgentRunStats = {
       ...stats,
       totalCacheReadTokens: 0,
@@ -337,7 +297,6 @@ function createAgentEndHandler(agentState: {
       totalTokens: stats.totalInputTokens + stats.totalOutputTokens,
       totalGenerationMs: agentState.totalGenerationMs ?? 0,
     };
-
     const notificationStr = formatAggregateOutput(
       agentRunStats,
       totalDurationMs,
@@ -345,7 +304,6 @@ function createAgentEndHandler(agentState: {
     if (ctx.hasUI) ctx.ui.notify(notificationStr, "info");
   };
 }
-
 function createAgentStartHandler(state: {
   agentStartTime: number | null;
 }): () => void {
@@ -353,7 +311,6 @@ function createAgentStartHandler(state: {
     state.agentStartTime ??= Date.now();
   };
 }
-
 function createSessionHandlers(
   currentTiming: { value: TurnTiming | null },
   agentState: { totalGenerationMs?: number },
@@ -364,15 +321,14 @@ function createSessionHandlers(
   }
 
   return {
-    onSessionStart() {
+    onSessionStart(this: void) {
       resetCounters();
     },
-    onSessionShutdown() {
+    onSessionShutdown(this: void) {
       resetCounters();
     },
   };
 }
-
 export default function (pi: ExtensionAPI): void {
   const currentTiming = { value: null as TurnTiming | null };
   const agentState = {
@@ -388,7 +344,6 @@ export default function (pi: ExtensionAPI): void {
   pi.on("turn_end", createTurnEndHandler(currentTiming, agentState));
   pi.on("agent_start", createAgentStartHandler(agentState));
   pi.on("agent_end", createAgentEndHandler(agentState));
-
   const sessionHandlers = createSessionHandlers(currentTiming, agentState);
   pi.on("session_start", sessionHandlers.onSessionStart);
   pi.on("session_shutdown", sessionHandlers.onSessionShutdown);

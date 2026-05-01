@@ -9,8 +9,6 @@ describe("registry", () => {
     });
 
     it("handles empty string as source", async () => {
-      // Empty string goes through generic parser which treats it as a local file
-      // This will fail with ENOENT, which is expected behavior for missing files
       await expect(
         parse("", undefined as unknown as AbortSignal),
       ).rejects.toThrow("ENOENT");
@@ -22,7 +20,6 @@ describe("registry", () => {
       const controller = new AbortController();
       controller.abort();
 
-      // When aborted, the convert function should fail early
       await expect(
         parse(
           "https://github.com/user/repo",
@@ -36,7 +33,6 @@ describe("registry", () => {
     it.each(["not-a-url", "ftp://example.com/file", "mailto:test@example.com"])(
       "treats unsupported protocol as local file: %s",
       async (url) => {
-        // The generic parser matches everything and treats non-URL strings as local files
         await expect(
           parse(url, undefined as unknown as AbortSignal),
         ).rejects.toThrow("ENOENT");

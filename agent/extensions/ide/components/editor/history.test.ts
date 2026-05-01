@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { History } from "./history";
 import type { EditorState } from "./types";
-
 const createState = (lines: string[]): EditorState => ({
   lines,
   cursor: { line: 0, col: 0 },
@@ -54,11 +53,8 @@ describe("History", () => {
         history.saveState(stateA);
         history.saveState(stateB);
         history.saveState(stateC);
-
         const undo1 = history.undo(createState(["final"]));
         expect(undo1?.lines).toEqual(["c"]);
-
-        // Need to push C back as current for next undo
         const undo2 = history.undo(stateC);
         expect(undo2?.lines).toEqual(["b"]);
       });
@@ -90,7 +86,6 @@ describe("History", () => {
         history.saveState(stateA);
         history.undo(stateB);
         history.saveState(stateC);
-
         const redoResult = history.redo(stateC);
         expect(redoResult).toBeNull();
       });
@@ -105,7 +100,6 @@ describe("History", () => {
         for (let i = 0; i < 600; i++) {
           history.saveState(createState([`${i}`]));
         }
-
         const result = history.undo(createState(["final"]));
         expect(result?.lines).toEqual(["599"]);
       });

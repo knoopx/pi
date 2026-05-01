@@ -1,7 +1,5 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import stringWidth from "string-width";
-
-
 export function applyFocusedStyle(
   theme: Theme,
   text: string,

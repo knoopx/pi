@@ -4,7 +4,9 @@ import type {
   AgentToolResult,
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
-import { dotJoin, stateDot, table, type Column } from "../../shared/renderers";
+import { dotJoin, stateDot } from "../../shared/renderers/header";
+import { table } from "../../shared/renderers/table/renderer";
+import type { Column } from "../../shared/renderers/types";
 
 import { ghCmd } from "./utils";
 import {
@@ -13,14 +15,12 @@ import {
   createTextResultRender,
   TypeBoxFields,
 } from "./shared";
-
 interface GHWorkflow {
   name: string;
   id: number;
   state: string;
   path: string;
 }
-
 interface GHWorkflowRun {
   workflow_name: string;
   status: string;
@@ -37,7 +37,6 @@ async function ghList<T>(args: string[], errorBase: string): Promise<T[]> {
 
   if (result.exitCode !== 0)
     throw new Error(`${errorBase} failed: ${result.stderr || result.stdout}`);
-
   let items: T[];
   try {
     const raw = JSON.parse(result.stdout) as unknown;
@@ -48,7 +47,6 @@ async function ghList<T>(args: string[], errorBase: string): Promise<T[]> {
 
   return items;
 }
-
 function listWorkflows(
   owner: string,
   repo: string,
@@ -66,7 +64,6 @@ function listWorkflows(
     "gh workflow list",
   );
 }
-
 function listWorkflowRuns(
   owner: string,
   repo: string,
@@ -85,13 +82,11 @@ function listWorkflowRuns(
 
   return ghList<GHWorkflowRun>(args, "gh run list");
 }
-
 const ListWorkflowsParams = Type.Object({
   owner: TypeBoxFields.owner,
   repo: TypeBoxFields.repoName,
   limit: TypeBoxFields.listLimit,
 });
-
 const ListRunsParams = Type.Object({
   owner: TypeBoxFields.owner,
   repo: TypeBoxFields.repoName,
@@ -103,10 +98,8 @@ const ListRunsParams = Type.Object({
   ),
   limit: TypeBoxFields.listLimit,
 });
-
 type ListWorkflowsParamsType = Static<typeof ListWorkflowsParams>;
 type ListRunsParamsType = Static<typeof ListRunsParams>;
-
 function createListWorkflowsTool() {
   return {
     name: "gh-list-workflows",
@@ -188,7 +181,6 @@ async function executeListWorkflows(
     details: { workflows },
   };
 }
-
 function createListRunsTool() {
   return {
     name: "gh-list-runs",
@@ -268,7 +260,6 @@ async function executeListRuns(
     details: { runs },
   };
 }
-
 export function registerWorkflowTools(pi: ExtensionAPI) {
   pi.registerTool(createListWorkflowsTool());
   pi.registerTool(createListRunsTool());

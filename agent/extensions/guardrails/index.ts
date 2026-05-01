@@ -17,7 +17,6 @@ import {
   matchFileNamePattern,
 } from "../../shared/pattern-matching";
 import { glob } from "tinyglobby";
-
 function createGuardrailsHandler(
   ref: { value: boolean },
   _config: ResolvedConfig,
@@ -42,15 +41,12 @@ function createGuardrailsHandler(
       return;
     }
 
-    // No argument — run audit
     await handleGuardrailsAudit(args, ctx);
   };
 }
-
 export default async function (pi: ExtensionAPI) {
   configLoader.load();
   const config = configLoader.getConfig();
-
   const guardrailsEnabledRef = {
     value: (await loadGuardrailsSettings()).enabled,
   };
@@ -76,7 +72,6 @@ async function hasMatchingFiles(
   });
   return matches.length > 0;
 }
-
 export async function isGroupActive(
   pattern: string,
   root: string,
@@ -111,19 +106,16 @@ export async function isGroupActive(
     return false;
   }
 }
-
 function getInputFieldAsString(
   input: unknown,
   field: string,
 ): string | undefined {
   if (!input || typeof input !== "object") return undefined;
-
   const value = (input as Record<string, unknown>)[field];
   if (value === undefined || value === null) return undefined;
 
   return String(value);
 }
-
 function matchesPattern(
   context: GuardrailsRule["context"],
   targetValue: string,
@@ -140,19 +132,6 @@ function matchesPattern(
       return false;
   }
 }
-
-/**
- * Test whether a rule matches the current tool call.
- *
- * For "command" context, `pattern` uses AST-like token matching
- * implemented by `matchCommandPattern` (`?`, `*`).
- *
- * For "file_name" context, `pattern` uses glob matching via picomatch.
- * For "file_content" context, `pattern` uses literal substring matching
- * with pipe-separated alternatives.
- *
- * @returns The matched target value for includes/excludes filtering, or null.
- */
 function matchCommandRule(
   rule: GuardrailsRule,
   toolName: string,
@@ -164,7 +143,6 @@ function matchCommandRule(
   if (!matchCommandPattern(command, rule.pattern)) return null;
   return { targetValue: command };
 }
-
 function checkFilePatternMatch(
   filePath: string | undefined,
   filePattern: string | undefined,
@@ -172,7 +150,6 @@ function checkFilePatternMatch(
   if (!filePattern || !filePath) return true;
   return matchFileNamePattern(filePath, filePattern);
 }
-
 function isPathWithinProject(
   filePath: string | undefined,
   projectRoot: string,
@@ -185,7 +162,6 @@ function isPathWithinProject(
   const normalizedRoot = projectRoot.replace(/\/+/g, "/");
   return normalizedPath.startsWith(`${normalizedRoot}/`);
 }
-
 function getFileTargetValue(
   rule: GuardrailsRule,
   toolName: string,
@@ -200,7 +176,6 @@ function getFileTargetValue(
     return getInputFieldAsString(input, "content");
   return undefined;
 }
-
 function matchRule(
   rule: GuardrailsRule,
   toolName: string,
@@ -209,18 +184,15 @@ function matchRule(
 ): { targetValue: string } | null {
   if (rule.context === "command")
     return matchCommandRule(rule, toolName, input);
-
   const filePath = getInputFieldAsString(input, "path");
   if (!checkFilePatternMatch(filePath, rule.file_pattern)) return null;
   if (!passesScopeCheck(rule, filePath, cwd)) return null;
-
   const targetValue = getFileTargetValue(rule, toolName, input, filePath);
   if (!targetValue) return null;
 
   if (!matchesPattern(rule.context, targetValue, rule.pattern)) return null;
   return { targetValue };
 }
-
 function passesScopeCheck(
   rule: GuardrailsRule,
   filePath: string | undefined,
@@ -231,13 +203,11 @@ function passesScopeCheck(
   if (rule.scope === "project") return withinProject;
   return !withinProject;
 }
-
 interface MatchedRule {
   rule: GuardrailsRule;
   group: GuardrailsGroup;
   targetValue: string;
 }
-
 function shouldIncludeRule(rule: GuardrailsRule, targetValue: string): boolean {
   if (
     rule.includes &&
@@ -269,7 +239,6 @@ async function processGroupRules(
     try {
       const matchResult = matchRule(rule, toolName, input, cwd);
       if (!matchResult) continue;
-
       const { targetValue } = matchResult;
       if (!(await shouldIncludeRule(rule, targetValue))) continue;
 
@@ -311,7 +280,6 @@ async function handleMatchedRule(
   if (action === "confirm") {
     if (!ctx.hasUI)
       return { block: true, reason: `Blocked [${group.group}]: ${reason}` };
-
     const icon = ctx.ui.theme ? ctx.ui.theme.fg("warning", "󰀪") : "󰀪";
     const proceed = await ctx.ui.confirm(
       `${icon} ${group.group}: ${reason}`,
@@ -334,12 +302,10 @@ async function handleGuardrailsAudit(
     ctx.ui?.notify("No guardrails configured", "info");
     return;
   }
-
   const fg = createThemeFg(ctx.ui.theme);
   const auditResult = await auditGuardrailsConfig(config, ctx.cwd, fg);
   notifyAuditResult(ctx, auditResult, fg);
 }
-
 interface GuardrailsAuditResult {
   lines: string[];
   errors: number;
@@ -377,7 +343,6 @@ async function auditGuardrailsConfig(
 
   return { lines, errors };
 }
-
 function validateGuardrailsRule(
   rule: GuardrailsRule,
   index: number,
@@ -424,7 +389,6 @@ function validateGuardrailsRule(
 
   return errors;
 }
-
 function setupPermissionGateHook(
   pi: ExtensionAPI,
   config: ResolvedConfig,
@@ -432,12 +396,10 @@ function setupPermissionGateHook(
 ) {
   pi.on("tool_call", async (event, ctx) => {
     if (!isEnabled()) return;
-
     const toolName = event.toolName;
     const input = event.input;
 
     if (toolName === "read" || toolName === "genui") return;
-
     const matchedRules = await findMatchingRules(
       toolName,
       input,

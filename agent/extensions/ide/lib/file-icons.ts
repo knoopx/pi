@@ -1,4 +1,3 @@
-
 const FILE_ICONS: Record<string, string> = {
   ".ts": "󰛦",
   ".tsx": "󰜈",
@@ -55,7 +54,6 @@ const FILE_ICONS: Record<string, string> = {
   ".gitattributes": "󰊢",
   ".lock": "󰌾",
 };
-
 const FILENAME_ICONS: Record<string, string> = {
   "package.json": "󰎙",
   "tsconfig.json": "󰛦",
@@ -80,7 +78,6 @@ const FILENAME_ICONS: Record<string, string> = {
   "CHANGELOG.md": "󰍔",
   "AGENTS.md": "󰍔",
 };
-
 const FILE_STATUS_ICONS: Record<string, string> = {
   A: "󰐕",
   M: "󰏫",
@@ -88,7 +85,6 @@ const FILE_STATUS_ICONS: Record<string, string> = {
   R: "󰑕",
   C: "󰆏",
 };
-
 const FILE_ICON_COLORS: Record<string, string> = {
   ".ts": "#3178c6",
   ".tsx": "#3178c6",
@@ -145,7 +141,6 @@ const FILE_ICON_COLORS: Record<string, string> = {
   ".gitattributes": "#f14e32",
   ".lock": "#6b7280",
 };
-
 const FILENAME_COLORS: Record<string, string> = {
   "package.json": "#cb3837",
   "tsconfig.json": "#3178c6",
@@ -170,18 +165,15 @@ const FILENAME_COLORS: Record<string, string> = {
   "CHANGELOG.md": "#519aba",
   "AGENTS.md": "#519aba",
 };
-
 function getFilename(filePath: string): string {
   const parts = filePath.split("/");
   return parts[parts.length - 1] || "";
 }
-
 export function getFileIcon(filePath: string): string {
   if (filePath.endsWith("/")) return "󰉋";
   const filename = getFilename(filePath);
 
   if (FILENAME_ICONS[filename]) return FILENAME_ICONS[filename];
-
   const dotIndex = filename.lastIndexOf(".");
   if (dotIndex > 0) {
     const ext = filename.slice(dotIndex).toLowerCase();
@@ -190,18 +182,14 @@ export function getFileIcon(filePath: string): string {
 
   return "󰈙";
 }
-
 export function getFileStatusIcon(status: string): string {
   return FILE_STATUS_ICONS[status] || status;
 }
-
-
 export function getFileIconColor(filePath: string): string | null {
   if (filePath.endsWith("/")) return "#90a4ae";
   const filename = getFilename(filePath);
 
   if (FILENAME_COLORS[filename]) return FILENAME_COLORS[filename];
-
   const dotIndex = filename.lastIndexOf(".");
   if (dotIndex > 0) {
     const ext = filename.slice(dotIndex).toLowerCase();

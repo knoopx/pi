@@ -1,6 +1,4 @@
-import type { Parser } from "./types.js";
-
-/** Create a parser with standard URL matching and dispatch. */
+import type { Parser } from "./types";
 export function defineParser<T>(
   domain: string,
   matches: (url: string) => boolean,

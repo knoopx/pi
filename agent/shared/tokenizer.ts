@@ -1,5 +1,4 @@
 import { parse } from "shell-quote";
-
 const ENV_VAR_ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
 const COMMAND_WRAPPERS = new Set([
   "env",
@@ -10,48 +9,18 @@ const COMMAND_WRAPPERS = new Set([
   "time",
 ]);
 
-/**
- * Tokenize a shell command into pipeline segments, skipping env vars
- * and command wrappers. Each segment is an array of string tokens
- * representing a single command invocation.
- *
- * "FOO=bar env npm install && python3 -m pytest"
- * → [["npm", "install"], ["python3", "-m", "pytest"]]
- */
+const SEGMENT_SPLITTERS = new Set(["||", "&&", ";"]);
+
 export function tokenizeCommand(command: string): string[][] {
   const trimmed = command.trim();
   if (!trimmed) return [];
 
-  let tokens: ReturnType<typeof parse>;
-  try {
-    tokens = parse(trimmed);
-  } catch {
-    const parts = trimmed.split(/\s+/);
-    return parts.length > 0 ? [parts] : [];
-  }
-
-  const SEGMENT_SPLITTERS = new Set(["||", "&&", ";"]);
+  const tokens = parseShell(trimmed);
   const segments: string[][] = [];
   let current: string[] = [];
 
   for (const token of tokens) {
-    if (
-      typeof token === "object" &&
-      token !== null &&
-      "op" in token &&
-      typeof token.op === "string"
-    ) {
-      // Treat `|` as a literal token (patterns can match cross-pipeline).
-      // Split on `||`, `&&`, `;` only.
-      if (SEGMENT_SPLITTERS.has(token.op)) {
-        if (current.length > 0) {
-          segments.push(normalizeSegment(current));
-          current = [];
-        }
-      } else {
-        current.push(token.op);
-      }
-    } else if (typeof token === "string") current.push(token);
+    processToken(token, current, SEGMENT_SPLITTERS, segments);
   }
 
   if (current.length > 0) segments.push(normalizeSegment(current));
@@ -59,7 +28,60 @@ export function tokenizeCommand(command: string): string[][] {
   return segments;
 }
 
-/** Strip env vars and command wrappers from the front of a token list. */
+function parseShell(command: string): ReturnType<typeof parse> {
+  try {
+    return parse(command);
+  } catch {
+    const parts = command.split(/\s+/);
+    return parts.length > 0 ? parts : [];
+  }
+}
+
+function processToken(
+  token: ReturnType<typeof parse>[number],
+  current: string[],
+  segmentSplitters: Set<string>,
+  segments: string[][],
+): void {
+  if (isOperator(token)) {
+    handleOperator(token.op, current, segmentSplitters, segments);
+  } else if (typeof token === "string") {
+    current.push(token);
+  }
+}
+
+function isOperator(
+  token: ReturnType<typeof parse>[number],
+): token is { op: string } {
+  return (
+    typeof token === "object" &&
+    token !== null &&
+    "op" in token &&
+    typeof (token as { op: unknown }).op === "string"
+  );
+}
+
+function handleOperator(
+  op: string,
+  current: string[],
+  segmentSplitters: Set<string>,
+  segments: string[][],
+): void {
+  if (segmentSplitters.has(op)) {
+    finalizeSegment(current, segments);
+  } else {
+    current.push(op);
+  }
+}
+
+function finalizeSegment(current: string[], segments: string[][]): void {
+  if (current.length > 0) {
+    segments.push(normalizeSegment(current));
+    current.length = 0;
+  }
+}
+
+// Strip env vars and command wrappers from the front of a token list.
 function normalizeSegment(tokens: string[]): string[] {
   let i = 0;
   while (i < tokens.length && ENV_VAR_ASSIGNMENT.test(tokens[i])) {

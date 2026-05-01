@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parser as githubParser } from "./github";
+import { githubParser } from "./github";
 
 describe("GitHub parser", () => {
   describe("matches", () => {
@@ -35,8 +35,6 @@ describe("GitHub parser", () => {
     it("extracts ref from blob URLs", () => {
       const url =
         "https://github.com/owner/repo/blob/feature-branch/src/main.ts";
-      // We test via the convert function - but since it calls gh CLI,
-      // we test that matches returns true and the URL is valid
       expect(githubParser.matches(url)).toBe(true);
     });
 

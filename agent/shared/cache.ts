@@ -1,9 +1,5 @@
-/**
- * LRU cache utility for storing computed values
- */
 export function createLRUCache<K, V>(limit: number) {
   const cache = new Map<K, V>();
-
   function touch(key: K, value: V): V {
     cache.delete(key);
     cache.set(key, value);
@@ -18,7 +14,9 @@ export function createLRUCache<K, V>(limit: number) {
     get: (key: K) => cache.get(key),
     set: (key: K, value: V) => cache.set(key, value),
     touch,
-    clear: () => { cache.clear(); },
+    clear: () => {
+      cache.clear();
+    },
     size: () => cache.size,
   };
 }

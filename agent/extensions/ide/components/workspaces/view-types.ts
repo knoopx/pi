@@ -1,5 +1,4 @@
 import type { AgentWorkspace, FileChange, Change } from "../../lib/types";
-
 export interface WorkspaceViewProps {
   workspaces: AgentWorkspace[];
   selectedWorkspace: AgentWorkspace | null;

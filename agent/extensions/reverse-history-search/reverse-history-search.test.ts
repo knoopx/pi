@@ -11,7 +11,6 @@ import { fuzzyMatch } from "../../shared/fuzzy";
 import type { MockExtensionAPI } from "../../shared/test-utils";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 
-// Extension Registration
 describe("Reverse History Search Extension", () => {
   let mockPi: MockExtensionAPI;
 
@@ -40,7 +39,6 @@ describe("Reverse History Search Extension", () => {
     });
   });
 
-  // Shortcut Handler
   describe("ctrl+r shortcut handler", () => {
     let handler: (ctx: ExtensionContext) => Promise<void>;
     let mockCtx: ExtensionContext;
@@ -97,13 +95,13 @@ describe("Reverse History Search Extension", () => {
     });
 
     describe("given no UI is available", () => {
-      it("then it should do nothing", async () => {
+      it("then it should exit without showing UI", async () => {
         mockCtx.hasUI = false;
 
         await handler(mockCtx);
 
-        expect(mockCtx.ui.notify).not.toHaveBeenCalled();
-        expect(mockCtx.ui.custom).not.toHaveBeenCalled();
+        expect(mockCtx.ui.notify.bind(mockCtx.ui)).not.toHaveBeenCalled();
+        expect(mockCtx.ui.custom.bind(mockCtx.ui)).not.toHaveBeenCalled();
       });
     });
 
@@ -111,11 +109,11 @@ describe("Reverse History Search Extension", () => {
       it("then it should notify user that no history is found", async () => {
         await handler(mockCtx);
 
-        expect(mockCtx.ui.notify).toHaveBeenCalledWith(
+        expect(mockCtx.ui.notify.bind(mockCtx.ui)).toHaveBeenCalledWith(
           "No history found",
           "warning",
         );
-        expect(mockCtx.ui.custom).not.toHaveBeenCalled();
+        expect(mockCtx.ui.custom.bind(mockCtx.ui)).not.toHaveBeenCalled();
       });
     });
 
@@ -126,7 +124,6 @@ describe("Reverse History Search Extension", () => {
     });
   });
 
-  // Fuzzy Matching Logic
   describe("fuzzyMatch function", () => {
     describe("given an empty query", () => {
       it("then it should return true for empty query", () => {

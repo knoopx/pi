@@ -1,12 +1,10 @@
-import { BROWSER_HEADERS, FETCH_OPTIONS } from "../lib/constants.js";
-import { formatAge, formatNumber, stripHtml } from "../lib/formatters.js";
-import { defineParser } from "../lib/parser-utils.js";
-import { retry } from "../lib/retry.js";
-
+import { BROWSER_HEADERS, FETCH_OPTIONS } from "../lib/constants";
+import { formatAge, formatNumber, stripHtml } from "../lib/formatters";
+import { defineParser } from "../lib/parser-utils";
+import { retry } from "../lib/retry";
 const FIREBASE = "https://hacker-news.firebaseio.com/v0";
 const HN_BASE = "https://news.ycombinator.com";
 const ALGOLIA = "https://hn.algolia.com/api/v1";
-
 interface HNItem {
   id: number;
   type: "story" | "comment" | "job" | "poll" | "unknown";
@@ -21,7 +19,6 @@ interface HNItem {
   dead?: boolean;
   deleted?: boolean;
 }
-
 interface HNUser {
   id: string;
   about?: string;
@@ -29,9 +26,7 @@ interface HNUser {
   karma?: number;
   submitted?: number[];
 }
-
 type StoryKind = "top" | "new" | "best" | "ask" | "show" | "jobs";
-
 interface ParsedHNUrl {
   kind:
     | "stories"
@@ -49,7 +44,6 @@ interface ParsedHNUrl {
   firebasePath?: string;
   limit?: number;
 }
-
 function formatTime(timestamp: number): string {
   const d = new Date(timestamp * 1000);
   return d.toLocaleDateString("en-US", {
@@ -115,19 +109,15 @@ async function fetchAlgoliaSearch(
   const data = await fetchJson<{ hits: unknown[] }>(url, signal);
   return data.hits;
 }
-
 function parseHnUrl(url: string): ParsedHNUrl | null {
   const firebase = tryParseFirebaseUrl(url);
   if (firebase) return firebase;
-
   const match = url.match(
     /^https?:\/\/news\.ycombinator\.com(?:\/(.+))?(?:\?(.+))?$/,
   );
   if (!match) return null;
-
   const [, path, queryString] = match;
   const params = new URLSearchParams(queryString || "");
-
   const parsers: Array<() => ParsedHNUrl | null> = [
     () => tryParseItemPath(path, params),
     () => tryParseUserRelatedPath(path, params),
@@ -142,14 +132,12 @@ function parseHnUrl(url: string): ParsedHNUrl | null {
 
   return null;
 }
-
 function tryParseFirebaseUrl(url: string): ParsedHNUrl | null {
   if (!url.includes("hacker-news.firebaseio.com")) return null;
   const match = url.match(/\/v0\/(.+)/);
   if (match) return { kind: "firebase", firebasePath: match[1] };
   return null;
 }
-
 function tryParseItemPath(
   path: string | undefined,
   params: URLSearchParams,
@@ -159,14 +147,12 @@ function tryParseItemPath(
   if (id > 0) return { kind: "item", itemId: id };
   return null;
 }
-
 function tryParseUserRelatedPath(
   path: string | undefined,
   params: URLSearchParams,
 ): ParsedHNUrl | null {
   const username = params.get("id");
   if (!username) return null;
-
   const kindMap: Record<string, ParsedHNUrl["kind"]> = {
     user: "user",
     favorites: "saved",
@@ -177,7 +163,6 @@ function tryParseUserRelatedPath(
   if (kind) return { kind, username };
   return null;
 }
-
 const STORY_PATHS: Record<string, StoryKind> = {
   "": "top",
   newest: "new",
@@ -186,11 +171,9 @@ const STORY_PATHS: Record<string, StoryKind> = {
   show: "show",
   jobs: "jobs",
 };
-
 function clampLimit(raw: number): number {
   return isNaN(raw) ? 20 : Math.min(raw, 200);
 }
-
 function tryParseStoriesPath(
   path: string | undefined,
   params: URLSearchParams,
@@ -203,7 +186,6 @@ function tryParseStoriesPath(
     limit: clampLimit(Number(params.get("limit"))),
   };
 }
-
 function tryParseSearchParams(params: URLSearchParams): ParsedHNUrl | null {
   const q = params.get("q") || params.get("query");
   if (!q) return null;
@@ -219,13 +201,11 @@ function buildStoryItem(rank: number, item: HNItem): string[] {
   const linkLine = `    [HN](${HN_BASE}/item?id=${item.id})`;
   return [titleLine, metaLine, linkLine];
 }
-
 function buildStoryTitle(rank: number, item: HNItem): string {
   const title = item.title || "(no title)";
   if (item.url) return `**${rank}. ${title}** [${item.url}](${item.url})`;
   return `**${rank}. ${title}**`;
 }
-
 function buildStoryMeta(item: HNItem): string {
   const meta: string[] = [];
   if (item.score !== undefined) meta.push(`score: ${formatNumber(item.score)}`);
@@ -235,7 +215,6 @@ function buildStoryMeta(item: HNItem): string {
   if (item.time) meta.push(formatAge(item.time));
   return meta.join(" • ");
 }
-
 const STORY_LABELS: Record<StoryKind, string> = {
   top: "Top Stories",
   new: "New Stories",
@@ -252,7 +231,6 @@ async function handleStories(
 ): Promise<string> {
   const ids = await fetchStoryIds(kind, signal);
   const validItems = await fetchValidStories(ids.slice(0, limit), signal);
-
   const parts: string[] = [`# Hacker News — ${STORY_LABELS[kind]}`, ``];
 
   for (let i = 0; i < validItems.length; i++) {
@@ -273,7 +251,6 @@ async function handleItem(
   if (item.deleted || item.dead) {
     return renderDeletedItem(itemId);
   }
-
   const parts: string[] = [];
   parts.push(...renderItemHeader(item));
   parts.push(buildItemMeta(item));
@@ -284,36 +261,30 @@ async function handleItem(
 
   return parts.join("\n");
 }
-
 function renderDeletedItem(id: number): string {
   return `# Item #${id}\n\nThis item has been deleted or marked as dead.`;
 }
-
 function renderItemHeader(item: HNItem): string[] {
   const parts: string[] = [];
   if (item.title) parts.push(`# ${item.title}`);
   if (item.url) parts.push(`[**${item.url}**](${item.url})`);
   return parts;
 }
-
 function renderItemText(item: HNItem): string[] {
   if (!item.text) return [];
   const clean = stripHtml(item.text);
   if (!clean) return [];
   return ["", clean];
 }
-
 function renderItemLink(item: HNItem): string {
   return `[View on Hacker News](${HN_BASE}/item?id=${item.id})`;
 }
-
 function buildItemMeta(item: HNItem): string {
   const meta: string[] = [`id: ${item.id}`, `type: ${item.type}`];
   if (item.by) meta.push(`by: [${item.by}](${HN_BASE}/user?id=${item.by})`);
   if (item.time) meta.push(formatTime(item.time));
   return meta.join(" \u2022 ");
 }
-
 function buildItemStats(item: HNItem): string {
   const stats: string[] = [];
   if (item.score !== undefined)
@@ -328,7 +299,6 @@ async function handleUser(
 ): Promise<string> {
   const user = await fetchUser(username, signal);
   if (!user.id) throw new Error(`User ${username} not found`);
-
   const parts: string[] = [`# ${user.id}`, ""];
   parts.push(buildUserMeta(user));
   parts.push(...buildUserAbout(user));
@@ -336,14 +306,12 @@ async function handleUser(
 
   return parts.join("\n");
 }
-
 function buildUserMeta(user: HNUser): string {
   const meta: string[] = [];
   if (user.karma !== undefined) meta.push(`karma: ${formatNumber(user.karma)}`);
   if (user.created) meta.push(`member since: ${formatTime(user.created)}`);
   return meta.join(" \u2022 ");
 }
-
 function buildUserAbout(user: HNUser): string[] {
   if (!user.about?.trim()) return [];
   return ["", "**About:**", stripHtml(user.about)];
@@ -369,11 +337,9 @@ async function fetchRecentStories(
   signal?: AbortSignal,
 ): Promise<HNItem[]> {
   if (!user.submitted?.length) return [];
-
   const recentIds = user.submitted.slice(0, 10);
   return fetchValidStories(recentIds, signal);
 }
-
 function renderSubmissionItem(item: HNItem): string[] {
   const title = item.title || "(no title)";
   const url = item.url ? ` [${item.url}](${item.url})` : "";
@@ -384,7 +350,6 @@ function renderSubmissionItem(item: HNItem): string[] {
     `  ${meta} [HN](${HN_BASE}/item?id=${item.id})`,
   ];
 }
-
 function buildSubmissionMeta(item: HNItem): string {
   const parts: string[] = [];
   if (item.score !== undefined) parts.push(`${item.score} pts`);
@@ -401,7 +366,6 @@ async function parseHtmlStoryList(
   const ids = extractThingIds(html);
   return fetchValidStories(ids, signal);
 }
-
 function extractThingIds(html: string): number[] {
   const ids: number[] = [];
   const thingRegex = /id="([^"]+)"\s+class="athing"/g;
@@ -421,7 +385,6 @@ async function fetchValidStories(
   const items = await Promise.all(ids.map((id) => fetchItem(id, signal)));
   return items.filter(isValidStory);
 }
-
 function isValidStory(item: HNItem | null): item is HNItem {
   return !!(item && item.type === "story" && !item.deleted && !item.dead);
 }
@@ -433,7 +396,6 @@ async function handleHtmlListPage(
 ): Promise<string> {
   const stories = await fetchListStories(kind, username, signal);
   const label = LIST_PAGE_LABELS[kind];
-
   const parts: string[] = [`# ${username}\'s ${label}`, ""];
 
   for (let i = 0; i < stories.length; i++) {
@@ -447,7 +409,6 @@ async function handleHtmlListPage(
 
   return parts.join("\n");
 }
-
 const LIST_PAGE_LABELS: Record<string, string> = {
   saved: "Saved Stories",
   upvoted: "Upvoted Stories",
@@ -480,7 +441,6 @@ async function handleSearch(
   signal?: AbortSignal,
 ): Promise<string> {
   const hits = await fetchAlgoliaSearch(query, limit, signal);
-
   const parts: string[] = [`# Hacker News Search — "${query}"`, ""];
 
   for (let i = 0; i < hits.length; i++) {
@@ -490,18 +450,15 @@ async function handleSearch(
 
   return parts.join("\n");
 }
-
 function renderSearchHit(rank: number, hit: Record<string, unknown>): string[] {
   const id = Number(hit.objectID);
   const fields = extractSearchFields(hit);
-
   const lines: string[] = [`**${rank}. ${fields.title}**`];
   lines.push(buildSearchMeta(fields));
   lines.push(renderSearchLinks(id, fields.url));
 
   return lines;
 }
-
 function extractSearchFields(hit: Record<string, unknown>): {
   title: string;
   url: string | null;
@@ -519,11 +476,9 @@ function extractSearchFields(hit: Record<string, unknown>): {
     createdAt: safeString(hit.created_at),
   };
 }
-
 function safeString(value: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
-
 function buildSearchMeta(fields: {
   points: number;
   numComments: number;
@@ -547,7 +502,6 @@ function buildSearchMeta(fields: {
   }
   return meta.join(" \u2022 ");
 }
-
 function renderSearchLinks(id: number, url: string | null): string {
   const links: string[] = [`[HN](${HN_BASE}/item?id=${id})`];
   if (url) links.push(`[${url}](${url})`);
@@ -559,10 +513,8 @@ async function handleFirebasePath(
 ): Promise<string> {
   const itemId = tryParseItemId(path);
   if (itemId !== null) return handleItem(itemId, signal);
-
   const username = tryParseUsername(path);
   if (username) return handleUser(username, signal);
-
   const kind = tryParseStoryKind(path);
   if (kind) return handleStories(kind, 20, signal);
 
@@ -571,19 +523,16 @@ async function handleFirebasePath(
   const jsonBlock = "\`\`\`json\n" + JSON.stringify(data, null, 2) + "\n\`\`\`";
   return `# Firebase API: /v0/${path}\n\n${jsonBlock}`;
 }
-
 function tryParseItemId(path: string): number | null {
   const match = path.match(/^(?:id|item)\/(\d+)\.json?$/);
   if (match) return parseInt(match[1], 10);
   return null;
 }
-
 function tryParseUsername(path: string): string | null {
   const match = path.match(/^user\/([^/]+)\.json?$/);
   if (match) return match[1];
   return null;
 }
-
 const FIREBASE_STORY_KINDS: Record<string, StoryKind> = {
   topstories: "top",
   newstories: "new",
@@ -592,14 +541,12 @@ const FIREBASE_STORY_KINDS: Record<string, StoryKind> = {
   showstories: "show",
   jobstories: "jobs",
 };
-
 function tryParseStoryKind(path: string): StoryKind | null {
   for (const [key, kind] of Object.entries(FIREBASE_STORY_KINDS)) {
     if (new RegExp(`^${key}\\.json?$`).test(path)) return kind;
   }
   return null;
 }
-
 function dispatchHN(
   parsed: ParsedHNUrl,
   signal?: AbortSignal,
@@ -607,18 +554,38 @@ function dispatchHN(
   const handlers: Record<ParsedHNUrl["kind"], () => Promise<string>> = {
     stories: () =>
       handleStories(parsed.storyKind || "top", parsed.limit || 20, signal),
-    item: () => handleItem(parsed.itemId!, signal),
-    user: () => handleUser(parsed.username!, signal),
-    saved: () => handleHtmlListPage("saved", parsed.username!, signal),
-    upvoted: () => handleHtmlListPage("upvoted", parsed.username!, signal),
-    submitted: () => handleHtmlListPage("submitted", parsed.username!, signal),
-    search: () => handleSearch(parsed.query!, parsed.limit || 20, signal),
-    firebase: () => handleFirebasePath(parsed.firebasePath!, signal),
+    item: () => {
+      if (!parsed.itemId) throw new Error("Missing item id");
+      return handleItem(parsed.itemId, signal);
+    },
+    user: () => {
+      if (!parsed.username) throw new Error("Missing username");
+      return handleUser(parsed.username, signal);
+    },
+    saved: () => {
+      if (!parsed.username) throw new Error("Missing username for saved");
+      return handleHtmlListPage("saved", parsed.username, signal);
+    },
+    upvoted: () => {
+      if (!parsed.username) throw new Error("Missing username for upvoted");
+      return handleHtmlListPage("upvoted", parsed.username, signal);
+    },
+    submitted: () => {
+      if (!parsed.username) throw new Error("Missing username for submitted");
+      return handleHtmlListPage("submitted", parsed.username, signal);
+    },
+    search: () => {
+      if (!parsed.query) throw new Error("Missing search query");
+      return handleSearch(parsed.query, parsed.limit || 20, signal);
+    },
+    firebase: () => {
+      if (!parsed.firebasePath) throw new Error("Missing firebase path");
+      return handleFirebasePath(parsed.firebasePath, signal);
+    },
   };
   return handlers[parsed.kind]();
 }
-
-export const parser = defineParser(
+export const hackernewsParser = defineParser(
   "Hacker News",
   (url) =>
     /^https?:\/\/(news\.ycombinator\.com|hacker-news\.firebaseio\.com)\//i.test(

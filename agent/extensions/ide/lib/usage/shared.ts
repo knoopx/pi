@@ -5,9 +5,7 @@ import { fetchOpenAIUsage } from "./providers/openai";
 import { fetchZAIUsage } from "./providers/zai";
 import { createDefaultDependencies } from "./runtime";
 import type { BaseDependencies, UsageSnapshot } from "./types";
-
 const defaultDependencies = createDefaultDependencies();
-
 export async function detectAndFetchUsage(
   model: { provider?: string; id?: string } | undefined,
   dependencies: BaseDependencies = defaultDependencies,
@@ -31,7 +29,6 @@ export async function detectAndFetchUsage(
 
   return undefined;
 }
-
 export function formatUsageSnapshot(usage: UsageSnapshot | undefined): string {
   if (!usage) return "Quota: unavailable";
 
@@ -49,5 +46,4 @@ export function formatUsageSnapshot(usage: UsageSnapshot | undefined): string {
     })
     .join(", ");
 }
-
 export type { UsageSnapshot } from "./types";

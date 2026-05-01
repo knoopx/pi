@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { detectAndFetchUsage, formatUsageSnapshot } from "./shared";
 import type { BaseDependencies, UsageSnapshot } from "./types";
 
-// Mock the provider modules
 vi.mock("./providers/anthropic", () => ({
   fetchAnthropicUsage: vi.fn(),
 }));
@@ -41,7 +40,6 @@ describe("detectAndFetchUsage", () => {
           windows: [{ label: "5h", usedPercent: 50 }],
         };
         vi.mocked(fetchAnthropicUsage).mockResolvedValueOnce(mockSnapshot);
-
         const result = await detectAndFetchUsage(
           { provider: "anthropic", id: "claude-3" },
           createMockDeps(),

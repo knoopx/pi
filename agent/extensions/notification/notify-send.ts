@@ -7,7 +7,6 @@ interface NotifyToolParams {
   icon?: string;
   category?: string;
 }
-
 export function buildNotifySendArgs(params: NotifyToolParams): string[] {
   const args: string[] = [];
 

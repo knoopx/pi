@@ -1,7 +1,6 @@
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import type { ListPickerItem } from "../../lib/list-picker";
 import { makeCommandDef } from "./helpers";
-
 export interface SymbolReferenceItem extends ListPickerItem {
   name: string;
   type: string;
@@ -11,26 +10,21 @@ export interface SymbolReferenceItem extends ListPickerItem {
   signature?: string;
   callLine?: number;
 }
-
 export interface SymbolReferenceConfig {
   title: string;
   command: string;
   args: string[];
   ctx: ExtensionContext;
 }
-
-export 
-interface SymbolReferenceCommandDef {
+export interface SymbolReferenceCommandDef {
   titleFn: (target: string) => string;
   command: string;
   argsFn: (target: string) => string[];
 }
-
 export interface SymbolReferenceActionResult {
   filePath: string;
   action: SymbolReferenceActionType;
 }
-
 export type SymbolReferenceActionType =
   | "callers"
   | "callees"
@@ -41,14 +35,11 @@ export type SymbolReferenceActionType =
   | "deps"
   | "used-by"
   | "delete";
-
 export interface SymbolReferenceResult {
   item: SymbolReferenceItem;
   action?: SymbolReferenceActionType;
   insertType?: "name" | "path";
 }
-
-
 export const SYMBOL_REFERENCE_COMMANDS: Record<
   SymbolReferenceActionType,
   SymbolReferenceCommandDef

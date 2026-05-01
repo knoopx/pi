@@ -1,5 +1,4 @@
 import type { ListPickerItem } from "../../lib/list-picker";
-
 export interface AstGrepMatch {
   file: string;
   text: string;
@@ -8,7 +7,6 @@ export interface AstGrepMatch {
     end: { line: number; column: number };
   };
 }
-
 export interface TodoItem extends ListPickerItem {
   path: string;
   startLine: number;

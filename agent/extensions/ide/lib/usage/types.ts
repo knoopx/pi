@@ -6,7 +6,6 @@ export interface WindowConfig {
   resetPath?: string;
   fixedLabel?: string;
 }
-
 export interface ProviderConfig {
   provider: string;
   displayName: string;
@@ -25,14 +24,12 @@ export interface RateWindow {
   usedPercent: number;
   resetDescription?: string;
 }
-
 export interface UsageSnapshot {
   provider: string;
   displayName: string;
   windows: RateWindow[];
   error?: string;
 }
-
 export interface BaseDependencies {
   homedir(): string;
   fileExists(path: string): boolean;

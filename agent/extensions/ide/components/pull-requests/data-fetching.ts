@@ -1,6 +1,5 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { PullRequest } from "./types";
-
 export async function fetchPullRequests(
   pi: ExtensionAPI,
   cwd: string,
@@ -10,11 +9,9 @@ export async function fetchPullRequests(
   const result = await pi.exec("gh", args, { cwd });
   if (result.code !== 0)
     throw new Error(result.stderr || "Failed to fetch pull requests");
-
   const data = parsePrResponse(result.stdout);
   return data.map(toPullRequest);
 }
-
 function buildPrListArgs(
   state: "open" | "closed" | "merged" | "all",
 ): string[] {
@@ -29,7 +26,6 @@ function buildPrListArgs(
   if (state !== "all") args.push(`--state=${state}`);
   return args;
 }
-
 interface RawPr {
   number: number;
   title: string;
@@ -46,7 +42,6 @@ interface RawPr {
   url: string;
   body: string;
 }
-
 function parsePrResponse(stdout: string): RawPr[] {
   try {
     return JSON.parse(stdout) as RawPr[];
@@ -54,7 +49,6 @@ function parsePrResponse(stdout: string): RawPr[] {
     throw new Error("Failed to parse pull request data");
   }
 }
-
 function toPullRequest(pr: RawPr): PullRequest {
   return {
     id: String(pr.number),

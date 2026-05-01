@@ -1,6 +1,4 @@
 import type { ListPickerItem } from "../../lib/list-picker";
-
-
 export interface PullRequest extends ListPickerItem {
   number: number;
   title: string;
@@ -17,5 +15,4 @@ export interface PullRequest extends ListPickerItem {
   url: string;
   body: string;
 }
-
 export type PrStateColor = "success" | "error" | "accent" | "dim";

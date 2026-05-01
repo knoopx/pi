@@ -14,7 +14,6 @@ import {
   type WrappedToolHandler,
 } from "./utils";
 import type { ToolRenderContext } from "./types";
-
 interface ReadParams {
   path: string;
   offset?: number;
@@ -22,7 +21,6 @@ interface ReadParams {
 }
 
 // pi framework requires 5-arg handler signature
- 
 export function createReadExecute(
   orig: ToolExecuteFn,
 ): WrappedToolHandler<ReadParams> {
@@ -37,7 +35,6 @@ export function createReadExecute(
       content: (TextContent | ImageContent)[];
       details?: Record<string, unknown>;
     };
-
     const fp = params.path ?? "";
     const imageBlock = findImageBlock(result.content);
     if (imageBlock) {
@@ -51,14 +48,11 @@ export function createReadExecute(
 
   return handler as WrappedToolHandler<ReadParams>;
 }
- 
-
 function findImageBlock(
   content: (TextContent | ImageContent)[] | undefined,
 ): ImageContent | undefined {
   return content?.find((c): c is ImageContent => c.type === "image");
 }
-
 function enrichTextResult(
   result: {
     content: (TextContent | ImageContent)[];
@@ -71,7 +65,6 @@ function enrichTextResult(
   if (!textContent || !filePath) return;
   result.details = buildFileReadDetails(filePath, textContent, offset ?? 1);
 }
-
 function buildImageDetails(
   filePath: string,
   imageBlock: ImageContent,
@@ -83,7 +76,6 @@ function buildImageDetails(
     mimeType: imageBlock.mimeType ?? "image/png",
   };
 }
-
 function buildFileReadDetails(
   filePath: string,
   content: string,
@@ -97,7 +89,6 @@ function buildFileReadDetails(
     lineCount: content.split("\n").length,
   };
 }
-
 export function createReadRenderCall(
   cwd: string,
   home: string,
@@ -122,7 +113,6 @@ export function createReadRenderCall(
     return text;
   };
 }
-
 function renderImageResult(
   details: Record<string, unknown>,
   theme: Theme,
@@ -136,7 +126,6 @@ function renderImageResult(
     `  ${fileIconGlyph(details.filePath as string)}${theme.fg("dim", `${mimeStr} · ${sizeStr}`)}\n${theme.fg("border", "─".repeat(tw))}\n${theme.fg("border", "─".repeat(tw))}`,
   );
 }
-
 function renderFileResult(
   details: Record<string, unknown>,
   options: { expanded: boolean },
@@ -154,7 +143,6 @@ function renderFileResult(
     text.setText(rendered);
   });
 }
-
 function renderFallbackResult(
   result: { content: (TextContent | ImageContent)[] },
   theme: Theme,
@@ -165,7 +153,6 @@ function renderFallbackResult(
     `  ${theme.fg("dim", (fallback?.text ?? "read").slice(0, 120))}`,
   );
 }
-
 export function createReadRenderResult(): (
   result: {
     content: (TextContent | ImageContent)[];
@@ -178,7 +165,6 @@ export function createReadRenderResult(): (
   return (result, options, theme, ctx) => {
     const text = getTextComponent(ctx, Text);
     if (ctx.isError) return renderError(result.content, theme, text);
-
     const d = result.details;
     const rendered = tryRenderDetailResult(d, options, theme, text);
     if (rendered) return rendered;
@@ -187,7 +173,6 @@ export function createReadRenderResult(): (
     return text;
   };
 }
-
 function dispatchDetailRenderer(
   details: Record<string, unknown>,
   options: { expanded: boolean },
@@ -203,7 +188,6 @@ function dispatchDetailRenderer(
     renderFileResult(details, options, theme, text);
   }
 }
-
 function tryRenderDetailResult(
   details: Record<string, unknown> | undefined,
   options: { expanded: boolean },

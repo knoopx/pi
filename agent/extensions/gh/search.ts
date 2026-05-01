@@ -22,7 +22,6 @@ import type {
 
 import type { Static, TSchema } from "@sinclair/typebox";
 import { renderTextToolResult } from "../../shared/render-utils";
-
 interface CodeSearchParams {
   query: string;
   limit?: number;
@@ -58,7 +57,6 @@ async function searchCode(
     "--jq",
     '[.[] | {repo: ((.repository.nameWithOwner // "") | split("/") | .[1] // ""), owner: ((.repository.nameWithOwner // "") | split("/") | .[0] // ""), name: (.path | split("/") | .[-1]), path, html_url: .url, text_matches: [.textMatches[]? | {snippet: .fragment, matches: [.matches[]? | .text]}]}]',
   );
-
   const results = await ghCmdJson<GHCodeSearchResult[]>(args, "search code");
 
   return {
@@ -67,7 +65,6 @@ async function searchCode(
     total: results.length,
   };
 }
-
 interface SearchParams {
   query?: string;
   limit?: number;
@@ -95,7 +92,6 @@ async function searchWithFilters<T>(
     author,
     assignee,
   } = params;
-
   const args = buildFilterArgs(
     command,
     limit,
@@ -109,7 +105,6 @@ async function searchWithFilters<T>(
   );
 
   args.push(`--json=${jsonFields}`, "--jq", jqFilter);
-
   const results = await ghCmdJson<T[]>(args, `search ${command}`);
 
   return { query: query || "", results, total: results.length };
@@ -136,7 +131,6 @@ async function searchPRs(
     '[.[] | {number, title, state, repo: (.repository.name // ""), owner: (.repository.owner // ""), createdAt, updatedAt, labels: [.labels[:5][]? | {name}], url, mergeable: ""}]',
   );
 }
-
 interface RepoSearchParams {
   query: string;
   limit?: number;
@@ -165,7 +159,6 @@ async function searchRepos(
     "--jq",
     "[.[] | {name, full_name: .fullName, description, html_url: .url, language, stargazers_count: .stargazersCount, forks_count: .forksCount}]",
   );
-
   const results = await ghCmdJson<GHRepoSearchResult[]>(args, "search repos");
 
   return {
@@ -177,18 +170,13 @@ async function searchRepos(
 
 import { Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
-import {
-  dotJoin,
-  countLabel,
-  table,
-  stateDot,
-  type Column,
-} from "../../shared/renderers";
-
+import { dotJoin, countLabel } from "../../shared/renderers/header";
+import { table } from "../../shared/renderers/table/renderer";
+import { stateDot } from "../../shared/renderers/header";
+import type { Column } from "../../shared/renderers/types";
 function formatNumber(n: number): string {
   return n.toLocaleString("en-US");
 }
-
 function formatSearchResults<T>(
   result: { query: string; results: T[]; total: number },
   columns: Column[],
@@ -200,7 +188,6 @@ function formatSearchResults<T>(
     "\n",
   );
 }
-
 function formatRepoSearchResult(result: {
   query: string;
   results: GHRepoSearchResult[];
@@ -223,7 +210,6 @@ function formatRepoSearchResult(result: {
       },
     },
   ];
-
   const rowMapper = (repo: GHRepoSearchResult) => ({
     "󰓎": formatNumber(repo.stargazers_count),
     "󰘬": formatNumber(repo.forks_count),
@@ -238,7 +224,6 @@ function formatRepoSearchResult(result: {
     countLabel(formatNumber(total), "repo"),
   );
 }
-
 function formatCodeSearchResult(result: {
   query: string;
   results: GHCodeSearchResult[];
@@ -257,7 +242,6 @@ function formatCodeSearchResult(result: {
       },
     },
   ];
-
   const rowMapper = (item: GHCodeSearchResult, i: number) => {
     const snippet = item.text_matches?.[0]?.snippet?.substring(0, 100) ?? "";
     return {
@@ -272,7 +256,6 @@ function formatCodeSearchResult(result: {
     countLabel(formatNumber(total), "result"),
   );
 }
-
 interface SearchResultRow extends Record<string, unknown> {
   "#": string;
   title: string;
@@ -285,7 +268,6 @@ interface SearchResultRow extends Record<string, unknown> {
   updated?: string;
   mergeable?: string;
 }
-
 function formatSearchResult<TItem, TRow extends SearchResultRow>(
   result: { query: string; results: TItem[]; total: number },
   rowMapper: (item: TItem, index: number) => TRow,
@@ -302,7 +284,6 @@ function formatSearchResult<TItem, TRow extends SearchResultRow>(
 
   return formatSearchResults(result, cols, rowMapper, countLabelFn);
 }
-
 interface GHListItemResult {
   number: number;
   title: string;
@@ -313,14 +294,12 @@ interface GHListItemResult {
   labels: Array<{ name: string }>;
   url: string;
 }
-
 interface ListItemFormatOptions<Item extends GHListItemResult> {
   countLabel: (total: number) => string;
   titleBadge?: (row: SearchResultRow) => string;
   subtitleLine?: (row: SearchResultRow) => string;
   additionalFields?: (item: Item) => Record<string, string>;
 }
-
 function createListItemFormatter<Item extends GHListItemResult>(
   options: ListItemFormatOptions<Item>,
 ): (result: { query: string; results: Item[]; total: number }) => string {
@@ -334,7 +313,6 @@ function createListItemFormatter<Item extends GHListItemResult>(
       url: item.url,
       ...(options.additionalFields?.(item) ?? {}),
     });
-
     const titleFormatter = (row: SearchResultRow) => {
       const dot = row.state === "open" ? stateDot("on") : stateDot("off");
       const badge = options.titleBadge?.(row) ?? "";
@@ -355,11 +333,9 @@ function createListItemFormatter<Item extends GHListItemResult>(
     );
   };
 }
-
 const formatIssueSearchResult = createListItemFormatter<GHIssueSearchResult>({
   countLabel: (total) => `${formatNumber(total)} issues`,
 });
-
 const formatPRSearchResult = createListItemFormatter<GHPRSearchResult>({
   countLabel: (total) => `${formatNumber(total)} PRs`,
   additionalFields: (pr) => ({
@@ -378,7 +354,6 @@ const formatPRSearchResult = createListItemFormatter<GHPRSearchResult>({
   },
   subtitleLine: (row) => `${row.repo} · ${row.created} - ${row.updated}`,
 });
-
 function formatSearchParamValue(raw: unknown): string | undefined {
   if (Array.isArray(raw)) {
     const strings = raw.filter((v) => typeof v === "string");
@@ -386,7 +361,6 @@ function formatSearchParamValue(raw: unknown): string | undefined {
   }
   return typeof raw === "string" ? raw : undefined;
 }
-
 function createSearchToolRenderer(toolName: string) {
   const FILTER_KEYS = [
     "extension",
@@ -421,7 +395,6 @@ function createSearchToolRenderer(toolName: string) {
     },
   };
 }
-
 interface RegisterSearchToolOptions<TParams extends TSchema, TResult> {
   toolName: string;
   toolLabel: string;
@@ -430,7 +403,6 @@ interface RegisterSearchToolOptions<TParams extends TSchema, TResult> {
   searchFn: (params: Static<TParams>) => Promise<TResult>;
   formatFn: (result: TResult) => string;
 }
-
 function registerSearchTool<TParams extends TSchema, TResult>(
   pi: ExtensionAPI,
   options: RegisterSearchToolOptions<TParams, TResult>,
@@ -481,7 +453,6 @@ async function executeSearchTool<TParams extends TSchema, TResult>(
     );
   }
 }
-
 const SearchReposParams = Type.Object({
   query: TypeBoxFields.searchQuery,
   limit: TypeBoxFields.searchLimit,
@@ -507,7 +478,6 @@ const SearchReposParams = Type.Object({
     }),
   ),
 });
-
 const SearchCodeParams = Type.Object({
   query: TypeBoxFields.searchQuery,
   limit: TypeBoxFields.searchLimit,
@@ -529,7 +499,6 @@ const SearchCodeParams = Type.Object({
   owner: TypeBoxFields.ownerFilter,
   repo: TypeBoxFields.repoFilter,
 });
-
 const SearchParamsSchema = Type.Object({
   query: Type.String({
     description: "Search query keywords (optional, use filters instead)",
@@ -546,7 +515,6 @@ const SearchParamsSchema = Type.Object({
   author: TypeBoxFields.authorFilter,
   assignee: TypeBoxFields.assigneeFilter,
 });
-
 function createSearchReposTool() {
   return {
     toolName: "gh-search-repos",
@@ -568,7 +536,6 @@ Examples:
     formatFn: formatRepoSearchResult as (result: unknown) => string,
   };
 }
-
 function createSearchCodeTool() {
   return {
     toolName: "gh-search-code",
@@ -592,7 +559,6 @@ Examples:
     formatFn: formatCodeSearchResult as (result: unknown) => string,
   };
 }
-
 function createSearchIssuesTool() {
   return {
     toolName: "gh-search-issues",
@@ -614,7 +580,6 @@ Examples:
     formatFn: formatIssueSearchResult as (result: unknown) => string,
   };
 }
-
 function createSearchPRsTool() {
   return {
     toolName: "gh-search-prs",
@@ -636,7 +601,6 @@ Examples:
     formatFn: formatPRSearchResult as (result: unknown) => string,
   };
 }
-
 export function registerSearchTools(pi: ExtensionAPI) {
   registerSearchTool(pi, createSearchReposTool());
   registerSearchTool(pi, createSearchCodeTool());

@@ -3,26 +3,22 @@ import type {
   ExtensionContext,
   Theme,
 } from "@mariozechner/pi-coding-agent";
-
 interface ComponentTui {
   terminal: { rows: number };
   requestRender: () => void;
 }
-
 interface ChangesComponentInit {
   pi: ExtensionAPI;
   tui: ComponentTui;
   theme: Theme;
   ctx: ExtensionContext;
 }
-
 export interface ChangesComponentAPI {
   render: (w: number) => string[];
   handleInput: (d: string) => void;
   invalidate: () => void;
   dispose: () => void;
 }
-
 interface ChangesCallbacks {
   done: () => void;
   onNotify?: (text: string) => void;
@@ -32,24 +28,20 @@ interface ChangesCallbacks {
     action: "inspect" | "deps" | "used-by",
   ) => void;
 }
-
 export type ChangesComponentFactory = (
   init: ChangesComponentInit & Record<string, unknown>,
   callbacks: ChangesCallbacks,
 ) => ChangesComponentAPI;
-
 interface RevisionFilter {
   name: string;
   revision: string;
 }
-
 export const REVISION_FILTERS: RevisionFilter[] = [
   { name: "Stack", revision: "ancestors(@) ~ root()" },
   { name: "Mine", revision: "mine()" },
   { name: "Tracked", revision: "bookmarks()" },
   { name: "Recent", revision: "committer_date(after:'30 days ago')" },
 ];
-
 export function buildGraphInput(
   changes: { changeId: string; parentIds?: string[] }[],
   currentChangeId: string | null,

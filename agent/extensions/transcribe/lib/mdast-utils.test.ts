@@ -11,7 +11,6 @@ describe("cleanTree", () => {
       if (para && Array.isArray(para.children)) {
         para.children.length = 0;
       }
-      // Should not throw
       expect(() => cleanTree(tree)).not.toThrow();
     });
 
@@ -26,7 +25,6 @@ describe("cleanTree", () => {
 
     it("does not crash on empty node children array", () => {
       const tree = markdownToMdast("# Title\n\n**bold**");
-      // Set children to an empty array (not undefined, but also not containing valid nodes)
       const para = tree.children.find((c) => c.type === "paragraph");
       if (para) {
         (para as { children?: unknown[] }).children = [];
@@ -36,7 +34,6 @@ describe("cleanTree", () => {
 
     it("does not crash on node with undefined children", () => {
       const tree = markdownToMdast("# Title");
-      // Set children to undefined
       const heading = tree.children[0] as { children?: unknown[] };
       heading.children = undefined;
       expect(() => cleanTree(tree)).not.toThrow();
@@ -44,7 +41,6 @@ describe("cleanTree", () => {
 
     it("does not crash with undefined children", () => {
       const tree = markdownToMdast("# Title");
-      // Set children to undefined - should be handled gracefully
       const heading = tree.children[0];
       (heading as { children?: unknown }).children = undefined;
       expect(() => cleanTree(tree)).not.toThrow();
@@ -52,7 +48,6 @@ describe("cleanTree", () => {
 
     it("does not crash on node with null children", () => {
       const tree = markdownToMdast("# Title");
-      // Set children to null
       const heading = tree.children[0] as { children?: unknown };
       heading.children = null;
       expect(() => cleanTree(tree)).not.toThrow();
@@ -95,12 +90,56 @@ describe("cleanTree", () => {
     });
   });
 
+  describe("empty list items", () => {
+    it("removes empty unordered list items (* alone)", () => {
+      const md = `# Title\n\n* item one\n*\n*\n* item two\n*`;
+      const tree = cleanTree(markdownToMdast(md));
+      const text = JSON.stringify(tree);
+      expect(text).toContain("item one");
+      expect(text).toContain("item two");
+    });
+
+    it("removes empty ordered list items", () => {
+      const md = `1. first\n2.\n3. third`;
+      const tree = cleanTree(markdownToMdast(md));
+      const text = JSON.stringify(tree);
+      expect(text).toContain("first");
+      expect(text).toContain("third");
+    });
+
+    it("removes list when all items are empty", () => {
+      const md = `# Title\n\n*\n*\n*`;
+      const tree = cleanTree(markdownToMdast(md));
+      const lists = tree.children.filter(
+        (c): c is MdastRoot["children"][number] & { type: string } =>
+          c.type === "list",
+      );
+      expect(lists.length).toBe(0);
+    });
+
+    it("keeps list items with non-empty content", () => {
+      const md = `* a\n* b\n* c`;
+      const tree = cleanTree(markdownToMdast(md));
+      const text = JSON.stringify(tree);
+      expect(text).toContain("a");
+      expect(text).toContain("b");
+      expect(text).toContain("c");
+    });
+
+    it("keeps list items with nested lists", () => {
+      const md = `* parent\n  * child`;
+      const tree = cleanTree(markdownToMdast(md));
+      const text = JSON.stringify(tree);
+      expect(text).toContain("parent");
+      expect(text).toContain("child");
+    });
+  });
+
   describe("empty anchor links in headings", () => {
     it("preserves headings with non-empty links", () => {
       const md = `# [Heading](#heading)`;
       const tree = cleanTree(markdownToMdast(md));
       const text = JSON.stringify(tree);
-      // The link should remain since it has visible text "Heading"
       expect(text).toContain("Heading");
     });
   });

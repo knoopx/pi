@@ -8,7 +8,6 @@ import {
   isAbortedAgentEnd,
 } from "./abort-detection";
 import { buildHookInput } from "./pattern-matching";
-
 const mockCtx = {
   cwd: "/test",
   hasUI: false,

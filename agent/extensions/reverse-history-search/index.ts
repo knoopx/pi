@@ -5,39 +5,35 @@ import type {
   ExtensionContext,
   Theme,
 } from "@mariozechner/pi-coding-agent";
-import { matchesKey, type TUI } from "@mariozechner/pi-tui";
+import { matchesKey } from "@mariozechner/pi-tui";
+import type { TUI } from "@mariozechner/pi-tui";
 import { ensureWidth } from "../ide/lib/text-utils";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-
 interface HistoryEntry {
   content: string;
   preview?: string;
   timestamp: number;
   type: "command" | "message";
 }
-
 interface SessionMessageLine {
   role?: unknown;
   timestamp?: unknown;
   command?: unknown;
   content?: unknown;
 }
-
 interface SessionLine {
   type?: unknown;
   timestamp?: unknown;
   cwd?: unknown;
   message?: unknown;
 }
-
 function asSessionMessage(message: unknown): SessionMessageLine | null {
   if (typeof message !== "object" || message === null) return null;
 
   return message as SessionMessageLine;
 }
-
 const addHistoryEntry = (
   history: HistoryEntry[],
   seen: Set<string>,
@@ -45,7 +41,6 @@ const addHistoryEntry = (
 ): void => {
   const content = entry.content.trim();
   if (!content) return;
-
   const key = `${entry.type}:${content}`;
   if (seen.has(key)) return;
 
@@ -53,28 +48,23 @@ const addHistoryEntry = (
   const firstLine = content.split("\n")[0]?.trim() ?? content;
   history.push({ ...entry, content, preview: firstLine });
 };
-
 const extractBangCommandsFromUserText = (text: string): string[] => {
   const commands: string[] = [];
 
   for (const rawLine of text.split("\n")) {
     const line = rawLine.trim();
     if (!line.startsWith("!")) continue;
-
     const command = line.replace(/^!+/, "").trim();
     if (command) commands.push(command);
   }
 
   return commands;
 };
-
 const getUserTextFromContent = (content: unknown): string => {
   if (!Array.isArray(content)) return "";
-
   const parts = content
     .map((block) => {
       if (typeof block !== "object" || block === null) return "";
-
       const typedBlock = block as { type?: unknown; text?: unknown };
       return typedBlock.type === "text" && typeof typedBlock.text === "string"
         ? typedBlock.text
@@ -84,7 +74,6 @@ const getUserTextFromContent = (content: unknown): string => {
 
   return parts.join("\n").trim();
 };
-
 const isPathMatch = (sessionCwd: string, targetCwd: string): boolean => {
   return (
     sessionCwd === targetCwd ||
@@ -92,16 +81,13 @@ const isPathMatch = (sessionCwd: string, targetCwd: string): boolean => {
     targetCwd.startsWith(`${sessionCwd}/`)
   );
 };
-
 const truncateSingleLine = (value: string, maxLength: number): string => {
   const oneLine = value.replace(/\s+/g, " ").trim();
   const safeMaxLength = Math.max(12, maxLength);
   if (oneLine.length <= safeMaxLength) return oneLine;
   return `${oneLine.slice(0, safeMaxLength - 1)}…`;
 };
-
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
 function getSessionCwd(content: string): string | null {
   const lines = content.trim().split("\n");
   for (const line of lines) {
@@ -117,7 +103,6 @@ function getSessionCwd(content: string): string | null {
   }
   return null;
 }
-
 function extractTimestamp(
   entry: SessionLine,
   message: SessionMessageLine,
@@ -128,14 +113,12 @@ function extractTimestamp(
   if (typeof message.timestamp === "number") return message.timestamp;
   return Date.now();
 }
-
 interface ProcessSessionFileOpts {
   targetCwd: string;
   cutoffTimestamp: number;
   history: HistoryEntry[];
   seen: Set<string>;
 }
-
 function processSessionFile(
   fullPath: string,
   opts: ProcessSessionFileOpts,
@@ -143,40 +126,30 @@ function processSessionFile(
   try {
     const content = readFileSync(fullPath, "utf-8");
     if (!shouldProcessSession(content, opts.targetCwd)) return;
-
     const lines = content.trim().split("\n");
     for (const line of lines) {
       processSessionLine(line, opts);
     }
-  } catch {
-    // Skip files we can't read
-  }
+  } catch {}
 }
-
 function shouldProcessSession(content: string, targetCwd: string): boolean {
   const sessionCwd = getSessionCwd(content);
   if (!sessionCwd) return false;
   return isPathMatch(sessionCwd, targetCwd);
 }
-
 function processSessionLine(line: string, opts: ProcessSessionFileOpts): void {
   if (!line.trim()) return;
   try {
     const entry = JSON.parse(line) as SessionLine;
     if (entry.type !== "message") return;
-
     const message = asSessionMessage(entry.message);
     if (!message) return;
-
     const timestamp = extractTimestamp(entry, message);
     if (timestamp < opts.cutoffTimestamp) return;
 
     processMessageEntry(message, timestamp, opts.history, opts.seen);
-  } catch {
-    // Skip malformed lines
-  }
+  } catch {}
 }
-
 function processMessageEntry(
   message: SessionMessageLine,
   timestamp: number,
@@ -211,7 +184,6 @@ function processMessageEntry(
     }
   }
 }
-
 function walkDir(
   dir: string,
   opts: {
@@ -233,15 +205,10 @@ function walkDir(
           stat.mtimeMs >= opts.cutoffTimestamp
         )
           processSessionFile(fullPath, opts);
-      } catch {
-        // Skip files we can't read
-      }
+      } catch {}
     }
-  } catch {
-    // Skip directories we can't read
-  }
+  } catch {}
 }
-
 const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
   const history: HistoryEntry[] = [];
   const seen = new Set<string>();
@@ -250,9 +217,7 @@ const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
   try {
     const sessionsDir = join(homedir(), ".pi", "agent", "sessions");
     walkDir(sessionsDir, { targetCwd, cutoffTimestamp, history, seen });
-  } catch {
-    // Sessions directory doesn't exist or can't be read
-  }
+  } catch {}
 
   return history.sort((a, b) => b.timestamp - a.timestamp);
 };
@@ -302,7 +267,6 @@ class HistorySearchComponent {
       return;
     }
 
-    // Regular character input
     if (data.length === 1 && data.charCodeAt(0) >= 32)
       this.handleCharacter(data);
   }
@@ -355,11 +319,9 @@ class HistorySearchComponent {
 
   render(width: number): string[] {
     if (this.cachedLines && this.cachedWidth === width) return this.cachedLines;
-
     const lines: string[] = [];
     const borderChar = this.theme.fg("accent", "─");
 
-    // Top border
     lines.push(borderChar.repeat(width));
 
     // History list config
@@ -372,7 +334,6 @@ class HistorySearchComponent {
       ),
     );
     const end = Math.min(start + maxVisible, this.filteredHistory.length);
-
     const queryPart = this.query ? `${this.query} • ` : "";
     const pagerPart = `[${start + 1}-${end} of ${this.filteredHistory.length}]`;
     lines.push(this.theme.fg("dim", `${queryPart}${pagerPart}`));
@@ -380,17 +341,14 @@ class HistorySearchComponent {
     for (let i = start; i < end; i++) {
       const entry = this.filteredHistory[i];
       const isSelected = i === this.selectedIndex;
-
       const typeIndicator = entry.type === "command" ? "$" : "󰆉";
       const typeColor = entry.type === "command" ? "success" : "accent";
-
       const displayContent = truncateSingleLine(
         entry.preview ?? entry.content,
         width - 2,
       );
       const content = `${typeIndicator} ${displayContent}`;
       const padded = ensureWidth(content, width);
-
       let line: string;
       if (isSelected) {
         const colored = this.theme.fg(typeColor, padded);
@@ -403,7 +361,6 @@ class HistorySearchComponent {
       lines.push(line);
     }
 
-    // Bottom border
     lines.push(borderChar.repeat(width));
 
     this.cachedLines = lines;
@@ -416,7 +373,6 @@ class HistorySearchComponent {
     this.cachedLines = undefined;
   }
 }
-
 function makeHistorySearchRenderer(
   theme: Theme,
   history: HistoryEntry[],
@@ -449,27 +405,23 @@ function makeHistorySearchRenderer(
     },
   };
 }
-
 export default function (pi: ExtensionAPI): void {
   pi.registerShortcut("ctrl+r", {
     description:
       "Reverse history search (user messages and commands from sessions in current directory)",
     async handler(ctx: ExtensionContext) {
       if (!ctx.hasUI) return;
-
       const history = loadSessionHistoryForCwd(ctx.cwd);
       if (history.length === 0) {
         ctx.ui.notify("No history found", "warning");
         return;
       }
-
       const result = await ctx.ui.custom<HistoryEntry | null>(
         (tuiRef, themeRef, _kb, doneRef) =>
           makeHistorySearchRenderer(themeRef, history, doneRef, tuiRef),
       );
 
       if (!result) return;
-
       const content = result.content.trim().replace(/\n+$/, "");
       if (result.type === "command") {
         ctx.ui.setEditorText(`!${content}`);

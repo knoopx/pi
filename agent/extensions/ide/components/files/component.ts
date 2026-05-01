@@ -16,7 +16,6 @@ import { getFileIcon } from "../../lib/file-icons";
 import { openEditor } from "../../lib/editor-utils";
 import type { FileInfo, FileResult } from "./types";
 import { getMtimeSorter } from "./helpers";
-
 interface FilesComponentOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };
@@ -26,7 +25,6 @@ interface FilesComponentOptions {
   initialQuery: string;
   ctx: ExtensionContext;
 }
-
 export function createFilesComponent(
   options: FilesComponentOptions,
 ): ListPickerComponent & Component {
@@ -64,7 +62,6 @@ class FilesView implements Component {
           );
           if (result.code !== 0)
             throw new Error(`Failed to load files: ${result.stderr}`);
-
           const { statSync } = await import("node:fs");
           const { join } = await import("node:path");
 
@@ -117,9 +114,7 @@ class FilesView implements Component {
     this.pendingAction = undefined;
   };
 
-  setPreview(_lines: string[]): void {
-    // Not applicable for file browser
-  }
+  setPreview(_lines: string[]): void {}
 
   reload(): Promise<void> {
     this.invalidate();

@@ -7,6 +7,14 @@ vi.mock("node:fs/promises", () => ({
   mkdir: vi.fn(),
 }));
 
+function expectDefaultActive(config: {
+  load(): void;
+  getConfig(): unknown;
+}): void {
+  config.load();
+  expect(config.getConfig()).toEqual(defaultsConfig);
+}
+
 describe("guardrails configLoader", () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => vi.resetAllMocks());
@@ -23,9 +31,7 @@ describe("guardrails configLoader", () => {
   describe("when loading", () => {
     it("then resolves defaults as active config", async () => {
       const { configLoader } = await import("./config");
-
-      configLoader.load();
-      expect(configLoader.getConfig()).toEqual(defaultsConfig);
+      expectDefaultActive(configLoader);
     });
   });
 });

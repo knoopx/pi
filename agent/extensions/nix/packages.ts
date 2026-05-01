@@ -1,6 +1,6 @@
-import { dotJoin, countLabel, table } from "../../shared/renderers";
-import type { Column } from "../../shared/renderers";
-
+import { dotJoin, countLabel } from "../../shared/renderers/header";
+import { table } from "../../shared/renderers/table/renderer";
+import type { Column } from "../../shared/renderers/types";
 function str(value: string | undefined): string {
   return value || "";
 }
@@ -14,7 +14,6 @@ import {
   searchNix,
   type NixPackage,
 } from "./query";
-
 const PACKAGE_SOURCE_FIELDS = [
   "package_attr_name",
   "package_attr_set",
@@ -28,7 +27,6 @@ const PACKAGE_SOURCE_FIELDS = [
   "package_maintainers",
   "package_license_set",
 ];
-
 function buildPackageAggregations(): Record<string, unknown> {
   return {
     all: {
@@ -51,7 +49,6 @@ function buildPackageAggregations(): Record<string, unknown> {
     },
   };
 }
-
 function buildPackageQuery(query: string): Record<string, unknown> {
   return {
     _source: PACKAGE_SOURCE_FIELDS,
@@ -67,11 +64,9 @@ function buildPackageQuery(query: string): Record<string, unknown> {
     aggregations: buildPackageAggregations(),
   };
 }
-
 export async function searchNixPackages(query: string): Promise<NixPackage[]> {
   return await searchNix<NixPackage>(buildPackageQuery, query);
 }
-
 function buildPackageSourceUrl(
   position: NixPackage["package_position"],
 ): string | null {
@@ -84,7 +79,6 @@ function buildPackageSourceUrl(
   const anchor = line ? `#L${line}` : "";
   return `${NIXPKGS_GITHUB_BASE}/${filePath}${anchor}`;
 }
-
 export function mapPackage(item: NixPackage): Record<string, string> {
   return removeEmptyProperties({
     attr_name: item.package_attr_name,
@@ -102,7 +96,6 @@ export function mapPackage(item: NixPackage): Record<string, string> {
     sourceUrl: buildPackageSourceUrl(item.package_position) ?? "",
   });
 }
-
 export function formatPackageTable(res: Record<string, string>[]): string {
   const cols: Column[] = [
     { key: "#", align: "right", minWidth: 3 },
@@ -124,7 +117,6 @@ export function formatPackageTable(res: Record<string, string>[]): string {
       },
     },
   ];
-
   const rows = res.map((pkg, i) => ({
     "#": String(i + 1),
     version: str(pkg.version),

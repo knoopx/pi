@@ -5,7 +5,6 @@ import {
   matchCommandPattern,
   matchFileNamePattern,
 } from "../../shared/pattern-matching";
-
 export function isGroupActive(pattern: string, root: string): Promise<boolean> {
   if (pattern === "*") return Promise.resolve(true);
 
@@ -13,7 +12,6 @@ export function isGroupActive(pattern: string, root: string): Promise<boolean> {
     .then((files) => files.some((file) => matchFileNamePattern(file, pattern)))
     .catch(() => false);
 }
-
 export function substituteVariables(
   command: string,
   vars: HookVariables,
@@ -23,29 +21,24 @@ export function substituteVariables(
     .replace(/%tool%/g, vars.tool ?? "")
     .replace(/%cwd%/g, vars.cwd);
 }
-
 export function doesRuleMatch(
   rule: HookRule,
   toolName?: string,
   input?: unknown,
 ): boolean {
-  // No context filter means match everything
   if (!rule.context || !rule.pattern) return true;
 
-  // Command context uses token pattern matching (`?`, `*`, `{a,b}`)
   if (rule.context === "command") {
     if (toolName !== "bash") return false;
     const command = getInputField(input, "command");
     if (!command) return false;
     return matchCommandPattern(command, rule.pattern);
   }
-
   const targetValue = getContextValue(rule.context, toolName, input);
   if (targetValue === undefined) return false;
 
   return matchValuePattern(rule.context, targetValue, rule.pattern);
 }
-
 export function matchValuePattern(
   context: string,
   value: string,
@@ -54,7 +47,6 @@ export function matchValuePattern(
   if (context === "file_name") return matchFileNamePattern(value, pattern);
   return matchCommandPattern(value, pattern);
 }
-
 export function getContextValue(
   context: string,
   toolName?: string,
@@ -71,7 +63,6 @@ export function getContextValue(
       return undefined;
   }
 }
-
 export function getInputField(
   input: unknown,
   field: string,
@@ -80,7 +71,6 @@ export function getInputField(
   const value = (input as Record<string, unknown>)[field];
   return value != null ? String(value) : undefined;
 }
-
 interface BuildHookInputOptions {
   toolName?: string;
   input?: unknown;
@@ -91,7 +81,6 @@ interface BuildHookInputOptions {
     isError?: boolean;
   };
 }
-
 export function buildHookInput(
   event: HookEvent,
   ctx: { cwd: string },

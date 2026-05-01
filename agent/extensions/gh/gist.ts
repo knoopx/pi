@@ -7,11 +7,11 @@ import type {
 import { type Static, Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
 import { dangerousOperationConfirmation } from "../../shared/tool-utils";
-import { detail, stateDot } from "../../shared/renderers";
+import { detail } from "../../shared/renderers/detail";
+import { stateDot } from "../../shared/renderers/header";
 
 import { ghCmd, ghCmdJson, ghCmdJsonWithInput } from "./utils";
 import { createErrorResult, createTextResultRender } from "./shared";
-
 function createGistResult(
   output: string,
   gist: Gist,
@@ -24,12 +24,10 @@ function createGistResult(
     details: { gist },
   };
 }
-
 function createGistErrorResult(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   return createErrorResult(message);
 }
-
 interface GistFile {
   filename: string;
   type: string;
@@ -38,7 +36,6 @@ interface GistFile {
   raw_url: string;
   size: number;
 }
-
 interface Gist {
   id: string;
   description: string | null;
@@ -68,28 +65,22 @@ async function listGists(userId?: string, limit = 30): Promise<Gist[]> {
       "api gists",
     );
   }
-
   const result = await ghCmd(["gist", "list", `--limit=${limit}`]);
 
   if (result.exitCode !== 0)
     throw new Error(`gh gist list failed: ${result.stderr || result.stdout}`);
-
   const lines = result.stdout.trim().split("\n").filter(Boolean);
   const gistIds = lines.map((line) => line.split(/\s+/)[0]);
-
   const gists: Gist[] = [];
   for (const gistId of gistIds) {
     try {
       const gist = await getGist(gistId);
       gists.push(gist);
-    } catch {
-      // Skip gists that fail to load
-    }
+    } catch {}
   }
 
   return gists;
 }
-
 function getGist(gistId: string): Promise<Gist> {
   return ghCmdJson<Gist>(["api", `/gists/${gistId}`], "api gist");
 }
@@ -102,7 +93,6 @@ async function createGist(
   const fs = await import("node:fs");
   const os = await import("node:os");
   const path = await import("node:path");
-
   const tempDir = os.tmpdir();
   const fileArgs: string[] = [];
 
@@ -111,25 +101,21 @@ async function createGist(
     fs.writeFileSync(tempFile, fileData.content);
     fileArgs.push(tempFile);
   }
-
   const args = ["gist", "create", ...fileArgs];
   if (description) args.push("--desc", description);
   if (isPublic) args.push("--public");
-
   const result = await ghCmd(args);
 
   for (const tempFile of fileArgs) {
     try {
       fs.unlinkSync(tempFile);
     } catch (err) {
-      // Ignore cleanup errors
       void err;
     }
   }
 
   if (result.exitCode !== 0)
     throw new Error(`gh gist create failed: ${result.stderr || result.stdout}`);
-
   const gistUrl = result.stdout.trim();
   const gistId = gistUrl.split("/").pop();
   if (!gistId)
@@ -137,7 +123,6 @@ async function createGist(
 
   return getGist(gistId);
 }
-
 function updateGist(
   gistId: string,
   files?: Record<string, { content: string; filename?: string }>,
@@ -160,7 +145,6 @@ function updateGist(
     "api gist update",
   );
 }
-
 function formatGist(gist: Gist): string {
   const fields = [
     { label: "url", value: gist.html_url },
@@ -184,7 +168,6 @@ function formatGist(gist: Gist): string {
 
   return detail(fields);
 }
-
 function formatGistUpdate(gist: Gist): string {
   const lines: string[] = [
     `✓ Gist updated: ${gist.html_url}`,
@@ -202,7 +185,6 @@ function formatGistUpdate(gist: Gist): string {
 
   return lines.join("\n");
 }
-
 const ListGistsParams = Type.Object({
   userId: Type.Optional(
     Type.String({
@@ -219,13 +201,11 @@ const ListGistsParams = Type.Object({
     }),
   ),
 });
-
 const GetGistParams = Type.Object({
   gistId: Type.String({
     description: "Gist ID (e.g., 'abc123')",
   }),
 });
-
 const CreateGistParams = Type.Object({
   files: Type.Record(
     Type.String(),
@@ -256,7 +236,6 @@ const CreateGistParams = Type.Object({
     }),
   ),
 });
-
 const UpdateGistParams = Type.Object({
   gistId: Type.String({
     description: "Gist ID to update",
@@ -282,12 +261,10 @@ const UpdateGistParams = Type.Object({
     }),
   ),
 });
-
 type ListGistsParamsType = Static<typeof ListGistsParams>;
 type GetGistParamsType = Static<typeof GetGistParams>;
 type CreateGistParamsType = Static<typeof CreateGistParams>;
 type UpdateGistParamsType = Static<typeof UpdateGistParams>;
-
 function createListGistsTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
   return {
     name: "gh-list-gists",
@@ -332,7 +309,6 @@ Examples:
     renderResult: createTextResultRender(),
   };
 }
-
 function createGetGistTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
   return {
     name: "gh-get-gist",
@@ -378,7 +354,6 @@ Examples:
     renderResult: createTextResultRender(),
   };
 }
-
 function createCreateGistTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
   return {
     name: "gh-create-gist",
@@ -436,7 +411,6 @@ async function executeListGists(
   const userId = params.userId;
   const limit = params.limit;
   const gists = await listGists(userId, limit);
-
   const lines = gists
     .map((gist) => [
       `• **${gist.id}** ${stateDot(gist.public)} public`,
@@ -481,7 +455,6 @@ async function executeUpdateGist(
   const output = formatGistUpdate(gist);
   return createGistResult(output, gist);
 }
-
 function createUpdateGistTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
   return {
     name: "gh-update-gist",
@@ -539,7 +512,6 @@ Examples:
     renderResult: createTextResultRender(),
   };
 }
-
 export function registerGistTools(pi: ExtensionAPI) {
   pi.registerTool(createListGistsTool());
   pi.registerTool(createGetGistTool());

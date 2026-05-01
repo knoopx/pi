@@ -3,7 +3,6 @@ import { ChangeListPane } from "../../lib/split-panel/change-list-pane";
 import { FileListPane } from "../../lib/split-panel/file-list-pane";
 import { DiffPane } from "../../lib/split-panel/diff-pane";
 import type { AgentWorkspace, FileChange, Change } from "../../lib/types";
-
 interface RightPanesProps {
   selectedWorkspace: AgentWorkspace | null;
   files: FileChange[];
@@ -19,15 +18,12 @@ interface RightPanesProps {
   rightBottomTitle: string;
   theme: Theme;
 }
-
-
 export function createRightPanes(props: RightPanesProps): {
   rightTop: string[];
   rightBottom: string[];
 } {
   const isDefault = props.selectedWorkspace?.name === "default";
   const rightTopTitle = isDefault ? " Changes" : " Files";
-
   const rightTop = isDefault
     ? new ChangeListPane({
         changes: props.changes.map((c) => ({
@@ -55,7 +51,6 @@ export function createRightPanes(props: RightPanesProps): {
         focus: props.focus,
         theme: props.theme,
       }).render(props.rightW);
-
   const rightBottom = new DiffPane({
     lines: props.diffContent,
     scroll: props.diffScroll,

@@ -2,6 +2,7 @@
   "name": "pi",
   "type": "module",
   "devDependencies": {
+    "eslint-plugin-import-x": "^4.16.2",
     "vitest": "^4.1.4"
   }
 }

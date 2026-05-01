@@ -8,7 +8,6 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { buildNotifySendArgs } from "./notify-send";
-
 const SETTINGS_PATH = resolve(homedir(), ".pi/agent/settings.json");
 
 async function loadSettings(): Promise<Record<string, unknown>> {
@@ -37,7 +36,6 @@ async function loadTtsEnabled(): Promise<boolean> {
   const notification = settings.notification as { tts?: boolean } | undefined;
   return notification?.tts ?? false;
 }
-
 interface NotifyToolParams {
   summary: string;
   body?: string;
@@ -47,13 +45,10 @@ interface NotifyToolParams {
   icon?: string;
   category?: string;
 }
-
 const buildSpeechText = (summary: string, body?: string): string =>
   body ? `${summary}. ${body}` : summary;
-
 const runTts = (pi: ExtensionAPI, text: string): void => {
   if (!text.trim()) return;
-
   const escaped = text.replace(/'/g, "'\\''");
   void pi.exec("sh", [
     "-c",
@@ -65,7 +60,6 @@ for player in $playing; do playerctl -p "$player" play 2>/dev/null; done
 ' &`,
   ]);
 };
-
 function buildErrorResult(
   message: string,
   result: { code: number; stdout: string; stderr: string },
@@ -86,7 +80,6 @@ function buildErrorResult(
     },
   };
 }
-
 function runTtsIfNeeded(
   isTtsEnabled: boolean,
   pi: ExtensionAPI,
@@ -95,7 +88,6 @@ function runTtsIfNeeded(
   if (!isTtsEnabled) return;
   runTts(pi, buildSpeechText(params.summary, params.body));
 }
-
 function createExecuteNotify(
   isTtsEnabledRef: { value: boolean },
   pi: ExtensionAPI,
@@ -106,7 +98,6 @@ function createExecuteNotify(
     signal: AbortSignal | undefined,
   ): Promise<AgentToolResult<Record<string, unknown>>> {
     const options = signal ? { signal } : undefined;
-
     const args = buildNotifySendArgs(params);
     const result = await pi.exec("notify-send", args, options);
 
@@ -132,7 +123,6 @@ function createExecuteNotify(
     };
   };
 }
-
 function makeNotifyTool(isTtsEnabledRef: { value: boolean }, pi: ExtensionAPI) {
   return {
     name: "notify",
@@ -174,10 +164,8 @@ function makeNotifyTool(isTtsEnabledRef: { value: boolean }, pi: ExtensionAPI) {
     execute: createExecuteNotify(isTtsEnabledRef, pi),
   };
 }
-
 const ttsDescription =
   "Toggle text-to-speech for notifications (usage: /tts [on|off|toggle])";
-
 function createTtsHandler(isTtsEnabledRef: { value: boolean }) {
   return async function handler(
     _args: string,
@@ -211,7 +199,6 @@ function createTtsHandler(isTtsEnabledRef: { value: boolean }) {
     if (ctx.hasUI) ctx.ui?.notify(message, "info");
   };
 }
-
 export default async function notificationExtension(
   pi: ExtensionAPI,
 ): Promise<void> {

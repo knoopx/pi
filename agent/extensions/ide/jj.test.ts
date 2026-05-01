@@ -9,12 +9,10 @@ import { loadChangedFiles } from "./jj/files";
 import { getRawDiff } from "./jj/files";
 import { restoreFile } from "./jj/files";
 import { listBookmarksByChange } from "./jj/bookmarks";
-
 const { execMock, pi } = createMockExecPi();
 beforeEach(() => execMock.mockReset());
 
-
-async function assertEmptyOnFailure(fn: () => Promise<any>) {
+async function assertEmptyOnFailure(fn: () => Promise<unknown>) {
   execMock.mockResolvedValue({ code: 1, stdout: "", stderr: "error" });
   const result = await fn();
   expect(result).toEqual([]);
@@ -48,7 +46,6 @@ describe("jj module", () => {
             "abc123\tdef456\tchanged\tmutable\tAlice\t2026-02-15 14:00\tparent1,parent2\tfeat(ide): ✨ add discard\n",
           stderr: "",
         });
-
         const result = await loadChanges(pi, "/repo");
 
         expect(execMock).toHaveBeenCalledWith(
@@ -87,7 +84,6 @@ describe("jj module", () => {
             "main\tabc123\tfeat: ✨ one\tAlice\nmain\tabc123\tfeat: ✨ one\tAlice\nfeature\tdef456\tfeat: ✨ two\tBob\n",
           stderr: "",
         });
-
         const result = await listBookmarksByChange(pi, "/repo");
 
         expect(result).toEqual([
@@ -110,7 +106,6 @@ describe("jj module", () => {
     describe("when jj bookmark list fails", () => {
       it("then returns an empty list", async () => {
         execMock.mockResolvedValue({ code: 1, stdout: "", stderr: "error" });
-
         const result = await listBookmarksByChange(pi, "/repo");
 
         expect(result).toEqual([]);
@@ -126,7 +121,6 @@ describe("jj module", () => {
           stdout: "op1|refactor(ide): ♻️ cleanup|extra\nop2|✨\n",
           stderr: "",
         });
-
         const result = await loadOpLog(pi, "/repo", 10);
 
         expect(result).toEqual([
@@ -149,7 +143,7 @@ describe("jj module", () => {
         execMock
           .mockResolvedValueOnce({
             code: 0,
-            stdout: "/repo", // workspace root
+            stdout: "/repo",
             stderr: "",
           })
           .mockResolvedValueOnce({ code: 0, stdout: "", stderr: "" });
@@ -176,7 +170,7 @@ describe("jj module", () => {
         execMock
           .mockResolvedValueOnce({
             code: 0,
-            stdout: "/repo", // workspace root
+            stdout: "/repo",
             stderr: "",
           })
           .mockResolvedValueOnce({ code: 0, stdout: "", stderr: "" });
@@ -265,7 +259,6 @@ describe("jj module", () => {
             stdout: "empty\n",
             stderr: "",
           });
-
           const result = await hasFileChanges(pi, "/repo");
 
           expect(execMock).toHaveBeenCalledWith(
@@ -284,7 +277,6 @@ describe("jj module", () => {
             stdout: "changed\n",
             stderr: "",
           });
-
           const result = await hasFileChanges(pi, "/repo");
 
           expect(result).toBe(true);
@@ -298,7 +290,6 @@ describe("jj module", () => {
             stdout: "",
             stderr: "not a git repo",
           });
-
           const result = await hasFileChanges(pi, "/repo");
 
           expect(result).toBe(false);
@@ -316,7 +307,6 @@ describe("jj module", () => {
             "A src/new.ts 42 0\nM src/old.ts 5 3\nD src/deleted.ts 0 18\n",
           stderr: "",
         });
-
         const result = await loadChangedFiles(pi, "/repo", "abc123");
 
         expect(result).toEqual([
@@ -334,7 +324,6 @@ describe("jj module", () => {
           stdout: "R src/new-name.ts 0 0\n",
           stderr: "",
         });
-
         const result = await loadChangedFiles(pi, "/repo", "abc123");
 
         expect(result).toEqual([
@@ -350,7 +339,6 @@ describe("jj module", () => {
           stdout: "E shared/lib.ts 2 1\n? misc/file.json 10 0\n",
           stderr: "",
         });
-
         const result = await loadChangedFiles(pi, "/repo", "abc123");
 
         expect(result).toEqual([
@@ -381,7 +369,6 @@ describe("jj module", () => {
             "R src/renamed.ts 5 3\nM src/existing.ts 10 2\nA src/new.ts 42 0\n",
           stderr: "",
         });
-
         const result = await loadChangedFiles(pi, "/repo", "abc123");
 
         expect(result).toEqual([
@@ -411,11 +398,10 @@ describe("jj module", () => {
           stdout: "empty\n",
           stderr: "",
         });
-
         const result = await createNewChange(pi, "/repo");
 
         expect(result).toEqual({ success: true, created: false });
-        expect(execMock).toHaveBeenCalledTimes(1); // Only checks empty status
+        expect(execMock).toHaveBeenCalledTimes(1);
       });
     });
 
@@ -438,7 +424,6 @@ describe("jj module", () => {
               stdout: "newchange123\n",
               stderr: "",
             });
-
           const result = await createNewChange(pi, "/repo");
 
           expect(result).toEqual({
@@ -463,7 +448,6 @@ describe("jj module", () => {
               stdout: "",
               stderr: "worktree locked",
             });
-
           const result = await createNewChange(pi, "/repo");
 
           expect(result).toEqual({
@@ -492,7 +476,6 @@ describe("jj module", () => {
               stdout: "",
               stderr: "error",
             });
-
           const result = await createNewChange(pi, "/repo");
 
           expect(result).toEqual({
@@ -510,7 +493,7 @@ describe("jj module", () => {
         execMock
           .mockResolvedValueOnce({
             code: 0,
-            stdout: "", // workspace update-stale
+            stdout: "",
             stderr: "",
           })
           .mockResolvedValueOnce({
@@ -519,7 +502,6 @@ describe("jj module", () => {
               "diff --git a/src/file.ts b/src/file.ts\n@@ -1 +1 @@\n-old\n+new\n",
             stderr: "",
           });
-
         const result = await getRawDiff(pi, "/repo", "abc123");
 
         expect(execMock).toHaveBeenNthCalledWith(
@@ -537,12 +519,12 @@ describe("jj module", () => {
         execMock
           .mockResolvedValueOnce({
             code: 0,
-            stdout: "", // workspace update-stale
+            stdout: "",
             stderr: "",
           })
           .mockResolvedValueOnce({
             code: 0,
-            stdout: "/repo", // workspace root
+            stdout: "/repo",
             stderr: "",
           })
           .mockResolvedValueOnce({
@@ -551,7 +533,6 @@ describe("jj module", () => {
               "diff --git a/src/file.ts b/src/file.ts\n@@ -1 +1 @@\n-old\n+new\n",
             stderr: "",
           });
-
         const result = await getRawDiff(
           pi,
           "/repo/subdir",
@@ -574,12 +555,12 @@ describe("jj module", () => {
         execMock
           .mockResolvedValueOnce({
             code: 0,
-            stdout: "", // workspace update-stale
+            stdout: "",
             stderr: "",
           })
           .mockResolvedValueOnce({
             code: 1,
-            stdout: "", // workspace root fails
+            stdout: "",
             stderr: "not a jj repo",
           })
           .mockResolvedValueOnce({
@@ -604,7 +585,7 @@ describe("jj module", () => {
         execMock
           .mockResolvedValueOnce({
             code: 0,
-            stdout: "", // workspace update-stale
+            stdout: "",
             stderr: "",
           })
           .mockResolvedValueOnce({

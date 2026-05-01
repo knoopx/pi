@@ -1,7 +1,6 @@
 import type { Theme, ThemeColor } from "@mariozechner/pi-coding-agent";
 import { highlightCode } from "../tools/shiki/highlight";
 import { lang } from "../tools/language";
-
 export function highlightCodeLines(
   line: string,
   theme: Theme,
@@ -10,7 +9,6 @@ export function highlightCodeLines(
   if (accentColor) return theme.fg(accentColor, line);
   return line;
 }
-
 export function loadFilePreviewWithShiki(
   filePath: string,
   content: string,

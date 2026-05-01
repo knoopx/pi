@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { TestTerminal, createMockChange } from "../../lib/test-utils";
 import { calculateGraphLayout } from "../../lib/graph";
+import type { Change } from "../../lib/types";
 import { buildGraphInput } from "./types";
 import { Navigation } from "./navigation";
 import { createMockTheme } from "../../lib/test-utils";
-
-function makeNav(state: any): Navigation {
+import type { ChangesState } from "./state";
+function makeNav(state: ChangesState): Navigation {
   return new Navigation(
     state,
     { requestRender: () => {} },
@@ -15,7 +16,7 @@ function makeNav(state: any): Navigation {
 
 async function renderSnapshot(
   width: number,
-  configure: (state: any) => void,
+  configure: (state: ChangesState) => void,
 ): Promise<string[]> {
   const { Renderer } = await import("./renderer");
   const theme = createMockTheme();
@@ -25,7 +26,7 @@ async function renderSnapshot(
   if (state.changes.length > 0) {
     state.graphLayout ??= calculateGraphLayout(
       buildGraphInput(
-        state.changes.map((c: any) => ({
+        state.changes.map((c) => ({
           changeId: c.changeId,
           parentIds: c.parentIds,
         })),
@@ -42,7 +43,6 @@ async function renderSnapshot(
   );
   return renderer.render(width, "");
 }
-
 function makeChanges(count: number, startDesc = 0) {
   return Array.from({ length: count }, (_, i) =>
     createMockChange({
@@ -53,20 +53,18 @@ function makeChanges(count: number, startDesc = 0) {
     }),
   );
 }
-
 interface MoveModeOptions {
   count?: number;
   selectedIndex?: number;
   focus?: "left" | "right";
-  custom?: (state: any) => void;
+  custom?: (state: ChangesState) => void;
   direction?: "up" | "down";
 }
-
-function setupMoveMode(opts: MoveModeOptions & { changes?: any[] } = {}) {
+function setupMoveMode(opts: MoveModeOptions & { changes?: Change[] } = {}) {
   const count = opts.count ?? 5;
   const selectedIndex = opts.selectedIndex ?? 0;
   const changes = opts.changes ?? makeChanges(count);
-  return (state: any) => {
+  return (state: ChangesState) => {
     state.changes = changes;
     state.selectionState.selectedIndex = selectedIndex;
     state.selectedChange = state.changes[selectedIndex];
@@ -212,7 +210,6 @@ describe("changes/move-mode rendering", () => {
         state.files = [];
         state.diffContent = [];
         state.selectionState.focus = "left";
-
         const nav = makeNav(state);
         nav.enterMoveMode();
         for (const dir of moves) nav.moveChange(dir);
@@ -528,7 +525,6 @@ describe("changes/move-mode rendering", () => {
         120,
         setupMoveMode({ selectedIndex: 2, direction: "down" }),
       );
-
       const changeRows = rawLines.slice(3, 8);
       const hasWarning = changeRows.some((line) =>
         line.includes("\x1b[38;2;250;208;0m"),

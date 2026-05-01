@@ -4,14 +4,12 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { runEngineHooks } from "./engine";
-
 function createMockPi(): ExtensionAPI {
   return {
     exec: () => Promise.resolve({ code: 0, stdout: "", stderr: "" }),
     sendMessage: () => {},
   } as unknown as ExtensionAPI;
 }
-
 function createMockCtx(cwd: string): ExtensionContext {
   return { cwd, hasUI: false, abort: () => {} } as unknown as ExtensionContext;
 }

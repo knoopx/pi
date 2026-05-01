@@ -1,12 +1,13 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Type, type Static } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
+import type { Static } from "@sinclair/typebox";
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
 import { textResult } from "../../shared/tool-utils";
-import { dotJoin, countLabel, table } from "../../shared/renderers";
-import type { Column } from "../../shared/renderers";
+import { dotJoin, countLabel } from "../../shared/renderers/header";
+import { table } from "../../shared/renderers/table/renderer";
+import type { Column } from "../../shared/renderers/types";
 import { acquireSlot } from "../../shared/throttle";
-
 const DDG_HOST = "duckduckgo.com";
 const MAX_REDIRECTS = 3;
 
@@ -35,7 +36,6 @@ async function fetchWithRedirect(
       redirectChain.push(currentUrl);
       currentUrl = nextUrl;
       redirected = true;
-      // Preserve headers and body across redirects
       init.headers = response.headers;
       continue;
     }
@@ -68,7 +68,6 @@ const DDG_HEADERS = {
   referer: "https://duckduckgo.com/",
   "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
 };
-
 const DDG_DATA_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36",
@@ -85,7 +84,6 @@ const DDG_DATA_HEADERS = {
   referer: "https://duckduckgo.com/",
   "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
 };
-
 interface SearchResult {
   title: string;
   url: string;
@@ -93,7 +91,6 @@ interface SearchResult {
   source: string;
   engine: string;
 }
-
 interface JsonpDataItem {
   n?: boolean;
   t?: string;
@@ -102,16 +99,13 @@ interface JsonpDataItem {
   i?: string;
   sn?: string;
 }
-
 function stripHtml(text: string): string {
   const $ = cheerio.load(`<div>${text}</div>`);
   return $("div").text();
 }
-
 function singleLine(text: string): string {
   return stripHtml(text).replace(/\s+/g, " ").trim();
 }
-
 const searchCols: Column[] = [
   { key: "#", align: "right", minWidth: 3 },
   {
@@ -125,7 +119,6 @@ const searchCols: Column[] = [
     },
   },
 ];
-
 function formatSearchOutput(query: string, results: SearchResult[]): string {
   const rows = results.map((r, i) => ({
     "#": String(i + 1),
@@ -148,14 +141,11 @@ const SearchDuckDuckGoParams = Type.Object({
     Type.Number({ description: "Number of results (default 10)" }),
   ),
 });
-
 type SearchDuckDuckGoParamsType = Static<typeof SearchDuckDuckGoParams>;
-
 function extractPreloadUrl(html: string): string {
   const $ = cheerio.load(html);
   let basePreloadUrl = "";
 
-  // Method 1: Use cheerio to find preload links
   $('link[rel="preload"]').each((_, el) => {
     const href = $(el).attr("href");
     if (href?.includes("links.duckduckgo.com/d.js")) {
@@ -164,7 +154,6 @@ function extractPreloadUrl(html: string): string {
     }
   });
 
-  // Method 2: If preload link not found, try script tag
   if (!basePreloadUrl)
     $("#deep_preload_script").each((_, el) => {
       const src = $(el).attr("src");
@@ -174,7 +163,6 @@ function extractPreloadUrl(html: string): string {
       }
     });
 
-  // Method 3: Use regex to extract from entire HTML
   if (!basePreloadUrl) {
     const urlRegex = /https:\/\/links\.duckduckgo\.com\/d\.js\?[^"']+\//i;
     const urlMatch = urlRegex.exec(html);
@@ -183,7 +171,6 @@ function extractPreloadUrl(html: string): string {
 
   return basePreloadUrl;
 }
-
 function parseJsonpData(
   dataHtml: string,
   maxResults: number,
@@ -198,13 +185,11 @@ function parseJsonpData(
     return { results: [], validCount: 0 };
   }
 }
-
 function extractJsonpData(dataHtml: string): string | null {
   const jsonpRegex = /DDG\.pageLayout\.load\('d',\s*(\[.*?\])\s*\);/s;
   const match = jsonpRegex.exec(dataHtml);
   return match?.[1] ?? null;
 }
-
 function buildSearchResults(
   items: JsonpDataItem[],
   maxResults: number,
@@ -220,7 +205,6 @@ function buildSearchResults(
 
   return { results, validCount };
 }
-
 function shouldSkipItem(
   item: JsonpDataItem,
   currentLength: number,
@@ -228,7 +212,6 @@ function shouldSkipItem(
 ): boolean {
   return !!item.n || currentLength >= maxResults;
 }
-
 function toSearchResult(item: JsonpDataItem): SearchResult {
   return {
     title: item.t || "",
@@ -257,7 +240,6 @@ async function fetchPreloadPage(
 
   if (!response.ok)
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-
   const dataHtml = await response.text();
   const { results, validCount } = parseJsonpData(dataHtml, maxResults);
 
@@ -273,7 +255,6 @@ async function searchDuckDuckGoPreloadUrl(
   maxResults = 10,
 ): Promise<SearchResult[]> {
   const results: SearchResult[] = [];
-
   const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&t=h_&ia=web`;
   await acquireSlot(DDG_HOST);
   const { response } = await fetchWithRedirect(searchUrl, {
@@ -282,12 +263,10 @@ async function searchDuckDuckGoPreloadUrl(
 
   if (!response.ok)
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-
   const html = await response.text();
   const basePreloadUrl = extractPreloadUrl(html);
 
   if (!basePreloadUrl) return [];
-
   const preloadUrlObj = new URL(basePreloadUrl);
   let offset = 0;
 
@@ -310,7 +289,6 @@ async function searchDuckDuckGoPreloadUrl(
 
   return results.slice(0, maxResults);
 }
-
 function parseSearchResults(
   $: cheerio.CheerioAPI,
   items: cheerio.Cheerio<Element>,
@@ -319,7 +297,6 @@ function parseSearchResults(
 ): void {
   items.each((_, el) => {
     if (results.length >= maxResults) return false;
-
     const titleEl = $(el).find("a.result__a");
     const snippetEl = $(el).find(".result__snippet");
     const title = titleEl.text().trim();
@@ -358,7 +335,6 @@ async function fetchHtmlPage(
           api: "d.js",
         },
   );
-
   const { response } = await fetchWithRedirect(requestUrl, {
     method: "POST",
     headers: {
@@ -385,7 +361,6 @@ async function searchDuckDuckGoHtml(
   const { html, ok } = await fetchHtmlPage(query, 0);
 
   if (!ok) throw new Error(`HTTP fetch failed`);
-
   let $ = cheerio.load(html);
   let items = $("div.result");
 
@@ -407,23 +382,14 @@ async function searchDuckDuckGoHtml(
   return results.slice(0, maxResults);
 }
 
-/**
- * Search DuckDuckGo and return results
- * @param query Search query
- * @param limit Maximum number of results
- * @returns Array of search results
- */
 async function searchDuckDuckGo(
   query: string,
   limit: number,
 ): Promise<SearchResult[]> {
-  // Try using the preloaded URL method
   try {
     const results = await searchDuckDuckGoPreloadUrl(query, limit);
     if (results.length > 0) return results;
-  } catch {
-    // fall through to HTML method
-  }
+  } catch {}
 
   try {
     return await searchDuckDuckGoHtml(query, limit);
@@ -437,7 +403,6 @@ async function searchDuckDuckGo(
     );
   }
 }
-
 export default function duckduckgoExtension(pi: ExtensionAPI) {
   pi.registerTool({
     name: "search-web",
@@ -459,7 +424,6 @@ Returns search results with titles, URLs, and descriptions.`,
 
         if (results.length === 0)
           return textResult("No results found.", { query, limit });
-
         const text = formatSearchOutput(query, results);
         return textResult(text, { query, limit, results });
       } catch (error) {

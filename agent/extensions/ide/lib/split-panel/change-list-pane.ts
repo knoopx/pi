@@ -1,8 +1,8 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import type { GraphLayout } from "../graph";
-import { ChangeRow, type ChangeRowFlags } from "./change-row";
+import { ChangeRow } from "./change-row";
+import type { ChangeRowFlags } from "./change-row";
 import { ensureWidth, getVisibleItems } from "../text-utils";
-
 interface ChangeListPaneProps {
   changes: Array<{
     changeId: string;
@@ -24,8 +24,6 @@ interface ChangeListPaneProps {
   height: number;
   theme: Theme;
 }
-
-
 export class ChangeListPane {
   constructor(private readonly props: ChangeListPaneProps) {}
 
@@ -37,13 +35,11 @@ export class ChangeListPane {
     if (this.props.changes.length === 0) {
       return [ensureWidth(this.props.theme.fg("dim", " No changes"), width)];
     }
-
     const visibleItems = getVisibleItems(
       this.props.changes,
       this.props.selectedIndex,
       this.props.height,
     );
-
     const rows: string[] = [];
 
     for (const { item: change, index: idx } of visibleItems) {
@@ -54,7 +50,6 @@ export class ChangeListPane {
       const isWorkingCopy = this.props.currentChangeId === change.changeId;
       const isMoving =
         this.props.mode === "move" && idx === this.props.selectedIndex;
-
       const flags: ChangeRowFlags = {
         isCursor,
         isMarked,

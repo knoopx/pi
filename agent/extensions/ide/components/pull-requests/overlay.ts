@@ -4,7 +4,6 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { createPullRequestsComponent } from "./component";
 import { openBrowserOverlay } from "../../lib/overlay-utils";
-
 export async function openPullRequestsBrowser(
   pi: ExtensionAPI,
   ctx: ExtensionContext,

@@ -18,7 +18,6 @@ import { SYMBOL_TYPES } from "./types";
 import { querySymbols } from "./helpers";
 import { openEditor } from "../../lib/editor-utils";
 // Symbol types available for filtering (cycle order)
-
 interface SymbolsComponentOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };
@@ -28,7 +27,6 @@ interface SymbolsComponentOptions {
   initialQuery: string;
   ctx: ExtensionContext;
 }
-
 
 async function goToFirstResult(
   pi: ExtensionAPI,
@@ -40,26 +38,19 @@ async function goToFirstResult(
     cwd: ctx.cwd,
   });
   if (result.code !== 0 || !result.stdout.trim()) return;
-
   const firstLine = result.stdout
     .split("\n")
     .find((l) => l.includes("|") && !l.startsWith("["));
   if (!firstLine) return;
-
   const match = /\|([^|]+)\|(\d+)-/.exec(firstLine);
   if (!match) return;
-
   const [, filePath, line] = match;
   await openEditor(pi, ctx, `${filePath}:${line}`);
 }
-
-
 const PICKER_ACTIONS: [string, SymbolReferenceActionType][] = [
   [Key.ctrl("j"), "callees"],
   [Key.ctrl("k"), "schema"],
 ];
-
-
 function buildSymbolActions(
   doneWithAction: (item: SymbolInfo | null) => void,
   goToTypes: (name: string) => void,
@@ -95,8 +86,6 @@ function buildSymbolActions(
     })),
   ];
 }
-
-
 function buildSymbolPickerOptions(options: {
   pi: ExtensionAPI;
   ctx: ExtensionContext;
@@ -132,7 +121,6 @@ function buildSymbolPickerOptions(options: {
     },
   };
 }
-
 export function createSymbolsComponent(
   options: SymbolsComponentOptions,
 ): ListPickerComponent & { invalidate: () => void } {
@@ -140,7 +128,6 @@ export function createSymbolsComponent(
   let pendingAction: SymbolReferenceActionType | undefined;
   let pendingInsertType: "name" | "path" | undefined;
   const currentTypeRef = { value: "class" as SymbolTypeFilter };
-
   function doneWithAction(item: SymbolInfo | null): void {
     if (!item) {
       done(null);
@@ -154,7 +141,6 @@ export function createSymbolsComponent(
     pendingAction = undefined;
     pendingInsertType = undefined;
   }
-
   const actions = buildSymbolActions(doneWithAction, (name) => {
     void goToFirstResult(pi, ctx, "types", [name]);
   });
@@ -165,7 +151,6 @@ export function createSymbolsComponent(
     currentTypeRef,
     actions,
   });
-
   const internalDone = (item: SymbolInfo | null) => {
     if (item) done({ symbol: item });
     else done(null);

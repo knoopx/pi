@@ -102,7 +102,6 @@ describe("pad", () => {
       it("then calculates visible width correctly", () => {
         const text = "\x1b[31mhi\x1b[0m";
         const result = pad(text, 5);
-        // Should pad based on visible "hi" (2 chars), not full string
         expect(result).toContain("hi");
       });
     });

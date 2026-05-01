@@ -12,8 +12,6 @@ export {
   DATA_COLUMNS,
   TABLE_WIDTH,
 } from "./shared/ui-helpers";
-
-// Re-export types that consumers may need
 export type { UsageData } from "./usage/types";
 export type { ToolStats } from "./tool-usage/types";
 export type { BaseStats } from "./shared/types";
@@ -26,7 +24,6 @@ import { UsageComponent } from "./usage/component";
 import { collectUsageData } from "./usage/data-collection";
 import { ToolUsageComponent } from "./tool-usage/component";
 import { collectToolStats } from "./tool-usage/data-collection";
-
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("tool-usage", {
     description: "Show tool usage statistics dashboard",

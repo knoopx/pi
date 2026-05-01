@@ -1,9 +1,7 @@
 import type { BaseDependencies, ProviderConfig, RateWindow } from "../types";
 import { createGenericProvider, loadTokenFromPiAuthJson } from "../util";
-
 const loadGeminiToken = (deps: BaseDependencies) =>
   loadTokenFromPiAuthJson(deps, "google-gemini-cli");
-
 const geminiConfig: ProviderConfig = {
   provider: "gemini",
   displayName: "Google Gemini",
@@ -28,7 +26,6 @@ const geminiConfig: ProviderConfig = {
       const frac = bucket.remainingFraction ?? 1;
       if (!quotas[model] || frac < quotas[model]) quotas[model] = frac;
     }
-
     const { min: proMin, hasModel: hasProModel } = extractModelQuota(
       quotas,
       (m) => m.toLowerCase().includes("pro"),
@@ -37,15 +34,15 @@ const geminiConfig: ProviderConfig = {
       quotas,
       (m) => m.toLowerCase().includes("flash"),
     );
-
     const windows: RateWindow[] = [];
-    if (hasProModel) windows.push({ label: "Pro", usedPercent: (1 - proMin) * 100 });
-    if (hasFlashModel) windows.push({ label: "Flash", usedPercent: (1 - flashMin) * 100 });
+    if (hasProModel)
+      windows.push({ label: "Pro", usedPercent: (1 - proMin) * 100 });
+    if (hasFlashModel)
+      windows.push({ label: "Flash", usedPercent: (1 - flashMin) * 100 });
 
     return windows;
   },
 };
-
 function extractModelQuota(
   quotas: Record<string, number>,
   matcher: (model: string) => boolean,
@@ -62,5 +59,4 @@ function extractModelQuota(
 
   return { min, hasModel };
 }
-
 export const fetchGeminiUsage = await createGenericProvider(geminiConfig);

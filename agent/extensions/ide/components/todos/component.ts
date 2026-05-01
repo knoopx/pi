@@ -11,7 +11,6 @@ import {
 import { createFilePreviewLoader } from "../../lib/preview-utils";
 import type { TodoItem } from "./types";
 import { filterTodosByQuery, findTodos, formatTodoItem } from "./helpers";
-
 interface TodosComponentOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };
@@ -21,7 +20,6 @@ interface TodosComponentOptions {
   initialQuery: string;
   cwd: string;
 }
-
 export function createTodosComponent(
   options: TodosComponentOptions,
 ): ListPickerComponent {

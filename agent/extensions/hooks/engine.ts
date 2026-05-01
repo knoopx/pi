@@ -11,7 +11,6 @@ import {
   isGroupActive,
 } from "./pattern-matching";
 import { processHookGroupExecution } from "./results";
-
 interface ProcessHooksInput {
   event: HookEvent;
   ctx: ExtensionContext;
@@ -26,12 +25,10 @@ interface ProcessHooksInput {
     };
   };
 }
-
 interface BlockResult {
   block: true;
   reason: string;
 }
-
 export async function runEngineHooks(
   pi: ExtensionAPI,
   config: HooksConfig,
@@ -64,7 +61,6 @@ export async function runEngineHooks(
     )
       return undefined;
 
-     
     return processHookExecution(
       pi,
       { rule, group, ctx, vars, hookInput },

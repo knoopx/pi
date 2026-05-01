@@ -17,14 +17,12 @@ export function formatRemainingDuration(
   resetAt: string | number | undefined,
 ): string | undefined {
   if (!resetAt) return undefined;
-
   const resetDate =
     typeof resetAt === "string" ? new Date(resetAt) : new Date(resetAt * 1000);
   const now = new Date();
   const remainingMs = resetDate.getTime() - now.getTime();
 
   if (remainingMs <= 0) return "resetting...";
-
   const days = Math.floor(remainingMs / (1000 * 60 * 60 * 24));
   const hours = Math.floor(
     (remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
@@ -43,7 +41,6 @@ export function createRateLimitProcessor(
   type AnyRecord = Record<string, unknown>;
   const getPath = (obj: unknown, path: string): unknown =>
     path.split(".").reduce((o, k) => (o as AnyRecord)?.[k], obj);
-
   function extractUsedPercent(data: AnyRecord, cfg: WindowConfig): number {
     let usedPercent = cfg.usedPercentPath
       ? (getPath(data, cfg.usedPercentPath) as number) || 0
@@ -52,7 +49,6 @@ export function createRateLimitProcessor(
       usedPercent = cfg.usedPercentTransform(usedPercent);
     return usedPercent;
   }
-
   function extractLabel(
     root: unknown,
     data: AnyRecord,
@@ -62,7 +58,6 @@ export function createRateLimitProcessor(
       ? cfg.label(root, data)
       : cfg.fixedLabel || cfg.label;
   }
-
   function extractResetAt(
     root: unknown,
     data: AnyRecord,
@@ -97,7 +92,6 @@ export function createRateLimitProcessor(
     return result;
   };
 }
-
 export function createGenericProvider(config: ProviderConfig) {
   return async function fetchUsage(
     deps: BaseDependencies,
@@ -119,9 +113,7 @@ export function createGenericProvider(config: ProviderConfig) {
           config.displayName,
           res.status,
         );
-
       const data = await res.json();
-
       let windows: RateWindow[] = [];
       if (config.customProcessor) windows = config.customProcessor(data);
       else if (config.windows)
@@ -137,7 +129,6 @@ export function createGenericProvider(config: ProviderConfig) {
     }
   };
 }
-
 export function loadTokenFromPiAuthJson(
   deps: BaseDependencies,
   providerKey: string,
@@ -148,7 +139,6 @@ export function loadTokenFromPiAuthJson(
     const data: Record<string, Record<string, unknown>> = JSON.parse(
       deps.readFile(piAuthPath) ?? "{}",
     ) as Record<string, Record<string, unknown>>;
-
     const providerData = data[providerKey];
     const token = tokenSelector
       ? tokenSelector(providerData)

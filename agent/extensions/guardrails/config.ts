@@ -1,6 +1,5 @@
 import defaultsConfig from "./defaults";
 import { loadEnabledSetting, saveEnabledSetting } from "../../shared/settings";
-
 export interface GuardrailsRule {
   context: "command" | "file_name" | "file_content";
 
@@ -15,7 +14,6 @@ export interface GuardrailsRule {
   action: "block" | "confirm";
   reason: string;
 }
-
 export interface GuardrailsGroup {
   group: string;
 
@@ -24,28 +22,21 @@ export interface GuardrailsGroup {
   excludePattern?: string;
   rules: GuardrailsRule[];
 }
-
 export type GuardrailsConfig = GuardrailsGroup[];
-
 export type ResolvedConfig = GuardrailsGroup[];
-
 const GUARDRAILS_SETTINGS_KEY = "guardrails";
-
 interface GuardrailsSettings {
   enabled: boolean;
 }
-
 const DEFAULT_GUARDRAILS_SETTINGS: GuardrailsSettings = {
   enabled: true,
 };
-
 export async function loadGuardrailsSettings(): Promise<GuardrailsSettings> {
   return await loadEnabledSetting(
     GUARDRAILS_SETTINGS_KEY,
     DEFAULT_GUARDRAILS_SETTINGS,
   );
 }
-
 export async function saveGuardrailsSettings(
   updates: Partial<GuardrailsSettings>,
 ): Promise<GuardrailsSettings> {
@@ -55,7 +46,6 @@ export async function saveGuardrailsSettings(
     loadGuardrailsSettings,
   );
 }
-
 function isValidGroup(group: unknown): group is GuardrailsGroup {
   const g = group as Record<string, unknown>;
   return (
@@ -68,7 +58,6 @@ function isValidGroup(group: unknown): group is GuardrailsGroup {
     g.rules.every((rule: unknown) => isValidRule(rule))
   );
 }
-
 function isValidRule(rule: unknown): boolean {
   const r = rule as Record<string, unknown>;
   if (typeof rule !== "object" || rule === null) return false;
@@ -80,11 +69,9 @@ function isValidRule(rule: unknown): boolean {
   if (!isValidAction(r.action)) return false;
   return typeof r.reason === "string";
 }
-
 function isStringField(obj: Record<string, unknown>, key: string): boolean {
   return typeof obj[key] === "string";
 }
-
 function isOptionalStringField(
   obj: Record<string, unknown>,
   key: string,
@@ -92,12 +79,10 @@ function isOptionalStringField(
   const val = obj[key];
   return val === undefined || typeof val === "string";
 }
-
 function isValidScope(scope: unknown): boolean {
   if (scope === undefined) return true;
   return scope === "project" || scope === "external";
 }
-
 function isValidAction(action: unknown): boolean {
   return action === "block" || action === "confirm";
 }
@@ -115,5 +100,4 @@ class GuardrailsConfigLoader {
     return this.resolved;
   }
 }
-
 export const configLoader = new GuardrailsConfigLoader();

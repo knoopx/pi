@@ -2,7 +2,6 @@ import { describe, expect, it, beforeEach } from "vitest";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { createMockExtensionAPI } from "../../shared/test-utils";
 import type { MockExtensionAPI, MockTool } from "../../shared/test-utils";
-
 const mockCtx = {
   cwd: "/tmp",
   abort: () => {},
@@ -25,7 +24,6 @@ describe("notification output snapshots", () => {
 
   it("renders success output", async () => {
     mockPi.exec.mockResolvedValue({ code: 0, stdout: "", stderr: "" });
-
     const result = await tool.execute(
       "id",
       { summary: "Build complete", body: "All tests passed" },
@@ -44,7 +42,6 @@ describe("notification output snapshots", () => {
       stdout: "",
       stderr: "Command not found",
     });
-
     const result = await tool.execute(
       "id",
       { summary: "Test" },

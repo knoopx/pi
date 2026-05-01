@@ -1,9 +1,6 @@
-
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { FileChange } from "../lib/types";
 import { parseStdoutLines, updateStaleWorkspace } from "./core";
-
-
 export async function loadChangedFiles(
   pi: ExtensionAPI,
   cwd: string,
@@ -38,8 +35,6 @@ export async function loadChangedFiles(
     return null;
   }).sort((a, b) => a.path.localeCompare(b.path));
 }
-
-
 export async function getRawDiff(
   pi: ExtensionAPI,
   cwd: string,
@@ -48,13 +43,10 @@ export async function getRawDiff(
 ): Promise<{ diff: string; files: string[] }> {
   await updateStaleWorkspace(pi, cwd);
 
-  // When a specific file is requested, resolve paths relative to repo root.
   // File paths from loadChangedFiles are always repo-root-relative.
   const execCwd = filePath ? await getRepoRoot(pi, cwd) : cwd;
-
   const jjArgs = ["diff", "--git", "-r", changeId];
   if (filePath) jjArgs.push(filePath);
-
   const result = await pi.exec("jj", jjArgs, { cwd: execCwd });
 
   if (result.code === 0) {
@@ -77,8 +69,6 @@ export async function getRawDiff(
   }
   throw new Error(`Failed to get diff: ${result.stderr}`);
 }
-
-
 export async function restoreFile(
   pi: ExtensionAPI,
   cwd: string,
@@ -86,7 +76,6 @@ export async function restoreFile(
   filePath: string,
 ): Promise<string> {
   const repoRoot = await getRepoRoot(pi, cwd);
-
   const result = await pi.exec(
     "jj",
     ["restore", "--changes-in", changeId, filePath],
@@ -99,8 +88,6 @@ export async function restoreFile(
   }
   return result.stderr || result.stdout;
 }
-
-
 export async function getRepoRoot(
   pi: ExtensionAPI,
   cwd = process.cwd(),

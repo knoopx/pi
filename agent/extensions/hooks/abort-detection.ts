@@ -7,7 +7,6 @@ export function containsAbortText(text: string): boolean {
     normalized.includes("canceled")
   );
 }
-
 export function extractTextContent(
   content: unknown[] | undefined,
   extraText?: string,
@@ -25,7 +24,6 @@ export function extractTextContent(
 
   return [contentText, extraText ?? ""].filter(Boolean).join("\n");
 }
-
 export function isAbortedToolResult(event: {
   isError?: boolean;
   content?: unknown[];
@@ -33,7 +31,6 @@ export function isAbortedToolResult(event: {
   if (!event.isError) return false;
   return containsAbortText(extractTextContent(event.content));
 }
-
 export function isAbortedTurnEnd(event: {
   message?: { role?: string; stopReason?: string; errorMessage?: string };
 }): boolean {
@@ -44,7 +41,6 @@ export function isAbortedTurnEnd(event: {
 
   return containsAbortText(message.errorMessage ?? "");
 }
-
 export function isAbortedAgentEnd(event: { messages?: unknown[] }): boolean {
   const messages = event.messages ?? [];
 

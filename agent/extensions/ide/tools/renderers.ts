@@ -5,12 +5,10 @@ import { MAX_PREVIEW_LINES } from "./shiki-constants";
 import { fileIconGlyph, dirIconGlyph } from "./icons";
 import { termW } from "./terminal-utils";
 import { lang } from "./language";
-
 function skipAnsiEscape(code: string, pos: number): number {
   const end = code.indexOf("m", pos);
   return end !== -1 ? end + 1 : pos + 1;
 }
-
 function truncateAnsiLine(
   code: string,
   maxVisible: number,
@@ -20,7 +18,6 @@ function truncateAnsiLine(
   const cut = findVisibleCut(code, maxVisible - 1);
   return `${code.slice(0, cut)}${theme.fg("muted", "›")}`;
 }
-
 function findVisibleCut(code: string, maxVis: number): number {
   let vis = 0;
   let j = 0;
@@ -34,7 +31,6 @@ function findVisibleCut(code: string, maxVis: number): number {
   }
   return j;
 }
-
 interface FormatLineOptions {
   ln: number;
   code: string;
@@ -42,14 +38,12 @@ interface FormatLineOptions {
   tw: number;
   theme: Theme;
 }
-
 function formatLineWithNumber(options: FormatLineOptions): string {
   const { ln, code, nw, tw, theme } = options;
   const display = truncateAnsiLine(code, tw - nw - 4, theme);
   const lnStr = " ".repeat(Math.max(0, nw - String(ln).length)) + ln;
   return `${theme.fg("muted", lnStr)} ${theme.fg("border", "│")} ${display}`;
 }
-
 interface RenderFileContentOptions {
   content: string;
   filePath: string;
@@ -57,7 +51,6 @@ interface RenderFileContentOptions {
   maxLines: number;
   theme: Theme;
 }
-
 export async function renderFileContent(
   options: RenderFileContentOptions,
 ): Promise<string> {
@@ -66,7 +59,6 @@ export async function renderFileContent(
   const total = lines.length;
   const show = lines.slice(0, maxLines);
   const highlighted = await highlightFile(show, filePath, theme);
-
   const tw = termW();
   const rendered = renderHighlightedLines({
     hl: highlighted,
@@ -78,7 +70,6 @@ export async function renderFileContent(
 
   return buildFilePreview({ lines: rendered, total, maxLines, tw, theme });
 }
-
 function highlightFile(
   lines: string[],
   filePath: string,
@@ -88,7 +79,6 @@ function highlightFile(
   const mutedColor = theme.getFgAnsi("muted");
   return highlightCode(lines.join("\n"), lg, mutedColor);
 }
-
 function renderHighlightedLines(opts: {
   hl: string[];
   fallback: string[];
@@ -108,7 +98,6 @@ function renderHighlightedLines(opts: {
   }
   return out;
 }
-
 function buildFilePreview(opts: {
   lines: string[];
   total: number;
@@ -126,13 +115,11 @@ function buildFilePreview(opts: {
   }
   return out.join("\n");
 }
-
 function formatTreeEntry(entry: string, isLast: boolean, theme: Theme): string {
   const connector = theme.fg("border", isLast ? "└── " : "├── ");
   const label = formatEntryLabel(entry, theme);
   return `${connector}${label}`;
 }
-
 function formatEntryLabel(entry: string, theme: Theme): string {
   const { name, icon } = parseTreeEntry(entry);
   if (entry.endsWith("/")) {
@@ -140,29 +127,24 @@ function formatEntryLabel(entry: string, theme: Theme): string {
   }
   return icon + name;
 }
-
 function parseTreeEntry(entry: string): { name: string; icon: string } {
   const isDir = entry.endsWith("/");
   const name = isDir ? entry.slice(0, -1) : entry;
   const icon = isDir ? dirIconGlyph() : fileIconGlyph(name);
   return { name, icon };
 }
-
 export function renderTree(text: string, theme: Theme): string {
   const lines = text.trim().split("\n").filter(Boolean);
   if (!lines.length) return theme.fg("dim", "(empty directory)");
-
   const total = lines.length;
   const show = lines.slice(0, MAX_PREVIEW_LINES);
   const isTruncated = total > MAX_PREVIEW_LINES;
-
   const out = renderTreeEntries(show, isTruncated, theme);
   if (isTruncated) {
     out.push(renderTruncationMessage(total - MAX_PREVIEW_LINES, theme));
   }
   return out.join("\n");
 }
-
 function renderTreeEntries(
   entries: string[],
   isTruncated: boolean,
@@ -176,11 +158,9 @@ function renderTreeEntries(
   }
   return out;
 }
-
 function renderTruncationMessage(remaining: number, theme: Theme): string {
   return `${theme.fg("border", "└── ")}${theme.fg("dim", `… ${remaining} more entries`)}`;
 }
-
 function groupFilesByDirectory(lines: string[]): Map<string, string[]> {
   const groups = new Map<string, string[]>();
   for (const line of lines) {
@@ -196,7 +176,6 @@ function groupFilesByDirectory(lines: string[]): Map<string, string[]> {
   }
   return groups;
 }
-
 interface RenderDirFilesOptions {
   dir: string;
   files: string[];
@@ -205,7 +184,6 @@ interface RenderDirFilesOptions {
   totalCount: number;
   totalLines: number;
 }
-
 function renderDirectoryFiles(options: RenderDirFilesOptions): {
   lines: string[];
   count: number;
@@ -230,11 +208,9 @@ function renderDirectoryFiles(options: RenderDirFilesOptions): {
 
   return { lines: out, count };
 }
-
 export function renderFindResults(text: string, theme: Theme): string {
   const lines = text.trim().split("\n").filter(Boolean);
   if (!lines.length) return theme.fg("dim", "(no matches)");
-
   const groups = groupFilesByDirectory(lines);
   const out: string[] = [];
   let count = 0;
@@ -256,7 +232,6 @@ export function renderFindResults(text: string, theme: Theme): string {
 
   return out.join("\n");
 }
-
 function createPatternHighlighter(
   pattern: string,
   theme: Theme,
@@ -269,7 +244,6 @@ function createPatternHighlighter(
   }
   return (text) => text.replace(re, theme.fg("warning", theme.bold("$1")));
 }
-
 function parseGrepLine(line: string): {
   file: string;
   lineNo: string;
@@ -281,7 +255,6 @@ function parseGrepLine(line: string): {
   const [, file, lineNo, content] = match;
   return { file, lineNo, content };
 }
-
 function renderGrepMatch(
   lineNo: string,
   content: string,
@@ -294,7 +267,6 @@ function renderGrepMatch(
   const lnStr = " ".repeat(Math.max(0, nw - lineNo.length)) + lineNo;
   return `  ${theme.fg("muted", lnStr)} ${theme.fg("border", "│")} ${display}`;
 }
-
 function processGrepLine(
   line: string,
   currentFile: string,
@@ -313,7 +285,6 @@ function processGrepLine(
   if (line.trim()) return { output: [line], newFile: currentFile, count: 1 };
   return { output: [], newFile: currentFile, count: 0 };
 }
-
 function buildGrepMatchOutput(
   parsed: { file: string; lineNo: string; content: string },
   currentFile: string,
@@ -329,7 +300,6 @@ function buildGrepMatchOutput(
   out.push(renderGrepMatch(lineNo, content, highlighter, theme));
   return { output: out, newFile: file, count: 1 };
 }
-
 export async function renderGrepResults(
   text: string,
   pattern: string,
@@ -337,16 +307,13 @@ export async function renderGrepResults(
 ): Promise<string> {
   const lines = text.split("\n");
   if (isEmptyResult(lines)) return theme.fg("dim", "(no matches)");
-
   const highlighter = createPatternHighlighter(pattern, theme);
   const out = await processGrepLines(lines, highlighter, theme);
   return out.join("\n");
 }
-
 function isEmptyResult(lines: string[]): boolean {
   return !lines.length || (lines.length === 1 && !lines[0].trim());
 }
-
 function processGrepLines(
   lines: string[],
   highlighter: ((text: string) => string) | null,
@@ -361,7 +328,6 @@ function processGrepLines(
       out.push(theme.fg("dim", "  … more matches"));
       break;
     }
-
     const {
       output,
       newFile,

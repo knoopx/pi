@@ -1,7 +1,5 @@
 import type { ChildProcess, spawn } from "node:child_process";
-
 type SpawnFn = typeof spawn;
-
 export async function ghCmd(
   args: string[],
   options?: { stdio?: "inherit" | "pipe" },
@@ -11,7 +9,6 @@ export async function ghCmd(
     stdio: options?.stdio === "inherit" ? "inherit" : "pipe",
   });
 }
-
 function collectProcessOutput(
   proc: ChildProcess,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
@@ -36,7 +33,6 @@ function collectProcessOutput(
     });
   });
 }
-
 function executeGhCommand(
   spawn: SpawnFn,
   args: string[],
@@ -47,7 +43,6 @@ function executeGhCommand(
   });
   return collectProcessOutput(proc);
 }
-
 function parseGhJsonOutput<T>(
   result: { stdout: string; stderr: string; exitCode: number },
   commandName: string,
@@ -65,7 +60,6 @@ function parseGhJsonOutput<T>(
     );
   }
 }
-
 export async function ghCmdJson<T>(
   args: string[],
   commandName: string,
@@ -73,7 +67,6 @@ export async function ghCmdJson<T>(
   const result = await ghCmd(args);
   return parseGhJsonOutput<T>(result, commandName);
 }
-
 export async function ghCmdJsonWithInput<T>(
   args: string[],
   input: unknown,
@@ -83,7 +76,6 @@ export async function ghCmdJsonWithInput<T>(
   const result = await executeGhCommandWithInput(spawn, args, input);
   return parseGhJsonOutput<T>(result, commandName);
 }
-
 function executeGhCommandWithInput(
   spawn: SpawnFn,
   args: string[],

@@ -37,7 +37,6 @@ async function runWithFetch(
     });
   });
   globalThis.fetch = mockFn as unknown as typeof globalThis.fetch;
-
   const result = await tool.execute(
     "tool1",
     params,
@@ -53,7 +52,6 @@ async function runWithFetch(
   enriched.__mockFetch = mockFn;
   return enriched;
 }
-
 function get<T extends object>(obj: T, path: string): unknown {
   const keys = path.split(".");
   let cur: unknown = obj;
@@ -63,7 +61,6 @@ function get<T extends object>(obj: T, path: string): unknown {
   }
   return cur;
 }
-
 function testErrorHandling(
   getTool: () => MockTool,
   params: Record<string, string>,
@@ -100,7 +97,6 @@ function testErrorHandling(
   });
 }
 
- 
 describe("NPM Extension", () => {
   let mockPi: MockExtensionAPI;
   let originalFetch: typeof globalThis.fetch;

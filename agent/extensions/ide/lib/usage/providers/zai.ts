@@ -4,7 +4,6 @@ import {
   formatRemainingDuration,
   loadTokenFromPiAuthJson,
 } from "../util";
-
 const zaiConfig: ProviderConfig = {
   provider: "zai",
   displayName: "Z.AI (GLM Coding Plan)",
@@ -23,23 +22,19 @@ const zaiConfig: ProviderConfig = {
       usage_details?: string;
       nextResetTime?: number;
     }
-
     interface DataType {
       data?: {
         limits?: LimitItem[];
       };
     }
-
     const response = rawData as DataType;
     const limits = response.data?.limits;
 
     if (!limits || limits.length === 0) return [];
-
     const windows: RateWindow[] = [];
 
     for (const limit of limits) {
       if (limit.type !== "TOKENS_LIMIT") continue;
-
       const usedPercent: number = limit.percentage;
       const resetDescription = calculateResetDescription(limit.nextResetTime);
 
@@ -53,7 +48,6 @@ const zaiConfig: ProviderConfig = {
     return windows;
   },
 };
-
 function calculateResetDescription(
   nextResetTime: number | undefined,
 ): string | undefined {
@@ -61,5 +55,4 @@ function calculateResetDescription(
 
   return formatRemainingDuration(nextResetTime / 1000);
 }
-
 export const fetchZAIUsage = await createGenericProvider(zaiConfig);

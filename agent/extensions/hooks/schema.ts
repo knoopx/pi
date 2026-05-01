@@ -1,6 +1,6 @@
-import { Type, type Static } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
+import type { Static } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
-
 const HookEventSchema = Type.Union([
   Type.Literal("session_start"),
   Type.Literal("session_shutdown"),
@@ -11,17 +11,15 @@ const HookEventSchema = Type.Union([
   Type.Literal("turn_start"),
   Type.Literal("turn_end"),
 ]);
-
 const HookContextSchema = Type.Union([
   Type.Literal("tool_name"),
   Type.Literal("file_name"),
   Type.Literal("command"),
 ]);
-
 const HookRuleSchema = Type.Object({
   event: HookEventSchema,
   context: Type.Optional(HookContextSchema),
-  
+
   pattern: Type.Optional(Type.String()),
 
   command: Type.String(),
@@ -29,66 +27,57 @@ const HookRuleSchema = Type.Object({
   timeout: Type.Optional(Type.Number({ minimum: 0 })),
   notify: Type.Optional(Type.Boolean()),
 });
-
 const HooksGroupSchema = Type.Object({
   group: Type.String(),
   pattern: Type.String(),
   hooks: Type.Array(HookRuleSchema),
 });
-
 const HooksConfigSchema = Type.Array(HooksGroupSchema);
-
 export type HookEvent = Static<typeof HookEventSchema>;
 export type HookRule = Static<typeof HookRuleSchema>;
 export type HooksGroup = Static<typeof HooksGroupSchema>;
 export type HooksConfig = Static<typeof HooksConfigSchema>;
-
-
 export interface HookInput {
-  
   session_id?: string;
-  
+
   cwd: string;
-  
+
   hook_event_name: HookEvent;
-  
+
   tool_name?: string;
-  
+
   tool_input?: Record<string, unknown>;
-  
+
   tool_call_id?: string;
-  
+
   tool_response?: {
     content?: unknown[];
     details?: Record<string, unknown>;
     isError?: boolean;
   };
 }
-
-
 export interface HookOutput {
-  
   continue?: boolean;
-  
+
   stopReason?: string;
-  
+
   suppressOutput?: boolean;
-  
+
   systemMessage?: string;
-  
+
   decision?: "block";
-  
+
   reason?: string;
-  
+
   hookSpecificOutput?: {
     hookEventName: HookEvent;
-    
+
     permissionDecision?: "allow" | "deny" | "ask";
-    
+
     permissionDecisionReason?: string;
-    
+
     updatedInput?: Record<string, unknown>;
-    
+
     additionalContext?: string;
   };
 }
@@ -104,7 +93,6 @@ const ve = (
     ): Iterable<{ path: string; message: string }>;
   }
 ).Errors;
-
 export function validateConfig(data: unknown): HooksConfig {
   if (!vc(HooksConfigSchema, data)) {
     const errors = [...ve(HooksConfigSchema, data)];
@@ -113,12 +101,9 @@ export function validateConfig(data: unknown): HooksConfig {
   }
   return data as HooksConfig;
 }
-
 export function isValidConfig(data: unknown): data is HooksConfig {
   return vc(HooksConfigSchema, data);
 }
-
-
 export function parseHookOutput(stdout: string): HookOutput | undefined {
   const trimmed = stdout.trim();
   if (!trimmed.startsWith("{")) return undefined;
