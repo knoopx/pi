@@ -10,7 +10,7 @@ export const NIXPKGS_GITHUB_BASE =
 //     "https://search.nixos.org/backend/_cat/indices" | grep nixos.*unstable
 // Pick the row with the highest group number (e.g. nixos-47-unstable-...).
 const SEARCH_URL =
-  "https://search.nixos.org/backend/nixos-47-unstable-b12141ef619e0a9c1c84dc8c684040326f27cdcc/_search";
+  "https://search.nixos.org/backend/nixos-47-unstable-0726a0ecb6d4e08f6adced58726b95db924cef57/_search";
 const AUTH_TOKEN =
   process.env.NIX_SEARCH_TOKEN ??
   "YVdWU0FMWHBadjpYOGdQSG56TDUyd0ZFZWt1eHNmUTljU2g=";
