@@ -1,0 +1,12 @@
+{
+  "extends": "../../shared/tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@mariozechner/pi-coding-agent": [
+        "./node_modules/@mariozechner/pi-coding-agent"
+      ]
+    }
+  },
+  "include": ["*.ts", "eval/*.ts"],
+  "exclude": ["node_modules"]
+}
