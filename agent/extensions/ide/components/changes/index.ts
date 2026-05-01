@@ -356,6 +356,7 @@ class ChangesComponent implements Component {
   private async discardFile(): Promise<void> {
     const file = this.getSelectedFile();
     if (!file || !this.state.selectedChange) return;
+    const prevFileIndex = this.state.selectionState.fileIndex;
     try {
       const restoreOutput = await restoreFile(
         this.pi,
@@ -364,7 +365,23 @@ class ChangesComponent implements Component {
         file.path,
       );
       this.state.changeCache.delete(this.state.selectedChange.changeId);
-      await this.loadFilesAndDiff(this.state.selectedChange);
+
+      // Reload files and restore selection index (adjusted for removed file)
+      this.state.files = await this.service.loadChangedFiles(
+        this.state.selectedChange.changeId,
+      );
+      const adjustedIndex = Math.max(
+        0,
+        Math.min(prevFileIndex, this.state.files.length - 1),
+      );
+      this.state.selectionState.fileIndex = adjustedIndex;
+      const selectedFile = this.state.files[adjustedIndex];
+      if (selectedFile) {
+        await this.loadDiff(this.state.selectedChange, selectedFile.path);
+      } else {
+        this.state.diffContent = [];
+      }
+
       const msg = `Restored file ${file.path} in change ${this.state.selectedChange.changeId.slice(0, 8)}`;
       notifyMutation(this.pi, msg, restoreOutput);
     } catch (error) {
