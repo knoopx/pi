@@ -1,6 +1,6 @@
+import { BROWSER_HEADERS } from "../lib/constants.js";
 import { defineParser } from "../lib/parser-utils.js";
-import { BROWSER_HEADERS } from "../lib/constants";
-import { retry } from "../lib/retry";
+import { retry } from "../lib/retry.js";
 
 const FETCH_OPTIONS: Parameters<typeof retry>[1] = {
   maxRetries: 2,
@@ -119,45 +119,6 @@ async function fetchRaw(
       throw new Error(`Fetch failed ${res.status}: ${res.statusText}`);
     return res.text();
   }, FETCH_OPTIONS);
-}
-
-// --- Model info shape (partial) ---
-interface HFModelInfo {
-  id: string;
-  author: string;
-  pipeline_tag?: string;
-  tags?: string[];
-  downloads?: number;
-  likes?: number;
-  lastModified?: string;
-  createdAt?: string;
-  gated?: boolean | string;
-  cardData?: Record<string, unknown>;
-  siblings?: Array<{ rfilename: string }>;
-}
-
-// --- Dataset info shape (partial) ---
-interface HFDatasetInfo {
-  id: string;
-  author: string;
-  description?: string;
-  tags?: string[];
-  downloads?: number;
-  likes?: number;
-  lastModified?: string;
-  createdAt?: string;
-  gated?: boolean | string;
-}
-
-// --- Space info shape (partial) ---
-interface HFSpaceInfo {
-  id: string;
-  author: string;
-  sdk?: string;
-  tags?: string[];
-  likes?: number;
-  lastModified?: string;
-  createdAt?: string;
 }
 
 // --- Tree entry shape ---
@@ -304,58 +265,70 @@ async function renderRepoBody(
   }
 }
 
-async function handleModelRepo(
+function addKindSpecificHeader(
+  parts: string[],
+  kind: HFRepo["kind"],
+  info: Record<string, unknown>,
+): void {
+  if (kind === "model" && info.pipeline_tag) {
+    parts.push(`**Pipeline:** ${info.pipeline_tag as string}`);
+  } else if (kind === "space" && info.sdk) {
+    parts.push(`**SDK:** ${info.sdk as string}`);
+  }
+}
+
+function makeTagFilter(
+  kind: HFRepo["kind"],
+): ((t: string) => boolean) | undefined {
+  if (kind === "model") {
+    return (t) => !t.startsWith("region:") && t !== "safetensors";
+  }
+  if (kind === "dataset") {
+    return (t) => !t.startsWith("region:");
+  }
+  return undefined;
+}
+
+function extractDatasetDescription(
+  info: Record<string, unknown>,
+): string | undefined {
+  const raw = info.description as string | undefined;
+  if (!raw) return undefined;
+  return raw.replace(/\t+/g, "").replace(/>\s*/g, ">").trim();
+}
+
+async function handleRepo(
   parsed: HFPath,
   signal?: AbortSignal,
 ): Promise<string> {
-  const info = await fetchJSON<HFModelInfo>(repoApiPath(parsed), signal);
-  const parts: string[] = [`# ${info.id}`];
-  if (info.pipeline_tag) parts.push(`**Pipeline:** ${info.pipeline_tag}`);
+  const info = await fetchJSON<Record<string, unknown>>(
+    repoApiPath(parsed),
+    signal,
+  );
+
+  const parts: string[] = [`# ${info.id as string}`];
+  addKindSpecificHeader(parts, parsed.kind, info);
+
+  const datasetDesc =
+    parsed.kind === "dataset" ? extractDatasetDescription(info) : undefined;
 
   await renderRepoBody(
     parts,
-    info,
+    info as {
+      tags?: string[];
+      downloads?: number;
+      likes?: number;
+      lastModified?: string;
+      gated?: boolean | string;
+    },
     parsed,
     signal,
-    (t) => !t.startsWith("region:") && t !== "safetensors",
+    makeTagFilter(parsed.kind),
+    parsed.kind === "dataset" ? 20 : undefined,
+    datasetDesc,
   );
   return parts.join("\n");
 }
-
-async function handleDatasetRepo(
-  parsed: HFPath,
-  signal?: AbortSignal,
-): Promise<string> {
-  const info = await fetchJSON<HFDatasetInfo>(repoApiPath(parsed), signal);
-  const parts: string[] = [`# ${info.id}`];
-  const cleanDesc = info.description
-    ? info.description.replace(/\t+/g, "").replace(/>\s*/g, ">").trim()
-    : undefined;
-
-  await renderRepoBody(
-    parts,
-    info,
-    parsed,
-    signal,
-    (t) => !t.startsWith("region:"),
-    20,
-    cleanDesc,
-  );
-  return parts.join("\n");
-}
-
-async function handleSpaceRepo(
-  parsed: HFPath,
-  signal?: AbortSignal,
-): Promise<string> {
-  const info = await fetchJSON<HFSpaceInfo>(repoApiPath(parsed), signal);
-  const parts: string[] = [`# ${info.id}`];
-  if (info.sdk) parts.push(`**SDK:** ${info.sdk}`);
-
-  await renderRepoBody(parts, info, parsed, signal);
-  return parts.join("\n");
-}
-
 async function handleFile(
   parsed: HFPath,
   signal?: AbortSignal,
@@ -453,15 +426,6 @@ function handleDiscussion(
   return parts.join("\n");
 }
 
-const REPO_HANDLERS: Record<
-  HFRepo["kind"],
-  (p: HFPath, s?: AbortSignal) => Promise<string>
-> = {
-  model: handleModelRepo,
-  dataset: handleDatasetRepo,
-  space: handleSpaceRepo,
-};
-
 async function dispatchHF(
   parsed: HFPath,
   signal?: AbortSignal,
@@ -476,7 +440,7 @@ async function dispatchHF(
     case "discussions":
       return handleDiscussion(parsed);
     case "repo":
-      return REPO_HANDLERS[parsed.kind](parsed, signal);
+      return handleRepo(parsed, signal);
   }
 }
 

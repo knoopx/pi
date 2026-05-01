@@ -1,8 +1,7 @@
+import { BROWSER_HEADERS, FETCH_OPTIONS } from "../lib/constants.js";
+import { formatAge, formatNumber, stripHtml } from "../lib/formatters.js";
 import { defineParser } from "../lib/parser-utils.js";
-import { BROWSER_HEADERS } from "../lib/constants";
-import { FETCH_OPTIONS } from "../lib/constants";
-import { retry } from "../lib/retry";
-import { formatAge, formatNumber, stripHtml } from "../lib/formatters";
+import { retry } from "../lib/retry.js";
 
 const BASE = "https://www.reddit.com";
 
@@ -175,10 +174,31 @@ function makePermalink(permalink: string): string {
 
 // --- Listing renderer ---
 
-function renderListing(header: string, listing: RedditListing): string {
+interface RenderListingOptions {
+  /** Extra lines to insert before posts (e.g. section headers). */
+  preamble?: string[];
+  /** Message shown when the listing is empty. */
+  emptyMessage?: string;
+}
+
+function renderListing(
+  header: string,
+  listing: RedditListing,
+  opts: RenderListingOptions = {},
+): string {
   const parts: string[] = [header, ``];
 
-  for (const { data: post } of listing.data.children) {
+  const posts = listing.data.children;
+  if (!posts.length && opts.emptyMessage) {
+    parts.push(opts.emptyMessage);
+    return parts.join("\n");
+  }
+
+  if (opts.preamble?.length) {
+    parts.push(...opts.preamble, "");
+  }
+
+  for (const { data: post } of posts) {
     if (parts.length > 1) parts.push("");
     parts.push(...renderPost(post));
   }
@@ -244,10 +264,14 @@ async function handleThread(
   return parts.join("\n");
 }
 
+function extractUrlLink(url: string | undefined, isSelf?: boolean): string[] {
+  if (!url || isSelf) return [];
+  const domain = extractDomain(url);
+  return [`[${domain}](${url})`];
+}
+
 function renderThreadLink(post: RedditPostData): string[] {
-  if (post.is_self || !post.url) return [];
-  const domain = extractDomain(post.url);
-  return [`[${domain}](${post.url})`];
+  return extractUrlLink(post.url, post.is_self);
 }
 
 function renderThreadBody(post: RedditPostData): string[] {
@@ -323,19 +347,10 @@ async function handleUser(
     signal,
   );
 
-  const parts: string[] = [`# u/${user}`, ``];
-
-  if (!data.data.children.length) {
-    parts.push(`No posts found for u/${user}.`);
-    return parts.join("\n");
-  }
-
-  parts.push("**Recent Posts**", "");
-  for (const { data: post } of data.data.children) {
-    if (parts.length > 2) parts.push("");
-    parts.push(...renderPost(post));
-  }
-  return parts.join("\n");
+  return renderListing(`# u/${user}`, data, {
+    preamble: ["**Recent Posts**"],
+    emptyMessage: `No posts found for u/${user}.`,
+  });
 }
 
 // --- Rendering ---
@@ -366,10 +381,8 @@ function buildPostMeta(post: RedditPostData): string {
 }
 
 function buildPostLink(post: RedditPostData): string[] {
-  if (!post.is_self && post.url) {
-    const domain = extractDomain(post.url);
-    return [`[${domain}](${post.url})`];
-  }
+  const link = extractUrlLink(post.url, post.is_self);
+  if (link.length) return link;
 
   if (post.selftext) {
     const snippet = stripHtml(post.selftext).split("\n").filter(Boolean)[0];

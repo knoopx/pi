@@ -59,25 +59,22 @@ function parsePathSegments(
   return parseNumberedPath(owner, repo, first, parts);
 }
 
-function parsePullPath(
+function tryParsePullOrIssue(
   owner: string,
   repo: string,
+  first: string,
   parts: string[],
 ): GitHubPath | null {
   if (!parts[1]) return null;
-  return { owner, repo, type: "pull", number: parseInt(parts[1], 10) };
+  return {
+    owner,
+    repo,
+    type: first === "pull" ? "pull" : "issue",
+    number: parseInt(parts[1], 10),
+  };
 }
 
-function parseIssuePath(
-  owner: string,
-  repo: string,
-  parts: string[],
-): GitHubPath | null {
-  if (!parts[1]) return null;
-  return { owner, repo, type: "issue", number: parseInt(parts[1], 10) };
-}
-
-function parseReleasePath(
+function tryParseRelease(
   owner: string,
   repo: string,
   parts: string[],
@@ -86,7 +83,7 @@ function parseReleasePath(
   return { owner, repo, type: "release", ref: parts[2] };
 }
 
-function parseCommitPath(
+function tryParseCommit(
   owner: string,
   repo: string,
   parts: string[],
@@ -101,21 +98,24 @@ function parseNumberedPath(
   first: string,
   parts: string[],
 ): GitHubPath | null {
-  switch (first) {
-    case "pull":
-      return parsePullPath(owner, repo, parts);
-    case "issues":
-      return parseIssuePath(owner, repo, parts);
-    case "releases":
-      return parseReleasePath(owner, repo, parts);
-    case "commit":
-      return parseCommitPath(owner, repo, parts);
+  if (first === "pull" || first === "issues") {
+    return tryParsePullOrIssue(owner, repo, first, parts);
+  }
+  if (first === "releases") {
+    return tryParseRelease(owner, repo, parts);
+  }
+  if (first === "commit") {
+    return tryParseCommit(owner, repo, parts);
   }
   return null;
 }
 
 function spawnGh(args: string[], signal?: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      return reject(new Error((signal.reason as string) ?? "Aborted"));
+    }
+
     const child = spawn("gh", args, { stdio: ["pipe", "pipe", "pipe"] });
 
     signal?.addEventListener("abort", () => {

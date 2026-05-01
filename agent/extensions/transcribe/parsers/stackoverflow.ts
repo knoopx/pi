@@ -1,8 +1,7 @@
+import { BROWSER_HEADERS, FETCH_OPTIONS } from "../lib/constants.js";
+import { formatAge, formatNumber, stripHtml } from "../lib/formatters.js";
 import { defineParser } from "../lib/parser-utils.js";
-import { BROWSER_HEADERS } from "../lib/constants";
-import { FETCH_OPTIONS } from "../lib/constants";
-import { retry } from "../lib/retry";
-import { formatAge, formatNumber, stripHtml } from "../lib/formatters";
+import { retry } from "../lib/retry.js";
 
 const BASE = "https://stackoverflow.com";
 const API = "https://api.stackexchange.com/2.3";
