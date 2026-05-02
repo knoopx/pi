@@ -1,44 +1,44 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`usage component rendering > renders 'This Week' tab with week totals 1`] = `
-"Usage Statistics
+"[38;2;250;208;0m[1mUsage Statistics[22m[39m
 
- Today   [This Week]   All Time 
+[38;2;76;62;118m Today [39m  [38;2;250;208;0m[This Week][39m  [38;2;76;62;118m All Time [39m
 
-Provider / Model           Sessions     Msgs     Cost   Tokens     ↑In    ↓Out   Cache
-──────────────────────────────────────────────────────────────────────────────────────
-▸ Anthropic                       2       25    $0.12      60k     40k     20k       -
-──────────────────────────────────────────────────────────────────────────────────────
-Total                             5       30    $0.14      70k     45k     25k       -
+[38;2;110;97;148mProvider / Model           Sessions     Msgs     Cost   Tokens[38;2;76;62;118m     ↑In[39m[38;2;76;62;118m    ↓Out[39m[38;2;76;62;118m   Cache[39m[39m
+[38;2;76;62;118m──────────────────────────────────────────────────────────────────────────────────────[39m
+[38;2;250;208;0m▸ [39m[38;2;250;208;0mAnthropic[39m                       2       25    $0.12      60k[38;2;76;62;118m     40k[39m[38;2;76;62;118m     20k[39m[38;2;76;62;118m       -[39m
+[38;2;76;62;118m──────────────────────────────────────────────────────────────────────────────────────[39m
+[1mTotal[22m                             5       30    $0.14      70k[38;2;76;62;118m     45k[39m[38;2;76;62;118m     25k[39m[38;2;76;62;118m       -[39m
 
-[Tab/←→] period  [↑↓] select  [Enter] expand  [q] close"
+[38;2;76;62;118m[Tab/←→] period  [↑↓] select  [Enter] expand  [q] close[39m"
 `;
 
 exports[`usage component rendering > renders empty usage when no providers 1`] = `
-"Usage Statistics
+"[38;2;250;208;0m[1mUsage Statistics[22m[39m
 
-[Today]   This Week    All Time 
+[38;2;250;208;0m[Today][39m  [38;2;76;62;118m This Week [39m  [38;2;76;62;118m All Time [39m
 
-Provider / Model           Sessions     Msgs     Cost   Tokens     ↑In    ↓Out   Cache
-──────────────────────────────────────────────────────────────────────────────────────
-  No usage data for this period
-──────────────────────────────────────────────────────────────────────────────────────
-Total                             -        -        -        -       -       -       -
+[38;2;110;97;148mProvider / Model           Sessions     Msgs     Cost   Tokens[38;2;76;62;118m     ↑In[39m[38;2;76;62;118m    ↓Out[39m[38;2;76;62;118m   Cache[39m[39m
+[38;2;76;62;118m──────────────────────────────────────────────────────────────────────────────────────[39m
+[38;2;76;62;118m  No usage data for this period[39m
+[38;2;76;62;118m──────────────────────────────────────────────────────────────────────────────────────[39m
+[1mTotal[22m                             -        -        -        -[38;2;76;62;118m       -[39m[38;2;76;62;118m       -[39m[38;2;76;62;118m       -[39m
 
-[Tab/←→] period  [↑↓] select  [Enter] expand  [q] close"
+[38;2;76;62;118m[Tab/←→] period  [↑↓] select  [Enter] expand  [q] close[39m"
 `;
 
 exports[`usage component rendering > renders usage dashboard with provider data and totals 1`] = `
-"Usage Statistics
+"[38;2;250;208;0m[1mUsage Statistics[22m[39m
 
-[Today]   This Week    All Time 
+[38;2;250;208;0m[Today][39m  [38;2;76;62;118m This Week [39m  [38;2;76;62;118m All Time [39m
 
-Provider / Model           Sessions     Msgs     Cost   Tokens     ↑In    ↓Out   Cache
-──────────────────────────────────────────────────────────────────────────────────────
-▸ Anthropic                       1        5    $0.03      12k    8.0k    4.0k       -
-▸ OpenAI                          1        3    $0.01     5.0k    3.0k    2.0k       -
-──────────────────────────────────────────────────────────────────────────────────────
-Total                             2        8    $0.04      17k     11k    6.0k       -
+[38;2;110;97;148mProvider / Model           Sessions     Msgs     Cost   Tokens[38;2;76;62;118m     ↑In[39m[38;2;76;62;118m    ↓Out[39m[38;2;76;62;118m   Cache[39m[39m
+[38;2;76;62;118m──────────────────────────────────────────────────────────────────────────────────────[39m
+[38;2;250;208;0m▸ [39m[38;2;250;208;0mAnthropic[39m                       1        5    $0.03      12k[38;2;76;62;118m    8.0k[39m[38;2;76;62;118m    4.0k[39m[38;2;76;62;118m       -[39m
+[38;2;76;62;118m▸ [39mOpenAI                          1        3    $0.01     5.0k[38;2;76;62;118m    3.0k[39m[38;2;76;62;118m    2.0k[39m[38;2;76;62;118m       -[39m
+[38;2;76;62;118m──────────────────────────────────────────────────────────────────────────────────────[39m
+[1mTotal[22m                             2        8    $0.04      17k[38;2;76;62;118m     11k[39m[38;2;76;62;118m    6.0k[39m[38;2;76;62;118m       -[39m
 
-[Tab/←→] period  [↑↓] select  [Enter] expand  [q] close"
+[38;2;76;62;118m[Tab/←→] period  [↑↓] select  [Enter] expand  [q] close[39m"
 `;

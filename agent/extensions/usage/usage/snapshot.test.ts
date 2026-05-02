@@ -1,20 +1,7 @@
 import { describe, it, expect } from "vitest";
-import type { Theme } from "@mariozechner/pi-coding-agent";
 import { UsageComponent } from "./component";
 import { emptyTimeFilteredStats, type UsageData } from "./types";
-
-function createMockTheme(): Theme {
-  return {
-    name: "mock",
-    fg: (color: string, text: string) => text,
-    bg: (color: string, text: string) => text,
-    bold: (t: string) => t,
-    italic: (t: string) => t,
-    underline: (t: string) => t,
-    inverse: (t: string) => t,
-    strikethrough: (t: string) => t,
-  } as unknown as Theme;
-}
+import { createMockTheme } from "../../ide/lib/test-utils";
 
 function createMockUsageData(): UsageData {
   return {

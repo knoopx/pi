@@ -1,37 +1,37 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`tool-usage component rendering > renders empty tool usage when no tools 1`] = `
-"Tool Usage Statistics
+"[38;2;250;208;0m[1mTool Usage Statistics[22m[39m
 
-Sessions: NaN  |  Tool Calls: NaN
+Sessions: -  |  Tool Calls: -
 
-[By Tool]   By Date    By Session 
+[38;2;250;208;0m[By Tool][39m  [38;2;76;62;118m By Date [39m  [38;2;76;62;118m By Session [39m
 
-  No tool usage data
-──────────────────────────────────────────────────────────────────────
+[38;2;76;62;118m  No tool usage data[39m
+[38;2;76;62;118m──────────────────────────────────────────────────────────────────────[39m
 
   Avg per session: NaN  |  Unique tools: 0
 
-[Tab/←→] view  [↑↓] select  [q] close"
+[38;2;76;62;118m[Tab/←→] view  [↑↓] select  [q] close[39m"
 `;
 
 exports[`tool-usage component rendering > renders tool usage dashboard with per-tool stats 1`] = `
-"Tool Usage Statistics
+"[38;2;250;208;0m[1mTool Usage Statistics[22m[39m
 
 Sessions: 5  |  Tool Calls: 66
 
-[By Tool]   By Date    By Session 
+[38;2;250;208;0m[By Tool][39m  [38;2;76;62;118m By Date [39m  [38;2;76;62;118m By Session [39m
 
-  bash            25  ( 37.9%)  ██████████████████████████████
-  read            15  ( 22.7%)  ██████████████████
-  edit            12  ( 18.2%)  ██████████████
-  grep             8  ( 12.1%)  ██████████
-  write            6  (  9.1%)  ███████
+  [38;2;250;208;0mbash      [39m      25  [38;2;76;62;118m( 37.9%)[39m  [38;2;250;208;0m██████████████████████████████[39m
+  read            15  [38;2;76;62;118m( 22.7%)[39m  [38;2;250;208;0m██████████████████[39m
+  edit            12  [38;2;76;62;118m( 18.2%)[39m  [38;2;250;208;0m██████████████[39m
+  grep             8  [38;2;76;62;118m( 12.1%)[39m  [38;2;250;208;0m██████████[39m
+  write            6  [38;2;76;62;118m(  9.1%)[39m  [38;2;250;208;0m███████[39m
 
-──────────────────────────────────────────────────────────────────────
+[38;2;76;62;118m──────────────────────────────────────────────────────────────────────[39m
 
-  Most used: bash (25 calls, 37.9%)
+  Most used: [38;2;250;208;0mbash[39m (25 calls, 37.9%)
   Avg per session: 13.2  |  Unique tools: 5
 
-[Tab/←→] view  [↑↓] select  [q] close"
+[38;2;76;62;118m[Tab/←→] view  [↑↓] select  [q] close[39m"
 `;
