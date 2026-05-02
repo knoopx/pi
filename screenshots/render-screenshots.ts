@@ -138,8 +138,8 @@ const FEATURES: Record<string, { snap: string; test: string }> = {
     test: "renders tool usage dashboard with per-tool stats",
   },
   editor: {
-    snap: join(IDE_SNAPS, "editor", "__snapshots__", "component.test.ts.snap"),
-    test: "then shows line numbers and content with left border",
+    snap: join(IDE_SNAPS, "editor", "__snapshots__", "highlight.test.ts.snap"),
+    test: "then applies syntax highlighting to keywords",
   },
   "bookmark-prompt": {
     snap: join(
