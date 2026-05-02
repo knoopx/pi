@@ -1,10 +1,10 @@
 {
-  "lastChangelogVersion": "0.71.1",
+  "lastChangelogVersion": "0.72.1",
   "defaultProvider": "local",
   "defaultModel": "Qwen3.6-35B-A3B",
   "theme": "custom",
   "hideThinkingBlock": false,
-  "defaultThinkingLevel": "medium",
+  "defaultThinkingLevel": "high",
   "branchSummary": {
     "skipPrompt": true
   },
