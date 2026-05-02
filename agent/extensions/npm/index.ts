@@ -2,11 +2,11 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
 import type { Static } from "@sinclair/typebox";
-import { textResult } from "../../shared/tool-utils";
-import { throttledFetch } from "../../shared/throttle";
-import { detail } from "../../shared/renderers/detail";
-import { dotJoin, countLabel } from "../../shared/renderers/header";
-import { formatPackageSearchResults } from "../../shared/package-registry";
+import { textResult } from "../../shared/result/tool-result";
+import { throttledFetch } from "../../shared/network/throttle";
+import { detail } from "../../shared/rendering/detail";
+import { dotJoin, countLabel } from "../../shared/rendering/header";
+import { formatPackageSearchResults } from "../../shared/format/package-registry";
 
 const SearchNpmPackagesParams = Type.Object({
   query: Type.String({ description: "Search query for npm packages" }),

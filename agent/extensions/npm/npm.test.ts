@@ -3,10 +3,10 @@ import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import setupNpmExtension from "./index";
-import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
-import { createMockExtensionAPI } from "../../shared/test-utils";
+import type { MockTool, MockExtensionAPI } from "../../shared/testing/test-utils";
+import { createMockExtensionAPI } from "../../shared/testing/test-utils";
 
-import { disableThrottle } from "../../shared/throttle";
+import { disableThrottle } from "../../shared/network/throttle";
 
 async function runWithFetch(
   tool: MockTool,
