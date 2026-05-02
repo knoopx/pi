@@ -1,5 +1,5 @@
 import defaultsConfig from "./defaults";
-import { loadEnabledSetting, saveEnabledSetting } from "../../shared/settings";
+import { loadEnabledSetting, saveEnabledSetting } from "../../shared/config/settings";
 export interface GuardrailsRule {
   context: "command" | "file_name" | "file_content";
 

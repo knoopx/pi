@@ -5,7 +5,7 @@ import {
   matchCommandPattern,
   matchContentPattern,
   matchFileNamePattern,
-} from "../../shared/pattern-matching";
+} from "../../shared/matching/pattern-matching";
 const typedDefaults: GuardrailsConfig = defaults;
 function getGroup(name: string): GuardrailsConfig[number] {
   const group = typedDefaults.find((g) => g.group === name);

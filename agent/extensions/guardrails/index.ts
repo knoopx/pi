@@ -4,7 +4,7 @@ import type {
   ExtensionContext,
   ThemeColor,
 } from "@mariozechner/pi-coding-agent";
-import { createThemeFg, notifyAuditResult } from "../../shared/audit-utils";
+import { createThemeFg, notifyAuditResult } from "../../shared/guardrails/audit";
 import {
   configLoader,
   loadGuardrailsSettings,
@@ -15,7 +15,7 @@ import {
   matchCommandPattern,
   matchContentPattern,
   matchFileNamePattern,
-} from "../../shared/pattern-matching";
+} from "../../shared/matching/pattern-matching";
 import { glob } from "tinyglobby";
 function createGuardrailsHandler(
   ref: { value: boolean },
