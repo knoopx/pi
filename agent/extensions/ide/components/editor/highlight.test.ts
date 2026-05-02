@@ -29,17 +29,21 @@ describe("syntax highlighting", () => {
     });
 
   describe("given TypeScript code", () => {
-    describe("when rendering code with keywords", () => {
-      it("then applies syntax highlighting to keywords", () => {
+    describe("when rendering code with keywords", async () => {
+      it("then applies syntax highlighting to keywords", async () => {
         const code = "const x = 42;\nfunction foo() { return x; }";
         const comp = createComponent(code, "/tmp/test.ts");
+        // Wait for async highlight to complete
+        await new Promise((r) => setTimeout(r, 500));
         const lines = comp.render(120);
-        const contentLines = lines.slice(3, 5);
-        const hasAnsiColorCodes = contentLines.some((line) =>
-          line.includes("\x1b[38;"),
+        // Find the code line (contains 'const')
+        const codeLine = lines.find((l) => l.includes("const"));
+        expect(codeLine).toBeDefined();
+        // Check that 'const' keyword has truecolor ANSI codes around it
+        const keywordMatch = codeLine!.match(
+          /\x1b\[38;2;\d+;\d+;\d+mconst\x1b\[[0-9;]*m/,
         );
-
-        expect(hasAnsiColorCodes).toBe(true);
+        expect(keywordMatch).not.toBeNull();
         expect(lines.join("\n")).toMatchSnapshot();
       });
     });

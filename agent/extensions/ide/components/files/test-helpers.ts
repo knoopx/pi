@@ -14,7 +14,6 @@ const TS_FILES: Record<string, string> = {
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { createListPicker } from "../../lib/list-picker";
-import { createFilePreviewLoader } from "../../lib/preview-utils";
 import { getFileIcon } from "../../lib/file-icons";
 
 export function createFilesComponent(options) {
@@ -25,7 +24,7 @@ export function createFilesComponent(options) {
       title: () => "Files",
       loadItems: (q) => rg(pi, ctx.cwd, q),
       formatItem: (f, w, t) => getFileIcon(f.path),
-      loadPreview: createFilePreviewLoader(ctx.cwd, theme),
+      loadPreview: async () => [],
     },
   });
 }`,
@@ -257,7 +256,6 @@ export function renderSplitPanel(
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { createListPicker } from "../../lib/list-picker";
-import { createFilePreviewLoader } from "../../lib/preview-utils";
 import { getFileIcon } from "../../lib/file-icons";
 import type { FileInfo } from "./types";
 
@@ -281,7 +279,7 @@ export function createFilesComponent(options: {
       title: () => "Files",
       loadItems: (q) => rg(pi, ctx.cwd, q),
       formatItem: (f, w, t) => getFileIcon((f as FileInfo).path),
-      loadPreview: createFilePreviewLoader(ctx.cwd, theme),
+      loadPreview: async () => [],
     },
   });
 }`,
@@ -370,7 +368,6 @@ import type { Theme } from "@mariozechner/pi-coding-agent";
 import type { KeybindingsManager } from "@mariozechner/pi-coding-agent";
 import { createListPicker } from "../../lib/list-picker";
 import { formatSymbolListEntry } from "../../lib/symbol-utils";
-import { createFilePreviewLoader } from "../../lib/preview-utils";
 import type { SymbolInfo, SymbolResult, SymbolTypeFilter } from "./types";
 
 export function querySymbols(
@@ -428,7 +425,7 @@ export function createSymbolsComponent(options: {
       title: () => "Symbols [" + currentType.value + "]",
       loadItems: (q) => querySymbols(pi, ctx.cwd, q, currentType.value),
       formatItem: (s, w, t) => formatSymbolListEntry(t, s as SymbolInfo),
-      loadPreview: createFilePreviewLoader(ctx.cwd, theme),
+      loadPreview: async () => [],
     },
   });
 }`,
@@ -454,7 +451,7 @@ export function register(pi: ExtensionAPI) {
     },
   });
 }`,
-  "agent/shared/tool-utils.ts": `
+  "agent/shared/tool-result.ts": `
 import { spawn } from "node:child_process";
 
 export async function runTool(

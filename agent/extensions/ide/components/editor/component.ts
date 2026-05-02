@@ -78,6 +78,9 @@ class EditorComponent implements Component, Focusable {
         this.handleCharInput(char);
       },
     });
+
+    // Pre-compute syntax highlighting so it's available on first render.
+    void this.updateHighlightCache();
   }
 
   private buildBindings(): KeyBinding[] {
@@ -299,7 +302,7 @@ class EditorComponent implements Component, Focusable {
     const cached = this.getCachedDisplayLines(hlKey);
     if (cached) return cached;
 
-    this.hlCache.set(hlKey, lines);
+    // Don't cache raw lines — wait for async highlight to populate the cache.
     return lines;
   }
 
@@ -375,8 +378,6 @@ class EditorComponent implements Component, Focusable {
 
     this.cachedWidth = width;
     this.cachedLines = output;
-
-    void this.updateHighlightCache();
 
     return output;
   }

@@ -27,7 +27,6 @@ function createBaseConfig<T extends ListPickerItem>(
     filterItems: (items: T[]) => items,
     formatItem: (item: T) => item.label,
     loadPreview: vi.fn().mockResolvedValue([] as string[]),
-    actions: [],
     reloadDebounceMs: 0,
     ...overrides,
   };
@@ -65,7 +64,7 @@ function setup(
     loadItems: vi.fn().mockResolvedValue(items),
     formatItem: (item: ListPickerItem) => `[icon] ${item.label}`,
     filterItems: (items: ListPickerItem[]) => items,
-    loadPreview: vi.fn().mockResolvedValue(["line1", "line2"]),
+    loadPreview: vi.fn().mockResolvedValue(["line1", "line2"] as const),
     ...overrides,
   });
 }

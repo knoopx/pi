@@ -384,9 +384,7 @@ class ChangesComponent implements Component {
     return restoreOutput;
   }
 
-  private async refreshFilesAndSelection(prevIndex: number): Promise<void> {
-    const { changeId } = this.state.selectedChange!;
-    this.state.files = await this.service.loadChangedFiles(changeId);
+  private selectFileByAdjustedIndex(prevIndex: number): void {
     const adjustedIndex = Math.max(
       0,
       Math.min(prevIndex, this.state.files.length - 1),
@@ -394,10 +392,16 @@ class ChangesComponent implements Component {
     this.state.selectionState.fileIndex = adjustedIndex;
     const selectedFile = this.state.files[adjustedIndex];
     if (selectedFile) {
-      await this.loadDiff(this.state.selectedChange!, selectedFile.path);
+      void this.loadDiff(this.state.selectedChange!, selectedFile.path);
     } else {
       this.state.diffContent = [];
     }
+  }
+
+  private async refreshFilesAndSelection(prevIndex: number): Promise<void> {
+    const { changeId } = this.state.selectedChange!;
+    this.state.files = await this.service.loadChangedFiles(changeId);
+    this.selectFileByAdjustedIndex(prevIndex);
   }
 
   private async splitFile(): Promise<void> {
@@ -459,17 +463,7 @@ class ChangesComponent implements Component {
     this.state.files = await this.service.loadChangedFiles(
       this.state.selectedChange!.changeId,
     );
-    const adjustedIndex = Math.max(
-      0,
-      Math.min(prevFileIndex, this.state.files.length - 1),
-    );
-    this.state.selectionState.fileIndex = adjustedIndex;
-    const selectedFile = this.state.files[adjustedIndex];
-    if (selectedFile) {
-      await this.loadDiff(this.state.selectedChange!, selectedFile.path);
-    } else {
-      this.state.diffContent = [];
-    }
+    this.selectFileByAdjustedIndex(prevFileIndex);
     this.tui.requestRender();
     notifyMutation(this.pi, msg, splitResult.stderr || splitResult.stdout);
   }

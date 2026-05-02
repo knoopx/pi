@@ -1,8 +1,13 @@
 import { codeToANSI } from "@shikijs/cli";
 import type { BundledLanguage } from "shiki";
-import { createLRUCache } from "../../../../shared/cache";
+import { getSingletonHighlighter } from "shiki";
+import { createLRUCache } from "../../../../shared/cache/lru-cache";
 import { THEME, MAX_HL_CHARS, CACHE_LIMIT } from "../shiki-constants";
 import { normalizeShikiContrast } from "./contrast";
+
+// Pre-load the highlighter so it's ready before first render.
+void getSingletonHighlighter().catch(() => {});
+
 const _cache = createLRUCache<string, string[]>(CACHE_LIMIT);
 export async function highlightCode(
   code: string,

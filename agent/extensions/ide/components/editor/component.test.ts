@@ -42,6 +42,13 @@ describe("createEditorComponent", () => {
       content,
     }) as unknown as TestEditorComponent;
 
+  const typeAndSnapshot = (comp: TestEditorComponent, input: string): void => {
+    comp.handleInput(input);
+    expect(tui.requestRender).toHaveBeenCalled();
+    const lines = comp.render(120);
+    expect(lines.join("\n")).toMatchSnapshot();
+  };
+
   describe("given component creation", () => {
     describe("when created with content", () => {
       it("then initializes editor with correct lines", (): void => {
@@ -162,12 +169,7 @@ describe("createEditorComponent", () => {
   describe("given keyboard input", () => {
     describe("when typing a character", () => {
       it("then inserts the character and requests render", (): void => {
-        const comp = createComponent();
-        comp.handleInput("x");
-
-        expect(tui.requestRender).toHaveBeenCalled();
-        const lines = comp.render(120);
-        expect(lines.join("\n")).toMatchSnapshot();
+        typeAndSnapshot(createComponent(), "x");
       });
     });
 
@@ -183,12 +185,7 @@ describe("createEditorComponent", () => {
 
     describe("when pressing enter", () => {
       it("then inserts a newline and requests render", (): void => {
-        const comp = createComponent();
-        comp.handleInput("\r");
-
-        expect(tui.requestRender).toHaveBeenCalled();
-        const lines = comp.render(120);
-        expect(lines.join("\n")).toMatchSnapshot();
+        typeAndSnapshot(createComponent(), "\r");
       });
     });
 
@@ -268,34 +265,19 @@ describe("createEditorComponent", () => {
   describe("given pair insertion", () => {
     describe("when typing opening parenthesis", () => {
       it("then inserts matching pair", (): void => {
-        const comp = createComponent();
-        comp.handleInput("(");
-
-        expect(tui.requestRender).toHaveBeenCalled();
-        const lines = comp.render(120);
-        expect(lines.join("\n")).toMatchSnapshot();
+        typeAndSnapshot(createComponent(), "(");
       });
     });
 
     describe("when typing opening bracket", () => {
       it("then inserts matching pair", (): void => {
-        const comp = createComponent();
-        comp.handleInput("[");
-
-        expect(tui.requestRender).toHaveBeenCalled();
-        const lines = comp.render(120);
-        expect(lines.join("\n")).toMatchSnapshot();
+        typeAndSnapshot(createComponent(), "[");
       });
     });
 
     describe("when typing opening brace", () => {
       it("then inserts matching pair", (): void => {
-        const comp = createComponent();
-        comp.handleInput("{");
-
-        expect(tui.requestRender).toHaveBeenCalled();
-        const lines = comp.render(120);
-        expect(lines.join("\n")).toMatchSnapshot();
+        typeAndSnapshot(createComponent(), "{");
       });
     });
   });

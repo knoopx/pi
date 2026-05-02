@@ -11,11 +11,70 @@ import {
   type ListPickerComponent,
 } from "../../lib/list-picker";
 import type { SymbolReferenceActionType } from "../symbol-references/types";
-import { createFilePreviewLoader } from "../../lib/preview-utils";
 import { getFileIcon } from "../../lib/file-icons";
 import { openEditor } from "../../lib/editor-utils";
 import type { FileInfo, FileResult } from "./types";
 import { getMtimeSorter } from "./helpers";
+import { loadFilePreviewWithShiki } from "../../lib/file-preview";
+import { join } from "node:path";
+
+const BINARY_EXTENSIONS = new Set([
+  // images
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "webp",
+  "bmp",
+  "svg",
+  // other binaries
+  "ico",
+  "cur",
+  "tif",
+  "tiff",
+  "exr",
+  "hdr",
+  "pdf",
+  "psd",
+  "ai",
+  "eps",
+  "mp3",
+  "ogg",
+  "wav",
+  "flac",
+  "aac",
+  "mp4",
+  "avi",
+  "mkv",
+  "mov",
+  "wmv",
+  "webm",
+  "zip",
+  "tar",
+  "gz",
+  "bz2",
+  "xz",
+  "7z",
+  "rar",
+  "exe",
+  "dll",
+  "so",
+  "dylib",
+  "bin",
+  "o",
+  "a",
+  "woff",
+  "woff2",
+  "ttf",
+  "otf",
+  "jpg",
+  "jpeg",
+]);
+
+function isBinaryFile(path: string): boolean {
+  const ext = path.split(".").pop()?.toLowerCase();
+  return ext !== undefined && BINARY_EXTENSIONS.has(ext);
+}
 interface FilesComponentOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };
@@ -51,9 +110,22 @@ class FilesView implements Component {
         formatItem: (item) => {
           return `${getFileIcon(item.path)} ${item.path}`;
         },
-        loadPreview: createFilePreviewLoader(ctx.cwd, theme),
+        async loadPreview(item: FileInfo) {
+          try {
+            const { readFile } = await import("node:fs/promises");
+            const content = await readFile(join(ctx.cwd, item.path), "utf8");
+            return loadFilePreviewWithShiki(item.path, content, theme);
+          } catch {
+            return [];
+          }
+        },
         filterItems: (items, query) =>
-          items.filter((item) => item.path.toLowerCase().includes(query)),
+          items.filter(
+            (item) =>
+              !isBinaryFile(item.path) &&
+              item.path.toLowerCase().includes(query),
+          ),
+
         async loadItems(_query: string) {
           const result = await pi.exec(
             "rg",

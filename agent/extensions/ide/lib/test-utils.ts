@@ -1,10 +1,10 @@
 import chalk from "chalk";
-import { vi } from "vitest";
+import { expect, vi } from "vitest";
 import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
 import type { TUI, Terminal } from "@mariozechner/pi-tui";
 import { parseHexRgb } from "./split-panel/utils";
 import type { Change } from "./types";
-import { createMockExtensionAPI } from "../../../shared/test-utils";
+import { createMockExtensionAPI } from "../../../shared/testing/test-utils";
 interface ChalkStyler {
   bold(t: string): string;
   italic(t: string): string;
@@ -246,6 +246,72 @@ export function createMockTui() {
     setFocus: vi.fn(),
   } as unknown as TUI;
 }
+
+export function createComponentFixture<T extends Record<string, unknown>>(
+  factory: (options: T) => { render: (cols: number) => string[] },
+  options: Partial<T> & {
+    pi?: ExtensionAPI;
+    tui?: ReturnType<typeof createMockTui>;
+    theme?: ReturnType<typeof createMockTheme>;
+  },
+): {
+  component: ReturnType<typeof factory>;
+  mockPi: ExtensionAPI;
+  tui: ReturnType<typeof createMockTui>;
+} {
+  const mockPi = options.pi ?? createMockPi();
+  const tui = options.tui ?? createMockTui();
+  const theme = options.theme ?? createMockTheme();
+  const component = factory({
+    ...options,
+    pi: mockPi,
+    tui,
+    theme,
+  } as unknown as T) as ReturnType<typeof factory>;
+  return { component, mockPi, tui };
+}
+
+export async function createComponentTest<T extends Record<string, unknown>>(
+  factory: (options: T) => { render: (cols: number) => string[] },
+  options: Omit<Partial<T>, "pi" | "tui"> & {
+    stdout?: string;
+    execRouter?: (
+      cmd: string,
+      args?: string[],
+    ) => Promise<{ code: number; stdout: string; stderr: string }>;
+  },
+): Promise<{
+  component: ReturnType<typeof factory>;
+  tui: ReturnType<typeof createMockTui>;
+}> {
+  const mockPi = createMockPi({
+    exec: options.execRouter
+      ? vi.fn().mockImplementation(options.execRouter)
+      : vi.fn().mockResolvedValue({
+          code: 0,
+          stdout: options.stdout ?? "",
+          stderr: "",
+        }),
+  });
+  const { component, tui } = createComponentFixture(factory, {
+    ...options,
+    pi: mockPi,
+  } as Partial<T> & {
+    pi?: ExtensionAPI;
+    tui?: ReturnType<typeof createMockTui>;
+    theme?: ReturnType<typeof createMockTheme>;
+  });
+  await new Promise((r) => setTimeout(r, 50));
+  return { component, tui };
+}
+
+export function snapshotRender(component: {
+  render: (cols: number) => string[];
+}): void {
+  const result = component.render(120);
+  expect(result.join("\n")).toMatchSnapshot();
+}
+
 interface ExecResult {
   code: number;
   stdout: string;
@@ -264,6 +330,35 @@ export function createMockExecPi(): MockExecPi {
     pi: { exec: execMock } as unknown as ExtensionAPI,
   };
 }
+export interface ErrorFixtureOptions<T extends Record<string, unknown>> {
+  componentFactory: (options: T) => { render: (cols: number) => string[] };
+  config: Partial<T> & {
+    pi?: ExtensionAPI;
+    tui?: ReturnType<typeof createMockTui>;
+    theme?: ReturnType<typeof createMockTheme>;
+  };
+  stderr?: string;
+}
+
+export async function createErrorFixture<T extends Record<string, unknown>>(
+  options: ErrorFixtureOptions<T>,
+): Promise<string[]> {
+  const { componentFactory, config, stderr = "command failed" } = options;
+  const mockPi = createMockPi({
+    exec: vi.fn().mockResolvedValue({
+      code: 1,
+      stdout: "",
+      stderr,
+    }),
+  });
+  const { component } = createComponentFixture(componentFactory, {
+    ...config,
+    pi: mockPi,
+  });
+  await new Promise((r) => setTimeout(r, 50));
+  return component.render(120);
+}
+
 interface ExecRoute {
   command: string;
   args: string[];

@@ -3,10 +3,10 @@ import { highlightCode } from "../tools/shiki/highlight";
 import { lang } from "../tools/language";
 export function highlightCodeLines(
   line: string,
-  theme: Theme,
+  _theme: Theme,
   accentColor?: ThemeColor,
 ): string {
-  if (accentColor) return theme.fg(accentColor, line);
+  if (accentColor) return _theme.fg(accentColor, line);
   return line;
 }
 export function loadFilePreviewWithShiki(

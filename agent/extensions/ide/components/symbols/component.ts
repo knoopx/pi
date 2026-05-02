@@ -11,10 +11,11 @@ import {
   type ListPickerAction,
 } from "../../lib/list-picker";
 import { formatSymbolListEntry } from "../../lib/symbol-utils";
-import { createFilePreviewLoader } from "../../lib/preview-utils";
+import { join } from "node:path";
 import type { SymbolReferenceActionType } from "../symbol-references/types";
 import type { SymbolResult, SymbolInfo, SymbolTypeFilter } from "./types";
 import { SYMBOL_TYPES } from "./types";
+import { loadFilePreviewWithShiki } from "../../lib/file-preview";
 import { querySymbols } from "./helpers";
 import { openEditor } from "../../lib/editor-utils";
 interface SymbolsComponentOptions {
@@ -107,7 +108,15 @@ function buildSymbolPickerOptions(options: {
     reloadDebounceMs: 300,
     formatItem: (item: SymbolInfo, _width: number, t: Theme): string =>
       formatSymbolListEntry(t, { ...item, line: item.startLine }),
-    loadPreview: createFilePreviewLoader(ctx.cwd, theme),
+    async loadPreview(item: SymbolInfo) {
+      try {
+        const { readFile } = await import("node:fs/promises");
+        const content = await readFile(join(ctx.cwd, item.path), "utf8");
+        return loadFilePreviewWithShiki(item.path, content, theme);
+      } catch {
+        return [];
+      }
+    },
     onKey: (data: string, onReload: (() => void) | undefined): boolean => {
       if (matchesKey(data, Key.ctrl("/"))) {
         const currentIndex = SYMBOL_TYPES.indexOf(currentTypeRef.value);

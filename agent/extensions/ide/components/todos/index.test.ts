@@ -1,22 +1,12 @@
+import "../test-setup";
+
 import { describe, it, expect, vi } from "vitest";
-import type * as fsPromises from "node:fs/promises";
-
-type ImportOriginal = () => Promise<typeof fsPromises>;
-vi.mock("node:fs/promises", async (importOriginal: ImportOriginal) => {
-  const actual = await importOriginal();
-  const { mockReadFileImplementation } = await import("../files/test-helpers");
-  return {
-    ...actual,
-    readFile: vi.fn().mockImplementation(mockReadFileImplementation),
-  };
-});
-
 import type { KeybindingsManager } from "@mariozechner/pi-coding-agent";
 import { createTodosComponent } from "./component";
 import {
-  createMockPi,
-  createMockTui,
-  createMockTheme,
+  createErrorFixture,
+  createComponentTest,
+  snapshotRender,
 } from "../../lib/test-utils";
 import type { AstGrepMatch } from "./types";
 
@@ -36,31 +26,25 @@ function makeAstGrepMatches(matches: Partial<AstGrepMatch>[]): string {
 }
 
 async function createFixture(stdout: string) {
-  const mockPi = createMockPi({
-    exec: vi.fn().mockResolvedValue({ code: 0, stdout, stderr: "" }),
-  });
-  const tui = createMockTui();
-  const theme = createMockTheme();
-  const component = createTodosComponent({
-    pi: mockPi,
-    tui,
-    theme,
-    keybindings: {} as KeybindingsManager,
-    done: vi.fn(),
-    initialQuery: "",
-    cwd: REPO,
-  });
-
-  await new Promise((r) => setTimeout(r, 50));
-  return { component, tui };
+  return createComponentTest(
+    createTodosComponent as unknown as (options: Record<string, unknown>) => {
+      render: (cols: number) => string[];
+    },
+    {
+      stdout,
+      keybindings: {} as KeybindingsManager,
+      done: vi.fn(),
+      initialQuery: "",
+      cwd: REPO,
+    },
+  );
 }
 
 describe("todos — list row rendering", () => {
   describe("given empty results", () => {
     it("renders the no items message", async () => {
       const { component } = await createFixture("[]");
-      const result = component.render(120);
-      expect(result.join("\n")).toMatchSnapshot();
+      snapshotRender(component);
     });
   });
 
@@ -178,7 +162,7 @@ describe("todos — list row rendering", () => {
         },
         {
           text: "// XXX: review error handling in jj command wrapper",
-          file: "agent/shared/tool-utils.ts",
+          file: "agent/shared/tool-result.ts",
         },
         {
           text: "// TODO: implement caching layer for file previews",
@@ -194,7 +178,7 @@ describe("todos — list row rendering", () => {
         },
         {
           text: "// TODO: improve logging format for tool execution",
-          file: "agent/shared/tool-utils.ts",
+          file: "agent/shared/tool-result.ts",
         },
         {
           text: "// FIXME: timeout when loading large diffs",
@@ -225,27 +209,20 @@ describe("todos — list row rendering", () => {
 
   describe("given a scan error", () => {
     it("renders empty list when ast-grep fails", async () => {
-      const mockPi = createMockPi({
-        exec: vi.fn().mockResolvedValue({
-          code: 1,
-          stdout: "",
-          stderr: "ast-grep: no such command",
-        }),
+      const result = await createErrorFixture({
+        componentFactory: createTodosComponent as unknown as (
+          options: Record<string, unknown>,
+        ) => {
+          render: (cols: number) => string[];
+        },
+        config: {
+          keybindings: {} as KeybindingsManager,
+          done: vi.fn(),
+          initialQuery: "",
+          cwd: REPO,
+        },
+        stderr: "ast-grep: no such command",
       });
-      const tui = createMockTui();
-      const theme = createMockTheme();
-      const component = createTodosComponent({
-        pi: mockPi,
-        tui,
-        theme,
-        keybindings: {} as KeybindingsManager,
-        done: vi.fn(),
-        initialQuery: "",
-        cwd: REPO,
-      });
-
-      await new Promise((r) => setTimeout(r, 50));
-      const result = component.render(120);
       expect(result.join("\n")).toMatchSnapshot();
     });
   });

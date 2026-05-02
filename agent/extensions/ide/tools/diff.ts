@@ -1,7 +1,7 @@
 import { codeToANSI } from "@shikijs/cli";
 import { bundledThemes } from "shiki";
 import type { BundledLanguage, BundledTheme } from "shiki";
-import { createLRUCache } from "../../../shared/cache";
+import { createLRUCache } from "../../../shared/cache/lru-cache";
 import { lang } from "./language";
 let addBg: string | null = null;
 let removeBg: string | null = null;

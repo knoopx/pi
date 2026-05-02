@@ -2,9 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import type { KeybindingsManager } from "@mariozechner/pi-coding-agent";
 import { createOpLogComponent } from "./component";
 import {
-  createMockPi,
-  createMockTui,
-  createMockTheme,
+  createErrorFixture,
+  createComponentTest,
+  snapshotRender,
 } from "../../lib/test-utils";
 
 const REPO = "/tmp/test-project";
@@ -15,30 +15,24 @@ function makeOpLogOutput(entries: string[]): string {
 }
 
 async function createFixture(stdout: string) {
-  const mockPi = createMockPi({
-    exec: vi.fn().mockResolvedValue({ code: 0, stdout, stderr: "" }),
-  });
-  const tui = createMockTui();
-  const theme = createMockTheme();
-  const component = createOpLogComponent({
-    pi: mockPi,
-    tui,
-    theme,
-    keybindings: {} as KeybindingsManager,
-    done: vi.fn(),
-    cwd: REPO,
-  });
-
-  await new Promise((r) => setTimeout(r, 50));
-  return { component, tui };
+  return createComponentTest(
+    createOpLogComponent as unknown as (options: Record<string, unknown>) => {
+      render: (cols: number) => string[];
+    },
+    {
+      stdout,
+      keybindings: {} as KeybindingsManager,
+      done: vi.fn(),
+      cwd: REPO,
+    },
+  );
 }
 
 describe("oplog — list row rendering", () => {
   describe("given empty results", () => {
     it("renders the no items message", async () => {
       const { component } = await createFixture("");
-      const result = component.render(120);
-      expect(result.join("\n")).toMatchSnapshot();
+      snapshotRender(component);
     });
   });
 
@@ -130,26 +124,19 @@ describe("oplog — list row rendering", () => {
 
   describe("given a jj command error", () => {
     it("renders empty list when jj op log fails", async () => {
-      const mockPi = createMockPi({
-        exec: vi.fn().mockResolvedValue({
-          code: 1,
-          stdout: "",
-          stderr: "jj: not a repository",
-        }),
+      const result = await createErrorFixture({
+        componentFactory: createOpLogComponent as unknown as (
+          options: Record<string, unknown>,
+        ) => {
+          render: (cols: number) => string[];
+        },
+        config: {
+          keybindings: {} as KeybindingsManager,
+          done: vi.fn(),
+          cwd: REPO,
+        },
+        stderr: "jj: not a repository",
       });
-      const tui = createMockTui();
-      const theme = createMockTheme();
-      const component = createOpLogComponent({
-        pi: mockPi,
-        tui,
-        theme,
-        keybindings: {} as KeybindingsManager,
-        done: vi.fn(),
-        cwd: REPO,
-      });
-
-      await new Promise((r) => setTimeout(r, 50));
-      const result = component.render(120);
       expect(result.join("\n")).toMatchSnapshot();
     });
   });

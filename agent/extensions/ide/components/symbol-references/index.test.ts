@@ -5,9 +5,9 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { createSymbolReferenceComponent } from "./component";
 import {
+  createErrorFixture,
   createMockPi,
-  createMockTui,
-  createMockTheme,
+  createComponentFixture,
 } from "../../lib/test-utils";
 
 const REPO = "/tmp/test-project";
@@ -21,22 +21,24 @@ async function createFixture(cmStdout: string, title: string) {
   const mockPi = createMockPi({
     exec: vi.fn().mockResolvedValue({ code: 0, stdout: cmStdout, stderr: "" }),
   });
-  const tui = createMockTui();
-  const theme = createMockTheme();
-
-  const component = createSymbolReferenceComponent({
-    pi: mockPi,
-    tui,
-    theme,
-    keybindings: Object.assign(Object.create(null), {}) as KeybindingsManager,
-    done: vi.fn(),
-    config: {
-      title,
-      command: "cm",
-      args: ["query", "testSymbol"],
-      ctx: { cwd: REPO } as ExtensionContext,
+  const { component, tui } = createComponentFixture(
+    createSymbolReferenceComponent as unknown as (
+      options: Record<string, unknown>,
+    ) => {
+      render: (cols: number) => string[];
     },
-  });
+    {
+      pi: mockPi,
+      keybindings: Object.assign(Object.create(null), {}) as KeybindingsManager,
+      done: vi.fn(),
+      config: {
+        title,
+        command: "cm",
+        args: ["query", "testSymbol"],
+        ctx: { cwd: REPO } as ExtensionContext,
+      },
+    },
+  );
 
   await new Promise((r) => setTimeout(r, 50));
   return { component, tui };
@@ -206,35 +208,27 @@ describe("symbol-references — list row rendering", () => {
 
   describe("given a cm command error", () => {
     it("renders empty list when cm fails", async () => {
-      const mockPi = createMockPi({
-        exec: vi.fn().mockResolvedValue({
-          code: 1,
-          stdout: "",
-          stderr: "Symbol not found",
-        }),
-      });
-      const tui = createMockTui();
-      const theme = createMockTheme();
-
-      const component = createSymbolReferenceComponent({
-        pi: mockPi,
-        tui,
-        theme,
-        keybindings: Object.assign(
-          Object.create(null),
-          {},
-        ) as KeybindingsManager,
-        done: vi.fn(),
-        config: {
-          title: "Callers",
-          command: "cm",
-          args: ["callers", "missingSymbol"],
-          ctx: { cwd: REPO } as ExtensionContext,
+      const result = await createErrorFixture({
+        componentFactory: createSymbolReferenceComponent as unknown as (
+          options: Record<string, unknown>,
+        ) => {
+          render: (cols: number) => string[];
         },
+        config: {
+          keybindings: Object.assign(
+            Object.create(null),
+            {},
+          ) as KeybindingsManager,
+          done: vi.fn(),
+          config: {
+            title: "Callers",
+            command: "cm",
+            args: ["callers", "missingSymbol"],
+            ctx: { cwd: REPO } as ExtensionContext,
+          },
+        },
+        stderr: "Symbol not found",
       });
-
-      await new Promise((r) => setTimeout(r, 50));
-      const result = component.render(120);
       expect(result.join("\n")).toMatchSnapshot();
     });
   });

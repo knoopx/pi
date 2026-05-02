@@ -8,9 +8,10 @@ import {
   createListPicker,
   type ListPickerComponent,
 } from "../../lib/list-picker";
-import { createFilePreviewLoader } from "../../lib/preview-utils";
 import type { TodoItem } from "./types";
 import { filterTodosByQuery, findTodos, formatTodoItem } from "./helpers";
+import { loadFilePreviewWithShiki } from "../../lib/file-preview";
+import { join } from "node:path";
 interface TodosComponentOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };
@@ -37,7 +38,15 @@ export function createTodosComponent(
       filterItems: (items, query) => filterTodosByQuery(items, query),
       reloadDebounceMs: 300,
       formatItem: (item, width, theme) => formatTodoItem(width, theme, item),
-      loadPreview: createFilePreviewLoader(cwd, theme),
+      async loadPreview(item: TodoItem) {
+        try {
+          const { readFile } = await import("node:fs/promises");
+          const content = await readFile(join(cwd, item.path), "utf8");
+          return loadFilePreviewWithShiki(item.path, content, theme);
+        } catch {
+          return [];
+        }
+      },
       actions: [
         {
           key: Key.ctrl("t"),

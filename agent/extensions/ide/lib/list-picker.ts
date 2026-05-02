@@ -200,12 +200,8 @@ class ListPickerImpl<T extends ListPickerItem> implements Component {
   }
 
   private filterItems(): void {
-    if (!this.searchQuery) {
-      this.filteredItems = this.items;
-    } else {
-      const lower = this.searchQuery.toLowerCase();
-      this.filteredItems = this.config.filterItems(this.items, lower);
-    }
+    const lower = this.searchQuery.toLowerCase();
+    this.filteredItems = this.config.filterItems(this.items, lower);
     this.focusedIndex = Math.min(
       this.focusedIndex,
       Math.max(0, this.filteredItems.length - 1),
@@ -229,9 +225,9 @@ class ListPickerImpl<T extends ListPickerItem> implements Component {
     }
 
     try {
-      const lines = await this.config.loadPreview(item);
-      this.previewCache.set(cacheKey, lines);
-      this.sourceLines = lines;
+      const result = await this.config.loadPreview(item);
+      this.previewCache.set(cacheKey, result);
+      this.sourceLines = result;
       this.sourceScroll = item.startLine ? Math.max(0, item.startLine - 3) : 0;
       this.invalidate();
       this.tui.requestRender();
@@ -304,17 +300,13 @@ class ListPickerImpl<T extends ListPickerItem> implements Component {
       rightW: dims.rightW,
     });
     const itemRows = this.getItemRows(dims.leftW, dims.contentH);
-    const sourceRows = renderSourceRows({
-      lines: this.sourceLines,
-      width: dims.rightW,
-      height: dims.contentH,
-      scroll: this.sourceScroll,
-      theme: this.theme,
-      highlightRange:
-        focusedItem?.startLine && focusedItem.endLine
-          ? { start: focusedItem.startLine, end: focusedItem.endLine }
-          : undefined,
-    });
+    const sourceRows = this.getSourceRows(
+      dims.rightW,
+      dims.contentH,
+      focusedItem?.startLine && focusedItem.endLine
+        ? { start: focusedItem.startLine, end: focusedItem.endLine }
+        : undefined,
+    );
     const helpText = formatHelpWithStatus(
       this.theme,
       this.statusState.message,
@@ -491,6 +483,21 @@ class ListPickerImpl<T extends ListPickerItem> implements Component {
     this.sourceScroll = 0;
     this.invalidate();
     this.tui.requestRender();
+  }
+
+  private getSourceRows(
+    width: number,
+    height: number,
+    highlightRange?: { start: number; end: number },
+  ): string[] {
+    return renderSourceRows({
+      lines: this.sourceLines,
+      width,
+      height,
+      scroll: this.sourceScroll,
+      theme: this.theme,
+      highlightRange,
+    });
   }
 
   private async reload(): Promise<void> {

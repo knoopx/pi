@@ -11,7 +11,7 @@ import {
   horizontalSeparator,
   bottomBorder,
 } from "../../lib/ui/frame";
-import { fuzzySort } from "../../../../shared/fuzzy";
+import { fuzzySort } from "../../../../shared/matching/fuzzy";
 function filterBookmarkCandidates(
   bookmarks: string[],
   query: string,

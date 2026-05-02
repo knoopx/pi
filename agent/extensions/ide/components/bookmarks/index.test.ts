@@ -1,22 +1,12 @@
+import "../test-setup";
+
 import { describe, it, expect, vi } from "vitest";
-import type * as fsPromises from "node:fs/promises";
-
-type ImportOriginal = () => Promise<typeof fsPromises>;
-vi.mock("node:fs/promises", async (importOriginal: ImportOriginal) => {
-  const actual = await importOriginal();
-  const { mockReadFileImplementation } = await import("../files/test-helpers");
-  return {
-    ...actual,
-    readFile: vi.fn().mockImplementation(mockReadFileImplementation),
-  };
-});
-
 import type { KeybindingsManager } from "@mariozechner/pi-coding-agent";
 import { createBookmarksComponent } from "./component";
 import {
-  createMockPi,
-  createMockTui,
-  createMockTheme,
+  createErrorFixture,
+  createComponentTest,
+  snapshotRender,
 } from "../../lib/test-utils";
 
 const REPO = "/tmp/test-project";
@@ -50,38 +40,32 @@ index abc1234..def5678 100644
  `;
 
 async function createFixture(stdout: string) {
-  const mockPi = createMockPi({
-    exec: vi
-      .fn()
-      .mockResolvedValue({ code: 0, stdout, stderr: "" })
-      .mockImplementation((cmd: string, args?: string[]) => {
+  return createComponentTest(
+    createBookmarksComponent as unknown as (
+      options: Record<string, unknown>,
+    ) => {
+      render: (cols: number) => string[];
+    },
+    {
+      stdout,
+      keybindings: {} as KeybindingsManager,
+      done: vi.fn(),
+      cwd: REPO,
+      execRouter: (cmd: string, args?: string[]) => {
         if (cmd === "jj" && args?.includes("diff")) {
           return Promise.resolve({ code: 0, stdout: MOCK_DIFF, stderr: "" });
         }
         return Promise.resolve({ code: 0, stdout, stderr: "" });
-      }),
-  });
-  const tui = createMockTui();
-  const theme = createMockTheme();
-  const component = createBookmarksComponent({
-    pi: mockPi,
-    tui,
-    theme,
-    keybindings: {} as KeybindingsManager,
-    done: vi.fn(),
-    cwd: REPO,
-  });
-
-  await new Promise((r) => setTimeout(r, 50));
-  return { component, tui };
+      },
+    },
+  );
 }
 
 describe("bookmarks — list row rendering", () => {
   describe("given empty results", () => {
     it("renders the no items message", async () => {
       const { component } = await createFixture("");
-      const result = component.render(120);
-      expect(result.join("\n")).toMatchSnapshot();
+      snapshotRender(component);
     });
   });
 
@@ -198,26 +182,19 @@ describe("bookmarks — list row rendering", () => {
 
   describe("given a jj command error", () => {
     it("renders empty list when jj bookmark list fails", async () => {
-      const mockPi = createMockPi({
-        exec: vi.fn().mockResolvedValue({
-          code: 1,
-          stdout: "",
-          stderr: "jj: no repository found",
-        }),
+      const result = await createErrorFixture({
+        componentFactory: createBookmarksComponent as unknown as (
+          options: Record<string, unknown>,
+        ) => {
+          render: (cols: number) => string[];
+        },
+        config: {
+          keybindings: {} as KeybindingsManager,
+          done: vi.fn(),
+          cwd: REPO,
+        },
+        stderr: "jj: no repository found",
       });
-      const tui = createMockTui();
-      const theme = createMockTheme();
-      const component = createBookmarksComponent({
-        pi: mockPi,
-        tui,
-        theme,
-        keybindings: {} as KeybindingsManager,
-        done: vi.fn(),
-        cwd: REPO,
-      });
-
-      await new Promise((r) => setTimeout(r, 50));
-      const result = component.render(120);
       expect(result.join("\n")).toMatchSnapshot();
     });
   });

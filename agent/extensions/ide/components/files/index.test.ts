@@ -58,7 +58,7 @@ describe("files — list row rendering", () => {
         "agent/extensions/ide/components/split-panel/border.ts",
         "agent/extensions/nix/nix.test.ts",
         "agent/extensions/gh/index.ts",
-        "agent/shared/tool-utils.ts",
+        "agent/shared/tool-result.ts",
         "agent/extensions/usage/usage.test.ts",
         "flake.nix",
         "package.json",

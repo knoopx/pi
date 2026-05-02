@@ -53,6 +53,18 @@ async function createFixture(
   return { component, tui };
 }
 
+async function navigateAndSnapshot(
+  lines: string,
+  ...inputs: string[]
+): Promise<void> {
+  const { component, tui } = await createFixture(lines);
+  for (const input of inputs) {
+    component.handleInput?.(input);
+  }
+  const result = component.render(120);
+  expect(result.join("\n")).toMatchSnapshot();
+}
+
 describe("bookmark-prompt", () => {
   describe("loading state", () => {
     it("renders the loading state while bookmarks are being fetched", () => {
@@ -177,31 +189,20 @@ describe("bookmark-prompt", () => {
 
   describe("navigation and selection", () => {
     it("moves selection down on arrow-down key", async () => {
-      const { component } = await createFixture("alpha\nbeta\ngamma\n");
-
-      component.handleInput?.("\x1b[B");
-      component.handleInput?.("\x1b[B");
-      const result = component.render(120);
-      expect(result.join("\n")).toMatchSnapshot();
+      await navigateAndSnapshot("alpha\nbeta\ngamma\n", "\x1b[B", "\x1b[B");
     });
 
     it("moves selection up on arrow-up key", async () => {
-      const { component } = await createFixture("alpha\nbeta\ngamma\n");
-
-      component.handleInput?.("\x1b[B");
-      component.handleInput?.("\x1b[B");
-      component.handleInput?.("\x1b[A");
-      const result = component.render(120);
-      expect(result.join("\n")).toMatchSnapshot();
+      await navigateAndSnapshot(
+        "alpha\nbeta\ngamma\n",
+        "\x1b[B",
+        "\x1b[B",
+        "\x1b[A",
+      );
     });
 
     it("clamps selection to max when pressing down at end", async () => {
-      const { component } = await createFixture("alpha\nbeta\n");
-
-      component.handleInput?.("\x1b[B");
-      component.handleInput?.("\x1b[B");
-      const result = component.render(120);
-      expect(result.join("\n")).toMatchSnapshot();
+      await navigateAndSnapshot("alpha\nbeta\n", "\x1b[B", "\x1b[B");
     });
 
     it("calls done with selected bookmark on enter", async () => {

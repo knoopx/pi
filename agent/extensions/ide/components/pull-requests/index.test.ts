@@ -2,9 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import type { KeybindingsManager } from "@mariozechner/pi-coding-agent";
 import { createPullRequestsComponent } from "./component";
 import {
-  createMockPi,
-  createMockTui,
-  createMockTheme,
+  createErrorFixture,
+  createComponentTest,
+  snapshotRender,
 } from "../../lib/test-utils";
 import type { RawPr } from "./data-fetching";
 
@@ -35,30 +35,26 @@ function makePrData(prs: Partial<RawPr>[]): string {
 }
 
 async function createFixture(stdout: string) {
-  const mockPi = createMockPi({
-    exec: vi.fn().mockResolvedValue({ code: 0, stdout, stderr: "" }),
-  });
-  const tui = createMockTui();
-  const theme = createMockTheme();
-  const component = createPullRequestsComponent({
-    pi: mockPi,
-    tui,
-    theme,
-    keybindings: {} as KeybindingsManager,
-    done: vi.fn(),
-    cwd: REPO,
-  });
-
-  await new Promise((r) => setTimeout(r, 50));
-  return { component, tui };
+  return createComponentTest(
+    createPullRequestsComponent as unknown as (
+      options: Record<string, unknown>,
+    ) => {
+      render: (cols: number) => string[];
+    },
+    {
+      stdout,
+      keybindings: {} as KeybindingsManager,
+      done: vi.fn(),
+      cwd: REPO,
+    },
+  );
 }
 
 describe("pull-requests — list row rendering", () => {
   describe("given empty results", () => {
     it("renders the no items message", async () => {
       const { component } = await createFixture("[]");
-      const result = component.render(120);
-      expect(result.join("\n")).toMatchSnapshot();
+      snapshotRender(component);
     });
   });
 
@@ -238,26 +234,19 @@ describe("pull-requests — list row rendering", () => {
 
   describe("given a gh command error", () => {
     it("renders error state when gh pr list fails", async () => {
-      const mockPi = createMockPi({
-        exec: vi.fn().mockResolvedValue({
-          code: 1,
-          stdout: "",
-          stderr: "Not a GitHub repository",
-        }),
+      const result = await createErrorFixture({
+        componentFactory: createPullRequestsComponent as unknown as (
+          options: Record<string, unknown>,
+        ) => {
+          render: (cols: number) => string[];
+        },
+        config: {
+          keybindings: {} as KeybindingsManager,
+          done: vi.fn(),
+          cwd: REPO,
+        },
+        stderr: "Not a GitHub repository",
       });
-      const tui = createMockTui();
-      const theme = createMockTheme();
-      const component = createPullRequestsComponent({
-        pi: mockPi,
-        tui,
-        theme,
-        keybindings: {} as KeybindingsManager,
-        done: vi.fn(),
-        cwd: REPO,
-      });
-
-      await new Promise((r) => setTimeout(r, 50));
-      const result = component.render(120);
       expect(result.join("\n")).toMatchSnapshot();
     });
   });
