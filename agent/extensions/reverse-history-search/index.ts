@@ -1,4 +1,4 @@
-import { fuzzyMatch } from "../../shared/fuzzy";
+import { fuzzyMatch } from "../../shared/matching/fuzzy";
 
 import type {
   ExtensionAPI,
@@ -7,11 +7,12 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { matchesKey } from "@mariozechner/pi-tui";
 import type { TUI } from "@mariozechner/pi-tui";
-import { ensureWidth } from "../ide/lib/text-utils";
+
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-interface HistoryEntry {
+import { renderHistoryPage } from "./render";
+export interface HistoryEntry {
   content: string;
   preview?: string;
   timestamp: number;
@@ -319,49 +320,13 @@ class HistorySearchComponent {
 
   render(width: number): string[] {
     if (this.cachedLines && this.cachedWidth === width) return this.cachedLines;
-    const lines: string[] = [];
-    const borderChar = this.theme.fg("accent", "─");
-
-    lines.push(borderChar.repeat(width));
-
-    const maxVisible = 10;
-    const start = Math.max(
-      0,
-      Math.min(
-        this.selectedIndex - 4,
-        this.filteredHistory.length - maxVisible,
-      ),
+    const lines = renderHistoryPage(
+      this.filteredHistory,
+      this.selectedIndex,
+      width,
+      this.query,
+      this.theme,
     );
-    const end = Math.min(start + maxVisible, this.filteredHistory.length);
-    const queryPart = this.query ? `${this.query} • ` : "";
-    const pagerPart = `[${start + 1}-${end} of ${this.filteredHistory.length}]`;
-    lines.push(this.theme.fg("dim", `${queryPart}${pagerPart}`));
-
-    for (let i = start; i < end; i++) {
-      const entry = this.filteredHistory[i];
-      const isSelected = i === this.selectedIndex;
-      const typeIndicator = entry.type === "command" ? "$" : "󰆉";
-      const typeColor = entry.type === "command" ? "success" : "accent";
-      const displayContent = truncateSingleLine(
-        entry.preview ?? entry.content,
-        width - 2,
-      );
-      const content = `${typeIndicator} ${displayContent}`;
-      const padded = ensureWidth(content, width);
-      let line: string;
-      if (isSelected) {
-        const colored = this.theme.fg(typeColor, padded);
-        line = this.theme.bg("selectedBg", colored);
-      } else {
-        const coloredIndicator = this.theme.fg(typeColor, typeIndicator);
-        line = `${coloredIndicator} ${displayContent}`;
-      }
-
-      lines.push(line);
-    }
-
-    lines.push(borderChar.repeat(width));
-
     this.cachedLines = lines;
     this.cachedWidth = width;
     return lines;

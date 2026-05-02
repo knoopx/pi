@@ -1,88 +1,12 @@
 import { describe, it, expect } from "vitest";
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { HistoryEntry } from "./index";
+import { createMockTheme } from "../ide/lib/test-utils";
+import { renderHistoryPage } from "./render";
 
-function createMockTheme(): Theme {
-  return {
-    name: "mock",
-    fg: (color: string, text: string) => text,
-    bg: (color: string, text: string) => text,
-    bold: (t: string) => t,
-    italic: (t: string) => t,
-    underline: (t: string) => t,
-    inverse: (t: string) => t,
-    strikethrough: (t: string) => t,
-  } as unknown as Theme;
-}
-
-interface HistoryEntry {
-  content: string;
-  preview?: string;
-  timestamp: number;
-  type: "command" | "message";
-}
-
-function truncateSingleLine(text: string, maxWidth: number): string {
-  if (text.length <= maxWidth) return text;
-  return text.slice(0, maxWidth - 1) + "…";
-}
-
-function ensureWidth(text: string, width: number): string {
-  return text.padEnd(width);
-}
-
-function renderHistorySearch(
-  theme: Theme,
-  entries: HistoryEntry[],
-  query: string,
-  selectedIndex: number,
-  width: number,
-): string[] {
-  const lines: string[] = [];
-  const borderChar = theme.fg("accent", "─");
-
-  lines.push(borderChar.repeat(width));
-
-  const maxVisible = 10;
-  const filtered = entries.filter((e) => {
-    if (!query) return true;
-    return e.content.toLowerCase().includes(query.toLowerCase());
-  });
-
-  const start = Math.max(
-    0,
-    Math.min(selectedIndex - 4, filtered.length - maxVisible),
-  );
-  const end = Math.min(start + maxVisible, filtered.length);
-  const queryPart = query ? `${query} • ` : "";
-  const pagerPart = `[${start + 1}-${end} of ${filtered.length}]`;
-  lines.push(theme.fg("dim", `${queryPart}${pagerPart}`));
-
-  for (let i = start; i < end; i++) {
-    const entry = filtered[i];
-    const isSelected = i === selectedIndex;
-    const typeIndicator = entry.type === "command" ? "$" : "󰆉";
-    const typeColor = entry.type === "command" ? "success" : "accent";
-    const displayContent = truncateSingleLine(
-      entry.preview ?? entry.content,
-      width - 2,
-    );
-    const content = `${typeIndicator} ${displayContent}`;
-    const padded = ensureWidth(content, width);
-    let line: string;
-    if (isSelected) {
-      const colored = theme.fg(typeColor, padded);
-      line = theme.bg("selectedBg", colored);
-    } else {
-      const coloredIndicator = theme.fg(typeColor, typeIndicator);
-      line = `${coloredIndicator} ${displayContent}`;
-    }
-
-    lines.push(line);
-  }
-
-  lines.push(borderChar.repeat(width));
-
-  return lines;
+function filterEntries(entries: HistoryEntry[], query: string): HistoryEntry[] {
+  if (!query) return entries;
+  const lower = query.toLowerCase();
+  return entries.filter((e) => e.content.toLowerCase().includes(lower));
 }
 
 describe("reverse-history-search — list row rendering", () => {
@@ -140,33 +64,37 @@ describe("reverse-history-search — list row rendering", () => {
   ];
 
   it("renders history search results with query filter", () => {
-    const lines = renderHistorySearch(theme, sampleEntries, "", 0, 120);
+    const filtered = filterEntries(sampleEntries, "");
+    const lines = renderHistoryPage(filtered, 0, 120, undefined, theme);
     expect(lines.join("\n")).toMatchSnapshot(
       "renders history search results with query filter",
     );
   });
 
   it("renders filtered results matching query", () => {
-    const lines = renderHistorySearch(theme, sampleEntries, "bun", 1, 120);
+    const filtered = filterEntries(sampleEntries, "bun");
+    const lines = renderHistoryPage(filtered, 1, 120, "bun", theme);
     expect(lines.join("\n")).toMatchSnapshot(
       "renders filtered results matching query",
     );
   });
 
   it("renders selected item with highlight indicator", () => {
-    const lines = renderHistorySearch(theme, sampleEntries, "", 3, 120);
+    const filtered = filterEntries(sampleEntries, "");
+    const lines = renderHistoryPage(filtered, 3, 120, undefined, theme);
     expect(lines.join("\n")).toMatchSnapshot(
       "renders selected item with highlight indicator",
     );
   });
 
   it("renders empty results when no matches", () => {
-    const lines = renderHistorySearch(
-      theme,
-      sampleEntries,
-      "nonexistenttermxyz",
+    const filtered = filterEntries(sampleEntries, "nonexistenttermxyz");
+    const lines = renderHistoryPage(
+      filtered,
       0,
       120,
+      "nonexistenttermxyz",
+      theme,
     );
     expect(lines.join("\n")).toMatchSnapshot(
       "renders empty results when no matches",
@@ -174,7 +102,8 @@ describe("reverse-history-search — list row rendering", () => {
   });
 
   it("renders at narrow width", () => {
-    const lines = renderHistorySearch(theme, sampleEntries, "", 0, 80);
+    const filtered = filterEntries(sampleEntries, "");
+    const lines = renderHistoryPage(filtered, 0, 80, undefined, theme);
     expect(lines.join("\n")).toMatchSnapshot("renders at narrow width");
   });
 });

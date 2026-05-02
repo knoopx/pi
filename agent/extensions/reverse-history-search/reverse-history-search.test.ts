@@ -7,9 +7,9 @@ import type {
   ModelRegistry,
 } from "@mariozechner/pi-coding-agent";
 import setupExtension from "./index";
-import { fuzzyMatch } from "../../shared/fuzzy";
-import type { MockExtensionAPI } from "../../shared/test-utils";
-import { createMockExtensionAPI } from "../../shared/test-utils";
+import { fuzzyMatch } from "../../shared/matching/fuzzy";
+import type { MockExtensionAPI } from "../../shared/testing/test-utils";
+import { createMockExtensionAPI } from "../../shared/testing/test-utils";
 
 describe("Reverse History Search Extension", () => {
   let mockPi: MockExtensionAPI;
