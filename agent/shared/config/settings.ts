@@ -1,7 +1,9 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
+
 const SETTINGS_PATH = resolve(homedir(), ".pi/agent/settings.json");
+
 function isMissingFileError(error: unknown): boolean {
   return (
     typeof error === "object" &&
@@ -11,7 +13,20 @@ function isMissingFileError(error: unknown): boolean {
   );
 }
 
-async function readSettingsOrEmpty(): Promise<Record<string, unknown>> {
+export async function readSettingsOrEmpty(): Promise<Record<string, unknown>> {
+  try {
+    const content = await readFile(SETTINGS_PATH, "utf-8");
+    return JSON.parse(content) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function readSettingsSafe(): Promise<Record<string, unknown>> {
+  return _readSettingsSafe();
+}
+
+async function _readSettingsSafe(): Promise<Record<string, unknown>> {
   try {
     const content = await readFile(SETTINGS_PATH, "utf-8");
     const parsed = JSON.parse(content) as Record<string, unknown>;
@@ -26,11 +41,12 @@ async function readSettingsOrEmpty(): Promise<Record<string, unknown>> {
     );
   }
 }
+
 export async function loadEnabledSetting<T extends { enabled: boolean }>(
   key: string,
   defaults: T,
 ): Promise<T> {
-  const settings = await readSettingsOrEmpty();
+  const settings = await _readSettingsSafe();
   const raw = settings[key];
 
   if (raw === undefined || Array.isArray(raw)) {
@@ -49,12 +65,13 @@ export async function loadEnabledSetting<T extends { enabled: boolean }>(
         : defaults.enabled,
   };
 }
+
 export async function saveEnabledSetting<T extends { enabled: boolean }>(
   key: string,
   updates: Partial<T>,
   loadFn: () => Promise<T>,
 ): Promise<T> {
-  const existingSettings = await readSettingsOrEmpty();
+  const existingSettings = await _readSettingsSafe();
   const current = await loadFn();
   const next: T = {
     ...current,
@@ -80,4 +97,55 @@ export async function saveEnabledSetting<T extends { enabled: boolean }>(
   );
 
   return next;
+}
+
+// --- Extension config helpers (from settings-core.ts) ---
+
+export function loadExtensionConfig<T>(
+  settings: Record<string, unknown>,
+  key: string,
+  defaults: Record<string, unknown>,
+): T {
+  const raw = settings[key];
+  if (!isValidRaw(raw)) return defaults as T;
+
+  const result: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(defaults)) {
+    if (typeof v === "boolean") {
+      result[k] = coerceBool(k, raw, v);
+    } else if (typeof v === "string") {
+      result[k] = coerceStr(k, raw, v);
+    } else if (typeof v === "number") {
+      result[k] = coerceNum(k, raw, v);
+    }
+  }
+  return result as T;
+}
+
+function isValidRaw(raw: unknown): raw is Record<string, unknown> {
+  return typeof raw === "object" && !Array.isArray(raw) && raw !== null;
+}
+
+function coerceBool(
+  key: string,
+  r: Record<string, unknown>,
+  def: boolean,
+): boolean {
+  return typeof r[key] === "boolean" ? r[key] : def;
+}
+
+function coerceStr(
+  key: string,
+  r: Record<string, unknown>,
+  def: string,
+): string {
+  return typeof r[key] === "string" ? r[key] : def;
+}
+
+function coerceNum(
+  key: string,
+  r: Record<string, unknown>,
+  def: number,
+): number {
+  return typeof r[key] === "number" ? r[key] : def;
 }
