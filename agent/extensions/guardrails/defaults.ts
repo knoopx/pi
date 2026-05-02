@@ -266,7 +266,7 @@ const defaults: GuardrailsConfig = [
       },
       {
         context: "command",
-        pattern: "jj {squash,split,describe,commit} *",
+        pattern: "jj {squash,split,describe,desc,commit} *",
         excludes: "* -m *",
         action: "block",
         reason:
