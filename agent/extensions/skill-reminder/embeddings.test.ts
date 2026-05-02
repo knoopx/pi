@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cosine } from "./embeddings";
+import { cosine } from "../../shared/embeddings/engine";
 
 describe("cosine", () => {
   describe("given identical vectors", () => {
