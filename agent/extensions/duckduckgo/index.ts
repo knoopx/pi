@@ -3,11 +3,11 @@ import { Type } from "@sinclair/typebox";
 import type { Static } from "@sinclair/typebox";
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
-import { textResult } from "../../shared/tool-utils";
-import { dotJoin, countLabel } from "../../shared/renderers/header";
-import { table } from "../../shared/renderers/table/renderer";
-import type { Column } from "../../shared/renderers/types";
-import { acquireSlot } from "../../shared/throttle";
+import { textResult } from "../../shared/result/tool-result";
+import { dotJoin, countLabel } from "../../shared/rendering/header";
+import { table } from "../../shared/rendering/table/renderer";
+import type { Column } from "../../shared/rendering/types";
+import { acquireSlot } from "../../shared/network/throttle";
 const DDG_HOST = "duckduckgo.com";
 const MAX_REDIRECTS = 3;
 

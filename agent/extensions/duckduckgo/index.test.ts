@@ -8,9 +8,9 @@ import {
   createMockExtensionAPI,
   type MockExtensionAPI,
   type MockTool,
-} from "../../shared/test-utils";
+} from "../../shared/testing/test-utils";
 import duckduckgoExtension from "./index";
-import { disableThrottle } from "../../shared/throttle";
+import { disableThrottle } from "../../shared/network/throttle";
 
 async function executeSearchTool(
   toolConfig: MockTool,
