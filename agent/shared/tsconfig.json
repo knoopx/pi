@@ -28,6 +28,19 @@
       ]
     }
   },
-  "include": ["*.ts", "components/**/*.ts", "renderers/**/*.ts"],
+  "include": [
+    "cache/**/*.ts",
+    "components/**/*.ts",
+    "config/**/*.ts",
+    "embeddings/**/*.ts",
+    "format/**/*.ts",
+    "guardrails/**/*.ts",
+    "indexing/**/*.ts",
+    "matching/**/*.ts",
+    "network/**/*.ts",
+    "rendering/**/*.ts",
+    "result/**/*.ts",
+    "testing/**/*.ts"
+  ],
   "exclude": ["node_modules"]
 }
