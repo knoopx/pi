@@ -3,31 +3,24 @@ import type {
   InputEvent,
   ToolResultEvent,
 } from "@mariozechner/pi-coding-agent";
-import type { IndexedChunk } from "./cache";
-import type { BuildIndexProgress } from "./index-builder";
-import { loadConfig, type SkillReminderConfig } from "./settings";
-import { buildIndex } from "./index-builder";
-import { embedQuery } from "./embeddings";
-import { buildQuery, extractPromptText } from "./query";
-import { scoreAndRank } from "./rag";
-import { buildReminder, formatHits } from "./formatter";
-import { isTextContent } from "./guards";
-import { finish, renderEmbedding } from "./progress";
+import { Indexer } from "./indexer";
+import { loadConfig, type Config } from "./config";
+import type { IndexedSection } from "../../shared/indexing/cache";
+import { embedQuery } from "../../shared/embeddings/engine";
+import { buildQuery, extractPromptText } from "./query-builder";
+import { scoreAndRank } from "./scorer";
+import { formatHits, buildReminder } from "./reminder";
+import { isTextContent } from "../../shared/guards";
+import { finishEmbedding } from "../../shared/embeddings/progress";
 
-async function initIndex(
-  config: SkillReminderConfig,
-): Promise<IndexedChunk[] | null> {
-  const progress: BuildIndexProgress = {
-    onEmbedBatch: renderEmbedding,
-  };
-
+async function buildIndex(config: Config): Promise<IndexedSection[] | null> {
   try {
-    return await buildIndex(config, progress);
+    return await Indexer.build(config);
   } catch (err) {
     console.error("[skill-reminder] Failed to build index:", err);
     return null;
   } finally {
-    finish();
+    finishEmbedding();
   }
 }
 
@@ -51,7 +44,7 @@ export default async function (pi: ExtensionAPI) {
   const config = await loadConfig();
   if (!config.enabled) return;
 
-  const index = await initIndex(config);
+  const index = await buildIndex(config);
   if (!index?.length) return;
 
   // TS can't resolve the overload with 28+ event types; handler is correct at runtime.
