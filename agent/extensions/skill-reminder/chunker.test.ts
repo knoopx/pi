@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Root } from "mdast";
-import { parseMarkdown, chunkByElements, stripFrontmatter } from "./parser";
+import { parseMarkdown, chunkByElements, stripFrontmatter } from "./chunker";
 
 function parse(text: string): Root {
   return parseMarkdown(text);
@@ -119,16 +119,13 @@ This is the content.`);
     expect(chunkByElements(parse(""))).toHaveLength(0);
   });
 
-  it("produces non-empty chunks for headings-only document", () => {
+  it("produces no chunks for headings-only document", () => {
     const tree = parse(`# First
 
 ## Second`);
     const chunks = chunkByElements(tree);
 
-    expect(chunks.length).toBeGreaterThanOrEqual(1);
-    for (const chunk of chunks) {
-      expect(chunk.text.trim()).not.toBe("");
-    }
+    expect(chunks.length).toBe(0);
   });
 
   it("does not produce oversized chunks from table rows", () => {
