@@ -2,14 +2,14 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
 import type { Static } from "@sinclair/typebox";
-import { textResult } from "../../shared/tool-utils";
-import { throttledFetch } from "../../shared/throttle";
-import { detail } from "../../shared/renderers/detail";
+import { textResult } from "../../shared/result/tool-result";
+import { throttledFetch } from "../../shared/network/throttle";
+import { detail } from "../../shared/rendering/detail";
 import {
   formatPackageSearchResults,
   createPackageErrorResult,
-} from "../../shared/package-registry";
-import type { PackageSearchResult } from "../../shared/package-registry";
+} from "../../shared/format/package-registry";
+import type { PackageSearchResult } from "../../shared/format/package-registry";
 
 const SearchPyPIPackagesParams = Type.Object({
   query: Type.String({
