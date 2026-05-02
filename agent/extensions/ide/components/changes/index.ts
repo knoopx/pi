@@ -137,9 +137,8 @@ class ChangesComponent implements Component {
       state: this.state,
       finish: this.finish,
       refreshAfterMutation: () => this.refreshAfterMutation(),
-      restoreSelection: async (prevIndex: number) => {
-        this.restoreSelection(prevIndex);
-      },
+      restoreSelection: (prevIndex: number) =>
+        this.restoreSelectionAndDiff(prevIndex),
       notify,
       onBookmark: this.onBookmark,
       onFileCmAction: this.onFileCmAction,
@@ -321,7 +320,7 @@ class ChangesComponent implements Component {
     await this.reloadChanges();
   }
 
-  private restoreSelection(prevIndex: number): void {
+  private async restoreSelectionAndDiff(prevIndex: number): Promise<void> {
     if (this.state.changes.length > 0) {
       this.state.selectionState.selectedIndex = Math.min(
         prevIndex,
@@ -329,6 +328,7 @@ class ChangesComponent implements Component {
       );
       this.state.selectedChange =
         this.state.changes[this.state.selectionState.selectedIndex];
+      await this.loadFilesAndDiff(this.state.selectedChange);
     } else {
       this.state.selectionState.selectedIndex = 0;
       this.state.selectedChange = null;
