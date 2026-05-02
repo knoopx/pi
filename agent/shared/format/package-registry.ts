@@ -1,7 +1,7 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import { dotJoin, countLabel } from "./renderers/header";
-import { table } from "./renderers/table/renderer";
-import type { Column } from "./renderers/types";
+import { dotJoin, countLabel } from "../rendering/header";
+import { table } from "../rendering/table/renderer";
+import type { Column } from "../rendering/types";
 export interface PackageSearchResult {
   name: string;
   version: string;
