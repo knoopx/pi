@@ -1,6 +1,6 @@
-import { dotJoin, countLabel } from "../../shared/renderers/header";
-import { table } from "../../shared/renderers/table/renderer";
-import type { Column } from "../../shared/renderers/types";
+import { dotJoin, countLabel } from "../../shared/rendering/header";
+import { table } from "../../shared/rendering/table/renderer";
+import type { Column } from "../../shared/rendering/types";
 function str(value: string | undefined): string {
   return value || "";
 }

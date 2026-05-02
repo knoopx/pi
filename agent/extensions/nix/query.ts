@@ -1,4 +1,4 @@
-import { throttledFetch } from "../../shared/throttle";
+import { throttledFetch } from "../../shared/network/throttle";
 
 export const NIXPKGS_GITHUB_BASE =
   "https://github.com/NixOS/nixpkgs/blob/nixos-unstable";
