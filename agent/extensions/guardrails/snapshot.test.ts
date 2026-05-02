@@ -35,6 +35,7 @@ function makeRule(overrides: Partial<GuardrailsRule> = {}): GuardrailsRule {
     pattern: "*",
     action: "block" as const,
     scope: undefined,
+    reason: "test rule",
     ...overrides,
   };
 }

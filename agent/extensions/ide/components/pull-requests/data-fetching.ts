@@ -26,7 +26,7 @@ function buildPrListArgs(
   if (state !== "all") args.push(`--state=${state}`);
   return args;
 }
-interface RawPr {
+export interface RawPr {
   number: number;
   title: string;
   state: string;
