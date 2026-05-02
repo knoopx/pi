@@ -1,5 +1,5 @@
 import { cosine } from "./embeddings";
-import type { HitEntry, HitChunk } from "./formatter";
+import type { HitEntry } from "./formatter";
 import type { IndexedChunk } from "./cache";
 import type { SkillReminderConfig } from "./settings";
 

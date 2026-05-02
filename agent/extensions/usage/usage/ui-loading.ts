@@ -1,6 +1,6 @@
 import { CancellableLoader } from "@mariozechner/pi-tui";
 import type { ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
-import { BorderedView } from "../../../shared/components";
+import { BorderedView } from "../../../shared/components/bordered-view";
 import type { Theme } from "../shared/types";
 export async function loadAndDisplay<
   TData,
@@ -50,7 +50,7 @@ export async function loadAndDisplay<
   if (!data) return;
 
   await ctx.ui.custom<void>((tui, theme, keybindings, done) => {
-    const component = createComponent(theme, data!);
+    const component = createComponent(theme, data);
     return new BorderedView(
       theme,
       component,

@@ -82,7 +82,6 @@ Content A.
 Content B.`;
 
     const result = chunk(md);
-    // 2 headings + 2 paragraphs = 4 chunks.
     expect(result.length).toBeGreaterThanOrEqual(4);
     const allText = result.map((c) => c.text).join("\n");
     expect(allText).toContain("# Section A");
@@ -129,7 +128,6 @@ Set values here.`;
 Real text here.`;
 
     const result = chunk(md);
-    // Both headings produce chunks.
     expect(result.find((c) => c.text.includes("# Empty"))).toBeDefined();
   });
 
@@ -195,7 +193,6 @@ Level 1 text.
 Level 2 text.`;
 
     const result = chunk(md);
-    // Each heading + body = separate chunks.
     expect(result.length).toBeGreaterThanOrEqual(4);
     expect(result.find((c) => c.text.includes("# Level 1"))).toBeDefined();
     expect(result.find((c) => c.text.includes("# Level 2"))).toBeDefined();
@@ -223,7 +220,6 @@ See [the docs](./ref.md) for details.`;
 | ${row} |`;
 
     const result = chunk(md);
-    // Each row is one chunk, not the whole table.
     for (const c of result) {
       expect(c.text.length).toBeLessThan(500);
     }

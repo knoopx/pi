@@ -1,15 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Theme } from "@mariozechner/pi-coding-agent";
-import {
-  getSessionsDir,
-  UsageComponent,
-  formatCost,
-  formatTokens,
-  formatNumber,
-  padLeft,
-  padRight,
-  type UsageData,
-} from "./index";
+import { getSessionsDir } from "./usage/data-collection";
+import { UsageComponent } from "./usage/component";
+import { formatCost, formatTokens, formatNumber } from "./shared/formatters";
+import { padLeft, padRight } from "./shared/padding";
+import type { UsageData } from "./usage/types";
 import { emptyTimeFilteredStats } from "./usage/types";
 
 // Helper Functions

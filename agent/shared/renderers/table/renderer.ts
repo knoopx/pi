@@ -19,7 +19,6 @@ export function table(
     }),
   );
 
-  // Measure column widths
   const measured: MeasuredColumn[] = columns.map((col, ci) => {
     const headerW = col.key.length;
     const maxCell = formatted.reduce((max, row) => {
@@ -34,7 +33,6 @@ export function table(
     return { ...col, width };
   });
 
-  // Constrain total width to terminal/maxTableWidth
   const sepWidth = 3; // " │ "
   const chrome = indent + sepWidth * (measured.length - 1);
   const totalNatural = chrome + measured.reduce((s, c) => s + c.width, 0);

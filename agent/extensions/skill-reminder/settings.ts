@@ -29,8 +29,8 @@ const DEFAULTS: SkillReminderConfig = {
   embeddingModel: "unsloth/embeddinggemma-300m-GGUF",
   maxSkills: 4,
   chunkMaxChars: 1000,
-  scoreThreshold: 0.7,
-  promptScoreThreshold: 0.7,
+  scoreThreshold: 0.8,
+  promptScoreThreshold: 0.8,
 };
 
 const SETTINGS_KEY = "skillReminder";

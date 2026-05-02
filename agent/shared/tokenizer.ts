@@ -81,7 +81,6 @@ function finalizeSegment(current: string[], segments: string[][]): void {
   }
 }
 
-// Strip env vars and command wrappers from the front of a token list.
 function normalizeSegment(tokens: string[]): string[] {
   let i = 0;
   while (i < tokens.length && ENV_VAR_ASSIGNMENT.test(tokens[i])) {

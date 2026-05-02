@@ -1,6 +1,5 @@
 const DEFAULT_MIN_INTERVAL_MS = 1000;
 
-// Set to true to bypass all throttling (used in tests).
 let disabled = false;
 export function disableThrottle(): void {
   disabled = true;

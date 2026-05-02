@@ -11,7 +11,7 @@ vi.mock("node:fs/promises", async (importOriginal: ImportOriginal) => {
   };
 });
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { KeybindingsManager } from "@mariozechner/pi-coding-agent";
 import { createTodosComponent } from "./component";
 import {
   createMockPi,
@@ -45,7 +45,7 @@ async function createFixture(stdout: string) {
     pi: mockPi,
     tui,
     theme,
-    keybindings: {} as any,
+    keybindings: {} as KeybindingsManager,
     done: vi.fn(),
     initialQuery: "",
     cwd: REPO,
@@ -238,7 +238,7 @@ describe("todos — list row rendering", () => {
         pi: mockPi,
         tui,
         theme,
-        keybindings: {} as any,
+        keybindings: {} as KeybindingsManager,
         done: vi.fn(),
         initialQuery: "",
         cwd: REPO,

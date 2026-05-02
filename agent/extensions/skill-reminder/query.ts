@@ -1,7 +1,4 @@
-import type {
-  BeforeAgentStartEvent,
-  ToolResultEvent,
-} from "@mariozechner/pi-coding-agent";
+import type { ToolResultEvent } from "@mariozechner/pi-coding-agent";
 import { isTextContent } from "./guards";
 
 function extractTextItems(content: readonly unknown[] | undefined): string[] {

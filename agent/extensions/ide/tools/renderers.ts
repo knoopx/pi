@@ -300,15 +300,15 @@ function buildGrepMatchOutput(
   out.push(renderGrepMatch(lineNo, content, highlighter, theme));
   return { output: out, newFile: file, count: 1 };
 }
-export async function renderGrepResults(
+export function renderGrepResults(
   text: string,
   pattern: string,
   theme: Theme,
-): Promise<string> {
+): string {
   const lines = text.split("\n");
   if (isEmptyResult(lines)) return theme.fg("dim", "(no matches)");
   const highlighter = createPatternHighlighter(pattern, theme);
-  const out = await processGrepLines(lines, highlighter, theme);
+  const out = processGrepLines(lines, highlighter, theme);
   return out.join("\n");
 }
 function isEmptyResult(lines: string[]): boolean {

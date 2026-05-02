@@ -311,7 +311,7 @@ export function createActionHandlers(
     handleNew: () => handleNew(pi, cwd, state, refreshAfterMutation),
     handleRevert: () => handleRevert(pi, cwd, state, refreshAfterMutation),
     handleInspectChange: async () => {
-      handleInspectChange(pi, state, finish);
+      await handleInspectChange(pi, state, finish);
     },
     getSelectedChanges: () => getSelectedChanges(state),
   };

@@ -6,7 +6,7 @@ import type {
 import { truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
 
 import { detectAndFetchUsage } from "./usage/shared";
-import type { UsageSnapshot } from "./usage/shared";
+import type { UsageSnapshot } from "./usage/types";
 import { getVcsLabel } from "../jj/changes";
 function calculateTotalCost(
   sessionManager: ExtensionContext["sessionManager"],
@@ -21,7 +21,7 @@ function calculateTotalCost(
 }
 function formatCostText(totalCost: number, ctx: ExtensionContext): string {
   const usingSubscription = ctx.model
-    ? ctx.modelRegistry.isUsingOAuth(ctx.model)
+    ? ctx.modelRegistry.isUsingOAuth(ctx.model as never)
     : false;
   return `$${totalCost.toFixed(3)}${usingSubscription ? " (sub)" : ""}`;
 }

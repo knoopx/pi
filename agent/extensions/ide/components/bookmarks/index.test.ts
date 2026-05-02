@@ -11,6 +11,7 @@ vi.mock("node:fs/promises", async (importOriginal: ImportOriginal) => {
   };
 });
 
+import type { KeybindingsManager } from "@mariozechner/pi-coding-agent";
 import { createBookmarksComponent } from "./component";
 import {
   createMockPi,
@@ -66,7 +67,7 @@ async function createFixture(stdout: string) {
     pi: mockPi,
     tui,
     theme,
-    keybindings: {} as any,
+    keybindings: {} as KeybindingsManager,
     done: vi.fn(),
     cwd: REPO,
   });
@@ -210,7 +211,7 @@ describe("bookmarks — list row rendering", () => {
         pi: mockPi,
         tui,
         theme,
-        keybindings: {} as any,
+        keybindings: {} as KeybindingsManager,
         done: vi.fn(),
         cwd: REPO,
       });

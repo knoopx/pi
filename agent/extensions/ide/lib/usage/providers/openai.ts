@@ -34,4 +34,4 @@ const openaiConfig: ProviderConfig = {
     },
   ],
 };
-export const fetchOpenAIUsage = await createGenericProvider(openaiConfig);
+export const fetchOpenAIUsage = createGenericProvider(openaiConfig);

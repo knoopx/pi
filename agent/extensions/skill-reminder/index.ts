@@ -90,11 +90,7 @@ export default async function (pi: ExtensionAPI) {
 
     const reminder = formatHits(rankedHits);
 
-    // pi.sendMessage({ content: reminder });
-    pi.sendMessage(
-      { customType: "skills", content: reminder, display: true },
-      // { triggerTurn: false },
-    );
+    pi.sendMessage({ customType: "skills", content: reminder, display: true });
 
     return {
       action: "continue" as const,

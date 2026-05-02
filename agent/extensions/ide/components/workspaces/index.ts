@@ -280,7 +280,9 @@ Types: feat, fix, docs, style, refactor, perf, test, chore`;
       this.cacheStore.delete(workspaceName);
       await this.loadWorkspaces();
     } catch (error) {
-      this.pi.sendUserMessage(`Error: Failed to create workspace: ${error}`);
+      this.pi.sendUserMessage(
+        `Error: Failed to create workspace: ${String(error)}`,
+      );
     }
   }
 

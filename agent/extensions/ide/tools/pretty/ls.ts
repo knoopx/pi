@@ -59,6 +59,6 @@ export function createLsRenderResult(): (
     "lsResult",
     renderTree,
     (d: Record<string, unknown>, theme: Theme) =>
-      `  ${theme.fg("dim", `${d.entryCount} entries`)}`,
+      `  ${theme.fg("dim", `${String(d.entryCount)} entries`)}`,
   );
 }

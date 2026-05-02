@@ -11,7 +11,6 @@ import {
 } from "../../shared/package-registry";
 import type { PackageSearchResult } from "../../shared/package-registry";
 
-// Parameter schemas
 const SearchPyPIPackagesParams = Type.Object({
   query: Type.String({
     description: "Search query (package name or keyword)",
@@ -32,7 +31,6 @@ const PyPIPackageInfoParams = Type.Object({
 type SearchPyPIPackagesParamsType = Static<typeof SearchPyPIPackagesParams>;
 type PyPIPackageInfoParamsType = Static<typeof PyPIPackageInfoParams>;
 
-// PyPI API response types
 interface PyPIPackageInfo {
   name: string;
   version: string;

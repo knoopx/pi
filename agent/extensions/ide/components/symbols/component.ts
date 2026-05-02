@@ -17,7 +17,6 @@ import type { SymbolResult, SymbolInfo, SymbolTypeFilter } from "./types";
 import { SYMBOL_TYPES } from "./types";
 import { querySymbols } from "./helpers";
 import { openEditor } from "../../lib/editor-utils";
-// Symbol types available for filtering (cycle order)
 interface SymbolsComponentOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };

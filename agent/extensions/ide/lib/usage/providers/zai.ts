@@ -55,4 +55,4 @@ function calculateResetDescription(
 
   return formatRemainingDuration(nextResetTime / 1000);
 }
-export const fetchZAIUsage = await createGenericProvider(zaiConfig);
+export const fetchZAIUsage = createGenericProvider(zaiConfig);

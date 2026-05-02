@@ -28,7 +28,6 @@ export function threadSeparator(
   return label + "─".repeat(remaining);
 }
 
-// State dot: ● on/open/warning/off, ○ inactive
 export function stateDot(
   state: "on" | "off" | "warning" | "inactive" | boolean,
 ): string {

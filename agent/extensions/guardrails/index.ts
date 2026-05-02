@@ -114,7 +114,10 @@ function getInputFieldAsString(
   const value = (input as Record<string, unknown>)[field];
   if (value === undefined || value === null) return undefined;
 
-  return String(value);
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean")
+    return String(value);
+  return undefined;
 }
 function matchesPattern(
   context: GuardrailsRule["context"],
@@ -240,7 +243,7 @@ async function processGroupRules(
       const matchResult = matchRule(rule, toolName, input, cwd);
       if (!matchResult) continue;
       const { targetValue } = matchResult;
-      if (!(await shouldIncludeRule(rule, targetValue))) continue;
+      if (!shouldIncludeRule(rule, targetValue)) continue;
 
       matched.push({ rule, group, targetValue });
     } catch {

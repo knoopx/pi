@@ -324,7 +324,6 @@ class HistorySearchComponent {
 
     lines.push(borderChar.repeat(width));
 
-    // History list config
     const maxVisible = 10;
     const start = Math.max(
       0,

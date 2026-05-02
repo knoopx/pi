@@ -63,7 +63,9 @@ class EditorComponent implements Component, Focusable {
     this.keyboardHandler = createKeyboardHandler({
       bindings: this.bindings,
       getContext: () => this as never,
-      onEscape: () => this.quit(),
+      onEscape: () => {
+        void this.quit();
+      },
       onEnter: () => {
         this.editor.insertNewline();
         this.requestRender();

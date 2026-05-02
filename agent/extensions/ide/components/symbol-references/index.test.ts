@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionContext,
+  KeybindingsManager,
+} from "@mariozechner/pi-coding-agent";
 import { createSymbolReferenceComponent } from "./component";
 import {
   createMockPi,
@@ -25,7 +28,7 @@ async function createFixture(cmStdout: string, title: string) {
     pi: mockPi,
     tui,
     theme,
-    keybindings: {} as any,
+    keybindings: Object.assign(Object.create(null), {}) as KeybindingsManager,
     done: vi.fn(),
     config: {
       title,
@@ -217,7 +220,10 @@ describe("symbol-references — list row rendering", () => {
         pi: mockPi,
         tui,
         theme,
-        keybindings: {} as any,
+        keybindings: Object.assign(
+          Object.create(null),
+          {},
+        ) as KeybindingsManager,
         done: vi.fn(),
         config: {
           title: "Callers",

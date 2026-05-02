@@ -519,7 +519,7 @@ export function renderBorder(theme: Theme): string {
 }`,
 };
 
-const TS_CONTENT = TS_FILES["src/main.ts"]!;
+const TS_CONTENT = TS_FILES["src/main.ts"];
 
 const TSX_CONTENT = `
 import { useState } from "react";

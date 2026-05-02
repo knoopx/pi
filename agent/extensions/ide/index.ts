@@ -16,7 +16,6 @@ import { createBookmarkPromptComponent } from "./components/bookmark-prompt";
 import { registerAllTools } from "./tools/registration";
 import { setBookmarkToChange } from "./jj/bookmarks";
 
-// Overlay imports
 import { openFilesPicker } from "./components/files/overlay";
 import { openSymbolsPicker } from "./components/symbols/overlay";
 import { openBookmarksBrowser } from "./components/bookmarks/overlay";
@@ -245,9 +244,13 @@ function handleBookmarksCommand(pi: ExtensionAPI, ctx: ExtensionContext): void {
   if (!ctx.hasUI) return;
   void openBookmarksBrowser(pi, ctx);
 }
-function handleChangeCommand(pi: ExtensionAPI, ctx: ExtensionContext): void {
+function handleChangeCommand(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+  onBookmark: (changeId: string) => Promise<string | null>,
+): void {
   if (!ctx.hasUI) return;
-  void openChangesBrowser(pi, ctx, (cid) => promptAndSetBookmark(pi)(ctx, cid));
+  void openChangesBrowser(pi, ctx, onBookmark);
 }
 function handleOplogCommand(pi: ExtensionAPI, ctx: ExtensionContext): void {
   if (!ctx.hasUI) return;
@@ -278,23 +281,29 @@ function registerShortcuts(pi: ExtensionAPI): void {
     {
       key: Key.ctrl("t"),
       description: "Open symbol picker",
-      handler: (ctx) => openSymbolsPicker(pi, ctx, ""),
+      handler: (ctx) => {
+        void openSymbolsPicker(pi, ctx, "");
+      },
     },
     {
       key: Key.ctrl("p"),
       description: "Open file picker",
-      handler: (ctx) => openFilesPicker(pi, ctx, ""),
+      handler: (ctx) => {
+        void openFilesPicker(pi, ctx, "");
+      },
     },
     {
       key: Key.ctrl("b"),
       description: "Open bookmarks browser",
-      handler: (ctx) => openBookmarksBrowser(pi, ctx),
+      handler: (ctx) => {
+        void openBookmarksBrowser(pi, ctx);
+      },
     },
     {
       key: Key.ctrl("j"),
       description: "Open workspaces review",
-      handler: async (ctx) => {
-        await ctx.ui.custom(
+      handler: (ctx) => {
+        void ctx.ui.custom(
           (tui, theme, keybindings, done) =>
             createWorkspacesComponent({
               pi,
@@ -311,20 +320,25 @@ function registerShortcuts(pi: ExtensionAPI): void {
     {
       key: Key.ctrl("k"),
       description: "Open changes browser",
-      handler: (ctx) =>
-        openChangesBrowser(pi, ctx, (cid) =>
+      handler: (ctx) => {
+        void openChangesBrowser(pi, ctx, async (cid) =>
           promptAndSetBookmark(pi)(ctx, cid),
-        ),
+        );
+      },
     },
     {
       key: Key.ctrl("o"),
       description: "Open operation log browser",
-      handler: (ctx) => openOpLogBrowser(pi, ctx),
+      handler: (ctx) => {
+        void openOpLogBrowser(pi, ctx);
+      },
     },
     {
       key: Key.ctrl("g"),
       description: "Open pull requests browser",
-      handler: (ctx) => openPullRequestsBrowser(pi, ctx),
+      handler: (ctx) => {
+        void openPullRequestsBrowser(pi, ctx);
+      },
     },
   ];
 
@@ -343,14 +357,14 @@ function registerCommands(pi: ExtensionAPI): void {
     description:
       "Create a jujutsu workspace and spawn a pi subagent (usage: /workspace <task description>)",
     handler: async (args, ctx) => {
-      handleWorkspaceCommand(pi, args, ctx);
+      void handleWorkspaceCommand(pi, args, ctx);
     },
   });
 
   pi.registerCommand("workspaces", {
     description: "Review ide workspaces and their diffs",
     handler: async (_args, ctx) => {
-      handleWorkspacesCommand(pi, ctx);
+      void handleWorkspacesCommand(pi, ctx);
     },
   });
 
@@ -358,42 +372,46 @@ function registerCommands(pi: ExtensionAPI): void {
     description:
       "Browse and pick symbols from the codebase with source preview",
     handler: async (args, ctx) => {
-      handleSymbolsCommand(pi, args, ctx);
+      void handleSymbolsCommand(pi, args, ctx);
     },
   });
 
   pi.registerCommand("files", {
     description: "Browse and pick files from the codebase with source preview",
     handler: async (args, ctx) => {
-      handleFilesCommand(pi, args, ctx);
+      void handleFilesCommand(pi, args, ctx);
     },
   });
 
   pi.registerCommand("bookmarks", {
     description: "Browse bookmarks (name@remote), insert, refresh, and forget",
     handler: async (_args, ctx) => {
-      handleBookmarksCommand(pi, ctx);
+      void handleBookmarksCommand(pi, ctx);
     },
   });
 
   pi.registerCommand("changes", {
     description: "Browse jujutsu changes on current branch with diff preview",
     handler: async (_args, ctx) => {
-      handleChangeCommand(pi, ctx);
+      void handleChangeCommand(
+        pi,
+        ctx,
+        async (cid) => await promptAndSetBookmark(pi)(ctx, cid),
+      );
     },
   });
 
   pi.registerCommand("oplog", {
     description: "Browse jujutsu operation log with restore capability",
     handler: async (_args, ctx) => {
-      handleOplogCommand(pi, ctx);
+      void handleOplogCommand(pi, ctx);
     },
   });
 
   pi.registerCommand("pull-requests", {
     description: "Browse GitHub pull requests with diff preview",
     handler: async (_args, ctx) => {
-      handlePullRequestsCommand(pi, ctx);
+      void handlePullRequestsCommand(pi, ctx);
     },
   });
 
@@ -401,7 +419,7 @@ function registerCommands(pi: ExtensionAPI): void {
     description:
       "Search for task comments across the codebase with source preview",
     handler: async (args, ctx) => {
-      handleTodosCommand(pi, args, ctx);
+      void handleTodosCommand(pi, args, ctx);
     },
   });
 }

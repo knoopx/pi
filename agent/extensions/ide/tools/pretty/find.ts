@@ -56,6 +56,6 @@ export function createFindRenderResult(): (
     "findResult",
     renderFindResults,
     (d: Record<string, unknown>, theme: Theme) =>
-      `  ${theme.fg("dim", `${d.matchCount} files`)}`,
+      `  ${theme.fg("dim", `${String(d.matchCount)} files`)}`,
   );
 }

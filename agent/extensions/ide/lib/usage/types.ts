@@ -18,7 +18,6 @@ export interface ProviderConfig {
   customProcessor?: (data: unknown) => RateWindow[];
 }
 
-// Shared types for quota providers
 export interface RateWindow {
   label: string;
   usedPercent: number;
@@ -37,7 +36,6 @@ export interface BaseDependencies {
   fetch(url: string, options?: Record<string, unknown>): Promise<unknown>;
 }
 
-// Helper function to create error snapshots
 function createErrorSnapshot(
   provider: string,
   displayName: string,
@@ -51,7 +49,6 @@ function createErrorSnapshot(
   };
 }
 
-// Helper function to create auth error snapshots
 export function createAuthErrorSnapshot(
   provider: string,
   displayName: string,
@@ -59,7 +56,6 @@ export function createAuthErrorSnapshot(
   return createErrorSnapshot(provider, displayName, "No credentials found");
 }
 
-// Helper function to create network error snapshots
 export function createNetworkErrorSnapshot(
   provider: string,
   displayName: string,
@@ -67,7 +63,6 @@ export function createNetworkErrorSnapshot(
   return createErrorSnapshot(provider, displayName, "Network error");
 }
 
-// Helper function to create HTTP error snapshots
 export function createHttpErrorSnapshot(
   provider: string,
   displayName: string,

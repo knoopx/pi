@@ -68,8 +68,10 @@ export function getInputField(
   field: string,
 ): string | undefined {
   if (!input || typeof input !== "object") return undefined;
-  const value = (input as Record<string, unknown>)[field];
-  return value != null ? String(value) : undefined;
+  const raw = (input as Record<string, unknown>)[field];
+  if (raw == null) return undefined;
+  if (typeof raw === "object") return JSON.stringify(raw);
+  return String(raw as string | number | boolean);
 }
 interface BuildHookInputOptions {
   toolName?: string;

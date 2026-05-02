@@ -115,7 +115,7 @@ describe("workspace navigation state", () => {
   });
 
   it("then preserves workspaces list across navigation", () => {
-    const [_wsA, wsB] = setupTwoWorkspaces(state, "ws-a", "ws-b");
+    const [, wsB] = setupTwoWorkspaces(state, "ws-a", "ws-b");
 
     state.selectedWorkspace = wsB;
     state.fileIndex = 0;

@@ -5,7 +5,6 @@ export interface NavigationCallbacks {
   onSwitchFocus?: (focus: "left" | "right") => void;
 }
 export class Navigation {
-  // Page offset for page-based navigation — set dynamically by caller
   scrollPageOffset = 10;
 
   constructor(

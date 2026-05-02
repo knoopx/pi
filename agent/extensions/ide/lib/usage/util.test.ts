@@ -339,7 +339,7 @@ describe("createGenericProvider", () => {
           status: 200,
           data: {},
         });
-        const fetchUsage = await createGenericProvider(config);
+        const fetchUsage = createGenericProvider(config);
         const result = await fetchUsage(deps);
 
         expect(result).toEqual({
@@ -358,7 +358,7 @@ describe("createGenericProvider", () => {
           status: 401,
           data: {},
         });
-        const fetchUsage = await createGenericProvider(config);
+        const fetchUsage = createGenericProvider(config);
         const result = await fetchUsage(deps);
 
         expect(result?.error).toBe("HTTP 401: Unauthorized");
@@ -368,7 +368,7 @@ describe("createGenericProvider", () => {
     describe("when network error occurs", () => {
       it("then returns network error snapshot", async () => {
         const deps = createMockDeps("token", "error");
-        const fetchUsage = await createGenericProvider(config);
+        const fetchUsage = createGenericProvider(config);
         const result = await fetchUsage(deps);
 
         expect(result?.error).toBe("Network error");
@@ -382,7 +382,7 @@ describe("createGenericProvider", () => {
           status: 200,
           data: { usage: { percent: 42 } },
         });
-        const fetchUsage = await createGenericProvider(config);
+        const fetchUsage = createGenericProvider(config);
         const result = await fetchUsage(deps);
 
         expect(result).toEqual({
@@ -407,7 +407,7 @@ describe("createGenericProvider", () => {
           status: 200,
           data: {},
         });
-        const fetchUsage = await createGenericProvider(customConfig);
+        const fetchUsage = createGenericProvider(customConfig);
         const result = await fetchUsage(deps);
 
         expect(result?.windows).toEqual([{ label: "Custom", usedPercent: 99 }]);

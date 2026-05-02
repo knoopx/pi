@@ -107,7 +107,6 @@ class ChangesComponent implements Component {
       tui.requestRender();
     });
 
-    // Navigation
     const navigationCallbacks: NavigationCallbacks = {
       onChangeSelected: async (_changeId) => {
         const change =

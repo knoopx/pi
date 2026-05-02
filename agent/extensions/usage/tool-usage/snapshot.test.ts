@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { ToolStats } from "./types";
 import { ToolUsageComponent } from "./component";
 
 function createMockTheme(): Theme {
@@ -27,7 +28,7 @@ describe("tool-usage component rendering", () => {
     };
     const component = new ToolUsageComponent(
       theme,
-      data as any,
+      data as unknown as ToolStats,
       () => {},
       () => {},
     );
@@ -40,7 +41,7 @@ describe("tool-usage component rendering", () => {
     const data = { byTool: {}, byDate: {}, bySession: {} };
     const component = new ToolUsageComponent(
       theme,
-      data as any,
+      data as unknown as ToolStats,
       () => {},
       () => {},
     );

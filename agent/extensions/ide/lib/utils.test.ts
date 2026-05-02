@@ -16,7 +16,7 @@ describe("utils", () => {
     });
 
     describe("when loading file preview with TypeScript", () => {
-      it("then returns syntax-highlighted lines", async () => {
+      it("then returns syntax-highlighted lines", async (): Promise<void> => {
         const content = "const x = 1;";
         const result = await loadFilePreviewWithShiki(
           "test.ts",
@@ -30,7 +30,7 @@ describe("utils", () => {
     });
 
     describe("when file is empty", () => {
-      it("then returns array with empty string", async () => {
+      it("then returns array with empty string", async (): Promise<void> => {
         const result = await loadFilePreviewWithShiki(
           "empty.ts",
           "",
@@ -42,7 +42,7 @@ describe("utils", () => {
     });
 
     describe("given error in shiki", () => {
-      it("then returns plain lines as fallback", async () => {
+      it("then returns plain lines as fallback", async (): Promise<void> => {
         const content = "line1\nline2";
         const mockThemeError = {
           getFgAnsi: vi.fn(() => {
@@ -66,7 +66,7 @@ describe("utils", () => {
     beforeEach(() => {
       mockTheme = {
         fg: vi.fn(
-          (color, text) =>
+          (color: string, text: string) =>
             `\x1b[38;5;${(color.charCodeAt(0) % 240) + 16}m${text}\x1b[0m`,
         ),
         inverse: vi.fn((text) => `\x1b[7m${text}\x1b[0m`),
@@ -74,7 +74,7 @@ describe("utils", () => {
     });
 
     describe("given a bookmark name", () => {
-      it("then formats with accent fg and inverse", () => {
+      it("then formats with accent fg and inverse", (): void => {
         const result = formatBookmarkReference(mockTheme, "main");
         expect(mockTheme.fg).toHaveBeenCalledWith("accent", " 󰃀 main ");
         expect(mockTheme.inverse).toHaveBeenCalled();
@@ -84,7 +84,7 @@ describe("utils", () => {
     });
 
     describe("given empty bookmark", () => {
-      it("then returns icon with empty name", () => {
+      it("then returns icon with empty name", (): void => {
         const result = formatBookmarkReference(mockTheme, "");
         expect(mockTheme.fg).toHaveBeenCalledWith("accent", " 󰃀  ");
         expect(result).toContain("\x1b[7m");
@@ -92,7 +92,7 @@ describe("utils", () => {
     });
 
     describe("given bookmark with special characters", () => {
-      it("then preserves special characters", () => {
+      it("then preserves special characters", (): void => {
         const result = formatBookmarkReference(mockTheme, "feature/test-123");
         expect(mockTheme.fg).toHaveBeenCalledWith(
           "accent",
@@ -132,7 +132,7 @@ describe("utils", () => {
       crashPatterns.forEach(
         ({ desc, input, shouldNotContain, shouldContain }) => {
           describe(`when processing ${desc}`, () => {
-            it("then handles width calculation correctly", () => {
+            it("then handles width calculation correctly", (): void => {
               const result = ensureWidth(input, 100);
               expect(stringWidth(result)).toBe(100);
 
@@ -146,7 +146,7 @@ describe("utils", () => {
     });
 
     describe("given width exactly at terminal boundary", () => {
-      it("then never exceeds specified width", () => {
+      it("then never exceeds specified width", (): void => {
         const terminalWidth = 295;
         const problematicContent =
           "[48;2;30;19;60m [38;2;250;208;0m- [39m[38;2;248;248;248m[1m[32magent/extens[0m]8;;";

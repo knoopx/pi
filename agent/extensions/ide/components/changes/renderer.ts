@@ -38,7 +38,6 @@ export class Renderer {
     const rightTopTitle = this.renderRightTopTitle(dims.rightW);
     const rightBottomTitle = this.renderRightBottomTitle();
 
-    // Compose pane components
     const changePane = new ChangeListPane({
       changes: this.state.changes,
       selectedIndex: this.state.selectionState.selectedIndex,

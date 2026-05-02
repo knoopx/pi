@@ -20,7 +20,6 @@ import type {
 } from "./types";
 import { parseSymbolReferenceOutput } from "./helpers";
 import { openEditor } from "../../lib/editor-utils";
-// Symbol-based actions available in symbol references
 const SYMBOL_ACTION_DEFS: [string, SymbolReferenceActionType][] = [
   [Key.ctrl("t"), "callers"],
   [Key.ctrl("j"), "callees"],

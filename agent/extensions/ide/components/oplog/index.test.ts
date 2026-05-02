@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import type { KeybindingsManager } from "@mariozechner/pi-coding-agent";
 import { createOpLogComponent } from "./component";
 import {
   createMockPi,
@@ -23,7 +24,7 @@ async function createFixture(stdout: string) {
     pi: mockPi,
     tui,
     theme,
-    keybindings: {} as any,
+    keybindings: {} as KeybindingsManager,
     done: vi.fn(),
     cwd: REPO,
   });
@@ -142,7 +143,7 @@ describe("oplog — list row rendering", () => {
         pi: mockPi,
         tui,
         theme,
-        keybindings: {} as any,
+        keybindings: {} as KeybindingsManager,
         done: vi.fn(),
         cwd: REPO,
       });

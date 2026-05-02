@@ -99,7 +99,6 @@ function visitChunkType(
   const text = nodeText(node);
   if (!text) return;
 
-  // Code blocks and HTML stay atomic.
   if (ATOMIC_TYPES.has(node.type)) {
     chunks.push({ text: withHeading(text, headingText) });
     return;

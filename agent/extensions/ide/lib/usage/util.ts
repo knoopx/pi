@@ -12,7 +12,6 @@ import {
   createHttpErrorSnapshot,
 } from "./types";
 
-// Shared utility function to format remaining duration
 export function formatRemainingDuration(
   resetAt: string | number | undefined,
 ): string | undefined {
@@ -34,7 +33,6 @@ export function formatRemainingDuration(
   return `${minutes}m`;
 }
 
-// Generic processData helper for rate limit windows
 export function createRateLimitProcessor(
   windows: WindowConfig[],
 ): (data: unknown) => RateWindow[] {

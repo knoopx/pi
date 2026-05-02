@@ -13,7 +13,6 @@ export interface SymbolResult {
   insertType?: "name" | "path";
 }
 
-// Symbol types available for filtering (cycle order)
 export const SYMBOL_TYPES = [
   "class",
   "function",

@@ -44,7 +44,7 @@ describe("createEditorComponent", () => {
 
   describe("given component creation", () => {
     describe("when created with content", () => {
-      it("then initializes editor with correct lines", () => {
+      it("then initializes editor with correct lines", (): void => {
         const comp = createComponent();
 
         expect(comp.focused).toBe(true);
@@ -52,7 +52,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when created with cursorLine option", () => {
-      it("then sets cursor to specified line", () => {
+      it("then sets cursor to specified line", (): void => {
         const tui2 = createMockTui();
         const doneFn2 = vi.fn();
         const comp = createEditorComponent({
@@ -72,7 +72,7 @@ describe("createEditorComponent", () => {
 
   describe("given render output", () => {
     describe("when rendering at width 120", () => {
-      it("then produces a bordered overlay frame", () => {
+      it("then produces a bordered overlay frame", (): void => {
         const comp = createComponent();
         const lines = comp.render(120);
 
@@ -96,7 +96,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when rendering with file path", () => {
-      it("then shows basename in title", () => {
+      it("then shows basename in title", (): void => {
         const comp = createEditorComponent({
           pi: createMockPi(),
           tui,
@@ -114,7 +114,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when rendering content lines", () => {
-      it("then shows line numbers and content with left border", () => {
+      it("then shows line numbers and content with left border", (): void => {
         const comp = createComponent();
         const lines = comp.render(120);
         const contentStart = 3;
@@ -126,7 +126,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when rendering help bar", () => {
-      it("then includes key bindings in help text", () => {
+      it("then includes key bindings in help text", (): void => {
         const comp = createComponent();
         const lines = comp.render(120);
         const helpLine = lines[lines.length - 2];
@@ -140,15 +140,15 @@ describe("createEditorComponent", () => {
     });
 
     describe("when caching is active", () => {
-      it("then returns cached result on same width", () => {
+      it("then returns cached result on same width", (): void => {
         const comp = createComponent();
-        const first = comp.render(120);
-        const second = comp.render(120);
+        comp.render(120);
+        comp.render(120);
       });
     });
 
     describe("when invalidated", () => {
-      it("then re-renders on next call", () => {
+      it("then re-renders on next call", (): void => {
         const comp = createComponent();
         comp.render(120);
         comp.invalidate();
@@ -161,7 +161,7 @@ describe("createEditorComponent", () => {
 
   describe("given keyboard input", () => {
     describe("when typing a character", () => {
-      it("then inserts the character and requests render", () => {
+      it("then inserts the character and requests render", (): void => {
         const comp = createComponent();
         comp.handleInput("x");
 
@@ -172,7 +172,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when pressing escape", () => {
-      it("then calls done with result", async () => {
+      it("then calls done with result", async (): Promise<void> => {
         const comp = createComponent();
         comp.handleInput("\x1b");
 
@@ -182,7 +182,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when pressing enter", () => {
-      it("then inserts a newline and requests render", () => {
+      it("then inserts a newline and requests render", (): void => {
         const comp = createComponent();
         comp.handleInput("\r");
 
@@ -193,7 +193,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when pressing backspace", () => {
-      it("then deletes character backward", () => {
+      it("then deletes character backward", (): void => {
         const comp = createComponent();
         comp.handleInput("\x7f");
 
@@ -202,7 +202,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when pressing ctrl+s", () => {
-      it("then saves and shows status notification", () => {
+      it("then saves and shows status notification", (): void => {
         const comp = createComponent();
         comp.handleInput("\x13");
 
@@ -211,7 +211,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when pressing arrow up", () => {
-      it("then moves cursor up", () => {
+      it("then moves cursor up", (): void => {
         const comp = createComponent();
         comp.handleInput("\x1b[A");
 
@@ -220,7 +220,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when pressing arrow down", () => {
-      it("then moves cursor down", () => {
+      it("then moves cursor down", (): void => {
         const comp = createComponent();
         comp.handleInput("\x1b[B");
 
@@ -229,7 +229,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when pressing page up", () => {
-      it("then scrolls page up", () => {
+      it("then scrolls page up", (): void => {
         const comp = createComponent();
         comp.handleInput("\x1b[5~");
 
@@ -238,7 +238,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when pressing page down", () => {
-      it("then scrolls page down", () => {
+      it("then scrolls page down", (): void => {
         const comp = createComponent();
         comp.handleInput("\x1b[6~");
 
@@ -247,7 +247,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when pressing home", () => {
-      it("then moves to line start", () => {
+      it("then moves to line start", (): void => {
         const comp = createComponent();
         comp.handleInput("\x1b[H");
 
@@ -256,7 +256,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when pressing end", () => {
-      it("then moves to line end", () => {
+      it("then moves to line end", (): void => {
         const comp = createComponent();
         comp.handleInput("\x1b[F");
 
@@ -267,7 +267,7 @@ describe("createEditorComponent", () => {
 
   describe("given pair insertion", () => {
     describe("when typing opening parenthesis", () => {
-      it("then inserts matching pair", () => {
+      it("then inserts matching pair", (): void => {
         const comp = createComponent();
         comp.handleInput("(");
 
@@ -278,7 +278,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when typing opening bracket", () => {
-      it("then inserts matching pair", () => {
+      it("then inserts matching pair", (): void => {
         const comp = createComponent();
         comp.handleInput("[");
 
@@ -289,7 +289,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when typing opening brace", () => {
-      it("then inserts matching pair", () => {
+      it("then inserts matching pair", (): void => {
         const comp = createComponent();
         comp.handleInput("{");
 
@@ -301,8 +301,8 @@ describe("createEditorComponent", () => {
   });
 
   describe("given status notifications", () => {
-    describe("when notify is called with info message", () => {
-      it("then renders with status in help bar", () => {
+    describe("when notify is called with info message", (): void => {
+      it("then renders with status in help bar", (): void => {
         const comp = createComponent();
         comp.notify("Saved", "info");
         const lines = comp.render(120);
@@ -316,7 +316,7 @@ describe("createEditorComponent", () => {
 
   describe("given focus", () => {
     describe("when focused is true", () => {
-      it("then shows cursor marker in output", () => {
+      it("then shows cursor marker in output", (): void => {
         const comp = createComponent();
         const lines = comp.render(120);
         const contentLine = lines[3];
@@ -327,7 +327,7 @@ describe("createEditorComponent", () => {
     });
 
     describe("when focused is set to false", () => {
-      it("then hides cursor marker", () => {
+      it("then hides cursor marker", (): void => {
         const comp = createComponent();
         comp.focused = false;
         const lines = comp.render(120);
@@ -343,7 +343,7 @@ describe("createEditorComponent", () => {
 
   describe("given dispose", () => {
     describe("when disposed", () => {
-      it("then clears highlight cache", () => {
+      it("then clears highlight cache", (): void => {
         const comp = createComponent();
         comp.dispose();
 
@@ -355,8 +355,8 @@ describe("createEditorComponent", () => {
   });
 
   describe("given empty file", () => {
-    describe("when editing an empty file", () => {
-      it("then renders with empty content area", () => {
+    describe("when editing an empty file", (): void => {
+      it("then renders with empty content area", (): void => {
         const comp = createEditorComponent({
           pi: createMockPi(),
           tui,
@@ -375,7 +375,7 @@ describe("createEditorComponent", () => {
 
   describe("given quit behavior", () => {
     describe("when quitting with unsaved changes", () => {
-      it("then saves before closing", async () => {
+      it("then saves before closing", async (): Promise<void> => {
         const comp = createComponent("original");
         comp.handleInput("x");
 

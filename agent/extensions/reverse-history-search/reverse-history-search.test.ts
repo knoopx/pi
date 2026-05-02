@@ -21,7 +21,7 @@ describe("Reverse History Search Extension", () => {
 
   describe("given the extension is initialized", () => {
     describe("when registering shortcut", () => {
-      it("then it should register ctrl+r shortcut", () => {
+      it("then it should register ctrl+r shortcut", (): void => {
         const { registerShortcut } = mockPi as unknown as MockExtensionAPI;
         expect(registerShortcut).toHaveBeenCalledWith(
           "ctrl+r",
@@ -29,7 +29,7 @@ describe("Reverse History Search Extension", () => {
         );
       });
 
-      it("then it should register a handler function", () => {
+      it("then it should register a handler function", (): void => {
         const call = mockPi.registerShortcut.mock.calls[0] as [
           string,
           { handler: unknown },
@@ -40,7 +40,7 @@ describe("Reverse History Search Extension", () => {
   });
 
   describe("ctrl+r shortcut handler", () => {
-    let handler: (ctx: ExtensionContext) => Promise<void>;
+    let handler: (this: void, ctx: ExtensionContext) => Promise<void>;
     let mockCtx: ExtensionContext;
 
     beforeEach(() => {
@@ -95,7 +95,7 @@ describe("Reverse History Search Extension", () => {
     });
 
     describe("given no UI is available", () => {
-      it("then it should exit without showing UI", async () => {
+      it("then it should exit without showing UI", async (): Promise<void> => {
         mockCtx.hasUI = false;
 
         await handler(mockCtx);
@@ -106,7 +106,7 @@ describe("Reverse History Search Extension", () => {
     });
 
     describe("given no history exists for current working directory", () => {
-      it("then it should notify user that no history is found", async () => {
+      it("then it should notify user that no history is found", async (): Promise<void> => {
         await handler(mockCtx);
 
         expect(mockCtx.ui.notify).toHaveBeenCalledWith(
@@ -118,7 +118,7 @@ describe("Reverse History Search Extension", () => {
     });
 
     describe("given UI is available and history exists", () => {
-      it("then it should show the custom UI with history", async () => {
+      it("then it should show the custom UI with history", async (): Promise<void> => {
         await expect(handler(mockCtx)).resolves.toBeUndefined();
       });
     });
@@ -126,30 +126,30 @@ describe("Reverse History Search Extension", () => {
 
   describe("fuzzyMatch function", () => {
     describe("given an empty query", () => {
-      it("then it should return true for empty query", () => {
+      it("then it should return true for empty query", (): void => {
         expect(fuzzyMatch("test", "")).toBe(true);
       });
 
-      it("then it should match unknown text", () => {
+      it("then it should match unknown text", (): void => {
         expect(fuzzyMatch("unknown text", "")).toBe(true);
         expect(fuzzyMatch("", "")).toBe(true);
         expect(fuzzyMatch("git status", "")).toBe(true);
       });
 
-      it("then it should return true for unknown input", () => {
+      it("then it should return true for unknown input", (): void => {
         expect(fuzzyMatch("test", "")).toBe(true);
         expect(fuzzyMatch("12345", "")).toBe(true);
       });
     });
 
     describe("given exact string matching", () => {
-      it("then it should match identical strings", () => {
+      it("then it should match identical strings", (): void => {
         expect(fuzzyMatch("git", "git")).toBe(true);
         expect(fuzzyMatch("status", "status")).toBe(true);
         expect(fuzzyMatch("command", "command")).toBe(true);
       });
 
-      it("then it should not match different strings", () => {
+      it("then it should not match different strings", (): void => {
         expect(fuzzyMatch("git", "svn")).toBe(false);
         expect(fuzzyMatch("hello", "world")).toBe(false);
         expect(fuzzyMatch("apple", "orange")).toBe(false);
@@ -157,39 +157,39 @@ describe("Reverse History Search Extension", () => {
     });
 
     describe("given fuzzy pattern matching", () => {
-      it("then it should match word prefixes", () => {
+      it("then it should match word prefixes", (): void => {
         expect(fuzzyMatch("npm install", "inst")).toBe(true);
         expect(fuzzyMatch("git commit", "comm")).toBe(true);
       });
 
-      it("then it should not match unrelated text", () => {
+      it("then it should not match unrelated text", (): void => {
         expect(fuzzyMatch("git status", "xyz")).toBe(false);
         expect(fuzzyMatch("npm install", "cargo")).toBe(false);
       });
     });
 
     describe("given case insensitive matching", () => {
-      it("then it should treat uppercase and lowercase as equivalent", () => {
+      it("then it should treat uppercase and lowercase as equivalent", (): void => {
         expect(fuzzyMatch("GIT STATUS", "git")).toBe(true);
         expect(fuzzyMatch("git status", "GIT")).toBe(true);
       });
     });
 
     describe("given partial matches", () => {
-      it("then it should match substrings", () => {
+      it("then it should match substrings", (): void => {
         expect(fuzzyMatch("git status --help", "status")).toBe(true);
         expect(fuzzyMatch("npm install package", "inst")).toBe(true);
         expect(fuzzyMatch("cargo build", "build")).toBe(true);
       });
 
-      it("then it should match full words", () => {
+      it("then it should match full words", (): void => {
         expect(fuzzyMatch("hello world", "hello")).toBe(true);
         expect(fuzzyMatch("git push origin", "push")).toBe(true);
       });
     });
 
     describe("given complex queries", () => {
-      it("then it should handle word boundaries", () => {
+      it("then it should handle word boundaries", (): void => {
         expect(fuzzyMatch("cargo publish", "pub")).toBe(true);
         expect(fuzzyMatch("git push origin", "push")).toBe(true);
       });

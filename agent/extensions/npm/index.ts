@@ -8,7 +8,6 @@ import { detail } from "../../shared/renderers/detail";
 import { dotJoin, countLabel } from "../../shared/renderers/header";
 import { formatPackageSearchResults } from "../../shared/package-registry";
 
-// Parameter schemas
 const SearchNpmPackagesParams = Type.Object({
   query: Type.String({ description: "Search query for npm packages" }),
   size: Type.Optional(
@@ -27,7 +26,6 @@ type GetNpmPackageVersionsParamsType = Static<
   typeof GetNpmPackageVersionsParams
 >;
 
-// NPM API response types
 interface NpmSearchObject {
   package: {
     name: string;

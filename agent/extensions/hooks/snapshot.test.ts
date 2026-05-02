@@ -13,7 +13,7 @@ function formatHooksAudit(groups: HooksGroup[], allActive: boolean): string[] {
     lines.push(renderGroupHeader(fg, group, allActive));
 
     for (const hook of group.hooks) {
-      lines.push(renderHookLine(hook as HookRule));
+      lines.push(renderHookLine(hook));
     }
   }
 

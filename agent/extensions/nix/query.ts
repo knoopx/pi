@@ -1,14 +1,8 @@
 import { throttledFetch } from "../../shared/throttle";
 
-// GitHub base URL for nixpkgs source links.
 export const NIXPKGS_GITHUB_BASE =
   "https://github.com/NixOS/nixpkgs/blob/nixos-unstable";
 
-// NixOS search index — points to the latest nixos-unstable snapshot.
-// To find the current index, run:
-//   curl -s -H "Authorization: Bearer $NIX_SEARCH_TOKEN" \
-//     "https://search.nixos.org/backend/_cat/indices" | grep nixos.*unstable
-// Pick the row with the highest group number (e.g. nixos-47-unstable-...).
 const SEARCH_URL =
   "https://search.nixos.org/backend/nixos-47-unstable-0726a0ecb6d4e08f6adced58726b95db924cef57/_search";
 const AUTH_TOKEN =
@@ -83,7 +77,6 @@ const COMMON_HEADERS: Record<string, string> = {
   Authorization: `Bearer ${AUTH_TOKEN}`,
 };
 
-// Fields searched for package queries
 export const PACKAGE_SEARCH_FIELDS = [
   "package_attr_name",
   "package_pname",

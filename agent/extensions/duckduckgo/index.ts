@@ -48,7 +48,6 @@ async function fetchWithRedirect(
   );
 }
 
-// Standard headers for DuckDuckGo requests
 const DDG_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36",
@@ -134,7 +133,6 @@ function formatSearchOutput(query: string, results: SearchResult[]): string {
   ].join("\n");
 }
 
-// Parameter schema
 const SearchDuckDuckGoParams = Type.Object({
   query: Type.String({ description: "Search query" }),
   limit: Type.Optional(

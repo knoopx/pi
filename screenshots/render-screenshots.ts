@@ -1,9 +1,4 @@
 #!/usr/bin/env bun
-/**
- * Render vitest snapshots into PNG images using charm-freeze.
- * Reads .snap files, extracts ANSI strings for selected exports,
- * and pipes them through charm-freeze to generate terminal screenshot images.
- */
 
 import { spawn } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";

@@ -74,4 +74,4 @@ const anthropicConfig: ProviderConfig = {
     return windows;
   },
 };
-export const fetchAnthropicUsage = await createGenericProvider(anthropicConfig);
+export const fetchAnthropicUsage = createGenericProvider(anthropicConfig);

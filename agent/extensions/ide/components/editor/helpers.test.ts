@@ -55,7 +55,7 @@ describe("findWordBoundaryForward", () => {
     describe("when finding word boundary forward", () => {
       it("then returns position past word and trailing space", () => {
         // skipCharsForward skips word chars then space chars
-        const result = findWordBoundaryForward("hello world", 0, 11);
+        expect(findWordBoundaryForward("hello world", 0, 11)).toBe(6);
       });
     });
   });

@@ -45,7 +45,6 @@ export function groupBookmarksByChange(
 
   return Array.from(byChange.entries()).map(
     ([changeId, { bookmarks, description, author }]) => {
-      // Deduplicate by base name (prefer showing each name once)
       const seenNames = new Set<string>();
       const displayNames: string[] = [];
       for (const b of bookmarks) {

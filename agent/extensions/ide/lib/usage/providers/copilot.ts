@@ -30,4 +30,4 @@ const copilotConfig: ProviderConfig = {
     },
   ],
 };
-export const fetchCopilotUsage = await createGenericProvider(copilotConfig);
+export const fetchCopilotUsage = createGenericProvider(copilotConfig);

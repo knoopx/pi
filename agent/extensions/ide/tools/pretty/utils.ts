@@ -11,7 +11,6 @@ export type ToolExecuteFn = (
   ctx: unknown,
 ) => Promise<unknown>;
 
-// Typed handler returned by createExecuteWrapper.
 export type WrappedToolHandler<P> = (
   tid: string,
   params: P,

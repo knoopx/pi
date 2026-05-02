@@ -59,4 +59,4 @@ function extractModelQuota(
 
   return { min, hasModel };
 }
-export const fetchGeminiUsage = await createGenericProvider(geminiConfig);
+export const fetchGeminiUsage = createGenericProvider(geminiConfig);

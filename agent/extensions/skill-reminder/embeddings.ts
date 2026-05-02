@@ -62,7 +62,6 @@ export async function embedTexts(
   timeoutMs = DEFAULT_TIMEOUT_MS,
   progress?: EmbedProgress,
 ): Promise<number[][]> {
-  // Split into batches respecting token budget.
   const batches: string[][] = [];
   let currentBatch: string[] = [];
   let currentTokens = 0;
@@ -70,7 +69,6 @@ export async function embedTexts(
   for (const text of texts) {
     const estimatedTokens = Math.ceil(text.length / CHARS_PER_TOKEN);
 
-    // Flush batch if adding this text would exceed budget.
     if (
       currentTokens + estimatedTokens > MAX_BATCH_TOKENS &&
       currentBatch.length > 0

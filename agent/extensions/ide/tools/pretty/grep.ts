@@ -59,7 +59,7 @@ export function createGrepRenderCall(
       ctx,
       suffix: (a: Record<string, unknown>, t: Theme) => {
         const glob = (a as { glob?: string })?.glob
-          ? ` ${t.fg("muted", `(${a.glob})`)}`
+          ? ` ${t.fg("muted", `(${String(a.glob)})`)}`
           : "";
         return glob;
       },
@@ -77,6 +77,6 @@ export function createGrepRenderResult(): (
     (textContent: string, theme: Theme) =>
       renderGrepResults(textContent, "", theme),
     (d: Record<string, unknown>, theme: Theme) =>
-      theme.fg("dim", `${d.matchCount} matches`),
+      theme.fg("dim", `${String(d.matchCount)} matches`),
   );
 }

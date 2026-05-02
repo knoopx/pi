@@ -112,7 +112,7 @@ async function createPicker(options?: { cmStdout?: string }): Promise<{
 
 describe("symbols component", () => {
   describe("ctrl+/ cycles symbol type filter and reloads", () => {
-    it("cycles through all symbol types on repeated ctrl+/ presses", async () => {
+    it("cycles through all symbol types on repeated ctrl+/ presses", async (): Promise<void> => {
       const { picker, execMock } = await createPicker({
         cmStdout: "MyClass|c|./src/MyClass.ts|1-20",
       });
@@ -139,7 +139,7 @@ describe("symbols component", () => {
       expect(cmCalls[2][1]).toContain("method");
     });
 
-    it("wraps from 'all' back to 'class'", async () => {
+    it("wraps from 'all' back to 'class'", async (): Promise<void> => {
       const { picker, execMock } = await createPicker({
         cmStdout: "Test|f|./src/test.ts|1-5",
       });
@@ -155,12 +155,8 @@ describe("symbols component", () => {
       expect(wrapCall[1]).toContain("class");
     });
 
-    it("requests re-render after cycling type filter", async () => {
-      const {
-        picker,
-        execMock: _em,
-        tui,
-      } = await createPicker({
+    it("requests re-render after cycling type filter", async (): Promise<void> => {
+      const { picker, tui } = await createPicker({
         cmStdout: "TestClass|c|./src/Test.ts|1-5",
       });
 
@@ -173,7 +169,7 @@ describe("symbols component", () => {
       });
     });
 
-    it("renders with type filter in title", async () => {
+    it("renders with type filter in title", async (): Promise<void> => {
       // No cmStdout — uses dynamic resolveCmOutput per --type
       const { picker } = await createPicker({});
 
@@ -208,8 +204,8 @@ describe("symbols component", () => {
   });
 
   describe("symbol type filter in loadItems", () => {
-    it("passes the type filter to the query command", async () => {
-      const { picker: _p, execMock } = await createPicker({
+    it("passes the type filter to the query command", async (): Promise<void> => {
+      const { execMock } = await createPicker({
         cmStdout: "TestClass|c|./src/Test.ts|1-5",
       });
 
@@ -227,7 +223,7 @@ describe("symbols component", () => {
       );
     });
 
-    it("omits --type when filter is 'all'", async () => {
+    it("omits --type when filter is 'all'", async (): Promise<void> => {
       const { picker, execMock } = await createPicker({
         cmStdout: "TestClass|c|./src/Test.ts|1-5",
       });

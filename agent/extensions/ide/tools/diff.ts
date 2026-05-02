@@ -103,7 +103,6 @@ async function initShiki(theme: BundledTheme): Promise<void> {
 const CACHE_LIMIT = 64;
 const _cache = createLRUCache<string, string[]>(CACHE_LIMIT);
 
-// Internal types for git diff parsing
 interface DiffHunk {
   file: string;
   hunks: DiffHunkBlock[];
@@ -197,15 +196,12 @@ function parseDiffLine(
   addLineNo: number | null;
   removeLineNo: number | null;
 } | null {
-  // Try parsing as added line
   const added = parseAddedLine(line, addLineNo);
   if (added) return { ...added, removeLineNo };
 
-  // Try parsing as removed line
   const removed = parseRemovedLine(line, removeLineNo);
   if (removed) return { ...removed, addLineNo };
 
-  // Try parsing as context line
   const context = parseContextLine(line, addLineNo, removeLineNo);
   if (context) return context;
 

@@ -84,10 +84,13 @@ export interface HookOutput {
 
 // Workaround for @sinclair/typebox 0.34.x CJS/ESM dual-module type mismatch.
 // cross-module type checking between the CJS and ESM builds.
-const vc = (Value as { Check(schema: unknown, data: unknown): boolean }).Check;
+const vc = (
+  Value as { Check(this: void, schema: unknown, data: unknown): boolean }
+).Check;
 const ve = (
   Value as {
     Errors(
+      this: void,
       schema: unknown,
       data: unknown,
     ): Iterable<{ path: string; message: string }>;

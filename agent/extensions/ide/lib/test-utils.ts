@@ -15,7 +15,11 @@ interface ChalkStyler {
 
 // Real Theme delegates to chalk, which silently passes through on non-TTY.
 // Force truecolor so mock output matches TTY behavior.
-const c = chalk.constructor({ level: 3 }) as ChalkStyler;
+const c = (chalk.constructor as unknown as (...args: unknown[]) => ChalkStyler)(
+  {
+    level: 3,
+  },
+);
 export class TestTerminal implements Terminal {
   private _columns: number;
   private _rows: number;

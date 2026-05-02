@@ -13,7 +13,6 @@ import {
   buildOptionTableRenderer,
 } from "./options";
 
-// Parameter schema for search queries
 const SearchQueryParams = Type.Object({
   query: Type.String({
     description: "Search query (option name or description)",

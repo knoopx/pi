@@ -15,8 +15,9 @@ export default ts.config(
     rules: {
       "@typescript-eslint/no-unused-vars": [
         "error",
-        { argsIgnorePattern: "^_" },
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
+      "@typescript-eslint/unbound-method": "off",
       "import/extensions": ["error", "never"],
     },
   },

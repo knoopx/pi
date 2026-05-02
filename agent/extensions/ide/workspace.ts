@@ -104,7 +104,6 @@ export function parseDiffStats(output: string): DiffStats {
   let totalDeletions = 0;
   const lines = output.trim().split("\n");
   for (const line of lines) {
-    // Match file lines like: "src/file.ts | 10 +++++-----"
     const fileMatch = /^\s*(.+?)\s*\|\s*(\d+)\s*([+-]*)\s*$/.exec(line);
     if (fileMatch) {
       const path = fileMatch[1].trim();

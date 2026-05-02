@@ -46,4 +46,3 @@ export function formatUsageSnapshot(usage: UsageSnapshot | undefined): string {
     })
     .join(", ");
 }
-export type { UsageSnapshot } from "./types";

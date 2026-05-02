@@ -23,6 +23,5 @@ async function loadIdeTheme(): Promise<void> {
   }
 }
 
-// Best-effort: falls back to DEFAULT_THEME if settings cannot be loaded.
 void loadIdeTheme().catch(() => {});
 export { MAX_HL_CHARS, CACHE_LIMIT };
