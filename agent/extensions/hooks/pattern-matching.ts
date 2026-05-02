@@ -4,7 +4,7 @@ import type { HookVariables } from "./types";
 import {
   matchCommandPattern,
   matchFileNamePattern,
-} from "../../shared/pattern-matching";
+} from "../../shared/matching/pattern-matching";
 export function isGroupActive(pattern: string, root: string): Promise<boolean> {
   if (pattern === "*") return Promise.resolve(true);
 

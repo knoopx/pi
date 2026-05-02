@@ -1,6 +1,6 @@
 import defaultsConfig from "./defaults";
 import { type HooksConfig, isValidConfig } from "./schema";
-import { loadEnabledSetting, saveEnabledSetting } from "../../shared/settings";
+import { loadEnabledSetting, saveEnabledSetting } from "../../shared/config/settings";
 const HOOKS_SETTINGS_KEY = "hooks";
 interface HooksSettings {
   enabled: boolean;

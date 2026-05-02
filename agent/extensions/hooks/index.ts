@@ -8,7 +8,7 @@ import type {
   ToolResultEvent,
   TurnEndEvent,
 } from "@mariozechner/pi-coding-agent";
-import { createThemeFg, notifyAuditResult } from "../../shared/audit-utils";
+import { createThemeFg, notifyAuditResult } from "../../shared/guardrails/audit";
 
 import { configLoader, loadHooksSettings, saveHooksSettings } from "./config";
 import type { HookEvent, HooksConfig } from "./schema";
@@ -22,7 +22,7 @@ import { isGroupActive } from "./pattern-matching";
 import {
   matchCommandPattern,
   matchFileNamePattern,
-} from "../../shared/pattern-matching";
+} from "../../shared/matching/pattern-matching";
 import { runEngineHooks } from "./engine";
 function registerSessionHandlers(
   pi: ExtensionAPI,
