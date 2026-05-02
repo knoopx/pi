@@ -4,9 +4,9 @@ import type {
   AgentToolResult,
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
-import { dotJoin, stateDot } from "../../shared/renderers/header";
-import { table } from "../../shared/renderers/table/renderer";
-import type { Column } from "../../shared/renderers/types";
+import { dotJoin, stateDot } from "../../shared/rendering/header";
+import { table } from "../../shared/rendering/table/renderer";
+import type { Column } from "../../shared/rendering/types";
 
 import { ghCmd } from "./utils";
 import {

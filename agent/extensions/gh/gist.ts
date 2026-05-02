@@ -6,9 +6,9 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
-import { dangerousOperationConfirmation } from "../../shared/tool-utils";
-import { detail } from "../../shared/renderers/detail";
-import { stateDot } from "../../shared/renderers/header";
+import { dangerousOperationConfirmation } from "../../shared/result/tool-result";
+import { detail } from "../../shared/rendering/detail";
+import { stateDot } from "../../shared/rendering/header";
 
 import { ghCmd, ghCmdJson, ghCmdJsonWithInput } from "./utils";
 import { createErrorResult, createTextResultRender } from "./shared";

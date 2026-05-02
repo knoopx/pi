@@ -21,7 +21,7 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 
 import type { Static, TSchema } from "@sinclair/typebox";
-import { renderTextToolResult } from "../../shared/render-utils";
+import { renderTextToolResult } from "../../shared/rendering/render-utils";
 interface CodeSearchParams {
   query: string;
   limit?: number;
@@ -170,10 +170,10 @@ async function searchRepos(
 
 import { Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
-import { dotJoin, countLabel } from "../../shared/renderers/header";
-import { table } from "../../shared/renderers/table/renderer";
-import { stateDot } from "../../shared/renderers/header";
-import type { Column } from "../../shared/renderers/types";
+import { dotJoin, countLabel } from "../../shared/rendering/header";
+import { table } from "../../shared/rendering/table/renderer";
+import { stateDot } from "../../shared/rendering/header";
+import type { Column } from "../../shared/rendering/types";
 function formatNumber(n: number): string {
   return n.toLocaleString("en-US");
 }

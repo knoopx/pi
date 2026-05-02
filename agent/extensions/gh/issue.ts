@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
-import type { Column } from "../../shared/renderers/types";
+import type { Column } from "../../shared/rendering/types";
 
 import { ghCmd, ghCmdJson } from "./utils";
 import {

@@ -6,9 +6,9 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
-import { dotJoin } from "../../shared/renderers/header";
-import { table } from "../../shared/renderers/table/renderer";
-import type { Column } from "../../shared/renderers/types";
+import { dotJoin } from "../../shared/rendering/header";
+import { table } from "../../shared/rendering/table/renderer";
+import type { Column } from "../../shared/rendering/types";
 
 import { ghCmd, ghCmdJson } from "./utils";
 import {

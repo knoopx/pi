@@ -8,12 +8,12 @@ import type {
 
 import { Type } from "@sinclair/typebox";
 import type { Static, TSchema } from "@sinclair/typebox";
-import { detail } from "../../shared/renderers/detail";
-import { table } from "../../shared/renderers/table/renderer";
-import type { Column } from "../../shared/renderers/types";
+import { detail } from "../../shared/rendering/detail";
+import { table } from "../../shared/rendering/table/renderer";
+import type { Column } from "../../shared/rendering/types";
 import { Text } from "@mariozechner/pi-tui";
-import { dangerousOperationConfirmation } from "../../shared/tool-utils";
-import { renderTextToolResult } from "../../shared/render-utils";
+import { dangerousOperationConfirmation } from "../../shared/result/tool-result";
+import { renderTextToolResult } from "../../shared/rendering/render-utils";
 export const TypeBoxFields = {
   owner: Type.String({
     description: "Repository owner (e.g., 'facebook')",

@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { TextContent } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import type { MockTool, MockExtensionAPI } from "../../shared/test-utils";
-import { createMockExtensionAPI } from "../../shared/test-utils";
+import type { MockTool, MockExtensionAPI } from "../../shared/testing/test-utils";
+import { createMockExtensionAPI } from "../../shared/testing/test-utils";
 import type * as utilsTypes from "./utils";
 let spawnResult = { stdout: "", stderr: "", exitCode: 0 };
 function createSpawnResult(data: unknown) {
