@@ -1,6 +1,7 @@
 {
   "extends": "../../shared/tsconfig.json",
   "compilerOptions": {
+    "types": ["vitest/globals"],
     "paths": {
       "@mariozechner/pi-coding-agent": [
         "./node_modules/@mariozechner/pi-coding-agent"
