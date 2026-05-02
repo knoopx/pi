@@ -2,6 +2,13 @@ import { describe, expect, it } from "vitest";
 import type { Root as MdastRoot } from "mdast";
 import { markdownToMdast, cleanTree } from "./mdast-utils";
 
+function expectLinkPreserved(md: string): void {
+  const tree = cleanTree(markdownToMdast(md));
+  const text = JSON.stringify(tree);
+  expect(text).toContain("Google");
+  expect(text).toContain("https://google.com");
+}
+
 describe("cleanTree", () => {
   describe("handles nodes without children gracefully", () => {
     it("does not crash on paragraph with no children", () => {
@@ -73,11 +80,7 @@ describe("cleanTree", () => {
     });
 
     it("keeps links with visible text", () => {
-      const md = `[Google](https://google.com)`;
-      const tree = cleanTree(markdownToMdast(md));
-      const text = JSON.stringify(tree);
-      expect(text).toContain("Google");
-      expect(text).toContain("https://google.com");
+      expectLinkPreserved(`[Google](https://google.com)`);
     });
 
     it("keeps bold and italic", () => {
@@ -152,11 +155,7 @@ describe("cleanTree", () => {
     });
 
     it("keeps links with real URLs", () => {
-      const md = `[Google](https://google.com)`;
-      const tree = cleanTree(markdownToMdast(md));
-      const text = JSON.stringify(tree);
-      expect(text).toContain("Google");
-      expect(text).toContain("https://google.com");
+      expectLinkPreserved(`[Google](https://google.com)`);
     });
   });
 });
