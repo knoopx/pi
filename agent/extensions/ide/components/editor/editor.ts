@@ -1,20 +1,9 @@
 import { History } from "./history";
-import {
-  clampCol,
-  findWordBoundaryBackward,
-  findWordBoundaryForward,
-  getLeadingWhitespace,
-  moveWordLeftOnLine,
-  moveWordRightOnLine,
-} from "./helpers";
+import * as move from "./move";
+import * as edit from "./edit";
+import * as selection from "./selection";
 import type { Cursor, EditorState } from "./types";
-function cursorsEqual(a: Cursor, b: Cursor): boolean {
-  return a.line === b.line && a.col === b.col;
-}
-function compareCursor(a: Cursor, b: Cursor): number {
-  if (a.line !== b.line) return a.line - b.line;
-  return a.col - b.col;
-}
+
 export class Editor {
   private lines: string[] = [""];
   private cursor: Cursor = { line: 0, col: 0 };
@@ -22,6 +11,38 @@ export class Editor {
   private topLine = 0;
   private history = new History();
   private viewHeight = 20;
+
+  private applyDeleteEdit(
+    editFn: (
+      lines: string[],
+      cursor: Cursor,
+      hasSel: boolean,
+      delSel: () => {
+        lines: string[];
+        cursor: Cursor;
+        selectionAnchor: Cursor | null;
+      },
+      range: { start: Cursor; end: Cursor } | null,
+      anchor: Cursor | null,
+    ) => { lines: string[]; cursor: Cursor; selectionAnchor: Cursor | null },
+  ): void {
+    this.saveState();
+    const selectionRange = selection.getSelectionRange(
+      this.selectionAnchor,
+      this.cursor,
+    );
+    const result = editFn(
+      this.lines,
+      this.cursor,
+      this.hasSelection(),
+      () => ({ lines: this.lines, cursor: this.cursor, selectionAnchor: null }),
+      selectionRange,
+      this.selectionAnchor,
+    );
+    this.lines = result.lines;
+    this.cursor = result.cursor;
+    this.selectionAnchor = result.selectionAnchor;
+  }
 
   constructor(content: string = "") {
     this.setContent(content);
@@ -40,11 +61,13 @@ export class Editor {
   }
 
   getSelection(): { start: Cursor; end: Cursor } | null {
-    return this.getSelectionRange();
+    return selection.getSelectionRange(this.selectionAnchor, this.cursor);
   }
 
   hasSelection(): boolean {
-    return this.getSelectionRange() !== null;
+    return (
+      selection.getSelectionRange(this.selectionAnchor, this.cursor) !== null
+    );
   }
 
   clearSelection(): void {
@@ -59,7 +82,10 @@ export class Editor {
   }
 
   getSelectedText(): string {
-    const range = this.getSelectionRange();
+    const range = selection.getSelectionRange(
+      this.selectionAnchor,
+      this.cursor,
+    );
     if (!range) return "";
     const content = this.getContent();
     const startOffset = this.offsetFromCursor(range.start);
@@ -91,37 +117,47 @@ export class Editor {
   }
 
   insertPair(open: string, close: string): void {
-    const selection = this.getSelectionRange();
-    if (selection) {
-      const selectedText = this.getSelectedText();
-      const startOffset = this.offsetFromCursor(selection.start);
-      this.replaceRange(
-        selection.start,
-        selection.end,
-        `${open}${selectedText}${close}`,
-      );
-      const newStart = this.cursorFromOffset(startOffset + 1);
-      const newEnd = this.cursorFromOffset(
-        startOffset + 1 + selectedText.length,
-      );
-      this.setSelection(newStart, newEnd);
-      return;
-    }
-    const insertOffset = this.offsetFromCursor(this.cursor);
-    this.insertText(`${open}${close}`);
-    const newCursor = this.cursorFromOffset(insertOffset + 1);
-    this.setCursor(newCursor.line, newCursor.col);
+    const selectionRange = selection.getSelectionRange(
+      this.selectionAnchor,
+      this.cursor,
+    );
+    const result = edit.insertPair(
+      this.lines,
+      this.cursor,
+      this.selectionAnchor,
+      selectionRange,
+      this.getSelectedText(),
+      (c: Cursor) => this.offsetFromCursor(c),
+      (o: number) => this.cursorFromOffset(o),
+      open,
+      close,
+    );
+    this.lines = result.lines;
+    this.cursor = result.cursor;
+    this.selectionAnchor = result.selectionAnchor;
   }
 
   deleteSelection(): void {
-    const range = this.getSelectionRange();
-    if (!range) return;
-    this.replaceRange(range.start, range.end, "");
-    this.selectionAnchor = null;
+    const selectionRange = selection.getSelectionRange(
+      this.selectionAnchor,
+      this.cursor,
+    );
+    const result = edit.deleteSelection(
+      this.lines,
+      this.cursor,
+      this.selectionAnchor,
+      selectionRange,
+    );
+    this.lines = result.lines;
+    this.cursor = result.cursor;
+    this.selectionAnchor = result.selectionAnchor;
   }
 
   insertChar(char: string): void {
-    this.insertText(char);
+    this.saveState();
+    const result = edit.insertChar(this.lines, this.cursor, char);
+    this.lines = result.lines;
+    this.cursor = result.cursor;
   }
 
   insertText(text: string): void {
@@ -137,140 +173,101 @@ export class Editor {
     const after = line.slice(this.cursor.col);
 
     if (parts.length === 1) {
-      this.insertSingleLine(before, parts[0] ?? "", after);
+      this.saveState();
+      this.lines[this.cursor.line] = before + parts[0]! + after;
+      this.cursor.col += parts[0]!.length;
     } else {
-      this.insertMultiLine(before, parts, after);
+      this.saveState();
+      const first = parts[0] ?? "";
+      this.lines[this.cursor.line] = before + first;
+      const middle = parts.slice(1, -1);
+      const last = parts[parts.length - 1] ?? "";
+      const insertLines = [...middle, last + after];
+
+      this.lines.splice(this.cursor.line + 1, 0, ...insertLines);
+      this.cursor.line += insertLines.length;
+      this.cursor.col = last.length;
+      this.adjustScroll();
     }
-  }
-
-  private insertSingleLine(before: string, text: string, after: string): void {
-    this.saveState();
-    this.lines[this.cursor.line] = before + text + after;
-    this.cursor.col += text.length;
-  }
-
-  private insertMultiLine(
-    before: string,
-    parts: string[],
-    after: string,
-  ): void {
-    this.saveState();
-    const first = parts[0] ?? "";
-    this.lines[this.cursor.line] = before + first;
-    const middle = parts.slice(1, -1);
-    const last = parts[parts.length - 1] ?? "";
-    const insertLines = [...middle, last + after];
-
-    this.lines.splice(this.cursor.line + 1, 0, ...insertLines);
-    this.cursor.line += insertLines.length;
-    this.cursor.col = last.length;
-    this.adjustScroll();
   }
 
   deleteCharBackward(): void {
-    if (this.hasSelection()) {
-      this.deleteSelection();
-      return;
-    }
-    if (this.cursor.col > 0) {
-      this.saveState();
-      const line = this.currentLine();
-      this.lines[this.cursor.line] =
-        line.slice(0, this.cursor.col - 1) + line.slice(this.cursor.col);
-      this.cursor.col--;
-    } else if (this.cursor.line > 0) {
-      this.joinWithPreviousLine();
-    }
+    this.applyDeleteEdit(edit.deleteCharBackward);
   }
 
   deleteCharForward(): void {
-    if (this.hasSelection()) {
-      this.deleteSelection();
-      return;
-    }
-    const line = this.currentLine();
-    if (this.cursor.col < line.length) {
-      this.saveState();
-      this.lines[this.cursor.line] =
-        line.slice(0, this.cursor.col) + line.slice(this.cursor.col + 1);
-    } else if (this.cursor.line < this.lines.length - 1) {
-      this.joinWithNextLine();
-    }
+    this.applyDeleteEdit(edit.deleteCharForward);
   }
 
   insertNewline(): void {
-    if (this.hasSelection()) {
-      this.replaceSelection("\n");
-      return;
-    }
-    this.saveState();
-    const line = this.currentLine();
-    const beforeCursor = line.slice(0, this.cursor.col);
-    const afterCursor = line.slice(this.cursor.col);
-    const indent = getLeadingWhitespace(beforeCursor);
-
-    this.lines[this.cursor.line] = beforeCursor;
-    this.lines.splice(this.cursor.line + 1, 0, indent + afterCursor);
-    this.cursor.line++;
-    this.cursor.col = indent.length;
-    this.adjustScroll();
+    const result = edit.insertNewline(
+      this.lines,
+      this.cursor,
+      this.hasSelection(),
+      (lines, cursor, text) => {
+        this.saveState();
+        const r = edit.insertText(lines, cursor, text, false, () => ({
+          lines,
+          cursor,
+        }));
+        return r;
+      },
+    );
+    this.lines = result.lines;
+    this.cursor = result.cursor;
   }
 
   moveCursor(
     direction: "up" | "down" | "left" | "right",
     select = false,
   ): void {
-    this.beginSelection(select);
-    this.executeMove(direction);
-    this.finalizeSelection();
-    this.adjustScroll();
-  }
-
-  private executeMove(direction: "up" | "down" | "left" | "right"): void {
-    const moves = {
-      up: () => {
-        this.moveUp();
-      },
-      down: () => {
-        this.moveDown();
-      },
-      left: () => {
-        this.moveLeft();
-      },
-      right: () => {
-        this.moveRight();
-      },
-    };
-    moves[direction]();
+    const result = move.moveCursor(
+      this.lines,
+      this.cursor,
+      this.selectionAnchor,
+      this.viewHeight,
+      this.topLine,
+      direction,
+      select,
+    );
+    this.cursor = result.cursor;
+    this.selectionAnchor = result.selectionAnchor;
+    this.topLine = result.topLine;
   }
 
   moveToLineStart(select = false): void {
-    this.beginSelection(select);
-    const line = this.currentLine();
-    const firstNonSpace = line.search(/\S/);
-
-    if (firstNonSpace === -1 || this.cursor.col === firstNonSpace) {
-      this.cursor.col = 0;
-    } else {
-      this.cursor.col = firstNonSpace;
-    }
-    this.finalizeSelection();
+    const result = move.moveToLineStart(
+      this.cursor,
+      this.selectionAnchor,
+      this.currentLine(),
+      select,
+    );
+    this.cursor = result.cursor;
+    this.selectionAnchor = result.selectionAnchor;
   }
 
   moveToLineEnd(select = false): void {
-    this.beginSelection(select);
-    this.cursor.col = this.currentLine().length;
-    this.finalizeSelection();
+    const result = move.moveToLineEnd(
+      this.cursor,
+      this.selectionAnchor,
+      this.currentLine(),
+      select,
+    );
+    this.cursor = result.cursor;
+    this.selectionAnchor = result.selectionAnchor;
   }
 
-  setCursor(line: number, col: number = 0, clearSelection = true): void {
-    const clampedLine = Math.max(0, Math.min(line, this.lines.length - 1));
-    this.cursor.line = clampedLine;
-    this.cursor.col = Math.max(0, Math.min(col, this.currentLine().length));
-    if (clearSelection) {
-      this.selectionAnchor = null;
-    }
-    this.adjustScroll();
+  setCursor(line: number, col = 0, clearSelection = true): void {
+    const result = move.setCursor(
+      this.lines,
+      this.cursor,
+      this.selectionAnchor,
+      line,
+      col,
+      clearSelection,
+    );
+    this.cursor = result.cursor;
+    this.selectionAnchor = result.selectionAnchor;
   }
 
   replaceRange(start: Cursor, end: Cursor, text: string): void {
@@ -290,188 +287,94 @@ export class Editor {
   }
 
   movePageUp(select = false): void {
-    this.beginSelection(select);
-    const pageMoveCount = Math.max(1, this.viewHeight - 1);
-    for (let i = 0; i < pageMoveCount; i++) {
-      if (this.cursor.line === 0) break;
-      this.cursor.line--;
-    }
-    clampCol(this.lines, this.cursor);
-    this.finalizeSelection();
-    this.adjustScroll();
+    const result = move.movePageUp(
+      this.lines,
+      this.cursor,
+      this.selectionAnchor,
+      this.viewHeight,
+      this.topLine,
+      select,
+    );
+    this.cursor = result.cursor;
+    this.selectionAnchor = result.selectionAnchor;
+    this.topLine = result.topLine;
   }
 
   movePageDown(select = false): void {
-    this.beginSelection(select);
-    const pageMoveCount = Math.max(1, this.viewHeight - 1);
-    const lastLine = this.lines.length - 1;
-    for (let i = 0; i < pageMoveCount; i++) {
-      if (this.cursor.line >= lastLine) break;
-      this.cursor.line++;
-    }
-    clampCol(this.lines, this.cursor);
-    this.finalizeSelection();
-    this.adjustScroll();
+    const result = move.movePageDown(
+      this.lines,
+      this.cursor,
+      this.selectionAnchor,
+      this.viewHeight,
+      this.topLine,
+      select,
+    );
+    this.cursor = result.cursor;
+    this.selectionAnchor = result.selectionAnchor;
+    this.topLine = result.topLine;
   }
 
   moveWordLeft(select = false): void {
-    this.beginSelection(select);
-    if (this.cursor.col === 0 && this.cursor.line > 0) {
-      this.cursor.line--;
-      this.cursor.col = this.currentLine().length;
-    } else {
-      moveWordLeftOnLine(this.lines, this.cursor);
-    }
-    this.finalizeSelection();
+    const result = move.moveWordLeft(
+      this.lines,
+      this.cursor,
+      this.selectionAnchor,
+      select,
+    );
+    this.cursor = result.cursor;
+    this.selectionAnchor = result.selectionAnchor;
   }
 
   moveWordRight(select = false): void {
-    this.beginSelection(select);
-    const line = this.currentLine();
-    if (
-      this.cursor.col >= line.length &&
-      this.cursor.line < this.lines.length - 1
-    ) {
-      this.cursor.line++;
-      this.cursor.col = 0;
-    } else {
-      moveWordRightOnLine(this.lines, this.cursor);
-    }
-    this.finalizeSelection();
+    const result = move.moveWordRight(
+      this.lines,
+      this.cursor,
+      this.selectionAnchor,
+      select,
+    );
+    this.cursor = result.cursor;
+    this.selectionAnchor = result.selectionAnchor;
   }
 
   deleteWordBackward(): void {
-    if (this.hasSelection()) {
-      this.deleteSelection();
-      return;
-    }
-    const line = this.currentLine() ?? "";
-    const col = this.cursor.col;
-
-    if (this.atFileStart()) return;
-    if (this.joinLineBackward(line)) return;
-    const deleteEnd = findWordBoundaryBackward(line, col);
-    if (deleteEnd < col) {
-      this.deleteRangeInLine(deleteEnd, col);
-    }
-  }
-
-  private atFileStart(): boolean {
-    return this.cursor.col === 0 && this.cursor.line === 0;
-  }
-
-  private deleteRangeInLine(from: number, to: number): void {
-    this.saveState();
-    const line = this.currentLine() ?? "";
-    this.lines[this.cursor.line] = line.slice(0, from) + line.slice(to);
-    this.cursor.col = from;
+    this.applyDeleteEdit(edit.deleteWordBackward);
   }
 
   deleteWordForward(): void {
-    if (this.hasSelection()) {
-      this.deleteSelection();
-      return;
-    }
-    const line = this.currentLine() ?? "";
-    const col = this.cursor.col;
-    const lineLen = line.length;
-
-    if (this.atFileEnd(lineLen)) return;
-    if (this.joinLineForward(line)) return;
-    const deleteEnd = findWordBoundaryForward(line, col, lineLen);
-    if (deleteEnd > col) {
-      this.deleteRangeInLine(col, deleteEnd);
-    }
-  }
-
-  private atFileEnd(lineLen: number): boolean {
-    return (
-      this.cursor.col === lineLen && this.cursor.line === this.lines.length - 1
-    );
-  }
-
-  private joinLineBackward(line: string): boolean {
-    if (this.cursor.col !== 0 || this.cursor.line === 0) return false;
-    this.saveState();
-    const prevLine = this.lines[this.cursor.line - 1] ?? "";
-    const newLine = prevLine + line;
-    this.lines.splice(this.cursor.line, 2, newLine);
-    this.cursor.col = newLine.length;
-    return true;
-  }
-
-  private joinLineForward(line: string): boolean {
-    if (
-      this.cursor.col !== line.length ||
-      this.cursor.line >= this.lines.length - 1
-    )
-      return false;
-    this.saveState();
-    const nextLine = this.lines[this.cursor.line + 1] ?? "";
-    const newLine = line + nextLine;
-    this.lines.splice(this.cursor.line, 2, newLine);
-    return true;
+    this.applyDeleteEdit(edit.deleteWordForward);
   }
 
   deleteLine(): void {
-    if (this.hasSelection()) {
-      this.deleteSelection();
-      return;
-    }
-    this.saveState();
-
-    if (this.lines.length === 1) {
-      this.clearOnlyLine();
-      return;
-    }
-
-    this.lines.splice(this.cursor.line, 1);
-    this.adjustCursorAfterDelete();
-    this.adjustScroll();
-  }
-
-  private clearOnlyLine(): void {
-    this.lines[0] = "";
-    this.cursor.col = 0;
-  }
-
-  private adjustCursorAfterDelete(): void {
-    if (this.cursor.line >= this.lines.length) {
-      this.cursor.line = this.lines.length - 1;
-      this.cursor.col = (this.currentLine() ?? "").length;
-    } else {
-      this.cursor.col = 0;
-    }
+    this.applyDeleteEdit(edit.deleteLine);
   }
 
   toggleComment(): void {
     this.saveState();
-    const line = this.currentLine();
-    const trimmed = line.trim();
-
-    if (trimmed.startsWith("//")) {
-      const uncommented = line.replace(/^(\s*)\/\/\s?/, "$1");
-      this.lines[this.cursor.line] = uncommented;
-      if (this.cursor.col >= uncommented.length) {
-        this.cursor.col = uncommented.length;
-      }
-    } else {
-      const indent = getLeadingWhitespace(line);
-      const commented = indent + "// " + line.slice(indent.length);
-      this.lines[this.cursor.line] = commented;
-      this.cursor.col += 3;
-    }
+    const result = edit.toggleComment(
+      this.lines,
+      this.cursor,
+      this.currentLine(),
+    );
+    this.lines = result.lines;
+    this.cursor = result.cursor;
   }
 
   replaceSelection(text: string): void {
-    const range = this.getSelectionRange();
-    if (!range) {
-      this.insertText(text);
-      return;
-    }
-
-    this.replaceRange(range.start, range.end, text);
-    this.selectionAnchor = null;
+    this.saveState();
+    const selectionRange = selection.getSelectionRange(
+      this.selectionAnchor,
+      this.cursor,
+    );
+    const result = edit.replaceSelection(
+      this.lines,
+      this.cursor,
+      this.selectionAnchor,
+      selectionRange,
+      text,
+    );
+    this.lines = result.lines;
+    this.cursor = result.cursor;
+    this.selectionAnchor = result.selectionAnchor;
   }
 
   undo(): boolean {
@@ -544,85 +447,6 @@ export class Editor {
       remaining -= length + 1;
     }
     return null;
-  }
-
-  private beginSelection(select: boolean): void {
-    if (select) {
-      if (!this.selectionAnchor) {
-        this.selectionAnchor = { ...this.cursor };
-      }
-    } else {
-      this.selectionAnchor = null;
-    }
-  }
-
-  private finalizeSelection(): void {
-    if (!this.selectionAnchor) return;
-    if (cursorsEqual(this.selectionAnchor, this.cursor)) {
-      this.selectionAnchor = null;
-    }
-  }
-
-  private getSelectionRange(): { start: Cursor; end: Cursor } | null {
-    if (!this.selectionAnchor) return null;
-    if (cursorsEqual(this.selectionAnchor, this.cursor)) return null;
-
-    if (compareCursor(this.selectionAnchor, this.cursor) <= 0) {
-      return { start: { ...this.selectionAnchor }, end: { ...this.cursor } };
-    }
-    return { start: { ...this.cursor }, end: { ...this.selectionAnchor } };
-  }
-
-  private joinWithPreviousLine(): void {
-    this.saveState();
-    const prevLine = this.lines[this.cursor.line - 1] ?? "";
-    const currentLine = this.currentLine();
-    this.cursor.col = prevLine.length;
-    this.lines[this.cursor.line - 1] = prevLine + currentLine;
-    this.lines.splice(this.cursor.line, 1);
-    this.cursor.line--;
-    this.adjustScroll();
-  }
-
-  private joinWithNextLine(): void {
-    this.saveState();
-    const line = this.currentLine();
-    const nextLine = this.lines[this.cursor.line + 1] ?? "";
-    this.lines[this.cursor.line] = line + nextLine;
-    this.lines.splice(this.cursor.line + 1, 1);
-  }
-
-  private moveUp(): void {
-    if (this.cursor.line > 0) {
-      this.cursor.line--;
-      clampCol(this.lines, this.cursor);
-    }
-  }
-
-  private moveDown(): void {
-    if (this.cursor.line < this.lines.length - 1) {
-      this.cursor.line++;
-      clampCol(this.lines, this.cursor);
-    }
-  }
-
-  private moveLeft(): void {
-    if (this.cursor.col > 0) {
-      this.cursor.col--;
-    } else if (this.cursor.line > 0) {
-      this.cursor.line--;
-      this.cursor.col = this.currentLine().length;
-    }
-  }
-
-  private moveRight(): void {
-    const lineLen = this.currentLine().length;
-    if (this.cursor.col < lineLen) {
-      this.cursor.col++;
-    } else if (this.cursor.line < this.lines.length - 1) {
-      this.cursor.line++;
-      this.cursor.col = 0;
-    }
   }
 
   private adjustScroll(): void {

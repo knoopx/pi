@@ -54,7 +54,6 @@ describe("findWordBoundaryForward", () => {
   describe("given 'hello world' at column 0", () => {
     describe("when finding word boundary forward", () => {
       it("then returns position past word and trailing space", () => {
-        // skipCharsForward skips word chars then space chars
         expect(findWordBoundaryForward("hello world", 0, 11)).toBe(6);
       });
     });
@@ -95,7 +94,6 @@ describe("moveWordLeftOnLine", () => {
   describe("given cursor at column 8 in 'hello world'", () => {
     describe("when moving word left", () => {
       it("then moves to previous word boundary", () => {
-        // charType at 7 is 'word', skipSameBackward from 7 goes to 6
         const cursor = { line: 0, col: 8 };
         moveWordLeftOnLine(["hello world"], cursor);
 

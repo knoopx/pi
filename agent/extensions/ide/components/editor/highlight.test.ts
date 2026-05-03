@@ -6,6 +6,7 @@ import {
   createMockTheme,
   createMockTui,
   createMockPi,
+  waitForAsyncHighlight,
 } from "../../lib/test-utils";
 
 describe("syntax highlighting", () => {
@@ -33,10 +34,8 @@ describe("syntax highlighting", () => {
       it("then applies syntax highlighting to keywords", async () => {
         const code = "const x = 42;\nfunction foo() { return x; }";
         const comp = createComponent(code, "/tmp/test.ts");
-        // Wait for async highlight to complete
-        await new Promise((r) => setTimeout(r, 500));
+        await waitForAsyncHighlight();
         const lines = comp.render(120);
-        // Find the code line (contains 'const')
         const codeLine = lines.find((l) => l.includes("const"));
         expect(codeLine).toBeDefined();
         // Check that 'const' keyword has truecolor ANSI codes around it
