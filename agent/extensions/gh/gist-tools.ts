@@ -4,187 +4,31 @@ import type {
   AgentToolResult,
   Theme,
 } from "@mariozechner/pi-coding-agent";
-import { type Static, Type } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
+import type { Static } from "@sinclair/typebox";
 import { Text } from "@mariozechner/pi-tui";
 import { dangerousOperationConfirmation } from "../../shared/result/tool-result";
-import { detail } from "../../shared/rendering/detail";
-import { stateDot } from "../../shared/rendering/header";
-
-import { ghCmd, ghCmdJson, ghCmdJsonWithInput } from "./utils";
 import { createErrorResult, createTextResultRender } from "./shared";
+import {
+  listGists,
+  getGist,
+  createGist,
+  updateGist,
+  formatGist,
+  formatGistUpdate,
+} from "./gist-api";
+import type { Gist } from "./gist-api";
+
 function createGistResult(
   output: string,
   gist: Gist,
-): {
-  content: { type: "text"; text: string }[];
-  details: { gist: Gist };
-} {
+): AgentToolResult<{ gist: Gist }> {
   return {
     content: [{ type: "text", text: output }],
     details: { gist },
   };
 }
-function createGistErrorResult(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  return createErrorResult(message);
-}
-interface GistFile {
-  filename: string;
-  type: string;
-  language: string | null;
-  content: string;
-  raw_url: string;
-  size: number;
-}
-interface Gist {
-  id: string;
-  description: string | null;
-  public: boolean;
-  created_at: string;
-  updated_at: string;
-  html_url: string;
-  files: Record<string, GistFile>;
-  user: {
-    login: string;
-    id: number;
-    avatar_url: string;
-    html_url: string;
-  } | null;
-}
 
-async function listGists(userId?: string, limit = 30): Promise<Gist[]> {
-  if (userId && userId !== "@me") {
-    const endpoint = `/users/${userId}/gists?per_page=${limit}`;
-    return ghCmdJson<Gist[]>(
-      [
-        "api",
-        endpoint,
-        "--jq",
-        "[.[] | {id, description, public, created_at, updated_at, html_url, files, user: (.owner // null)}]",
-      ],
-      "api gists",
-    );
-  }
-  const result = await ghCmd(["gist", "list", `--limit=${limit}`]);
-
-  if (result.exitCode !== 0)
-    throw new Error(`gh gist list failed: ${result.stderr || result.stdout}`);
-  const lines = result.stdout.trim().split("\n").filter(Boolean);
-  const gistIds = lines.map((line) => line.split(/\s+/)[0]);
-  const gists: Gist[] = [];
-  for (const gistId of gistIds) {
-    try {
-      const gist = await getGist(gistId);
-      gists.push(gist);
-    } catch {}
-  }
-
-  return gists;
-}
-function getGist(gistId: string): Promise<Gist> {
-  return ghCmdJson<Gist>(["api", `/gists/${gistId}`], "api gist");
-}
-
-async function createGist(
-  files: Record<string, { content: string; filename?: string }>,
-  description = "",
-  isPublic = false,
-): Promise<Gist> {
-  const fs = await import("node:fs");
-  const os = await import("node:os");
-  const path = await import("node:path");
-  const tempDir = os.tmpdir();
-  const fileArgs: string[] = [];
-
-  for (const [filename, fileData] of Object.entries(files)) {
-    const tempFile = path.join(tempDir, `gist-${filename}`);
-    fs.writeFileSync(tempFile, fileData.content);
-    fileArgs.push(tempFile);
-  }
-  const args = ["gist", "create", ...fileArgs];
-  if (description) args.push("--desc", description);
-  if (isPublic) args.push("--public");
-  const result = await ghCmd(args);
-
-  for (const tempFile of fileArgs) {
-    try {
-      fs.unlinkSync(tempFile);
-    } catch (err) {
-      void err;
-    }
-  }
-
-  if (result.exitCode !== 0)
-    throw new Error(`gh gist create failed: ${result.stderr || result.stdout}`);
-  const gistUrl = result.stdout.trim();
-  const gistId = gistUrl.split("/").pop();
-  if (!gistId)
-    throw new Error(`Failed to extract gist ID from output: ${gistUrl}`);
-
-  return getGist(gistId);
-}
-function updateGist(
-  gistId: string,
-  files?: Record<string, { content: string; filename?: string }>,
-  description?: string,
-): Promise<Gist> {
-  const apiBody: Record<string, unknown> = {};
-  if (description !== undefined) apiBody.description = description;
-  if (files) {
-    const apiFiles: Record<string, { content: string; filename?: string }> = {};
-    for (const [filename, fileData] of Object.entries(files)) {
-      apiFiles[filename] = { content: fileData.content };
-      if (fileData.filename) apiFiles[filename].filename = fileData.filename;
-    }
-    apiBody.files = apiFiles;
-  }
-
-  return ghCmdJsonWithInput<Gist>(
-    ["api", `/gists/${gistId}`, "-X", "PATCH", "--input", "-"],
-    apiBody,
-    "api gist update",
-  );
-}
-function formatGist(gist: Gist): string {
-  const fields = [
-    { label: "url", value: gist.html_url },
-    { label: "description", value: gist.description || "No description" },
-    { label: "created", value: new Date(gist.created_at).toLocaleString() },
-    { label: "updated", value: new Date(gist.updated_at).toLocaleString() },
-    {
-      label: "visibility",
-      value: `${stateDot(gist.public)} public`,
-    },
-    {
-      label: "files",
-      value: Object.entries(gist.files)
-        .map(
-          ([name, f]) =>
-            `${name} (${(f.size / 1024).toFixed(1)} KB, ${f.language || "plain text"})`,
-        )
-        .join(", "),
-    },
-  ];
-
-  return detail(fields);
-}
-function formatGistUpdate(gist: Gist): string {
-  const lines: string[] = [
-    `✓ Gist updated: ${gist.html_url}`,
-    gist.description || "No description",
-    `Updated: ${new Date(gist.updated_at).toLocaleString()}`,
-    "",
-    "Files:",
-  ];
-
-  for (const [filename, file] of Object.entries(gist.files)) {
-    const size = (file.size / 1024).toFixed(1);
-    const lang = file.language || "Plain text";
-    lines.push(`  • ${filename} (${size} KB, ${lang})`);
-  }
-
-  return lines.join("\n");
-}
 const ListGistsParams = Type.Object({
   userId: Type.Optional(
     Type.String({
@@ -201,11 +45,13 @@ const ListGistsParams = Type.Object({
     }),
   ),
 });
+
 const GetGistParams = Type.Object({
   gistId: Type.String({
     description: "Gist ID (e.g., 'abc123')",
   }),
 });
+
 const CreateGistParams = Type.Object({
   files: Type.Record(
     Type.String(),
@@ -236,6 +82,7 @@ const CreateGistParams = Type.Object({
     }),
   ),
 });
+
 const UpdateGistParams = Type.Object({
   gistId: Type.String({
     description: "Gist ID to update",
@@ -261,10 +108,60 @@ const UpdateGistParams = Type.Object({
     }),
   ),
 });
-type ListGistsParamsType = Static<typeof ListGistsParams>;
-type GetGistParamsType = Static<typeof GetGistParams>;
-type CreateGistParamsType = Static<typeof CreateGistParams>;
-type UpdateGistParamsType = Static<typeof UpdateGistParams>;
+
+async function executeListGists(
+  params: Static<typeof ListGistsParams>,
+): Promise<AgentToolResult<{ gists: Gist[] }>> {
+  const userId = params.userId;
+  const limit = params.limit;
+  const gists = await listGists(userId, limit);
+  const lines = gists
+    .map((gist) => [
+      `• **${gist.id}** ${stateDot(gist.public)} public`,
+      gist.description || "No description",
+      `Files: ${Object.keys(gist.files).join(", ")} | Created: ${new Date(
+        gist.created_at,
+      ).toLocaleDateString()}`,
+      gist.html_url,
+      "",
+    ])
+    .flat();
+
+  return {
+    content: [{ type: "text", text: lines.join("\n") }],
+    details: { gists },
+  };
+}
+
+async function executeCreateGist(
+  params: Static<typeof CreateGistParams>,
+): Promise<AgentToolResult<{ gist: Gist }>> {
+  const files = params.files as Record<
+    string,
+    { content: string; filename?: string }
+  >;
+  const description = params.description;
+  const isPublic = params.isPublic;
+  const gist = await createGist(files, description, isPublic);
+  const output = formatGist(gist);
+  return createGistResult(output, gist);
+}
+
+async function executeUpdateGist(
+  params: Static<typeof UpdateGistParams>,
+): Promise<AgentToolResult<{ gist: Gist }>> {
+  const gistId = params.gistId;
+  const files = params.files as
+    | Record<string, { content: string; filename?: string }>
+    | undefined;
+  const description = params.description;
+  const gist = await updateGist(gistId, files, description);
+  const output = formatGistUpdate(gist);
+  return createGistResult(output, gist);
+}
+
+import { stateDot } from "../../shared/rendering/header";
+
 function createListGistsTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
   return {
     name: "gh-list-gists",
@@ -283,7 +180,7 @@ Examples:
 
     async execute(
       _toolCallId: string,
-      params: ListGistsParamsType,
+      params: Static<typeof ListGistsParams>,
       _signal: AbortSignal | undefined,
       _onUpdate:
         | ((partialResult: AgentToolResult<{ gists: Gist[] }>) => void)
@@ -309,6 +206,7 @@ Examples:
     renderResult: createTextResultRender(),
   };
 }
+
 function createGetGistTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
   return {
     name: "gh-get-gist",
@@ -327,7 +225,7 @@ Examples:
 
     async execute(
       _toolCallId: string,
-      params: GetGistParamsType,
+      params: Static<typeof GetGistParams>,
       _signal: AbortSignal | undefined,
       _onUpdate:
         | ((partialResult: AgentToolResult<{ gist: Gist }>) => void)
@@ -339,7 +237,9 @@ Examples:
         const output = formatGist(gist);
         return createGistResult(output, gist);
       } catch (error) {
-        return createGistErrorResult(error);
+        return createErrorResult(
+          error instanceof Error ? error.message : String(error),
+        );
       }
     },
 
@@ -354,6 +254,7 @@ Examples:
     renderResult: createTextResultRender(),
   };
 }
+
 function createCreateGistTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
   return {
     name: "gh-create-gist",
@@ -373,7 +274,7 @@ Examples:
 
     async execute(
       _toolCallId: string,
-      params: CreateGistParamsType,
+      params: Static<typeof CreateGistParams>,
       _signal: AbortSignal | undefined,
       _onUpdate:
         | ((partialResult: AgentToolResult<{ gist: Gist }>) => void)
@@ -405,56 +306,6 @@ Examples:
   };
 }
 
-async function executeListGists(
-  params: ListGistsParamsType,
-): Promise<AgentToolResult<{ gists: Gist[] }>> {
-  const userId = params.userId;
-  const limit = params.limit;
-  const gists = await listGists(userId, limit);
-  const lines = gists
-    .map((gist) => [
-      `• **${gist.id}** ${stateDot(gist.public)} public`,
-      gist.description || "No description",
-      `Files: ${Object.keys(gist.files).join(", ")} | Created: ${new Date(
-        gist.created_at,
-      ).toLocaleDateString()}`,
-      gist.html_url,
-      "",
-    ])
-    .flat();
-
-  return {
-    content: [{ type: "text", text: lines.join("\n") }],
-    details: { gists },
-  };
-}
-
-async function executeCreateGist(
-  params: CreateGistParamsType,
-): Promise<AgentToolResult<{ gist: Gist }>> {
-  const files = params.files as Record<
-    string,
-    { content: string; filename?: string }
-  >;
-  const description = params.description;
-  const isPublic = params.isPublic;
-  const gist = await createGist(files, description, isPublic);
-  const output = formatGist(gist);
-  return createGistResult(output, gist);
-}
-
-async function executeUpdateGist(
-  params: UpdateGistParamsType,
-): Promise<AgentToolResult<{ gist: Gist }>> {
-  const gistId = params.gistId;
-  const files = params.files as
-    | Record<string, { content: string; filename?: string }>
-    | undefined;
-  const description = params.description;
-  const gist = await updateGist(gistId, files, description);
-  const output = formatGistUpdate(gist);
-  return createGistResult(output, gist);
-}
 function createUpdateGistTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
   return {
     name: "gh-update-gist",
@@ -473,7 +324,7 @@ Examples:
 
     async execute(
       _toolCallId: string,
-      params: UpdateGistParamsType,
+      params: Static<typeof UpdateGistParams>,
       _signal: AbortSignal | undefined,
       _onUpdate:
         | ((partialResult: AgentToolResult<{ gist: Gist }>) => void)
@@ -512,6 +363,7 @@ Examples:
     renderResult: createTextResultRender(),
   };
 }
+
 export function registerGistTools(pi: ExtensionAPI) {
   pi.registerTool(createListGistsTool());
   pi.registerTool(createGetGistTool());
