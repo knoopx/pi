@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Stats } from "node:fs";
 import { isCacheStale } from "../../shared/cache/cache-helpers";
+import { mapToRawChunks } from "./indexer";
+
+vi.mock("node:os", () => ({
+  homedir: () => "/home/testuser",
+}));
 
 const fsPromises = await import("node:fs/promises");
 
@@ -72,5 +77,47 @@ describe("isCacheStale", () => {
     it("then it should return false because there is nothing to check", async () => {
       expect(await isCacheStale({}, [])).toBe(false);
     });
+  });
+});
+
+describe("mapToRawChunks", () => {
+  it("produces file paths relative to home with ~ prefix", () => {
+    const chunks = [{ text: "# Test\n\nSome content here for testing." }];
+    const result = mapToRawChunks(
+      chunks,
+      "test-skill",
+      "/home/testuser/.pi/agent/skills/test-skill/file.md",
+      1000,
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].file).toBe("~/.pi/agent/skills/test-skill/file.md");
+  });
+
+  it("handles nested skill paths correctly", () => {
+    const chunks = [{ text: "# Test\n\nSome content here for testing." }];
+    const result = mapToRawChunks(
+      chunks,
+      "nu-shell",
+      "/home/testuser/.pi/agent/skills/nu-shell/references/system.md",
+      1000,
+    );
+
+    expect(result[0].file).toBe(
+      "~/.pi/agent/skills/nu-shell/references/system.md",
+    );
+  });
+
+  it("includes correct skill name and section", () => {
+    const chunks = [{ text: "# Test\n\nSome content here for testing." }];
+    const result = mapToRawChunks(
+      chunks,
+      "my-skill",
+      "/home/testuser/.pi/agent/skills/my-skill/doc.md",
+      1000,
+    );
+
+    expect(result[0].skill).toBe("my-skill");
+    expect(result[0].section).toBe("Test");
   });
 });

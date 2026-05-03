@@ -1,4 +1,5 @@
 import { readFile, stat } from "node:fs/promises";
+import { homedir } from "node:os";
 import { relative } from "node:path";
 import type { Chunk } from "../../shared/embeddings/chunker";
 import {
@@ -60,7 +61,7 @@ function hasEnoughBodyContent(text: string): boolean {
   return body.length >= 30;
 }
 
-function mapToRawChunks(
+export function mapToRawChunks(
   chunks: Chunk[],
   skill: string,
   filePath: string,
@@ -70,7 +71,9 @@ function mapToRawChunks(
     const text = truncateText(chunk.text.trim(), maxChars);
     if (!text || !hasEnoughBodyContent(text)) return [];
     const section = extractSection(text);
-    return [{ skill, file: relative(SKILLS_DIR, filePath), section, text }];
+    return [
+      { skill, file: `~/${relative(homedir(), filePath)}`, section, text },
+    ];
   });
 }
 

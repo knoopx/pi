@@ -41,7 +41,7 @@ function parseEvent(input: string): ToolResultEvent {
   return {
     type: "tool_result" as const,
     toolCallId: raw.toolCallId ?? "eval-test",
-    toolName: raw.toolName,
+    toolName: raw.toolName ?? "unknown",
     isError: true,
     input: raw.input ?? {},
     content: raw.content ?? [],
@@ -100,15 +100,19 @@ async function getScoredHits(
   threshold: number,
 ): Promise<ScoredHit[]> {
   const scored = index
-    .map<ScoredHit | null>((chunk) => ({
-      score: cosine(embedding, chunk.embedding),
-      skill: chunk.skill,
-      file: chunk.file,
-      section: chunk.section,
-      text: chunk.text,
-    }))
+    .map<ScoredHit | null>((chunk) => {
+      if (!chunk.skill) return null;
+      return {
+        score: cosine(embedding, chunk.embedding),
+        skill: chunk.skill,
+        file: chunk.file,
+        section: chunk.section,
+        text: chunk.text,
+      };
+    })
     .filter(
-      (s): s is ScoredHit => s.score > threshold && s.skill !== undefined,
+      (s): s is ScoredHit =>
+        s !== null && s.score > threshold && s.skill !== undefined,
     );
 
   if (scored.length === 0) return [];
