@@ -1,8 +1,6 @@
 import type { Component } from "@mariozechner/pi-tui";
 import type { Theme } from "@mariozechner/pi-coding-agent";
-import { Key } from "@mariozechner/pi-tui";
-import { createKeyboardHandler, buildHelpFromBindings } from "../../keyboard";
-import type { KeyBinding } from "../../keyboard";
+import { createKeyboardHandler } from "../../keyboard";
 import { truncateAnsi, ensureWidth, pad } from "../text-utils";
 import { applyFocusedStyle } from "../style-utils";
 import { calculateDimensions } from "../split-panel/layout";
@@ -13,7 +11,6 @@ import type { StatusMessageState } from "../ui/status";
 
 import type {
   ListPickerItem,
-  ListPickerAction,
   ListPickerConfig,
   ListPickerComponent,
   ListPickerOptions,

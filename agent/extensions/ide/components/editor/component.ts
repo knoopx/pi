@@ -1,13 +1,7 @@
 import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
 import type { Component, Focusable, TUI } from "@mariozechner/pi-tui";
-import { Key } from "@mariozechner/pi-tui";
 
-import {
-  createKeyboardHandler,
-  buildHelpFromBindings,
-  filterActiveBindings,
-  type KeyBinding,
-} from "../../keyboard";
+import { createKeyboardHandler, type KeyBinding } from "../../keyboard";
 import { Editor } from "./editor";
 import { buildBindings } from "./bindings";
 import {
@@ -20,7 +14,6 @@ import {
 } from "./rendering";
 import {
   createStatusNotifier,
-  formatHelpWithStatus,
   type StatusMessageState,
 } from "../../lib/ui/status";
 

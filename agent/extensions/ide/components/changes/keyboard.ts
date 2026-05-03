@@ -1,5 +1,4 @@
 import type { ChangesState } from "./state";
-import type { NavigationCallbacks } from "./navigation";
 import type { KeyBinding } from "../../keyboard";
 import type { KeyPattern } from "../../lib/types";
 import { Key } from "@mariozechner/pi-tui";

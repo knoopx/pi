@@ -2,7 +2,7 @@ import { ghCmdJson } from "./utils";
 import { buildFilterArgs, TypeBoxFields } from "./shared";
 import type { GHIssueSearchResult } from "./types";
 import { Type } from "@sinclair/typebox";
-import { stateDot, countLabel } from "../../shared/rendering/header";
+
 import { createListItemFormatter } from "./search-list-formatter";
 
 export interface SearchParams {

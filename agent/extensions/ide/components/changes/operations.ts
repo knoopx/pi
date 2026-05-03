@@ -37,15 +37,7 @@ function pluralize(count: number, singular: string, plural: string): string {
 }
 
 export function createOperations(opts: OperationsOptions) {
-  const {
-    pi,
-    cwd,
-    state,
-    finish,
-    refreshAfterMutation,
-    restoreSelection,
-    notify,
-  } = opts;
+  const { pi, cwd, state, refreshAfterMutation, notify } = opts;
 
   function getSelectedFile(): FileChange | undefined {
     if (!state.selectedChange) return undefined;

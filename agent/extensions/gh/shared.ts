@@ -20,7 +20,6 @@ export {
 } from "./rendering";
 
 import type { Column } from "../../shared/rendering/types";
-import { countLabel } from "../../shared/rendering/header";
 import { table } from "../../shared/rendering/table/renderer";
 
 export function formatSearchResults<T>(

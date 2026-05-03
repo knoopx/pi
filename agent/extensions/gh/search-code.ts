@@ -3,7 +3,6 @@ import { pushArrayFlag, TypeBoxFields, formatSearchResults } from "./shared";
 import type { GHCodeSearchResult } from "./types";
 import { Type } from "@sinclair/typebox";
 import { countLabel } from "../../shared/rendering/header";
-import { table } from "../../shared/rendering/table/renderer";
 import type { Column } from "../../shared/rendering/types";
 
 interface CodeSearchParams {

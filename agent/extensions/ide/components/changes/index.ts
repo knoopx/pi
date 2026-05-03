@@ -14,12 +14,10 @@ import {
   createStatusNotifier,
   type StatusMessageState,
 } from "../../lib/ui/status";
-import type { Change, FileChange } from "../../lib/types";
-import { getRepoRoot } from "../../jj/files";
+import type { Change } from "../../lib/types";
 
 import { renderDiffWithShiki } from "../../tools/diff";
 import { THEME } from "../../tools/shiki-constants";
-import { notifyMutation } from "../../jj/core";
 
 import { DataService } from "./service";
 import { ChangesState } from "./state";
@@ -187,7 +185,7 @@ class ChangesComponent implements Component, ChangesComponentAPI {
         tui.requestRender();
       },
       navigateMove: (direction) => this.navigateMove(direction),
-      onChangeSelected: (changeId) => {
+      onChangeSelected: (_changeId) => {
         const change =
           this.state.changes[this.state.selectionState.selectedIndex];
         if (!change) return;

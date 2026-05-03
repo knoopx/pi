@@ -1,5 +1,3 @@
-import type { ListPickerItem } from "./types";
-
 export function computeNewIndex(
   current: number,
   maxIndex: number,

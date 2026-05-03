@@ -1,11 +1,5 @@
 import type { Cursor } from "./types";
-import {
-  clampCol,
-  findWordBoundaryBackward,
-  findWordBoundaryForward,
-  moveWordLeftOnLine,
-  moveWordRightOnLine,
-} from "./helpers";
+import { clampCol, moveWordLeftOnLine, moveWordRightOnLine } from "./helpers";
 
 export function moveCursor(
   lines: string[],

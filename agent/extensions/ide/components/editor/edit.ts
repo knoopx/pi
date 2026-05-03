@@ -132,8 +132,8 @@ export function insertText(
   lines: string[],
   cursor: Cursor,
   text: string,
-  hasSelection: boolean,
-  replaceSelFn: (
+  _hasSelection: boolean,
+  _replaceSelFn: (
     lines: string[],
     c: Cursor,
     t: string,
@@ -379,7 +379,6 @@ function cursorFromOffsetForLines(
   start: Cursor,
   offset: number,
 ): Cursor {
-  const content = lines.join("\n");
   let remaining = offset;
   for (let i = 0; i < lines.length; i++) {
     const length = lines[i]?.length ?? 0;

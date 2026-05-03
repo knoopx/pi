@@ -50,14 +50,14 @@ async function createFixture(
   });
 
   await new Promise((r) => setTimeout(r, 50));
-  return { component, tui };
+  return { component, _tui: tui };
 }
 
 async function navigateAndSnapshot(
   lines: string,
   ...inputs: string[]
 ): Promise<void> {
-  const { component, tui } = await createFixture(lines);
+  const { component } = await createFixture(lines);
   for (const input of inputs) {
     component.handleInput?.(input);
   }
@@ -77,11 +77,11 @@ describe("bookmark-prompt", () => {
       const mockPi = createMockPi({
         exec: vi.fn().mockReturnValue(loadPromise),
       });
-      const tui = createMockTui();
+      const _tui = createMockTui();
       const theme = createMockTheme();
       const component = createBookmarkPromptComponent({
         pi: mockPi,
-        tui,
+        tui: _tui,
         theme,
         done: () => {},
         cwd: "/home/user/project",
@@ -277,19 +277,19 @@ describe("bookmark-prompt", () => {
 
   describe("different terminal widths", () => {
     it("renders at narrow width", async () => {
-      const { component, tui } = await createFixture(
+      const { _tui, component } = await createFixture(
         "main\nfeature-a\nfix-bug\n",
       );
-      (tui.terminal as unknown as TestTerminal).columns = 60;
+      (_tui.terminal as unknown as TestTerminal).columns = 60;
       const result = component.render(60);
       expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("renders at wide width", async () => {
-      const { component, tui } = await createFixture(
+      const { _tui, component } = await createFixture(
         "main\nfeature-a\nfix-bug\n",
       );
-      (tui.terminal as unknown as TestTerminal).columns = 160;
+      (_tui.terminal as unknown as TestTerminal).columns = 160;
       const result = component.render(160);
       expect(result.join("\n")).toMatchSnapshot();
     });

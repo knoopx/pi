@@ -1,5 +1,5 @@
 import defaultsConfig from "./defaults";
-import type { GuardrailsGroup, GuardrailsRule } from "./types";
+import type { GuardrailsGroup } from "./types";
 import {
   loadEnabledSetting,
   saveEnabledSetting,

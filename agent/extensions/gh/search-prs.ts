@@ -4,7 +4,7 @@ import {
   SearchParams,
   SearchParamsSchema,
 } from "./search-issues";
-import { countLabel } from "../../shared/rendering/header";
+
 import { createListItemFormatter } from "./search-list-formatter";
 
 async function searchPRs(
