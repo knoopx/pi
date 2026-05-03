@@ -4,7 +4,10 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
 import setupPyPIExtension from "./index";
-import type { MockTool, MockExtensionAPI } from "../../shared/testing/test-utils";
+import type {
+  MockTool,
+  MockExtensionAPI,
+} from "../../shared/testing/test-utils";
 import { createMockExtensionAPI } from "../../shared/testing/test-utils";
 import { disableThrottle } from "../../shared/network/throttle";
 
@@ -29,14 +32,6 @@ describe("PyPI Extension", () => {
         expect(mockPi.registerTool).toHaveBeenCalledWith(
           expect.objectContaining({
             name: "search-pypi-packages",
-          }),
-        );
-      });
-
-      it("then it should register PyPI package info tool", () => {
-        expect(mockPi.registerTool).toHaveBeenCalledWith(
-          expect.objectContaining({
-            name: "pypi-package-info",
           }),
         );
       });
@@ -179,187 +174,6 @@ describe("PyPI Extension", () => {
 
       it("then it should return empty result message", () => {
         expect((result.content[0] as TextContent).text).toMatchSnapshot();
-      });
-    });
-  });
-
-  describe("pypi-package-info", () => {
-    let registeredTool: MockTool;
-
-    beforeEach(() => {
-      const calls = mockPi.registerTool.mock.calls as [MockTool][];
-      const found = calls.find((c) => c[0]?.name === "pypi-package-info");
-      if (!found) throw new Error("not found");
-      registeredTool = found[0];
-    });
-
-    describe("given a valid package on PyPI", () => {
-      let result: AgentToolResult<Record<string, unknown>>;
-
-      beforeEach(async () => {
-        globalThis.fetch = vi.fn().mockImplementation(
-          (..._args) =>
-            ({
-              ok: true,
-              json: () =>
-                Promise.resolve({
-                  info: {
-                    name: "requests",
-                    version: "2.31.0",
-                    summary: "Python HTTP for Humans.",
-                    home_page: "https://requests.readthedocs.io/",
-                    author: "Kenneth Reitz",
-                    license: "Apache 2.0",
-                  },
-                }),
-              preconnect: vi.fn(),
-            }) as unknown,
-        );
-
-        result = await registeredTool.execute(
-          "tool1",
-          { package: "requests" },
-          undefined,
-          undefined,
-          undefined,
-        );
-      });
-
-      it("then it should fetch package info from PyPI", () => {
-        expect(globalThis.fetch).toHaveBeenCalledWith(
-          "https://pypi.org/pypi/requests/json",
-          expect.objectContaining({ signal: undefined }),
-        );
-      });
-
-      it("then it should return formatted package info", () => {
-        expect((result.content[0] as TextContent).text).toMatchSnapshot();
-        expect(result.details.package).toBe("requests");
-      });
-    });
-
-    describe("given a package with many dependencies", () => {
-      it("then it should truncate and show count", async () => {
-        const requiresDist = Array.from({ length: 30 }, (_, i) => `dep${i}`);
-
-        globalThis.fetch = vi.fn().mockImplementation(
-          (..._args) =>
-            ({
-              ok: true,
-              json: () =>
-                Promise.resolve({
-                  info: {
-                    name: "big-package",
-                    version: "1.0.0",
-                    summary: "A package with many deps",
-                    requires_dist: requiresDist,
-                  },
-                }),
-              preconnect: vi.fn(),
-            }) as unknown,
-        );
-        const result = await registeredTool.execute(
-          "tool1",
-          { package: "big-package" },
-          undefined,
-          undefined,
-          undefined,
-        );
-
-        expect((result.content[0] as TextContent).text).toMatchSnapshot();
-      });
-    });
-
-    describe("given a package that does not exist on PyPI", () => {
-      let result: AgentToolResult<Record<string, unknown>>;
-
-      beforeEach(async () => {
-        globalThis.fetch = vi.fn().mockImplementation(
-          (..._args) =>
-            ({
-              ok: false,
-              status: 404,
-              preconnect: vi.fn(),
-            }) as unknown,
-        );
-
-        result = await registeredTool.execute(
-          "tool1",
-          { package: "nonexistent-pkg-xyz-123" },
-          undefined,
-          undefined,
-          undefined,
-        );
-      });
-
-      it("then it should return not found message", () => {
-        expect((result.content[0] as TextContent).text).toBe(
-          'Package "nonexistent-pkg-xyz-123" not found on PyPI.',
-        );
-        expect(result.details.package).toBe("nonexistent-pkg-xyz-123");
-      });
-    });
-
-    describe("given an HTTP request returns server error", () => {
-      it("then it should return error message", async () => {
-        globalThis.fetch = vi.fn().mockImplementation(
-          (..._args) =>
-            ({
-              ok: false,
-              status: 500,
-              statusText: "Internal Server Error",
-              preconnect: vi.fn(),
-            }) as unknown,
-        );
-        const result = await registeredTool.execute(
-          "tool1",
-          { package: "requests" },
-          undefined,
-          undefined,
-          undefined,
-        );
-
-        expect((result.content[0] as TextContent).text).toBe(
-          "Error fetching package info: HTTP 500",
-        );
-      });
-    });
-
-    describe("given fetch throws a network error", () => {
-      it("then it should return error message", async () => {
-        globalThis.fetch = vi
-          .fn()
-          .mockRejectedValue(new Error("Network error"));
-        const result = await registeredTool.execute(
-          "tool1",
-          { package: "requests" },
-          undefined,
-          undefined,
-          undefined,
-        );
-
-        expect((result.content[0] as TextContent).text).toBe(
-          "Failed to show package info: Error: Network error",
-        );
-      });
-    });
-
-    describe("given fetch throws a generic error", () => {
-      it("then it should return error message", async () => {
-        globalThis.fetch = vi
-          .fn()
-          .mockRejectedValue(new Error("Something went wrong"));
-        const result = await registeredTool.execute(
-          "tool1",
-          { package: "requests" },
-          undefined,
-          undefined,
-          undefined,
-        );
-
-        expect((result.content[0] as TextContent).text).toBe(
-          "Failed to show package info: Error: Something went wrong",
-        );
       });
     });
   });
