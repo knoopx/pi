@@ -1,5 +1,5 @@
 import type { Theme } from "@mariozechner/pi-coding-agent";
-import { ensureWidth } from "../ide/lib/text-utils";
+import { pad } from "../ide/lib/text-utils";
 
 interface HistoryEntry {
   content: string;
@@ -25,8 +25,6 @@ function renderHistoryRow(
     entry.preview ?? entry.content,
     width - 2,
   );
-  const content = `${typeIndicator} ${displayContent}`;
-  const padded = ensureWidth(content, width);
 
   if (isSelected) {
     const coloredIndicator = theme.fg(typeColor, typeIndicator);
@@ -35,7 +33,7 @@ function renderHistoryRow(
   }
 
   const coloredIndicator = theme.fg(typeColor, typeIndicator);
-  return `${coloredIndicator} ${displayContent}`;
+  return pad(`${coloredIndicator} ${displayContent}`, width);
 }
 
 export function renderHistoryPage(

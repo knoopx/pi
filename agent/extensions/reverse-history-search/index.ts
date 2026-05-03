@@ -82,12 +82,6 @@ const isPathMatch = (sessionCwd: string, targetCwd: string): boolean => {
     targetCwd.startsWith(`${sessionCwd}/`)
   );
 };
-const truncateSingleLine = (value: string, maxLength: number): string => {
-  const oneLine = value.replace(/\s+/g, " ").trim();
-  const safeMaxLength = Math.max(12, maxLength);
-  if (oneLine.length <= safeMaxLength) return oneLine;
-  return `${oneLine.slice(0, safeMaxLength - 1)}…`;
-};
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 function getSessionCwd(content: string): string | null {
   const lines = content.trim().split("\n");
@@ -232,7 +226,23 @@ const HISTORY_FILTERS: HistoryFilter[] = [
   { name: "Commands", type: "command" },
 ];
 
-class HistorySearchComponent {
+const keyHandlers: Record<string, (self: HistorySearchComponent) => void> = {
+  escape: (self) => self.handleEscape(),
+  enter: (self) => self.handleEnter(),
+  pageUp: (self) => self.handlePageUp(),
+  pageDown: (self) => self.handlePageDown(),
+  home: (self) => self.handleHome(),
+  end: (self) => self.handleEnd(),
+  up: (self) => self.handleUp(),
+  down: (self) => self.handleDown(),
+  "ctrl+/": (self) => self.cycleFilter(1),
+  backspace: (self) => self.handleBackspace(),
+  delete: (self) => self.handleBackspace(),
+};
+
+const allKeys = Object.keys(keyHandlers);
+
+export class HistorySearchComponent {
   private allHistory: HistoryEntry[];
   private filteredHistory: HistoryEntry[];
   private query = "";
@@ -260,58 +270,42 @@ class HistorySearchComponent {
     return 10;
   }
 
-  private keyHandlers = new Map<string, () => void>([
-    ["escape", () => this.handleEscape()],
-    ["enter", () => this.handleEnter()],
-    ["pageUp", () => this.handlePageUp()],
-    ["pageDown", () => this.handlePageDown()],
-    ["home", () => this.handleHome()],
-    ["end", () => this.handleEnd()],
-    ["up", () => this.handleUp()],
-    ["down", () => this.handleDown()],
-    ["ctrl+/", () => this.cycleFilter(1)],
-  ]);
-
   handleInput(data: string): void {
-    const handler = this.keyHandlers.get(data);
-    if (handler) {
-      handler();
-      return;
-    }
-
-    if (matchesKey(data, "backspace") || matchesKey(data, "delete")) {
-      this.handleBackspace();
-      return;
+    for (const key of allKeys) {
+      if (matchesKey(data, key as import("@mariozechner/pi-tui").KeyId)) {
+        keyHandlers[key](this);
+        return;
+      }
     }
 
     if (data.length === 1 && data.charCodeAt(0) >= 32)
       this.handleCharacter(data);
   }
 
-  private handleEscape(): void {
+  handleEscape(): void {
     this.onCancel?.();
   }
 
-  private handleEnter(): void {
+  handleEnter(): void {
     if (this.filteredHistory.length > 0)
       this.onSelect?.(this.filteredHistory[this.selectedIndex]);
   }
 
-  private handleUp(): void {
+  handleUp(): void {
     if (this.selectedIndex > 0) {
       this.selectedIndex--;
       this.invalidate();
     }
   }
 
-  private handleDown(): void {
+  handleDown(): void {
     if (this.selectedIndex < this.filteredHistory.length - 1) {
       this.selectedIndex++;
       this.invalidate();
     }
   }
 
-  private handlePageUp(): void {
+  handlePageUp(): void {
     const offset = this.getPageOffset();
     const newIndex = Math.max(0, this.selectedIndex - offset);
     if (newIndex !== this.selectedIndex) {
@@ -320,7 +314,7 @@ class HistorySearchComponent {
     }
   }
 
-  private handlePageDown(): void {
+  handlePageDown(): void {
     const offset = this.getPageOffset();
     const maxIndex = this.filteredHistory.length - 1;
     const newIndex = Math.min(maxIndex, this.selectedIndex + offset);
@@ -330,14 +324,14 @@ class HistorySearchComponent {
     }
   }
 
-  private handleHome(): void {
+  handleHome(): void {
     if (this.selectedIndex > 0) {
       this.selectedIndex = 0;
       this.invalidate();
     }
   }
 
-  private handleEnd(): void {
+  handleEnd(): void {
     const maxIndex = this.filteredHistory.length - 1;
     if (this.selectedIndex < maxIndex) {
       this.selectedIndex = maxIndex;
@@ -345,7 +339,7 @@ class HistorySearchComponent {
     }
   }
 
-  private cycleFilter(direction: 1 | -1): void {
+  cycleFilter(direction: 1 | -1): void {
     this.filterIndex =
       (this.filterIndex + direction + HISTORY_FILTERS.length) %
       HISTORY_FILTERS.length;
@@ -353,7 +347,7 @@ class HistorySearchComponent {
     this.updateFilter();
   }
 
-  private handleBackspace(): void {
+  handleBackspace(): void {
     if (this.query.length > 0) {
       this.query = this.query.slice(0, -1);
       this.updateFilter();
@@ -404,7 +398,7 @@ class HistorySearchComponent {
     this.cachedLines = undefined;
   }
 }
-function makeHistorySearchRenderer(
+export function makeHistorySearchRenderer(
   theme: Theme,
   history: HistoryEntry[],
   done: (result: HistoryEntry | null) => void,
