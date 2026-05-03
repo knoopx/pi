@@ -330,11 +330,15 @@ function createSessionHandlers(
   };
 }
 export default function (pi: ExtensionAPI): void {
-  const currentTiming = { value: null as TurnTiming | null };
-  const agentState = {
-    agentStartTime: null as number | null,
-    lastTurnEndTimestamp: undefined as number | null | undefined,
-    totalGenerationMs: undefined as number | undefined,
+  const currentTiming: { value: TurnTiming | null } = { value: null };
+  const agentState: {
+    agentStartTime: number | null;
+    lastTurnEndTimestamp?: number | undefined;
+    totalGenerationMs?: number | undefined;
+  } = {
+    agentStartTime: null,
+    lastTurnEndTimestamp: undefined,
+    totalGenerationMs: undefined,
   };
 
   pi.on("turn_start", createTurnStartHandler(currentTiming));

@@ -29,7 +29,9 @@ async function getAllSessionFiles(signal?: AbortSignal): Promise<string[]> {
         if (signal?.aborted) return result;
         if (file.endsWith(".jsonl")) result.push(join(cwdPath, file));
       }
-    } catch {}
+    } catch {
+      // Directory unreadable; skip it
+    }
     return result;
   }
   const files: string[] = [];
@@ -43,7 +45,9 @@ async function getAllSessionFiles(signal?: AbortSignal): Promise<string[]> {
       const sessionFiles = await collectSessionFiles(cwdPath, signal);
       files.push(...sessionFiles);
     }
-  } catch {}
+  } catch {
+    // Sessions directory unreadable; proceed with empty list
+  }
 
   return files;
 }
@@ -64,7 +68,12 @@ function validateEntry(
 }
 function validateMessage(msg: unknown): msg is AssistantMessage {
   if (!msg || typeof msg !== "object") return false;
-  const m = msg as Record<string, unknown>;
+  const m = msg as {
+    role?: string;
+    usage?: unknown;
+    provider?: string;
+    model?: string;
+  };
   return (
     m.role === "assistant" &&
     typeof m.usage === "object" &&
@@ -81,9 +90,7 @@ function extractMessageFromEntry(
   const msg = entry.message;
   if (!validateMessage(msg)) return null;
   const { usage } = msg;
-  const tokens = extractTokenCounts(
-    usage as unknown as Record<string, unknown>,
-  );
+  const tokens = extractTokenCounts(usage);
   const timestamp = resolveTimestamp(entry, msg);
 
   if (isDuplicate(tokens, timestamp, seenHashes)) return null;
@@ -100,7 +107,14 @@ function extractMessageFromEntry(
     timestamp,
   };
 }
-function extractTokenCounts(usage: Record<string, unknown>): {
+interface TokenUsage {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+}
+
+function extractTokenCounts(usage: TokenUsage): {
   input: number;
   output: number;
   cacheRead: number;
@@ -205,7 +219,9 @@ function parseSessionLine(
       seenHashes,
     );
     if (message) return { message };
-  } catch {}
+  } catch {
+    // Malformed JSON line; skip it
+  }
   return {};
 }
 function checkSignalAborted(signal?: AbortSignal): boolean {
