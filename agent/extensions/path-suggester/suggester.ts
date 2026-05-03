@@ -26,7 +26,6 @@ export function scoreAndRank(
     if (existing === undefined || score > existing) {
       fileScores.set(entry.path, score);
     }
-    // Only collect symbols from entries that pass the threshold
     if (entry.symbolText && score >= config.scoreThreshold) {
       const existingSymbols = fileSymbols.get(entry.path);
       if (!existingSymbols) {

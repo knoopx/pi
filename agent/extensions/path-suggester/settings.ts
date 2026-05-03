@@ -1,6 +1,9 @@
-import { readSettingsOrEmpty, loadExtensionConfig } from "../../shared/config/settings";
+import {
+  readSettingsOrEmpty,
+  loadExtensionConfig,
+} from "../../shared/config/settings";
 
-export interface PathSuggesterConfig {
+export interface PathSuggesterConfig extends Record<string, unknown> {
   enabled: boolean;
   serverUrl: string;
   embeddingModel: string;
@@ -22,9 +25,5 @@ const SETTINGS_KEY = "pathSuggester";
 
 export async function loadConfig(): Promise<PathSuggesterConfig> {
   const settings = await readSettingsOrEmpty();
-  return loadExtensionConfig(
-    settings,
-    SETTINGS_KEY,
-    DEFAULTS as unknown as Record<string, unknown>,
-  );
+  return loadExtensionConfig(settings, SETTINGS_KEY, DEFAULTS);
 }

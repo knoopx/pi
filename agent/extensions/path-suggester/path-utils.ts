@@ -15,16 +15,16 @@ interface SymbolToken {
 function parseSymbolTokens(symbols: string): SymbolToken[] {
   const tokens: SymbolToken[] = [];
   for (const token of symbols.split(",")) {
-    const atIdx = token.indexOf("@");
-    if (atIdx > 0) {
-      const colonIdx = token.indexOf(":");
-      if (colonIdx > 0 && colonIdx < atIdx) {
-        tokens.push({
-          type: token.slice(0, colonIdx),
-          name: token.slice(colonIdx + 1, atIdx),
-        });
-      }
-    }
+    let colonIdx = token.indexOf(":");
+    if (colonIdx < 0 || colonIdx === 0) continue;
+
+    let atIdx = token.indexOf("@");
+    const nameEnd = atIdx > 0 ? atIdx : token.length;
+
+    tokens.push({
+      type: token.slice(0, colonIdx),
+      name: token.slice(colonIdx + 1, nameEnd),
+    });
   }
   return tokens;
 }
@@ -79,7 +79,6 @@ export function buildSymbolText(entry: CmEntry): string {
   const tokens = parseSymbolTokens(entry.symbols);
   if (tokens.length === 0) return "";
 
-  // Filter out anonymous functions and deduplicate by type+name
   const seen = new Set<string>();
   const unique: SymbolToken[] = [];
   for (const t of tokens) {
@@ -91,6 +90,6 @@ export function buildSymbolText(entry: CmEntry): string {
   }
 
   if (unique.length === 0) return "";
-  const parts = unique.map((t) => `${typeMap[t.type] ?? t.type} ${t.name}`);
+  const parts = unique.map((t) => `${t.name} (${typeMap[t.type] ?? t.type})`);
   return parts.join(", ").slice(0, 600);
 }

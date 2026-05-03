@@ -36,7 +36,6 @@ export const PathSuggesterFileIndex = {
       path: resolve(e.path),
     }));
 
-    // Check cache
     try {
       const cached = await loadPathSuggesterCache();
       if (
@@ -48,9 +47,7 @@ export const PathSuggesterFileIndex = {
       ) {
         return cached.chunks as RawEntry[];
       }
-    } catch {
-      // cache miss, continue
-    }
+    } catch {}
 
     return embedAndSave(absEntries, config);
   },
@@ -103,9 +100,7 @@ async function embedAndSave(
     try {
       const s = await stat(entry.path);
       mtimes[entry.path] = s.mtimeMs;
-    } catch {
-      // skip inaccessible files
-    }
+    } catch {}
   }
 
   await savePathSuggesterCache({ mtimes, chunks: entries });

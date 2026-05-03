@@ -37,7 +37,6 @@ export default async function (pi: ExtensionAPI) {
     index = await initIndex(config, projectDir);
   });
 
-  // Suggest related file paths for all user input
   pi.on("input", async (event: InputEvent, ctx) => {
     return await handleInput(pi, event, ctx, index, config);
   });

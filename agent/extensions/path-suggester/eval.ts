@@ -1,6 +1,9 @@
 import { relative, resolve } from "node:path";
 import { readFile, stat } from "node:fs/promises";
-import { loadCache, saveCache } from "./cache";
+import {
+  loadPathSuggesterCache as loadCache,
+  savePathSuggesterCache as saveCache,
+} from "./cache";
 import { embedQuery, cosine, embedTexts } from "../../shared/embeddings/engine";
 import { loadConfig, type PathSuggesterConfig } from "./settings";
 import { buildFileList, buildSymbolText } from "./path-utils";
@@ -37,8 +40,9 @@ async function loadIndex(projectDir: string): Promise<RawEntry[]> {
     symbols: e.symbols,
   }));
 
-  const { snippets, symbolEntries } =
-    await collectSnippetsAndSymbols(absEntries);
+  const { snippets, symbolEntries } = await collectSnippetsAndSymbols(
+    [] as typeof absEntries,
+  );
 
   const config = await loadConfig();
   const allTexts = [...snippets, ...symbolEntries.map((e) => e.text)];
@@ -121,9 +125,7 @@ async function collectMtimes(
     try {
       const s = await stat(entry.path);
       mtimes[entry.path] = s.mtimeMs;
-    } catch {
-      // skip inaccessible files
-    }
+    } catch {}
   }
   return mtimes;
 }
