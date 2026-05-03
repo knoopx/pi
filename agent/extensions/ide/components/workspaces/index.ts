@@ -62,8 +62,7 @@ export interface WorkspacesComponentOptions {
 export function createWorkspacesComponent(
   options: WorkspacesComponentOptions,
 ): WorkspacesComponentAPI {
-  const component = new WorkspaceComponent(options);
-  return component as unknown as WorkspacesComponentAPI;
+  return new WorkspaceComponent(options);
 }
 interface WorkspacesComponentAPI {
   render(width: number): string[];
@@ -73,7 +72,7 @@ interface WorkspacesComponentAPI {
   dispose(): void;
 }
 
-class WorkspaceComponent implements Component {
+class WorkspaceComponent implements Component, WorkspacesComponentAPI {
   private pi: ExtensionAPI;
   private tui: { terminal: { rows: number }; requestRender: () => void };
   private theme: Theme;
@@ -125,7 +124,7 @@ class WorkspaceComponent implements Component {
     this.tui.requestRender();
   }
 
-  private async loadWorkspaces(): Promise<void> {
+  async loadWorkspaces(): Promise<void> {
     try {
       this.state.workspaces = await loadWorkspacesList(this.pi);
       this.state.loading = false;

@@ -88,24 +88,27 @@ export function getTextComponent(
     setText: (s: string) => void;
   };
 }
-interface BuildRenderCallOptions {
+interface BuildRenderCallOptions<Args> {
   cwd: string;
   home: string;
   toolName: string;
-  args: Record<string, unknown>;
+  args: Args;
   theme: Theme;
-  ctx: ToolRenderContext<unknown, unknown>;
-  suffix?: (args: Record<string, unknown>, theme: Theme) => string;
+  ctx: ToolRenderContext<unknown, Args>;
+  suffix?: (args: Args, theme: Theme) => string;
 }
-export function buildRenderCall(options: BuildRenderCallOptions): Component {
+export function buildRenderCall<Args>(
+  options: BuildRenderCallOptions<Args>,
+): Component {
   const { cwd, home, toolName, args, theme, suffix } = options;
   const text = new Text("", 0, 0);
   let pathStr = "";
-  const pathArg = args.path as string | undefined;
+  const typedArgs = args as { path?: string; pattern?: string };
+  const pathArg = typedArgs.path;
   if (pathArg) {
     pathStr = shortPath(cwd, home, pathArg);
   } else {
-    const pattern = args.pattern as string | undefined;
+    const pattern = typedArgs.pattern;
     if (pattern) pathStr = theme.fg("accent", pattern);
   }
   const extraSuffix = suffix ? suffix(args, theme) : "";

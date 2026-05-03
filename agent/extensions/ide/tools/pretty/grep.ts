@@ -54,13 +54,11 @@ export function createGrepRenderCall(
       cwd,
       home,
       toolName: "grep",
-      args: args as unknown as Record<string, unknown>,
+      args,
       theme,
       ctx,
-      suffix: (a: Record<string, unknown>, t: Theme) => {
-        const glob = (a as { glob?: string })?.glob
-          ? ` ${t.fg("muted", `(${String(a.glob)})`)}`
-          : "";
+      suffix: (a: GrepParams, t: Theme) => {
+        const glob = a.glob ? ` ${t.fg("muted", `(${String(a.glob)})`)}` : "";
         return glob;
       },
     });

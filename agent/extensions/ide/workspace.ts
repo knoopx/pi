@@ -226,8 +226,8 @@ export async function loadAgentWorkspaces(
       description: ws.description,
       status,
       changeId: ws.changeId,
-      parentChangeId: "", // Would need to track this separately
-      createdAt: Date.now(), // Would need to track this separately
+      parentChangeId: "",
+      createdAt: Date.now(),
       fileStats: {
         added: diffStats.files.filter((f) => f.status === "added").length,
         modified: diffStats.files.filter((f) => f.status === "modified").length,

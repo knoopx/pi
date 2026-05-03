@@ -73,7 +73,7 @@ function registerTool(
     execute: entry.wrapExecute(orig.execute),
     renderCall: entry.createRenderCall(cwd, process.env.HOME ?? ""),
     renderResult: entry.createRenderResult(),
-  } as unknown as Parameters<typeof pi.registerTool>[0]);
+  } as Parameters<typeof pi.registerTool>[0]);
 }
 const TOOL_REGISTRY = [
   {

@@ -95,7 +95,6 @@ async function createPicker(options?: { cmStdout?: string }): Promise<{
   });
 
   await waitForLoaded(picker);
-  // Allow preview pane to load (async readFile + Shiki highlighting via createFilePreviewLoader)
   await new Promise((r) => setTimeout(r, 200));
   return { picker, execMock, tui };
 }

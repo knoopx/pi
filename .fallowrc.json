@@ -2,7 +2,13 @@
   "entry": [
     "agent/extensions/**/index.ts",
     "agent/extensions/**/*.test.ts",
-    "agent/shared/**/*.test.ts"
+    "agent/shared/**/*.test.ts",
+    "agent/shared/config/eslint-config.ts",
+    "screenshots/render-screenshots.ts",
+    "agent/extensions/path-suggester/eval.ts",
+    "agent/extensions/skill-reminder/eval/prompt.ts",
+    "agent/extensions/skill-reminder/eval/shared.ts",
+    "agent/extensions/skill-reminder/eval/tool-call.ts"
   ],
   "rules": {
     "unlisted-dependencies": "off"

@@ -617,11 +617,9 @@ export async function mockReadFileImplementation(
   const byExt = EXTENSION_CONTENTS[ext];
   if (byExt) return byExt;
 
-  const actual = await import("node:fs/promises");
-  return actual.readFile(
-    path,
-    _opts as Parameters<typeof actual.readFile>[1],
-  ) as unknown as string;
+  throw new Error(
+    `Filesystem mock: no fixture for path "${p}". Tests must not hit the real filesystem.`,
+  );
 }
 const REPO = "/home/user/project";
 const DEFAULT_FILES_OUTPUT =

@@ -201,7 +201,6 @@ class ChangesComponent implements Component, ChangesComponentAPI {
       loadChanges: (revision) => this.service.loadChanges(revision),
     });
 
-    // Build keyboard bindings
     const { moveBindings, leftBindings, rightBindings, globalBindings } =
       buildKeyboardBindings(this.state, this.navigation, {
         cycleFilter: (direction) => this.cycleFilter(direction),

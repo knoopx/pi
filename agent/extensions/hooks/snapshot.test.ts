@@ -2,15 +2,11 @@ import { describe, it, expect } from "vitest";
 import type { HooksGroup, HookRule } from "./schema";
 import { renderGroupHeader, renderHookLine } from "./index";
 
-function fg(_color: string, text: string): string {
-  return text;
-}
-
 function formatHooksAudit(groups: HooksGroup[], allActive: boolean): string[] {
   const lines: string[] = [];
 
   for (const group of groups) {
-    lines.push(renderGroupHeader(fg, group, allActive));
+    lines.push(renderGroupHeader((_, text) => text, group, allActive));
 
     for (const hook of group.hooks) {
       lines.push(renderHookLine(hook));

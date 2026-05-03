@@ -13,8 +13,6 @@ interface ChalkStyler {
   strikethrough(t: string): string;
 }
 
-// Real Theme delegates to chalk, which silently passes through on non-TTY.
-// Force truecolor so mock output matches TTY behavior.
 const c = (chalk.constructor as unknown as (...args: unknown[]) => ChalkStyler)(
   {
     level: 3,
@@ -301,6 +299,10 @@ export async function createComponentTest<T extends Record<string, unknown>>(
   });
   await new Promise((r) => setTimeout(r, 50));
   return { component, tui };
+}
+
+export function waitForAsyncHighlight(ms = 500): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 export function snapshotRender(component: {

@@ -1,5 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
 import type { Component } from "@mariozechner/pi-tui";
 import { Input } from "@mariozechner/pi-tui";
 import { buildHelpText } from "../../lib/text-utils";

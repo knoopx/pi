@@ -1,4 +1,18 @@
 import { describe, it, expect, vi } from "vitest";
+
+vi.mock("node:fs/promises", () => ({
+  readFile: vi
+    .fn()
+    .mockResolvedValue(
+      [
+        'import type { Component } from "@mariozechner/pi-tui";',
+        "export interface StubItem {",
+        "  id: string;",
+        "  label: string;",
+        "}",
+      ].join("\n"),
+    ),
+}));
 import type {
   ExtensionContext,
   KeybindingsManager,

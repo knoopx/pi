@@ -39,10 +39,10 @@ export function createLsRenderCall(
       cwd,
       home,
       toolName: "ls",
-      args: args as unknown as Record<string, unknown>,
+      args,
       theme,
       ctx,
-      suffix: (a: Record<string, unknown>, t: Theme) => {
+      suffix: (a: LsParams, t: Theme) => {
         const fp = (a as { path?: string }).path ?? ".";
         return ` ${t.fg("accent", fp)}`;
       },

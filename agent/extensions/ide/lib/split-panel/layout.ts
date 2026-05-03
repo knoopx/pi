@@ -56,7 +56,7 @@ export function calculateDimensions(
       Math.max(3, Math.floor(contentH * rightTopRatio)),
       Math.floor(contentH * 0.4),
     );
-    result.rightBottomH = contentH - result.rightTopH - 3; // 3 for separator lines
+    result.rightBottomH = contentH - result.rightTopH - 3;
   }
 
   return result;

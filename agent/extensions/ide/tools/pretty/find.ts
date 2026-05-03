@@ -40,7 +40,7 @@ export function createFindRenderCall(
       cwd,
       home,
       toolName: "find",
-      args: args as unknown as Record<string, unknown>,
+      args,
       theme,
       ctx,
     });

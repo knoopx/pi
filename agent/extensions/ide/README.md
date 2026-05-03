@@ -4,6 +4,7 @@ A development environment extension for pi that provides code browsing, Codemapp
 
 ## Features
 
+- **Search** - Fuzzy search across all files with source preview
 - **Code browsing** - Browse files and symbols with syntax-highlighted previews
 - **Codemapper integration** - Inspect symbols, callers, callees, tests, types, schema, and impact
 - **Jujutsu integration** - Browse mutable changes, diff files, split/fixup/drop/new changes, and manage bookmarks
@@ -20,6 +21,21 @@ A development environment extension for pi that provides code browsing, Codemapp
 - **Session fork integration** - Auto-creates jj workspace when using `/fork`
 
 ## Commands
+
+### `/search [query]`
+
+Fuzzy-search across all files with syntax-highlighted source preview. Type to filter, enter to select a result.
+
+![Search](../../../screenshots/search.png)
+
+| Key       | Action           |
+| --------- | ---------------- |
+| `↑/↓`     | Navigate         |
+| Enter     | Select result    |
+| Ctrl+E    | Open in VS Code  |
+| Ctrl+I    | Insert path:line |
+| PgUp/PgDn | Scroll preview   |
+| Esc       | Exit             |
 
 ### `/files [query]`
 
