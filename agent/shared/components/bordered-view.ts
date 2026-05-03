@@ -43,11 +43,4 @@ export class BorderedView {
   invalidate(): void {
     this.container.invalidate();
   }
-
-  handleInput(input: string): void {
-    this.component.handleInput?.(input);
-    this.requestRender();
-  }
-
-  dispose(): void {}
 }

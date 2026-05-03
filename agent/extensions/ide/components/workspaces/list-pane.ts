@@ -72,7 +72,4 @@ export class WorkspaceListPane {
     const label = STATUS_TEXT[ws.status];
     return label ? ` (${label})` : "";
   }
-
-  invalidate(): void {}
-  dispose(): void {}
 }

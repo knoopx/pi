@@ -256,13 +256,6 @@ class ToolUsageComponent {
     return false;
   }
 
-  handleInput(data: string): void {
-    if (this.handleTabCycle(data, 1)) return;
-    if (this.handleTabCycle(data, -1)) return;
-    if (this.handleCursorMove(data)) return;
-    this.handleQuit(data);
-  }
-
   private cycleTab(tab: ToolTabName, dir: number): ToolTabName {
     const order = TOOL_TAB_ORDER;
     const idx = order.indexOf(tab);

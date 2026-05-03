@@ -12,7 +12,6 @@ export abstract class Row<P = Record<string, never>> implements Component {
   }
 
   invalidate(): void {}
-  dispose(): void {}
 
   protected abstract renderLine(width: number): string;
 }

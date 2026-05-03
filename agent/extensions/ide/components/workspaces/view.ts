@@ -81,6 +81,4 @@ export class WorkspaceView implements Component {
   }
 
   invalidate(): void {}
-
-  dispose(): void {}
 }

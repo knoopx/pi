@@ -41,7 +41,4 @@ export class FileListPane {
 
     return rows;
   }
-
-  invalidate(): void {}
-  dispose(): void {}
 }

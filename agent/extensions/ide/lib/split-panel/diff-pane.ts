@@ -23,7 +23,4 @@ export class DiffPane {
     );
     return renderDiffLinesToRows(visible, width, this.props.theme);
   }
-
-  invalidate(): void {}
-  dispose(): void {}
 }

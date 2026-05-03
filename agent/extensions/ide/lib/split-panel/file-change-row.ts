@@ -27,7 +27,6 @@ export class FileChangeRow implements Component {
   }
 
   invalidate(): void {}
-  dispose(): void {}
 
   private renderLine(width: number): string {
     const { file, isSelected, theme } = this.props;

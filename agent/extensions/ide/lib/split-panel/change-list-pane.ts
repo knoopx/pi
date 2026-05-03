@@ -71,7 +71,4 @@ export class ChangeListPane {
 
     return rows;
   }
-
-  invalidate(): void {}
-  dispose(): void {}
 }
