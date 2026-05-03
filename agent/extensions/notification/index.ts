@@ -39,7 +39,6 @@ async function loadTtsEnabled(): Promise<boolean> {
 interface NotifyToolParams {
   summary: string;
   body?: string;
-  urgency?: "low" | "normal" | "critical";
   expireTime?: number;
   appName?: string;
   icon?: string;
@@ -128,21 +127,11 @@ function makeNotifyTool(isTtsEnabledRef: { value: boolean }, pi: ExtensionAPI) {
     name: "notify",
     label: "Send Notification",
     description:
-      "Send a desktop notification using notify-send. Mandatory to use on phase changes, long-running operations, and task completion — never skip sending notifications when these events occur. Supports urgency, expiration, app name, icon, and category.",
+      "Send a desktop notification using notify-send. Mandatory to use on phase changes, long-running operations, and task completion — never skip sending notifications when these events occur. Supports expiration, app name, icon, and category.",
     parameters: Type.Object({
       summary: Type.String({ description: "Notification summary/title" }),
       body: Type.Optional(
         Type.String({ description: "Notification body text" }),
-      ),
-      urgency: Type.Optional(
-        Type.Union(
-          [
-            Type.Literal("low"),
-            Type.Literal("normal"),
-            Type.Literal("critical"),
-          ],
-          { description: "Urgency level (default: normal)" },
-        ),
       ),
       expireTime: Type.Optional(
         Type.Number({

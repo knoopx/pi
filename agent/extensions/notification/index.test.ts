@@ -22,14 +22,6 @@ describe("notification/notify-send", () => {
       assertArgs({ summary: SUMMARY }, [SUMMARY]);
     });
 
-    it("given urgency then it should add -u", () => {
-      assertArgs({ summary: SUMMARY, urgency: "critical" }, [
-        "-u",
-        "critical",
-        SUMMARY,
-      ]);
-    });
-
     it("given expireTime then it should add -t", () => {
       assertArgs({ summary: SUMMARY, expireTime: 5000 }, [
         "-t",
@@ -63,15 +55,12 @@ describe("notification/notify-send", () => {
         {
           summary: SUMMARY,
           body: "Test body",
-          urgency: "critical",
           expireTime: 3000,
           appName: "TestApp",
           icon: "warning",
           category: "alert",
         },
         [
-          "-u",
-          "critical",
           "-t",
           "3000",
           "-a",

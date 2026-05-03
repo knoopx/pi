@@ -12,7 +12,6 @@ Supported params:
 
 - `summary` (required)
 - `body`
-- `urgency`
 - `expireTime`
 - `appName`
 - `icon`

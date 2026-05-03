@@ -1,7 +1,6 @@
 interface NotifyToolParams {
   summary: string;
   body?: string;
-  urgency?: "low" | "normal" | "critical";
   expireTime?: number;
   appName?: string;
   icon?: string;
@@ -9,8 +8,6 @@ interface NotifyToolParams {
 }
 export function buildNotifySendArgs(params: NotifyToolParams): string[] {
   const args: string[] = [];
-
-  if (params.urgency) args.push("-u", params.urgency);
 
   if (params.expireTime !== undefined)
     args.push("-t", String(params.expireTime));
