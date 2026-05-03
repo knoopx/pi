@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { loadCache, saveCache } from "./cache";
+import { loadPathSuggesterCache, savePathSuggesterCache } from "./cache";
 import { isCacheStale } from "../../shared/cache/cache-helpers";
 import { embedTexts } from "./embeddings";
 import type { PathSuggesterConfig } from "./settings";
@@ -38,7 +38,7 @@ export const PathSuggesterFileIndex = {
 
     // Check cache
     try {
-      const cached = await loadCache();
+      const cached = await loadPathSuggesterCache();
       if (
         cached &&
         !(await isCacheStale(
@@ -108,6 +108,6 @@ async function embedAndSave(
     }
   }
 
-  await saveCache({ mtimes, chunks: entries });
+  await savePathSuggesterCache({ mtimes, chunks: entries });
   return entries;
 }

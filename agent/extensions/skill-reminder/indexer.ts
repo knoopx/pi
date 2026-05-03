@@ -9,7 +9,10 @@ import {
   stripFrontmatter,
 } from "./chunker";
 import * as SharedFileIndex from "../../shared/indexing/file-indexer";
-import { loadCache, saveCache } from "./cache";
+import {
+  loadSkillReminderCache as loadCache,
+  saveSkillReminderCache as saveCache,
+} from "./cache";
 import { isCacheStale } from "../../shared/cache/cache-helpers";
 import { embedTexts } from "../../shared/embeddings/engine";
 import type { Config } from "./config";

@@ -11,10 +11,12 @@ const CACHE_FILE = join(
   "index.json",
 );
 
-export async function loadCache(): Promise<FileIndexEntry | null> {
+export async function loadSkillReminderCache(): Promise<FileIndexEntry | null> {
   return _loadCache(CACHE_FILE);
 }
 
-export async function saveCache(entry: FileIndexEntry): Promise<void> {
+export async function saveSkillReminderCache(
+  entry: FileIndexEntry,
+): Promise<void> {
   return _saveCache(entry, CACHE_FILE);
 }

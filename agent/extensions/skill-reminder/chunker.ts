@@ -1,7 +1,6 @@
 import { relative } from "node:path";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
-export type { Chunk } from "../../shared/embeddings/chunker";
 export {
   parseMarkdown,
   chunkByElements,
