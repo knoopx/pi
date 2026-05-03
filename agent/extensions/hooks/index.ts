@@ -8,7 +8,7 @@ import type {
   ToolResultEvent,
   TurnEndEvent,
 } from "@mariozechner/pi-coding-agent";
-import { createThemeFg, notifyAuditResult } from "../../shared/guardrails/audit";
+import { createThemeFg, notifyAuditResult } from "../guardrails/audit";
 
 import { configLoader, loadHooksSettings, saveHooksSettings } from "./config";
 import type { HookEvent, HooksConfig } from "./schema";

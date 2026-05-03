@@ -4,7 +4,7 @@ import type {
   ExtensionContext,
   ThemeColor,
 } from "@mariozechner/pi-coding-agent";
-import { createThemeFg, notifyAuditResult } from "../../shared/guardrails/audit";
+import { createThemeFg, notifyAuditResult } from "./audit";
 import {
   configLoader,
   loadGuardrailsSettings,
