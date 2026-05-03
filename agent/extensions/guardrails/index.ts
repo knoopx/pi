@@ -10,7 +10,7 @@ import {
   loadGuardrailsSettings,
   saveGuardrailsSettings,
 } from "./config";
-import type { GuardrailsGroup, GuardrailsRule, ResolvedConfig } from "./config";
+import type { GuardrailsGroup, GuardrailsRule } from "./types";
 import {
   matchCommandPattern,
   matchContentPattern,
@@ -19,7 +19,7 @@ import {
 import { glob } from "tinyglobby";
 function createGuardrailsHandler(
   ref: { value: boolean },
-  _config: ResolvedConfig,
+  _config: GuardrailsGroup[],
 ) {
   return async function handler(
     args: string,
@@ -257,7 +257,7 @@ async function processGroupRules(
 async function findMatchingRules(
   toolName: string,
   input: unknown,
-  config: ResolvedConfig,
+  config: GuardrailsGroup[],
   cwd: string,
 ): Promise<MatchedRule[]> {
   const matched: MatchedRule[] = [];
@@ -315,7 +315,7 @@ interface GuardrailsAuditResult {
 }
 
 async function auditGuardrailsConfig(
-  config: ResolvedConfig,
+  config: GuardrailsGroup[],
   cwd: string,
   fg: (color: ThemeColor, text: string) => string,
 ): Promise<GuardrailsAuditResult> {
@@ -394,7 +394,7 @@ function validateGuardrailsRule(
 }
 function setupPermissionGateHook(
   pi: ExtensionAPI,
-  config: ResolvedConfig,
+  config: GuardrailsGroup[],
   isEnabled: () => boolean,
 ) {
   pi.on("tool_call", async (event, ctx) => {

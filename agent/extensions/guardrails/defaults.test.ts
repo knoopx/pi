@@ -1,13 +1,14 @@
 import { describe, it, expect } from "vitest";
 import defaults from "./defaults";
-import type { GuardrailsConfig } from "./config";
+import type { GuardrailsGroup } from "./types";
 import {
   matchCommandPattern,
   matchContentPattern,
   matchFileNamePattern,
 } from "../../shared/matching/pattern-matching";
-const typedDefaults: GuardrailsConfig = defaults;
-function getGroup(name: string): GuardrailsConfig[number] {
+const typedDefaults: GuardrailsGroup[] = defaults;
+type Rule = (typeof typedDefaults)[number]["rules"][number];
+function getGroup(name: string): GuardrailsGroup {
   const group = typedDefaults.find((g) => g.group === name);
   if (!group) throw new Error(`Group not found: ${name}`);
   return group;
@@ -15,8 +16,8 @@ function getGroup(name: string): GuardrailsConfig[number] {
 function groupMatches(groupName: string, command: string): boolean {
   const group = getGroup(groupName);
   return group.rules
-    .filter((r) => r.context === "command")
-    .some((r) => {
+    .filter((r: Rule) => r.context === "command")
+    .some((r: Rule) => {
       if (!matchCommandPattern(command, r.pattern)) return false;
       if (r.includes && !matchCommandPattern(command, r.includes)) return false;
       if (r.excludes && matchCommandPattern(command, r.excludes)) return false;
@@ -26,8 +27,8 @@ function groupMatches(groupName: string, command: string): boolean {
 function fileNameGroupMatches(groupName: string, filePath: string): boolean {
   const group = getGroup(groupName);
   return group.rules
-    .filter((r) => r.context === "file_name")
-    .some((r) => {
+    .filter((r: Rule) => r.context === "file_name")
+    .some((r: Rule) => {
       if (!matchFileNamePattern(filePath, r.pattern)) return false;
       if (r.excludes && matchFileNamePattern(filePath, r.excludes))
         return false;
@@ -37,8 +38,8 @@ function fileNameGroupMatches(groupName: string, filePath: string): boolean {
 function fileContentGroupMatches(groupName: string, content: string): boolean {
   const group = getGroup(groupName);
   return group.rules
-    .filter((r) => r.context === "file_content")
-    .some((r) => matchContentPattern(content, r.pattern));
+    .filter((r: Rule) => r.context === "file_content")
+    .some((r: Rule) => matchContentPattern(content, r.pattern));
 }
 
 describe("defaults.json", () => {

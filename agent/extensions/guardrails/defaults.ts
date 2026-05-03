@@ -1,5 +1,6 @@
-import type { GuardrailsConfig } from "./config";
-const defaults: GuardrailsConfig = [
+import type { GuardrailsGroup } from "./types";
+
+const defaults: GuardrailsGroup[] = [
   {
     group: "no-npm",
     pattern: "*",

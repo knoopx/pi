@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { GuardrailsRule, GuardrailsGroup } from "./config";
-
-function fg(color: string, text: string): string {
-  // Plain-text rendering for snapshots (no ANSI codes)
-  return text;
-}
+import type { GuardrailsRule, GuardrailsGroup } from "./types";
 
 function formatGuardrailsAudit(
   groups: GuardrailsGroup[],
@@ -14,14 +9,10 @@ function formatGuardrailsAudit(
 
   for (const group of groups) {
     const statusIcon = allActive ? "✓" : "✗";
-    const statusColor = allActive ? "success" : "error";
-    lines.push(
-      `${fg(statusColor, statusIcon)} ${group.group} (${group.pattern})`,
-    );
+    lines.push(`${statusIcon} ${group.group} (${group.pattern})`);
 
     for (const rule of group.rules) {
-      const actionTag =
-        rule.action === "block" ? fg("error", "󰳛") : fg("warning", "󰀪");
+      const actionTag = rule.action === "block" ? "󰳛" : "󰀪";
       lines.push(`  ${actionTag} [${rule.context}] ${rule.pattern}`);
     }
   }

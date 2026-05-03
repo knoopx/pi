@@ -1,29 +1,9 @@
 import defaultsConfig from "./defaults";
-import { loadEnabledSetting, saveEnabledSetting } from "../../shared/config/settings";
-export interface GuardrailsRule {
-  context: "command" | "file_name" | "file_content";
-
-  pattern: string;
-
-  file_pattern?: string;
-  includes?: string;
-
-  excludes?: string;
-
-  scope?: "project" | "external";
-  action: "block" | "confirm";
-  reason: string;
-}
-export interface GuardrailsGroup {
-  group: string;
-
-  pattern: string;
-
-  excludePattern?: string;
-  rules: GuardrailsRule[];
-}
-export type GuardrailsConfig = GuardrailsGroup[];
-export type ResolvedConfig = GuardrailsGroup[];
+import type { GuardrailsGroup, GuardrailsRule } from "./types";
+import {
+  loadEnabledSetting,
+  saveEnabledSetting,
+} from "../../shared/config/settings";
 const GUARDRAILS_SETTINGS_KEY = "guardrails";
 interface GuardrailsSettings {
   enabled: boolean;
@@ -88,13 +68,13 @@ function isValidAction(action: unknown): boolean {
 }
 
 class GuardrailsConfigLoader {
-  private resolved: ResolvedConfig | null = null;
+  private resolved: GuardrailsGroup[] | null = null;
 
   load(): void {
     this.resolved = defaultsConfig.filter(isValidGroup);
   }
 
-  getConfig(): ResolvedConfig {
+  getConfig(): GuardrailsGroup[] {
     if (!this.resolved)
       throw new Error("Config not loaded. Call load() first.");
     return this.resolved;
