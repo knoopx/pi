@@ -86,6 +86,40 @@ async function setupHandler(
   return handler;
 }
 
+function cmdBlockRule(group: string, pattern: string, reason: string): unknown {
+  return {
+    group,
+    pattern: "*",
+    rules: [
+      {
+        context: "command",
+        pattern,
+        action: "block" as const,
+        reason,
+      },
+    ],
+  };
+}
+
+function cmdConfirmRule(
+  group: string,
+  pattern: string,
+  reason: string,
+): unknown {
+  return {
+    group,
+    pattern: "*",
+    rules: [
+      {
+        context: "command",
+        pattern,
+        action: "confirm" as const,
+        reason,
+      },
+    ],
+  };
+}
+
 describe("isGroupActive", () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -197,18 +231,7 @@ describe("guardrails extension", () => {
   describe("given command context AST-like pattern", () => {
     it("then blocks matching command", async () => {
       const handler = await setupHandler([
-        {
-          group: "bun",
-          pattern: "*",
-          rules: [
-            {
-              context: "command",
-              pattern: "npm *",
-              action: "block",
-              reason: "use bun",
-            },
-          ],
-        },
+        cmdBlockRule("bun", "npm *", "use bun"),
       ]);
       const result = await handler(
         { toolName: "bash", input: { command: "npm install" } },
@@ -220,18 +243,7 @@ describe("guardrails extension", () => {
 
     it("then allows non-matching command", async () => {
       const handler = await setupHandler([
-        {
-          group: "bun",
-          pattern: "*",
-          rules: [
-            {
-              context: "command",
-              pattern: "npm *",
-              action: "block",
-              reason: "use bun",
-            },
-          ],
-        },
+        cmdBlockRule("bun", "npm *", "use bun"),
       ]);
       const result = await handler(
         { toolName: "bash", input: { command: "bun install" } },
@@ -243,18 +255,7 @@ describe("guardrails extension", () => {
 
     it("then matches command after env and &&", async () => {
       const handler = await setupHandler([
-        {
-          group: "bun",
-          pattern: "*",
-          rules: [
-            {
-              context: "command",
-              pattern: "npm *",
-              action: "block",
-              reason: "use bun",
-            },
-          ],
-        },
+        cmdBlockRule("bun", "npm *", "use bun"),
       ]);
       const result = await handler(
         {
@@ -334,18 +335,7 @@ describe("guardrails extension", () => {
   describe("given confirm action", () => {
     it("then prompts and allows when user confirms", async () => {
       const handler = await setupHandler([
-        {
-          group: "danger",
-          pattern: "*",
-          rules: [
-            {
-              context: "command",
-              pattern: "rm -rf *",
-              action: "confirm",
-              reason: "dangerous",
-            },
-          ],
-        },
+        cmdConfirmRule("danger", "rm -rf *", "dangerous"),
       ]);
       const c = makeCtx();
       const result = await handler(
@@ -359,18 +349,7 @@ describe("guardrails extension", () => {
 
     it("then blocks when user denies", async () => {
       const handler = await setupHandler([
-        {
-          group: "danger",
-          pattern: "*",
-          rules: [
-            {
-              context: "command",
-              pattern: "rm -rf *",
-              action: "confirm",
-              reason: "dangerous",
-            },
-          ],
-        },
+        cmdConfirmRule("danger", "rm -rf *", "dangerous"),
       ]);
       const c = makeCtx();
       (c.ui as { confirm: Mock }).confirm.mockResolvedValue(false);
