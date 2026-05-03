@@ -5,115 +5,67 @@ description: Runs packages temporarily, creates isolated shell environments, and
 
 # Nix
 
-Package manager and functional language for reproducible environments.
+Package manager and functional language for reproducible environments. Run any tool once without installing it permanently.
 
-## Quick Start
+## Running Packages
+
+Execute a package from `nixpkgs` directly:
 
 ```bash
-# Run a package once
-nix run nixpkgs#hello
+nix run nixpkgs#cowsay -- "Hello!"    # Run with arguments
+nix run nixpkgs#hello                  # Simple command
+```
 
-# Create a shell with multiple packages
+For long-running services, wrap in tmux: `tmux new -d 'nix run nixpkgs#some-server'`.
+
+## Shell Environments
+
+Create a temporary shell with specific tools:
+
+```bash
 nix shell nixpkgs#git nixpkgs#vim --command git --version
-```
-
-## Running Applications
-
-Run any application from `nixpkgs` without installing it permanently.
-
-```bash
-# Run a package with specific arguments
-nix run nixpkgs#cowsay -- "Hello from Nix!"
-
-# Run long-running applications: `tmux new -d 'nix run nixpkgs#some-server'`
-```
-
-## Formatting
-
-Format Nix files in your project:
-
-```bash
-# Format current flake
-nix fmt
-
-# Check formatting
-nix fmt -- --check
-```
-
-## Hash Conversion
-
-Convert hashes between formats (replaces deprecated `nix hash to-sri`/`to-base16`).
-
-```bash
-# Convert a nix32 hash to SRI (sha256)
-nix hash convert --hash-algo sha256 --from nix32 --to sri 1b8m03r63zqhnjf7l5wnldhh7c134ap5vpj0850ymkq1iyzicy5s
-
-# Convert to nix32 explicitly
-nix hash convert --hash-algo sha256 --to nix32 sha256-ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=
-```
-
-## Prefetching Hashes
-
-Use prefetch helpers to fetch sources and get the nix32 hash, then convert to SRI if needed.
-
-```bash
-# Fetch a tarball and print its nix32 hash
-nix-prefetch-url --unpack https://example.com/source.tar.gz
-
-# Convert the nix32 hash to SRI for fetchFromGitHub/fetchurl
-nix hash convert --hash-algo sha256 --from nix32 --to sri <nix32-hash>
 ```
 
 ## Evaluating Expressions
 
-Since the environment is headless and non-interactive, use `nix eval` instead of the REPL for debugging.
+Debug and inspect Nix expressions in headless environments:
 
 ```bash
-# Evaluate a simple expression
-nix eval --expr '1 + 2'
-
-# Inspect an attribute from nixpkgs
-nix eval nixpkgs#hello.name
-
-# Evaluate a local nix file
-nix eval --file ./default.nix
-
-# List keys in a set (useful for exploration)
-nix eval --expr 'builtins.attrNames (import <nixpkgs> {})'
+nix eval --expr '1 + 2'              # Simple expression
+nix eval nixpkgs#hello.name          # Inspect an attribute
+nix eval --file ./default.nix        # Evaluate a local file
+nix eval --expr 'builtins.attrNames (import <nixpkgs> {})'  # List keys
 ```
 
-## Searching for Packages
+## Searching Packages
 
 ```bash
-# Search for a package by name or description
-nix search nixpkgs python3
+nix search nixpkgs python3           # Search by name or description
 ```
 
-## Nix Language Patterns
+## Formatting Nix Files
 
-### Variables and Functions
-
-```nix
-# Let binding
-let
-  name = "Nix";
-in
-  "Hello ${name}"
-
-# Function definition
-let
-  multiply = x: y: x * y;
-in
-  multiply 2 3
+```bash
+nix fmt                              # Format current directory
+nix fmt -- --check                   # Check formatting without changes
 ```
 
-### Attribute Sets
+## Hash Utilities
 
-```nix
-{
-  a = 1;
-  b = "foo";
-}
+Convert between hash formats:
+
+```bash
+# Convert SRI to nix32 format
+nix hash convert --hash-algo sha256 --to nix32 sha256-ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=
+
+# Convert nix32 to SRI
+nix hash convert --hash-algo sha256 --from nix32 --to sri 1b8m03r63zqhnjf7l5wnldhh7c134ap5vpj0850ymkq1iyzicy5s
+```
+
+Prefetch a URL and get its hash:
+
+```bash
+nix-prefetch-url --unpack https://example.com/source.tar.gz
 ```
 
 ## Shebang Scripts
@@ -123,33 +75,17 @@ Use Nix as a script interpreter:
 ```bash
 #!/usr/bin/env nix
 #! nix shell nixpkgs#bash nixpkgs#curl --command bash
-
 curl -s https://example.com
-```
-
-Or with flakes:
-
-```bash
-#!/usr/bin/env nix
-#! nix shell nixpkgs#python3 --command python3
-
-print("Hello from Nix!")
 ```
 
 ## Troubleshooting
 
-- **Broken Builds**: Use `nix log` to see the build output of a derivation.
-- **Dependency Issues**: Use `nix-store -q --references $(which program)` to see what a program depends on.
-- **Cache Issues**: Add `--no-substitute` to force a local build if you suspect a bad binary cache.
-- **Why Depends**: Use `nix why-depends nixpkgs#hello nixpkgs#glibc` to see dependency chain.
+- **Broken builds**: `nix log <derivation>` to see build output
+- **Dependency chains**: `nix why-depends nixpkgs#hello nixpkgs#glibc`
+- **Bad cache**: Add `--no-substitute` to force local build
+- **References**: `nix-store -q --references $(which program)`
 
 ## Related Skills
 
-- **nix-flakes**: Use Nix Flakes for reproducible builds and dependency management in Nix projects.
-- **nh**: Manage NixOS and Home Manager operations with improved output using nh.
-
-## Related Tools
-
-- **search-nix-packages**: Search for packages available in the NixOS package repository.
-- **search-nix-options**: Find configuration options available in NixOS.
-- **search-home-manager-options**: Find configuration options for Home Manager.
+- **nix-flakes**: Reproducible builds with flake.nix
+- **nh**: Cleaner interface for NixOS/Home Manager operations

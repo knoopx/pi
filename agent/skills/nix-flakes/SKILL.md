@@ -5,82 +5,57 @@ description: Creates reproducible builds, manages flake inputs, defines devShell
 
 # Nix Flakes
 
-Modern Nix project management with hermeticity and reproducibility through flake.lock.
+Modern Nix project management with hermeticity through `flake.lock`. Every dependency is locked to a specific revision for reproducibility.
 
-## Core Commands
+## Project Setup
 
-### Project Management
+Initialize a new flake:
 
 ```bash
-# Initialize a new flake in the current directory
-nix flake init
-
-# Create a new flake from template
-nix flake new hello -t templates#hello
-
-# Update flake.lock (updates all inputs)
-nix flake update
-
-# Update specific input only
-nix flake update nixpkgs
-
-# Lock without updating (create missing entries)
-nix flake lock
-
-# Check flake for syntax and common errors
-nix flake check
-
-# Show flake outputs
-nix flake show
-
-# Show flake metadata (inputs, revisions)
-nix flake metadata path:.
-nix flake info path:.  # Alias for metadata
-
-# Prefetch flake and inputs into store
-nix flake prefetch github:NixOS/nixpkgs
-nix flake prefetch-inputs path:.
-
-# Clone flake repository
-nix flake clone nixpkgs --dest ./nixpkgs
+nix flake init                    # Basic flake in current directory
+nix flake new hello -t templates#hello  # From template
 ```
 
-### Running and Building
-
-Always prefix local flake paths with `path:` (e.g., `path:.`) to ensure Nix uses all files in the directory without requiring them to be staged in Git.
+Manage dependencies:
 
 ```bash
-# Build the default package
-nix build path:.
-
-# Build a specific output
-nix build path:.#packageName
-
-# Run the default app
-nix run path:.
-
-# Run a specific app from a flake
-nix run path:.#appName
-
-# Run an app from a remote flake
-nix run github:numtide/treefmt
+nix flake update                  # Update all inputs in flake.lock
+nix flake update nixpkgs          # Update specific input only
+nix flake lock                    # Lock missing entries without updating
 ```
 
-### Development Environments
+## Building & Running
 
-In a headless environment, use `nix develop` with `--command` to run tasks within the environment.
+Always prefix local paths with `path:` to include untracked files:
 
 ```bash
-# Run a command inside the devShell
+nix build path:.                  # Build default package
+nix build path:.#packageName      # Build a specific output
+nix run path:.                    # Run the default app
+nix run path:.#appName            # Run a specific app
+nix run github:numtide/treefmt    # Run from a remote flake
+```
+
+## Development Environments
+
+Run commands inside a devShell:
+
+```bash
 nix develop path:. --command make build
-
-# Check if current environment matches devShell
-nix develop path:. --command env
+nix develop path:. --command env  # Check the environment
 ```
 
-## Flake Structure (`flake.nix`)
+The `--command` flag is required in headless environments to avoid interactive mode.
 
-A basic `flake.nix` pattern:
+## Inspecting Flakes
+
+```bash
+nix flake show path:.             # List all outputs
+nix flake metadata path:.         # See inputs and revisions
+nix eval path:.#packages.x86_64-linux.default.name  # Evaluate a specific output
+```
+
+## Basic Flake Structure
 
 ```nix
 {
@@ -96,7 +71,6 @@ A basic `flake.nix` pattern:
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       packages.${system}.default = pkgs.hello;
-
       devShells.${system}.default = pkgs.mkShell {
         buildInputs = [ pkgs.git pkgs.vim ];
       };
@@ -106,27 +80,11 @@ A basic `flake.nix` pattern:
 
 ## Best Practices
 
-- **Locking**: Manage the `flake.lock` file to ensure reproducibility.
-- **Purity**: Flakes are "pure" by default. They cannot access files outside the flake directory unless they are tracked (e.g. in the git tree if using git).
-- **Non-Interactive**: When using `nix develop`, always use the `--command` flag to ensure scripts remain non-interactive.
-
-## Debugging Flakes
-
-```bash
-# Inspect inputs
-nix flake metadata path:.
-
-# Evaluate a specific output
-nix eval path:.#packages.x86_64-linux.default.name
-```
+- Always commit `flake.lock` for reproducibility
+- Use `path:` prefix when building local flakes to include untracked files
+- Always use `--command` with `nix develop` in scripts and headless environments
 
 ## Related Skills
 
-- **nix**: Run applications without installation and create development environments using Nix.
-- **nh**: Manage NixOS and Home Manager operations with improved output using nh.
-
-## Related Tools
-
-- **search-nix-packages**: Search for packages available in the NixOS package repository when working with flakes.
-- **search-nix-options**: Find configuration options available in NixOS for flake configurations.
-- **search-home-manager-options**: Find configuration options for Home Manager in flake setups.
+- **nix**: Run packages temporarily and evaluate expressions
+- **nh**: Cleaner interface for NixOS/Home Manager operations

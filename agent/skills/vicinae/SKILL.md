@@ -5,51 +5,19 @@ description: Builds Vicinae launcher extensions with TypeScript and React, defin
 
 # Vicinae Extensions
 
-Extensions for Vicinae launcher using TypeScript and React.
+Extensions for the Vicinae launcher using TypeScript and React. Two command types: **view** commands display React UI, **no-view** commands execute actions without UI.
 
-## Contents
+## Creating an Extension
 
-- [Core Concepts](#core-concepts)
-- [Quick Start](#quick-start)
-- [Project Structure](#project-structure)
-- [Command Types](#command-types)
-- [Development Workflow](#development-workflow)
-- Advanced: [UX Patterns](./references/ux-patterns.md)
-- Advanced: [API Reference](./references/api-reference.md)
-- Advanced: [Keyboard Shortcuts](./references/shortcuts.md)
+Recommended: use Vicinae's built-in "Create Extension" command.
 
-## Core Concepts
-
-| Concept             | Description                                    |
-| ------------------- | ---------------------------------------------- |
-| **Extension**       | Package adding commands to the launcher        |
-| **View Command**    | Displays React UI (`mode: "view"`)             |
-| **No-View Command** | Executes action without UI (`mode: "no-view"`) |
-| **Manifest**        | `package.json` with extension metadata         |
-
-## Quick Start
-
-**Recommended**: Use Vicinae's built-in "Create Extension" command.
-
-**Manual**:
+Manual setup:
 
 ```bash
 mkdir my-extension && cd my-extension
 npm init -y
 npm install @vicinae/api typescript @types/react @types/node
 mkdir src && touch src/command.tsx
-```
-
-## Project Structure
-
-```
-my-extension/
-├── package.json          # Manifest with commands
-├── tsconfig.json
-├── src/
-│   ├── command.tsx       # View commands
-│   └── action.ts         # No-view commands
-└── assets/               # Icons
 ```
 
 ## Manifest (package.json)
@@ -67,15 +35,11 @@ my-extension/
       "mode": "view"
     }
   ],
-  "dependencies": {
-    "@vicinae/api": "^0.8.2"
-  }
+  "dependencies": { "@vicinae/api": "^0.8.2" }
 }
 ```
 
-## Command Types
-
-### View Command (src/command.tsx)
+## View Commands (src/command.tsx)
 
 ```tsx
 import { List, ActionPanel, Action, Icon } from "@vicinae/api";
@@ -101,9 +65,9 @@ export default function MyCommand() {
 }
 ```
 
-**Important**: All actions must have an `icon` prop.
+All actions must have an `icon` prop.
 
-### No-View Command (src/action.ts)
+## No-View Commands (src/action.ts)
 
 ```typescript
 import { showToast } from "@vicinae/api";
@@ -116,94 +80,25 @@ export default async function QuickAction() {
 ## Development Workflow
 
 ```bash
-npm run build         # Production build
-npx tsc --noEmit      # Type check
+npm run build              # Production build
+npx tsc --noEmit           # Type check
 
-# Run Vicinae dev server in tmux
-# Creates the session only if it does not exist
+# Run dev server in tmux (creates session only if it doesn't exist)
 tmux has -t vicinae-dev || tmux new-session -d -s vicinae-dev 'bunx vici develop'
-
-# Read logs
-tmux capture-pane -t vicinae-dev -p -S -
+tmux capture-pane -t vicinae-dev -p -S -   # Read logs
 ```
 
-## Common APIs
+## Navigation & Preferences
 
-```typescript
-import {
-  // UI Components
-  List,
-  Detail,
-  Form,
-  Grid,
-  ActionPanel,
-  Action,
-  Icon,
-  Color,
-  // Utilities
-  showToast,
-  Toast,
-  Clipboard,
-  open,
-  closeMainWindow,
-  getPreferenceValues,
-  useNavigation,
-} from "@vicinae/api";
-```
-
-## Keyboard Shortcuts
-
-Common shortcuts: `Ctrl+R` (refresh), `Ctrl+N` (new), `Ctrl+E` (edit), `Shift+Delete` (delete).
-
-See [Keyboard Shortcuts](./references/shortcuts.md) for full reference and implementation examples.
-
-## Navigation
+Navigate between views with `useNavigation`:
 
 ```tsx
-function ListView() {
-  const { push, pop } = useNavigation();
-
-  return (
-    <List.Item
-      title="Go to Detail"
-      icon={Icon.Document}
-      actions={
-        <ActionPanel>
-          <Action
-            icon={Icon.Eye}
-            title="View"
-            onAction={() => push(<DetailView />)}
-          />
-        </ActionPanel>
-      }
-    />
-  );
-}
+const { push, pop } = useNavigation();
+<Action icon={Icon.Eye} title="View" onAction={() => push(<DetailView />)} />;
 ```
 
-## Preferences
+Define preferences in the manifest and access with `getPreferenceValues()`.
 
-Define in manifest:
+## References
 
-```json
-{
-  "preferences": [
-    {
-      "name": "apiKey",
-      "title": "API Key",
-      "type": "password",
-      "required": true
-    }
-  ]
-}
-```
-
-Access in code:
-
-```typescript
-const { apiKey } = getPreferenceValues();
-```
-
-## Related Skills
-
-- **typescript**: Type safety for extensions
+See references/ for advanced UX patterns, full API reference, and keyboard shortcuts.

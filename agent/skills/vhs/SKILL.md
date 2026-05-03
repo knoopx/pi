@@ -5,15 +5,11 @@ description: Creates terminal screenshots and GIFs using VHS tape files. Use whe
 
 # VHS
 
-Terminal recorder from Charm that creates GIFs/PNGs from scripted interactions.
+Terminal recorder from Charm that creates GIFs, PNGs, MP4s, and WebMs from scripted "tape" files. Run via `nix run nixpkgs#vhs -- <file>.tape`.
 
-## Run
+## Tape File Structure
 
-```bash
-nix run nixpkgs#vhs -- <file>.tape
-```
-
-## Tape File Syntax
+A tape file is a sequence of commands that describe terminal interactions:
 
 ```tape
 Output output.gif           # or .png, .mp4, .webm
@@ -24,38 +20,30 @@ Set Width 1200
 Set Height 600
 Set Theme "Catppuccin Mocha"
 
-Hide                        # Hide commands from output
+Hide                        # Hide typed commands from output
 Type "echo hello"
 Enter
 Sleep 1s
 Show                        # Show commands again
-
-Screenshot output.png       # Capture current frame
 ```
 
 ## Commands
 
-| Command                           | Description       |
-| --------------------------------- | ----------------- |
-| `Type "text"`                     | Type text         |
-| `Enter`, `Tab`, `Escape`, `Space` | Press key         |
-| `Ctrl+x`, `Alt+x`                 | Key combo         |
-| `Up`, `Down`, `Left`, `Right`     | Arrow keys        |
-| `Sleep 1s`                        | Wait (ms, s)      |
-| `Screenshot file.png`             | Capture frame     |
-| `Hide` / `Show`                   | Toggle visibility |
+- `Type "text"` — type text into the terminal
+- `Enter`, `Tab`, `Escape`, `Space` — press keys
+- `Ctrl+x`, `Alt+x` — key combinations
+- `Up`, `Down`, `Left`, `Right` — arrow keys
+- `Sleep 1s` — wait (supports `ms` and `s` units)
+- `Screenshot file.png` — capture the current frame
 
 ## Settings
 
-| Setting                        | Example            |
-| ------------------------------ | ------------------ |
-| `Set Shell "bash"`             | Shell to use       |
-| `Set FontSize 14`              | Font size          |
-| `Set Width 1200`               | Terminal width     |
-| `Set Height 600`               | Terminal height    |
-| `Set Theme "Catppuccin Mocha"` | Color theme        |
-| `Set Padding 20`               | Window padding     |
-| `Set WindowBar Colorful`       | Window decorations |
+| Setting                        | Example           | Purpose                 |
+| ------------------------------ | ----------------- | ----------------------- |
+| `Set Shell "bash"`             | `Set Shell "zsh"` | Which shell to use      |
+| `Set FontSize 14`              | `Set Width 1200`  | Terminal dimensions     |
+| `Set Theme "Catppuccin Mocha"` | `Set Padding 20`  | Color theme and padding |
+| `Set WindowBar Colorful`       | —                 | Window decorations      |
 
 ## Example: TUI Screenshot
 
@@ -83,8 +71,8 @@ Type "q"
 Enter
 ```
 
-## List Themes
+## Tips
 
-```bash
-nix run nixpkgs#vhs -- themes
-```
+- Use `Hide`/`Show` to control whether typed commands appear in the output
+- `Sleep` timing is critical — give apps time to render before capturing
+- List available themes: `nix run nixpkgs#vhs -- themes`

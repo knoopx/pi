@@ -5,129 +5,60 @@ description: Refactors TypeScript codebases with AST-aware rename, extract, and 
 
 # retype-cli
 
-TypeScript refactoring CLI built on ts-morph. AST-aware, safe refactoring.
+TypeScript refactoring built on ts-morph. AST-aware — safe renames, extractions, and reference finding across the entire codebase.
 
-## Commands
+## Finding Symbols
 
-| Command       | Purpose                                   |
-| ------------- | ----------------------------------------- |
-| `search`      | Find entities (functions, classes, types) |
-| `rename`      | Rename entity across all files            |
-| `extract`     | Move entity to different file             |
-| `references`  | Find all usages of an entity              |
-| `unused`      | Find unused exports                       |
-| `fix-imports` | Fix missing imports                       |
-
-## Search
+Search for functions, classes, or types:
 
 ```bash
-# Find function by name
 bunx retype-cli search linearGraphQL -p ./src --list
-
-# Find exported functions only
-bunx retype-cli search --kind function --exported -p ./src --list
-
-# Find by regex pattern
 bunx retype-cli search "create.*Component" --regex -p ./src --list
-
-# Show code body
-bunx retype-cli search myFunction --body -p ./src
+bunx retype-cli search myFunction --body -p ./src   # Show code body
 ```
 
-## References
+## Finding References
+
+See every usage of a symbol:
 
 ```bash
-# Find all usages of a function
 bunx retype-cli references linearGraphQL -p ./src --list
-
-# Show all references (not truncated)
-bunx retype-cli references linearGraphQL -p ./src --list --all
+bunx retype-cli references linearGraphQL -p ./src --list --all  # Don't truncate
 ```
 
-## Rename
+## Renaming
+
+Preview changes before applying:
 
 ```bash
-# Rename with preview (dry run)
 bunx retype-cli rename oldName newName -p ./src --preview
-
-# Rename without confirmation
-bunx retype-cli rename oldName newName -p ./src --yes
-
-# Exact match only
-bunx retype-cli rename oldName newName -p ./src --exact --yes
+bunx retype-cli rename oldName newName -p ./src --yes   # Apply without confirmation
+bunx retype-cli rename oldName newName -p ./src --exact --yes  # Exact match only
 ```
 
-## Extract
+## Extracting to New Files
 
-Move entity to a different file, updating all imports automatically.
+Move a symbol to a different file, updating all imports automatically:
 
 ```bash
-# Extract function to new file
 bunx retype-cli extract linearGraphQL ./src/api/linear.ts -p ./src --yes
-
-# Interactive extraction
-bunx retype-cli extract myHelper ./src/utils/helpers.ts -p ./src
 ```
 
-## Fix Imports
+## Fixing Imports & Finding Unused Exports
 
 ```bash
-# Find and fix missing imports
-bunx retype-cli fix-imports -p ./src
+bunx retype-cli fix-imports -p ./src        # Fix missing imports
+bunx retype-cli unused -p ./src --list      # Find unused exports
 ```
 
-## Unused Exports
+## Typical Workflow: Extract a Module
 
-```bash
-# Find unused exported entities
-bunx retype-cli unused -p ./src --list
-```
+1. Find the function: `bunx retype-cli search linearGraphQL -p ./src --list`
+2. Check references: `bunx retype-cli references linearGraphQL -p ./src --list`
+3. Extract to new file: `bunx retype-cli extract linearGraphQL ./src/api/linear.ts -p ./src --yes`
+4. Verify with typecheck
 
-## Common Workflows
+## Typical Workflow: Rename Across Codebase
 
-### Extract API to separate module
-
-```bash
-# 1. Find the function
-bunx retype-cli search linearGraphQL -p ./src --list
-
-# 2. Check current references
-bunx retype-cli references linearGraphQL -p ./src --list
-
-# 3. Extract to new file (updates all imports)
-bunx retype-cli extract linearGraphQL ./src/api/linear.ts -p ./src --yes
-
-# 4. Verify
-bun run typecheck
-```
-
-### Rename across codebase
-
-```bash
-# 1. Preview changes
-bunx retype-cli rename createComponent createWidget -p ./src --preview
-
-# 2. Apply changes
-bunx retype-cli rename createComponent createWidget -p ./src --yes
-```
-
-### Clean up unused exports
-
-```bash
-# 1. Find unused
-bunx retype-cli unused -p ./src --list
-
-# 2. Review and remove manually
-```
-
-## Options
-
-| Option         | Description                   |
-| -------------- | ----------------------------- |
-| `-p, --path`   | Project root path             |
-| `-c, --config` | Path to tsconfig.json         |
-| `--list`       | Output as simple list         |
-| `--yes`        | Skip confirmation             |
-| `--preview`    | Dry run (rename only)         |
-| `--exact`      | Exact match (rename only)     |
-| `--all`        | Show all results (references) |
+1. Preview changes: `bunx retype-cli rename createComponent createWidget -p ./src --preview`
+2. Apply: `bunx retype-cli rename createComponent createWidget -p ./src --yes`

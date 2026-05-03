@@ -5,196 +5,114 @@ description: Manages version control with Jujutsu (jj), including rebasing, conf
 
 # Jujutsu
 
-Git-compatible VCS focused on concurrent development and ease of use.
+Git-compatible VCS with a different data model — no staging area, changes are immediate. Every file is tracked in the working copy as "changes" (like commits without parents).
 
-> ⚠️ **Not Git!** Jujutsu syntax differs from Git:
->
-> - Parent: `@-` not `@~1` or `@^`
-> - Grandparent: `@--` not `@~2`
-> - Child: `@+` not `@~-1`
-> - Use `jj log` not `jj changes`
-
-> 🚨 **CRITICAL — NEVER USE `git` FOR MUTATIONS IN A JJ REPO!**
->
-> In a colocated repo, `git` commands that create or modify commits (e.g. `git commit`, `git rebase`, `git cherry-pick`, `git merge`) will silently corrupt your history and **cause irreversible file loss**. The jj data model is fundamentally different — git has no concept of it.
->
-> ✅ **Allowed** (read-only): `git log`, `git diff`, `git show`, `git blame`, `git grep`
-> ❌ **Forbidden** (mutations): `git commit`, `git rebase`, `git cherry-pick`, `git merge`, `git reset --hard`, `git checkout` on tracked files, `git stash`
-
-## Key Commands
-
-| Command                    | Description                                  |
-| -------------------------- | -------------------------------------------- |
-| `jj st`                    | Show working copy status                     |
-| `jj log`                   | Show change log                              |
-| `jj diff`                  | Show changes in working copy                 |
-| `jj new`                   | Create new change                            |
-| `jj desc`                  | Edit change description                      |
-| `jj squash`                | Move changes to parent                       |
-| `jj split`                 | Split current change                         |
-| `jj rebase -s src -d dest` | Rebase changes                               |
-| `jj absorb`                | Move changes into stack of mutable revisions |
-| `jj bisect`                | Find bad revision by bisection               |
-| `jj fix`                   | Update files with formatting fixes           |
-| `jj sign`                  | Cryptographically sign a revision            |
-| `jj metaedit`              | Modify metadata without changing content     |
-
-## Project Setup
-
-```bash
-jj git init              # Init in existing git repo
-jj git init --colocate   # Side-by-side with git
-```
+> ⚠️ **Never use `git` for mutations in a jj repo** — it corrupts history. Allowed: `git log`, `git diff`, `git show`, `git blame`, `git grep`.
 
 ## Basic Workflow
 
+Create a change, describe it, view history:
+
 ```bash
-jj new                   # Create new change
-jj desc -m "feat: add feature"  # Set description
-jj log                   # View history
-jj edit change-id        # Switch to change
-jj new --before @        # Time travel (create before current)
+jj new                   # Start a new change (like working on a commit)
+jj desc -m "feat: add login"  # Write the message
+jj log                   # View history — this is your main view command
+jj diff                  # See what changed in working copy
+```
+
+Edit an existing change:
+
+```bash
+jj edit <change-id>      # Switch to a specific change
+# Make changes to files...
+jj squash                # Move new edits into the parent change
+```
+
+## Time Travel & Navigation
+
+Jump to any point in history:
+
+```bash
 jj edit @-               # Go to parent
+jj next --edit           # Go to child
+jj edit <change-id>      # Jump to specific change
+jj new --before @        # Insert a new change before current
 ```
 
-## Time Travel
+## Squash & Split Changes
+
+Combine changes into one:
 
 ```bash
-jj edit change-id        # Switch to specific change
-jj next --edit           # Next child change
-jj edit @-               # Parent change
-jj new --before @ -m msg # Insert before current
+# Merge two changes together
+jj squash -m "combined message"
+
+# Split working copy into separate commits
+jj split                 # Interactive — pick hunks to commit separately
 ```
 
-## Merging & Rebasing
+Auto-move changes to relevant commits in a stack:
 
 ```bash
-jj new x yz -m msg       # Merge changes
-jj rebase -s src -d dest # Rebase source onto dest
-jj abandon              # Delete current change
+jj absorb                # Smart squashing across mutable revisions
+```
+
+## Rebasing & Merging
+
+Rebase changes onto another:
+
+```bash
+jj rebase -s @- -d main  # Rebase current change onto main
+jj rebase -d main -s ::@ # Rebase all descendants of @ onto main
+```
+
+Merge two changes:
+
+```bash
+jj new x yz -m "merge"   # Create merge of x and yz
 ```
 
 ## Conflicts
 
-```bash
-jj resolve              # Interactive conflict resolution
-# Edit files, then continue
-```
-
-## Revset Syntax
-
-**Parent/child operators:**
-
-| Syntax | Meaning          | Example              |
-| ------ | ---------------- | -------------------- |
-| `@-`   | Parent of @      | `jj diff -r @-`      |
-| `@--`  | Grandparent      | `jj log -r @--`      |
-| `x-`   | Parent of x      | `jj diff -r abc123-` |
-| `@+`   | Child of @       | `jj log -r @+`       |
-| `x::y` | x to y inclusive | `jj log -r main::@`  |
-| `x..y` | x to y exclusive | `jj log -r main..@`  |
-| `x\|y` | Union (or)       | `jj log -r 'a \| b'` |
-
-**⚠️ Common mistakes:**
-
-- ❌ `@~1` → ✅ `@-` (parent)
-- ❌ `@^` → ✅ `@-` (parent)
-- ❌ `@~-1` → ✅ `@+` (child)
-- ❌ `jj changes` → ✅ `jj log` or `jj diff`
-- ❌ `a,b,c` → ✅ `a | b | c` (union uses pipe, not comma)
-
-**Functions:**
+Resolve interactively:
 
 ```bash
-jj log -r 'heads(all())'        # All heads
-jj log -r 'remote_bookmarks()..'  # Not on remote
-jj log -r 'author(name)'        # By author
-jj log -r 'description(regex)'  # By description
-jj log -r 'mine()'              # My commits
-jj log -r 'committer_date(after:"7 days ago")'  # Recent commits
-jj log -r 'mine() & committer_date(after:"yesterday")'  # My recent
+# Edit conflicted files, then continue
+jj resolve
 ```
 
-## Templates
+## Pushing to Git
+
+Bookmarks are like branches. Track and push them:
 
 ```bash
-jj log -T 'commit_id ++ "\n" ++ description'
+jj bookmark create main -r @   # Create a bookmark at current change
+jj git push --bookmark main    # Push that bookmark
+jj git fetch                   # Fetch from remote
+jj bookmark track main@origin  # Track a remote bookmark
 ```
 
-## Git Interop
+## Useful Patterns
+
+**Undo an operation:** `jj undo` — reverses the last jj command.
+
+**Get git commit hash from jj change:**
 
 ```bash
-jj bookmark create main -r @  # Create bookmark
-jj git push --bookmark main   # Push bookmark
-jj git fetch                 # Fetch from remote
-jj bookmark track main@origin # Track remote
+jj log -T 'commit_id\n' -r @           # Full hash
+jj log -T 'commit_id.short()\n' -r @   # Short hash
+git rev-parse @                        # Also works in colocated repos
 ```
 
-## Advanced Commands
+**Operation history:** `jj op log` — see all jj operations.
 
-```bash
-jj absorb               # Auto-move changes to relevant commits in stack
-jj bisect start         # Start bisection
-jj bisect good          # Mark current as good
-jj bisect bad           # Mark current as bad
-jj fix                  # Run configured formatters on files
-jj sign -r @            # Sign current revision
-jj metaedit -r @ -m "new message"  # Edit metadata only
-```
+## Common Pitfalls
 
-## Git Equivalents
-
-| Git command               | Jujutsu equivalent                                                       |
-| ------------------------- | ------------------------------------------------------------------------ |
-| `git show <rev>:<file>`   | `jj file show <file> -r <rev>`                                           |
-| `git blame <file>`        | `jj file annotate <file>`                                                |
-| `git diff <rev1> <rev2>`  | `jj diff --from <rev1> --to <rev2>`                                      |
-| `git log -- <file>`       | `jj log -r 'files("path")'`                                              |
-| `git grep <pattern>`      | `jj file search <pattern>`                                               |
-| `git ls-tree -r <rev>`    | `jj file list -r <rev>`                                                  |
-| `git stash`               | `jj new -p`                                                              |
-| `git stash pop`           | `jj restore -s @- --to @` (manual approach)                              |
-| `git checkout <file> @~1` | `jj file show <file> -r @~- > <file>`                                    |
-| `git show <rev>`          | `jj diff -r <rev>`                                                       |
-| `git log --oneline`       | `jj log --limit 20 -T 'commit_id.short() ++ " " ++ description ++ "\n"'` |
-| `git log --stat`          | `jj log -T 'commit_id.short() ++ " " ++ diff.stat() ++ "\n"'`            |
-| `git show --stat <rev>`   | `jj diff -r <rev> -T 'stat()'`                                           |
-| `git tag <name> <rev>`    | `jj bookmark create <name> -r <rev>`                                     |
-| `git branch <name> <rev>` | `jj bookmark create <name> -r <rev>`                                     |
-| `git checkout -b <name>`  | `jj new <name>`                                                          |
-| `git reset HEAD <file>`   | (no staging — use `jj split` or edit)                                    |
-| `git rebase <upstream>`   | `jj rebase -d <upstream> -s ::@`                                         |
-
-## Get Git Commit Hash from jj Change
-
-Jujutsu has a human-readable **change ID** and a corresponding git **commit hash** (in colocated repos).
-
-```bash
-# Full commit hash for current change
-git rev-parse @  # → d60f1caf1ebf96973c3decd939e3fdf5ee380dc0
-jj log -T 'commit_id ++ "\n"' -r @
-
-# Short commit hash
-jj log -T 'commit_id.short() ++ "\n"' -r @
-
-# Commit hash for any revision by change ID or revset
-jj log -T 'change_id ++ " → " ++ commit_id ++ "\n"' -r 'change_id("uzwqqk")'
-jj log -T 'commit_id ++ "\n"' -r '@-'
-
-# Show both IDs together in log
-jj log -T '{change_id} {commit_id}\n' --limit 5
-```
-
-## Tips
-
-- No staging: changes are immediate
-- Use conventional commits: `type(scope): desc`
-- `jj undo` to revert operations
-- `jj op log` to see operation history
-- Bookmarks are like branches
-- `jj absorb` is powerful for fixing up commits in a stack
+- ❌ Use `@~1` → ✅ Use `@-` (parent)
+- ❌ Use `a,b,c` for union → ✅ Use `a | b | c` (pipe, not comma)
+- ❌ Use `jj changes` → ✅ Use `jj log` or `jj diff`
 
 ## Related Skills
 
-- **gh**: GitHub CLI for PRs and issues
-- **review**: Code review before committing
+- **conventional-commits**: Commit message format
+- **sem**: Semantic analysis before writing commit messages

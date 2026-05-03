@@ -5,20 +5,11 @@ description: "Creates scientific plots from tabular data via the command line. U
 
 # Kuva — CLI Scientific Plotting
 
-27 chart types from stdin, CSV, or TSV. Auto-detects delimiters and headers. Output defaults to SVG on stdout; `-o plot.svg` (or `.png`/`.pdf` with matching feature flags). `--terminal` renders inline with Unicode braille.
+27 chart types from stdin, CSV, or TSV. Auto-detects delimiters and headers. Output defaults to SVG on stdout; `-o plot.svg` (or `.png`/`.pdf` with matching build features). `--terminal` renders inline with Unicode braille.
 
-## Workflow / Commands
+## Typical Pattern: DuckDB + Kuva Pipeline
 
-See individual references for chart-specific options:
-
-- [basic charts](references/basic-charts.md) — scatter, line, bar, histogram, pie
-- [distributions](references/distributions.md) — box, violin, strip, density, ridgeline
-- [matrices and flows](references/matrices-flows.md) — heatmap, sankey, chord, upset
-- [bioinformatics](references/bioinformatics.md) — volcano, manhattan, forest, candlestick
-
-## DuckDB Pipeline Pattern
-
-Query data with DuckDB, pipe CSV output to kuva. Use `read_csv_auto()` for TSV/CSV files, `-csv` flag for clean pipe output, redirect stderr with `2>/dev/null`.
+Query data with DuckDB, pipe CSV output to kuva:
 
 ```bash
 # Filter and plot — scatter with regression on filtered rows
@@ -51,12 +42,12 @@ duckdb -csv 2>/dev/null \
 - Override delimiter: `-d ,` or `-d $'\t'`
 - First row is data (not headers): `--no-header`
 
-## Shared Styling
+## Shared Styling Options
 
-All commands accept:
+All chart types accept:
 
 - `--theme light|dark|solarized|minimal`
-- `--palette category10|wong|okabe-ito|pastel|bold|tol-bright|tol-muted|tol-light|ibm`
+- `--palette category10|wong|okabe-ito|pastel|bold`
 - `--cvd-palette deuteranopia|protanopia|tritanopia`
 - `--x-label`, `--y-label`, `--ticks N`, `--no-grid`, `--log-x/y`
 - `--interactive` — hover/click in SVG output
@@ -67,4 +58,7 @@ All commands accept:
 - `--equation`/`--correlation` require `--trend` on scatter
 - `--terminal` is incompatible with `-o` file output
 - Column names with spaces need quoting: `--x "my column"`
-- SVG is the default and always available; PNG/PDF require matching build features
+
+## Chart Types
+
+Basic charts (scatter, line, bar, histogram, pie), distributions (box, violin, strip, density, ridgeline), matrices and flows (heatmap, sankey, chord, upset), bioinformatics (volcano, manhattan, forest, candlestick). See the references/ directory for chart-specific options.

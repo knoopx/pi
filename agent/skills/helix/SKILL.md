@@ -3,23 +3,36 @@ name: helix
 description: "Configures and uses Helix, a post-modern modal text editor written in Rust. Use when editing files with Helix, configuring keybindings, setting up language servers, or customizing themes."
 ---
 
-## Overview
+# Helix
 
-Helix is a post-modern modal text editor featuring selection-first editing, multiple selections, and tree-sitter integration. It uses the `selection → action` model inspired by Kakoune.
+Modal text editor with selection-first editing and tree-sitter integration. The model is simple: select text first, then act on it (delete, yank, change). Supports multiple simultaneous selections.
 
-### Core Concepts
+## Modes & Navigation
 
-- **Modes**: Normal (navigation/editing), Insert (typing), Select/extend (making selections)
-- **Selection-first**: Select text first, then act on it (delete, yank, change)
-- **Multiple selections**: Edit multiple locations simultaneously
-- **Tree-sitter**: Syntax-aware navigation and textobjects
+- **Normal**: navigation and editing — `i` inserts before selection, `v` enters select mode
+- **Insert**: typing mode — `jk` or `Escape` returns to Normal
+- **Select/extend**: making multi-cursor selections
 
-## Quick Reference
+Key commands in Normal mode:
 
-### Essential Commands
+- `/` search forward, `n`/`N` next/previous match
+- `gd` go to definition, `]d`/`[d` next/previous diagnostic
+- `Space` opens Space mode (pickers, LSP actions)
+- `ma`/`mi` select around/inside textobjects (tree-sitter aware)
+
+## Space Mode (LSP & Pickers)
+
+Accessed via `Space` in Normal mode:
+
+- `f` file picker, `b` buffer picker, `s` document symbols
+- `d` diagnostics, `a` code action, `r` rename, `k` hover docs
+- `/` global search
+
+## Configuration
+
+Config lives in `~/.config/helix/config.toml` (global) or `.helix/config.toml` (project-local).
 
 ```toml
-# config.toml example
 theme = "onedark"
 
 [editor]
@@ -28,91 +41,33 @@ mouse = false
 auto-format = true
 
 [keys.normal]
-C-s = ":w"  # Save file
-g = { a = "code_action" }  # Minor mode: ga triggers code action
+C-s = ":w"          # Save with Ctrl+S
+g = { a = "code_action" }  # ga triggers code action
+
+[keys.insert.j]
+k = "normal_mode"   # jk escapes insert mode
 ```
 
-### Keybindings
+## Language Servers
 
-| Mode   | Key       | Action                    |
-| ------ | --------- | ------------------------- |
-| Normal | `i`       | Insert before selection   |
-| Normal | `v`       | Enter select mode         |
-| Normal | `:`       | Command mode              |
-| Normal | `Space`   | Space mode (pickers, LSP) |
-| Normal | `d`       | Delete selection          |
-| Normal | `y`       | Yank (copy) selection     |
-| Normal | `p`/`P`   | Paste after/before        |
-| Normal | `u`/`U`   | Undo/Redo                 |
-| Normal | `/`       | Search forward            |
-| Normal | `n`/`N`   | Next/Previous match       |
-| Normal | `gd`      | Go to definition          |
-| Normal | `]d`/`[d` | Next/Previous diagnostic  |
-
-### Space Mode (LSP & Pickers)
-
-Accessed via `Space` in normal mode:
-
-| Key | Action                       |
-| --- | ---------------------------- |
-| `f` | File picker (workspace root) |
-| `b` | Buffer picker                |
-| `s` | Document symbol picker       |
-| `d` | Document diagnostics         |
-| `a` | Code action                  |
-| `r` | Rename symbol                |
-| `k` | Hover (documentation)        |
-| `/` | Global search                |
-
-## Configuration
-
-### File Locations
-
-- **Linux/Mac**: `~/.config/helix/config.toml`
-- **Windows**: `%AppData%\helix\config.toml`
-- **Project-local**: `.helix/config.toml` (merged with global)
-
-### Language Configuration
-
-Create `languages.toml` in config directory:
+Configure in `languages.toml`:
 
 ```toml
 [[language]]
 name = "rust"
 language-servers = [{ name = "rust-analyzer", except-features = ["format"] }, "taplo"]
-
-[language-server.rust-analyzer]
-command = "rust-analyzer"
 ```
 
-## Common Tasks
+## Shell Integration
 
-### Remapping Keys
+Pipe selection through external commands or insert command output:
 
-```toml
-[keys.normal]
-jk = "normal_mode"  # Escape insert mode with jk
-C-s = ":w"          # Save with Ctrl+S
+- `|` pipe selection through a command
+- `!` insert command output before selection
+- `:pipe` typable command for piping
 
-[keys.insert.j]
-k = "normal_mode"   # Minor mode: jk exits insert
-```
+## Key Constraints
 
-### Textobjects (Tree-sitter)
-
-- `ma` / `mi` - Select around/inside textobject
-- `]f` / `[f` - Next/previous function
-- `]d` / `[d` - Next/previous diagnostic
-
-### Shell Integration
-
-- `|` - Pipe selection through command
-- `!` - Insert command output before selection
-- `:pipe` - Typable command for piping
-
-## See Also
-
-- `references/keymap.md` - Complete keybinding reference
-- `references/configuration.md` - Detailed configuration options
-- `references/languages.md` - Language server setup
-- `references/themes.md` - Creating custom themes
+- Selection-first editing — you must select text before acting on it
+- Tree-sitter provides syntax-aware textobjects and navigation
+- Project-local config merges with global config

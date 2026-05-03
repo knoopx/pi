@@ -1,41 +1,46 @@
 ---
-  name: lychee
-  description: "Checks for broken links in documentation, websites, and codebases using lychee. Use when finding dead links, validating URLs in markdown files, or checking links in a project."
+name: lychee
+description: "Checks for broken links in documentation, websites, and codebases using lychee. Use when finding dead links, validating URLs in markdown files, or checking links in a project."
 ---
 
 # Lychee
 
-Fast, async link checker written in Rust. Finds broken URLs and mail addresses in Markdown, HTML, and other text formats.
+Fast link checker written in Rust. Finds broken URLs and mail addresses in Markdown, HTML, and other text formats.
 
-## Workflow / Commands
+## Basic Usage
 
-**Run a full project check:**
+Check an entire project:
 
 ```bash
-lychee .                          # Recursively check all supported files; exit 0 = all OK, non-zero = failures
+lychee .                          # Recursively check all supported files
+                                  # Exit 0 = all OK, non-zero = failures found
 ```
 
-**Check a single file or directory:**
+Check a single file or URL:
 
 ```bash
 lychee README.md                  # Single file
-lychee 'docs/**/*.md'             # Glob (must be quoted to prevent shell expansion)
+lychee 'docs/**/*.md'             # Glob (quote to prevent shell expansion)
 lychee https://example.com        # Website URL
 ```
 
-**CI-friendly output (no progress bar, exit code on failure):**
+## CI-Friendly Output
+
+Disable the progress bar for scripts and CI:
 
 ```bash
 lychee --no-progress .
 ```
 
-**Include mail addresses and fragment anchors in checks:**
+## Configuration Options
+
+Include mail addresses and fragment anchors:
 
 ```bash
 lychee --include-mail --include-fragments .
 ```
 
-**Exclude URLs or paths (regex patterns, repeatable):**
+Exclude URLs or paths (regex patterns, repeatable):
 
 ```bash
 lychee --exclude '^https://github\.com/' \
@@ -43,24 +48,22 @@ lychee --exclude '^https://github\.com/' \
        .
 ```
 
-**Remap URL patterns (repeatable):**
+Remap URL patterns:
 
 ```bash
 lychee --remap 'https://old.com https://new.com' README.md
 ```
 
-## Details
+## Debugging
 
-- **Configuration file**: create `lychee.toml` in the project root to persist settings (auto-loaded). Use `--config custom.toml` for a different file.
-- **Caching** speeds up repeated checks: `lychee --cache .`. Limit age with `--max-cache-age 2d`.
-- **Output formats**: `-f json . > report.json` (machine-readable), `-f markdown` (table), `-f detailed` (per-link summary, the default).
-- **GitHub links** benefit from `GITHUB_TOKEN` env var to avoid rate limits.
-- **Debugging**: `lychee --dump README.md` lists extracted links without checking; `lychee -vvv` shows retry details; `--suggest` proposes replacements via web archive.
+- `lychee --dump README.md` — list extracted links without checking them
+- `lychee -vvv` — verbose retry details
+- `--suggest` — propose replacements via web archive
 
-## Constraints
+## Tips
 
-- Glob patterns must be quoted to prevent shell expansion
-- Exit code `0` means all links OK; non-zero means failures found (useful in CI)
-- `--exclude-all-private` skips private IPs, link-local, and loopback addresses
-
-See [deep reference](references/DEEP.md) for config file schema and advanced recipes.
+- Create `lychee.toml` in the project root for persistent settings
+- Enable caching with `lychee --cache .` for faster repeated checks
+- Set `GITHUB_TOKEN` env var to avoid GitHub rate limits
+- Use `--exclude-all-private` to skip private IPs and loopback addresses
+- Output formats: `-f json . > report.json`, `-f markdown` for tables
