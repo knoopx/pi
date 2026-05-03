@@ -3,7 +3,10 @@ import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import setupNpmExtension from "./index";
-import type { MockTool, MockExtensionAPI } from "../../shared/testing/test-utils";
+import type {
+  MockTool,
+  MockExtensionAPI,
+} from "../../shared/testing/test-utils";
 import { createMockExtensionAPI } from "../../shared/testing/test-utils";
 
 import { disableThrottle } from "../../shared/network/throttle";
@@ -117,18 +120,6 @@ describe("NPM Extension", () => {
       it("then it should register npm search tool", () => {
         expect(mockPi.registerTool).toHaveBeenCalledWith(
           expect.objectContaining({ name: "search-npm-packages" }),
-        );
-      });
-
-      it("then it should register npm package info tool", () => {
-        expect(mockPi.registerTool).toHaveBeenCalledWith(
-          expect.objectContaining({ name: "npm-package-info" }),
-        );
-      });
-
-      it("then it should register npm package versions tool", () => {
-        expect(mockPi.registerTool).toHaveBeenCalledWith(
-          expect.objectContaining({ name: "npm-package-versions" }),
         );
       });
     });
@@ -256,134 +247,6 @@ describe("NPM Extension", () => {
           okMsg: "No packages found.",
           failMsgPrefix: "Failed to search packages:",
           netFailMsgPrefix: "Error searching packages:",
-        },
-      );
-    });
-  });
-
-  describe.each([
-    {
-      name: "npm-package-info",
-      toolName: "npm-package-info",
-      action: "get package info",
-    },
-    {
-      name: "npm-package-versions",
-      toolName: "npm-package-versions",
-      action: "get package versions",
-    },
-  ])(`$name`, ({ toolName, action }) => {
-    let registeredTool: MockTool;
-
-    beforeEach(() => {
-      const found = mockPi.registerTool.mock.calls.find(
-        (call) => (call[0] as MockTool).name === toolName,
-      );
-      if (!found) throw new Error(`Tool '${toolName}' not registered`);
-      registeredTool = found[0] as MockTool;
-    });
-
-    describe("given a valid package", () => {
-      let result: AgentToolResult<Record<string, unknown>>;
-
-      beforeEach(async () => {
-        const mockPackageData =
-          toolName === "npm-package-info"
-            ? {
-                name: "express",
-                description: "Fast, unopinionated, minimalist web framework",
-                author: { name: "TJ Holowaychuk" },
-                maintainers: [
-                  { name: "TJ Holowaychuk" },
-                  { name: "Douglas Wilson" },
-                ],
-                homepage: "http://expressjs.com/",
-                repository: {
-                  url: "git+https://github.com/expressjs/express.git",
-                },
-                keywords: ["express", "framework", "web", "http"],
-                "dist-tags": { latest: "4.18.2" },
-                versions: {
-                  "4.18.2": {
-                    license: "MIT",
-                    dependencies: {},
-                    devDependencies: {},
-                  },
-                },
-              }
-            : {
-                name: "lodash",
-                "dist-tags": { latest: "4.17.21", beta: "4.17.21-rc.1" },
-                versions: { "4.17.21": {}, "4.17.20": {}, "4.17.21-rc.1": {} },
-              };
-
-        result = await runWithFetch(
-          registeredTool,
-          { package: toolName === "npm-package-info" ? "express" : "lodash" },
-          {
-            jsonResponse: mockPackageData,
-          },
-        );
-      });
-
-      it("then it should return formatted data", () => {
-        expect((result.content[0] as TextContent).text).toMatchSnapshot();
-        expect(result.details.package).toBe(
-          toolName === "npm-package-info" ? "express" : "lodash",
-        );
-        if (toolName === "npm-package-info") {
-          expect(get(result.details, "info.name")).toBe("express");
-          expect(get(result.details, "info.license")).toBe("MIT");
-        } else {
-          expect(result.details.count).toBe(3);
-        }
-      });
-    });
-
-    describe("given a package that does not exist", () => {
-      it("then it should return not found message", async () => {
-        const result = await runWithFetch(
-          registeredTool,
-          { package: "nonexistent-pkg-xyz-123" },
-          {
-            errorStatus: 404,
-            errorText: "Not Found",
-          },
-        );
-        expect((result.content[0] as TextContent).text).toBe(
-          'Package "nonexistent-pkg-xyz-123" not found.',
-        );
-        if (toolName === "npm-package-info") {
-          expect(result.details.status).toBe(404);
-        }
-      });
-    });
-
-    describe("given an HTTP request returns server error", () => {
-      it("then it should return error message", async () => {
-        const result = await runWithFetch(
-          registeredTool,
-          { package: "lodash" },
-          {
-            errorStatus: 500,
-            errorText: "Internal Server Error",
-          },
-        );
-        expect((result.content[0] as TextContent).text).toBe(
-          `Failed to ${action}: Internal Server Error`,
-        );
-        expect(result.details.status).toBe(500);
-      });
-    });
-
-    describe("given the fetch function throws an error", () => {
-      testErrorHandling(
-        () => registeredTool,
-        { package: "lodash" },
-        {
-          okMsg: `No packages found.`,
-          failMsgPrefix: `Failed to ${action}:`,
-          netFailMsgPrefix: `Error ${action}:`,
         },
       );
     });
