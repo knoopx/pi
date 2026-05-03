@@ -239,11 +239,143 @@ const defaults: GuardrailsGroup[] = [
     rules: [
       {
         context: "command",
-        pattern: "git *",
-        excludes: "* {log,diff,clone} *",
+        pattern: "git add *",
         action: "block",
         reason:
-          "this project uses Jujutsu, not Git. Use jj equivalents (read skill: jujutsu)",
+          "this project uses Jujutsu, not Git. jj has no staging area — edits are immediate (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git commit *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj describe -m 'message'` instead (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git status *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj status` instead (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git push *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj git push` instead (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git pull *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj git pull` instead (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git merge *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj new x y` to create a merge change (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git branch *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj bookmark` instead (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git checkout *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj edit` to switch changes or `jj restore` to discard (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git reset *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj abandon` or `jj undo` instead (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git revert *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj git revert` instead (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git stash *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. jj has no stash — use `jj squash` or `jj new` to save work (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git tag *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj bookmark create` instead (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git init *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj git init` instead (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git config *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Config lives in `.jj/repo/config.toml` (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git remote *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj git remote` instead (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git fetch *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj git fetch` instead (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git rebase *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj rebase` instead (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git restore *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj restore` instead (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git worktree *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. jj has no worktrees — use `jj edit` and `jj new --before` instead (read skill: jujutsu)",
+      },
+      {
+        context: "command",
+        pattern: "git clean *",
+        action: "block",
+        reason:
+          "this project uses Jujutsu, not Git. Use `jj untrack` instead (read skill: jujutsu)",
       },
     ],
   },
