@@ -1,0 +1,21 @@
+{
+  "name": "huggingface",
+  "version": "1.0.0",
+  "description": "Hugging Face integration - search models, inspect quant files, read discussions",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "^0.70.2"
+  },
+  "devDependencies": {
+    "@sinclair/typebox": "^0.34.9",
+    "@types/node": "^25.6.0",
+    "eslint": "^10.2.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  }
+}
