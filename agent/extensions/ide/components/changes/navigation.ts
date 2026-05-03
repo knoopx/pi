@@ -1,4 +1,5 @@
 import type { ChangesState } from "./state";
+import { computeNewIndex } from "../../lib/list-picker/navigation";
 export interface NavigationCallbacks {
   onChangeSelected: (changeId: string) => void | Promise<void>;
   onFileSelected?: (filePath: string) => void | Promise<void>;
@@ -146,15 +147,11 @@ export class Navigation {
     maxIndex: number,
     pageOffset: number,
   ): number {
-    switch (dir) {
-      case "up":
-        return Math.max(0, current - 1);
-      case "pageUp":
-        return Math.max(0, current - pageOffset);
-      case "pageDown":
-        return Math.min(maxIndex, current + pageOffset);
-      default:
-        return Math.min(maxIndex, current + 1);
-    }
+    return computeNewIndex(
+      current,
+      maxIndex,
+      dir as "up" | "down" | "pageUp" | "pageDown",
+      pageOffset,
+    );
   }
 }
