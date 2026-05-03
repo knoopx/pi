@@ -26,8 +26,8 @@ Provides Ctrl+R reverse history search functionality for pi, allowing fuzzy sear
 
 ### Result Types
 
-- **$**: Bash commands (prefixed with `!` when inserted)
-- **💬**: User messages (inserted as plain text)
+- **󰅩**: Bash commands (prefixed with `!` when inserted)
+- **󰈚**: User messages (inserted as plain text)
 
 ## Installation
 

@@ -19,7 +19,7 @@ function renderHistoryRow(
   width: number,
   theme: Theme,
 ): string {
-  const typeIndicator = entry.type === "command" ? "$" : "\ud83c\udf09";
+  const typeIndicator = entry.type === "command" ? "󰅩" : "󰈚";
   const typeColor = entry.type === "command" ? "success" : "accent";
   const displayContent = truncateSingleLine(
     entry.preview ?? entry.content,
@@ -29,8 +29,9 @@ function renderHistoryRow(
   const padded = ensureWidth(content, width);
 
   if (isSelected) {
-    const colored = theme.fg(typeColor, padded);
-    return theme.bg("selectedBg", colored);
+    const coloredIndicator = theme.fg(typeColor, typeIndicator);
+    const contentColored = theme.fg(typeColor, displayContent);
+    return theme.bg("selectedBg", `${coloredIndicator} ${contentColored}`);
   }
 
   const coloredIndicator = theme.fg(typeColor, typeIndicator);
@@ -43,6 +44,7 @@ export function renderHistoryPage(
   width: number,
   query: string | undefined,
   theme: Theme,
+  filterName?: string,
 ): string[] {
   const lines: string[] = [];
   const borderChar = theme.fg("accent", "\u2500");
@@ -57,7 +59,8 @@ export function renderHistoryPage(
   const end = Math.min(start + maxVisible, filtered.length);
   const queryPart = query ? `${query} \u2022 ` : "";
   const pagerPart = `[${start + 1}-${end} of ${filtered.length}]`;
-  lines.push(theme.fg("dim", `${queryPart}${pagerPart}`));
+  const filterPart = filterName ? `${filterName} • ` : "";
+  lines.push(theme.fg("dim", `${filterPart}${queryPart}${pagerPart}`));
 
   for (let i = start; i < end; i++) {
     lines.push(

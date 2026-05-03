@@ -223,11 +223,21 @@ const loadSessionHistoryForCwd = (targetCwd: string): HistoryEntry[] => {
   return history.sort((a, b) => b.timestamp - a.timestamp);
 };
 
+interface HistoryFilter {
+  name: string;
+  type: "command" | "message";
+}
+const HISTORY_FILTERS: HistoryFilter[] = [
+  { name: "Messages", type: "message" },
+  { name: "Commands", type: "command" },
+];
+
 class HistorySearchComponent {
   private allHistory: HistoryEntry[];
   private filteredHistory: HistoryEntry[];
   private query = "";
   private selectedIndex = 0;
+  private filterIndex = 0;
   private cachedWidth?: number;
   private cachedLines?: string[];
 
@@ -242,6 +252,14 @@ class HistorySearchComponent {
     this.filteredHistory = history;
   }
 
+  getFilterName(): string {
+    return HISTORY_FILTERS[this.filterIndex]?.name ?? "Messages";
+  }
+
+  private getPageOffset(): number {
+    return 10;
+  }
+
   handleInput(data: string): void {
     if (matchesKey(data, "escape")) {
       this.handleEscape();
@@ -253,6 +271,26 @@ class HistorySearchComponent {
       return;
     }
 
+    if (matchesKey(data, "pageUp")) {
+      this.handlePageUp();
+      return;
+    }
+
+    if (matchesKey(data, "pageDown")) {
+      this.handlePageDown();
+      return;
+    }
+
+    if (matchesKey(data, "home")) {
+      this.handleHome();
+      return;
+    }
+
+    if (matchesKey(data, "end")) {
+      this.handleEnd();
+      return;
+    }
+
     if (matchesKey(data, "up")) {
       this.handleUp();
       return;
@@ -260,6 +298,11 @@ class HistorySearchComponent {
 
     if (matchesKey(data, "down")) {
       this.handleDown();
+      return;
+    }
+
+    if (matchesKey(data, "ctrl+/")) {
+      this.cycleFilter(1);
       return;
     }
 
@@ -295,6 +338,48 @@ class HistorySearchComponent {
     }
   }
 
+  private handlePageUp(): void {
+    const offset = this.getPageOffset();
+    const newIndex = Math.max(0, this.selectedIndex - offset);
+    if (newIndex !== this.selectedIndex) {
+      this.selectedIndex = newIndex;
+      this.invalidate();
+    }
+  }
+
+  private handlePageDown(): void {
+    const offset = this.getPageOffset();
+    const maxIndex = this.filteredHistory.length - 1;
+    const newIndex = Math.min(maxIndex, this.selectedIndex + offset);
+    if (newIndex !== this.selectedIndex) {
+      this.selectedIndex = newIndex;
+      this.invalidate();
+    }
+  }
+
+  private handleHome(): void {
+    if (this.selectedIndex > 0) {
+      this.selectedIndex = 0;
+      this.invalidate();
+    }
+  }
+
+  private handleEnd(): void {
+    const maxIndex = this.filteredHistory.length - 1;
+    if (this.selectedIndex < maxIndex) {
+      this.selectedIndex = maxIndex;
+      this.invalidate();
+    }
+  }
+
+  private cycleFilter(direction: 1 | -1): void {
+    this.filterIndex =
+      (this.filterIndex + direction + HISTORY_FILTERS.length) %
+      HISTORY_FILTERS.length;
+    this.selectedIndex = 0;
+    this.updateFilter();
+  }
+
   private handleBackspace(): void {
     if (this.query.length > 0) {
       this.query = this.query.slice(0, -1);
@@ -308,8 +393,15 @@ class HistorySearchComponent {
   }
 
   private updateFilter(): void {
-    this.filteredHistory = this.allHistory.filter((entry) =>
-      fuzzyMatch(entry.content, this.query),
+    const currentFilter = HISTORY_FILTERS[this.filterIndex];
+    const matchesQuery = (entry: HistoryEntry): boolean =>
+      this.query === "" || fuzzyMatch(entry.content, this.query);
+
+    const matchesType = (entry: HistoryEntry): boolean =>
+      entry.type === currentFilter.type;
+
+    this.filteredHistory = this.allHistory.filter(
+      (entry) => matchesQuery(entry) && matchesType(entry),
     );
 
     if (this.selectedIndex >= this.filteredHistory.length)
@@ -320,12 +412,14 @@ class HistorySearchComponent {
 
   render(width: number): string[] {
     if (this.cachedLines && this.cachedWidth === width) return this.cachedLines;
+    const filterName = this.getFilterName();
     const lines = renderHistoryPage(
       this.filteredHistory,
       this.selectedIndex,
       width,
       this.query,
       this.theme,
+      filterName,
     );
     this.cachedLines = lines;
     this.cachedWidth = width;
