@@ -260,49 +260,22 @@ class HistorySearchComponent {
     return 10;
   }
 
+  private keyHandlers = new Map<string, () => void>([
+    ["escape", () => this.handleEscape()],
+    ["enter", () => this.handleEnter()],
+    ["pageUp", () => this.handlePageUp()],
+    ["pageDown", () => this.handlePageDown()],
+    ["home", () => this.handleHome()],
+    ["end", () => this.handleEnd()],
+    ["up", () => this.handleUp()],
+    ["down", () => this.handleDown()],
+    ["ctrl+/", () => this.cycleFilter(1)],
+  ]);
+
   handleInput(data: string): void {
-    if (matchesKey(data, "escape")) {
-      this.handleEscape();
-      return;
-    }
-
-    if (matchesKey(data, "enter")) {
-      this.handleEnter();
-      return;
-    }
-
-    if (matchesKey(data, "pageUp")) {
-      this.handlePageUp();
-      return;
-    }
-
-    if (matchesKey(data, "pageDown")) {
-      this.handlePageDown();
-      return;
-    }
-
-    if (matchesKey(data, "home")) {
-      this.handleHome();
-      return;
-    }
-
-    if (matchesKey(data, "end")) {
-      this.handleEnd();
-      return;
-    }
-
-    if (matchesKey(data, "up")) {
-      this.handleUp();
-      return;
-    }
-
-    if (matchesKey(data, "down")) {
-      this.handleDown();
-      return;
-    }
-
-    if (matchesKey(data, "ctrl+/")) {
-      this.cycleFilter(1);
+    const handler = this.keyHandlers.get(data);
+    if (handler) {
+      handler();
       return;
     }
 
