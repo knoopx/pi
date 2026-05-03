@@ -11,14 +11,17 @@ export function scoreAndRank(
   _queryText?: string,
 ): HitChunk[] {
   const scored = index
-    .map<HitChunk>((chunk) => ({
+    .map<HitChunk | null>((chunk) => ({
       score: cosine(queryEmbedding, chunk.embedding),
-      skill: chunk.skill!,
+      skill: chunk.skill,
       file: chunk.file,
       section: chunk.section,
       text: chunk.text,
     }))
-    .filter((s) => s.score > config.scoreThreshold);
+    .filter(
+      (s): s is HitChunk =>
+        s.score > config.scoreThreshold && s.skill !== undefined,
+    );
 
   if (scored.length === 0) return [];
 

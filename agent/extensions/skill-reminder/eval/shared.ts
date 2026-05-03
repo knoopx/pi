@@ -1,5 +1,5 @@
 import type { IndexedSection } from "../../../shared/indexing/cache";
-import { loadCache } from "../cache";
+import { loadSkillReminderCache as loadCache } from "../cache";
 import { cosine } from "../../../shared/embeddings/engine";
 import { loadConfig } from "../config";
 
@@ -7,12 +7,16 @@ export async function loadIndex(): Promise<IndexedSection[]> {
   const cached = await loadCache();
   if (!cached) {
     console.log("Cache not found, building index...");
-    const { Indexer } = await import("../indexer");
+    const { build } = await import("../indexer");
     const config = await loadConfig();
-    return await Indexer.build(config);
+    return await build(config);
   }
 
-  const skillCount = new Set(cached.chunks.map((c) => c.skill!)).size;
+  const skillCount = new Set(
+    cached.chunks
+      .map((chunk: IndexedSection) => chunk.skill)
+      .filter((s): s is string => s !== undefined),
+  ).size;
   console.log(
     `Loaded ${cached.chunks.length} chunks across ${skillCount} skills`,
   );
@@ -21,12 +25,20 @@ export async function loadIndex(): Promise<IndexedSection[]> {
 
 export function printMatches(index: IndexedSection[], embedding: number[]) {
   const scored = index
-    .map((chunk) => ({
-      skill: chunk.skill!,
+    .map<{
+      skill: string | undefined;
+      file: string;
+      section: string;
+      score: number;
+    }>((chunk) => ({
+      skill: chunk.skill,
       file: chunk.file,
       section: chunk.section,
       score: cosine(embedding, chunk.embedding),
     }))
+    .filter(
+      (s): s is Required<typeof s> & { skill: string } => s.skill !== undefined,
+    )
     .sort((a, b) => b.score - a.score);
 
   // Deduplicate by file + section, keeping the highest-scoring chunk.

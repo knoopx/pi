@@ -3,7 +3,7 @@ import type {
   InputEvent,
   ToolResultEvent,
 } from "@mariozechner/pi-coding-agent";
-import { Indexer } from "./indexer";
+import { build } from "./indexer";
 import { loadConfig, type Config } from "./config";
 import type { IndexedSection } from "../../shared/indexing/cache";
 import { embedQuery } from "../../shared/embeddings/engine";
@@ -15,7 +15,7 @@ import { finishEmbedding } from "../../shared/embeddings/progress";
 
 async function buildIndex(config: Config): Promise<IndexedSection[] | null> {
   try {
-    return await Indexer.build(config);
+    return await build(config);
   } catch (err) {
     console.error("[skill-reminder] Failed to build index:", err);
     return null;

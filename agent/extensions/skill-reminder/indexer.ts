@@ -13,7 +13,7 @@ import {
   loadSkillReminderCache as loadCache,
   saveSkillReminderCache as saveCache,
 } from "./cache";
-import { isCacheStale } from "../../shared/cache/cache-helpers";
+import { tryLoadCached } from "../../shared/cache/cache-helpers";
 import { embedTexts } from "../../shared/embeddings/engine";
 import type { Config } from "./config";
 import type { IndexedSection } from "../../shared/indexing/cache";
@@ -133,29 +133,17 @@ async function embedAndSave(
   return chunks;
 }
 
-async function tryLoadCached(
-  files: string[],
-): Promise<IndexedSection[] | null> {
-  const cached = await loadCache();
-  if (cached && !(await isCacheStale(cached.mtimes, files))) {
-    return cached.chunks;
-  }
-  return null;
-}
+export async function build(config: Config): Promise<IndexedSection[]> {
+  const files = await SharedFileIndex.FileIndex.findMarkdownFiles(SKILLS_DIR);
 
-export namespace Indexer {
-  export async function build(config: Config): Promise<IndexedSection[]> {
-    const files = await SharedFileIndex.FileIndex.findMarkdownFiles(SKILLS_DIR);
+  const cached = await tryLoadCached(files, loadCache);
+  if (cached) return cached;
 
-    const cached = await tryLoadCached(files);
-    if (cached) return cached;
+  const { rawChunks, mtimes } = await collectRawChunks(
+    files,
+    config.chunkMaxChars,
+  );
+  if (!rawChunks.length) return [];
 
-    const { rawChunks, mtimes } = await collectRawChunks(
-      files,
-      config.chunkMaxChars,
-    );
-    if (!rawChunks.length) return [];
-
-    return embedAndSave(rawChunks, mtimes, config);
-  }
+  return embedAndSave(rawChunks, mtimes, config);
 }

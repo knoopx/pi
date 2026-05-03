@@ -56,7 +56,6 @@ Install the package.`);
 First sentence. Second sentence. Third one!`);
     const chunks = chunkByElements(tree);
 
-    // Heading + at least 2-3 sentence chunks.
     expect(chunks.length).toBeGreaterThanOrEqual(3);
     // Body chunks contain both heading context and sentence text.
     const sentences = chunks.filter(
@@ -98,7 +97,6 @@ const b = 2;
 | x | y |`);
     const chunks = chunkByElements(tree);
 
-    // Heading + at least one data row chunk.
     expect(chunks.length).toBeGreaterThanOrEqual(2);
     const allText = chunks.map((c) => c.text).join("\n");
     expect(allText).toContain("x");
@@ -129,7 +127,6 @@ This is the content.`);
   });
 
   it("does not produce oversized chunks from table rows", () => {
-    // Build a table with many columns to simulate the real Helix language table.
     const cols = Array.from({ length: 20 }, (_, i) => `Col${i}`).join(" | ");
     const sep = Array.from({ length: 20 }, () => "---").join("|");
     const row = Array.from({ length: 20 }, (_, i) => `val${i}`).join(" | ");
@@ -141,7 +138,6 @@ This is the content.`);
 | ${row} |`);
     const chunks = chunkByElements(tree);
 
-    // No single chunk should exceed 500 chars (a row with 20 cells is still small per-row).
     for (const chunk of chunks) {
       expect(chunk.text.length).toBeLessThan(500);
     }

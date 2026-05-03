@@ -133,11 +133,9 @@ describe("buildReminder", () => {
       expect(reminder).toContain(
         "The following skill content may help resolve this error:",
       );
-      // Compact format: file → section
       expect(reminder).toContain("SKILL.md → Setup");
       expect(reminder).toContain("SKILL.md → Mocking");
       expect(reminder).toContain("SKILL.md → Conflicts");
-      // Sorted by score descending
       const setupIdx = reminder.indexOf("→ Setup");
       const mockingIdx = reminder.indexOf("→ Mocking");
       const conflictsIdx = reminder.indexOf("→ Conflicts");
@@ -263,7 +261,6 @@ describe("scoreAndRank", () => {
 
       const hits = scoreAndRank(index, identical, MOCK_CONFIG);
       expect(hits.length).toBe(2);
-      // The highest-scoring "Setup" chunk should be kept.
       expect(hits.find((h) => h.section === "Setup")!.score).toBeCloseTo(1);
       expect(hits.filter((h) => h.section === "Setup").length).toBe(1);
     });

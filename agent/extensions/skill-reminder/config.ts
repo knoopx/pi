@@ -3,7 +3,7 @@ import {
   loadExtensionConfig,
 } from "../../shared/config/settings";
 
-export interface Config {
+export interface Config extends Record<string, unknown> {
   enabled: boolean;
   serverUrl: string;
   embeddingModel: string;
@@ -27,9 +27,5 @@ const SETTINGS_KEY = "skillReminder";
 
 export async function loadConfig(): Promise<Config> {
   const settings = await readSettingsOrEmpty();
-  return loadExtensionConfig(
-    settings,
-    SETTINGS_KEY,
-    DEFAULTS as unknown as Record<string, unknown>,
-  );
+  return loadExtensionConfig(settings, SETTINGS_KEY, DEFAULTS);
 }

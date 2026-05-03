@@ -100,14 +100,16 @@ async function getScoredHits(
   threshold: number,
 ): Promise<ScoredHit[]> {
   const scored = index
-    .map((chunk) => ({
+    .map<ScoredHit | null>((chunk) => ({
       score: cosine(embedding, chunk.embedding),
-      skill: chunk.skill!,
+      skill: chunk.skill,
       file: chunk.file,
       section: chunk.section,
       text: chunk.text,
     }))
-    .filter((s) => s.score > threshold);
+    .filter(
+      (s): s is ScoredHit => s.score > threshold && s.skill !== undefined,
+    );
 
   if (scored.length === 0) return [];
 
