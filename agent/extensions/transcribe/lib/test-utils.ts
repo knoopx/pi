@@ -117,7 +117,7 @@ const defaultItemContent = readFileSync(
   "utf-8",
 );
 
-const FIXED_NOW = new Date("2025-01-15T12:00:00Z").getTime();
+const FIXED_NOW = new Date("2026-05-03T11:14:00Z").getTime();
 
 export function mockFetchWithFixtures(): void {
   beforeAll(() => {
@@ -145,7 +145,6 @@ export function mockFetchWithFixtures(): void {
         } as Response;
       }
     }
-    // Return default HN item for any unmatched item URLs
     if (url.includes("hacker-news.firebaseio.com/v0/item/")) {
       return {
         ok: true,

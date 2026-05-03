@@ -19,7 +19,22 @@ export interface FileIndexEntry {
   chunks: IndexedSection[];
 }
 
-export function splitByDigest(
+function loadAndFilterCache<T>(
+  cached: FileIndexEntry | null,
+  fileDigests: Map<string, string>,
+): { unchanged: string[]; stale: string[]; cleanedChunks: T[] } {
+  const { unchanged, stale } = splitByDigest(fileDigests, cached?.digests);
+
+  const currentPaths = new Set(fileDigests.keys());
+  const cleanedChunks =
+    (cached?.chunks as IndexedSection[])
+      .filter((entry) => currentPaths.has(entry.file))
+      .map((e) => e as unknown as T) ?? [];
+
+  return { unchanged, stale, cleanedChunks };
+}
+
+function splitByDigest(
   fileDigests: Map<string, string>,
   cachedDigests?: Record<string, string>,
 ): { unchanged: string[]; stale: string[] } {
@@ -64,4 +79,44 @@ export async function saveCache(
 
 export function fileDigest(content: string): string {
   return createHash("sha256").update(content).digest("hex");
+}
+
+export function getChangedFiles(
+  staleFiles: string[],
+  unchangedFiles: string[],
+): string[] {
+  const unchangedPaths = new Set(unchangedFiles);
+  return staleFiles.filter((f) => !unchangedPaths.has(f));
+}
+
+export async function runIndexBuild<T>(
+  loadCacheFn: () => Promise<FileIndexEntry | null>,
+  saveCacheFn: (entry: FileIndexEntry) => Promise<void>,
+  fileDigests: Map<string, string>,
+  rebuildFn: (
+    stale: string[],
+    cleanedChunks: T[],
+    unchangedFiles: string[],
+  ) => Promise<T[]>,
+): Promise<T[]> {
+  const cached = await loadCacheFn();
+  const {
+    unchanged: unchangedFiles,
+    stale,
+    cleanedChunks,
+  } = loadAndFilterCache<T>(cached, fileDigests);
+
+  let allChunks: T[] = [...cleanedChunks];
+
+  if (stale.length > 0 || unchangedFiles.length < fileDigests.size) {
+    allChunks = await rebuildFn(stale, cleanedChunks, unchangedFiles);
+  }
+
+  const newDigests = Object.fromEntries(fileDigests.entries());
+  await saveCacheFn({
+    digests: newDigests,
+    chunks: allChunks as IndexedSection[],
+  });
+
+  return allChunks;
 }

@@ -303,9 +303,7 @@ async function handleRepo(
       { signal },
     );
     readme = Buffer.from(b64, "base64").toString("utf-8");
-  } catch {
-    // Repo has no README; fall back to description
-  }
+  } catch {}
 
   return readme || info;
 }

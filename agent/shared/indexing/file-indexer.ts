@@ -1,7 +1,13 @@
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { FileIndexEntry, IndexedSection } from "./cache";
-import { fileDigest, loadCache, saveCache, splitByDigest } from "./cache";
+import {
+  fileDigest,
+  loadCache,
+  saveCache,
+  runIndexBuild,
+  getChangedFiles,
+} from "./cache";
 import { embedTexts, type EmbedConfig } from "../embeddings/engine";
 import type { ProgressState } from "../embeddings/progress";
 
@@ -56,35 +62,19 @@ export namespace FileIndex {
       fileDigests.set(file, fileDigest(info.content));
     }
 
-    const cached = await loadCache();
-    const { unchanged: unchangedFiles, stale } = splitByDigest(
+    return runIndexBuild<IndexedSection>(
+      loadCache,
+      saveCache,
       fileDigests,
-      cached?.digests,
+      (stale, cleanedChunks, unchangedFiles) =>
+        rebuildAndMerge(
+          indexer,
+          stale,
+          cleanedChunks,
+          unchangedFiles,
+          embedConfig,
+        ),
     );
-
-    // Remove entries for deleted files
-    const currentPaths = new Set(fileDigests.keys());
-    const cleanedChunks =
-      (cached?.chunks as IndexedSection[]).filter((entry) =>
-        currentPaths.has(entry.file),
-      ) ?? [];
-
-    let allChunks: IndexedSection[] = [...cleanedChunks];
-
-    if (stale.length > 0 || unchangedFiles.length < fileDigests.size) {
-      allChunks = await rebuildAndMerge(
-        indexer,
-        stale,
-        cleanedChunks,
-        unchangedFiles,
-        embedConfig,
-      );
-    }
-
-    const newDigests = Object.fromEntries(fileDigests.entries());
-    await saveCache({ digests: newDigests, chunks: allChunks });
-
-    return allChunks;
   }
 }
 
@@ -95,8 +85,7 @@ async function rebuildAndMerge(
   unchangedFiles: string[],
   embedConfig: EmbedConfig,
 ): Promise<IndexedSection[]> {
-  const unchangedPaths = new Set(unchangedFiles);
-  const changedFiles = staleFiles.filter((f) => !unchangedPaths.has(f));
+  const changedFiles = getChangedFiles(staleFiles, unchangedFiles);
 
   if (changedFiles.length === 0) {
     return cleanedChunks;

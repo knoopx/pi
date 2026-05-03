@@ -26,8 +26,6 @@ export class FileChangeRow implements Component {
     return [this.renderLine(width)];
   }
 
-  invalidate(): void {}
-
   private renderLine(width: number): string {
     const { file, isSelected, theme } = this.props;
     const statusIcon = getFileStatusIcon(file.status);
@@ -70,4 +68,6 @@ export class FileChangeRow implements Component {
     }
     return truncateToWidth(rawLine, width, "", true);
   }
+
+  invalidate(): void {}
 }

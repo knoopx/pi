@@ -29,9 +29,7 @@ async function getAllSessionFiles(signal?: AbortSignal): Promise<string[]> {
         if (signal?.aborted) return result;
         if (file.endsWith(".jsonl")) result.push(join(cwdPath, file));
       }
-    } catch {
-      // Directory unreadable; skip it
-    }
+    } catch {}
     return result;
   }
   const files: string[] = [];
@@ -45,9 +43,7 @@ async function getAllSessionFiles(signal?: AbortSignal): Promise<string[]> {
       const sessionFiles = await collectSessionFiles(cwdPath, signal);
       files.push(...sessionFiles);
     }
-  } catch {
-    // Sessions directory unreadable; proceed with empty list
-  }
+  } catch {}
 
   return files;
 }
@@ -219,9 +215,7 @@ function parseSessionLine(
       seenHashes,
     );
     if (message) return { message };
-  } catch {
-    // Malformed JSON line; skip it
-  }
+  } catch {}
   return {};
 }
 function checkSignalAborted(signal?: AbortSignal): boolean {

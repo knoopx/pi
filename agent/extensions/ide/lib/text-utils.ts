@@ -20,7 +20,6 @@ export function pad(text: string, width: number): string {
   const cleaned = stripOscSequences(text);
   const len = stringWidth(cleaned);
   if (len >= width) return sliceAnsi(cleaned, 0, width);
-  // Always reset before padding to prevent ANSI style leakage into trailing spaces
   return cleaned + "\x1b[0m" + " ".repeat(width - len);
 }
 export function ensureWidth(text: string, width: number): string {
@@ -28,7 +27,6 @@ export function ensureWidth(text: string, width: number): string {
   const currentWidth = stringWidth(cleaned);
   if (currentWidth === width) return cleaned;
   if (currentWidth > width) return sliceAnsi(cleaned, 0, width);
-  // Always reset before padding to prevent ANSI style leakage into trailing spaces
   return cleaned + "\x1b[0m" + " ".repeat(width - currentWidth);
 }
 export function buildHelpText(

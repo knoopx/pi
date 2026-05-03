@@ -120,7 +120,7 @@ describe("parseCmMapOutput", () => {
     const output =
       "./agent/extensions/skill-reminder/vitest.config.ts|typescript|171";
     const result = parseCmMapOutput(output);
-    expect(result).toHaveLength(0); // only 3 parts, need >= 4
+    expect(result).toHaveLength(0);
   });
 
   it("preserves relative paths with ./ prefix", () => {
@@ -361,7 +361,6 @@ describe("buildSymbolText", () => {
     };
     const result = buildSymbolText(entry);
     expect(result.length).toBeLessThanOrEqual(600);
-    // Not all 50 symbols fit in 600 chars
     expect(result.split(", ").length).toBeLessThan(50);
   });
 
@@ -529,7 +528,7 @@ describe("buildFileList", () => {
     const output =
       "./agent/extensions/skill-reminder/vitest.config.ts|typescript|171";
     const result = await runBuildFileList(output);
-    expect(result).toEqual([]); // needs >= 4 parts
+    expect(result).toEqual([]);
   });
 
   it("handles mixed valid and invalid lines", async () => {

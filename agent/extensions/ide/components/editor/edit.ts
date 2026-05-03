@@ -104,22 +104,6 @@ function offsetFromLines(content: string, cursor: Cursor): number {
   return offset;
 }
 
-export function deleteSelection(
-  lines: string[],
-  cursor: Cursor,
-  selectionAnchor: Cursor | null,
-  selectionRange: { start: Cursor; end: Cursor } | null,
-): { lines: string[]; cursor: Cursor; selectionAnchor: Cursor | null } {
-  if (!selectionRange) return { lines, cursor, selectionAnchor };
-  const result = replaceInRange(
-    lines,
-    selectionRange.start,
-    selectionRange.end,
-    "",
-  );
-  return { lines: result, cursor: selectionRange.start, selectionAnchor: null };
-}
-
 export function insertChar(
   lines: string[],
   cursor: Cursor,
@@ -174,16 +158,13 @@ export function deleteCharBackward(
   selectionRange: { start: Cursor; end: Cursor } | null,
   selectionAnchor: Cursor | null,
 ): DeleteResult {
-  return makeDelete(delSelFn, (lines, cursor) => {
-    if (cursor.col > 0) {
-      const line = lines[cursor.line] ?? "";
-      lines[cursor.line] =
-        line.slice(0, cursor.col - 1) + line.slice(cursor.col);
-      cursor.col--;
-    } else {
-      joinLinesBackward(lines, cursor);
-    }
-  })(lines, cursor, hasSelection, selectionRange, selectionAnchor);
+  return makeDelete(delSelFn, deleteCharBackwardBody)(
+    lines,
+    cursor,
+    hasSelection,
+    selectionRange,
+    selectionAnchor,
+  );
 }
 
 export function deleteCharForward(
@@ -194,15 +175,13 @@ export function deleteCharForward(
   selectionRange: { start: Cursor; end: Cursor } | null,
   selectionAnchor: Cursor | null,
 ): DeleteResult {
-  return makeDelete(delSelFn, (lines, cursor) => {
-    const line = lines[cursor.line] ?? "";
-    if (cursor.col < line.length) {
-      lines[cursor.line] =
-        line.slice(0, cursor.col) + line.slice(cursor.col + 1);
-    } else {
-      joinLinesForward(lines, cursor);
-    }
-  })(lines, cursor, hasSelection, selectionRange, selectionAnchor);
+  return makeDelete(delSelFn, deleteCharForwardBody)(
+    lines,
+    cursor,
+    hasSelection,
+    selectionRange,
+    selectionAnchor,
+  );
 }
 
 function joinLinesBackward(lines: string[], cursor: Cursor): void {
@@ -217,6 +196,72 @@ function joinLinesForward(lines: string[], cursor: Cursor): void {
   const currentLine = lines[cursor.line] ?? "";
   const nextLine = lines[cursor.line + 1] ?? "";
   lines.splice(cursor.line, 2, currentLine + nextLine);
+}
+
+function deleteCharForwardBody(lines: string[], cursor: Cursor): void {
+  const line = lines[cursor.line] ?? "";
+  if (cursor.col < line.length) {
+    lines[cursor.line] = line.slice(0, cursor.col) + line.slice(cursor.col + 1);
+  } else {
+    joinLinesForward(lines, cursor);
+  }
+}
+
+function deleteCharBackwardBody(lines: string[], cursor: Cursor): void {
+  if (cursor.col > 0) {
+    const line = lines[cursor.line] ?? "";
+    lines[cursor.line] = line.slice(0, cursor.col - 1) + line.slice(cursor.col);
+    cursor.col--;
+  } else {
+    joinLinesBackward(lines, cursor);
+  }
+}
+
+function deleteWordForwardBody(lines: string[], cursor: Cursor): void {
+  const line = lines[cursor.line] ?? "";
+  const col = cursor.col;
+  const lineLen = line.length;
+
+  if (col === lineLen && cursor.line === lines.length - 1) return;
+  if (cursor.col !== lineLen || cursor.line >= lines.length - 1) {
+    const deleteEnd = findWordBoundaryForward(line, col, lineLen);
+    if (deleteEnd > col) {
+      lines[cursor.line] = line.slice(0, col) + line.slice(deleteEnd);
+    }
+  } else {
+    const nextLine = lines[cursor.line + 1] ?? "";
+    lines.splice(cursor.line, 2, line + nextLine);
+  }
+}
+
+function deleteWordBackwardBody(lines: string[], cursor: Cursor): void {
+  const line = lines[cursor.line] ?? "";
+  const col = cursor.col;
+
+  if (col === 0 && cursor.line === 0) return;
+  if (cursor.col !== 0 || cursor.line === 0) {
+    const deleteEnd = findWordBoundaryBackward(line, col);
+    if (deleteEnd < col) {
+      lines[cursor.line] = line.slice(0, deleteEnd) + line.slice(col);
+      cursor.col = deleteEnd;
+    }
+  } else if (cursor.line > 0) {
+    const prevLine = lines[cursor.line - 1] ?? "";
+    lines.splice(cursor.line - 1, 2, prevLine + line);
+    cursor.col = prevLine.length;
+    cursor.line--;
+  }
+}
+
+function makeDeleteBody(
+  delSelFn: DelSelFn,
+  body: DeleteBody,
+): (lines: string[], cursor: Cursor) => DeleteResult {
+  return (lines, cursor) =>
+    withSelection(false, delSelFn, null, null, () => {
+      body(lines, cursor);
+      return { lines, cursor, selectionAnchor: null };
+    });
 }
 
 export function insertNewline(
@@ -252,24 +297,13 @@ export function deleteWordBackward(
   selectionRange: { start: Cursor; end: Cursor } | null,
   selectionAnchor: Cursor | null,
 ): DeleteResult {
-  return makeDelete(delSelFn, (lines, cursor) => {
-    const line = lines[cursor.line] ?? "";
-    const col = cursor.col;
-
-    if (col === 0 && cursor.line === 0) return;
-    if (cursor.col !== 0 || cursor.line === 0) {
-      const deleteEnd = findWordBoundaryBackward(line, col);
-      if (deleteEnd < col) {
-        lines[cursor.line] = line.slice(0, deleteEnd) + line.slice(col);
-        cursor.col = deleteEnd;
-      }
-    } else if (cursor.line > 0) {
-      const prevLine = lines[cursor.line - 1] ?? "";
-      lines.splice(cursor.line - 1, 2, prevLine + line);
-      cursor.col = prevLine.length;
-      cursor.line--;
-    }
-  })(lines, cursor, hasSelection, selectionRange, selectionAnchor);
+  return makeDelete(delSelFn, deleteWordBackwardBody)(
+    lines,
+    cursor,
+    hasSelection,
+    selectionRange,
+    selectionAnchor,
+  );
 }
 
 export function deleteWordForward(
@@ -280,22 +314,13 @@ export function deleteWordForward(
   selectionRange: { start: Cursor; end: Cursor } | null,
   selectionAnchor: Cursor | null,
 ): DeleteResult {
-  return makeDelete(delSelFn, (lines, cursor) => {
-    const line = lines[cursor.line] ?? "";
-    const col = cursor.col;
-    const lineLen = line.length;
-
-    if (col === lineLen && cursor.line === lines.length - 1) return;
-    if (cursor.col !== lineLen || cursor.line >= lines.length - 1) {
-      const deleteEnd = findWordBoundaryForward(line, col, lineLen);
-      if (deleteEnd > col) {
-        lines[cursor.line] = line.slice(0, col) + line.slice(deleteEnd);
-      }
-    } else {
-      const nextLine = lines[cursor.line + 1] ?? "";
-      lines.splice(cursor.line, 2, line + nextLine);
-    }
-  })(lines, cursor, hasSelection, selectionRange, selectionAnchor);
+  return makeDelete(delSelFn, deleteWordForwardBody)(
+    lines,
+    cursor,
+    hasSelection,
+    selectionRange,
+    selectionAnchor,
+  );
 }
 
 export function deleteLine(

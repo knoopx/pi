@@ -19,9 +19,10 @@ import { embedTexts } from "../../shared/embeddings/engine";
 import type { Config } from "./config";
 import {
   type IndexedSection,
-  splitByDigest,
+  runIndexBuild,
+  getChangedFiles,
+  fileDigest,
 } from "../../shared/indexing/cache";
-import { fileDigest } from "../../shared/indexing/cache";
 
 interface RawChunk {
   skill: string;
@@ -105,36 +106,13 @@ export async function build(config: Config): Promise<IndexedSection[]> {
     fileDigests.set(file, fileDigest(content));
   }
 
-  // Load cache and separate unchanged vs changed files
-  const cached = await loadCache();
-  const { unchanged: unchangedFiles, stale } = splitByDigest(
+  return runIndexBuild<IndexedSection>(
+    loadCache,
+    saveCache,
     fileDigests,
-    cached?.digests,
+    (stale, cleanedChunks, unchangedFiles) =>
+      rebuildAndMerge(stale, cleanedChunks, unchangedFiles, config),
   );
-
-  // Remove entries for deleted files
-  const currentPaths = new Set(fileDigests.keys());
-  const cleanedChunks =
-    cached?.chunks.filter((entry: IndexedSection) =>
-      currentPaths.has(entry.file),
-    ) ?? [];
-
-  let allChunks: IndexedSection[] = [...cleanedChunks];
-
-  if (stale.length > 0 || unchangedFiles.length < fileDigests.size) {
-    allChunks = await rebuildAndMerge(
-      stale,
-      cleanedChunks,
-      unchangedFiles,
-      config,
-    );
-  }
-
-  // Save updated cache with new digests
-  const newDigests = Object.fromEntries(fileDigests.entries());
-  await saveCache({ digests: newDigests, chunks: allChunks });
-
-  return allChunks;
 }
 
 async function rebuildAndMerge(
@@ -143,8 +121,7 @@ async function rebuildAndMerge(
   unchangedFiles: string[],
   config: Config,
 ): Promise<IndexedSection[]> {
-  const unchangedPaths = new Set(unchangedFiles);
-  const changedFiles = staleFiles.filter((f) => !unchangedPaths.has(f));
+  const changedFiles = getChangedFiles(staleFiles, unchangedFiles);
 
   if (changedFiles.length === 0) {
     return cleanedChunks;

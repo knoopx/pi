@@ -87,7 +87,6 @@ function buildActionBindings(
       key: Key.ctrl("s"),
       label: "save",
       handler: () => {
-        // save is handled by component's own logic
         requestRender();
       },
     },

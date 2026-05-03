@@ -46,6 +46,25 @@ export function formatNumber(n: number): string {
   return n.toLocaleString();
 }
 
+export function filterUserTags(tags: string[]): string[] {
+  return tags.filter(
+    (t) =>
+      !t.startsWith("base_model:") &&
+      !t.startsWith("license:") &&
+      !t.startsWith("arxiv:") &&
+      !t.startsWith("deploy:") &&
+      !t.startsWith("dataset:") &&
+      t !== "region:us" &&
+      t !== "endpoints_compatible",
+  );
+}
+
+export function formatDownloadsShort(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
+
 export function pluralize(count: number, singular: string): string {
   return `${count} ${singular}${count !== 1 ? "s" : ""}`;
 }

@@ -3,7 +3,12 @@ import {
   createRetryFetchText,
   defineParser,
 } from "../lib/parser-utils";
-import { formatIsoAge } from "../lib/formatters";
+import {
+  formatIsoAge,
+  formatDownloadsShort,
+  filterUserTags,
+} from "../lib/formatters";
+import { fmtAuthorBase } from "../../../shared/rendering/header";
 interface HFRepo {
   kind: "model" | "dataset" | "space";
   owner: string;
@@ -130,9 +135,7 @@ async function fetchReadme(
     if (readmeEntry) {
       return await fetchRaw(parsed, "main", "README.md", signal);
     }
-  } catch {
-    // No README found or fetch failed; return empty string
-  }
+  } catch {}
   return "";
 }
 function renderTags(
@@ -169,13 +172,14 @@ interface RepoBodyOptions {
   extraDescription?: string;
 }
 
-function renderLicenseAndBaseModel(
+function renderLicenseAndBase(
   parts: string[],
   tags: string[] | undefined,
+  cardData?: Record<string, unknown>,
 ): void {
   if (!tags) return;
-  const license = extractLicense(tags, {});
-  const baseModel = extractBaseModel(tags, {});
+  const license = extractLicense(tags, cardData);
+  const baseModel = extractBaseModel(tags, cardData);
   if (license || baseModel) {
     parts.push("");
     parts.push(
@@ -212,7 +216,7 @@ async function renderRepoBody(
   if (opts.tags?.length) {
     renderTags(parts, opts.tags, opts.tagFilter, opts.tagLimit);
   }
-  renderLicenseAndBaseModel(parts, opts.tags);
+  renderLicenseAndBase(parts, opts.tags);
   renderRepoMetadata(parts, opts);
   const readme = await fetchReadme(parsed, signal);
   if (readme) {
@@ -286,12 +290,6 @@ function buildRepoBodyOptions(
   };
 }
 
-function formatDownloadsShort(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
-
 function formatSize(bytes: number): string {
   const gb = bytes / 1_073_741_824;
   if (gb >= 1) return `${gb.toFixed(1)}GB`;
@@ -327,19 +325,6 @@ function extractBaseModel(
     if (tag) return tag.replace(prefix, "");
   }
   return null;
-}
-
-function userTags(tags: string[]): string[] {
-  return tags.filter(
-    (t) =>
-      !t.startsWith("base_model:") &&
-      !t.startsWith("license:") &&
-      !t.startsWith("arxiv:") &&
-      !t.startsWith("deploy:") &&
-      !t.startsWith("dataset:") &&
-      t !== "region:us" &&
-      t !== "endpoints_compatible",
-  );
 }
 
 function guessQuantFormat(path: string): string {
@@ -495,13 +480,7 @@ function fmtAuthor(
   } | null,
 ): string {
   if (!a) return "system";
-  const parts = [a.name];
-  if (a.fullname && a.fullname !== a.name) parts.push(`(${a.fullname})`);
-  const badges: string[] = [];
-  if (a.type === "org") badges.push("org");
-  if (a.isPro) badges.push("PRO");
-  if (a.isHf) badges.push("HF staff");
-  if (badges.length) parts.push(`[${badges.join(", ")}]`);
+  const parts = fmtAuthorBase(a);
   return parts.join(" ");
 }
 
@@ -540,20 +519,8 @@ function renderConfigInfo(parts: string[], detail: HFModelDetail): void {
 function renderCardData(parts: string[], detail: HFModelDetail): void {
   const cardData = detail.cardData as Record<string, unknown> | undefined;
   if (!Array.isArray(detail.tags)) return;
-  const cardTags = userTags(detail.tags);
-  const license = extractLicense(detail.tags, cardData);
-  const baseModel = extractBaseModel(detail.tags, cardData);
-  if (license || baseModel) {
-    parts.push("");
-    parts.push(
-      [
-        license ? `**License:** ${license}` : "",
-        baseModel ? `**Base model:** ${baseModel}` : "",
-      ]
-        .filter(Boolean)
-        .join(" • "),
-    );
-  }
+  const cardTags = filterUserTags(detail.tags);
+  renderLicenseAndBase(parts, detail.tags, cardData);
   if (cardTags.length > 0 && cardTags.length <= 10) {
     parts.push("");
     parts.push("**Tags:**");
@@ -755,12 +722,8 @@ async function handleRepo(
           signal,
         );
         renderFileListSection(parts, parsed, tree, isGguf);
-      } catch {
-        // Tree fetch failed, skip file listing
-      }
-    } catch {
-      // Detail fetch failed, already rendered basic info
-    }
+      } catch {}
+    } catch {}
   }
 
   return parts.join("\n");
@@ -990,9 +953,7 @@ async function handleDiscussion(
         signal,
       );
       return renderDiscussionDetail(parsed, detail, signal);
-    } catch {
-      // Fallback to link if API fails
-    }
+    } catch {}
   }
 
   try {
@@ -1012,9 +973,7 @@ async function handleDiscussion(
       signal,
     );
     return renderDiscussionsList(parsed, result.discussions);
-  } catch {
-    // Fallback to link if API fails
-  }
+  } catch {}
 
   return buildFallback(parsed, url);
 }

@@ -137,22 +137,6 @@ export class Editor {
     this.selectionAnchor = result.selectionAnchor;
   }
 
-  deleteSelection(): void {
-    const selectionRange = selection.getSelectionRange(
-      this.selectionAnchor,
-      this.cursor,
-    );
-    const result = edit.deleteSelection(
-      this.lines,
-      this.cursor,
-      this.selectionAnchor,
-      selectionRange,
-    );
-    this.lines = result.lines;
-    this.cursor = result.cursor;
-    this.selectionAnchor = result.selectionAnchor;
-  }
-
   insertChar(char: string): void {
     this.saveState();
     const result = edit.insertChar(this.lines, this.cursor, char);
@@ -268,22 +252,6 @@ export class Editor {
     );
     this.cursor = result.cursor;
     this.selectionAnchor = result.selectionAnchor;
-  }
-
-  replaceRange(start: Cursor, end: Cursor, text: string): void {
-    this.saveState();
-    const content = this.getContent();
-    const startOffset = this.offsetFromCursor(start);
-    const endOffset = this.offsetFromCursor(end);
-    const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-    const nextContent =
-      content.slice(0, startOffset) + normalized + content.slice(endOffset);
-    this.lines = nextContent.split("\n");
-    const newOffset = startOffset + normalized.length;
-    const newCursor = this.cursorFromOffset(newOffset);
-    this.cursor = newCursor;
-    this.selectionAnchor = null;
-    this.adjustScroll();
   }
 
   movePageUp(select = false): void {

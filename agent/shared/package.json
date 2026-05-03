@@ -3,20 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@leeoniya/ufuzzy": "1.0.0",
-    "@mariozechner/pi-agent-core": "^0.66.1",
-    "@mariozechner/pi-ai": "^0.66.1",
-    "@mariozechner/pi-coding-agent": "^0.66.1",
-    "@mariozechner/pi-tui": "^0.66.1",
-    "mdast-util-to-string": "^4.0.0",
-    "picomatch": "^4.0.4",
-    "remark-gfm": "^4.0.1",
-    "remark-parse": "^11.0.0",
-    "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {
-    "@types/picomatch": "^4.0.3",
     "vitest": "^3.2.4"
   }
 }

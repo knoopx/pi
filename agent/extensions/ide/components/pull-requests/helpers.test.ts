@@ -56,7 +56,6 @@ describe("resolvePrStateColor", () => {
   });
 
   it("returns error for closed PRs (even drafts)", () => {
-    // CLOSED is checked before draft check in the function
     expect(resolvePrStateColor("CLOSED", false)).toBe("error");
     expect(resolvePrStateColor("CLOSED", true)).toBe("error");
   });
@@ -135,7 +134,6 @@ describe("truncateTitle", () => {
     const longTitle = "This is a very long title that needs truncation";
     const result = truncateTitle(longTitle, 20);
     expect(result.length).toBe(20);
-    // maxWidth - 1 chars + ellipsis = 20 total
     expect(result).toBe("This is a very long…");
   });
 

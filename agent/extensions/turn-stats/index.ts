@@ -7,8 +7,6 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import type { Usage } from "@mariozechner/pi-ai";
 
-// Message event types are not exported from pi's public API but are accepted
-// by pi.on() at runtime. Define them locally to match the internal types.
 interface MessageStartEvent {
   type: "message_start";
   message: unknown;

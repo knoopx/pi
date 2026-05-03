@@ -44,7 +44,7 @@ function parseEvent(input: string): ToolResultEvent {
     toolName: resolveToolName(raw.toolName),
     isError: true,
     input: resolveInput(raw.input),
-    content: resolveContent(raw.content),
+    content: resolveContent(raw.content) as any,
     details: undefined,
   };
 }
@@ -58,11 +58,11 @@ function resolveToolName(v: unknown): string {
 }
 
 function resolveInput(v: unknown): Record<string, unknown> {
-  return Array.isArray(v) ? (v as Record<string, unknown>) : {};
+  return Array.isArray(v) ? (v as unknown as Record<string, unknown>) : {};
 }
 
 function resolveContent(v: unknown): unknown[] {
-  return Array.isArray(v) ? v : [];
+  return Array.isArray(v) ? (v as unknown[]) : [];
 }
 
 async function getEvent(): Promise<ToolResultEvent> {

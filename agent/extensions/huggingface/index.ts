@@ -3,10 +3,16 @@ import { Type } from "@sinclair/typebox";
 import { textResult } from "../../shared/result/tool-result";
 import { throttledFetch } from "../../shared/network/throttle";
 import { dotJoin, countLabel, stateDot } from "../../shared/rendering/header";
-import { formatIsoAge, extractLicense } from "../transcribe/lib/formatters";
+import {
+  formatIsoAge,
+  extractLicense,
+  formatDownloadsShort,
+  filterUserTags,
+} from "../transcribe/lib/formatters";
 import { detail } from "../../shared/rendering/detail";
 import { table } from "../../shared/rendering/table/renderer";
 import type { Column } from "../../shared/rendering/types";
+import { fmtAuthorBase } from "../../shared/rendering/header";
 
 const HF_API = "https://huggingface.co/api";
 const HF_BASE = "https://huggingface.co";
@@ -92,12 +98,6 @@ async function hfFetch<T>(url: string, signal?: AbortSignal): Promise<T> {
   return (await response.json()) as T;
 }
 
-function fmtNum(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
-
 function parseCsv(input?: string): string[] {
   if (!input) return [];
   return input
@@ -128,21 +128,13 @@ function totalReactions(reactions: { count: number }[]): number {
 }
 
 function fmtAuthor(a: Author): string {
-  const parts = [a.name];
-  if (a.fullname && a.fullname !== a.name) parts.push(`(${a.fullname})`);
-  const badges: string[] = [];
-  if (a.type === "org") badges.push("org");
-  if (a.isPro) badges.push("PRO");
-  if (a.isHf) badges.push("HF staff");
-  if (a.isOrgMember) badges.push("member");
-  if (badges.length) parts.push(`[${badges.join(", ")}]`);
-  if (a.followerCount) parts.push(`${fmtNum(a.followerCount)} followers`);
+  const parts = fmtAuthorBase(a);
+  if (a.followerCount)
+    parts.push(`${formatDownloadsShort(a.followerCount)} followers`);
   return parts.join(" ");
 }
 
 export default function (pi: ExtensionAPI) {
-  // ── search-huggingface-models ──────────────────────────────────────
-
   pi.registerTool({
     name: "search-huggingface-models",
     label: "HuggingFace Search",
@@ -258,25 +250,15 @@ export default function (pi: ExtensionAPI) {
       }
 
       const rows = filtered.map((m) => {
-        const tags = m.tags
-          .filter(
-            (t) =>
-              !t.startsWith("base_model:") &&
-              !t.startsWith("license:") &&
-              !t.startsWith("arxiv:") &&
-              !t.startsWith("deploy:") &&
-              !t.startsWith("dataset:") &&
-              t !== "region:us" &&
-              t !== "endpoints_compatible" &&
-              t !== m.pipeline_tag &&
-              t !== m.library_name,
-          )
+        const allTags = filterUserTags(m.tags);
+        const tags = allTags
+          .filter((t) => t !== m.pipeline_tag && t !== m.library_name)
           .slice(0, 3)
           .join(", ");
         return {
           Model: m.id,
           url: `${HF_BASE}/models/${m.id}`,
-          "󰇚": fmtNum(m.downloads),
+          "󰇚": formatDownloadsShort(m.downloads),
           "󰋑": m.likes,
           License: extractLicense(m.tags, m.cardData) ?? "",
           Pipeline: m.pipeline_tag ?? "",
@@ -334,8 +316,6 @@ export default function (pi: ExtensionAPI) {
       });
     },
   });
-
-  // ── list-huggingface-discussions ───────────────────────────────────
 
   pi.registerTool({
     name: "list-huggingface-discussions",

@@ -18,7 +18,6 @@ import { getMtimeSorter } from "./helpers";
 import { loadPreviewFromPath } from "../../lib/file-preview";
 
 const BINARY_EXTENSIONS = new Set([
-  // images
   "png",
   "jpg",
   "jpeg",
@@ -26,7 +25,6 @@ const BINARY_EXTENSIONS = new Set([
   "webp",
   "bmp",
   "svg",
-  // other binaries
   "ico",
   "cur",
   "tif",

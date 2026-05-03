@@ -68,7 +68,6 @@ function handleCustomBindings<TContext>(
     const result = binding.handler(ctx);
     if (result === true || result === undefined) return true;
     if (result instanceof Promise) {
-      // Handler already returns true; unhandled rejections are intentional
       void result.catch(() => {});
       return true;
     }

@@ -47,7 +47,6 @@ describe("registry", () => {
     ])(
       "invokes %s parser for URL (throws API error, not 'No parser found'): %s",
       async (name, url) => {
-        // These should invoke the parser and throw an API/network error, not "No parser found"
         await expect(
           parse(url, undefined as unknown as AbortSignal),
         ).rejects.toThrow(/gh:|Unable to parse/);

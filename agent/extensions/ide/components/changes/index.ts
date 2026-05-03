@@ -157,7 +157,6 @@ class ChangesComponent implements Component, ChangesComponentAPI {
       onFileCmAction: this.onFileCmAction,
     });
 
-    // Wire up data loading module
     this.dataLoading = createDataLoading(this.state, {
       loadChanges: (revision) => this.service.loadChanges(revision),
       getCurrentChangeIdShort: () => this.service.getCurrentChangeIdShort(),
@@ -168,7 +167,6 @@ class ChangesComponent implements Component, ChangesComponentAPI {
       requestRender: () => tui.requestRender(),
     });
 
-    // Wire up operations module
     this.operations = createOperations({
       pi,
       cwd: init.ctx.cwd,

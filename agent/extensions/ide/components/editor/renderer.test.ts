@@ -460,7 +460,6 @@ describe("renderEditorView", () => {
         });
 
         expect(result.lines[0]).toContain(CURSOR_MARKER);
-        // Cursor should NOT appear on non-cursor lines
         for (let i = 1; i < result.lines.length; i++) {
           if (
             result.lines[i].includes("second") ||
@@ -509,7 +508,6 @@ describe("renderEditorView", () => {
           cursor: { line: 3, col: 0 },
         });
 
-        // The highlighted line (line 3) should be visible and have cursor
         expect(result.lines[2]).toContain(CURSOR_MARKER);
       });
     });
@@ -542,7 +540,6 @@ describe("renderEditorView", () => {
           cursor: { line: 0, col: 20 },
         });
 
-        // Cursor is beyond truncation point; no marker expected
         expect(result.lines[0]).not.toContain(CURSOR_MARKER);
       });
     });
@@ -607,7 +604,6 @@ describe("renderEditorView", () => {
           cursor: { line: 10, col: 0 },
         });
 
-        // Cursor on non-existent line should not crash
         expect(result.lines.length).toBe(10);
       });
     });
@@ -632,7 +628,6 @@ describe("renderEditorView", () => {
           cursor: { line: 3, col: 0 },
         });
 
-        // With topLine=2, visible lines are indices 2,3,4 → result[0]=line2, result[1]=line3
         expect(result.lines[1]).toContain(CURSOR_MARKER);
       });
     });
@@ -655,7 +650,6 @@ describe("renderEditorView", () => {
           cursor: { line: 5, col: 0 },
         });
 
-        // Line 5 is beyond visible range (topLine=0, height=3 → lines 0-2 visible)
         expect(result.lines[2]).not.toContain(CURSOR_MARKER);
       });
     });

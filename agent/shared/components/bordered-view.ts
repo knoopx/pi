@@ -40,7 +40,5 @@ export class BorderedView {
     return [...borderLines, ...componentLines, "", bottomBorder];
   }
 
-  invalidate(): void {
-    this.container.invalidate();
-  }
+  invalidate(): void {}
 }

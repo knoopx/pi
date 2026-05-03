@@ -77,7 +77,6 @@ class EditorComponent implements Component, Focusable {
       },
     });
 
-    // Pre-compute syntax highlighting so it's available on first render.
     void this.updateHighlightCache();
   }
 
