@@ -99,12 +99,10 @@ export async function saveEnabledSetting<T extends { enabled: boolean }>(
   return next;
 }
 
-// --- Extension config helpers (from settings-core.ts) ---
-
-export function loadExtensionConfig<T>(
+export function loadExtensionConfig<T extends Record<string, unknown>>(
   settings: Record<string, unknown>,
   key: string,
-  defaults: Record<string, unknown>,
+  defaults: T,
 ): T {
   const raw = settings[key];
   if (!isValidRaw(raw)) return defaults as T;

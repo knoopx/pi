@@ -2,7 +2,7 @@ import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { FileIndexEntry, IndexedSection } from "./cache";
 import { loadCache, saveCache } from "./cache";
-import { isCacheStale } from "../cache/cache-helpers";
+import { tryLoadCached } from "../cache/cache-helpers";
 import { embedTexts, type EmbedConfig } from "../embeddings/engine";
 
 interface ParsedFile {
@@ -63,23 +63,13 @@ export namespace FileIndex {
     return { rawChunks, mtimes };
   }
 
-  async function tryLoadCached(
-    files: string[],
-  ): Promise<IndexedSection[] | null> {
-    const cached = await loadCache();
-    if (cached && !(await isCacheStale(cached.mtimes, files))) {
-      return cached.chunks;
-    }
-    return null;
-  }
-
   export async function buildIndex(
     indexer: FileIndexer,
     embedConfig: EmbedConfig,
   ): Promise<IndexedSection[]> {
     const files = await indexer.findFiles();
 
-    const cached = await tryLoadCached(files);
+    const cached = await tryLoadCached(files, loadCache);
     if (cached) return cached;
 
     const { rawChunks, mtimes } = await collectRawChunks(indexer);

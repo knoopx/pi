@@ -1,5 +1,21 @@
 import { stat } from "node:fs/promises";
 
+export interface CachedResult<T> {
+  mtimes: Record<string, number>;
+  chunks: T[];
+}
+
+export async function tryLoadCached<T>(
+  files: string[],
+  loadCache: () => Promise<CachedResult<T> | null>,
+): Promise<T[] | null> {
+  const cached = await loadCache();
+  if (cached && !(await isCacheStale(cached.mtimes, files))) {
+    return cached.chunks;
+  }
+  return null;
+}
+
 export async function isCacheStale(
   cachedMtimes: Record<string, number>,
   currentFiles: string[],

@@ -15,7 +15,11 @@ export function detail(
   options: { maxWidth?: number } = {},
 ): string {
   if (fields.length === 0) return "";
-  const totalWidth = options.maxWidth ?? process.stdout.columns ?? Infinity;
+  const totalWidth =
+    (options.maxWidth ??
+    (typeof process !== "undefined" && process.stdout?.columns))
+      ? process.stdout.columns
+      : Infinity;
   const maxLabelWidth = fields.reduce(
     (max, f) => Math.max(max, f.label.replace(ANSI_RE, "").length),
     0,

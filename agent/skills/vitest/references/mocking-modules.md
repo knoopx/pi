@@ -18,10 +18,10 @@ describe("UserService", () => {
   it("should create user", () => {
     const mockUserService = vi.mocked(getUserService);
 
-    const result = mockUserService.create({ name: "John" });
+    const result = mockUserService.create({ name: "alice" });
 
     expect(result).toBe("user-123");
-    expect(mockUserService.create).toHaveBeenCalledWith({ name: "John" });
+    expect(mockUserService.create).toHaveBeenCalledWith({ name: "alice" });
   });
 });
 ```

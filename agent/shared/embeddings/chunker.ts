@@ -9,14 +9,12 @@ export interface Chunk {
   text: string;
 }
 
-// --- Markdown chunking (from skill-reminder) ---
-
 export function parseMarkdown(text: string): Root {
   return unified().use(remarkParse).use(remarkGfm).parse(text);
 }
 
 function nodeText(node: Node): string {
-  return toString(node as unknown as Root).trim();
+  return toString(node).trim();
 }
 
 function splitSentences(text: string): string[] {
@@ -109,8 +107,6 @@ export function chunkByElements(tree: Root): Chunk[] {
 
   return chunks;
 }
-
-// --- Frontmatter helpers ---
 
 export function stripFrontmatter(raw: string): string {
   const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);

@@ -14,7 +14,7 @@ Pretty-prints nested objects/arrays/tables.
 
 ## Exported helpers
 
-- Header/text: `dotJoin`, `sectionDivider`, `threadSeparator`, `stateDot`, `passFail`, `countLabel`
+- Header/text: `dotJoin`, `sectionDivider`, `threadSeparator`, `stateDot`, `countLabel`
 - Tables/details: `table`, `detail`
 - Action lines: `actionLine`
 
