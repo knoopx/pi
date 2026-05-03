@@ -108,7 +108,11 @@ const FEATURES: Record<string, { snap: string; test: string }> = {
   },
   pypi: {
     snap: join(EXT_SNAPS, "pypi", "__snapshots__", "pypi.test.ts.snap"),
-    test: "then it should return formatted package info",
+    test: "then it should return formatted search results",
+  },
+  huggingface: {
+    snap: join(EXT_SNAPS, "huggingface", "__snapshots__", "index.test.ts.snap"),
+    test: "then it should return formatted search results",
   },
   guardrails: {
     snap: join(

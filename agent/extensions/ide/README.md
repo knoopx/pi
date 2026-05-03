@@ -131,12 +131,6 @@ Browse all mutable jujutsu changes with file/diff preview.
 | `Ctrl+P` | Push all bookmarks pointing to selected change |
 | `Ctrl+D` | Drop change                                    |
 
-#### Describe Workflow
-
-Select changes with `Space`, then press `d` to generate conventional commit descriptions via the agent.
-
-![Describe](../../../screenshots/describe.png)
-
 **Files pane:**
 
 | Key               | Action                 |

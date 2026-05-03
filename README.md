@@ -177,6 +177,12 @@ Search repos, code, issues, PRs; browse repository contents and files; view rele
 
 ![GitHub](screenshots/gh.png)
 
+### HuggingFace — Model Search & Discussions
+
+Search Hugging Face models with filters (tags, author, pipeline, library, date windows, gated). Lists community discussions for any model with status, comments, and reactions. Results include download counts, likes, license, and pipeline tag.
+
+![HuggingFace](screenshots/huggingface.png)
+
 ### Nix — Package & Config Search
 
 Three tools: search NixOS packages, NixOS options, and Home Manager options. Public APIs, no installation required. Results include package version, description, license, maintainer, and source location.
@@ -186,6 +192,10 @@ Three tools: search NixOS packages, NixOS options, and Home Manager options. Pub
 ### Notification — Desktop Notifications
 
 Desktop notifications via `notify-send` with optional TTS (text-to-speech) mode.
+
+### Path Suggester — Semantic File Suggestions
+
+Embeds the project file tree at session start, then matches user prompts against file paths using cosine similarity. When a prompt closely matches files in the project, relevant paths are auto-suggested inline. Configured via `pathSuggester` in `~/.pi/agent/settings.json`. Uses an OpenAI-compatible embeddings API (Ollama by default).
 
 ### npm — Package Search
 
