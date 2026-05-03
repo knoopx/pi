@@ -69,6 +69,10 @@ export function setMockChanges(
 }
 type StateConfig = (state: ChangesState) => void;
 
+export const loadingStateConfig: StateConfig = (state) => {
+  state.loadingState.loading = true;
+};
+
 async function createRendererForTest(
   width: number,
   configure: StateConfig,

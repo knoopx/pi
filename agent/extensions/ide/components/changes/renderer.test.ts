@@ -4,13 +4,12 @@ import {
   renderSnapshot,
   defaultMockChange,
   setMockChanges,
+  loadingStateConfig,
 } from "./test-helpers";
 
 describe("loading state", () => {
   it("then renders loading indicator", async () => {
-    const visibleLines = await renderSnapshot(120, (state) => {
-      state.loadingState.loading = true;
-    });
+    const visibleLines = await renderSnapshot(120, loadingStateConfig);
     expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 });

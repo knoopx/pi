@@ -4,6 +4,7 @@ import { calculateGraphLayout } from "../../lib/graph";
 import type { Change } from "../../lib/types";
 import { buildGraphInput } from "./types";
 import { Navigation } from "./navigation";
+import { loadingStateConfig } from "./test-helpers";
 import { createMockTheme } from "../../lib/test-utils";
 import type { ChangesState } from "./state";
 function makeNav(state: ChangesState): Navigation {
@@ -415,9 +416,7 @@ describe("changes/move-mode rendering", () => {
 
   describe("move mode with loading state", () => {
     it("then does not show move indicator when loading", async () => {
-      const visibleLines = await renderSnapshot(120, (state) => {
-        state.loadingState.loading = true;
-      });
+      const visibleLines = await renderSnapshot(120, loadingStateConfig);
       expect(visibleLines.join("\n")).toMatchSnapshot();
     });
   });

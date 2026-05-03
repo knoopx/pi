@@ -61,6 +61,18 @@ async function createFixture(stdout: string) {
   );
 }
 
+async function renderBookmarks(
+  entries: {
+    bookmark: string;
+    changeId: string;
+    description?: string;
+    author?: string;
+  }[],
+) {
+  const { component } = await createFixture(makeBookmarkOutput(entries));
+  return component.render(120);
+}
+
 describe("bookmarks — list row rendering", () => {
   describe("given empty results", () => {
     it("renders the no items message", async () => {
@@ -88,59 +100,53 @@ describe("bookmarks — list row rendering", () => {
 
   describe("given multiple bookmarks on different changes", () => {
     it("renders all bookmarks with consistent padding", async () => {
-      const { component } = await createFixture(
-        makeBookmarkOutput([
-          {
-            bookmark: "main@origin",
-            changeId: "abc123def456",
-            description: "feat(ide): add split panel preview for file explorer",
-            author: "knoopx",
-          },
-          {
-            bookmark: "develop@origin",
-            changeId: "789ghi012jkl",
-            description:
-              "refactor(ide): simplify list-picker component rendering",
-            author: "knoopx",
-          },
-          {
-            bookmark: "release-v0.4.0",
-            changeId: "mno345pqr678",
-            description: "chore: bump version to 0.4.0 and update deps",
-            author: "knoopx",
-          },
-        ]),
-      );
-      const result = component.render(120);
+      const result = await renderBookmarks([
+        {
+          bookmark: "main@origin",
+          changeId: "abc123def456",
+          description: "feat(ide): add split panel preview for file explorer",
+          author: "knoopx",
+        },
+        {
+          bookmark: "develop@origin",
+          changeId: "789ghi012jkl",
+          description:
+            "refactor(ide): simplify list-picker component rendering",
+          author: "knoopx",
+        },
+        {
+          bookmark: "release-v0.4.0",
+          changeId: "mno345pqr678",
+          description: "chore: bump version to 0.4.0 and update deps",
+          author: "knoopx",
+        },
+      ]);
       expect(result.join("\n")).toMatchSnapshot();
     });
   });
 
   describe("given multiple bookmarks on the same change", () => {
     it("groups bookmarks by change ID", async () => {
-      const { component } = await createFixture(
-        makeBookmarkOutput([
-          {
-            bookmark: "main@origin",
-            changeId: "abc123def456",
-            description: "feat(ide): add split panel preview for file explorer",
-            author: "knoopx",
-          },
-          {
-            bookmark: "feature/split-panel",
-            changeId: "abc123def456",
-            description: "feat(ide): add split panel preview for file explorer",
-            author: "knoopx",
-          },
-          {
-            bookmark: "release-v0.4.0",
-            changeId: "mno345pqr678",
-            description: "chore: bump version to 0.4.0 and update deps",
-            author: "knoopx",
-          },
-        ]),
-      );
-      const result = component.render(120);
+      const result = await renderBookmarks([
+        {
+          bookmark: "main@origin",
+          changeId: "abc123def456",
+          description: "feat(ide): add split panel preview for file explorer",
+          author: "knoopx",
+        },
+        {
+          bookmark: "feature/split-panel",
+          changeId: "abc123def456",
+          description: "feat(ide): add split panel preview for file explorer",
+          author: "knoopx",
+        },
+        {
+          bookmark: "release-v0.4.0",
+          changeId: "mno345pqr678",
+          description: "chore: bump version to 0.4.0 and update deps",
+          author: "knoopx",
+        },
+      ]);
       expect(result.join("\n")).toMatchSnapshot();
     });
   });

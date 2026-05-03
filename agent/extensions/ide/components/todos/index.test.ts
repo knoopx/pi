@@ -40,6 +40,11 @@ async function createFixture(stdout: string) {
   );
 }
 
+async function renderMatches(matches: Partial<AstGrepMatch>[]) {
+  const { component } = await createFixture(makeAstGrepMatches(matches));
+  return component.render(120);
+}
+
 describe("todos — list row rendering", () => {
   describe("given empty results", () => {
     it("renders the no items message", async () => {
@@ -65,7 +70,7 @@ describe("todos — list row rendering", () => {
 
   describe("given multiple TODO items", () => {
     it("renders all TODOs with consistent padding", async () => {
-      const matches: Partial<AstGrepMatch>[] = [
+      const result = await renderMatches([
         {
           text: "// TODO: implement keyboard shortcut for file preview toggle",
           file: "agent/extensions/ide/components/files/component.ts",
@@ -82,14 +87,12 @@ describe("todos — list row rendering", () => {
           text: "// HACK: workaround for terminal width calculation on resize",
           file: "agent/extensions/ide/lib/list-picker.ts",
         },
-      ];
-      const { component } = await createFixture(makeAstGrepMatches(matches));
-      const result = component.render(120);
+      ]);
       expect(result.join("\n")).toMatchSnapshot();
     });
 
     it("renders mixed TODO/FIXME/HACK/XXX tags", async () => {
-      const matches: Partial<AstGrepMatch>[] = [
+      const result = await renderMatches([
         {
           text: "// TODO: implement file preview toggle",
           file: "agent/extensions/ide/components/files/component.ts",
@@ -106,9 +109,7 @@ describe("todos — list row rendering", () => {
           text: "// XXX: needs review split panel border rendering",
           file: "agent/extensions/ide/lib/split-panel/renderer.ts",
         },
-      ];
-      const { component } = await createFixture(makeAstGrepMatches(matches));
-      const result = component.render(120);
+      ]);
       expect(result.join("\n")).toMatchSnapshot();
     });
   });
@@ -201,8 +202,7 @@ describe("todos — list row rendering", () => {
         text: task.text,
         file: task.file ?? `src/module${i}.ts`,
       }));
-      const { component } = await createFixture(makeAstGrepMatches(matches));
-      const result = component.render(120);
+      const result = await renderMatches(matches);
       expect(result.join("\n")).toMatchSnapshot();
     });
   });
