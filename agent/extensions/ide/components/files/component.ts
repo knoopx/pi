@@ -15,8 +15,7 @@ import { getFileIcon } from "../../lib/file-icons";
 import { openEditor } from "../../lib/editor-utils";
 import type { FileInfo, FileResult } from "./types";
 import { getMtimeSorter } from "./helpers";
-import { loadFilePreviewWithShiki } from "../../lib/file-preview";
-import { join } from "node:path";
+import { loadPreviewFromPath } from "../../lib/file-preview";
 
 const BINARY_EXTENSIONS = new Set([
   // images
@@ -110,15 +109,8 @@ class FilesView implements Component {
         formatItem: (item) => {
           return `${getFileIcon(item.path)} ${item.path}`;
         },
-        async loadPreview(item: FileInfo) {
-          try {
-            const { readFile } = await import("node:fs/promises");
-            const content = await readFile(join(ctx.cwd, item.path), "utf8");
-            return loadFilePreviewWithShiki(item.path, content, theme);
-          } catch {
-            return [];
-          }
-        },
+        loadPreview: (item: FileInfo) =>
+          loadPreviewFromPath(ctx.cwd, item.path, theme),
         filterItems: (items, query) =>
           items.filter(
             (item) =>
