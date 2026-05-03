@@ -6,6 +6,7 @@ import type {
 import { build } from "./indexer";
 import { loadConfig, type Config } from "./config";
 import type { IndexedSection } from "../../shared/indexing/cache";
+import type { ProgressState } from "../../shared/embeddings/progress";
 import { embedQuery } from "../../shared/embeddings/engine";
 import { buildQuery, extractPromptText } from "./query-builder";
 import { scoreAndRank } from "./scorer";
@@ -53,7 +54,8 @@ export default async function (pi: ExtensionAPI) {
     if (!event.isError) return;
 
     const query = buildQuery(event);
-    const qEmbedding = await embedQuery(query, config);
+    const progress: ProgressState = { message: "Searching skills..." };
+    const qEmbedding = await embedQuery(query, config, progress);
     if (!qEmbedding) return;
 
     const rankedHits = scoreAndRank(index, qEmbedding, config, query);
@@ -70,7 +72,8 @@ export default async function (pi: ExtensionAPI) {
     const promptText = extractPromptText(event.text, event.images);
     if (!promptText) return;
 
-    const qEmbedding = await embedQuery(promptText, config);
+    const progress: ProgressState = { message: "Searching skills..." };
+    const qEmbedding = await embedQuery(promptText, config, progress);
     if (!qEmbedding) return;
 
     const rankedHits = scoreAndRank(

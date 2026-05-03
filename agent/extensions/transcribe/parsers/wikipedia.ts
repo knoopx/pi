@@ -96,32 +96,32 @@ function hasTextContent(children: unknown[]): boolean {
   return false;
 }
 
+function stripCitationMarkers(raw: string): string {
+  const parts: string[] = [];
+  let start = 0;
+
+  for (let i = 0; i < raw.length - 2; i++) {
+    if (raw[i] === "[" && raw[i + 1] === "\\" && raw[i + 2] === "[") {
+      if (i > start) parts.push(raw.slice(start, i));
+      const closeIdx = raw.indexOf("]]", i + 3);
+      if (closeIdx !== -1) {
+        i = closeIdx + 1;
+        start = i;
+      }
+    }
+  }
+  if (start < raw.length) parts.push(raw.slice(start));
+
+  return parts.join("");
+}
+
 function cleanCitationMarkers(tree: ParseResult): void {
   if (typeof tree === "string") return;
   visit(tree as UnistNode, "text", (node, index, parent) => {
     if (!parent || typeof index !== "number") return;
     const textNode = node as { value?: string };
-    const raw = textNode.value ?? "";
-
-    // Split on "[\\[" and reassemble without those markers
-    const parts: string[] = [];
-    let start = 0;
-    for (let i = 0; i < raw.length - 2; i++) {
-      if (raw[i] === "[" && raw[i + 1] === "\\" && raw[i + 2] === "[") {
-        if (i > start) parts.push(raw.slice(start, i));
-        // Skip past the marker closing "]]"
-        const closeIdx = raw.indexOf("]]", i + 3);
-        if (closeIdx !== -1) {
-          i = closeIdx + 1;
-          start = i;
-        }
-      }
-    }
-    if (start < raw.length) parts.push(raw.slice(start));
-
-    const cleaned = parts.join("");
-    if (cleaned === raw) return;
-
+    const cleaned = stripCitationMarkers(textNode.value ?? "");
+    if (cleaned === textNode.value) return;
     applyCitationFix(parent, index, cleaned);
   });
 }
@@ -308,6 +308,24 @@ function renderSearchResult(r: SearchResult, lang: string): string[] {
   return lines;
 }
 
+async function convertWikiPath(
+  path: WikiPath,
+  signal?: AbortSignal,
+): Promise<string> {
+  switch (path.type) {
+    case "article":
+      if (!path.title) throw new Error("Missing Wikipedia article title");
+      return handleArticle(path.title, path.lang, signal);
+    case "search":
+      return handleSearch(
+        path.query ?? "",
+        path.lang,
+        path.limit ?? 10,
+        signal,
+      );
+  }
+}
+
 export const wikipediaParser: Parser = {
   matches(url: string): boolean {
     return /^https?:\/\/[a-z]{2}\.wikipedia\.org\//i.test(url);
@@ -316,18 +334,6 @@ export const wikipediaParser: Parser = {
   async convert(url: string, signal?: AbortSignal): Promise<string> {
     const parsed = parseWikiUrl(url);
     if (!parsed) throw new Error(`Unable to parse Wikipedia URL: ${url}`);
-
-    switch (parsed.type) {
-      case "article":
-        if (!parsed.title) throw new Error("Missing Wikipedia article title");
-        return handleArticle(parsed.title, parsed.lang, signal);
-      case "search":
-        return handleSearch(
-          parsed.query ?? "",
-          parsed.lang,
-          parsed.limit ?? 10,
-          signal,
-        );
-    }
+    return convertWikiPath(parsed, signal);
   },
 };

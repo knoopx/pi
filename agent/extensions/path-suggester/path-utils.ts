@@ -12,13 +12,13 @@ interface SymbolToken {
   type: string;
 }
 
-function parseSymbolTokens(symbols: string): SymbolToken[] {
+export function parseSymbolTokens(symbols: string): SymbolToken[] {
   const tokens: SymbolToken[] = [];
   for (const token of symbols.split(",")) {
-    let colonIdx = token.indexOf(":");
+    const colonIdx = token.indexOf(":");
     if (colonIdx < 0 || colonIdx === 0) continue;
 
-    let atIdx = token.indexOf("@");
+    const atIdx = token.indexOf("@");
     const nameEnd = atIdx > 0 ? atIdx : token.length;
 
     tokens.push({
@@ -29,7 +29,7 @@ function parseSymbolTokens(symbols: string): SymbolToken[] {
   return tokens;
 }
 
-function parseCmMapOutput(output: string): CmEntry[] {
+export function parseCmMapOutput(output: string): CmEntry[] {
   const entries: CmEntry[] = [];
   for (const line of output.split("\n")) {
     if (

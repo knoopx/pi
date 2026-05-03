@@ -6,6 +6,7 @@ import type {
 import type { RawEntry } from "./file-index";
 import { PathSuggesterFileIndex } from "./file-index";
 import { loadConfig, type PathSuggesterConfig } from "./settings";
+import type { ProgressState } from "../../shared/embeddings/progress";
 import { embedQuery } from "./embeddings";
 import { scoreAndRank } from "./suggester";
 import { formatSuggestions } from "./formatter";
@@ -78,7 +79,8 @@ async function embedAndRank(
 ): Promise<string | null> {
   if (!index) return null;
 
-  const qEmbedding = await embedQuery(promptText, config);
+  const progress: ProgressState = { message: "Embedding query..." };
+  const qEmbedding = await embedQuery(promptText, config, progress);
   if (!qEmbedding) return null;
 
   const rankedHits = scoreAndRank(

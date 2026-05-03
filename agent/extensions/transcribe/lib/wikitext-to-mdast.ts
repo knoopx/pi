@@ -3,7 +3,10 @@ import { toMarkdown } from "mdast-util-to-markdown";
 import { gfmFromMarkdown } from "mdast-util-gfm";
 import { gfmToMarkdown } from "mdast-util-gfm";
 import type { Root as MdastRoot, Content } from "mdast";
-import type { Extension as MicromarkExtension } from "micromark-util-types";
+import type {
+  Extension as MicromarkExtension,
+  Construct,
+} from "micromark-util-types";
 import { codes } from "micromark-util-symbol";
 import { visitParents } from "unist-util-visit-parents";
 
@@ -13,22 +16,22 @@ type Effects = {
   exit: (type: string) => { _count?: number } | void;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function createWikitextSyntax(): MicromarkExtension {
   return {
     flow: {
-      [codes.equalsTo]: constructHeading as any,
-      [codes.dash]: constructThematicBreak as any,
+      [codes.equalsTo]: constructHeading as unknown as Construct,
+      [codes.dash]: constructThematicBreak as unknown as Construct,
     },
     text: {
-      [codes.apostrophe]: constructAttention as any,
-      [codes.leftCurlyBrace]: constructTemplate as any,
+      [codes.apostrophe]: constructAttention as unknown as Construct,
+      [codes.leftCurlyBrace]: constructTemplate as unknown as Construct,
     },
   };
 }
 
 const constructHeading = {
   tokenize: tokenizeHeading as (
+    this: unknown,
     effects: unknown,
     ok: unknown,
     nok: unknown,
@@ -41,7 +44,7 @@ function tokenizeHeading(
   ok: (code: number) => void,
   nok: (code: number) => void,
 ): (code: number) => void {
-  const ctx = this;
+  const ctx = this as { previous: number | undefined };
   let count = 0;
 
   return start;
@@ -193,58 +196,6 @@ function tokenizeTemplate(
   }
 }
 
-const constructWikiLink = {
-  tokenize: tokenizeWikiLink as (
-    effects: unknown,
-    ok: unknown,
-    nok: unknown,
-  ) => unknown,
-};
-
-function tokenizeWikiLink(
-  this: { previous: number | undefined },
-  effects: Effects,
-  ok: (code: number) => void,
-  nok: (code: number) => void,
-): (code: number) => void {
-  const ctx = this;
-  let depth = 0;
-
-  return start;
-
-  function start(code: number) {
-    if (code !== codes.leftSquareBracket) return nok(code);
-    effects.enter("wikitextWikiLink");
-    effects.consume(code);
-    depth = 1;
-    return inside;
-  }
-
-  function inside(code: number) {
-    if (code === codes.eof) {
-      effects.exit("wikitextWikiLink");
-      return nok(code);
-    }
-    if (code === codes.leftSquareBracket) {
-      depth++;
-      effects.consume(code);
-      return inside;
-    }
-    if (code === codes.rightSquareBracket) {
-      depth--;
-      if (depth === 0) {
-        effects.consume(code);
-        effects.exit("wikitextWikiLink");
-        return ok(code);
-      }
-      effects.consume(code);
-      return inside;
-    }
-    effects.consume(code);
-    return inside;
-  }
-}
-
 const constructThematicBreak = {
   tokenize: tokenizeThematicBreak as (
     effects: unknown,
@@ -309,10 +260,10 @@ function createWikitextFromMarkdown() {
   };
 
   function enterTemplate(
-    this: { enter: (node: unknown, token: unknown) => void },
+    this: { enter: (node: Record<string, unknown>, token: unknown) => void },
     token: unknown,
   ) {
-    this.enter({ type: "template" } as any, token);
+    this.enter({ type: "template" }, token);
   }
 
   function exitTemplate(
@@ -367,9 +318,13 @@ function createWikitextFromMarkdown() {
     },
     token: unknown,
   ) {
-    const node = this.stack[this.stack.length - 1];
-    if (node) {
-      (node as any)._count = (token as any)._count;
+    const node = this.stack[this.stack.length - 1] as
+      | Record<string, unknown>
+      | undefined;
+    if (node && token && typeof token === "object") {
+      (node as { _count?: number })._count = (
+        token as { _count?: number }
+      )._count;
     }
     this.exit(token);
   }
@@ -420,22 +375,24 @@ function createWikitextFromMarkdown() {
     for (let i = 0; i < attentionList.length - 1; i += 2) {
       const openInfo = attentionList[i];
       const closeInfo = attentionList[i + 1];
-      const count = (openInfo.node as any)._count ?? 2;
+      const count = openInfo.node._count ?? 2;
       const target = count >= 3 ? "strong" : "emphasis";
 
-      (openInfo.node as any).type = target;
-      delete (openInfo.node as any)._count;
-      (closeInfo.node as any).type = "_removed";
+      (openInfo.node as Content & { type: string; _count?: number }).type =
+        target;
+      delete (openInfo.node as { _count?: number })._count;
+      (closeInfo.node as unknown as { type: string }).type = "_removed";
     }
 
     if (attentionList.length % 2 === 1) {
-      (attentionList[attentionList.length - 1].node as any).type = "_removed";
+      const last = attentionList[attentionList.length - 1];
+      (last.node as unknown as { type: string }).type = "_removed";
     }
   }
 
   function collectSiblingContent(
     attentionList: AttentionInfo[],
-    tree: MdastRoot,
+    _tree: MdastRoot,
   ): void {
     for (const info of attentionList) {
       if (info.node.type !== "strong" && info.node.type !== "emphasis")
@@ -555,29 +512,76 @@ function createWikitextFromMarkdown() {
   }
 }
 
-function convertWikiLinksInTree(tree: MdastRoot): void {
-  // Collect all text nodes first (two-pass to avoid modifying during iteration)
-  const textNodes: Array<{
-    node: { value: string };
-    parent: { children: unknown[] };
-  }> = [];
+interface TextNodeRef {
+  node: { value: string };
+  parent: { children: unknown[] };
+}
+
+function collectTextNodes(tree: MdastRoot): TextNodeRef[] {
+  const result: TextNodeRef[] = [];
 
   visitParents(tree, "text", (node, parents) => {
     const textNode = node as { value: string };
     if (!textNode.value) return;
     const parent = parents[parents.length - 1] as { children: unknown[] };
     if (parent && Array.isArray(parent.children)) {
-      textNodes.push({ node: textNode, parent });
+      result.push({ node: textNode, parent });
     }
   });
+
+  return result;
+}
+
+function isCategoryLink(page: string): boolean {
+  return /^Category:/i.test(page);
+}
+
+function convertWikiPartToMdast(part: WikiLinkPart): {
+  type: "link";
+  url: string;
+  title: null;
+  children: Array<{ type: "text"; value: string }>;
+} | null {
+  if (isCategoryLink(part.page)) return null;
+
+  const linkText = part.display ?? part.page;
+  return {
+    type: "link",
+    url: part.page.replace(/ /g, "_"),
+    title: null,
+    children: [{ type: "text", value: linkText }],
+  };
+}
+
+function hasWikiLinks(parts: Array<{ type: string }>): boolean {
+  return parts.some((p) => p.type === "wiki");
+}
+
+function replaceTextNodeWithParts(
+  parent: { children: unknown[] },
+  node: { value: string },
+  mdastParts: Array<
+    | { type: "text"; value: string }
+    | {
+        type: "link";
+        url: string;
+        title: null;
+        children: Array<{ type: "text"; value: string }>;
+      }
+  >,
+): void {
+  const idx = parent.children.indexOf(node);
+  if (idx >= 0) parent.children.splice(idx, 1, ...mdastParts);
+}
+
+function convertWikiLinksInTree(tree: MdastRoot): void {
+  const textNodes = collectTextNodes(tree);
 
   for (let i = textNodes.length - 1; i >= 0; i--) {
     const { node, parent } = textNodes[i];
     const parts = splitWikiLinks(node.value);
-    const wikiCount = parts.filter(
-      (p): p is WikiLinkPart => p.type === "wiki",
-    ).length;
-    if (wikiCount === 0) continue; // No wiki links found
+
+    if (!hasWikiLinks(parts)) continue;
 
     const mdastParts: Array<
       | { type: "text"; value: string }
@@ -593,22 +597,12 @@ function convertWikiLinksInTree(tree: MdastRoot): void {
       if (part.type === "text") {
         mdastParts.push({ type: "text", value: part.value });
       } else {
-        const page = part.page;
-        if (/^Category:/i.test(page)) continue;
-
-        const linkText = part.display || page;
-        mdastParts.push({
-          type: "link",
-          url: page.replace(/ /g, "_"),
-          title: null,
-          children: [{ type: "text", value: linkText }],
-        });
+        const link = convertWikiPartToMdast(part);
+        if (link) mdastParts.push(link);
       }
     }
 
-    // Replace the text node with the split parts
-    const idx = parent.children.indexOf(node);
-    if (idx >= 0) parent.children.splice(idx, 1, ...mdastParts);
+    replaceTextNodeWithParts(parent, node, mdastParts);
   }
 }
 
@@ -618,58 +612,55 @@ interface WikiLinkPart {
   display?: string;
 }
 
+function findClosingBrackets(text: string, openPos: number): number | null {
+  let depth = 2;
+  let i = openPos + 2;
+
+  while (i < text.length && depth > 0) {
+    const ch = text[i];
+    if (ch === "[") depth++;
+    else if (ch === "]") depth--;
+    i++;
+  }
+
+  return depth === 0 ? i : null;
+}
+
+function parseWikiLink(raw: string): WikiLinkPart {
+  const pipeIndex = raw.indexOf("|");
+
+  if (pipeIndex !== -1) {
+    return {
+      type: "wiki",
+      page: raw.slice(0, pipeIndex),
+      display: raw.slice(pipeIndex + 1),
+    };
+  }
+
+  return { type: "wiki", page: raw };
+}
+
 function splitWikiLinks(
   text: string,
 ): Array<{ type: "text"; value: string } | WikiLinkPart> {
   const result: Array<{ type: "text"; value: string } | WikiLinkPart> = [];
   let lastIndex = 0;
-  let pos = 0;
 
-  while (pos < text.length) {
-    // Find [[ at current position
+  for (let pos = 0; pos < text.length; pos++) {
     if (text[pos] === "[" && pos + 1 < text.length && text[pos + 1] === "[") {
       if (pos > lastIndex) {
         result.push({ type: "text", value: text.slice(lastIndex, pos) });
       }
 
-      // Find matching ]]
-      let depth = 2;
-      let i = pos + 2;
-      while (i < text.length && depth > 0) {
-        const ch = text[i];
-        if (ch === "[") {
-          depth++;
-        } else if (ch === "]") {
-          depth--;
-        }
-        i++;
-      }
+      const closePos = findClosingBrackets(text, pos);
 
-      if (depth === 0) {
-        // Found complete wiki link: [[...]]
-        const raw = text.slice(pos + 2, i - 2);
-
-        // Split on first pipe for display text
-        const pipeIndex = raw.indexOf("|");
-        let page: string;
-        let display: string | undefined;
-
-        if (pipeIndex !== -1) {
-          page = raw.slice(0, pipeIndex);
-          display = raw.slice(pipeIndex + 1);
-        } else {
-          page = raw;
-        }
-
-        result.push({ type: "wiki", page, display });
-        lastIndex = i;
-        pos = i;
+      if (closePos !== null) {
+        const raw = text.slice(pos + 2, closePos - 2);
+        result.push(parseWikiLink(raw));
+        lastIndex = closePos;
       } else {
-        // Unterminated — treat as plain text
-        pos++;
+        pos++; // Unterminated — skip past first "["
       }
-    } else {
-      pos++;
     }
   }
 

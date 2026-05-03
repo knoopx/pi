@@ -1,6 +1,5 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { youtubeParser } from "./youtube";
-import { parse } from "../lib/registry";
 
 describe("YouTube parser", () => {
   describe("matches", () => {

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
@@ -14,8 +15,28 @@ export interface IndexedSection {
 }
 
 export interface FileIndexEntry {
-  mtimes: Record<string, number>;
+  digests: Record<string, string>;
   chunks: IndexedSection[];
+}
+
+export function splitByDigest(
+  fileDigests: Map<string, string>,
+  cachedDigests?: Record<string, string>,
+): { unchanged: string[]; stale: string[] } {
+  if (!cachedDigests) return { unchanged: [], stale: [] };
+
+  const unchanged: string[] = [];
+  const stale: string[] = [];
+
+  for (const [file, digest] of fileDigests) {
+    if (cachedDigests[file] === digest) {
+      unchanged.push(file);
+    } else {
+      stale.push(file);
+    }
+  }
+
+  return { unchanged, stale };
 }
 
 const DEFAULT_CACHE_DIR = resolve(homedir(), ".cache", "pi-index");
@@ -39,4 +60,8 @@ export async function saveCache(
   const dir = join(cacheFile, "..");
   await mkdir(dir, { recursive: true });
   await writeFile(cacheFile, JSON.stringify(entry), "utf-8");
+}
+
+export function fileDigest(content: string): string {
+  return createHash("sha256").update(content).digest("hex");
 }

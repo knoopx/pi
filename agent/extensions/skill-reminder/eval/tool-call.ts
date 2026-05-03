@@ -1,9 +1,9 @@
 import type { ToolResultEvent } from "@mariozechner/pi-coding-agent";
 import { embedTexts, cosine } from "../../../shared/embeddings/engine";
+import type { ProgressState } from "../../../shared/embeddings/progress";
 import { loadConfig } from "../config";
 import { buildQuery } from "../query-builder";
-import { scoreAndRank } from "../scorer";
-import { buildReminder, formatHits } from "../reminder";
+import { buildReminder } from "../reminder";
 import { loadIndex, printMatches } from "./shared";
 
 function printReminder(
@@ -40,13 +40,29 @@ function parseEvent(input: string): ToolResultEvent {
   const raw = JSON.parse(input);
   return {
     type: "tool_result" as const,
-    toolCallId: raw.toolCallId ?? "eval-test",
-    toolName: raw.toolName ?? "unknown",
+    toolCallId: resolveToolCallId(raw.toolCallId),
+    toolName: resolveToolName(raw.toolName),
     isError: true,
-    input: raw.input ?? {},
-    content: raw.content ?? [],
+    input: resolveInput(raw.input),
+    content: resolveContent(raw.content),
     details: undefined,
   };
+}
+
+function resolveToolCallId(v: unknown): string {
+  return typeof v === "string" && v.length > 0 ? v : "eval-test";
+}
+
+function resolveToolName(v: unknown): string {
+  return typeof v === "string" && v.length > 0 ? v : "unknown";
+}
+
+function resolveInput(v: unknown): Record<string, unknown> {
+  return Array.isArray(v) ? (v as Record<string, unknown>) : {};
+}
+
+function resolveContent(v: unknown): unknown[] {
+  return Array.isArray(v) ? v : [];
 }
 
 async function getEvent(): Promise<ToolResultEvent> {
@@ -133,7 +149,8 @@ async function main(): Promise<void> {
   console.log(query);
   console.log();
 
-  const embedding = (await embedTexts([query], config))[0];
+  const progress: ProgressState = { message: "Embedding query..." };
+  const embedding = (await embedTexts([query], config, progress))[0];
   printMatches(index, embedding);
 
   const deduped = await getScoredHits(index, embedding, config.scoreThreshold);

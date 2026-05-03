@@ -1,10 +1,9 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import { homedir } from "node:os";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 
 interface CacheEntry {
-  mtimes: Record<string, number>;
+  digests: Record<string, string>;
   chunks: unknown[];
 }
 

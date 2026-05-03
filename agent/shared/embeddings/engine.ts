@@ -1,3 +1,4 @@
+import type { ProgressState } from "./progress";
 import { renderEmbedding } from "./progress";
 
 const DEFAULT_TIMEOUT_MS = 3_000;
@@ -61,6 +62,7 @@ export interface EmbedConfig {
 export async function embedTexts(
   texts: string[],
   config: EmbedConfig,
+  progressState: ProgressState,
   timeoutMs = DEFAULT_TIMEOUT_MS,
 ): Promise<number[][]> {
   const batches: string[][] = [];
@@ -116,7 +118,7 @@ export async function embedTexts(
         ),
         index: i,
       };
-      renderEmbedding(++doneCount, batches.length);
+      renderEmbedding(progressState, ++doneCount, batches.length);
     }
   });
 
@@ -133,9 +135,10 @@ export async function embedTexts(
 export async function embedQuery(
   query: string,
   config: EmbedConfig,
+  progressState: ProgressState,
 ): Promise<number[] | null> {
   try {
-    const embeddings = await embedTexts([query], config);
+    const embeddings = await embedTexts([query], config, progressState);
     return embeddings[0] ?? null;
   } catch {
     return null;

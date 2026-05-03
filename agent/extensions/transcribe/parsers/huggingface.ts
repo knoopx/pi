@@ -919,7 +919,7 @@ function buildDiscussionHeader(
 function renderDiscussionDetail(
   parsed: HFPath,
   detail: HFDiscussionDetail,
-  signal?: AbortSignal,
+  _signal?: AbortSignal,
 ): string {
   const url = `${BASE}/${parsed.owner}/${parsed.name}/discussions/${parsed.number}`;
   const parts = buildDiscussionHeader(detail, parsed, url);

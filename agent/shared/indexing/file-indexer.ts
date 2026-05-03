@@ -1,13 +1,12 @@
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { FileIndexEntry, IndexedSection } from "./cache";
-import { loadCache, saveCache } from "./cache";
-import { tryLoadCached } from "../cache/cache-helpers";
+import { fileDigest, loadCache, saveCache, splitByDigest } from "./cache";
 import { embedTexts, type EmbedConfig } from "../embeddings/engine";
+import type { ProgressState } from "../embeddings/progress";
 
 interface ParsedFile {
   content: string;
-  mtimeMs: number;
 }
 
 export namespace FileIndex {
@@ -43,53 +42,93 @@ export namespace FileIndex {
     chunkMaxChars?: number;
   }
 
-  async function collectRawChunks(indexer: FileIndexer): Promise<{
-    rawChunks: RawChunk[];
-    mtimes: Record<string, number>;
-  }> {
-    const files = await indexer.findFiles();
-    const rawChunks: RawChunk[] = [];
-    const mtimes: Record<string, number> = {};
-
-    for (const file of files) {
-      const info = await indexer.readFile(file);
-      if (!info) continue;
-      mtimes[file] = info.mtimeMs;
-
-      const chunks = indexer.parseChunks(file, info);
-      rawChunks.push(...chunks);
-    }
-
-    return { rawChunks, mtimes };
-  }
-
   export async function buildIndex(
     indexer: FileIndexer,
     embedConfig: EmbedConfig,
   ): Promise<IndexedSection[]> {
     const files = await indexer.findFiles();
+    if (files.length === 0) return [];
 
-    const cached = await tryLoadCached(files, loadCache);
-    if (cached) return cached;
+    const fileDigests = new Map<string, string>();
+    for (const file of files) {
+      const info = await indexer.readFile(file);
+      if (!info) continue;
+      fileDigests.set(file, fileDigest(info.content));
+    }
 
-    const { rawChunks, mtimes } = await collectRawChunks(indexer);
-    if (!rawChunks.length) return [];
-
-    const maxChars = indexer.chunkMaxChars ?? 1000;
-    const truncatedChunks = rawChunks.map((c) => ({
-      ...c,
-      text: c.text.length > maxChars ? c.text.slice(0, maxChars) : c.text,
-    }));
-
-    const embeddings = await embedTexts(
-      truncatedChunks.map((c) => c.text),
-      embedConfig,
-      120_000,
+    const cached = await loadCache();
+    const { unchanged: unchangedFiles, stale } = splitByDigest(
+      fileDigests,
+      cached?.digests,
     );
 
-    const indexed = indexer.mapToIndexed(truncatedChunks, embeddings);
+    // Remove entries for deleted files
+    const currentPaths = new Set(fileDigests.keys());
+    const cleanedChunks =
+      (cached?.chunks as IndexedSection[]).filter((entry) =>
+        currentPaths.has(entry.file),
+      ) ?? [];
 
-    await saveCache({ mtimes, chunks: indexed });
-    return indexed;
+    let allChunks: IndexedSection[] = [...cleanedChunks];
+
+    if (stale.length > 0 || unchangedFiles.length < fileDigests.size) {
+      allChunks = await rebuildAndMerge(
+        indexer,
+        stale,
+        cleanedChunks,
+        unchangedFiles,
+        embedConfig,
+      );
+    }
+
+    const newDigests = Object.fromEntries(fileDigests.entries());
+    await saveCache({ digests: newDigests, chunks: allChunks });
+
+    return allChunks;
   }
+}
+
+async function rebuildAndMerge(
+  indexer: FileIndex.FileIndexer,
+  staleFiles: string[],
+  cleanedChunks: IndexedSection[],
+  unchangedFiles: string[],
+  embedConfig: EmbedConfig,
+): Promise<IndexedSection[]> {
+  const unchangedPaths = new Set(unchangedFiles);
+  const changedFiles = staleFiles.filter((f) => !unchangedPaths.has(f));
+
+  if (changedFiles.length === 0) {
+    return cleanedChunks;
+  }
+
+  const rawChunks: FileIndex.RawChunk[] = [];
+  for (const file of changedFiles) {
+    const info = await indexer.readFile(file);
+    if (!info) continue;
+    const chunks = indexer.parseChunks(file, info);
+    rawChunks.push(...chunks);
+  }
+
+  if (rawChunks.length === 0) {
+    return cleanedChunks;
+  }
+
+  const maxChars = indexer.chunkMaxChars ?? 1000;
+  const truncatedChunks = rawChunks.map((c) => ({
+    ...c,
+    text: c.text.length > maxChars ? c.text.slice(0, maxChars) : c.text,
+  }));
+
+  const progress: ProgressState = { message: "Indexing files..." };
+  const embeddings = await embedTexts(
+    truncatedChunks.map((c) => c.text),
+    embedConfig,
+    progress,
+    120_000,
+  );
+
+  const newChunks = indexer.mapToIndexed(truncatedChunks, embeddings);
+
+  return [...cleanedChunks, ...newChunks];
 }

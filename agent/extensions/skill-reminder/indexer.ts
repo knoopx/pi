@@ -1,4 +1,4 @@
-import { readFile, stat } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { relative } from "node:path";
 import type { Chunk } from "../../shared/embeddings/chunker";
@@ -14,10 +14,14 @@ import {
   loadSkillReminderCache as loadCache,
   saveSkillReminderCache as saveCache,
 } from "./cache";
-import { tryLoadCached } from "../../shared/cache/cache-helpers";
+import type { ProgressState } from "../../shared/embeddings/progress";
 import { embedTexts } from "../../shared/embeddings/engine";
 import type { Config } from "./config";
-import type { IndexedSection } from "../../shared/indexing/cache";
+import {
+  type IndexedSection,
+  splitByDigest,
+} from "../../shared/indexing/cache";
+import { fileDigest } from "../../shared/indexing/cache";
 
 interface RawChunk {
   skill: string;
@@ -30,18 +34,6 @@ function extractSection(text: string): string {
   const firstLine = text.split("\n")[0] ?? "";
   if (/^#+\s*/.test(firstLine)) return firstLine.replace(/^#+\s*/, "");
   return "overview";
-}
-
-async function readFileInfo(
-  file: string,
-): Promise<{ content: string; mtimeMs: number } | null> {
-  try {
-    const s = await stat(file);
-    const content = await readFile(file, "utf-8");
-    return { content, mtimeMs: s.mtimeMs };
-  } catch {
-    return null;
-  }
 }
 
 function parseChunks(body: string): Chunk[] {
@@ -81,50 +73,105 @@ async function parseFile(
   file: string,
   maxChars: number,
 ): Promise<RawChunk[] | null> {
-  const info = await readFileInfo(file);
-  if (!info) return null;
+  let content: string;
+  try {
+    content = await readFile(file, "utf-8");
+  } catch {
+    return null;
+  }
 
   const skill = deriveSkillName(file);
   if (!skill) return null;
 
-  const body = stripFrontmatter(info.content);
+  const body = stripFrontmatter(content);
   if (!body.trim()) return null;
 
   return mapToRawChunks(parseChunks(body), skill, file, maxChars);
 }
 
-async function collectRawChunks(
-  files: string[],
-  maxChars: number,
-): Promise<{ rawChunks: RawChunk[]; mtimes: Record<string, number> }> {
-  const rawChunks: RawChunk[] = [];
-  const mtimes: Record<string, number> = {};
+export async function build(config: Config): Promise<IndexedSection[]> {
+  const files = await SharedFileIndex.FileIndex.findMarkdownFiles(SKILLS_DIR);
+  if (files.length === 0) return [];
 
+  // Build per-file content → digest map (no stat calls)
+  const fileDigests = new Map<string, string>();
   for (const file of files) {
-    const info = await readFileInfo(file);
-    if (!info) continue;
-    mtimes[file] = info.mtimeMs;
+    let content: string;
+    try {
+      content = await readFile(file, "utf-8");
+    } catch {
+      continue;
+    }
+    fileDigests.set(file, fileDigest(content));
+  }
 
-    const chunks = await parseFile(file, maxChars);
+  // Load cache and separate unchanged vs changed files
+  const cached = await loadCache();
+  const { unchanged: unchangedFiles, stale } = splitByDigest(
+    fileDigests,
+    cached?.digests,
+  );
+
+  // Remove entries for deleted files
+  const currentPaths = new Set(fileDigests.keys());
+  const cleanedChunks =
+    cached?.chunks.filter((entry: IndexedSection) =>
+      currentPaths.has(entry.file),
+    ) ?? [];
+
+  let allChunks: IndexedSection[] = [...cleanedChunks];
+
+  if (stale.length > 0 || unchangedFiles.length < fileDigests.size) {
+    allChunks = await rebuildAndMerge(
+      stale,
+      cleanedChunks,
+      unchangedFiles,
+      config,
+    );
+  }
+
+  // Save updated cache with new digests
+  const newDigests = Object.fromEntries(fileDigests.entries());
+  await saveCache({ digests: newDigests, chunks: allChunks });
+
+  return allChunks;
+}
+
+async function rebuildAndMerge(
+  staleFiles: string[],
+  cleanedChunks: IndexedSection[],
+  unchangedFiles: string[],
+  config: Config,
+): Promise<IndexedSection[]> {
+  const unchangedPaths = new Set(unchangedFiles);
+  const changedFiles = staleFiles.filter((f) => !unchangedPaths.has(f));
+
+  if (changedFiles.length === 0) {
+    return cleanedChunks;
+  }
+
+  // Parse only changed files
+  const rawChunks: RawChunk[] = [];
+  for (const file of changedFiles) {
+    const chunks = await parseFile(file, config.chunkMaxChars);
     if (!chunks) continue;
     rawChunks.push(...chunks);
   }
 
-  return { rawChunks, mtimes };
-}
+  if (rawChunks.length === 0) {
+    return cleanedChunks;
+  }
 
-async function embedAndSave(
-  rawChunks: RawChunk[],
-  mtimes: Record<string, number>,
-  config: Config,
-): Promise<IndexedSection[]> {
+  // Embed only changed file chunks
+  const progress: ProgressState = { message: "Indexing skills..." };
   const embeddings = await embedTexts(
     rawChunks.map((c) => c.text),
     config,
+    progress,
     120_000,
   );
 
-  const chunks: IndexedSection[] = rawChunks.map((chunk, i) => ({
+  const newChunks: IndexedSection[] = rawChunks.map((chunk, i) => ({
     skill: chunk.skill,
     file: chunk.file,
     section: chunk.section,
@@ -132,21 +179,5 @@ async function embedAndSave(
     embedding: embeddings[i],
   }));
 
-  await saveCache({ mtimes, chunks });
-  return chunks;
-}
-
-export async function build(config: Config): Promise<IndexedSection[]> {
-  const files = await SharedFileIndex.FileIndex.findMarkdownFiles(SKILLS_DIR);
-
-  const cached = await tryLoadCached(files, loadCache);
-  if (cached) return cached;
-
-  const { rawChunks, mtimes } = await collectRawChunks(
-    files,
-    config.chunkMaxChars,
-  );
-  if (!rawChunks.length) return [];
-
-  return embedAndSave(rawChunks, mtimes, config);
+  return [...cleanedChunks, ...newChunks];
 }

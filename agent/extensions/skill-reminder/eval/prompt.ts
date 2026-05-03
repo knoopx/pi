@@ -1,3 +1,4 @@
+import type { ProgressState } from "../../../shared/embeddings/progress";
 import { embedTexts } from "../../../shared/embeddings/engine";
 import { loadConfig } from "../config";
 import { loadIndex, printMatches } from "./shared";
@@ -15,7 +16,8 @@ async function main(): Promise<void> {
 
   console.log(`Query: "${prompt}"\n`);
 
-  const embedding = (await embedTexts([prompt], config))[0];
+  const progress: ProgressState = { message: "Embedding prompt..." };
+  const embedding = (await embedTexts([prompt], config, progress))[0];
   printMatches(index, embedding);
 }
 

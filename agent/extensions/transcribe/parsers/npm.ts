@@ -5,7 +5,7 @@ import {
   requireVersion,
   type VersionedPackagePath,
 } from "../lib/parser-utils";
-import { formatDate, countLabel } from "../lib/formatters";
+import { formatDate, pluralize } from "../lib/formatters";
 
 interface NpmPath {
   kind: "package" | "version" | "latest" | "registry";
@@ -235,7 +235,7 @@ async function handleVersions(
   const distTags = data["dist-tags"] ?? {};
   const parts: string[] = [
     `# ${name}`,
-    `**${countLabel(versions.length, "version")}**`,
+    `**${pluralize(versions.length, "version")}**`,
   ];
 
   if (Object.keys(distTags).length > 0) {

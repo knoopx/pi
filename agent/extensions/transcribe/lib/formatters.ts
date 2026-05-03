@@ -46,7 +46,7 @@ export function formatNumber(n: number): string {
   return n.toLocaleString();
 }
 
-export function countLabel(count: number, singular: string): string {
+export function pluralize(count: number, singular: string): string {
   return `${count} ${singular}${count !== 1 ? "s" : ""}`;
 }
 

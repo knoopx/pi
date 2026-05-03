@@ -1,11 +1,18 @@
-import { stat } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import { loadPathSuggesterCache, savePathSuggesterCache } from "./cache";
-import { isCacheStale } from "../../shared/cache/cache-helpers";
+import type { ProgressState } from "../../shared/embeddings/progress";
 import { embedTexts } from "./embeddings";
 import type { PathSuggesterConfig } from "./settings";
 import { buildFileList, buildSymbolText, CmEntry } from "./path-utils";
+
+const CONCURRENCY_LIMIT = 20;
+
+function fileDigest(entry: CmEntry): string {
+  return createHash("sha256")
+    .update(`${entry.path}|${entry.symbols}`)
+    .digest("hex");
+}
 
 export interface RawEntry {
   path: string;
@@ -23,86 +30,136 @@ async function readContentSnippet(path: string): Promise<string> {
   }
 }
 
+async function readInBatches(paths: string[]): Promise<string[]> {
+  const results: string[] = new Array(paths.length);
+  let nextIndex = 0;
+
+  const workers = Array.from({ length: CONCURRENCY_LIMIT }, async () => {
+    while (nextIndex < paths.length) {
+      const i = nextIndex++;
+      results[i] = await readContentSnippet(paths[i]);
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
+}
+
 export const PathSuggesterFileIndex = {
   async buildIndex(
     config: PathSuggesterConfig,
     projectDir: string,
   ): Promise<RawEntry[]> {
     const cmEntries = await buildFileList(projectDir);
+    if (cmEntries.length === 0) return [];
 
-    // Normalize paths to absolute form for consistent cache comparison
-    const absEntries = cmEntries.map((e) => ({
-      ...e,
-      path: resolve(e.path),
-    }));
+    const currentDigests = new Map(
+      cmEntries.map((e) => [e.path, fileDigest(e)]),
+    );
 
-    try {
-      const cached = await loadPathSuggesterCache();
-      if (
-        cached &&
-        !(await isCacheStale(
-          cached.mtimes,
-          absEntries.map((e) => e.path),
-        ))
-      ) {
-        return cached.chunks as RawEntry[];
-      }
-    } catch {}
+    const cached = await loadPathSuggesterCache();
+    const { unchanged, stale } = filterByDigest(cmEntries, cached?.digests);
 
-    return embedAndSave(absEntries, config);
+    // Remove entries for deleted files
+    const currentPaths = new Set(currentDigests.keys());
+    const cleanedChunks =
+      (cached?.chunks as RawEntry[]).filter((entry) =>
+        currentPaths.has(entry.path),
+      ) ?? [];
+
+    let allEntries: RawEntry[] = [...cleanedChunks, ...unchanged];
+
+    if (stale.length > 0 || unchanged.length < cmEntries.length) {
+      allEntries = await rebuildAndMerge(
+        cmEntries,
+        cleanedChunks,
+        unchanged,
+        config,
+      );
+    }
+
+    const newDigests = Object.fromEntries(currentDigests.entries());
+    await savePathSuggesterCache({ digests: newDigests, chunks: allEntries });
+
+    return allEntries;
   },
 };
 
-async function embedAndSave(
+function filterByDigest(
   cmEntries: CmEntry[],
-  config: PathSuggesterConfig,
-): Promise<RawEntry[]> {
-  const snippets: string[] = [];
-  const symbolTexts: string[] = [];
-  const paths: string[] = [];
+  cachedDigests?: Record<string, string>,
+): { unchanged: RawEntry[]; stale: CmEntry[] } {
+  if (!cachedDigests) return { unchanged: [], stale: [] };
+
+  const unchanged: RawEntry[] = [];
+  const stale: CmEntry[] = [];
 
   for (const entry of cmEntries) {
-    const snippet = await readContentSnippet(entry.path);
-    const symText = buildSymbolText(entry);
-    snippets.push(snippet);
+    if (cachedDigests[entry.path] === fileDigest(entry)) {
+      unchanged.push({
+        path: entry.path,
+        contentSnippet: "",
+        symbolText: "",
+        embedding: [],
+      });
+    } else {
+      stale.push(entry);
+    }
+  }
+
+  return { unchanged, stale };
+}
+
+async function rebuildAndMerge(
+  allCmEntries: CmEntry[],
+  cachedChunks: RawEntry[],
+  unchanged: RawEntry[],
+  config: PathSuggesterConfig,
+): Promise<RawEntry[]> {
+  const unchangedPaths = new Set(unchanged.map((e) => e.path));
+
+  const rebuildEntries = allCmEntries.filter(
+    (e) => !unchangedPaths.has(e.path),
+  );
+
+  if (rebuildEntries.length === 0) {
+    return cachedChunks;
+  }
+
+  const paths = rebuildEntries.map((e) => e.path);
+  const snippets = await readInBatches(paths);
+
+  const symbolTexts: string[] = [];
+  const symbolPaths: string[] = [];
+  for (let i = 0; i < rebuildEntries.length; i++) {
+    const symText = buildSymbolText(rebuildEntries[i]);
     if (symText && symText.length > 5) {
       symbolTexts.push(symText);
-      paths.push(entry.path);
+      symbolPaths.push(paths[i]);
     }
-    paths.push(entry.path);
   }
 
   const allTexts = [...snippets, ...symbolTexts];
-  const embeddings = await embedTexts(allTexts, config, 120_000);
+  const progress: ProgressState = { message: "Indexing files..." };
+  const embeddings = await embedTexts(allTexts, config, progress, 120_000);
 
-  const entries: RawEntry[] = [];
-  for (let i = 0; i < cmEntries.length; i++) {
-    const entry = cmEntries[i];
-    entries.push({
-      path: entry.path,
+  const newEntries: RawEntry[] = [];
+  for (let i = 0; i < rebuildEntries.length; i++) {
+    newEntries.push({
+      path: paths[i],
       contentSnippet: snippets[i],
       symbolText: "",
       embedding: embeddings[i],
     });
   }
-  for (let i = 0; i < paths.length - cmEntries.length; i++) {
-    const fileIdx = i;
-    entries.push({
-      path: paths[cmEntries.length + fileIdx],
+  for (let i = 0; i < symbolTexts.length; i++) {
+    newEntries.push({
+      path: symbolPaths[i],
       contentSnippet: "",
-      symbolText: symbolTexts[fileIdx],
-      embedding: embeddings[cmEntries.length + fileIdx],
+      symbolText: symbolTexts[i],
+      embedding: embeddings[snippets.length + i],
     });
   }
 
-  const mtimes: Record<string, number> = {};
-  for (const entry of cmEntries) {
-    try {
-      const s = await stat(entry.path);
-      mtimes[entry.path] = s.mtimeMs;
-    } catch {}
-  }
-
-  await savePathSuggesterCache({ mtimes, chunks: entries });
-  return entries;
+  return [...cachedChunks, ...newEntries];
 }
