@@ -29,7 +29,6 @@ export class TestTerminal implements Terminal {
     this._rows = rows;
   }
 
-  // fallow-ignore-next-line unused-class-members — accessed via type assertion in tests
   get columns(): number {
     return this._columns;
   }
@@ -38,7 +37,6 @@ export class TestTerminal implements Terminal {
     this._columns = value;
   }
 
-  // fallow-ignore-next-line unused-class-members — accessed via type assertion in tests
   get rows(): number {
     return this._rows;
   }
