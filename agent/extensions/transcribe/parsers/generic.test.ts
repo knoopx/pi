@@ -61,6 +61,7 @@ describe("Generic parser", () => {
       expect(output).toMatch(/\|\s*Name\s*\|\s*Score\s*\|/);
       expect(output).toMatch(/\|\s*Model A\s*\|\s*95\s*\|/);
       expect(output).toMatch(/\|\s*Model B\s*\|\s*87\s*\|/);
+      expect(output).toMatchSnapshot();
     });
 
     it("converts inline HTML blockquote to markdown", async () => {
@@ -74,6 +75,7 @@ describe("Generic parser", () => {
       const output = await writeAndParse("blockquote.md", raw);
       expect(output).not.toContain("<blockquote>");
       expect(output).toContain("> A great quote");
+      expect(output).toMatchSnapshot();
     });
 
     it("handles mixed markdown and HTML in same content", async () => {
@@ -92,6 +94,7 @@ describe("Generic parser", () => {
       expect(output).not.toContain("<img");
       expect(output).not.toContain("<tr>");
       expect(output).not.toContain("<blockquote>");
+      expect(output).toMatchSnapshot();
     });
 
     it("does not break on pure markdown", async () => {
@@ -101,6 +104,7 @@ describe("Generic parser", () => {
       );
       expect(output).toContain("# Hello");
       expect(output).toContain("This is **markdown** content.");
+      expect(output).toMatchSnapshot();
     });
   });
 });

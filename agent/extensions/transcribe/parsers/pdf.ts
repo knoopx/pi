@@ -78,9 +78,6 @@ async function extractTextFromPdf(
   signal?: AbortSignal,
 ): Promise<string> {
   const args = ["-layout", "-nopgbrk", "-", "-"];
-  if (totalPages > 100) {
-    args.splice(2, 0, "-l", "100");
-  }
 
   return spawnChild("pdftotext", args, { data, signal });
 }
@@ -152,15 +149,6 @@ async function processPdfData(
 
   const lines: string[] = [...formatPdfHeader(meta, fileName)];
   lines.push("", "---", "", text.trim());
-
-  if (meta.totalPages > 100) {
-    lines.push(
-      "",
-      "---",
-      "",
-      `*[Truncated: Only first 100 of ${meta.totalPages} pages extracted]*`,
-    );
-  }
 
   return lines.join("\n");
 }

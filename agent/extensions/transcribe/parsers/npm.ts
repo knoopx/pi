@@ -5,17 +5,25 @@ import {
   requireVersion,
   type VersionedPackagePath,
 } from "../lib/parser-utils";
-import { formatDate } from "../lib/formatters";
+import { formatDate, countLabel } from "../lib/formatters";
 
 interface NpmPath {
-  kind: "package" | "version" | "latest";
+  kind: "package" | "version" | "latest" | "registry";
   name: string;
   version?: string;
 }
 
-const parseNpmUrl = createVersionedPackageParser(
-  /^https?:\/\/www\.npmjs\.com\/package\/([^/?]+)/i,
-);
+function parseNpmUrl(url: string): NpmPath | null {
+  const registryMatch = url.match(
+    /^https?:\/\/registry\.npmjs\.org\/([^/?]+)/i,
+  );
+  if (registryMatch) {
+    return { kind: "registry", name: registryMatch[1] };
+  }
+  return createVersionedPackageParser(
+    /^https?:\/\/www\.npmjs\.com\/package\/([^/?]+)/i,
+  )(url);
+}
 
 const fetchNpm = createRetryFetch({ apiName: "npm" });
 
@@ -82,16 +90,12 @@ function formatNpmKeywords(keywords: string[] | undefined): string[] {
 
 function formatNpmDependencies(
   dependencies: Record<string, string> | undefined,
-  limit = 20,
 ): string[] {
   if (!dependencies || !Object.keys(dependencies).length) return [];
-  const deps = Object.entries(dependencies).slice(0, limit);
+  const deps = Object.entries(dependencies);
   const lines: string[] = ["", "**Dependencies:**"];
   for (const [dep, ver] of deps) {
     lines.push(`- ${dep}: ${ver}`);
-  }
-  if (Object.keys(dependencies).length > limit) {
-    lines.push(`- ... and ${Object.keys(dependencies).length - limit} more`);
   }
   return lines;
 }
@@ -163,16 +167,12 @@ function formatEntryPoints(data: NpmPackageInfo): string[] {
 
 function formatSortedDependencies(
   dependencies: Record<string, string> | undefined,
-  limit = 30,
 ): string[] {
   if (!dependencies || !Object.keys(dependencies).length) return [];
   const sortedDeps = Object.entries(dependencies).sort();
   const lines: string[] = ["", "**Dependencies:**"];
-  for (const [dep, ver] of sortedDeps.slice(0, limit)) {
+  for (const [dep, ver] of sortedDeps) {
     lines.push(`- ${dep}: ${ver}`);
-  }
-  if (sortedDeps.length > limit) {
-    lines.push(`- ... and ${sortedDeps.length - limit} more`);
   }
   return lines;
 }
@@ -220,6 +220,44 @@ async function handleVersion(
   return parts.join("\n");
 }
 
+async function handleVersions(
+  name: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  const data = await fetchNpm<NpmPackageInfo>(
+    `https://registry.npmjs.org/${name}`,
+    signal,
+  );
+
+  if (!data.name) throw new Error(`Package ${name} not found on npm`);
+
+  const versions = Object.keys(data.versions ?? {});
+  const distTags = data["dist-tags"] ?? {};
+  const parts: string[] = [
+    `# ${name}`,
+    `**${countLabel(versions.length, "version")}**`,
+  ];
+
+  if (Object.keys(distTags).length > 0) {
+    parts.push("", "**Dist tags:**");
+    for (const [tag, version] of Object.entries(distTags)) {
+      parts.push(`- ${tag}: ${version}`);
+    }
+  }
+
+  parts.push("", "**All versions:**");
+  for (const v of versions) {
+    parts.push(`- ${v}`);
+  }
+
+  parts.push(
+    "",
+    `[View on npm](https://www.npmjs.com/package/${name}/v/${versions[versions.length - 1]})`,
+  );
+
+  return parts.join("\n");
+}
+
 function dispatchNpm(parsed: NpmPath, signal?: AbortSignal): Promise<string> {
   const handlers: Record<NpmPath["kind"], () => Promise<string>> = {
     package: () => handlePackage(parsed.name, signal),
@@ -230,6 +268,7 @@ function dispatchNpm(parsed: NpmPath, signal?: AbortSignal): Promise<string> {
         signal,
       ),
     latest: () => handlePackage(parsed.name, signal),
+    registry: () => handleVersions(parsed.name, signal),
   };
   return handlers[parsed.kind]();
 }

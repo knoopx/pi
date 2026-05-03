@@ -3,6 +3,7 @@ import {
   createRetryFetchText,
   defineParser,
 } from "../lib/parser-utils";
+import { formatIsoAge } from "../lib/formatters";
 interface HFRepo {
   kind: "model" | "dataset" | "space";
   owner: string;
@@ -134,37 +135,6 @@ async function fetchReadme(
   }
   return "";
 }
-interface MetaFields {
-  downloads?: number;
-  likes?: number;
-  lastModified?: string;
-  gated?: boolean | string;
-}
-function buildMeta(fields: MetaFields): string {
-  const meta = [
-    formatDownloads(fields),
-    formatLikes(fields),
-    formatDate(fields),
-    formatGated(fields),
-  ].filter(Boolean);
-  return meta.join(" • ");
-}
-function formatDownloads(f: MetaFields): string | null {
-  if (f.downloads === undefined) return null;
-  return `downloads: ${f.downloads.toLocaleString()}`;
-}
-function formatLikes(f: MetaFields): string | null {
-  if (f.likes === undefined) return null;
-  return `likes: ${f.likes.toLocaleString()}`;
-}
-function formatDate(f: MetaFields): string | null {
-  if (!f.lastModified) return null;
-  return `updated: ${f.lastModified.split("T")[0]}`;
-}
-function formatGated(f: MetaFields): string | null {
-  if (!f.gated) return null;
-  return `gated: ${f.gated === true ? "yes" : f.gated}`;
-}
 function renderTags(
   parts: string[],
   tags: string[],
@@ -199,6 +169,40 @@ interface RepoBodyOptions {
   extraDescription?: string;
 }
 
+function renderLicenseAndBaseModel(
+  parts: string[],
+  tags: string[] | undefined,
+): void {
+  if (!tags) return;
+  const license = extractLicense(tags, {});
+  const baseModel = extractBaseModel(tags, {});
+  if (license || baseModel) {
+    parts.push("");
+    parts.push(
+      [
+        license ? `**License:** ${license}` : "",
+        baseModel ? `**Base model:** ${baseModel}` : "",
+      ]
+        .filter(Boolean)
+        .join(" • "),
+    );
+  }
+}
+
+function renderRepoMetadata(parts: string[], opts: RepoBodyOptions): void {
+  const downloadsShort =
+    opts.downloads !== undefined ? formatDownloadsShort(opts.downloads) : null;
+  const lastModifiedAge = opts.lastModified
+    ? formatIsoAge(opts.lastModified)
+    : null;
+  if (!downloadsShort && !lastModifiedAge) return;
+  parts.push("");
+  const metaParts: string[] = [];
+  if (downloadsShort) metaParts.push(`downloads: ${downloadsShort}`);
+  if (lastModifiedAge) metaParts.push(`updated: ${lastModifiedAge}`);
+  parts.push(metaParts.join(" • "));
+}
+
 async function renderRepoBody(
   parts: string[],
   opts: RepoBodyOptions,
@@ -208,11 +212,8 @@ async function renderRepoBody(
   if (opts.tags?.length) {
     renderTags(parts, opts.tags, opts.tagFilter, opts.tagLimit);
   }
-  const metaStr = buildMeta(opts);
-  if (metaStr) {
-    parts.push("");
-    parts.push(metaStr);
-  }
+  renderLicenseAndBaseModel(parts, opts.tags);
+  renderRepoMetadata(parts, opts);
   const readme = await fetchReadme(parsed, signal);
   if (readme) {
     appendReadme(parts, readme);
@@ -285,6 +286,430 @@ function buildRepoBodyOptions(
   };
 }
 
+function formatDownloadsShort(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
+
+function formatSize(bytes: number): string {
+  const gb = bytes / 1_073_741_824;
+  if (gb >= 1) return `${gb.toFixed(1)}GB`;
+  const mb = bytes / 1_048_576;
+  if (mb >= 1) return `${mb.toFixed(0)}MB`;
+  return `${(bytes / 1024).toFixed(0)}KB`;
+}
+
+function extractLicense(
+  tags: string[],
+  cardData?: Record<string, unknown>,
+): string | null {
+  if (cardData?.license) return String(cardData.license);
+  const tag = tags.find((t) => t.startsWith("license:"));
+  return tag ? tag.replace("license:", "") : null;
+}
+
+function extractBaseModel(
+  tags: string[],
+  cardData?: Record<string, unknown>,
+): string | null {
+  if (cardData?.base_model) {
+    return Array.isArray(cardData.base_model)
+      ? (cardData.base_model as string[]).join(", ")
+      : String(cardData.base_model);
+  }
+  for (const prefix of [
+    "base_model:quantized:",
+    "base_model:finetune:",
+    "base_model:",
+  ]) {
+    const tag = tags.find((t) => t.startsWith(prefix));
+    if (tag) return tag.replace(prefix, "");
+  }
+  return null;
+}
+
+function userTags(tags: string[]): string[] {
+  return tags.filter(
+    (t) =>
+      !t.startsWith("base_model:") &&
+      !t.startsWith("license:") &&
+      !t.startsWith("arxiv:") &&
+      !t.startsWith("deploy:") &&
+      !t.startsWith("dataset:") &&
+      t !== "region:us" &&
+      t !== "endpoints_compatible",
+  );
+}
+
+function guessQuantFormat(path: string): string {
+  const file = path.slice(path.lastIndexOf("/") + 1);
+  const base = file.endsWith(".gguf") ? file.slice(0, -5) : file;
+  const chunks = base
+    .split("-")
+    .flatMap((chunk) => chunk.split("."))
+    .map((chunk) => chunk.toUpperCase());
+
+  for (let i = chunks.length - 1; i >= 0; i -= 1) {
+    const c = chunks[i];
+    if (c.length === 0) continue;
+    if (isQuantFormat(c)) return c;
+  }
+  return "UNKNOWN";
+}
+
+function hasAnyDigit(value: string): boolean {
+  for (const char of value) {
+    if (char >= "0" && char <= "9") return true;
+  }
+  return false;
+}
+
+function isQuantFormat(c: string): boolean {
+  return isQFormat(c) || isFloatFormat(c) || isMxfpFormat(c) || isUdFormat(c);
+}
+
+function isQFormat(c: string): boolean {
+  return (c.startsWith("IQ") || c.startsWith("Q")) && hasAnyDigit(c);
+}
+
+function isFloatFormat(c: string): boolean {
+  return c === "BF16" || c === "F16" || c === "F32";
+}
+
+function isMxfpFormat(c: string): boolean {
+  return c.startsWith("MXFP");
+}
+
+function isUdFormat(c: string): boolean {
+  return c.startsWith("UD") && hasAnyDigit(c);
+}
+
+interface HFModelDetail extends Record<string, unknown> {
+  id: string;
+  downloads: number;
+  likes: number;
+  tags: string[];
+  pipeline_tag?: string;
+  library_name?: string;
+  cardData?: Record<string, unknown>;
+  config?: { model_type?: string; architectures?: string[] };
+  transformersInfo?: { auto_model?: string; processor?: string };
+  "model-index"?: Array<{
+    name?: string;
+    results: Array<{
+      dataset: { name: string };
+      metrics: Array<{ type: string; name?: string; value: number }>;
+    }>;
+  }>;
+  widgetData?: Array<{
+    text?: string;
+    messages?: Array<{ role: string; content: string }>;
+  }>;
+  usedStorage?: number;
+  spaces?: string[];
+  gated?: boolean | string;
+  private?: boolean;
+  disabled?: boolean;
+  inference?: string;
+  createdAt: string;
+  lastModified?: string;
+  sha: string;
+}
+
+interface HFDiscussionEvent {
+  id: string;
+  type: string;
+  author: {
+    name: string;
+    fullname?: string;
+    type?: string;
+    isPro?: boolean;
+    isHf?: boolean;
+  } | null;
+  createdAt: string;
+  data?: {
+    edited?: boolean;
+    hidden?: boolean;
+    latest?: { raw?: string };
+    status?: string;
+    subject?: string;
+    oid?: string;
+    reactions?: Array<{ reaction: string; count: number }>;
+  };
+}
+
+interface HFDiscussionDetail {
+  num: number;
+  title: string;
+  status: string;
+  isPullRequest: boolean;
+  pinned: boolean;
+  locked: boolean;
+  createdAt: string;
+  author: {
+    name: string;
+    fullname?: string;
+    type?: string;
+    isPro?: boolean;
+    isHf?: boolean;
+  };
+  org?: { name: string; fullname?: string; type: string; plan?: string };
+  events: HFDiscussionEvent[];
+}
+
+async function fetchModelDetail(
+  modelId: string,
+  signal?: AbortSignal,
+): Promise<HFModelDetail> {
+  return fetchJSON<HFModelDetail>(`models/${modelId}`, signal);
+}
+
+async function fetchModelTree(
+  modelId: string,
+  signal?: AbortSignal,
+): Promise<HFTreeEntry[]> {
+  const revisions = ["main", "master"];
+  const [owner, name] = modelId.split("/");
+  let lastError: Error | null = null;
+  for (const revision of revisions) {
+    try {
+      return await fetchJSON<HFTreeEntry[]>(
+        `${repoApiPath({ kind: "model" as const, owner, name, type: "repo" as const })}/tree/${revision}`,
+        signal,
+      );
+    } catch (error) {
+      if (error instanceof Error) lastError = error;
+    }
+  }
+  throw lastError ?? new Error("Failed to fetch model tree");
+}
+
+function fmtAuthor(
+  a: {
+    name: string;
+    fullname?: string;
+    type?: string;
+    isPro?: boolean;
+    isHf?: boolean;
+  } | null,
+): string {
+  if (!a) return "system";
+  const parts = [a.name];
+  if (a.fullname && a.fullname !== a.name) parts.push(`(${a.fullname})`);
+  const badges: string[] = [];
+  if (a.type === "org") badges.push("org");
+  if (a.isPro) badges.push("PRO");
+  if (a.isHf) badges.push("HF staff");
+  if (badges.length) parts.push(`[${badges.join(", ")}]`);
+  return parts.join(" ");
+}
+
+function fmtReactions(
+  reactions: Array<{ reaction: string; count: number }>,
+): string {
+  const total = reactions.reduce((sum, r) => sum + r.count, 0);
+  return total > 0 ? `+${total}` : "";
+}
+
+function renderTransformersInfo(parts: string[], detail: HFModelDetail): void {
+  const ti = detail.transformersInfo;
+  if (!ti) return;
+  const meta: string[] = [];
+  if (ti.auto_model) meta.push(`auto_model=${ti.auto_model}`);
+  if (ti.processor) meta.push(`processor=${ti.processor}`);
+  if (meta.length) {
+    parts.push(`**Transformers:** ${meta.join(", ")}`);
+  }
+}
+
+function renderConfigInfo(parts: string[], detail: HFModelDetail): void {
+  if (!detail.config?.architectures?.length && !detail.config?.model_type)
+    return;
+  parts.push("");
+  parts.push("## Configuration");
+  if (detail.config.architectures?.length) {
+    parts.push(`**Architecture:** ${detail.config.architectures.join(", ")}`);
+  }
+  if (detail.config.model_type) {
+    parts.push(`**Model type:** ${detail.config.model_type}`);
+  }
+  renderTransformersInfo(parts, detail);
+}
+
+function renderCardData(parts: string[], detail: HFModelDetail): void {
+  const cardData = detail.cardData as Record<string, unknown> | undefined;
+  if (!Array.isArray(detail.tags)) return;
+  const cardTags = userTags(detail.tags);
+  const license = extractLicense(detail.tags, cardData);
+  const baseModel = extractBaseModel(detail.tags, cardData);
+  if (license || baseModel) {
+    parts.push("");
+    parts.push(
+      [
+        license ? `**License:** ${license}` : "",
+        baseModel ? `**Base model:** ${baseModel}` : "",
+      ]
+        .filter(Boolean)
+        .join(" • "),
+    );
+  }
+  if (cardTags.length > 0 && cardTags.length <= 10) {
+    parts.push("");
+    parts.push("**Tags:**");
+    for (const tag of cardTags) {
+      parts.push(`- ${tagToBullet(tag)}`);
+    }
+  }
+}
+
+function renderCardDataFields(
+  parts: string[],
+  cardData: Record<string, unknown> | undefined,
+): void {
+  if (!cardData) return;
+  if (cardData.language) {
+    parts.push("");
+    parts.push(
+      "**Languages:** " +
+        (Array.isArray(cardData.language)
+          ? (cardData.language as string[]).join(", ")
+          : String(cardData.language)),
+    );
+  }
+  if (cardData.datasets) {
+    parts.push(
+      "**Datasets:** " +
+        (Array.isArray(cardData.datasets)
+          ? (cardData.datasets as string[]).join(", ")
+          : String(cardData.datasets)),
+    );
+  }
+}
+
+function renderStatusInfo(parts: string[], detail: HFModelDetail): void {
+  const statusParts: string[] = [];
+  if (detail.gated) {
+    statusParts.push(
+      `gated: ${typeof detail.gated === "string" ? detail.gated : "yes"}`,
+    );
+  }
+  if (detail.private) statusParts.push("private: yes");
+  if (detail.disabled) statusParts.push("disabled: yes");
+  if (statusParts.length) {
+    parts.push("");
+    parts.push(statusParts.join(" • "));
+  }
+}
+
+function extractWidgetExamples(detail: HFModelDetail): string[] {
+  if (!Array.isArray(detail.widgetData)) return [];
+  const examples: string[] = [];
+  for (const w of detail.widgetData) {
+    if (w.text) {
+      examples.push(w.text);
+    } else if (w.messages?.length) {
+      const msg = w.messages.find((m) => m.role === "user");
+      if (msg) examples.push(msg.content);
+    }
+  }
+  return examples;
+}
+
+function renderWidgetExamples(parts: string[], detail: HFModelDetail): void {
+  const examples = extractWidgetExamples(detail);
+  if (examples.length === 0) return;
+  parts.push("");
+  parts.push("## Widget examples");
+  for (const e of examples) {
+    parts.push(`> ${e.split("\n")[0]}`);
+  }
+}
+
+// fallow-ignore-next-line complexity
+function formatBenchmarkResult(r: Record<string, unknown>): string {
+  const rm = r as { dataset?: { name?: string }; metrics?: unknown[] };
+  const m = rm.metrics?.[0] as
+    | { type?: string; name?: string; value?: number }
+    | undefined;
+  const value =
+    typeof m?.value === "number" ? m.value.toFixed(2) : String(m?.value ?? "?");
+  return `- ${rm.dataset?.name || "?"}: ${m?.name || m?.type || "score"} = ${value}`;
+}
+
+function renderBenchmarks(parts: string[], detail: HFModelDetail): void {
+  const modelIndex = detail["model-index"];
+  if (!Array.isArray(modelIndex) || modelIndex.length === 0) return;
+  const results = modelIndex.flatMap(
+    (mi) =>
+      ((mi as { results?: unknown[] }).results ?? []) as Record<
+        string,
+        unknown
+      >[],
+  );
+  if (results.length === 0) return;
+  parts.push("");
+  parts.push("## Benchmarks");
+  for (const r of results) {
+    parts.push(formatBenchmarkResult(r));
+  }
+}
+
+function renderSpaces(parts: string[], detail: HFModelDetail): void {
+  if (!Array.isArray(detail.spaces) || detail.spaces.length === 0) return;
+  parts.push("");
+  parts.push(`## Spaces (${detail.spaces.length})`);
+  for (const s of detail.spaces) {
+    parts.push(`- [${s}](https://huggingface.co/spaces/${s})`);
+  }
+}
+
+function renderFileListSection(
+  parts: string[],
+  parsed: HFPath,
+  tree: HFTreeEntry[],
+  isGguf: boolean,
+): void {
+  if (isGguf) {
+    const ggufFiles = tree.filter(
+      (f) => f.type === "file" && f.path.endsWith(".gguf"),
+    );
+    if (ggufFiles.length > 0) {
+      parts.push("");
+      parts.push(`## Quant files (${ggufFiles.length})`);
+      ggufFiles.forEach((f) => {
+        const size =
+          (f.lfs as { size?: number } | undefined)?.size ?? f.size ?? 0;
+        const format = guessQuantFormat(f.path);
+        parts.push(
+          `- ${format} — [${f.path}](${BASE}/${parsed.owner}/${parsed.name}/blob/main/${encodeURIComponent(f.path)}) (${formatSize(size)})`,
+        );
+      });
+    }
+  } else {
+    const weightExts = [".safetensors", ".bin", ".pt", ".onnx"];
+    const isWeight = (f: HFTreeEntry) =>
+      weightExts.some((ext) => f.path.endsWith(ext));
+    const weights = tree
+      .filter((f) => f.type === "file" && isWeight(f))
+      .sort((a, b) => (a.size ?? 0) - (b.size ?? 0));
+    if (weights.length > 0) {
+      parts.push("");
+      const totalSize = weights.reduce((s, f) => s + (f.size ?? 0), 0);
+      parts.push(
+        `## Model weights (${weights.length} files, ${formatSize(totalSize)} total)`,
+      );
+      for (const w of weights) {
+        const size =
+          (w.lfs as { size?: number } | undefined)?.size ?? w.size ?? 0;
+        parts.push(
+          `- [${w.path}](${BASE}/${parsed.owner}/${parsed.name}/blob/main/${encodeURIComponent(w.path)}) (${formatSize(size)})`,
+        );
+      }
+    }
+  }
+}
+
 async function handleRepo(
   parsed: HFPath,
   signal?: AbortSignal,
@@ -303,6 +728,41 @@ async function handleRepo(
     parsed,
     signal,
   );
+
+  if (parsed.kind === "model") {
+    const isGguf = Array.isArray(info.tags) && info.tags.includes("gguf");
+
+    try {
+      const detail = await fetchModelDetail(
+        parsed.owner + "/" + parsed.name,
+        signal,
+      );
+
+      renderConfigInfo(parts, detail);
+      renderCardData(parts, detail);
+      renderCardDataFields(
+        parts,
+        detail.cardData as Record<string, unknown> | undefined,
+      );
+      renderStatusInfo(parts, detail);
+      renderWidgetExamples(parts, detail);
+      renderBenchmarks(parts, detail);
+      renderSpaces(parts, detail);
+
+      try {
+        const tree = await fetchModelTree(
+          parsed.owner + "/" + parsed.name,
+          signal,
+        );
+        renderFileListSection(parts, parsed, tree, isGguf);
+      } catch {
+        // Tree fetch failed, skip file listing
+      }
+    } catch {
+      // Detail fetch failed, already rendered basic info
+    }
+  }
+
   return parts.join("\n");
 }
 async function handleFile(
@@ -355,42 +815,208 @@ async function handleTree(
 }
 function renderFileList(files: HFTreeEntry[]): string[] {
   const lines: string[] = [];
-  for (const f of files.slice(0, 100)) {
+  for (const f of files) {
     const size = f.size ? ` (${formatBytes(f.size)})` : "";
     const lfs = f.lfs ? " [LFS]" : "";
     lines.push(`- \`${f.path}\`${size}${lfs}`);
   }
-  if (files.length > 100) {
-    lines.push(`- ... and ${files.length - 100} more files`);
-  }
   return lines;
 }
-function handleDiscussion(
+function fmtOrgName(detail: {
+  org?: { name: string; fullname?: string };
+}): string | undefined {
+  if (!detail.org) return undefined;
+  const orgName =
+    detail.org.fullname && detail.org.fullname !== detail.org.name
+      ? `${detail.org.name} (${detail.org.fullname})`
+      : detail.org.name;
+  return `**Org:** ${orgName}`;
+}
+
+function renderEventComment(
+  parts: string[],
+  event: HFDiscussionEvent,
+  author: string,
+  date: string,
+): void {
+  const flags: string[] = [];
+  if (event.data?.edited) flags.push("edited");
+  if (event.data?.hidden) flags.push("hidden");
+  const body = event.data?.latest?.raw?.trim() ?? "(empty)";
+  const reactions = fmtReactions(event.data?.reactions ?? []);
+  const footer = [flags.join(" "), reactions].filter(Boolean).join("  ");
+  const content = footer ? `${body}\n\n${footer}` : body;
+  parts.push(`${author} • ${date}`);
+  parts.push(content);
+}
+
+function renderEventStatusChange(
+  parts: string[],
+  event: HFDiscussionEvent,
+  author: string,
+  date: string,
+): void {
+  const status = event.data?.status ?? "unknown";
+  parts.push(`${author} • ${date}`);
+  parts.push(`status → ${status}`);
+}
+
+function renderEventCommit(
+  parts: string[],
+  event: HFDiscussionEvent,
+  date: string,
+): void {
+  const ref = event.data?.subject ?? event.data?.oid?.slice(0, 8) ?? "unknown";
+  const oid = event.data?.oid ? ` (${event.data.oid.slice(0, 12)})` : "";
+  parts.push(`commit • ${date}`);
+  parts.push(`${ref}${oid}`);
+}
+
+function renderEvent(parts: string[], event: HFDiscussionEvent): void {
+  const author = fmtAuthor(event.author);
+  const date = new Date(event.createdAt).toISOString().split("T")[0];
+  parts.push("");
+  parts.push(`---`);
+
+  switch (event.type) {
+    case "comment":
+      renderEventComment(parts, event, author, date);
+      break;
+    case "status-change":
+      renderEventStatusChange(parts, event, author, date);
+      break;
+    case "commit":
+      renderEventCommit(parts, event, date);
+      break;
+    default:
+      parts.push(`${event.type} • ${date}`);
+      parts.push(author);
+      break;
+  }
+}
+
+function buildDiscussionHeader(
+  detail: HFDiscussionDetail,
   parsed: HFPath,
-  { showNote = false }: { showNote?: boolean } = {},
+  url: string,
+): string[] {
+  const header: string[] = [
+    `# Discussion #${detail.num}`,
+    `**Repo:** \`${parsed.owner}/${parsed.name}\``,
+    `**Title:** ${detail.title}`,
+    `**Status:** ${detail.status === "closed" ? "closed" : "open"}`,
+    `**Type:** ${detail.isPullRequest ? "PR" : "Discussion"}`,
+    `**URL:** [${url}](${url})`,
+    `**Opened by:** ${fmtAuthor(detail.author)} on ${new Date(detail.createdAt).toISOString().split("T")[0]}`,
+  ];
+  if (detail.pinned) header.push("**Pinned:** yes");
+  if (detail.locked) header.push("**Locked:** yes");
+  const orgName = fmtOrgName(detail);
+  if (orgName) header.push(orgName);
+  return header;
+}
+
+function renderDiscussionDetail(
+  parsed: HFPath,
+  detail: HFDiscussionDetail,
+  signal?: AbortSignal,
 ): string {
-  const url = `${BASE}/${parsed.owner}/${parsed.name}/discussions${parsed.number ? `/${parsed.number}` : ""}`;
+  const url = `${BASE}/${parsed.owner}/${parsed.name}/discussions/${parsed.number}`;
+  const parts = buildDiscussionHeader(detail, parsed, url);
+  for (const event of detail.events) {
+    renderEvent(parts, event);
+  }
+  return parts.join("\n");
+}
+
+function renderDiscussionsList(
+  parsed: HFPath,
+  discussions: Array<{
+    num: number;
+    title: string;
+    status: string;
+    isPullRequest: boolean;
+    pinned: boolean;
+  }>,
+): string {
+  const url = `${BASE}/${parsed.owner}/${parsed.name}/discussions`;
   const parts: string[] = [
+    `# Discussions`,
+    `**Repo:** \`${parsed.owner}/${parsed.name}\``,
+    "",
+    `${discussions.length} discussion(s) found`,
+  ];
+  if (parsed.kind !== "model") {
+    parts.push(`**Kind:** ${parsed.kind}`);
+  }
+  for (const d of discussions) {
+    const type = d.isPullRequest ? "PR" : "Disc";
+    const status = d.status === "closed" ? "○ closed" : "● open";
+    const pinned = d.pinned ? " ⓟ" : "";
+    parts.push("");
+    parts.push(
+      `- [${d.num}](${url}/${d.num}) ${status} ${type}${pinned} — ${d.title}`,
+    );
+  }
+  return parts.join("\n");
+}
+
+function buildFallback(parsed: HFPath, url: string): string {
+  const fallbackParts: string[] = [
     parsed.number ? `# Discussion #${parsed.number}` : `# Discussions`,
     `**Repo:** \`${parsed.owner}/${parsed.name}\``,
   ];
-
-  if (parsed.kind !== "model") parts.push(`**Kind:** ${parsed.kind}`);
-  parts.push("");
-  parts.push(
+  if (parsed.kind !== "model") fallbackParts.push(`**Kind:** ${parsed.kind}`);
+  fallbackParts.push("");
+  fallbackParts.push(
     parsed.number
       ? `[View on HuggingFace](${url})`
       : `[View all discussions](${url})`,
   );
+  return fallbackParts.join("\n");
+}
 
-  if (showNote) {
-    parts.push(
-      "",
-      `> Note: Individual discussion content is not available via the public API. The full discussion is available at the link above.`,
-    );
+async function handleDiscussion(
+  parsed: HFPath,
+  signal?: AbortSignal,
+): Promise<string> {
+  const baseUrl = `${BASE}/${parsed.owner}/${parsed.name}/discussions`;
+  const url = parsed.number ? `${baseUrl}/${parsed.number}` : baseUrl;
+
+  if (parsed.number) {
+    try {
+      const detail: HFDiscussionDetail = await fetchJSON(
+        `models/${parsed.owner}/${parsed.name}/discussions/${parsed.number}`,
+        signal,
+      );
+      return renderDiscussionDetail(parsed, detail, signal);
+    } catch {
+      // Fallback to link if API fails
+    }
   }
 
-  return parts.join("\n");
+  try {
+    const result: {
+      discussions: Array<{
+        num: number;
+        title: string;
+        status: string;
+        isPullRequest: boolean;
+        pinned: boolean;
+        createdAt: string;
+        numComments: number;
+        author: { name: string };
+      }>;
+    } = await fetchJSON(
+      `models/${parsed.owner}/${parsed.name}/discussions?limit=50`,
+      signal,
+    );
+    return renderDiscussionsList(parsed, result.discussions);
+  } catch {
+    // Fallback to link if API fails
+  }
+
+  return buildFallback(parsed, url);
 }
 
 async function dispatchHF(
@@ -403,9 +1029,9 @@ async function dispatchHF(
     case "tree":
       return handleTree(parsed, signal);
     case "discussion":
-      return handleDiscussion(parsed, { showNote: true });
+      return handleDiscussion(parsed, signal);
     case "discussions":
-      return handleDiscussion(parsed);
+      return handleDiscussion(parsed, signal);
     case "repo":
       return handleRepo(parsed, signal);
   }

@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { huggingfaceParser } from "./huggingface";
+import { parse } from "../lib/registry";
 
 describe("HuggingFace parser", () => {
   describe("matches", () => {
@@ -113,6 +114,21 @@ describe("HuggingFace parser", () => {
           "https://huggingface.co/meta-llama/Llama-2-7b",
         ),
       ).toBe(true);
+    });
+  });
+
+  describe("snapshot", () => {
+    beforeAll(async () => {
+      const { mockFetchWithFixtures } = await import("../lib/test-utils");
+      mockFetchWithFixtures();
+    });
+    it("captures output for https://huggingface.co/openai/whisper-large-v3", async () => {
+      const result = await parse(
+        "https://huggingface.co/openai/whisper-large-v3",
+      );
+      expect(
+        typeof result === "string" ? result : String(result),
+      ).toMatchSnapshot();
     });
   });
 });

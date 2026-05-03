@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { redditParser } from "./reddit";
+import { parse } from "../lib/registry";
 
 describe("Reddit parser", () => {
   describe("matches", () => {
@@ -93,6 +94,29 @@ describe("Reddit parser", () => {
 
     it("rejects redd.it short links", () => {
       expect(redditParser.matches("https://www.redd.it/abc123")).toBe(false);
+    });
+  });
+
+  describe("snapshot", () => {
+    beforeAll(async () => {
+      const { mockFetchWithFixtures } = await import("../lib/test-utils");
+      mockFetchWithFixtures();
+    });
+    it("captures output for https://www.reddit.com/r/programming/hot.json", async () => {
+      const result = await parse(
+        "https://www.reddit.com/r/programming/hot.json",
+      );
+      expect(
+        typeof result === "string" ? result : String(result),
+      ).toMatchSnapshot();
+    });
+    it("captures output for https://www.reddit.com/user/spez/submitted.json", async () => {
+      const result = await parse(
+        "https://www.reddit.com/user/spez/submitted.json",
+      );
+      expect(
+        typeof result === "string" ? result : String(result),
+      ).toMatchSnapshot();
     });
   });
 });

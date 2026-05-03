@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { hackernewsParser } from "./hackernews";
+import { parse } from "../lib/registry";
 
 describe("Hacker News parser", () => {
   describe("matches", () => {
@@ -176,6 +177,29 @@ describe("Hacker News parser", () => {
       expect(hackernewsParser.matches("https://hn.algolia.com/?q=test")).toBe(
         false,
       );
+    });
+  });
+
+  describe("snapshot", () => {
+    beforeAll(async () => {
+      const { mockFetchWithFixtures } = await import("../lib/test-utils");
+      mockFetchWithFixtures();
+    });
+    it("captures output for https://hacker-news.firebaseio.com/v0/item/39427851.json", async () => {
+      const result = await parse(
+        "https://hacker-news.firebaseio.com/v0/item/39427851.json",
+      );
+      expect(
+        typeof result === "string" ? result : String(result),
+      ).toMatchSnapshot();
+    });
+    it("captures output for https://hacker-news.firebaseio.com/v0/beststories.json", async () => {
+      const result = await parse(
+        "https://hacker-news.firebaseio.com/v0/beststories.json",
+      );
+      expect(
+        typeof result === "string" ? result : String(result),
+      ).toMatchSnapshot();
     });
   });
 });

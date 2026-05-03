@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { stackoverflowParser } from "./stackoverflow";
+import { parse } from "../lib/registry";
 
 describe("Stack Overflow parser", () => {
   describe("matches", () => {
@@ -121,6 +122,21 @@ describe("Stack Overflow parser", () => {
           "https://stackoverflow.com/search?q=test&tab=newest",
         ),
       ).toBe(true);
+    });
+  });
+
+  describe("snapshot", () => {
+    beforeAll(async () => {
+      const { mockFetchWithFixtures } = await import("../lib/test-utils");
+      mockFetchWithFixtures();
+    });
+    it("captures output for https://stackoverflow.com/questions/79935417", async () => {
+      const result = await parse(
+        "https://stackoverflow.com/questions/79935417",
+      );
+      expect(
+        typeof result === "string" ? result : String(result),
+      ).toMatchSnapshot();
     });
   });
 });

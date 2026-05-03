@@ -334,11 +334,7 @@ function buildPostLink(post: RedditPostData): string[] {
 
   if (post.selftext) {
     const snippet = stripHtml(post.selftext).split("\n").filter(Boolean)[0];
-    if (snippet) {
-      const truncated =
-        snippet.length > 200 ? snippet.slice(0, 197) + "..." : snippet;
-      return [truncated];
-    }
+    if (snippet) return [snippet];
   }
 
   return [];

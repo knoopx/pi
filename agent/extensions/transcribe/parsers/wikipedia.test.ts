@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { wikipediaParser } from "./wikipedia";
+import { parse } from "../lib/registry";
 
 describe("Wikipedia parser", () => {
   describe("matches", () => {
@@ -70,6 +71,21 @@ describe("Wikipedia parser", () => {
       expect(
         wikipediaParser.matches("https://m.en.wikipedia.org/wiki/Test"),
       ).toBe(false);
+    });
+  });
+
+  describe("snapshot", () => {
+    beforeAll(async () => {
+      const { mockFetchWithFixtures } = await import("../lib/test-utils");
+      mockFetchWithFixtures();
+    });
+    it("captures output for https://en.wikipedia.org/wiki/Artificial_intelligence", async () => {
+      const result = await parse(
+        "https://en.wikipedia.org/wiki/Artificial_intelligence",
+      );
+      expect(
+        typeof result === "string" ? result : String(result),
+      ).toMatchSnapshot();
     });
   });
 });

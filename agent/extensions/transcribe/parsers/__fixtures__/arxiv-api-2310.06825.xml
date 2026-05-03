@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/m2BVKV1RI4pXU3C/0o0VOw59DGI</id>
+  <title>arXiv Query: search_query=&amp;id_list=2310.06825&amp;start=0&amp;max_results=10</title>
+  <updated>2026-05-03T11:39:49Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=&amp;start=0&amp;max_results=10&amp;id_list=2310.06825" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>10</opensearch:itemsPerPage>
+  <opensearch:totalResults>1</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/2310.06825v1</id>
+    <title>Mistral 7B</title>
+    <updated>2023-10-10T17:54:58Z</updated>
+    <link href="https://arxiv.org/abs/2310.06825v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2310.06825v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We introduce Mistral 7B v0.1, a 7-billion-parameter language model engineered for superior performance and efficiency. Mistral 7B outperforms Llama 2 13B across all evaluated benchmarks, and Llama 1 34B in reasoning, mathematics, and code generation. Our model leverages grouped-query attention (GQA) for faster inference, coupled with sliding window attention (SWA) to effectively handle sequences of arbitrary length with a reduced inference cost. We also provide a model fine-tuned to follow instructions, Mistral 7B -- Instruct, that surpasses the Llama 2 13B -- Chat model both on human and automated benchmarks. Our models are released under the Apache 2.0 license.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2023-10-10T17:54:58Z</published>
+    <arxiv:comment>Models and code are available at https://mistral.ai/news/announcing-mistral-7b/</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Albert Q. Jiang</name>
+    </author>
+    <author>
+      <name>Alexandre Sablayrolles</name>
+    </author>
+    <author>
+      <name>Arthur Mensch</name>
+    </author>
+    <author>
+      <name>Chris Bamford</name>
+    </author>
+    <author>
+      <name>Devendra Singh Chaplot</name>
+    </author>
+    <author>
+      <name>Diego de las Casas</name>
+    </author>
+    <author>
+      <name>Florian Bressand</name>
+    </author>
+    <author>
+      <name>Gianna Lengyel</name>
+    </author>
+    <author>
+      <name>Guillaume Lample</name>
+    </author>
+    <author>
+      <name>Lucile Saulnier</name>
+    </author>
+    <author>
+      <name>Lélio Renard Lavaud</name>
+    </author>
+    <author>
+      <name>Marie-Anne Lachaux</name>
+    </author>
+    <author>
+      <name>Pierre Stock</name>
+    </author>
+    <author>
+      <name>Teven Le Scao</name>
+    </author>
+    <author>
+      <name>Thibaut Lavril</name>
+    </author>
+    <author>
+      <name>Thomas Wang</name>
+    </author>
+    <author>
+      <name>Timothée Lacroix</name>
+    </author>
+    <author>
+      <name>William El Sayed</name>
+    </author>
+  </entry>
+</feed>

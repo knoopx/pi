@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { pypiParser } from "./pypi";
+import { parse } from "../lib/registry";
 
 describe("PyPI parser", () => {
   describe("matches", () => {
@@ -58,6 +59,19 @@ describe("PyPI parser", () => {
       expect(pypiParser.matches("https://pypi.org/project/requests///")).toBe(
         true,
       );
+    });
+  });
+
+  describe("snapshot", () => {
+    beforeAll(async () => {
+      const { mockFetchWithFixtures } = await import("../lib/test-utils");
+      mockFetchWithFixtures();
+    });
+    it("captures output for https://pypi.org/project/requests/", async () => {
+      const result = await parse("https://pypi.org/project/requests/");
+      expect(
+        typeof result === "string" ? result : String(result),
+      ).toMatchSnapshot();
     });
   });
 });

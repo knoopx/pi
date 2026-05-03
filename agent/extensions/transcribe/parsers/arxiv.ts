@@ -97,7 +97,7 @@ function parseSingleEntry(e: string): ArxivEntry {
     id: arxivId,
     title: extract(e, "title").replace(/\s+/g, " "),
     authors: extractAll(e, "name").join(", "),
-    abstract: summary.length > 2000 ? summary.slice(0, 2000) + "..." : summary,
+    abstract: summary.replace(/\s+/g, " "),
     published: extract(e, "published").slice(0, 10),
     url: `https://arxiv.org/abs/${arxivId}`,
     categories: categories.length ? categories : undefined,
@@ -221,15 +221,11 @@ function renderSearchEntry(entry: ArxivEntry): string[] {
   if (entry.authors) lines.push(`**Authors:** ${entry.authors}`);
   if (entry.categories?.length)
     lines.push(`**Categories:** ${entry.categories.join(", ")}`);
-  const preview = truncateText(entry.abstract, 400);
-  lines.push("", preview);
+  lines.push("", entry.abstract);
 
   return lines;
 }
-function truncateText(text: string, maxLen: number): string {
-  if (text.length <= maxLen) return text;
-  return text.slice(0, maxLen) + "...";
-}
+
 function dispatchArxiv(
   parsed: ArxivPath,
   signal?: AbortSignal,

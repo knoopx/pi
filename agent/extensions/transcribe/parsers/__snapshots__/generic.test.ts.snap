@@ -1,0 +1,34 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Generic parser > convert with HTML in markdown > converts inline HTML blockquote to markdown 1`] = `
+"\\# README
+
+> A great quote
+
+After the quote.
+"
+`;
+
+exports[`Generic parser > convert with HTML in markdown > converts inline HTML table to markdown table 1`] = `
+"\\# Project Stats
+
+| Name    | Score |
+| ------- | ----- |
+| Model A | 95    |
+| Model B | 87    |
+"
+`;
+
+exports[`Generic parser > convert with HTML in markdown > does not break on pure markdown 1`] = `
+"# Hello
+
+This is **markdown** content.
+"
+`;
+
+exports[`Generic parser > convert with HTML in markdown > handles mixed markdown and HTML in same content 1`] = `
+"\\# README  | Feature | Status | |---------|--------| AuthDone
+
+> A great quote
+"
+`;

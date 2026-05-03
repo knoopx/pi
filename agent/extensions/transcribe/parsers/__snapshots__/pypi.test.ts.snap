@@ -1,0 +1,51 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PyPI parser > snapshot > captures output for https://pypi.org/project/requests/ 1`] = `
+"# requests
+Python HTTP for Humans.
+version: 2.33.1
+license: Apache-2.0
+python: >=>=3.10
+
+**Development Status:**
+- 5 - Production/Stable
+
+**Environment:**
+- Web Environment
+
+**Intended Audience:**
+- Developers
+
+**License:**
+- OSI Approved :: Apache Software License
+
+**Natural Language:**
+- English
+
+**Operating System:**
+- OS Independent
+
+**Programming Language:**
+- Python
+- Python :: 3
+- Python :: 3 :: Only
+- Python :: 3.10
+- Python :: 3.11
+- Python :: 3.12
+- Python :: 3.13
+- Python :: 3.14
+- Python :: Implementation :: CPython
+- Python :: Implementation :: PyPy
+
+**Topic:**
+- Internet :: WWW/HTTP
+- Software Development :: Libraries
+
+[Documentation](https://requests.readthedocs.io)
+[Source](https://github.com/psf/requests)
+
+**Releases (1 wheel(s)):**
+- [requests-2.33.1-py3-none-any.whl](https://files.pythonhosted.org/packages/d7/8e/7540e8a2036f79a125c1d2ebadf69ed7901608859186c856fa0388ef4197/requests-2.33.1-py3-none-any.whl) (63.4 KB)
+
+[View on PyPI](https://pypi.org/project/requests/)"
+`;

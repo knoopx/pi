@@ -1,0 +1,102 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Hacker News parser > snapshot > captures output for https://hacker-news.firebaseio.com/v0/beststories.json 1`] = `
+"# Hacker News — Best Stories
+
+**1. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**2. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**3. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**4. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**5. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**6. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**7. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**8. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**9. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**10. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**11. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**12. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**13. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**14. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**15. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**16. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**17. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**18. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**19. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)
+
+**20. Demo Hacker News Story** [https://example.com/demo](https://example.com/demo)
+score: 10 • by: demo-user • comments: 5 • 30mo ago
+    [HN](https://news.ycombinator.com/item?id=99999999)"
+`;
+
+exports[`Hacker News parser > snapshot > captures output for https://hacker-news.firebaseio.com/v0/item/39427851.json 1`] = `
+"id: 39427851 • type: comment • by: [masfoobar](https://news.ycombinator.com/user?id=masfoobar) • Feb 19, 2024, 10:53 AM
+
+
+eglot is part of emacs 29.
+I have been testing it out for my .NET development (with Omnisharp)
+I officially started with .NET back in 2008 and, at the time, you really had to use Visual Studio. I knew emacs was not an option at that time. Since .NET Core I knew I was getting closer and closer for emacs becomming an option.
+Then comes Visual Studio Code.
+I have experiemented with C# development in emacs for a few years, now. I cannot remember now but it was likely with lsp-mode. When I found out eglot is in v29, it was time to revisit it. It has been positive so far.
+I actually forced myself doing .net development in emacs this weekend. I am 90% there! Need to see if I can debug in emacs, now. I hope so!
+Once I am happy, I will continue to add more interactive functions, saving me typing &#x27;dotnet cli..&#x27; commands. I also need to revisit yasnippet to make coding more effecient in C#.
+Getting started with eglot and C# was pretty painless, thanks to this link:-
+https:&#x2F;&#x2F;www.johansivertsen.com&#x2F;post&#x2F;emacs-29-csharp&#x2F;
+
+[View on Hacker News](https://news.ycombinator.com/item?id=39427851)"
+`;

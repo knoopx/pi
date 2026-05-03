@@ -1,0 +1,15 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`npm parser > snapshot > captures output for https://www.npmjs.com/package/vitest 1`] = `
+"# vitest
+Next generation testing framework powered by Vite
+version: 4.1.5
+license: MIT
+author: Anthony Fu
+
+**Keywords:** vite, vitest, test, jest
+
+[https://vitest.dev](https://vitest.dev)
+
+[View on npm](https://www.npmjs.com/package/vitest)"
+`;

@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { arxivParser } from "./arxiv";
+import { parse } from "../lib/registry";
 
 describe("arXiv parser", () => {
   describe("matches", () => {
@@ -83,6 +84,19 @@ describe("arXiv parser", () => {
 
     it("handles /list with no count parameter", () => {
       expect(arxivParser.matches("https://arxiv.org/list/cs.CL")).toBe(true);
+    });
+  });
+
+  describe("snapshot", () => {
+    beforeAll(async () => {
+      const { mockFetchWithFixtures } = await import("../lib/test-utils");
+      mockFetchWithFixtures();
+    });
+    it("captures output for https://arxiv.org/abs/2310.06825", async () => {
+      const result = await parse("https://arxiv.org/abs/2310.06825");
+      expect(
+        typeof result === "string" ? result : String(result),
+      ).toMatchSnapshot();
     });
   });
 });

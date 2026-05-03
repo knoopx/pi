@@ -192,13 +192,9 @@ async function appendAnswers(
 
   parts.push("", `## Answers (${answers.length})`, "");
 
-  for (let i = 0; i < Math.min(answers.length, 5); i++) {
+  for (let i = 0; i < answers.length; i++) {
     if (i > 0) parts.push("");
     parts.push(...renderAnswer(answers[i]));
-  }
-
-  if (answers.length > 5) {
-    parts.push("", `... and ${answers.length - 5} more answers`);
   }
 }
 function renderAnswer(a: SoAnswer): string[] {
@@ -215,7 +211,7 @@ function renderAnswer(a: SoAnswer): string[] {
 
   if (a.body) {
     const body = stripHtml(a.body);
-    lines.push("", body.length > 600 ? body.slice(0, 597) + "..." : body);
+    lines.push("", body);
   }
 
   return lines;
@@ -243,7 +239,7 @@ function renderQuestionItem(rank: number, q: SoQuestion): string[] {
 
   if (q.snippet) {
     const snippet = stripHtml(q.snippet);
-    lines.push(snippet.length > 200 ? snippet.slice(0, 197) + "..." : snippet);
+    lines.push(snippet);
   }
 
   lines.push(`[\u2197 stackoverflow](${q.link})`);

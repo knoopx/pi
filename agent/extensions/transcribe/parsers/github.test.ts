@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { githubParser } from "./github";
+import { parse } from "../lib/registry";
 
 describe("GitHub parser", () => {
   describe("matches", () => {

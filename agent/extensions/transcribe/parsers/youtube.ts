@@ -150,7 +150,7 @@ function formatVideoComments(commentsData: YoutubeCommentsResponse): string[] {
   if (comments.length === 0) return [];
 
   const lines: string[] = ["", "## Top Comments", ""];
-  for (const thread of comments.slice(0, 5)) {
+  for (const thread of comments) {
     const comment = thread.snippet.topLevelComment?.snippet;
     if (!comment) continue;
     lines.push(
@@ -172,7 +172,7 @@ async function handleVideo(
       signal,
     ),
     fetchYoutube<YoutubeCommentsResponse>(
-      `commentThreads?part=snippet,replies&videoId=${videoId}&maxResults=10&order=relevance`,
+      `commentThreads?part=snippet,replies&videoId=${videoId}&maxResults=100&order=relevance`,
       signal,
     ).catch(() => ({ items: [] })),
   ]);
@@ -214,7 +214,7 @@ function formatPlaylistItems(
 ): string[] {
   if (items.length === 0) return [];
   const lines: string[] = ["", `## Videos (${items.length})`, ""];
-  for (const item of items.slice(0, 50)) {
+  for (const item of items) {
     const videoId = item.snippet.resourceId?.videoId;
     if (!videoId) continue;
     const title = item.snippet.title || "(no title)";
@@ -233,7 +233,7 @@ async function handlePlaylist(
       signal,
     ),
     fetchYoutube<YoutubePlaylistItemsResponse>(
-      `playlistItems?part=contentDetails,snippet&playlistId=${playlistId}&maxResults=50`,
+      `playlistItems?part=contentDetails,snippet&playlistId=${playlistId}&maxResults=100`,
       signal,
     ).catch(() => ({ items: [] })),
   ]);
@@ -271,9 +271,6 @@ function formatChannelStats(stats: Record<string, string>): string[] {
 
 function formatChannelDescription(description: string): string[] {
   if (!description) return [];
-  if (description.length > 1000) {
-    return ["", description.slice(0, 997) + "..."];
-  }
   return ["", description];
 }
 
@@ -312,7 +309,7 @@ async function handleSearch(
   signal?: AbortSignal,
 ): Promise<string> {
   const data = await fetchYoutube<YoutubeSearchResponse>(
-    `search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=20&order=relevance`,
+    `search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=100&order=relevance`,
     signal,
   );
 
@@ -323,7 +320,7 @@ async function handleSearch(
     `${items.length} result(s)`,
   ];
 
-  for (const item of items.slice(0, 20)) {
+  for (const item of items) {
     const videoId = item.id?.videoId;
     if (!videoId) continue;
     const title = item.snippet.title || "(no title)";

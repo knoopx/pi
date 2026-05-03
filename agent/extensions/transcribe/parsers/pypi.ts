@@ -153,12 +153,9 @@ function formatPypiWheels(urls: PypiPackageInfo["urls"] | undefined): string[] {
   if (dists.length === 0) return [];
 
   const lines: string[] = ["", `**Releases (${dists.length} wheel(s)):**`];
-  for (const u of dists.slice(0, 10)) {
+  for (const u of dists) {
     const size = u.size ? `(${(u.size / 1024).toFixed(1)} KB)` : "";
     lines.push(`- [${u.filename}](${u.url}) ${size}`);
-  }
-  if (dists.length > 10) {
-    lines.push(`- ... and ${dists.length - 10} more`);
   }
   return lines;
 }
@@ -194,11 +191,8 @@ function formatVersionFiles(
 ): string[] {
   if (urls.length === 0) return [];
   const lines: string[] = ["", "**Available files:**"];
-  for (const u of urls.slice(0, 15)) {
+  for (const u of urls) {
     lines.push(`- ${u.filename}`);
-  }
-  if (urls.length > 15) {
-    lines.push(`- ... and ${urls.length - 15} more`);
   }
   return lines;
 }
@@ -211,7 +205,7 @@ function formatVersionWheels(
   if (wheels.length === 0) return [];
 
   const lines: string[] = ["", `**Download (${wheels.length} wheel(s)):**`];
-  for (const u of wheels.slice(0, 5)) {
+  for (const u of wheels) {
     const size = u.size ? ` (${(u.size / 1024).toFixed(1)} KB)` : "";
     lines.push(`- [${u.filename}](${u.url})${size}`);
   }

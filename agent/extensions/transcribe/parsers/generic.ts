@@ -1,4 +1,5 @@
 import type { Root as MdastRoot, Node } from "mdast";
+import type { Html } from "mdast";
 import { fromMarkdown } from "mdast-util-from-markdown";
 import { gfmFromMarkdown } from "mdast-util-gfm";
 import type { Parser } from "../lib/types";
@@ -23,7 +24,7 @@ function convertHtmlNodes(tree: MdastRoot): void {
   });
 
   for (const { node, parent, index } of htmlNodes) {
-    const htmlContent = (node as unknown as { value: string }).value;
+    const htmlContent = (node as Html).value;
     try {
       const mdastTree = htmlToMdast(htmlContent);
       const siblings = (parent as { children?: Node[] }).children;

@@ -326,8 +326,7 @@ async function fetchRecentStories(
   signal?: AbortSignal,
 ): Promise<HNItem[]> {
   if (!user.submitted?.length) return [];
-  const recentIds = user.submitted.slice(0, 10);
-  return fetchValidStories(recentIds, signal);
+  return fetchValidStories(user.submitted, signal);
 }
 function renderSubmissionItem(item: HNItem): string[] {
   const title = item.title || "(no title)";
@@ -421,8 +420,7 @@ async function fetchSubmittedStories(
   signal?: AbortSignal,
 ): Promise<HNItem[]> {
   const user = await fetchUser(username, signal);
-  const recentIds = (user.submitted || []).slice(0, 20);
-  return fetchValidStories(recentIds, signal);
+  return fetchValidStories(user.submitted || [], signal);
 }
 async function handleSearch(
   query: string,
