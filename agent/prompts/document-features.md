@@ -1,5 +1,7 @@
 Document all extension features in README.md and ensure every feature has a matching screenshot. Use CodeMapper (`cm`) to explore the codebase, not direct file reads.
 
+**Only document what actually exists.** Do not invent features in README.md that are not implemented in the code. Documentation must reflect actual implementation. Inspect the repo to confirm before documenting.
+
 ## Step 1: Discover features via cm
 
 Run `cm --help` or `cm map <dir> --level 2 --format ai` to discover all commands, subcommands, and components. Identify what is documented in README.md versus what is missing from the source.
@@ -17,6 +19,8 @@ For each missing component:
 1. Use `cm query createXxxComponent --show-body` to understand the constructor signature and config options
 2. Use `cm callers createMockTheme` or inspect existing test files to learn the mock pattern
 3. Create a `.test.ts` that calls `createListPicker` (or equivalent) with mocked `pi.exec`, mocks `tui`, uses `createMockTheme()`, and renders output via `expect(result).toMatchSnapshot()`
+
+**Tests must verify actual behavior, not just that mocks were called.** A test that only asserts `mock was called with args X` is not testing anything — feed real input data through the system and assert on the output.
 
 Test patterns:
 

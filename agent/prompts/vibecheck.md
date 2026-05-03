@@ -21,7 +21,7 @@ Review every reported issue and apply fixes by severity:
 - **no-hardcoded-secrets** — Move secrets to environment variables or `.env` files
 - **no-eval** — Replace `eval()` / `new Function()` with safe alternatives
 - **no-sql-concat** — Use parameterized queries or query builders
-- **no-empty-catch** — Log the error, rethrow, or handle it explicitly
+- **no-empty-catch** — Log the error, rethrow, or handle it explicitly. Do not suppress errors to avoid fixing them.
 - **no-error-info-leak** — Never expose `err.message` or `err.stack` to clients
 - **no-py-eval** — Replace `eval()`, `exec()`, `os.system()` with safe alternatives
 - **no-py-sql-concat** — Use parameterized queries instead of f-string SQL

@@ -8,7 +8,7 @@ The user is reporting a violation. This is serious.
 
 1. **Acknowledge** what went wrong — specific, no hedging
 2. **Reflect** on which principle was violated and why
-3. **Read** `~/.pi/agent/APPEND_SYSTEM.md`
+3. **Read** `~/.pi/agent/prompts/audit-codebase.md`
 4. **Strengthen** the violated principle, or add a new one if none covers it
 5. **Commit** to not repeating it
 
