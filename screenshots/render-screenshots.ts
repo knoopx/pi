@@ -47,6 +47,10 @@ const FEATURES: Record<string, { snap: string; test: string }> = {
     snap: join(IDE_SNAPS, "files", "__snapshots__", "index.test.ts.snap"),
     test: "renders file rows with mixed extensions and consistent left alignment",
   },
+  search: {
+    snap: join(IDE_SNAPS, "search", "__snapshots__", "component.test.ts.snap"),
+    test: "renders search with highlighted match text",
+  },
   symbols: {
     snap: join(IDE_SNAPS, "symbols", "__snapshots__", "index.test.ts.snap"),
     test: "after cycle - all filter",
@@ -139,7 +143,7 @@ const FEATURES: Record<string, { snap: string; test: string }> = {
   },
   editor: {
     snap: join(IDE_SNAPS, "editor", "__snapshots__", "highlight.test.ts.snap"),
-    test: "then applies syntax highlighting to keywords",
+    test: "then applies JavaScript highlighting",
   },
   "bookmark-prompt": {
     snap: join(

@@ -23,6 +23,7 @@ import { openOpLogBrowser } from "./components/oplog/overlay";
 import { openPullRequestsBrowser } from "./components/pull-requests/overlay";
 import { openChangesBrowser } from "./components/changes/overlay";
 import { openTodosBrowser } from "./components/todos/overlay";
+import { openSearchPicker } from "./components/search/overlay";
 import { monitorWorkspace } from "./workspace";
 import { FULL_OVERLAY_OPTIONS } from "./lib/overlay-utils";
 import { createNewChange } from "./jj/changes";
@@ -271,6 +272,14 @@ function handleTodosCommand(
   if (!ctx.hasUI) return;
   void openTodosBrowser(pi, ctx, args);
 }
+function handleSearchCommand(
+  pi: ExtensionAPI,
+  args: string,
+  ctx: ExtensionContext,
+): void {
+  if (!ctx.hasUI) return;
+  void openSearchPicker(pi, ctx, args);
+}
 interface ShortcutDef {
   key: KeyId;
   description: string;
@@ -338,6 +347,13 @@ function registerShortcuts(pi: ExtensionAPI): void {
       description: "Open pull requests browser",
       handler: (ctx) => {
         void openPullRequestsBrowser(pi, ctx);
+      },
+    },
+    {
+      key: Key.ctrlShift("f"),
+      description: "Open project-wide search",
+      handler: (ctx) => {
+        void handleSearchCommand(pi, "", ctx);
       },
     },
   ];
@@ -420,6 +436,14 @@ function registerCommands(pi: ExtensionAPI): void {
       "Search for task comments across the codebase with source preview",
     handler: async (args, ctx) => {
       void handleTodosCommand(pi, args, ctx);
+    },
+  });
+
+  pi.registerCommand("search", {
+    description:
+      "Search project files using ripgrep with syntax-highlighted previews",
+    handler: async (args, ctx) => {
+      void handleSearchCommand(pi, args, ctx);
     },
   });
 }
