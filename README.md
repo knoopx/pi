@@ -2,7 +2,7 @@
 
 Personal [Pi Coding Agent](https://buildwithpi.ai/) configuration with 14 extensions and 28 skills.
 
-<video src="screenshots/demo.mp4" autoplay loop muted playsinline></video>
+https://github.com/user-attachments/assets/054693ae-40b8-4ec3-88bf-7dcca312fcb1
 
 ## IDE — TUI Development Environment
 
