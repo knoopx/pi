@@ -106,8 +106,7 @@ function buildFilePreview(opts: {
   theme: Theme;
 }): string {
   const { lines, total, maxLines, tw, theme } = opts;
-  const out = [theme.fg("border", "─".repeat(tw)), ...lines];
-  out.push(theme.fg("border", "─".repeat(tw)));
+  const out = [...lines];
   if (total > maxLines) {
     out.push(
       theme.fg("dim", `  … ${total - maxLines} more lines (${total} total)`),

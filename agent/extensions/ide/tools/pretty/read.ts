@@ -123,7 +123,7 @@ function renderImageResult(
   const sizeStr = humanSize(byteSize);
   const mimeStr = (details.mimeType as string) ?? "image";
   text.setText(
-    `  ${fileIconGlyph(details.filePath as string)}${theme.fg("dim", `${mimeStr} · ${sizeStr}`)}\n${theme.fg("border", "─".repeat(tw))}\n${theme.fg("border", "─".repeat(tw))}`,
+    `  ${fileIconGlyph(details.filePath as string)}${theme.fg("dim", `${mimeStr} · ${sizeStr}`)}`,
   );
 }
 function renderFileResult(
