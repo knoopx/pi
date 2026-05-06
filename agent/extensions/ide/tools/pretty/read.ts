@@ -123,7 +123,7 @@ function renderImageResult(
   const sizeStr = humanSize(byteSize);
   const mimeStr = (details.mimeType as string) ?? "image";
   text.setText(
-    `  ${fileIconGlyph(details.filePath as string)}${theme.fg("dim", `${mimeStr} · ${sizeStr}`)}`,
+    `${fileIconGlyph(details.filePath as string)}${theme.fg("dim", `${mimeStr} · ${sizeStr}`)}`,
   );
 }
 function renderFileResult(
@@ -149,9 +149,7 @@ function renderFallbackResult(
   text: Component & { setText: (s: string) => void },
 ): void {
   const fallback = result.content?.[0] as { text?: string } | undefined;
-  text.setText(
-    `  ${theme.fg("dim", (fallback?.text ?? "read").slice(0, 120))}`,
-  );
+  text.setText(`${theme.fg("dim", (fallback?.text ?? "read").slice(0, 120))}`);
 }
 export function createReadRenderResult(): (
   result: {

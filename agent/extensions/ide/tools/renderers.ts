@@ -109,7 +109,7 @@ function buildFilePreview(opts: {
   const out = [...lines];
   if (total > maxLines) {
     out.push(
-      theme.fg("dim", `  … ${total - maxLines} more lines (${total} total)`),
+      theme.fg("dim", `… ${total - maxLines} more lines (${total} total)`),
     );
   }
   return out.join("\n");
@@ -194,14 +194,14 @@ function renderDirectoryFiles(options: RenderDirFilesOptions): {
   for (let i = 0; i < files.length; i++) {
     if (totalCount + count >= maxCount) {
       out.push(
-        theme.fg("dim", `  … ${totalLines - (totalCount + count)} more files`),
+        theme.fg("dim", `… ${totalLines - (totalCount + count)} more files`),
       );
       return { lines: out, count };
     }
     const isLast = i === files.length - 1;
     const prefix = isLast ? "└── " : "├── ";
     const icon = fileIconGlyph(files[i]);
-    out.push(`  ${theme.fg("border", prefix)}${icon}${files[i]}`);
+    out.push(`${theme.fg("border", prefix)}${icon}${files[i]}`);
     count++;
   }
 
@@ -324,7 +324,7 @@ function processGrepLines(
 
   for (const line of lines) {
     if (count >= MAX_PREVIEW_LINES) {
-      out.push(theme.fg("dim", "  … more matches"));
+      out.push(theme.fg("dim", "… more matches"));
       break;
     }
     const {

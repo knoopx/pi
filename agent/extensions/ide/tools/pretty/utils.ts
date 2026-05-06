@@ -70,7 +70,7 @@ export function renderError(
   text: Component & { setText: (s: string) => void },
 ): Component {
   const errorText = getErrorText(content);
-  text.setText(`\n${theme.fg("error", errorText)}`);
+  text.setText(`${theme.fg("error", errorText)}`);
   return text;
 }
 export function countLines(text: string): number {
@@ -188,5 +188,5 @@ function getFallbackText(
 ): string {
   const raw = (content?.[0] as { text?: string })?.text;
   const displayText = raw ?? toolName;
-  return `  ${theme.fg("dim", displayText.slice(0, 120))}`;
+  return `${theme.fg("dim", displayText.slice(0, 120))}`;
 }
