@@ -2,6 +2,8 @@
 
 Personal [Pi Coding Agent](https://buildwithpi.ai/) configuration with 14 extensions and 28 skills.
 
+<video src="screenshots/demo.mp4" autoplay loop muted playsinline></video>
+
 ## IDE — TUI Development Environment
 
 Full terminal IDE built as a pi extension: file/symbol browsing, jujutsu version control, GitHub pull requests, workspace management, and operation log. Built with overlay TUIs, Shiki syntax highlighting, and keyboard-driven navigation.
