@@ -2,7 +2,7 @@
 
 Personal [Pi Coding Agent](https://buildwithpi.ai/) configuration with 14 extensions and 28 skills.
 
-https://raw.githubusercontent.com/knoopx/pi/main/screenshots/demo.mp4
+<video src="screenshots/demo.mp4" autoplay loop muted playsinline></video>
 
 ## IDE — TUI Development Environment
 
