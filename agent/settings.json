@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.74.0",
   "defaultProvider": "local",
-  "defaultModel": "Qwen3.6-35B-A3B",
+  "defaultModel": "Qwen3.6-27B-GGUF",
   "theme": "custom",
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "high",
@@ -13,5 +13,9 @@
   },
   "notification": {
     "tts": true
-  }
+  },
+  "enabledModels": [
+    "local/Qwen3.6-27B-GGUF",
+    "local/Qwen3.6-35B-A3B-GGUF"
+  ]
 }
