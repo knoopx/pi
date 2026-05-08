@@ -13,15 +13,6 @@ function isMissingFileError(error: unknown): boolean {
   );
 }
 
-export async function readSettingsOrEmpty(): Promise<Record<string, unknown>> {
-  try {
-    const content = await readFile(SETTINGS_PATH, "utf-8");
-    return JSON.parse(content) as Record<string, unknown>;
-  } catch {
-    return {};
-  }
-}
-
 function readSettingsSafe(): Promise<Record<string, unknown>> {
   return _readSettingsSafe();
 }
@@ -97,53 +88,4 @@ export async function saveEnabledSetting<T extends { enabled: boolean }>(
   );
 
   return next;
-}
-
-export function loadExtensionConfig<T extends Record<string, unknown>>(
-  settings: Record<string, unknown>,
-  key: string,
-  defaults: T,
-): T {
-  const raw = settings[key];
-  if (!isValidRaw(raw)) return defaults as T;
-
-  const result: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(defaults)) {
-    if (typeof v === "boolean") {
-      result[k] = coerceBool(k, raw, v);
-    } else if (typeof v === "string") {
-      result[k] = coerceStr(k, raw, v);
-    } else if (typeof v === "number") {
-      result[k] = coerceNum(k, raw, v);
-    }
-  }
-  return result as T;
-}
-
-function isValidRaw(raw: unknown): raw is Record<string, unknown> {
-  return typeof raw === "object" && !Array.isArray(raw) && raw !== null;
-}
-
-function coerceBool(
-  key: string,
-  r: Record<string, unknown>,
-  def: boolean,
-): boolean {
-  return typeof r[key] === "boolean" ? r[key] : def;
-}
-
-function coerceStr(
-  key: string,
-  r: Record<string, unknown>,
-  def: string,
-): string {
-  return typeof r[key] === "string" ? r[key] : def;
-}
-
-function coerceNum(
-  key: string,
-  r: Record<string, unknown>,
-  def: number,
-): number {
-  return typeof r[key] === "number" ? r[key] : def;
 }

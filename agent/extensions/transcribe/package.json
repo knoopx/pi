@@ -15,17 +15,14 @@
   "dependencies": {
     "@earendil-works/pi-coding-agent": "^0.74.0",
     "typebox": "^1.1.24",
-    "devlop": "^1.1.0",
     "hast-util-from-html": "^2.0.3",
     "hast-util-to-mdast": "^10.1.2",
     "mdast-util-from-markdown": "^2.0.3",
     "mdast-util-gfm": "^3.1.0",
     "mdast-util-to-markdown": "^2.1.2",
-    "micromark": "^4.0.2",
     "micromark-util-symbol": "^2.0.1",
     "micromark-util-types": "^2.0.2",
-    "unist-util-visit": "^5.1.0",
-    "unist-util-visit-parents": "^6.0.2"
+    "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {
     "@types/hast": "^3.0.4",

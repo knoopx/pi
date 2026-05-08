@@ -13,27 +13,31 @@ function truncateSingleLine(text: string, maxWidth: number): string {
   return text.slice(0, maxWidth - 1) + "\u2026";
 }
 
+function getEntryTypeStyle(entry: HistoryEntry): {
+  icon: string;
+  color: string;
+} {
+  if (entry.type === "command") return { icon: "󰅩", color: "success" };
+  return { icon: "󰈚", color: "accent" };
+}
+
 function renderHistoryRow(
   entry: HistoryEntry,
   isSelected: boolean,
   width: number,
   theme: Theme,
 ): string {
-  const typeIndicator = entry.type === "command" ? "󰅩" : "󰈚";
-  const typeColor = entry.type === "command" ? "success" : "accent";
+  const { icon, color } = getEntryTypeStyle(entry);
   const displayContent = truncateSingleLine(
     entry.preview ?? entry.content,
     width - 2,
   );
+  const coloredIndicator = theme.fg(color, icon);
+  const contentColored = theme.fg(color, displayContent);
+  const rowText = `${coloredIndicator} ${contentColored}`;
 
-  if (isSelected) {
-    const coloredIndicator = theme.fg(typeColor, typeIndicator);
-    const contentColored = theme.fg(typeColor, displayContent);
-    return theme.bg("selectedBg", `${coloredIndicator} ${contentColored}`);
-  }
-
-  const coloredIndicator = theme.fg(typeColor, typeIndicator);
-  return pad(`${coloredIndicator} ${displayContent}`, width);
+  if (isSelected) return theme.bg("selectedBg", rowText);
+  return pad(rowText, width);
 }
 
 export function renderHistoryPage(

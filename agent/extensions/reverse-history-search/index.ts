@@ -61,19 +61,24 @@ const extractBangCommandsFromUserText = (text: string): string[] => {
 
   return commands;
 };
+function isNonNullObject(value: unknown): value is object {
+  return typeof value === "object" && value !== null;
+}
+
+function extractTextFromBlock(block: unknown): string {
+  if (!isNonNullObject(block)) return "";
+  const typed = block as { type?: unknown; text?: unknown };
+  if (typed.type !== "text" || typeof typed.text !== "string") return "";
+  return typed.text as string;
+}
+
 const getUserTextFromContent = (content: unknown): string => {
   if (!Array.isArray(content)) return "";
-  const parts = content
-    .map((block) => {
-      if (typeof block !== "object" || block === null) return "";
-      const typedBlock = block as { type?: unknown; text?: unknown };
-      return typedBlock.type === "text" && typeof typedBlock.text === "string"
-        ? typedBlock.text
-        : "";
-    })
-    .filter((part) => part.length > 0);
-
-  return parts.join("\n").trim();
+  return content
+    .map(extractTextFromBlock)
+    .filter((part) => part.length > 0)
+    .join("\n")
+    .trim();
 };
 const isPathMatch = (sessionCwd: string, targetCwd: string): boolean => {
   return (
@@ -83,18 +88,26 @@ const isPathMatch = (sessionCwd: string, targetCwd: string): boolean => {
   );
 };
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+function tryParseSessionLine(
+  line: string,
+): { type: string; cwd?: string } | null {
+  try {
+    const parsed = JSON.parse(line) as { type?: string; cwd?: string };
+    if (parsed && parsed.type === "session") return parsed;
+  } catch {}
+  return null;
+}
+
+function parseSessionHeaderLine(line: string): string | null {
+  const parsed = tryParseSessionLine(line);
+  if (!parsed) return null;
+  return parsed.cwd || null;
+}
+
 function getSessionCwd(content: string): string | null {
-  const lines = content.trim().split("\n");
-  for (const line of lines) {
-    if (!line.trim()) continue;
-    try {
-      const raw = JSON.parse(line) as unknown;
-      if (typeof raw !== "object" || raw === null) continue;
-      const parsed = raw as { type?: string; cwd?: string };
-      if (parsed.type === "session" && parsed.cwd) return parsed.cwd;
-    } catch {
-      continue;
-    }
+  for (const line of content.trim().split("\n")) {
+    const cwd = parseSessionHeaderLine(line);
+    if (cwd) return cwd;
   }
   return null;
 }
@@ -132,75 +145,118 @@ function shouldProcessSession(content: string, targetCwd: string): boolean {
   if (!sessionCwd) return false;
   return isPathMatch(sessionCwd, targetCwd);
 }
-function processSessionLine(line: string, opts: ProcessSessionFileOpts): void {
-  if (!line.trim()) return;
+function parseMessageEntry(
+  line: string,
+): { entry: SessionLine; message: SessionMessageLine } | null {
   try {
     const entry = JSON.parse(line) as SessionLine;
-    if (entry.type !== "message") return;
+    if (entry.type !== "message") return null;
     const message = asSessionMessage(entry.message);
-    if (!message) return;
-    const timestamp = extractTimestamp(entry, message);
-    if (timestamp < opts.cutoffTimestamp) return;
-
-    processMessageEntry(message, timestamp, opts.history, opts.seen);
-  } catch {}
+    if (!message) return null;
+    return { entry, message };
+  } catch {
+    return null;
+  }
 }
+
+function processSessionLine(line: string, opts: ProcessSessionFileOpts): void {
+  if (!line.trim()) return;
+  const parsed = parseMessageEntry(line);
+  if (!parsed) return;
+  const timestamp = extractTimestamp(parsed.entry, parsed.message);
+  if (timestamp < opts.cutoffTimestamp) return;
+
+  processMessageEntry(parsed.message, timestamp, opts.history, opts.seen);
+}
+function processBashMessage(
+  message: SessionMessageLine,
+  timestamp: number,
+  history: HistoryEntry[],
+  seen: Set<string>,
+): void {
+  if (typeof message.command === "string") {
+    addHistoryEntry(history, seen, {
+      content: message.command,
+      timestamp,
+      type: "command",
+    });
+  }
+}
+
+function processUserMessage(
+  message: SessionMessageLine,
+  timestamp: number,
+  history: HistoryEntry[],
+  seen: Set<string>,
+): void {
+  const text = getUserTextFromContent(message.content);
+  if (!text) return;
+
+  addHistoryEntry(history, seen, {
+    content: text,
+    timestamp,
+    type: "message",
+  });
+
+  for (const command of extractBangCommandsFromUserText(text)) {
+    addHistoryEntry(history, seen, {
+      content: command,
+      timestamp,
+      type: "command",
+    });
+  }
+}
+
 function processMessageEntry(
   message: SessionMessageLine,
   timestamp: number,
   history: HistoryEntry[],
   seen: Set<string>,
 ): void {
-  if (message.role === "bashExecution" && typeof message.command === "string") {
-    addHistoryEntry(history, seen, {
-      content: message.command,
-      timestamp,
-      type: "command",
-    });
-    return;
-  }
-
-  if (message.role === "user") {
-    const text = getUserTextFromContent(message.content);
-    if (!text) return;
-
-    addHistoryEntry(history, seen, {
-      content: text,
-      timestamp,
-      type: "message",
-    });
-
-    for (const command of extractBangCommandsFromUserText(text)) {
-      addHistoryEntry(history, seen, {
-        content: command,
-        timestamp,
-        type: "command",
-      });
-    }
+  switch (message.role) {
+    case "bashExecution":
+      processBashMessage(message, timestamp, history, seen);
+      break;
+    case "user":
+      processUserMessage(message, timestamp, history, seen);
+      break;
   }
 }
-function walkDir(
-  dir: string,
-  opts: {
-    targetCwd: string;
-    cutoffTimestamp: number;
-    history: HistoryEntry[];
-    seen: Set<string>;
-  },
+function isRecentJsonlFile(
+  fullPath: string,
+  entry: string,
+  cutoffMs: number,
+): boolean {
+  try {
+    const stat = statSync(fullPath);
+    if (!entry.endsWith(".jsonl")) return false;
+    return stat.mtimeMs >= cutoffMs;
+  } catch {
+    return false;
+  }
+}
+
+function processDirEntry(
+  fullPath: string,
+  entry: string,
+  opts: ProcessSessionFileOpts,
 ): void {
   try {
-    const entries = readdirSync(dir);
-    for (const entry of entries) {
-      const fullPath = join(dir, entry);
-      try {
-        const stat = statSync(fullPath);
-        if (stat.isDirectory()) walkDir(fullPath, opts);
-        else if (
-          entry.endsWith(".jsonl") &&
-          stat.mtimeMs >= opts.cutoffTimestamp
-        )
-          processSessionFile(fullPath, opts);
-      } catch {}
+    const stat = statSync(fullPath);
+    if (stat.isDirectory()) {
+      walkDir(fullPath, opts);
+      return;
+    }
+    if (isRecentJsonlFile(fullPath, entry, opts.cutoffTimestamp)) {
+      processSessionFile(fullPath, opts);
+    }
+  } catch {}
+}
+
+function walkDir(dir: string, opts: ProcessSessionFileOpts): void {
+  try {
+    for (const entry of readdirSync(dir)) {
+      processDirEntry(join(dir, entry), entry, opts);
     }
   } catch {}
 }
@@ -270,16 +326,22 @@ export class HistorySearchComponent {
     return 10;
   }
 
-  handleInput(data: string): void {
+  private tryHandleKey(data: string): boolean {
     for (const key of allKeys) {
       if (matchesKey(data, key as import("@earendil-works/pi-tui").KeyId)) {
         keyHandlers[key](this);
-        return;
+        return true;
       }
     }
+    return false;
+  }
 
-    if (data.length === 1 && data.charCodeAt(0) >= 32)
+  handleInput(data: string): void {
+    if (this.tryHandleKey(data)) return;
+
+    if (data.length === 1 && data.charCodeAt(0) >= 32) {
       this.handleCharacter(data);
+    }
   }
 
   handleEscape(): void {
@@ -430,6 +492,15 @@ export function makeHistorySearchRenderer(
     },
   };
 }
+function applyHistoryResult(ctx: ExtensionContext, result: HistoryEntry): void {
+  const content = result.content.trim().replace(/\n+$/, "");
+  if (result.type === "command") {
+    ctx.ui.setEditorText(`!${content}`);
+  } else {
+    ctx.ui.setEditorText(content);
+  }
+}
+
 export default function (pi: ExtensionAPI): void {
   pi.registerShortcut("ctrl+r", {
     description:
@@ -447,12 +518,7 @@ export default function (pi: ExtensionAPI): void {
       );
 
       if (!result) return;
-      const content = result.content.trim().replace(/\n+$/, "");
-      if (result.type === "command") {
-        ctx.ui.setEditorText(`!${content}`);
-      } else {
-        ctx.ui.setEditorText(content);
-      }
+      applyHistoryResult(ctx, result);
     },
   });
 }

@@ -39,6 +39,49 @@ function extractBetween(source: string, start: string, end: string): string {
   return source.slice(contentStart, endIndex).trim();
 }
 
+function extractPackageFromBlock(block: string): PyPISearchResult | null {
+  const name = extractBetween(
+    block,
+    '<span class="package-snippet__name">',
+    "</span>",
+  );
+  const version = extractBetween(
+    block,
+    '<span class="package-snippet__version">',
+    "</span>",
+  );
+
+  if (!name || !version) return null;
+
+  const description = extractBetween(
+    block,
+    '<p class="package-snippet__description">',
+    "</p>",
+  );
+
+  return {
+    name,
+    version,
+    description: description || "No description available",
+  };
+}
+
+function findPackageSnippet(
+  html: string,
+  offset: number,
+): { block: string; nextOffset: number } | null {
+  const anchorStart = html.indexOf('<a class="package-snippet"', offset);
+  if (anchorStart === -1) return null;
+
+  const anchorEnd = html.indexOf("</a>", anchorStart);
+  if (anchorEnd === -1) return null;
+
+  return {
+    block: html.slice(anchorStart, anchorEnd + 4),
+    nextOffset: anchorEnd + 4,
+  };
+}
+
 function parseSearchResultsFromHtml(
   html: string,
   limit: number,
@@ -47,35 +90,13 @@ function parseSearchResultsFromHtml(
   let offset = 0;
 
   while (packages.length < limit) {
-    const anchorStart = html.indexOf('<a class="package-snippet"', offset);
-    if (anchorStart === -1) break;
-    const anchorEnd = html.indexOf("</a>", anchorStart);
-    if (anchorEnd === -1) break;
-    const block = html.slice(anchorStart, anchorEnd + 4);
-    const name = extractBetween(
-      block,
-      '<span class="package-snippet__name">',
-      "</span>",
-    );
-    const version = extractBetween(
-      block,
-      '<span class="package-snippet__version">',
-      "</span>",
-    );
-    const description = extractBetween(
-      block,
-      '<p class="package-snippet__description">',
-      "</p>",
-    );
+    const snippet = findPackageSnippet(html, offset);
+    if (!snippet) break;
 
-    if (name.length > 0 && version.length > 0)
-      packages.push({
-        name,
-        version,
-        description: description || "No description available",
-      });
+    const pkg = extractPackageFromBlock(snippet.block);
+    if (pkg) packages.push(pkg);
 
-    offset = anchorEnd + 4;
+    offset = snippet.nextOffset;
   }
 
   return packages;
@@ -107,6 +128,30 @@ async function tryDirectPackageLookup(
   }
 }
 
+async function resolveEmptySearchResult(
+  query: string,
+): Promise<AgentToolResult<Record<string, unknown>>> {
+  const directResult = await tryDirectPackageLookup(query);
+  return directResult ?? createPackageErrorResult(`No packages found.`, query);
+}
+
+async function formatSuccessfulSearch(
+  packages: PyPISearchResult[],
+  query: string,
+): Promise<AgentToolResult<Record<string, unknown>>> {
+  const output = formatPackageSearchResults(
+    packages,
+    packages.length,
+    "result",
+  );
+  return textResult(output, {
+    query,
+    total: packages.length,
+    returned: packages.length,
+    packages,
+  });
+}
+
 async function executeSearchPackages(
   _toolCallId: string,
   params: SearchPyPIPackagesParamsType,
@@ -120,32 +165,14 @@ async function executeSearchPackages(
       headers: { Accept: "application/vnd.pypi.simple.v1+json" },
     });
 
-    if (!response.ok) {
-      const directResult = await tryDirectPackageLookup(query);
-      return (
-        directResult ?? createPackageErrorResult(`No packages found.`, query)
-      );
-    }
+    if (!response.ok) return resolveEmptySearchResult(query);
+
     const html = await response.text();
     const packages = parseSearchResultsFromHtml(html, limit);
 
-    if (packages.length === 0) {
-      const directResult = await tryDirectPackageLookup(query);
-      return (
-        directResult ?? createPackageErrorResult(`No packages found.`, query)
-      );
-    }
-    const output = formatPackageSearchResults(
-      packages,
-      packages.length,
-      "result",
-    );
-    return textResult(output, {
-      query,
-      total: packages.length,
-      returned: packages.length,
-      packages,
-    });
+    if (packages.length === 0) return resolveEmptySearchResult(query);
+
+    return formatSuccessfulSearch(packages, query);
   } catch (error) {
     return createPackageErrorResult(
       `Failed to search packages: ${String(error)}`,

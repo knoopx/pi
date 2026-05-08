@@ -11,6 +11,13 @@ import { acquireSlot } from "../../shared/network/throttle";
 const DDG_HOST = "duckduckgo.com";
 const MAX_REDIRECTS = 3;
 
+function handleRedirect(response: Response, currentUrl: string): string | null {
+  if (response.status < 300 || response.status >= 400) return null;
+  const location = response.headers.get("location");
+  if (!location) return null;
+  return new URL(location, currentUrl).toString();
+}
+
 async function fetchWithRedirect(
   url: string,
   init: RequestInit = {},
@@ -26,13 +33,8 @@ async function fetchWithRedirect(
   for (let i = 0; i < MAX_REDIRECTS; i++) {
     const response = await fetch(currentUrl, init);
 
-    if (!response.ok && response.status < 300)
-      return { response, redirected, redirectChain };
-
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get("location");
-      if (!location) return { response, redirected, redirectChain };
-      const nextUrl = new URL(location, currentUrl).toString();
+    const nextUrl = handleRedirect(response, currentUrl);
+    if (nextUrl) {
       redirectChain.push(currentUrl);
       currentUrl = nextUrl;
       redirected = true;
@@ -211,11 +213,12 @@ function shouldSkipItem(
   return !!item.n || currentLength >= maxResults;
 }
 function toSearchResult(item: JsonpDataItem): SearchResult {
+  const { t: title = "", u: url = "", a: description = "", i, sn } = item;
   return {
-    title: item.t || "",
-    url: item.u || "",
-    description: item.a || "",
-    source: item.i || item.sn || "",
+    title,
+    url,
+    description,
+    source: i ?? sn ?? "",
     engine: "duckduckgo",
   };
 }
@@ -248,11 +251,7 @@ async function fetchPreloadPage(
   };
 }
 
-async function searchDuckDuckGoPreloadUrl(
-  query: string,
-  maxResults = 10,
-): Promise<SearchResult[]> {
-  const results: SearchResult[] = [];
+async function fetchInitialSearchPage(query: string): Promise<URL | null> {
   const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&t=h_&ia=web`;
   await acquireSlot(DDG_HOST);
   const { response } = await fetchWithRedirect(searchUrl, {
@@ -264,8 +263,15 @@ async function searchDuckDuckGoPreloadUrl(
   const html = await response.text();
   const basePreloadUrl = extractPreloadUrl(html);
 
-  if (!basePreloadUrl) return [];
-  const preloadUrlObj = new URL(basePreloadUrl);
+  if (!basePreloadUrl) return null;
+  return new URL(basePreloadUrl);
+}
+
+async function collectPreloadPages(
+  preloadUrl: URL,
+  maxResults: number,
+): Promise<SearchResult[]> {
+  const results: SearchResult[] = [];
   let offset = 0;
 
   while (results.length < maxResults) {
@@ -273,11 +279,7 @@ async function searchDuckDuckGoPreloadUrl(
       results: pageResults,
       validCount,
       hasMore,
-    } = await fetchPreloadPage(
-      preloadUrlObj,
-      offset,
-      maxResults - results.length,
-    );
+    } = await fetchPreloadPage(preloadUrl, offset, maxResults - results.length);
 
     results.push(...pageResults);
 
@@ -287,6 +289,39 @@ async function searchDuckDuckGoPreloadUrl(
 
   return results.slice(0, maxResults);
 }
+
+async function searchDuckDuckGoPreloadUrl(
+  query: string,
+  maxResults = 10,
+): Promise<SearchResult[]> {
+  const preloadUrl = await fetchInitialSearchPage(query);
+  if (!preloadUrl) return [];
+
+  return collectPreloadPages(preloadUrl, maxResults);
+}
+function extractResultFromElement(
+  $: cheerio.CheerioAPI,
+  el: Element,
+): SearchResult | null {
+  if ($(el).hasClass("result--ad")) return null;
+
+  const titleEl = $(el).find("a.result__a");
+  const title = titleEl.text().trim();
+  const url = titleEl.attr("href");
+  if (!title || !url) return null;
+
+  const description = $(el).find(".result__snippet").text().trim();
+  const source = $(el).find(".result__url").text().trim();
+
+  return {
+    title,
+    url,
+    description,
+    source,
+    engine: "duckduckgo",
+  };
+}
+
 function parseSearchResults(
   $: cheerio.CheerioAPI,
   items: cheerio.Cheerio<Element>,
@@ -295,22 +330,8 @@ function parseSearchResults(
 ): void {
   items.each((_, el) => {
     if (results.length >= maxResults) return false;
-    const titleEl = $(el).find("a.result__a");
-    const snippetEl = $(el).find(".result__snippet");
-    const title = titleEl.text().trim();
-    const url = titleEl.attr("href") || "";
-    const description = snippetEl.text().trim();
-    const sourceEl = $(el).find(".result__url");
-    const source = sourceEl.text().trim();
-
-    if (title && url && !$(el).hasClass("result--ad"))
-      results.push({
-        title,
-        url,
-        description,
-        source,
-        engine: "duckduckgo",
-      });
+    const result = extractResultFromElement($, el);
+    if (result) results.push(result);
   });
 }
 
@@ -348,36 +369,61 @@ async function fetchHtmlPage(
   return { html: await response.text(), ok: response.ok };
 }
 
+async function paginateHtmlResults(
+  query: string,
+  results: SearchResult[],
+  maxResults: number,
+  startOffset: number,
+): Promise<void> {
+  let offset = startOffset;
+  let items = $("div.result");
+
+  while (results.length < maxResults && items.length > 0) {
+    const nextPage = await fetchHtmlPage(query, offset);
+    if (!nextPage.ok) break;
+
+    const next$ = cheerio.load(nextPage.html);
+    const nextItems = next$("div.result");
+    parseSearchResults(next$, nextItems, results, maxResults);
+    offset += nextItems.length;
+    items = nextItems;
+  }
+}
+
+async function collectHtmlPages(
+  query: string,
+  maxResults: number,
+): Promise<SearchResult[]> {
+  const results: SearchResult[] = [];
+  const firstResult = await fetchHtmlPage(query, 0);
+  if (!firstResult.ok) throw new Error(`HTTP fetch failed`);
+
+  const $ = cheerio.load(firstResult.html);
+  const items = $("div.result");
+  if (items.length === 0) return results;
+
+  parseSearchResults($, items, results, maxResults);
+  await paginateHtmlResults(query, results, maxResults, items.length);
+
+  return results.slice(0, maxResults);
+}
+
 async function searchDuckDuckGoHtml(
   query: string,
   maxResults = 10,
 ): Promise<SearchResult[]> {
-  const results: SearchResult[] = [];
-  let offset = 0;
-
   await acquireSlot(DDG_HOST);
-  const { html, ok } = await fetchHtmlPage(query, 0);
+  return collectHtmlPages(query, maxResults);
+}
 
-  if (!ok) throw new Error(`HTTP fetch failed`);
-  let $ = cheerio.load(html);
-  let items = $("div.result");
-
-  if (items.length === 0) return results;
-
-  parseSearchResults($, items, results, maxResults);
-
-  while (results.length < maxResults && items.length > 0) {
-    offset += items.length;
-    const { html: nextHtml, ok: nextOk } = await fetchHtmlPage(query, offset);
-
-    if (!nextOk) break;
-
-    $ = cheerio.load(nextHtml);
-    items = $("div.result");
-    parseSearchResults($, items, results, maxResults);
-  }
-
-  return results.slice(0, maxResults);
+function formatSearchError(error: unknown): Error {
+  const status = (error as { status?: number })?.status;
+  return new Error(
+    status
+      ? `DuckDuckGo search failed (HTTP ${status})`
+      : "DuckDuckGo search failed",
+    { cause: error },
+  );
 }
 
 async function searchDuckDuckGo(
@@ -392,13 +438,7 @@ async function searchDuckDuckGo(
   try {
     return await searchDuckDuckGoHtml(query, limit);
   } catch (error) {
-    const status = (error as { status?: number })?.status;
-    throw new Error(
-      status
-        ? `DuckDuckGo search failed (HTTP ${status})`
-        : "DuckDuckGo search failed",
-      { cause: error },
-    );
+    throw formatSearchError(error);
   }
 }
 export default function duckduckgoExtension(pi: ExtensionAPI) {

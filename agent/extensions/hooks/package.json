@@ -15,12 +15,10 @@
   },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "^0.74.0",
-    "picomatch": "^4.0.4",
     "typebox": "^1.1.24"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
-    "@types/picomatch": "^4.0.3",
     "eslint": "^10.2.1",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.1",
