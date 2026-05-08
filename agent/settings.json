@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.73.0",
+  "lastChangelogVersion": "0.74.0",
   "defaultProvider": "local",
   "defaultModel": "Qwen3.6-35B-A3B",
   "theme": "custom",
