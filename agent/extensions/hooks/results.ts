@@ -1,6 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { HooksGroup, HookRule, HookOutput } from "./schema";
-import { SKIP_TOOLS } from "./constants";
 interface HookResult {
   success: boolean;
   exitCode: number;
@@ -81,7 +80,4 @@ export async function processHookGroupExecution(
     );
 
   if (state.results.length > 0) sendHookResults(pi, state.results);
-}
-export function getSkipTools(): ReadonlySet<string> {
-  return SKIP_TOOLS;
 }

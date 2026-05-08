@@ -12,7 +12,6 @@ import { createThemeFg, notifyAuditResult } from "../guardrails/audit";
 
 import { configLoader, loadHooksSettings, saveHooksSettings } from "./config";
 import type { HookEvent, HooksConfig } from "./schema";
-import { getSkipTools } from "./results";
 import {
   isAbortedToolResult,
   isAbortedTurnEnd,
@@ -68,7 +67,6 @@ function registerToolHandlers(
 ): void {
   pi.on("tool_call", async (event: ToolCallEvent, ctx) => {
     if (!isEnabled()) return;
-    if (getSkipTools().has(event.toolName)) return;
     return runProcessHooks({
       pi,
       config: await getConfig(),
@@ -84,8 +82,6 @@ function registerToolHandlers(
 
   pi.on("tool_result", async (event: ToolResultEvent, ctx) => {
     if (!isEnabled()) return;
-    if (getSkipTools().has(event.toolName)) return;
-
     if (isAbortedToolResult(event)) {
       abortedInCurrentTurnRef.value = true;
       return;

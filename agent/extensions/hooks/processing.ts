@@ -7,6 +7,7 @@ import { doesRuleMatch } from "./pattern-matching";
 import type { HookProcessState, HookVariables, HookResult } from "./types";
 import { runHook } from "./hook-execution";
 import { shouldBlock } from "./blocking-checks";
+import { READ_ONLY_TOOLS } from "./constants";
 export function shouldExecuteRule(
   rule: HookRule,
   event: HookEvent,
@@ -14,6 +15,8 @@ export function shouldExecuteRule(
   input?: unknown,
 ): boolean {
   if (rule.event !== event) return false;
+  if (READ_ONLY_TOOLS.has(toolName ?? "") && rule.context === "file_name")
+    return false;
   if (!doesRuleMatch(rule, toolName, input)) return false;
   return true;
 }
