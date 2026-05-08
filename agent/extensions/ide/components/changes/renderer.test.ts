@@ -33,7 +33,7 @@ describe("focus switching", () => {
         "--- a/agent/extensions/ide/components/files/component.ts",
         "+++ b/agent/extensions/ide/components/files/component.ts",
         "@@ -1,5 +1,7 @@",
-        " import { Component } from '@mariozechner/pi-tui';",
+        " import { Component } from '@earendil-works/pi-tui';",
         "+import type { FileInfo } from '../../lib/types';",
         "+",
         "  export class FilesComponent extends Component {",

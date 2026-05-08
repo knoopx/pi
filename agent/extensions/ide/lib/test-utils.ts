@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { expect, vi } from "vitest";
-import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
-import type { TUI, Terminal } from "@mariozechner/pi-tui";
+import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
+import type { TUI, Terminal } from "@earendil-works/pi-tui";
 import { parseHexRgb } from "./split-panel/utils";
 import type { Change } from "./types";
 import { createMockExtensionAPI } from "../../../shared/testing/test-utils";

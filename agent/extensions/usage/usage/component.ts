@@ -1,4 +1,4 @@
-import { truncateToWidth } from "@mariozechner/pi-tui";
+import { truncateToWidth } from "@earendil-works/pi-tui";
 import type { Theme } from "../shared/types";
 import type { BaseStats } from "../shared/types";
 import type { UsageData, TabName, ProviderStats } from "./types";

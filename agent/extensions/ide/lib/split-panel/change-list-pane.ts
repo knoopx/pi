@@ -1,4 +1,4 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { GraphLayout } from "../graph";
 import { ChangeRow } from "./change-row";
 import type { ChangeRowFlags } from "./change-row";

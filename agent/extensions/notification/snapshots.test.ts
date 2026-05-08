@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { createMockExtensionAPI } from "../../shared/testing/test-utils";
 import type { MockExtensionAPI, MockTool } from "../../shared/testing/test-utils";
 const mockCtx = {

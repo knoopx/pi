@@ -1,4 +1,4 @@
-import type { Usage } from "@mariozechner/pi-ai";
+import type { Usage } from "@earendil-works/pi-ai";
 
 export function createUsage(
   partial: Omit<Partial<Usage>, "cost"> & { cost?: Partial<Usage["cost"]> },

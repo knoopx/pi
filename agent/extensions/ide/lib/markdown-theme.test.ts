@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { createMarkdownTheme } from "./markdown-theme";
 import { formatRelativeTime } from "../lib/formatters";
 import { formatErrorMessage } from "./footer";

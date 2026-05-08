@@ -1,6 +1,6 @@
 import type { Editor } from "./editor";
 import type { KeyBinding } from "../../keyboard";
-import { Key } from "@mariozechner/pi-tui";
+import { Key } from "@earendil-works/pi-tui";
 
 export function buildBindings(
   e: Editor,

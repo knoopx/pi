@@ -1,7 +1,7 @@
 import "../test-setup";
 
 import { describe, it, expect, vi } from "vitest";
-import type { KeybindingsManager } from "@mariozechner/pi-coding-agent";
+import type { KeybindingsManager } from "@earendil-works/pi-coding-agent";
 import { createBookmarksComponent } from "./component";
 import {
   createErrorFixture,
@@ -32,8 +32,8 @@ index abc1234..def5678 100644
 --- a/agent/extensions/ide/components/files.ts
 +++ b/agent/extensions/ide/components/files.ts
 @@ -1,5 +1,8 @@
- import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-+import type { Theme } from "@mariozechner/pi-coding-agent";
+ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
++import type { Theme } from "@earendil-works/pi-coding-agent";
  import { createListPicker } from "../../lib/list-picker";
 +import { createFilePreviewLoader } from "../../lib/preview-utils";
  import { getFileIcon } from "../../lib/file-icons";
@@ -159,7 +159,7 @@ describe("bookmarks — list row rendering", () => {
             bookmark: "feature/pi-tui-integration",
             changeId: "abc123def456",
             description:
-              "feat(tui): integrate @mariozechner/pi-tui component architecture with virtual list rendering, dynamic keybindings, and theme-aware split panel layouts",
+              "feat(tui): integrate @earendil-works/pi-tui component architecture with virtual list rendering, dynamic keybindings, and theme-aware split panel layouts",
             author: "knoopx",
           },
         ]),

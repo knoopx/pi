@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { Theme } from "@mariozechner/pi-coding-agent";
-import type { TUI } from "@mariozechner/pi-tui";
+import type { Theme } from "@earendil-works/pi-coding-agent";
+import type { TUI } from "@earendil-works/pi-tui";
 import { createMockTheme, TestTerminal } from "../ide/lib/test-utils";
 import { HistorySearchComponent, makeHistorySearchRenderer } from "./index";
 import type { HistoryEntry } from "./index";

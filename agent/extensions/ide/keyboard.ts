@@ -1,5 +1,5 @@
-import type { KeyId } from "@mariozechner/pi-tui";
-import { Key, matchesKey } from "@mariozechner/pi-tui";
+import type { KeyId } from "@earendil-works/pi-tui";
+import { Key, matchesKey } from "@earendil-works/pi-tui";
 import type { KeyPattern } from "./lib/types";
 export interface KeyBinding<TContext = void> {
   key: KeyPattern;

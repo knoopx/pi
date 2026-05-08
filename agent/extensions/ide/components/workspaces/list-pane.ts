@@ -1,4 +1,4 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { ListRow } from "../../lib/split-panel/list-row";
 import type { AgentWorkspace } from "../../lib/types";
 import { formatFileStats } from "../../lib/formatters";

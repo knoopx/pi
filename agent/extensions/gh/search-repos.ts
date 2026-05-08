@@ -1,7 +1,7 @@
 import { ghCmdJson } from "./utils";
 import { pushArrayFlag, TypeBoxFields, formatSearchResults } from "./shared";
 import type { GHRepoSearchResult } from "./types";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import { countLabel } from "../../shared/rendering/header";
 import type { Column } from "../../shared/rendering/types";
 

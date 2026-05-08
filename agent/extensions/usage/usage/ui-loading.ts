@@ -1,5 +1,5 @@
-import { CancellableLoader } from "@mariozechner/pi-tui";
-import type { ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
+import { CancellableLoader } from "@earendil-works/pi-tui";
+import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { BorderedView } from "../../../shared/components/bordered-view";
 import type { Theme } from "../shared/types";
 export async function loadAndDisplay<

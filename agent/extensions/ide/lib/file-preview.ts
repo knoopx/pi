@@ -1,4 +1,4 @@
-import type { Theme, ThemeColor } from "@mariozechner/pi-coding-agent";
+import type { Theme, ThemeColor } from "@earendil-works/pi-coding-agent";
 import { highlightCode } from "../tools/shiki/highlight";
 import { lang } from "../tools/language";
 import { readFile } from "node:fs/promises";

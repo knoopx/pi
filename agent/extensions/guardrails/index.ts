@@ -3,7 +3,7 @@ import type {
   ExtensionCommandContext,
   ExtensionContext,
   ThemeColor,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import { createThemeFg, notifyAuditResult } from "./audit";
 import {
   configLoader,

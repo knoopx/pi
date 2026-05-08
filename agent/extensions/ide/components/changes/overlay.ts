@@ -1,7 +1,7 @@
 import type {
   ExtensionAPI,
   ExtensionContext,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import { createChangesComponent } from "./index";
 import { createSymbolReferenceComponent } from "../symbol-references/component";
 import type {

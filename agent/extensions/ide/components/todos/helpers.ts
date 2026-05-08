@@ -1,4 +1,4 @@
-import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
 import type { AstGrepMatch, TodoItem } from "./types";
 const COMMENT_MARKERS = ["TODO", "FIXME", "HACK", "XXX"] as const;
 const MARKERS_REGEX = COMMENT_MARKERS.join("|");

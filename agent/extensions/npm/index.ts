@@ -1,7 +1,7 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import { Type } from "@sinclair/typebox";
-import type { Static } from "@sinclair/typebox";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { AgentToolResult } from "@earendil-works/pi-agent-core";
+import { Type } from "typebox";
+import type { Static } from "typebox";
 import { textResult } from "../../shared/result/tool-result";
 import { throttledFetch } from "../../shared/network/throttle";
 import { formatPackageSearchResults } from "../../shared/format/package-registry";

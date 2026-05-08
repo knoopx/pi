@@ -9,11 +9,12 @@
     ]
   },
   "scripts": {
-    "lint": "bun ./node_modules/eslint/bin/eslint.js"
+    "lint": "bun ./node_modules/eslint/bin/eslint.js",
+    "tsc": "tsc --noEmit"
   },
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "^0.70.2",
-    "@sinclair/typebox": "^0.34.48",
+    "@earendil-works/pi-coding-agent": "^0.74.0",
+    "typebox": "^1.1.24",
     "devlop": "^1.1.0",
     "hast-util-from-html": "^2.0.3",
     "hast-util-to-mdast": "^10.1.2",

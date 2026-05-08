@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import type { KeybindingsManager } from "@mariozechner/pi-coding-agent";
+import type { KeybindingsManager } from "@earendil-works/pi-coding-agent";
 import { createPullRequestsComponent } from "./component";
 import {
   createErrorFixture,
@@ -156,7 +156,7 @@ describe("pull-requests — list row rendering", () => {
           },
           {
             number: 3,
-            title: "chore: update dependency @mariozechner/pi-tui to ^0.3.0",
+            title: "chore: update dependency @earendil-works/pi-tui to ^0.3.0",
             reviewDecision: null,
             author: { login: "knoopx" },
             headRefName: "chore/deps-update",
@@ -210,7 +210,7 @@ describe("pull-requests — list row rendering", () => {
           `fix(ide): handle empty state in bookmarks view`,
           `feat(ide): add keyboard shortcut for file preview toggle`,
           `perf(ide): optimize file icon resolution performance`,
-          `chore(deps): update @mariozechner/pi-tui to ^0.3.0`,
+          `chore(deps): update @earendil-works/pi-tui to ^0.3.0`,
         ][i % 10],
         headRefName: [
           "feature/split-panel",

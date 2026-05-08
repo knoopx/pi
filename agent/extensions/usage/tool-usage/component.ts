@@ -1,5 +1,5 @@
-import { matchesKey, truncateToWidth } from "@mariozechner/pi-tui";
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import { matchesKey, truncateToWidth } from "@earendil-works/pi-tui";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { formatNumber } from "../shared/formatters";
 import type { ToolStats, ToolTabName } from "./types";
 const TOOL_TAB_LABELS: Record<ToolTabName, string> = {

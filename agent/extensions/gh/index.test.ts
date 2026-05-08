@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import type { TextContent } from "@mariozechner/pi-ai";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { TextContent } from "@earendil-works/pi-ai";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { MockTool, MockExtensionAPI } from "../../shared/testing/test-utils";
 import { createMockExtensionAPI } from "../../shared/testing/test-utils";
 import type * as utilsTypes from "./utils";

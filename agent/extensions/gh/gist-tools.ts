@@ -3,10 +3,10 @@ import type {
   ExtensionContext,
   AgentToolResult,
   Theme,
-} from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
-import type { Static } from "@sinclair/typebox";
-import { Text } from "@mariozechner/pi-tui";
+} from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
+import type { Static } from "typebox";
+import { Text } from "@earendil-works/pi-tui";
 import { dangerousOperationConfirmation } from "../../shared/result/tool-result";
 import { createErrorResult, createTextResultRender } from "./shared";
 import {

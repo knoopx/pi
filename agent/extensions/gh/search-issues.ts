@@ -1,7 +1,7 @@
 import { ghCmdJson } from "./utils";
 import { buildFilterArgs, TypeBoxFields } from "./shared";
 import type { GHIssueSearchResult } from "./types";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 import { createListItemFormatter } from "./search-list-formatter";
 

@@ -5,7 +5,7 @@ import type {
   ExtensionUIContext,
   SessionManager,
   ModelRegistry,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import setupExtension from "./index";
 import { fuzzyMatch } from "../../shared/matching/fuzzy";
 import type { MockExtensionAPI } from "../../shared/testing/test-utils";

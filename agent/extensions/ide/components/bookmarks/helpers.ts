@@ -1,5 +1,5 @@
 import type { BookmarkEntry } from "./types";
-import { Key } from "@mariozechner/pi-tui";
+import { Key } from "@earendil-works/pi-tui";
 import type { BookmarkFilterMode } from "../../lib/types";
 const BOOKMARK_FILTER_MODES = [
   "all",
@@ -7,7 +7,7 @@ const BOOKMARK_FILTER_MODES = [
   "descriptions",
   "authors",
 ] as const;
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { formatBookmarkReference } from "../../lib/changes-formatting";
 function parseBookmark(bookmark: string): { name: string; remote: string } {
   const atIndex = bookmark.lastIndexOf("@");

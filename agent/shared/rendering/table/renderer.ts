@@ -1,4 +1,4 @@
-import { visibleWidth } from "@mariozechner/pi-tui";
+import { visibleWidth } from "@earendil-works/pi-tui";
 import { wrapPlain } from "../text";
 import type { Column, MeasuredColumn } from "../types";
 import { cellStr, padEnd, padStart } from "./cells";

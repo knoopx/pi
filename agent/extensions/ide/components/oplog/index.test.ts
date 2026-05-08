@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import type { KeybindingsManager } from "@mariozechner/pi-coding-agent";
+import type { KeybindingsManager } from "@earendil-works/pi-coding-agent";
 import { createOpLogComponent } from "./component";
 import {
   createErrorFixture,
@@ -97,7 +97,7 @@ describe("oplog — list row rendering", () => {
         "merge feature branch feature/split-panel",
         "squash commits into 789ghi012jkl",
         "amend description fix typo in component name",
-        "update dependency @mariozechner/pi-tui to ^0.3.0",
+        "update dependency @earendil-works/pi-tui to ^0.3.0",
         "fix lint errors in agent/extensions/ide",
         "add unit tests for preview-utils",
         "refactor lib/split-panel rendering logic",

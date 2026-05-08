@@ -1,7 +1,7 @@
 import type {
   ExtensionAPI,
   ExtensionContext,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import type { HookInput, HooksGroup, HookRule } from "./schema";
 import { parseHookOutput } from "./schema";
 import type { HookResult, HookVariables } from "./types";

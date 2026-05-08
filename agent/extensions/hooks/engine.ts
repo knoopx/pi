@@ -1,7 +1,7 @@
 import type {
   ExtensionAPI,
   ExtensionContext,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import type { HookEvent, HooksConfig } from "./schema";
 import type { HookProcessState, HookVariables } from "./types";
 import { shouldExecuteRule, processHookExecution } from "./processing";

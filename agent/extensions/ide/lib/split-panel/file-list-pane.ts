@@ -1,4 +1,4 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { FileChangeRow } from "./file-change-row";
 import { ensureWidth, getVisibleItems } from "../text-utils";
 interface FileListPaneProps {

@@ -2,7 +2,7 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   Theme,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 interface ComponentTui {
   terminal: { rows: number };
   requestRender: () => void;

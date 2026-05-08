@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AgentWorkspace, FileChange, Change } from "../../lib/types";
 import { getCurrentChangeId, loadAgentWorkspaces } from "../../workspace";
 import { getRepoRoot } from "../../jj/files";

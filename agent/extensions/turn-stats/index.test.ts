@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { Usage } from "@mariozechner/pi-ai";
+import type { Usage } from "@earendil-works/pi-ai";
 import {
   formatDuration,
   formatTokens,

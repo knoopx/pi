@@ -1,7 +1,7 @@
 import type {
   ExtensionCommandContext,
   ThemeColor,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 interface AuditResult {
   lines: string[];
   errors: number;

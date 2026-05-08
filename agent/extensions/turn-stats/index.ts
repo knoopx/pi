@@ -4,8 +4,8 @@ import type {
   TurnStartEvent,
   TurnEndEvent,
   AgentEndEvent,
-} from "@mariozechner/pi-coding-agent";
-import type { Usage } from "@mariozechner/pi-ai";
+} from "@earendil-works/pi-coding-agent";
+import type { Usage } from "@earendil-works/pi-ai";
 
 interface MessageStartEvent {
   type: "message_start";

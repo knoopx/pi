@@ -1,9 +1,9 @@
 import type {
   AgentToolResult,
   ExtensionAPI,
-} from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
-import type { Static } from "@sinclair/typebox";
+} from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
+import type { Static } from "typebox";
 import { searchNixPackages, mapPackage, formatPackageTable } from "./packages";
 import {
   searchNixOptions,

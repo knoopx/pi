@@ -1,8 +1,8 @@
 import type {
   ExtensionAPI,
   KeybindingsManager,
-} from "@mariozechner/pi-coding-agent";
-import type { Theme } from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 
 export interface ListPickerItem {
   id: string;

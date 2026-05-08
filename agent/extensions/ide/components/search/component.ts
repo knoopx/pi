@@ -2,9 +2,9 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   KeybindingsManager,
-} from "@mariozechner/pi-coding-agent";
-import type { Theme } from "@mariozechner/pi-coding-agent";
-import { Key } from "@mariozechner/pi-tui";
+} from "@earendil-works/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
+import { Key } from "@earendil-works/pi-tui";
 import {
   createListPicker,
   type ListPickerComponent,

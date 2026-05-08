@@ -1,5 +1,5 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
 import { textResult } from "../../shared/result/tool-result";
 import { throttledFetch } from "../../shared/network/throttle";
 import { dotJoin, countLabel, stateDot } from "../../shared/rendering/header";

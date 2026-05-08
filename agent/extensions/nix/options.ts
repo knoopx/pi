@@ -1,4 +1,4 @@
-import type { AgentToolResult } from "@mariozechner/pi-coding-agent";
+import type { AgentToolResult } from "@earendil-works/pi-coding-agent";
 import { dotJoin, countLabel } from "../../shared/rendering/header";
 import { table } from "../../shared/rendering/table/renderer";
 import type { Column } from "../../shared/rendering/types";

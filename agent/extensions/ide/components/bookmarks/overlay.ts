@@ -1,7 +1,7 @@
 import type {
   ExtensionAPI,
   ExtensionContext,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import { createBookmarksComponent } from "./component";
 import { openBrowserOverlay } from "../../lib/overlay-utils";
 export async function openBookmarksBrowser(

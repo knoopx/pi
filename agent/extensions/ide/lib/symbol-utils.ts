@@ -1,4 +1,4 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 const SYMBOL_TYPE_ICONS: Record<string, string> = {
   f: "󰊕",
   m: "󰆧",

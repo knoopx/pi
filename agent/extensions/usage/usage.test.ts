@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { getSessionsDir } from "./usage/data-collection";
 import { UsageComponent } from "./usage/component";
 import { formatCost, formatTokens, formatNumber } from "./shared/formatters";

@@ -1,4 +1,4 @@
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import type { Column } from "../../shared/rendering/types";
 
 export const TypeBoxFields = {

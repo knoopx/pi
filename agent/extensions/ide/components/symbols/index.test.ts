@@ -1,12 +1,12 @@
 import "../test-setup";
 
 import { describe, it, expect, vi } from "vitest";
-import type { ExecResult } from "@mariozechner/pi-coding-agent";
+import type { ExecResult } from "@earendil-works/pi-coding-agent";
 import type {
   ExtensionAPI,
   ExtensionContext,
   KeybindingsManager,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import { createSymbolsComponent } from "./component";
 import {
   createMockTheme,

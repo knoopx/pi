@@ -1,5 +1,5 @@
-import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
-import type { Component, Focusable, TUI } from "@mariozechner/pi-tui";
+import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
+import type { Component, Focusable, TUI } from "@earendil-works/pi-tui";
 
 import { createKeyboardHandler, type KeyBinding } from "../../keyboard";
 import { Editor } from "./editor";

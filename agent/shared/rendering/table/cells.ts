@@ -1,4 +1,4 @@
-import { visibleWidth } from "@mariozechner/pi-tui";
+import { visibleWidth } from "@earendil-works/pi-tui";
 export function padEnd(text: string, width: number): string {
   const pad = width - visibleWidth(text);
   return pad > 0 ? text + " ".repeat(pad) : text;

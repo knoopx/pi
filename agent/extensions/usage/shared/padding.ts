@@ -1,4 +1,4 @@
-import { visibleWidth } from "@mariozechner/pi-tui";
+import { visibleWidth } from "@earendil-works/pi-tui";
 export function padLeft(s: string, len: number): string {
   const vis = visibleWidth(s);
   if (vis >= len) return s;

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "lint": "bun ./node_modules/eslint/bin/eslint.js",
-    "test": "bun vitest run *.test.ts"
+    "test": "bun vitest run *.test.ts",
+    "tsc": "tsc --noEmit"
   },
   "pi": {
     "extensions": [
@@ -13,8 +14,9 @@
     ]
   },
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "^0.70.2",
-    "picomatch": "^4.0.4"
+    "@earendil-works/pi-coding-agent": "^0.74.0",
+    "picomatch": "^4.0.4",
+    "typebox": "^1.1.24"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

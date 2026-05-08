@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ensureWidth } from "./text-utils";
 import { loadFilePreviewWithShiki } from "./file-preview";
 import { formatBookmarkReference } from "./changes-formatting";
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import stringWidth from "string-width";
 
 describe("utils", () => {

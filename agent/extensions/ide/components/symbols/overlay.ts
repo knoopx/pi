@@ -1,7 +1,7 @@
 import type {
   ExtensionAPI,
   ExtensionContext,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import type { SymbolResult } from "./types";
 import { runNavigationStack } from "../symbol-references/navigation";
 import { createSymbolsComponent } from "./component";

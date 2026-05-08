@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { Change, FileChange } from "../../lib/types";
 function filterBookmarksByChange(
   entries: { bookmark: string; changeId: string }[],

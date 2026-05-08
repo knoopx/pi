@@ -4,9 +4,9 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   Theme,
-} from "@mariozechner/pi-coding-agent";
-import { matchesKey } from "@mariozechner/pi-tui";
-import type { TUI } from "@mariozechner/pi-tui";
+} from "@earendil-works/pi-coding-agent";
+import { matchesKey } from "@earendil-works/pi-tui";
+import type { TUI } from "@earendil-works/pi-tui";
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -272,7 +272,7 @@ export class HistorySearchComponent {
 
   handleInput(data: string): void {
     for (const key of allKeys) {
-      if (matchesKey(data, key as import("@mariozechner/pi-tui").KeyId)) {
+      if (matchesKey(data, key as import("@earendil-works/pi-tui").KeyId)) {
         keyHandlers[key](this);
         return;
       }

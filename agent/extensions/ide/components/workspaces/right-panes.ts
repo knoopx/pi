@@ -1,4 +1,4 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { ChangeListPane } from "../../lib/split-panel/change-list-pane";
 import { FileListPane } from "../../lib/split-panel/file-list-pane";
 import { DiffPane } from "../../lib/split-panel/diff-pane";

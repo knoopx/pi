@@ -34,7 +34,7 @@ import {
   createMockTui,
   createMockTheme,
 } from "../../lib/test-utils";
-import type { KeybindingsManager } from "@mariozechner/pi-coding-agent";
+import type { KeybindingsManager } from "@earendil-works/pi-coding-agent";
 
 function buildRgOutput(items: SearchResult[]): string {
   const lines: string[] = [];

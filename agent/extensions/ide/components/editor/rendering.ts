@@ -1,4 +1,4 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { basename } from "node:path";
 import { BOX } from "../../lib/ui/frame";
 import { ensureWidth, pad } from "../../lib/text-utils";

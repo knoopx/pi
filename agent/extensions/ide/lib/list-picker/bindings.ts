@@ -1,5 +1,5 @@
 import type { KeyBinding } from "../../keyboard";
-import { Key } from "@mariozechner/pi-tui";
+import { Key } from "@earendil-works/pi-tui";
 import { buildHelpFromBindings } from "../../keyboard";
 import type { ListPickerItem } from "./types";
 

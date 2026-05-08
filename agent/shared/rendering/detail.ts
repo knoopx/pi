@@ -1,4 +1,4 @@
-import { visibleWidth } from "@mariozechner/pi-tui";
+import { visibleWidth } from "@earendil-works/pi-tui";
 import { wrapPlain } from "./text";
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
 function padStart(text: string, width: number): string {

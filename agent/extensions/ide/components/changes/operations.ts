@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { ChangesState } from "./state";
 import type { FileChange, Change } from "../../lib/types";
 import { formatErrorMessage } from "../../lib/footer";

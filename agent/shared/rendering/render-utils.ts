@@ -1,5 +1,5 @@
-import type { AgentToolResult, Theme } from "@mariozechner/pi-coding-agent";
-import { Text } from "@mariozechner/pi-tui";
+import type { AgentToolResult, Theme } from "@earendil-works/pi-coding-agent";
+import { Text } from "@earendil-works/pi-tui";
 export function renderTextToolResult<T = unknown>(
   result: AgentToolResult<T>,
   theme: Theme,

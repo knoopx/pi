@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import type {
   ExtensionAPI,
   ExtensionContext,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import { runEngineHooks } from "./engine";
 function createMockPi(): ExtensionAPI {
   return {

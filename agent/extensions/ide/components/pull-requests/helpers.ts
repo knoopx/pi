@@ -1,4 +1,4 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { formatRelativeTime } from "../../lib/formatters";
 import type { PrStateColor } from "./types";
 const PR_STATE_ICONS: Record<string, string> = {

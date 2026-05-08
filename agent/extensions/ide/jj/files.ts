@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { FileChange } from "../lib/types";
 import { parseStdoutLines, updateStaleWorkspace } from "./core";
 export async function loadChangedFiles(

@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { BorderedView } from "../../shared/components/bordered-view";
 import { loadAndDisplay } from "./usage/ui-loading";
 import { UsageComponent } from "./usage/component";

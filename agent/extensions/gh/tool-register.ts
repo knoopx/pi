@@ -2,8 +2,8 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   AgentToolResult,
-} from "@mariozechner/pi-coding-agent";
-import type { Static, TSchema } from "@sinclair/typebox";
+} from "@earendil-works/pi-coding-agent";
+import type { Static, TSchema } from "typebox";
 import { table } from "../../shared/rendering/table/renderer";
 import { detail } from "../../shared/rendering/detail";
 import type { Column } from "../../shared/rendering/types";
@@ -89,7 +89,7 @@ interface RegisterListToolOptions<TItem> {
   toolName: string;
   toolLabel: string;
   toolDescription: string;
-  paramsSchema: ReturnType<typeof import("@sinclair/typebox").Type.Object>;
+  paramsSchema: ReturnType<typeof import("typebox").Type.Object>;
   listFn: (
     owner: string,
     repo: string,
@@ -153,7 +153,7 @@ interface RegisterViewToolOptions<TItem> {
   toolName: string;
   toolLabel: string;
   toolDescription: string;
-  paramsSchema: ReturnType<typeof import("@sinclair/typebox").Type.Object>;
+  paramsSchema: ReturnType<typeof import("typebox").Type.Object>;
   viewFn: (owner: string, repo: string, number: number) => Promise<TItem>;
   fields: (item: TItem) => { label: string; value: string }[];
   includeBody?: boolean;

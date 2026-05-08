@@ -6,9 +6,9 @@ import type {
   ToolRenderResultOptions,
   AgentToolUpdateCallback,
   ExtensionContext,
-} from "@mariozechner/pi-coding-agent";
-import type { Static, TSchema } from "@sinclair/typebox";
-import { Text } from "@mariozechner/pi-tui";
+} from "@earendil-works/pi-coding-agent";
+import type { Static, TSchema } from "typebox";
+import { Text } from "@earendil-works/pi-tui";
 import { renderTextToolResult } from "../../shared/rendering/render-utils";
 import { createSearchReposTool } from "./search-repos";
 import { createSearchCodeTool } from "./search-code";

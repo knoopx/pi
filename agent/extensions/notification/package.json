@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Desktop notifications using notify-send with optional TTS",
   "scripts": {
-    "lint": "bun ./node_modules/eslint/bin/eslint.js"
+    "lint": "bun ./node_modules/eslint/bin/eslint.js",
+    "tsc": "tsc --noEmit"
   },
   "type": "module",
   "pi": {
@@ -12,9 +13,10 @@
     ]
   },
   "dependencies": {
-    "@mariozechner/pi-ai": "^0.70.2",
-    "@mariozechner/pi-coding-agent": "^0.70.2",
-    "@mariozechner/pi-tui": "^0.70.2"
+    "@earendil-works/pi-ai": "^0.74.0",
+    "@earendil-works/pi-coding-agent": "^0.74.0",
+    "@earendil-works/pi-tui": "^0.74.0",
+    "typebox": "^1.1.24"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

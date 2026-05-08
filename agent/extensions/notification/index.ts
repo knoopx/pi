@@ -5,8 +5,8 @@ import type {
   AgentToolResult,
   ExtensionAPI,
   ExtensionCommandContext,
-} from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
+} from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
 import { buildNotifySendArgs } from "./notify-send";
 const SETTINGS_PATH = resolve(homedir(), ".pi/agent/settings.json");
 

@@ -7,10 +7,10 @@ import {
   createLsTool,
   createFindTool,
   createGrepTool,
-} from "@mariozechner/pi-coding-agent";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-import type { Component } from "@mariozechner/pi-tui";
+import type { Component } from "@earendil-works/pi-tui";
 import type { ToolExecuteFn } from "./utils";
 
 import {

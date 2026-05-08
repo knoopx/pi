@@ -1,7 +1,7 @@
 import type {
   ExtensionAPI,
   ExtensionContext,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 const OVERLAY_OPTIONS = {
   overlay: true,
   overlayOptions: { width: "95%" as const, anchor: "center" as const },

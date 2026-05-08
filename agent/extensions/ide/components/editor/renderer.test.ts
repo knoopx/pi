@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { CURSOR_MARKER } from "@mariozechner/pi-tui";
+import { CURSOR_MARKER } from "@earendil-works/pi-tui";
 import { renderEditorView } from "./renderer";
 import type { RenderOptions } from "./renderer";
 import { createMockTheme } from "../../lib/test-utils";

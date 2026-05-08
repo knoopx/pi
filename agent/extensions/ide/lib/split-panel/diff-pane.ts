@@ -1,4 +1,4 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { ensureWidth } from "../text-utils";
 import { renderDiffLinesToRows } from "./content";
 interface DiffPaneProps {

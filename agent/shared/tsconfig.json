@@ -14,17 +14,17 @@
     "noUncheckedIndexedAccess": false,
     "noImplicitOverride": false,
     "paths": {
-      "@mariozechner/pi-tui": [
-        "../extensions/*/node_modules/@mariozechner/pi-tui"
+      "@earendil-works/pi-tui": [
+        "../extensions/*/node_modules/@earendil-works/pi-tui"
       ],
-      "@mariozechner/pi-coding-agent": [
-        "../extensions/*/node_modules/@mariozechner/pi-coding-agent"
+      "@earendil-works/pi-coding-agent": [
+        "../extensions/*/node_modules/@earendil-works/pi-coding-agent"
       ],
-      "@mariozechner/pi-ai": [
-        "../extensions/*/node_modules/@mariozechner/pi-ai"
+      "@earendil-works/pi-ai": [
+        "../extensions/*/node_modules/@earendil-works/pi-ai"
       ],
-      "@mariozechner/pi-agent-core": [
-        "../extensions/*/node_modules/@mariozechner/pi-agent-core"
+      "@earendil-works/pi-agent-core": [
+        "../extensions/*/node_modules/@earendil-works/pi-agent-core"
       ]
     }
   },

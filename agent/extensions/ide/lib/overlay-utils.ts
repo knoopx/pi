@@ -3,7 +3,7 @@ import type {
   ExtensionContext,
   KeybindingsManager,
   Theme,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import type { ListPickerComponent } from "./list-picker";
 interface ComponentCreatorOptions {
   pi: ExtensionAPI;

@@ -1,5 +1,5 @@
-import { CURSOR_MARKER } from "@mariozechner/pi-tui";
-import type { Component, Focusable } from "@mariozechner/pi-tui";
+import { CURSOR_MARKER } from "@earendil-works/pi-tui";
+import type { Component, Focusable } from "@earendil-works/pi-tui";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { createEditorComponent } from "./component";

@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { BundledTheme } from "shiki";
-import { getAgentDir } from "@mariozechner/pi-coding-agent";
+import { getAgentDir } from "@earendil-works/pi-coding-agent";
 const DEFAULT_THEME: BundledTheme = "github-dark";
 const IDE_SETTINGS_KEY = "ide";
 export let THEME: BundledTheme = DEFAULT_THEME;

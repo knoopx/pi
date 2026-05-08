@@ -1,7 +1,7 @@
 import "../test-setup";
 
 import { describe, it, expect, vi } from "vitest";
-import type { KeybindingsManager } from "@mariozechner/pi-coding-agent";
+import type { KeybindingsManager } from "@earendil-works/pi-coding-agent";
 import { createTodosComponent } from "./component";
 import {
   createErrorFixture,

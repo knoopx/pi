@@ -1,6 +1,6 @@
-import type { AgentToolResult, Theme } from "@mariozechner/pi-coding-agent";
-import { Text } from "@mariozechner/pi-tui";
-import type { Component } from "@mariozechner/pi-tui";
+import type { AgentToolResult, Theme } from "@earendil-works/pi-coding-agent";
+import { Text } from "@earendil-works/pi-tui";
+import type { Component } from "@earendil-works/pi-tui";
 import type { ToolRenderContext } from "./types";
 import { shortPath } from "../terminal-utils";
 export type ToolExecuteFn = (

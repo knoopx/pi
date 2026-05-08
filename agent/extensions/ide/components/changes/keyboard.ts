@@ -1,7 +1,7 @@
 import type { ChangesState } from "./state";
 import type { KeyBinding } from "../../keyboard";
 import type { KeyPattern } from "../../lib/types";
-import { Key } from "@mariozechner/pi-tui";
+import { Key } from "@earendil-works/pi-tui";
 import { ACTION_KEYS } from "../../keyboard";
 
 export function buildKeyboardBindings(

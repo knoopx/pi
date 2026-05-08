@@ -1,6 +1,6 @@
-import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
-import type { Component } from "@mariozechner/pi-tui";
-import { Input } from "@mariozechner/pi-tui";
+import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
+import type { Component } from "@earendil-works/pi-tui";
+import { Input } from "@earendil-works/pi-tui";
 import { buildHelpText } from "../../lib/text-utils";
 import { applyFocusedStyle } from "../../lib/style-utils";
 import { createKeyboardHandler } from "../../keyboard";

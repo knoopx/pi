@@ -1,6 +1,6 @@
 import sliceAnsi from "slice-ansi";
 import stringWidth from "string-width";
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 const OSC_FULL_PATTERN =
   /\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\|\u001b(?=\[))?/g;
 const OSC_BARE_URL_PATTERN = /\]8;;[^\u0007\u001b\]\s]*(?=\]8;;)/g;

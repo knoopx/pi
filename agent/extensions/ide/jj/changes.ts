@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { Change } from "../lib/types";
 import { sanitizeDescription, parseStdoutLines } from "./core";
 const CHANGE_ID_TEMPLATE =

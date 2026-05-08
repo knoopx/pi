@@ -1,6 +1,6 @@
-import { Type } from "@sinclair/typebox";
-import type { Static } from "@sinclair/typebox";
-import { Value } from "@sinclair/typebox/value";
+import { Type } from "typebox";
+import type { Static } from "typebox";
+import { Value } from "typebox/value";
 const HookEventSchema = Type.Union([
   Type.Literal("session_start"),
   Type.Literal("session_shutdown"),
@@ -82,7 +82,7 @@ export interface HookOutput {
   };
 }
 
-// Workaround for @sinclair/typebox 0.34.x CJS/ESM dual-module type mismatch.
+// Workaround for typebox 0.34.x CJS/ESM dual-module type mismatch.
 // cross-module type checking between the CJS and ESM builds.
 const vc = (
   Value as { Check(this: void, schema: unknown, data: unknown): boolean }

@@ -1,4 +1,4 @@
-import type { Component } from "@mariozechner/pi-tui";
+import type { Component } from "@earendil-works/pi-tui";
 
 export abstract class Row<P = Record<string, never>> implements Component {
   protected readonly props: P;

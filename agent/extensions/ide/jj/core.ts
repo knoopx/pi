@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 export function sanitizeDescription(rawDescription: string): string {
   const asciiOnly = rawDescription.replace(/[^\p{ASCII}]/gu, "");
   const normalizedWhitespace = asciiOnly.replace(/\s+/g, " ").trim();

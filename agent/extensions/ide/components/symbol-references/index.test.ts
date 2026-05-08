@@ -5,7 +5,7 @@ vi.mock("node:fs/promises", () => ({
     .fn()
     .mockResolvedValue(
       [
-        'import type { Component } from "@mariozechner/pi-tui";',
+        'import type { Component } from "@earendil-works/pi-tui";',
         "export interface StubItem {",
         "  id: string;",
         "  label: string;",
@@ -16,7 +16,7 @@ vi.mock("node:fs/promises", () => ({
 import type {
   ExtensionContext,
   KeybindingsManager,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import { createSymbolReferenceComponent } from "./component";
 import {
   createErrorFixture,
@@ -204,7 +204,7 @@ describe("symbol-references — list row rendering", () => {
         ],
         [
           "matchesKey",
-          "./node_modules/@mariozechner/pi-tui/dist/index.ts",
+          "./node_modules/@earendil-works/pi-tui/dist/index.ts",
           "15-30",
         ],
       ];

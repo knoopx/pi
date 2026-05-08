@@ -1,4 +1,4 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 export interface StatusMessageState {
   message: { text: string; type: "info" | "error" } | null;
   timeout: ReturnType<typeof setTimeout> | null;

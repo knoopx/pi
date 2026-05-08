@@ -2,8 +2,8 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   AgentToolResult,
-} from "@mariozechner/pi-coding-agent";
-import { type Static, Type } from "@sinclair/typebox";
+} from "@earendil-works/pi-coding-agent";
+import { type Static, Type } from "typebox";
 import { dotJoin, stateDot } from "../../shared/rendering/header";
 import { table } from "../../shared/rendering/table/renderer";
 import type { Column } from "../../shared/rendering/types";

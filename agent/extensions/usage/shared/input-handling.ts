@@ -1,4 +1,4 @@
-import { matchesKey } from "@mariozechner/pi-tui";
+import { matchesKey } from "@earendil-works/pi-tui";
 function createKeyMatcher(
   data: string,
 ): (key: Parameters<typeof matchesKey>[1]) => boolean {

@@ -1,4 +1,4 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { ChangesState } from "./state";
 import { calculateDimensions } from "../../lib/split-panel/layout";
 import { renderSplitPanel } from "../../lib/split-panel/border";

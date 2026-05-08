@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
   containsAbortText,
   extractTextContent,
