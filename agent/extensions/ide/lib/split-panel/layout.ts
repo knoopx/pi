@@ -13,6 +13,13 @@ export interface SplitPanelConfig {
 
   rightTopRatio?: number;
 }
+
+/** Default split-panel layout used by changes and workspaces views. */
+export const DEFAULT_SPLIT_CONFIG = {
+  leftRatio: 0.28,
+  rightSplit: true,
+  rightTopRatio: 0.3,
+} as const;
 export interface SplitPanelDimensions {
   width: number;
   height: number;

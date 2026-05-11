@@ -1,61 +1,28 @@
-import type { AgentToolResult, Theme } from "@earendil-works/pi-coding-agent";
-import type { Component } from "@earendil-works/pi-tui";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { renderFindResults } from "../renderers";
-import {
-  createExecuteWrapper,
-  countLines,
-  buildRenderCall,
-  buildRenderResult,
-  type ToolExecuteFn,
-  type WrappedToolHandler,
-} from "./utils";
-import type { ToolRenderContext } from "./types";
+import { countLines } from "./utils";
+import { createPrettyTool } from "./factory";
+
 interface FindParams {
   pattern: string;
   path?: string;
   limit?: number;
 }
-export function createFindExecute(
-  orig: ToolExecuteFn,
-): WrappedToolHandler<FindParams> {
-  return createExecuteWrapper<FindParams>((result, textContent, p) => {
-    result.details = {
+
+const { createExecute, createRenderCall, createRenderResult } =
+  createPrettyTool<FindParams>({
+    toolName: "find",
+    detailType: "findResult",
+    renderContent: renderFindResults,
+    footerFn: (d, theme) => theme.fg("dim", `${String(d.matchCount)} files`),
+    detailBuilder: (textContent, p) => ({
       _type: "findResult" as const,
       text: textContent,
       pattern: p.pattern ?? "",
       matchCount: countLines(textContent),
-    };
-  })(orig);
-}
-export function createFindRenderCall(
-  cwd: string,
-  home: string,
-): (
-  args: FindParams,
-  theme: Theme,
-  ctx: ToolRenderContext<unknown, FindParams>,
-) => Component {
-  return (args, theme, ctx) =>
-    buildRenderCall({
-      cwd,
-      home,
-      toolName: "find",
-      args,
-      theme,
-      ctx,
-    });
-}
-export function createFindRenderResult(): (
-  result: AgentToolResult<{ text: string }>,
-  options: { expanded: boolean; isPartial: boolean },
-  theme: Theme,
-  ctx: ToolRenderContext<unknown, FindParams>,
-) => Component {
-  return buildRenderResult(
-    "find",
-    "findResult",
-    renderFindResults,
-    (d: Record<string, unknown>, theme: Theme) =>
-      `${theme.fg("dim", `${String(d.matchCount)} files`)}`,
-  );
-}
+    }),
+  });
+
+export { createExecute as createFindExecute };
+export { createRenderCall as createFindRenderCall };
+export { createRenderResult as createFindRenderResult };

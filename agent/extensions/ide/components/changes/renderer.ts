@@ -1,6 +1,9 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { ChangesState } from "./state";
-import { calculateDimensions } from "../../lib/split-panel/layout";
+import {
+  calculateDimensions,
+  DEFAULT_SPLIT_CONFIG,
+} from "../../lib/split-panel/layout";
 import { renderSplitPanel } from "../../lib/split-panel/border";
 import { REVISION_FILTERS } from "./types";
 import { ChangeListPane } from "../../lib/split-panel/change-list-pane";
@@ -21,14 +24,12 @@ export class Renderer {
 
   render(width: number, helpText: string): string[] {
     const dims = calculateDimensions(this.tui.terminal.rows, width, {
+      ...DEFAULT_SPLIT_CONFIG,
       leftTitle: "",
       rightTitle: "",
       helpText: "",
       leftFocus: this.state.selectionState.focus === "left",
       rightFocus: this.state.selectionState.focus === "right",
-      leftRatio: 0.28,
-      rightSplit: true,
-      rightTopRatio: 0.3,
     });
     const filterName =
       REVISION_FILTERS[this.state.currentFilterIndex % REVISION_FILTERS.length]

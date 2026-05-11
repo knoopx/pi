@@ -1,6 +1,9 @@
 import type { Component } from "@earendil-works/pi-tui";
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { calculateDimensions } from "../../lib/split-panel/layout";
+import {
+  calculateDimensions,
+  DEFAULT_SPLIT_CONFIG,
+} from "../../lib/split-panel/layout";
 import { renderSplitPanel } from "../../lib/split-panel/border";
 import { WorkspaceListPane } from "./list-pane";
 import { computeWorkspaceViewTitles } from "./view-titles";
@@ -18,14 +21,12 @@ export class WorkspaceView implements Component {
 
   render(width: number): string[] {
     const dims = calculateDimensions(this.tui.terminal.rows, width, {
+      ...DEFAULT_SPLIT_CONFIG,
       leftTitle: "",
       rightTitle: "",
       helpText: "",
       leftFocus: this.props.focus === "left",
       rightFocus: this.props.focus === "right",
-      leftRatio: 0.28,
-      rightSplit: true,
-      rightTopRatio: 0.3,
     });
     const titles = computeWorkspaceViewTitles(
       this.props.selectedWorkspace,

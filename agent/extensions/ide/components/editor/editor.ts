@@ -252,34 +252,29 @@ export class Editor {
     );
     this.cursor = result.cursor;
     this.selectionAnchor = result.selectionAnchor;
+    applyPageMove(
+    fn: typeof move.movePageUp | typeof move.movePageDown,
+    select: boolean,
+  ): void {
+    const result = fn(
+      this.lines,
+      this.cursor,
+      this.selectionAnchor,
+      this.viewHeight,
+      this.topLine,
+      select,
+    );
+    this.cursor = result.cursor;
+    this.selectionAnchor = result.selectionAnchor;
+    this.topLine = result.topLine;
   }
 
   movePageUp(select = false): void {
-    const result = move.movePageUp(
-      this.lines,
-      this.cursor,
-      this.selectionAnchor,
-      this.viewHeight,
-      this.topLine,
-      select,
-    );
-    this.cursor = result.cursor;
-    this.selectionAnchor = result.selectionAnchor;
-    this.topLine = result.topLine;
+    this.applyPageMove(move.movePageUp, select);
   }
 
   movePageDown(select = false): void {
-    const result = move.movePageDown(
-      this.lines,
-      this.cursor,
-      this.selectionAnchor,
-      this.viewHeight,
-      this.topLine,
-      select,
-    );
-    this.cursor = result.cursor;
-    this.selectionAnchor = result.selectionAnchor;
-    this.topLine = result.topLine;
+    this.applyPageMove(move.movePageDown, select);
   }
 
   moveWordLeft(select = false): void {

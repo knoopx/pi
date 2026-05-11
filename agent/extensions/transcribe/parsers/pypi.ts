@@ -1,4 +1,5 @@
 import {
+  createPackageVersionHandler,
   createRetryFetch,
   createVersionedPackageParser,
   defineParser,
@@ -212,42 +213,30 @@ function formatVersionWheels(
   return lines;
 }
 
-async function handleVersion(
-  name: string,
-  version: string,
-  signal?: AbortSignal,
-): Promise<string> {
-  const data = await fetchPypi<PypiPackageInfo>(
-    `https://pypi.org/pypi/${name}/${version}/json`,
-    signal,
-  );
-
-  if (!data.info.name)
-    throw new Error(`Version ${version} not found for ${name}`);
-
-  const info = data.info;
-  const parts: string[] = [`# ${name}@${version}`];
-  if (info.summary) parts.push(info.summary);
-
-  const license = extractLicense(info);
-  if (license) parts.push(`license: ${license}`);
-  if (info.author) parts.push(`author: ${info.author}`);
-  if (info.requires_python) parts.push(`python: >=${info.requires_python}`);
-
-  const urls = data.urls || [];
-  const lines: string[] = [
-    ...formatVersionFiles(urls),
-    ...formatVersionWheels(urls),
-  ];
-
-  parts.push(...lines);
-  parts.push(
-    "",
+const handleVersion = createPackageVersionHandler<PypiPackageInfo>({
+  fetchUrl: (name, version) => `https://pypi.org/pypi/${name}/${version}/json`,
+  fetch: fetchPypi,
+  validate: (data, name, version) => {
+    if (!data.info.name)
+      throw new Error(`Version ${version} not found for ${name}`);
+  },
+  formatHeader: (data) => {
+    const header: string[] = [];
+    const info = data.info;
+    if (info.summary) header.push(info.summary);
+    const license = extractLicense(info);
+    if (license) header.push(`license: ${license}`);
+    if (info.author) header.push(`author: ${info.author}`);
+    if (info.requires_python) header.push(`python: >=${info.requires_python}`);
+    return header;
+  },
+  formatBody: (data) => {
+    const urls = data.urls || [];
+    return [...formatVersionFiles(urls), ...formatVersionWheels(urls)];
+  },
+  viewLink: (name, version) =>
     `[View on PyPI](https://pypi.org/project/${name}/${version}/)`,
-  );
-
-  return parts.join("\n");
-}
+});
 
 function dispatchPypi(parsed: PypiPath, signal?: AbortSignal): Promise<string> {
   const handlers: Record<PypiPath["kind"], () => Promise<string>> = {

@@ -1,6 +1,15 @@
-import { ghCmd, ghCmdJson } from "./utils";
+import { ghCmd } from "./utils";
 import type { Column } from "../../shared/rendering/types";
 import { createBasicColumns } from "./schema";
+import {
+  buildListArgs,
+  buildViewArgs,
+  listResource,
+  viewResource,
+} from "./api-base";
+
+const ISSUE_JSON_FIELDS =
+  "number,title,state,createdAt,updatedAt,author,body,url,labels,milestone";
 
 interface GHIssue {
   number: number;
@@ -21,21 +30,10 @@ export function listIssues(
   state?: "open" | "closed" | "merged" | "all",
   limit = 30,
 ): Promise<GHIssue[]> {
-  const args: string[] = [
-    "issue",
-    "list",
-    "-R",
-    `${owner}/${repo}`,
-    `--limit=${limit}`,
-  ];
-  if (state && state !== "all") args.push(`--state=${state}`);
-  args.push(
-    "--json=number,title,state,createdAt,updatedAt,author,body,url,labels,milestone",
-    "--jq",
-    "[.[] | . + {html_url: .url}]",
+  return listResource<GHIssue>(
+    buildListArgs("issue", owner, repo, state, limit, ISSUE_JSON_FIELDS),
+    "issue list",
   );
-
-  return ghCmdJson<GHIssue[]>(args, "issue list");
 }
 
 export function viewIssue(
@@ -43,17 +41,8 @@ export function viewIssue(
   repo: string,
   issueNumber: number,
 ): Promise<GHIssue> {
-  return ghCmdJson<GHIssue>(
-    [
-      "issue",
-      "view",
-      `${issueNumber}`,
-      "-R",
-      `${owner}/${repo}`,
-      "--json=number,title,state,createdAt,updatedAt,author,body,url,labels,milestone",
-      "--jq",
-      ". + {html_url: .url}",
-    ],
+  return viewResource<GHIssue>(
+    buildViewArgs("issue", owner, repo, issueNumber, ISSUE_JSON_FIELDS),
     "issue view",
   );
 }

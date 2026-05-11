@@ -1,6 +1,17 @@
-import { ghCmd, ghCmdJson } from "./utils";
+import { ghCmd } from "./utils";
 import type { Column } from "../../shared/rendering/types";
 import { createBasicColumns } from "./schema";
+import {
+  buildListArgs,
+  buildViewArgs,
+  listResource,
+  viewResource,
+} from "./api-base";
+
+const PR_JSON_FIELDS =
+  "number,title,state,createdAt,updatedAt,baseRefName,headRefName,author,body,url,mergeable,reviewDecision,mergeCommit,isCrossRepository";
+const PR_LIST_JSON_FIELDS =
+  "number,title,state,createdAt,updatedAt,baseRefName,headRefName,author,url,mergeable,reviewDecision";
 
 interface GHPR {
   number: number;
@@ -23,21 +34,10 @@ export function listPRs(
   state?: "open" | "closed" | "merged" | "all",
   limit = 30,
 ): Promise<GHPR[]> {
-  const args: string[] = [
-    "pr",
-    "list",
-    "-R",
-    `${owner}/${repo}`,
-    `--limit=${limit}`,
-  ];
-  if (state && state !== "all") args.push(`--state=${state}`);
-  args.push(
-    "--json=number,title,state,createdAt,updatedAt,baseRefName,headRefName,author,url,mergeable,reviewDecision",
-    "--jq",
-    "[.[] | . + {html_url: .url}]",
+  return listResource<GHPR>(
+    buildListArgs("pr", owner, repo, state, limit, PR_LIST_JSON_FIELDS),
+    "pr list",
   );
-
-  return ghCmdJson<GHPR[]>(args, "pr list");
 }
 
 export function viewPR(
@@ -45,17 +45,8 @@ export function viewPR(
   repo: string,
   prNumber: number,
 ): Promise<GHPR> {
-  return ghCmdJson<GHPR>(
-    [
-      "pr",
-      "view",
-      `${prNumber}`,
-      "-R",
-      `${owner}/${repo}`,
-      "--json=number,title,state,createdAt,updatedAt,baseRefName,headRefName,author,body,url,mergeable,reviewDecision,mergeCommit,isCrossRepository",
-      "--jq",
-      ". + {html_url: .url}",
-    ],
+  return viewResource<GHPR>(
+    buildViewArgs("pr", owner, repo, prNumber, PR_JSON_FIELDS),
     "pr view",
   );
 }

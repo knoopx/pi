@@ -37,6 +37,26 @@ function createRepoErrorResult(error: unknown) {
   return createErrorResult(message);
 }
 
+function createRepoExecute<P>(
+  handler: (params: P) => Promise<AgentToolResult<Record<string, unknown>>>,
+) {
+  return async (
+    _toolCallId: string,
+    params: P,
+    _signal: AbortSignal | undefined,
+    _onUpdate:
+      | ((partialResult: AgentToolResult<Record<string, unknown>>) => void)
+      | undefined,
+    _ctx: ExtensionContext,
+  ): Promise<AgentToolResult<Record<string, unknown>>> => {
+    try {
+      return await handler(params);
+    } catch (error) {
+      return createRepoErrorResult(error);
+    }
+  };
+}
+
 const GetRepoContentsParams = Type.Object({
   owner: TypeBoxFields.owner,
   repo: TypeBoxFields.repoName,
@@ -151,21 +171,7 @@ Examples:
 - gh-repo-contents(owner='microsoft', repo='vscode')`,
     parameters: GetRepoContentsParams,
 
-    async execute(
-      _toolCallId: string,
-      params: Static<typeof GetRepoContentsParams>,
-      _signal: AbortSignal | undefined,
-      _onUpdate:
-        | ((partialResult: AgentToolResult<Record<string, unknown>>) => void)
-        | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        return await executeGetRepoContents(params);
-      } catch (error) {
-        return createRepoErrorResult(error);
-      }
-    },
+    execute: createRepoExecute(executeGetRepoContents),
 
     renderCall: createRepoRenderCall("gh-repo-contents"),
     renderResult: createTextResultRender(),
@@ -190,21 +196,7 @@ Examples:
 - gh-file-content(owner='pytorch', repo='pytorch', path='setup.py', ref='main')`,
     parameters: GetFileContentParams,
 
-    async execute(
-      _toolCallId: string,
-      params: Static<typeof GetFileContentParams>,
-      _signal: AbortSignal | undefined,
-      _onUpdate:
-        | ((partialResult: AgentToolResult<Record<string, unknown>>) => void)
-        | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        return await executeGetFileContent(params);
-      } catch (error) {
-        return createRepoErrorResult(error);
-      }
-    },
+    execute: createRepoExecute(executeGetFileContent),
 
     renderCall(args: Record<string, unknown>, theme: Theme) {
       let text = theme.fg("toolTitle", theme.bold("gh-file-content"));
@@ -239,21 +231,7 @@ Examples:
 - gh-list-repo-files(owner='microsoft', repo='vscode', path='src', maxFiles=100)`,
     parameters: ListRepoFilesParams,
 
-    async execute(
-      _toolCallId: string,
-      params: Static<typeof ListRepoFilesParams>,
-      _signal: AbortSignal | undefined,
-      _onUpdate:
-        | ((partialResult: AgentToolResult<Record<string, unknown>>) => void)
-        | undefined,
-      _ctx: ExtensionContext,
-    ) {
-      try {
-        return await executeListRepoFiles(params);
-      } catch (error) {
-        return createRepoErrorResult(error);
-      }
-    },
+    execute: createRepoExecute(executeListRepoFiles),
 
     renderCall: createRepoRenderCall("gh-list-repo-files"),
     renderResult: createTextResultRender(),

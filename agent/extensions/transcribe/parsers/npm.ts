@@ -1,4 +1,5 @@
 import {
+  createPackageVersionHandler,
   createRetryFetch,
   createVersionedPackageParser,
   defineParser,
@@ -186,39 +187,29 @@ function formatScripts(scripts: Record<string, string> | undefined): string[] {
   return lines;
 }
 
-async function handleVersion(
-  name: string,
-  version: string,
-  signal?: AbortSignal,
-): Promise<string> {
-  const data = await fetchNpm<NpmPackageInfo>(
-    `https://registry.npmjs.org/${name}/${version}`,
-    signal,
-  );
-
-  if (!data.name) throw new Error(`Version ${version} not found for ${name}`);
-
-  const parts: string[] = [`# ${name}@${version}`];
-  if (data.description) parts.push(data.description);
-
-  const license = extractLicenseString(data.license);
-  if (license) parts.push(`license: ${license}`);
-
-  const lines: string[] = [
+const handleVersion = createPackageVersionHandler<NpmPackageInfo>({
+  fetchUrl: (name, version) => `https://registry.npmjs.org/${name}/${version}`,
+  fetch: fetchNpm,
+  validate: (data, _name, version) => {
+    if (!data.name)
+      throw new Error(`Version ${version} not found for ${data.name}`);
+  },
+  formatHeader: (data) => {
+    const header: string[] = [];
+    if (data.description) header.push(data.description);
+    const license = extractLicenseString(data.license);
+    if (license) header.push(`license: ${license}`);
+    return header;
+  },
+  formatBody: (data) => [
     ...formatEntryPoints(data),
     ...formatSortedDependencies(data.dependencies),
     ...formatScripts(data.scripts),
     ...formatNpmPublishedDate(data.date),
-  ];
-
-  parts.push(...lines);
-  parts.push(
-    "",
+  ],
+  viewLink: (name, version) =>
     `[View on npm](https://www.npmjs.com/package/${name}/v/${version})`,
-  );
-
-  return parts.join("\n");
-}
+});
 
 async function handleVersions(
   name: string,

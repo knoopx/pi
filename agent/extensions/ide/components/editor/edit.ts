@@ -150,39 +150,35 @@ function makeDelete(
     );
 }
 
-export function deleteCharBackward(
+type DeleteFn = (
   lines: string[],
   cursor: Cursor,
   hasSelection: boolean,
   delSelFn: DelSelFn,
   selectionRange: { start: Cursor; end: Cursor } | null,
   selectionAnchor: Cursor | null,
-): DeleteResult {
-  return makeDelete(delSelFn, deleteCharBackwardBody)(
+) => DeleteResult;
+
+function createDeleteFn(body: DeleteBody): DeleteFn {
+  return (
     lines,
     cursor,
     hasSelection,
+    delSelFn,
     selectionRange,
     selectionAnchor,
-  );
+  ) =>
+    makeDelete(delSelFn, body)(
+      lines,
+      cursor,
+      hasSelection,
+      selectionRange,
+      selectionAnchor,
+    );
 }
 
-export function deleteCharForward(
-  lines: string[],
-  cursor: Cursor,
-  hasSelection: boolean,
-  delSelFn: DelSelFn,
-  selectionRange: { start: Cursor; end: Cursor } | null,
-  selectionAnchor: Cursor | null,
-): DeleteResult {
-  return makeDelete(delSelFn, deleteCharForwardBody)(
-    lines,
-    cursor,
-    hasSelection,
-    selectionRange,
-    selectionAnchor,
-  );
-}
+export const deleteCharBackward = createDeleteFn(deleteCharBackwardBody);
+export const deleteCharForward = createDeleteFn(deleteCharForwardBody);
 
 function joinLinesBackward(lines: string[], cursor: Cursor): void {
   const prevLine = lines[cursor.line - 1] ?? "";
@@ -289,63 +285,22 @@ export function insertNewline(
   return { lines, cursor };
 }
 
-export function deleteWordBackward(
-  lines: string[],
-  cursor: Cursor,
-  hasSelection: boolean,
-  delSelFn: DelSelFn,
-  selectionRange: { start: Cursor; end: Cursor } | null,
-  selectionAnchor: Cursor | null,
-): DeleteResult {
-  return makeDelete(delSelFn, deleteWordBackwardBody)(
-    lines,
-    cursor,
-    hasSelection,
-    selectionRange,
-    selectionAnchor,
-  );
-}
-
-export function deleteWordForward(
-  lines: string[],
-  cursor: Cursor,
-  hasSelection: boolean,
-  delSelFn: DelSelFn,
-  selectionRange: { start: Cursor; end: Cursor } | null,
-  selectionAnchor: Cursor | null,
-): DeleteResult {
-  return makeDelete(delSelFn, deleteWordForwardBody)(
-    lines,
-    cursor,
-    hasSelection,
-    selectionRange,
-    selectionAnchor,
-  );
-}
-
-export function deleteLine(
-  lines: string[],
-  cursor: Cursor,
-  hasSelection: boolean,
-  delSelFn: DelSelFn,
-  selectionRange: { start: Cursor; end: Cursor } | null,
-  selectionAnchor: Cursor | null,
-): DeleteResult {
-  return makeDelete(delSelFn, (lines, cursor) => {
-    if (lines.length === 1) {
-      lines[0] = "";
-      cursor.col = 0;
-      return;
-    }
-    lines.splice(cursor.line, 1);
-    if (cursor.line >= lines.length) {
-      cursor.line = lines.length - 1;
-      cursor.col = (lines[cursor.line] ?? "").length;
-    } else {
-      cursor.col = 0;
-    }
-  })(lines, cursor, hasSelection, selectionRange, selectionAnchor);
-}
+export const deleteWordBackward = createDeleteFn(deleteWordBackwardBody);
+export const deleteWordForward = createDeleteFn(deleteWordForwardBody);
+export const deleteLine = createDeleteFn((lines, cursor) => {
+  if (lines.length === 1) {
+    lines[0] = "";
+    cursor.col = 0;
+    return;
+  }
+  lines.splice(cursor.line, 1);
+  if (cursor.line >= lines.length) {
+    cursor.line = lines.length - 1;
+    cursor.col = (lines[cursor.line] ?? "").length;
+  } else {
+    cursor.col = 0;
+  }
+});
 
 export function toggleComment(
   lines: string[],
