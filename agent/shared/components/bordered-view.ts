@@ -1,4 +1,4 @@
-import { Container, Spacer } from "@earendil-works/pi-tui";
+import { Container, matchesKey, Spacer } from "@earendil-works/pi-tui";
 import { DynamicBorder } from "@earendil-works/pi-coding-agent";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 
@@ -38,6 +38,14 @@ export class BorderedView {
     const componentLines = this.component.render();
     const bottomBorder = this.theme.fg("border", "─".repeat(width));
     return [...borderLines, ...componentLines, "", bottomBorder];
+  }
+
+  handleInput(data: string): void {
+    if (matchesKey(data, "escape") || matchesKey(data, "q")) {
+      this.done();
+      return;
+    }
+    this.component.handleInput?.(data);
   }
 
   invalidate(): void {}

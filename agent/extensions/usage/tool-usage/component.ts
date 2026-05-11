@@ -217,43 +217,41 @@ class ToolUsageComponent {
     return [this.theme.fg("dim", "[Tab/←→] view  [↑↓] select  [q] close")];
   }
 
-  private handleTabCycle(data: string, dir: number): boolean {
+  handleInput(data: string): void {
     const matches = (key: Parameters<typeof matchesKey>[1]) =>
       matchesKey(data, key);
-    if (dir === 1 && (matches("tab") || matches("right"))) {
-      this.activeTab = this.cycleTab(this.activeTab, 1);
-      return true;
-    }
-    if (dir === -1 && (matches("shift+tab") || matches("left"))) {
-      this.activeTab = this.cycleTab(this.activeTab, -1);
-      return true;
-    }
-    return false;
-  }
 
-  private handleCursorMove(data: string): boolean {
-    if (data === "\u001b[A" || data === "k" || data === "K") {
-      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
-      return true;
+    if (matches("escape") || matches("q")) {
+      this.done();
+      return;
     }
-    if (data === "\u001b[B" || data === "j" || data === "J") {
+
+    if (matches("tab") || matches("right")) {
+      this.activeTab = this.cycleTab(this.activeTab, 1);
+      this.requestRender();
+      return;
+    }
+
+    if (matches("shift+tab") || matches("left")) {
+      this.activeTab = this.cycleTab(this.activeTab, -1);
+      this.requestRender();
+      return;
+    }
+
+    if (matches("up") || matches("k")) {
+      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+      this.requestRender();
+      return;
+    }
+
+    if (matches("down") || matches("j")) {
       this.selectedIndex = Math.min(
         this.getRowCount() - 1,
         this.selectedIndex + 1,
       );
-      return true;
+      this.requestRender();
+      return;
     }
-    return false;
-  }
-
-  private handleQuit(data: string): boolean {
-    const matches = (key: Parameters<typeof matchesKey>[1]) =>
-      matchesKey(data, key);
-    if (matches("escape") || data === "\x1b" || data === "q" || data === "Q") {
-      this.done();
-      return true;
-    }
-    return false;
   }
 
   private cycleTab(tab: ToolTabName, dir: number): ToolTabName {
