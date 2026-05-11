@@ -3,11 +3,61 @@ import { throttledFetch } from "../../shared/network/throttle";
 export const NIXPKGS_GITHUB_BASE =
   "https://github.com/NixOS/nixpkgs/blob/nixos-unstable";
 
-const SEARCH_URL =
-  "https://search.nixos.org/backend/nixos-47-unstable-0726a0ecb6d4e08f6adced58726b95db924cef57/_search";
+const NIX_SEARCH_CHANNEL = "nixos-unstable";
+const SEARCH_BASE_URL = "https://search.nixos.org/backend";
 const AUTH_TOKEN =
   process.env.NIX_SEARCH_TOKEN ??
   "YVdWU0FMWHBadjpYOGdQSG56TDUyd0ZFZWt1eHNmUTljU2g=";
+
+const COMMON_HEADERS: Record<string, string> = {
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${AUTH_TOKEN}`,
+};
+
+let cachedSearchUrl: string | null = null;
+
+export function resetSearchUrlCache(): void {
+  cachedSearchUrl = null;
+}
+
+async function resolveSearchUrl(): Promise<string> {
+  if (cachedSearchUrl) return cachedSearchUrl;
+
+  const indicesResponse = await throttledFetch(
+    `${SEARCH_BASE_URL}/_cat/indices?v&h=index`,
+    {
+      headers: COMMON_HEADERS,
+    },
+  );
+
+  if (!indicesResponse.ok) {
+    throw new Error(
+      `HTTP ${indicesResponse.status} from Nix search API while discovering indices`,
+    );
+  }
+
+  const body = await indicesResponse.text();
+  const lines = body.trim().split("\n").slice(1);
+
+  let bestVersion = 0;
+  for (const line of lines) {
+    const match = line.match(/^nixos-(\d+)-unstable-/);
+    if (match) {
+      const version = parseInt(match[1], 10);
+      if (version > bestVersion) {
+        bestVersion = version;
+      }
+    }
+  }
+
+  if (bestVersion === 0) {
+    throw new Error("No nixos-*-unstable index found");
+  }
+
+  cachedSearchUrl = `${SEARCH_BASE_URL}/latest-${bestVersion}-${NIX_SEARCH_CHANNEL}/_search`;
+  return cachedSearchUrl;
+}
+
 interface NixPackage {
   type: "package";
   package_attr_name: string;
@@ -72,11 +122,6 @@ export function removeEmptyProperties<T extends Record<string, unknown>>(
   }
   return result;
 }
-const COMMON_HEADERS: Record<string, string> = {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${AUTH_TOKEN}`,
-};
-
 export const PACKAGE_SEARCH_FIELDS = [
   "package_attr_name",
   "package_pname",
@@ -109,7 +154,8 @@ export async function searchNix<T>(
   query: string,
 ): Promise<T[]> {
   const body = buildQuery(query);
-  const response = await throttledFetch(SEARCH_URL, {
+  const url = await resolveSearchUrl();
+  const response = await throttledFetch(url, {
     method: "POST",
     headers: COMMON_HEADERS,
     body: JSON.stringify(body),

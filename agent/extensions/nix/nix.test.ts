@@ -3,9 +3,13 @@ import type { AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { TextContent } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import setupNixExtension from "./index";
-import type { MockTool, MockExtensionAPI } from "../../shared/testing/test-utils";
+import type {
+  MockTool,
+  MockExtensionAPI,
+} from "../../shared/testing/test-utils";
 import { createMockExtensionAPI } from "../../shared/testing/test-utils";
 import { disableThrottle } from "../../shared/network/throttle";
+import { resetSearchUrlCache } from "./query";
 function assertFormattedOptionResults(
   result: AgentToolResult<Record<string, unknown>>,
   query: string,
@@ -21,6 +25,7 @@ describe("Nix Extension", () => {
 
   beforeEach(() => {
     disableThrottle();
+    resetSearchUrlCache();
     mockPi = createMockExtensionAPI();
     originalFetch = globalThis.fetch;
     setupNixExtension(mockPi as unknown as ExtensionAPI);
@@ -104,14 +109,26 @@ describe("Nix Extension", () => {
             package_position: "/pkgs/tools/build/hello-builder/default.nix:18",
           },
         ];
-        const mockFetch: unknown = vi.fn().mockImplementation((..._args) => ({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              hits: { hits: mockPackages.map((p) => ({ _source: p })) },
-            }),
-          preconnect: vi.fn(),
-        }));
+        const mockFetch: unknown = vi.fn().mockImplementation((url) => {
+          if (typeof url === "string" && url.includes("_cat/indices")) {
+            return {
+              ok: true,
+              text: () =>
+                Promise.resolve(
+                  "index\nnixos-48-unstable-abc123\nnixos-47-unstable-def456",
+                ),
+              preconnect: vi.fn(),
+            };
+          }
+          return {
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                hits: { hits: mockPackages.map((p) => ({ _source: p })) },
+              }),
+            preconnect: vi.fn(),
+          };
+        });
         globalThis.fetch = mockFetch as typeof globalThis.fetch;
 
         result = await registeredTool.execute(
@@ -152,14 +169,23 @@ describe("Nix Extension", () => {
 
     describe("given an HTTP request returns error", () => {
       it("then it should return error message", async () => {
-        const mockFetch = vi.fn().mockImplementation(
-          (..._args) =>
-            ({
-              ok: false,
-              status: 500,
+        const mockFetch = vi.fn().mockImplementation((url) => {
+          if (typeof url === "string" && url.includes("_cat/indices")) {
+            return {
+              ok: true,
+              text: () =>
+                Promise.resolve(
+                  "index\nnixos-48-unstable-abc123\nnixos-47-unstable-def456",
+                ),
               preconnect: vi.fn(),
-            }) as unknown,
-        );
+            };
+          }
+          return {
+            ok: false,
+            status: 500,
+            preconnect: vi.fn(),
+          };
+        });
         globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
         const result = await registeredTool.execute(
           "tool1",
@@ -202,17 +228,26 @@ describe("Nix Extension", () => {
               "nixos/modules/services/web-servers/apache-httpd/default.nix",
           },
         ];
-        const mockFetch = vi.fn().mockImplementation(
-          (..._args) =>
-            ({
+        const mockFetch = vi.fn().mockImplementation((url) => {
+          if (typeof url === "string" && url.includes("_cat/indices")) {
+            return {
               ok: true,
-              json: () =>
-                Promise.resolve({
-                  hits: { hits: mockOptions.map((o) => ({ _source: o })) },
-                }),
+              text: () =>
+                Promise.resolve(
+                  "index\nnixos-48-unstable-abc123\nnixos-47-unstable-def456",
+                ),
               preconnect: vi.fn(),
-            }) as unknown,
-        );
+            };
+          }
+          return {
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                hits: { hits: mockOptions.map((o) => ({ _source: o })) },
+              }),
+            preconnect: vi.fn(),
+          };
+        });
         globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
 
         result = await registeredTool.execute(
