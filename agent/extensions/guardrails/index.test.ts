@@ -24,7 +24,7 @@ let saveGuardrailsSettings: Mock;
 let glob: Mock;
 
 beforeAll(async () => {
-  vi.doMock("./config", () => ({
+  vi.doMock("./config/loader", () => ({
     configLoader: {
       load: vi.fn(),
       getConfig: vi.fn(),
@@ -35,10 +35,11 @@ beforeAll(async () => {
   const globMock = vi.fn();
   glob = globMock as unknown as Mock;
   vi.doMock("tinyglobby", () => ({ glob: globMock }));
-  const mod = await import("./index");
-  guardrailsExtension = mod.default;
-  isGroupActive = mod.isGroupActive;
-  const configModule = await import("./config");
+  const extensionMod = await import("./index");
+  guardrailsExtension = extensionMod.default;
+  const utilsMod = await import("./core/checking");
+  isGroupActive = utilsMod.isGroupActive;
+  const configModule = await import("./config/loader");
   configLoader = configModule.configLoader as unknown as typeof configLoader;
   loadGuardrailsSettings =
     configModule.loadGuardrailsSettings as unknown as Mock;

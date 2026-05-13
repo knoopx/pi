@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import defaultsConfig from "./defaults";
+import defaultsConfig from "../defaults/all";
 
 vi.mock("node:fs/promises", () => ({
   readFile: vi.fn(),
@@ -21,7 +21,7 @@ describe("guardrails configLoader", () => {
 
   describe("given configuration is not loaded yet", () => {
     it("then throws explicit load-first error", async () => {
-      const { configLoader } = await import("./config");
+      const { configLoader } = await import("./loader");
       expect(() => configLoader.getConfig()).toThrow(
         "Config not loaded. Call load() first.",
       );
@@ -30,7 +30,7 @@ describe("guardrails configLoader", () => {
 
   describe("when loading", () => {
     it("then resolves defaults as active config", async () => {
-      const { configLoader } = await import("./config");
+      const { configLoader } = await import("./loader");
       expectDefaultActive(configLoader);
     });
   });

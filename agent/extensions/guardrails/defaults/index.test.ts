@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
-import defaults from "./defaults";
-import type { GuardrailsGroup } from "./types";
+import defaults from "./all";
+import type { GuardrailsGroup } from "../types";
+import { matchCommandPattern } from "../../../shared/matching/command";
 import {
-  matchCommandPattern,
   matchContentPattern,
   matchFileNamePattern,
-} from "../../shared/matching/pattern-matching";
+} from "../../../shared/matching/pattern";
 const typedDefaults: GuardrailsGroup[] = defaults;
 type Rule = (typeof typedDefaults)[number]["rules"][number];
 function getGroup(name: string): GuardrailsGroup {
@@ -13,16 +13,20 @@ function getGroup(name: string): GuardrailsGroup {
   if (!group) throw new Error(`Group not found: ${name}`);
   return group;
 }
+function commandMatchesRule(command: string, rule: Rule): boolean {
+  if (!matchCommandPattern(command, rule.pattern)) return false;
+  if (rule.includes && !matchCommandPattern(command, rule.includes))
+    return false;
+  if (rule.excludes && matchCommandPattern(command, rule.excludes))
+    return false;
+  return true;
+}
+
 function groupMatches(groupName: string, command: string): boolean {
   const group = getGroup(groupName);
   return group.rules
     .filter((r: Rule) => r.context === "command")
-    .some((r: Rule) => {
-      if (!matchCommandPattern(command, r.pattern)) return false;
-      if (r.includes && !matchCommandPattern(command, r.includes)) return false;
-      if (r.excludes && matchCommandPattern(command, r.excludes)) return false;
-      return true;
-    });
+    .some((r: Rule) => commandMatchesRule(command, r));
 }
 function fileNameGroupMatches(groupName: string, filePath: string): boolean {
   const group = getGroup(groupName);
@@ -197,6 +201,11 @@ describe("defaults.json", () => {
   });
 
   describe("given jj group", () => {
+    it("then blocks jj edit, instructs new+ squash", () => {
+      expect(groupMatches("jj", "jj edit abc123")).toBe(true);
+      expect(groupMatches("jj", "jj edit @-")).toBe(true);
+    });
+
     it("then blocks wrong parent syntax", () => {
       expect(groupMatches("jj", "jj diff -r @~1")).toBe(true);
       expect(groupMatches("jj", "jj log -r @^")).toBe(true);
