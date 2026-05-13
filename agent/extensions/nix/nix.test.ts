@@ -10,6 +10,30 @@ import type {
 import { createMockExtensionAPI } from "../../shared/testing/test-utils";
 import { disableThrottle } from "../../shared/network/throttle";
 import { resetSearchUrlCache } from "./query";
+
+const NIX_INDICES_RESPONSE =
+  "index\nnixos-48-unstable-abc123\nnixos-47-unstable-def456";
+
+function createMockNixSearchFetch<T>(items: T[]) {
+  return vi.fn().mockImplementation((url: string) => {
+    if (url.includes("_cat/indices")) {
+      return {
+        ok: true,
+        text: () => Promise.resolve(NIX_INDICES_RESPONSE),
+        preconnect: vi.fn(),
+      };
+    }
+    return {
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          hits: { hits: items.map((item) => ({ _source: item })) },
+        }),
+      preconnect: vi.fn(),
+    };
+  });
+}
+
 function assertFormattedOptionResults(
   result: AgentToolResult<Record<string, unknown>>,
   query: string,
@@ -109,27 +133,9 @@ describe("Nix Extension", () => {
             package_position: "/pkgs/tools/build/hello-builder/default.nix:18",
           },
         ];
-        const mockFetch: unknown = vi.fn().mockImplementation((url) => {
-          if (typeof url === "string" && url.includes("_cat/indices")) {
-            return {
-              ok: true,
-              text: () =>
-                Promise.resolve(
-                  "index\nnixos-48-unstable-abc123\nnixos-47-unstable-def456",
-                ),
-              preconnect: vi.fn(),
-            };
-          }
-          return {
-            ok: true,
-            json: () =>
-              Promise.resolve({
-                hits: { hits: mockPackages.map((p) => ({ _source: p })) },
-              }),
-            preconnect: vi.fn(),
-          };
-        });
-        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        globalThis.fetch = createMockNixSearchFetch(
+          mockPackages,
+        ) as typeof globalThis.fetch;
 
         result = await registeredTool.execute(
           "tool1",
@@ -228,27 +234,9 @@ describe("Nix Extension", () => {
               "nixos/modules/services/web-servers/apache-httpd/default.nix",
           },
         ];
-        const mockFetch = vi.fn().mockImplementation((url) => {
-          if (typeof url === "string" && url.includes("_cat/indices")) {
-            return {
-              ok: true,
-              text: () =>
-                Promise.resolve(
-                  "index\nnixos-48-unstable-abc123\nnixos-47-unstable-def456",
-                ),
-              preconnect: vi.fn(),
-            };
-          }
-          return {
-            ok: true,
-            json: () =>
-              Promise.resolve({
-                hits: { hits: mockOptions.map((o) => ({ _source: o })) },
-              }),
-            preconnect: vi.fn(),
-          };
-        });
-        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
+        globalThis.fetch = createMockNixSearchFetch(
+          mockOptions,
+        ) as typeof globalThis.fetch;
 
         result = await registeredTool.execute(
           "tool1",
