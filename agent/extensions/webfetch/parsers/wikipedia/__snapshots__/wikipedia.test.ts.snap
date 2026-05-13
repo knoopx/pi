@@ -1,0 +1,748 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Wikipedia parser > snapshot > captures output for https://en.wikipedia.org/wiki/Artificial_intelligence 1`] = `
+"High-profile [applications of AI](applications_of_artificial_intelligence) include advanced [web search engine](web_search_engine)s, [chatbots](Chatbot), [virtual assistant](virtual_assistant)s, [autonomous vehicles](autonomous_vehicles), and play and analysis in [strategy game](strategy_game)s (e.g., [chess](chess) and [Go](Go_\\(game\\))). Since the 2020s, [generative AI](generative_AI) has become widely available to generate images, audio, and videos from text prompts.
+
+The traditional goals of AI research include learning, [reasoning](automated_reasoning), [knowledge representation](knowledge_representation), [planning](Automated_planning_and_scheduling), [natural language processing](natural_language_processing), and [perception](Machine_perception), as well as support for [robotics](robotics). To reach these goals, AI researchers have used techniques including [state space search](state_space_search) and [mathematical optimization](mathematical_optimization), [formal logic](formal_logic), [artificial neural network](artificial_neural_network)s, and methods based on [statistics](statistics), [operations research](operations_research), and [economics](economics). AI also draws upon [psychology](psychology), [linguistics](linguistics), [philosophy](Philosophy_of_artificial_intelligence), [neuroscience](neuroscience), and other fields.<ref>.</ref> Some companies, such as [OpenAI](OpenAI), [Google DeepMind](Google_DeepMind) and [Meta](Meta_Platforms), aim to create [artificial general intelligence](artificial_general_intelligence) (AGI)  AI that can complete virtually any cognitive task at least as well as a human.<ref></ref>
+
+Artificial intelligence was founded as an academic discipline in 1956,<ref name="Dartmouth workshop"/> and the field went through multiple cycles of optimism throughout [its history](History_of_artificial_intelligence),<ref name="Succ1"/><ref name="Fund01"/> followed by periods of disappointment and loss of funding, known as [AI winter](AI_winter)s.<ref name="First AI Winter"/><ref name="Second AI Winter"/> Funding and interest increased substantially after 2012, when [graphics processing unit](graphics_processing_unit)s began being used to accelerate neural networks, and [deep learning](deep_learning) outperformed previous AI techniques.<ref name="Deep learning revolution"/> This growth accelerated further after 2017 with the [transformer architecture](transformer_architecture). In the 2020s, an [AI boom](AI_boom) has coincided with advances in [generative AI](generative_AI), which allowed for the creation and modification of media. In addition to [AI safety](AI_safety) and [unintended consequences and harms](Generative_AI#Concerns) from the use of AI, [ethical concerns](Ethics_of_artificial_intelligence), [AI's long-term effects](AI_aftermath_scenarios), and [potential existential risks](Existential_risk_from_artificial_intelligence) have prompted discussions of [AI regulation](Regulation_of_artificial_intelligence).
+
+## Goals
+
+The general problem of simulating (or creating) intelligence has been broken into subproblems. These consist of particular traits or capabilities that researchers expect an intelligent system to display. The traits described below have received the most attention and cover the scope of AI research.
+
+## Reasoning and problem-solving
+
+Early researchers developed algorithms that imitated step-by-step reasoning that humans use when they solve puzzles or make logical [deductions](Deductive_reasoning).<ref>Problem-solving, puzzle solving, game playing, and deduction: ,  ([constraint satisfaction](constraint_satisfaction)), , , </ref> By the late 1980s and 1990s, methods were developed for dealing with [uncertain](uncertainty) or incomplete information, employing concepts from [probability](probability) and [economics](economics).<ref>Uncertain reasoning: , , , </ref>
+
+Many of these [algorithm](algorithm)s are insufficient for solving large reasoning problems because they experience a "combinatorial explosion": They become exponentially slower as the problems grow.<ref name="Intractability and efficiency and the combinatorial explosion">[Intractability and efficiency](Intractably) and the [combinatorial explosion](combinatorial_explosion): </ref> Even humans rarely use the step-by-step deduction that early AI research could model. They solve most of their problems using fast, intuitive judgments.<ref name="Psychological evidence of the prevalence of sub">Psychological evidence of the prevalence of sub-symbolic reasoning and knowledge: , , , </ref> Accurate and efficient reasoning is an unsolved problem.
+
+## Knowledge representation
+
+[thumb|upright=1.2|An ontology represents knowledge as a set of concepts within a domain and the relationships between those concepts.](File:General_Formal_Ontology.svg)
+
+[Knowledge representation](Knowledge_representation) and [knowledge engineering](knowledge_engineering)<ref>[Knowledge representation](Knowledge_representation) and [knowledge engineering](knowledge_engineering): , , , </ref> allow AI programs to answer questions intelligently and make deductions about real-world facts. Formal knowledge representations are used in content-based indexing and retrieval, scene interpretation, clinical decision support, knowledge discovery (mining "interesting" and actionable inferences from large [database](database)s), and other areas.
+
+A [knowledge base](knowledge_base) is a body of knowledge represented in a form that can be used by a program. An [ontology](ontology_\\(information_science\\)) is the set of objects, relations, concepts, and properties used by a particular domain of knowledge. Knowledge bases need to represent things such as objects, properties, categories, and relations between objects;<ref>Representing categories and relations: [Semantic network](Semantic_network)s, [description logic](description_logic)s, [inheritance](Inheritance_\\(object-oriented_programming\\)) (including [frames](Frame_\\(artificial_intelligence\\)), and [scripts](Scripts_\\(artificial_intelligence\\))): , , , </ref> situations, events, states, and time;<ref>Representing events and time:[Situation calculus](Situation_calculus), [event calculus](event_calculus), [fluent calculus](fluent_calculus) (including solving the [frame problem](frame_problem)): , , </ref> causes and effects;<ref>[Causal calculus](Causality#Causal_calculus): </ref> knowledge about knowledge (what we know about what other people know);<ref>Representing knowledge about knowledge: Belief calculus, [modal logic](modal_logic)s: , </ref> [default reasoning](default_reasoning) (things that humans assume are true until they are told differently and will remain true even when other facts are changing);<ref name="Default reasoning">[Default reasoning](Default_reasoning), [Frame problem](Frame_problem), [default logic](default_logic), [non-monotonic logic](non-monotonic_logic)s, [circumscription](circumscription_\\(logic\\)), [closed world assumption](closed_world_assumption), [abduction](abductive_reasoning): , , ,&#x20;
+(Poole ''et al.'' places abduction under "default reasoning". Luger ''et al.'' places this under "uncertain reasoning").</ref> and many other aspects and domains of knowledge.
+
+Among the most difficult problems in knowledge representation are the breadth of [commonsense knowledge](commonsense_knowledge) (the set of atomic facts that the average person knows is enormous);<ref name="Breadth of commonsense knowledge">Breadth of commonsense knowledge: , , ,  ([qualification problem](qualification_problem))</ref> and the sub-symbolic form of most commonsense knowledge (much of what people know is not represented as "facts" or "statements" that they could express verbally).<ref name="Psychological evidence of the prevalence of sub" /> There is also the difficulty of [knowledge acquisition](knowledge_acquisition), the problem of obtaining knowledge for AI applications.
+
+## Planning and decision-making
+
+An "agent" is any entity (artificial or not) that perceives and takes actions in the world. A [rational agent](rational_agent) has goals or preferences and takes actions to make them happen.[economics](economics), [philosophy](philosophy) and theoretical artificial intelligence. It can refer to anything that directs its behavior to accomplish goals, such as a person, an animal, a corporation, a nation, or in the case of AI, a computer program.
+}} In [automated planning](automated_planning), the agent has a specific goal.<ref>[Automated planning](Automated_planning): .</ref> In [automated decision-making](automated_decision-making), the agent has preferences—there are some situations it would prefer to be in, and some situations it is trying to avoid. The decision-making agent assigns a number to each situation (called the "[utility](utility)") that measures how much the agent prefers it. For each possible action, it can calculate the "[expected utility](expected_utility)": the utility of all possible outcomes of the action, weighted by the probability that the outcome will occur. It can then choose the action with the maximum expected utility.<ref>[Automated decision making](Automated_decision_making), [Decision theory](Decision_theory): .</ref>
+
+In [classical planning](Automated_planning_and_scheduling#classical_planning), the agent knows exactly what the effect of any action will be.<ref>[Classical planning](Automated_planning_and_scheduling#classical_planning): .</ref> In most real-world problems, however, the agent may not be certain about the situation they are in (it is "unknown" or "unobservable") and it may not know for certain what will happen after each possible action (it is not "deterministic"). It must choose an action by making a probabilistic guess and then reassess the situation to see if the action worked.<ref>Sensorless or "conformant" planning, contingent planning, replanning (a.k.a. online planning): .</ref>
+
+Alongside thorough testing and improvement based on previous decisions, having an explanation for why the agent took certain decisions is a way to build trust, especially when the decisions have to be relied upon.<ref>Trust, interpretability, and explainability: .</ref>
+
+In some problems, the agent's preferences may be uncertain, especially if there are other agents or humans involved. These can be learned (e.g., with [inverse reinforcement learning](inverse_reinforcement_learning)), or the agent can seek information to improve its preferences.<ref>Uncertain preferences:&#x20;
+[Inverse reinforcement learning](Inverse_reinforcement_learning): </ref> [Information value theory](Information_value_theory) can be used to weigh the value of exploratory or experimental actions.<ref>[Information value theory](Information_value_theory): .</ref> The space of possible future actions and situations is typically [intractably](intractably) large, so the agents must take actions and evaluate situations while being uncertain of what the outcome will be.
+
+A [Markov decision process](Markov_decision_process) has a [transition model](Finite-state_machine) that describes the probability that a particular action will change the state in a particular way and a reward function that supplies the utility of each state and the cost of each action. A [policy](Reinforcement_learning#Policy) associates a decision with each possible state. The policy could be calculated (e.g., by [iteration](policy_iteration)), be [heuristic](heuristic), or it can be learned.<ref>[Markov decision process](Markov_decision_process): .</ref>
+
+[Game theory](Game_theory) describes the rational behavior of multiple interacting agents and is used in AI programs that make decisions that involve other agents.<ref>[Game theory](Game_theory) and multi-agent decision theory: .</ref>
+
+## Learning
+
+[Machine learning](Machine_learning) is the study of programs that can improve their performance on a given task automatically.<ref>[Learning](machine_learning): , , , </ref> It has been a part of AI from the beginning.[Alan Turing](Alan_Turing) discussed the centrality of learning as early as 1950, in his classic paper "[Computing Machinery and Intelligence](Computing_Machinery_and_Intelligence)". In 1956, at the original Dartmouth AI summer conference, [Ray Solomonoff](Ray_Solomonoff) wrote a report on unsupervised probabilistic machine learning: "An Inductive Inference Machine".
+}}
+[upright=1.4|thumb|In \\[\\[supervised learning\\]\\], the training data is labelled with the expected answers, while in \\[\\[unsupervised learning\\]\\], the model identifies patterns or structures in unlabelled data.](File:Supervised_and_unsupervised_learning.png)
+There are several kinds of machine learning. [Unsupervised learning](Unsupervised_learning) analyzes a stream of data and finds patterns and makes predictions without any other guidance.<ref>[Unsupervised learning](Unsupervised_learning):  (definition),  ([cluster analysis](cluster_analysis)),  ([word embedding](word_embedding))</ref> [Supervised learning](Supervised_learning) requires labeling the training data with the expected answers, and comes in two main varieties: [classification](statistical_classification) (where the program must learn to predict what category the input belongs in) and [regression](Regression_analysis) (where the program must deduce a numeric function based on numeric input).<ref name="Supervised learning">[Supervised learning](Supervised_learning):  (Definition),  (Techniques)</ref>
+
+In [reinforcement learning](reinforcement_learning), the agent is rewarded for good responses and punished for bad ones. The agent learns to choose responses that are classified as "good".<ref>[Reinforcement learning](Reinforcement_learning): , </ref> [Transfer learning](Transfer_learning) is when the knowledge gained from one problem is applied to a new problem.<ref>[Transfer learning](Transfer_learning): , </ref> [Deep learning](Deep_learning) is a type of machine learning that runs inputs through biologically inspired [artificial neural networks](artificial_neural_networks) for all of these types of learning.<ref></ref>
+
+[Computational learning theory](Computational_learning_theory) can assess learners by [computational complexity](computational_complexity), by [sample complexity](sample_complexity) (how much data is required), or by other notions of [optimization](optimization).<ref>[Computational learning theory](Computational_learning_theory): , </ref>
+
+## Natural language processing
+
+Early work, based on [Noam Chomsky](Noam_Chomsky)'s [generative grammar](generative_grammar) and [semantic network](semantic_network)s, had difficulty with [word-sense disambiguation](word-sense_disambiguation) unless restricted to small domains called "[micro-worlds](blocks_world)" (due to the [common sense knowledge problem](Commonsense_knowledge_\\(artificial_intelligence\\))<ref name="Breadth of commonsense knowledge" />). [Margaret Masterman](Margaret_Masterman) believed that it was meaning and not grammar that was the key to understanding languages, and that [thesauri](thesauri) and not dictionaries should be the basis of computational language structure.
+
+Modern deep learning techniques for NLP include [word embedding](word_embedding) (representing words, typically as [vectors](Vector_space) encoding their meaning), [transformer](transformer_\\(machine_learning_model\\))s (a deep learning architecture using an [attention](Attention_\\(machine_learning\\)) mechanism), and others.<ref>Modern statistical and deep learning approaches to [NLP](Natural_language_processing): , </ref> In 2019, [generative pre-trained transformer](generative_pre-trained_transformer) (or "GPT") language models began to generate coherent text, and by 2023, these models were able to get human-level scores on the [bar exam](bar_exam), [SAT](SAT) test, [GRE](GRE) test, and many other real-world applications.
+
+## Perception
+
+[Machine perception](Machine_perception) is the ability to use input from sensors (such as cameras, microphones, wireless signals, active [lidar](lidar), sonar, radar, and [tactile sensor](tactile_sensor)s) to deduce aspects of the world. [Computer vision](Computer_vision) is the ability to analyze visual input.<ref>[Computer vision](Computer_vision): , </ref>
+
+The field includes [speech recognition](speech_recognition), [image classification](image_classification), [facial recognition](facial_recognition_system), [object recognition](object_recognition), [object tracking](motion_capture), and [robotic perception](robotic_perception).
+
+## Social intelligence
+
+[thumb|\\[\\[Kismet (robot)|Kismet\\]\\], a robot head made in the 1990s, is a machine that can recognize and simulate emotions.](File:Kismet-IMG_6007-gradient.jpg)
+
+[Affective computing](Affective_computing) is a field that comprises systems that recognize, interpret, process, or simulate human [feeling, emotion, and mood](Affect_\\(psychology\\)).<ref>[Affective computing](Affective_computing): , , , </ref> For example, some [virtual assistant](virtual_assistant)s are programmed to speak conversationally or even to banter humorously; it makes them appear more sensitive to the emotional dynamics of human interaction, or to otherwise facilitate [human–computer interaction](human–computer_interaction).
+
+However, this tends to give naïve users an unrealistic conception of the intelligence of existing computer agents. Moderate successes related to affective computing include textual [sentiment analysis](sentiment_analysis) and, more recently, [multimodal sentiment analysis](multimodal_sentiment_analysis), wherein AI classifies the effects displayed by a videotaped subject.
+
+## General intelligence
+
+A machine with [artificial general intelligence](artificial_general_intelligence) would be able to solve a wide variety of problems with breadth and versatility similar to [human intelligence](human_intelligence).<ref name="Artificial general intelligence">
+[Artificial general intelligence](Artificial_general_intelligence): <br />Proposal for the modern version: <br />Warnings of overspecialization in AI from leading researchers: , , </ref>
+
+## Techniques
+
+AI research uses a wide variety of techniques to accomplish the goals above.
+
+## Search and optimization
+
+There are two different kinds of search used in AI: [state space search](state_space_search) and [local search](Local_search_\\(optimization\\)):
+
+## State space search
+
+[State space search](State_space_search) searches through a tree of possible states to try to find a goal state.<ref>[State space search](State_space_search): </ref> For example, [planning](Automated_planning_and_scheduling) algorithms search through trees of goals and subgoals, attempting to find a path to a target goal, a process called [means-ends analysis](means-ends_analysis).
+
+[Simple exhaustive searches](Brute_force_search)<ref>[Uninformed search](Uninformed_search)es ([breadth first search](breadth_first_search), [depth-first search](depth-first_search) and general [state space search](state_space_search)): , , , </ref> are rarely sufficient for most real-world problems: the [search space](Search_algorithm) (the number of places to search) quickly grows to [astronomical numbers](Astronomically_large). The result is a search that is [too slow](Computation_time) or never completes.<ref name="Intractability and efficiency and the combinatorial explosion" /> "[Heuristics](Heuristics)" or "rules of thumb" can help prioritize choices that are more likely to reach a goal.<ref>[Heuristic](Heuristic) or informed searches (e.g., greedy [best first](Best-first_search) and [A\\*](A*_search_algorithm)): , , , </ref>
+
+[Adversarial search](Adversarial_search) is used for [game-playing](game_AI) programs, such as chess or Go. It searches through a [tree](Game_tree) of possible moves and countermoves, looking for a winning position.<ref>[Adversarial search](Adversarial_search): </ref>
+
+## Local search
+
+[class=skin-invert-image|thumb|upright=1.2|Illustration of \\[\\[gradient descent\\]\\] for three different starting points; two parameters (represented by the plan coordinates) are adjusted in order to minimize the \\[\\[loss function\\]\\] (the height).](File:Gradient_descent.gif)
+[Local search](Local_search_\\(optimization\\)) uses [mathematical optimization](mathematical_optimization) to find a solution to a problem. It begins with some form of guess and refines it incrementally.<ref>[Local](Local_search_\\(optimization\\)) or "[optimization](optimization)" search: </ref>
+
+[Gradient descent](Gradient_descent) is a type of local search that optimizes a set of numerical parameters by incrementally adjusting them to minimize a [loss function](loss_function). Variants of gradient descent are commonly used to train [neural networks](Artificial_neural_network),<ref></ref> through the [backpropagation](backpropagation) algorithm.
+
+Another type of local search is [evolutionary computation](evolutionary_computation), which aims to iteratively improve a set of candidate solutions by "mutating" and "recombining" them, [selecting](Artificial_selection) only the fittest to survive each generation.<ref>[Evolutionary computation](Evolutionary_computation): </ref>
+
+Distributed search processes can coordinate via [swarm intelligence](swarm_intelligence) algorithms. Two popular swarm algorithms used in search are [particle swarm optimization](particle_swarm_optimization) (inspired by bird [flocking](flocking)) and [ant colony optimization](ant_colony_optimization) (inspired by [ant trail](ant_trail)s).
+
+## Logic
+
+Formal [logic](logic) is used for [reasoning](automatic_reasoning) and [knowledge representation](knowledge_representation).<ref>[Logic](Logic): , , </ref>
+Formal logic comes in two main forms: [propositional logic](propositional_logic) (which operates on statements that are true or false and uses [logical connective](logical_connective)s such as "and", "or", "not" and "implies")<ref>[Propositional logic](Propositional_logic): , , </ref> and [predicate logic](predicate_logic) (which also operates on objects, predicates and relations and uses [quantifier](Quantifier_\\(logic\\))s such as "''Every'' ''X'' is a ''Y''" and "There are ''some'' ''X''s that are ''Y''s").<ref>[First-order logic](First-order_logic) and features such as [equality](Equality_\\(mathematics\\)): , , , </ref>
+
+[Deductive reasoning](Deductive_reasoning) in logic is the process of [proving](logical_proof) a new statement ([conclusion](Logical_consequence)) from other statements that are given and assumed to be true (the [premise](premise)s).<ref>[Logical inference](Logical_inference): </ref> Proofs can be structured as proof [trees](tree_structure), in which nodes are labelled by sentences, and children nodes are connected to parent nodes by [inference rule](inference_rule)s.
+
+Given a problem and a set of premises, problem-solving reduces to searching for a proof tree whose root node is labelled by a solution of the problem and whose [leaf nodes](leaf_nodes) are labelled by premises or [axiom](axiom)s. In the case of [Horn clause](Horn_clause)s, problem-solving search can be performed by reasoning [forwards](Forward_chaining) from the premises or [backwards](backward_chaining) from the problem.<ref>logical deduction as search: , , , </ref> In the more general case of the clausal form of [first-order logic](first-order_logic), [resolution](resolution_\\(logic\\)) is a single, axiom-free rule of inference, in which a problem is solved by proving a contradiction from premises that include the negation of the problem to be solved.<ref>[Resolution](Resolution_\\(logic\\)) and [unification](unification_\\(computer_science\\)): </ref>
+
+Inference in both Horn clause logic and first-order logic is [undecidable](Undecidable_problem), and therefore [intractable](Intractable_problem). However, backward reasoning with Horn clauses, which underpins computation in the [logic programming](logic_programming) language [Prolog](Prolog), is [Turing complete](Turing_complete). Moreover, its efficiency is competitive with computation in other [symbolic programming](symbolic_programming) languages.<ref></ref>
+
+[Fuzzy logic](Fuzzy_logic) assigns a "degree of truth" between 0 and 1. It can therefore handle propositions that are vague and partially true.<ref>Fuzzy logic: , </ref>
+
+[Non-monotonic logic](Non-monotonic_logic)s, including logic programming with [negation as failure](negation_as_failure), are designed to handle [default reasoning](default_reasoning).<ref name="Default reasoning" /> Other specialized versions of logic have been developed to describe many complex domains.
+
+## Probabilistic methods for uncertain reasoning
+
+[class=skin-invert-image|thumb|upright=1.4|A simple \\[\\[Bayesian network\\]\\], with the associated \\[\\[conditional probability table\\]\\]s](File:SimpleBayesNet.svg)
+Many problems in AI (including reasoning, planning, learning, perception, and robotics) require the agent to operate with incomplete or uncertain information. AI researchers have devised a number of tools to solve these problems using methods from [probability](probability) theory and economics.<ref name="Stoch">Stochastic methods for uncertain reasoning: , , , </ref> Precise mathematical tools have been developed that analyze how an agent can make choices and plan, using [decision theory](decision_theory), [decision analysis](decision_analysis),<ref>[decision theory](decision_theory) and [decision analysis](decision_analysis): , </ref> and [information value theory](information_value_theory).<ref>[Information value theory](Information_value_theory): </ref> These tools include models such as [Markov decision process](Markov_decision_process)es,<ref>[Markov decision process](Markov_decision_process)es and dynamic [decision network](decision_network)s: </ref> dynamic [decision network](decision_network)s,<ref name="Stochastic temporal models" /> [game theory](game_theory) and [mechanism design](mechanism_design).<ref>[Game theory](Game_theory) and [mechanism design](mechanism_design): </ref>
+
+[Bayesian network](Bayesian_network)s<ref>[Bayesian network](Bayesian_network)s: , , , </ref> are a tool that can be used for [reasoning](automated_reasoning) (using the [Bayesian inference](Bayesian_inference) algorithm),[conditionally independent](conditionally_independent) of one another. [AdSense](AdSense) uses a Bayesian network with over 300 million edges to learn which ads to serve.
+}}<ref>[Bayesian inference](Bayesian_inference) algorithm: , , , </ref> [learning](Machine_learning) (using the [expectation–maximization algorithm](expectation–maximization_algorithm)),<ref>[Bayesian learning](Bayesian_learning) and the [expectation–maximization algorithm](expectation–maximization_algorithm): , , , </ref> [planning](Automated_planning_and_scheduling) (using [decision network](decision_network)s)<ref>[Bayesian decision theory](Bayesian_decision_theory) and Bayesian [decision network](decision_network)s: </ref> and [perception](Machine_perception) (using [dynamic Bayesian network](dynamic_Bayesian_network)s).<ref name="Stochastic temporal models" />
+
+Probabilistic algorithms can also be used for filtering, prediction, smoothing, and finding explanations for streams of data, thus helping perception systems analyze processes that occur over time (e.g., [hidden Markov model](hidden_Markov_model)s or [Kalman filter](Kalman_filter)s).<ref name="Stochastic temporal models">Stochastic temporal models:&#x20;
+[Hidden Markov model](Hidden_Markov_model):&#x20;
+[Kalman filter](Kalman_filter)s:&#x20;
+[Dynamic Bayesian network](Dynamic_Bayesian_network)s: </ref>
+
+[thumb|upright=1.25|\\[\\[Expectation–maximization algorithm|Expectation–maximization\\]\\] \\[\\[cluster analysis|clustering\\]\\] of \\[\\[Old Faithful\\]\\] eruption data starts from a random guess but then successfully converges on an accurate clustering of the two physically distinct modes of eruption.](File:EM_Clustering_of_Old_Faithful_data.gif)
+
+## Classifiers and statistical learning methods
+
+The simplest AI applications can be divided into two types: classifiers (e.g., "if shiny then diamond"), on one hand, and controllers (e.g., "if diamond then pick up"), on the other hand. [Classifiers](Classifier_\\(mathematics\\))<ref>Statistical learning methods and [classifiers](Classifier_\\(mathematics\\)): ,</ref> are functions that use [pattern matching](pattern_matching) to determine the closest match. They can be fine-tuned based on chosen examples using [supervised learning](supervised_learning). Each pattern (also called an "[observation](random_variate)") is labeled with a certain predefined class. All the observations combined with their class labels are known as a [data set](data_set). When a new observation is received, that observation is classified based on previous experience.<ref name="Supervised learning" />
+
+There are many kinds of classifiers in use.<ref></ref> The [decision tree](decision_tree) is the simplest and most widely used symbolic machine learning algorithm.<ref>[Decision tree](Alternating_decision_tree)s: , </ref> [K-nearest neighbor](K-nearest_neighbor) algorithm was the most widely used analogical AI until the mid-1990s, and [Kernel methods](Kernel_methods) such as the [support vector machine](support_vector_machine) (SVM) displaced k-nearest neighbor in the 1990s.<ref>[Non-parameteric](Nonparametric_statistics) learning models such as [K-nearest neighbor](K-nearest_neighbor) and [support vector machines](support_vector_machines): ,  (k-nearest neighbor)
+\\* (kernel methods)</ref>
+The [naive Bayes classifier](naive_Bayes_classifier) is reportedly the "most widely used learner" at Google, due in part to its scalability.<ref>[Naive Bayes classifier](Naive_Bayes_classifier): , </ref>
+[Neural networks](Artificial_neural_network) are also used as classifiers.<ref name="Neural networks" />
+
+## Artificial neural networks
+
+[thumb|A neural network is an interconnected group of nodes, akin to the vast network of \\[\\[neuron\\]\\]s in the \\[\\[human brain\\]\\].](File:Artificial_neural_network.svg)
+
+An artificial neural network is based on a collection of nodes also known as [artificial neurons](artificial_neurons), which loosely model the [neurons](neurons) in a biological brain. It is trained to recognise patterns; once trained, it can recognise those patterns in fresh data. There is an input, at least one hidden layer of nodes and an output. Each node applies a function and once the [weight](Weighting) crosses its specified threshold, the data is transmitted to the next layer. A network is typically called a deep neural network if it has at least 2 hidden layers.<ref name="Neural networks">Neural networks: , </ref>
+
+Learning algorithms for neural networks use [local search](local_search_\\(optimization\\)) to choose the weights that will get the right output for each input during training. The most common training technique is the [backpropagation](backpropagation) algorithm.<ref>Gradient calculation in computational graphs, [backpropagation](backpropagation), [automatic differentiation](automatic_differentiation): , , </ref> Neural networks learn to model complex relationships between inputs and outputs and [find patterns](Pattern_recognition) in data. In theory, a neural network can learn any function.<ref>[Universal approximation theorem](Universal_approximation_theorem):&#x20;
+The theorem: , </ref>
+
+In [feedforward neural network](feedforward_neural_network)s the signal passes in only one direction.<ref>[Feedforward neural network](Feedforward_neural_network)s: </ref> The term [perceptron](perceptron) typically refers to a single-layer neural network.<ref>[Perceptron](Perceptron)s: </ref> In contrast, deep learning uses many layers.<ref name="Deep learning">[Deep learning](Deep_learning): , , , </ref> [Recurrent neural network](Recurrent_neural_network)s (RNNs) feed the output signal back into the input, which allows short-term memories of previous input events. [Long short-term memory](Long_short-term_memory) networks (LSTMs) are recurrent neural networks that better preserve longterm dependencies and are less sensitive to the [vanishing gradient problem](vanishing_gradient_problem).<ref>[Recurrent neural network](Recurrent_neural_network)s: </ref> [Convolutional neural network](Convolutional_neural_network)s (CNNs) use layers of [kernels](Kernel_\\(image_processing\\)) to more efficiently process local patterns. This local processing is especially important in [image processing](image_processing), where the early CNN layers typically identify simple local patterns such as edges and curves, with subsequent layers detecting more complex patterns like textures, and eventually whole objects.<ref>[Convolutional neural networks](Convolutional_neural_networks): </ref>
+
+## Deep learning
+
+[thumb|upright=0.85|\\[\\[Deep learning\\]\\] is a subset of \\[\\[machine learning\\]\\], which is itself a subset of artificial intelligence.\\<ref name="journalimcms.org">\\</ref>](File:AI-ML-DL.svg)
+[Deep learning](Deep_learning) uses several layers of neurons between the network's inputs and outputs.<ref name="Deep learning" /> The multiple layers can progressively extract higher-level features from the raw input. For example, in [image processing](image_processing), lower layers may identify edges, while higher layers may identify the concepts relevant to a human such as digits, letters, or faces.
+
+Deep learning has profoundly improved the performance of programs in many important subfields of artificial intelligence, including [computer vision](computer_vision), [speech recognition](speech_recognition), [natural language processing](natural_language_processing), [image classification](image_classification), and others. The reason that deep learning performs so well in so many applications is not known as of 2021. The sudden success of deep learning in 2012–2015 did not occur because of some new discovery or theoretical breakthrough (deep neural networks and backpropagation had been described by many people, as far back as the 1950s)[Warren S. McCulloch](Warren_S._McCulloch) and [Walter Pitts](Walter_Pitts) (1943);
+[Alan Turing](Alan_Turing) (1948);
+[Karl Steinbuch](Karl_Steinbuch) and [Roger David Joseph](Roger_David_Joseph) (1961).
+Deep or recurrent networks that learned (or used gradient descent) were developed by:
+[Frank Rosenblatt](Frank_Rosenblatt) (1957);
+[Oliver Selfridge](Oliver_Selfridge) (1959);
+[Alexey Ivakhnenko](Alexey_Ivakhnenko) and [Valentin Lapa](Valentin_Lapa) (1965);
+[Kaoru Nakano](Kaoru_Nakano) (1971);
+[Shun-Ichi Amari](Shun-Ichi_Amari) (1972);  and [John Joseph Hopfield](John_Joseph_Hopfield) (1982).
+Precursors to backpropagation were developed by:
+[Henry J. Kelley](Henry_J._Kelley) (1960);
+[Arthur E. Bryson](Arthur_E._Bryson) (1962);
+[Stuart Dreyfus](Stuart_Dreyfus) (1962);
+[Arthur E. Bryson](Arthur_E._Bryson) and [Yu-Chi Ho](Yu-Chi_Ho) (1969).
+Backpropagation was independently developed by:
+[Seppo Linnainmaa](Seppo_Linnainmaa) (1970); and [Paul Werbos](Paul_Werbos) (1974).
+}} but because of two factors: the incredible increase in computer power (including the hundred-fold increase in speed by switching to [GPU](GPU)s) and the availability of vast amounts of training data, especially the giant [curated datasets](List_of_datasets_for_machine-learning_research) used for benchmark testing, such as [ImageNet](ImageNet).
+
+\\===GPT===
+[Generative pre-trained transformer](Generative_pre-trained_transformer)s (GPT) are [large language model](large_language_model)s (LLMs) that generate text based on the semantic relationships between words in sentences. Text-based GPT models are pre-trained on a large [corpus of text](corpus_of_text) that can be from the Internet. The pretraining consists of predicting the next [token](Lexical_analysis) (a token being usually a word, subword, or punctuation). Throughout this pretraining, GPT models accumulate knowledge about the world and can then generate human-like text by repeatedly predicting the next token. Typically, a subsequent training phase makes the model more truthful, useful, and harmless, usually with a technique called [reinforcement learning from human feedback](reinforcement_learning_from_human_feedback) (RLHF). Current GPT models are prone to generating falsehoods called "[hallucinations](Hallucination_\\(artificial_intelligence\\))". These can be reduced with RLHF and quality data, but the problem has been getting worse for reasoning systems.<ref></ref> Such systems are used in [chatbot](chatbot)s, which allow people to ask a question or request a task in simple text.<ref></ref>
+
+Current models and services include [ChatGPT](ChatGPT), [Claude](Claude_AI), [Gemini](Gemini_\\(chatbot\\)), [Copilot](Microsoft_Copilot), and [Meta AI](Meta_AI).<ref></ref> [Multimodal](Multimodal_learning) GPT models can process different types of data ([modalities](Modality_\\(human–computer_interaction\\))) such as images, videos, sound, and text.
+
+\\===Hardware and software===
+
+
+[thumb|Raspberry Pi AI Kit](File:Raspberry_Pi_AI_Kit_for_Raspberry_Pi_5_complete_Kit_07.jpg)
+In the late 2010s, [graphics processing unit](graphics_processing_unit)s (GPUs) that were increasingly designed with AI-specific enhancements and used with specialized [TensorFlow](TensorFlow) software had replaced previously used [central processing unit](central_processing_unit) (CPUs) as the dominant means for large-scale (commercial and academic) [machine learning](machine_learning) models' training. Specialized [programming language](programming_language)s such as [Prolog](Prolog) were used in early AI research,<ref></ref> but [general-purpose programming language](general-purpose_programming_language)s like [Python](Python_\\(programming_language\\)) have become predominant.<ref></ref>
+
+The transistor density in [integrated circuit](integrated_circuit)s has been observed to roughly double every 18 months—a trend known as [Moore's law](Moore's_law), named after the [Intel](Intel) co-founder [Gordon Moore](Gordon_Moore), who first identified it. Improvements in [GPUs](GPUs) have been even faster,<ref></ref> a trend sometimes called [Huang's law](Huang's_law),<ref></ref> named after [Nvidia](Nvidia) co-founder and CEO [Jensen Huang](Jensen_Huang).
+
+## Applications
+
+[thumb|\\[\\[AI Overviews\\]\\], an example of AI use on search engines](File:AI_Overviews_result_for_What_is_Wikipedia,_2_March_2026.png)
+AI and machine learning technology is used in most of the essential applications of the 2020s, including:
+
+* [search engines](search_engines) (such as [Google Search](Google_Search))
+* [targeting online advertisements](Targeted_advertising)
+* [recommendation systems](recommendation_systems) (offered by [Netflix](Netflix), [YouTube](YouTube) or [Amazon](Amazon_\\(company\\))) driving [internet traffic](internet_traffic)
+* [targeted advertising](Marketing_and_artificial_intelligence) ([AdSense](AdSense), [Facebook](Facebook))
+* [virtual assistant](virtual_assistant)s (such as [Siri](Siri) or [Alexa](Amazon_Alexa))
+* [autonomous vehicles](autonomous_vehicles) (including [drones](Unmanned_aerial_vehicle), [ADAS](Advanced_driver-assistance_system) and [self-driving cars](self-driving_cars))
+* [automatic language translation](automatic_language_translation) ([Microsoft Translator](Microsoft_Translator), [Google Translate](Google_Translate))
+* [facial recognition](Facial_recognition_system) ([Apple](Apple_Computer)'s [FaceID](FaceID) or [Microsoft](Microsoft)'s [DeepFace](DeepFace) and [Google](Google)'s [FaceNet](FaceNet))
+* [image labeling](image_labeling) (used by Facebook, Apple's [Photos](Photos_\\(Apple\\)) and [TikTok](TikTok)).
+
+\\===Health and medicine===
+
+
+It has been suggested that AI can overcome discrepancies in funding allocated to different fields of research.<ref></ref>
+
+[AlphaFold 2](AlphaFold_2) (2021) demonstrated the ability to approximate, in hours rather than months, the 3D [structure of a protein](Protein_structure).<ref></ref> In 2023, it was reported that AI-guided drug discovery helped find a class of antibiotics capable of killing two different types of drug-resistant bacteria.<ref></ref> In 2024, researchers used machine learning to accelerate the search for [Parkinson's disease](Parkinson's_disease) drug treatments. Their aim was to identify compounds that block the clumping, or aggregation, of [alpha-synuclein](alpha-synuclein) (the protein that characterises Parkinson's disease). They were able to speed up the initial screening process ten-fold and reduce the cost by a thousand-fold.<ref></ref><ref></ref>
+
+## Gaming
+
+[Game playing](Game_AI) programs have been used since the 1950s to demonstrate and test AI's most advanced techniques.<ref></ref> [Deep Blue](IBM_Deep_Blue) became the first computer chess-playing system to beat a reigning world chess champion, [Garry Kasparov](Garry_Kasparov), on 11 May 1997.<ref></ref> In 2011, in a ''[Jeopardy!](Jeopardy!)'' [quiz show](quiz_show) exhibition match, [IBM](IBM)'s [question answering system](question_answering_system), [Watson](Watson_\\(artificial_intelligence_software\\)), defeated the two greatest ''Jeopardy!'' champions, [Brad Rutter](Brad_Rutter) and [Ken Jennings](Ken_Jennings), by a significant margin.<ref></ref> In March 2016, [AlphaGo](AlphaGo) won 4 out of 5 games of [Go](Go_\\(game\\)) in a match with Go champion [Lee Sedol](Lee_Sedol), becoming the first [computer Go](computer_Go)-playing system to beat a professional Go player without [handicaps](Go_handicaps). Then, in 2017, it [defeated Ke Jie](AlphaGo_versus_Ke_Jie), who was the best Go player in the world.<ref></ref> Other programs handle [imperfect-information](Imperfect_information) games, such as the [poker](poker)-playing program [Pluribus](Pluribus_\\(poker_bot\\)).<ref></ref> [DeepMind](DeepMind) developed increasingly generalistic [reinforcement learning](reinforcement_learning) models, such as with [MuZero](MuZero), which could be trained to play chess, Go, or [Atari](Atari) games.<ref></ref> In 2019, DeepMind's AlphaStar achieved grandmaster level in [StarCraft II](StarCraft_II), a particularly challenging real-time strategy game that involves incomplete knowledge of what happens on the map.<ref></ref> In 2021, an AI agent competed in a PlayStation [Gran Turismo](Gran_Turismo_\\(series\\)) competition, winning against four of the world's best Gran Turismo drivers using deep reinforcement learning.<ref></ref> In 2024, Google DeepMind introduced SIMA, a type of AI capable of autonomously playing nine previously unseen [open-world](open-world) video games by observing screen output, as well as executing short, specific tasks in response to natural language instructions.<ref></ref>
+
+## Mathematics
+
+In mathematics, probabilistic large language models are versatile, but can also produce wrong answers in the form of [hallucinations](Hallucination_\\(artificial_intelligence\\)). The [Alibaba Group](Alibaba_Group) developed a version of its ''[Qwen](Qwen)'' models called ''Qwen2-Math'', that achieved state-of-the-art performance on several mathematical benchmarks, including 84% accuracy on the MATH dataset of competition mathematics problems.<ref name="VentureBeat 8 August 2024"></ref> In January 2025, Microsoft proposed the technique ''rStar-Math'' that leverages [Monte Carlo tree search](Monte_Carlo_tree_search) and step-by-step reasoning, enabling a relatively small language model like ''Qwen-7B'' to solve 53% of the [AIME](American_Invitational_Mathematics_Examination) 2024 and 90% of the MATH benchmark problems.<ref></ref> [Google DeepMind](Google_DeepMind) has developed models for solving mathematical problems: ''AlphaTensor'', ''[AlphaGeometry](AlphaGeometry)'', ''AlphaProof'' and ''[AlphaEvolve](AlphaEvolve).''<ref></ref><ref></ref>
+
+[Topological deep learning](Topological_deep_learning) integrates various [topological](topological) approaches.
+
+## Finance
+
+According to Nicolas Firzli, director of the [World Pensions & Investments Forum](World_Pensions_&_Investments_Forum), it may be too early to see the emergence of highly innovative AI-informed financial products and services. He argues that "the deployment of AI tools will simply further automatise things: destroying tens of thousands of jobs in banking, financial planning, and pension advice in the process, but I'm not sure it will unleash a new wave of [\\[e.g., sophisticated\\]](\\[e.g.,_sophisticated]) pension innovation."<ref>M. Nicolas, J. Firzli: Pensions Age / European Pensions magazine, "Artificial Intelligence: Ask the Industry", May–June 2024. <https://videovoice.org/ai-in-finance-innovation-entrepreneurship-vs-over-regulation-with-the-eus-artificial-intelligence-act-wont-work-as-intended/> .</ref>
+
+## Military
+
+Various countries are deploying AI military applications.<ref name="CRS-2019">[PD-notice](Template:PD-notice)</ref> The main applications enhance [command and control](command_and_control), communications, sensors, integration and interoperability.<ref name="Slyusar-2019"></ref> Research is targeting intelligence collection and analysis, logistics, cyber operations, information operations, and semiautonomous and [autonomous vehicles](Vehicular_automation).<ref name="CRS-2019" /> AI technologies enable coordination of sensors and effectors, threat detection and identification, marking of enemy positions, [target acquisition](target_acquisition), coordination and deconfliction of distributed [Joint Fires](Forward_observers_in_the_U.S._military) between networked combat vehicles, both human-operated and autonomous.<ref name="Slyusar-2019" />
+
+AI has been used in military operations in Iraq, Syria, Israel and Ukraine.<ref name="CRS-2019" /><ref></ref><ref name="Davies-2023"></ref><ref></ref>
+
+## Generative AI
+
+\\===Agents===
+
+
+
+\\===Web search===
+[Microsoft](Microsoft) introduced [Copilot Search](Microsoft_Copilot) in February 2023 under the name [Bing Chat](Bing_Chat). Copilot Search provides AI-generated summaries.<ref></ref>
+
+Google introduced an [AI Mode](AI_Mode) at its Google I/O event on 20 May 2025.<ref></ref>
+
+## Sexuality
+
+AI technologies have also been used to attempt to identify [online gender-based violence](online_gender-based_violence) and online [sexual grooming](sexual_grooming) of minors.<ref></ref><ref></ref>
+
+\\===Other industry-specific tasks===
+In a 2017 survey, one in five companies reported having incorporated "AI" in some offerings or processes.<ref></ref>
+
+In the field of evacuation and [disaster](disaster) management, AI has been used to investigate patterns in large-scale and small-scale evacuations using historical data from GPS, videos or social media.<ref></ref><ref></ref><ref></ref>
+
+During the [2024 Indian elections](2024_Indian_general_election), US$50 million was spent on authorized AI-generated content, notably by creating [deepfake](deepfake)s of allied (including sometimes deceased) politicians to better engage with voters, and by translating speeches to various local languages.<ref></ref>
+
+\\==Ethics==
+
+
+[thumb|\\[\\[Street art in Tel Aviv\\]\\]\\<ref>\\</ref>\\<ref>\\</ref>](File:ChatGPT_street_art_in_Tel_Aviv.jpg)
+AI has potential benefits and potential risks.<ref></ref> AI may be able to advance science and find solutions for serious problems: [Demis Hassabis](Demis_Hassabis) of [DeepMind](DeepMind) hopes to "solve intelligence, and then use that to solve everything else". However, as the use of AI has become widespread, several unintended consequences and risks have been identified.<ref></ref> In-production systems can sometimes not factor ethics and bias into their AI training processes, especially when the AI algorithms are inherently unexplainable in deep learning.
+
+## Risks and harm
+
+## Privacy and copyright
+
+Machine learning algorithms require large amounts of data. The techniques used to acquire this data have raised concerns about [privacy](privacy), [surveillance](surveillance) and [copyright](copyright).
+
+AI-powered devices and services, such as virtual assistants and IoT products, continuously collect personal information, raising concerns about intrusive data gathering and unauthorized access by third parties. The loss of privacy is further exacerbated by AI's ability to process and combine vast amounts of data, potentially leading to a surveillance society where individual activities are constantly monitored and analyzed without adequate safeguards or transparency.
+
+Sensitive user data collected may include online activity records, geolocation data, video, or audio. For example, in order to build [speech recognition](speech_recognition) algorithms, [Amazon](Amazon_\\(company\\)) has recorded millions of private conversations and allowed [temporary worker](temporary_worker)s to listen to and transcribe some of them. Opinions about this widespread surveillance range from those who see it as a [necessary evil](necessary_evil) to those for whom it is clearly [unethical](unethical) and a violation of the [right to privacy](right_to_privacy).
+
+AI developers argue that this is the only way to deliver valuable applications and have developed several techniques that attempt to preserve privacy while still obtaining the data, such as [data aggregation](data_aggregation), [de-identification](de-identification) and [differential privacy](differential_privacy). Since 2016, some privacy experts, such as [Cynthia Dwork](Cynthia_Dwork), have begun to view privacy in terms of [fairness](fairness_\\(machine_learning\\)). [Brian Christian](Brian_Christian) wrote that experts have pivoted "from the question of 'what they know' to the question of 'what they're doing with it'."
+
+Generative AI is often trained on unlicensed copyrighted works, including in domains such as images or computer code; the output is then used under the rationale of "[fair use](fair_use)". Experts disagree about how well and under what circumstances this rationale will hold up in courts of law; relevant factors may include "the purpose and character of the use of the copyrighted work" and "the effect upon the potential market for the copyrighted work".<ref></ref> Website owners can indicate that they do not want their content scraped via a "[robots.txt](robots.txt)" file.<ref></ref> However, some companies will scrape content regardless<ref></ref><ref></ref> because the robots.txt file has no real authority. In 2023, leading authors (including [John Grisham](John_Grisham) and [Jonathan Franzen](Jonathan_Franzen)) sued AI companies for using their work to train generative AI. Another discussed approach is to envision a separate ''[sui generis](sui_generis)'' system of protection for creations generated by AI to ensure fair attribution and compensation for human authors.<ref></ref>
+
+\\====Dominance by tech giants====
+The commercial AI scene is dominated by [Big Tech](Big_Tech) companies such as [Alphabet Inc.](Alphabet_Inc.), [Amazon](Amazon_\\(company\\)), [Apple Inc.](Apple_Inc.), [Meta Platforms](Meta_Platforms), and [Microsoft](Microsoft).<ref></ref><ref></ref><ref></ref> Some of these players already own the vast majority of existing [cloud infrastructure](cloud_computing) and [computing](computing) power from [data center](data_center)s, allowing them to entrench further in the marketplace.<ref></ref><ref></ref>
+
+Technology companies have built electricity and artificial intelligence infrastructure to facilitate the AI boom of the 2020s. A 2025 report from the consulting firm [McKinsey & Company](McKinsey_&_Company) estimated that by 2030, $2.7 trillion would be invested into AI infrastructure and data centers in the US, surpassing World War II's [Manhattan Project](Manhattan_Project) every month.<ref></ref>
+
+In January 2024, the [International Energy Agency](International_Energy_Agency) (IEA) released ''Electricity 2024, Analysis and Forecast to 2026''.<ref></ref> This is the first IEA report to make projections for data centers and power consumption by AI and cryptocurrency. The report states that power demand for these uses might double by 2026, with the additional power consumption equaling that of Japan.<ref></ref>
+
+Power consumption by AI is responsible for an increase in fossil fuel use, and has delayed closings of obsolete, carbon-emitting coal energy facilities. A ChatGPT search involves the use of 10 times the electrical energy as a Google search.<ref></ref>
+
+A 2024 [Goldman Sachs](Goldman_Sachs) Research Paper, ''AI Data Centers and the Coming US Power Demand Surge'', found "US power demand (is) likely to experience growth not seen in a generation...." and forecasts that, by 2030, US data centers will consume 8% of US power, as opposed to 3% in 2022, presaging growth for the electrical power generation industry by a variety of means.<ref></ref> Data centers' need for more and more electrical power is such that they might max out the electrical grid. The Big Tech companies counter that AI can be used to maximize the utilization of the grid by all.<ref></ref>
+
+In 2024, ''The Wall Street Journal'' reported that big AI companies have begun negotiations with the US nuclear power providers to provide electricity to the data centers. In March 2024 Amazon purchased a Pennsylvania nuclear-powered data center for US$650 million.<ref></ref>
+
+In September 2024, [Microsoft](Microsoft) announced an agreement with [Constellation Energy](Constellation_Energy) to re-open the [Three Mile Island](Three_Mile_Island) nuclear power plant to provide Microsoft with 100% of all electric power produced by the plant for 20 years. Reopening the plant, which suffered a partial nuclear meltdown of its Unit 2 reactor in 1979, will require Constellation to get through strict regulatory processes which will include extensive safety scrutiny from the US [Nuclear Regulatory Commission](Nuclear_Regulatory_Commission). If approved (this will be the first ever US re-commissioning of a nuclear plant), over 835 megawatts of power – enough for 800,000 homes – of energy will be produced. The cost for re-opening and upgrading is estimated at US$1.6 billion and is dependent on tax breaks for nuclear power contained in the 2022 US [Inflation Reduction Act](Inflation_Reduction_Act).<ref></ref> As of 2024, the US government and the state of Michigan have been investing almost US$2 billion to reopen the [Palisades Nuclear](Palisades_Nuclear_Generating_Station) reactor on Lake Michigan. Closed since 2022, the plant was planned to be reopened in October 2025.<ref></ref>
+
+After the last approval in September 2023, [Taiwan](Taiwan) suspended the approval of data centers north of [Taoyuan](Taoyuan,_Taiwan) with a capacity of more than 5 MW in 2024, due to power supply shortages.<ref name="DatacenterDynamics"></ref> Taiwan aims to [phase out nuclear power](Nuclear_power_phase-out) by 2025.<ref name="DatacenterDynamics" />
+
+[Singapore](Singapore) imposed a ban on the opening of data centers in 2019 due to electric power, but in 2022, lifted this ban.<ref name="DatacenterDynamics" />
+
+Although most nuclear plants in Japan have been shut down after the 2011 [Fukushima nuclear accident](Fukushima_nuclear_accident), according to an October 2024 ''Bloomberg'' article in Japanese, cloud gaming services company Ubitus, in which Nvidia has a stake, is looking for land in Japan near a nuclear power plant for a new data center for generative AI.<ref name=bloombergjp></ref>
+
+On 1 November 2024, the [Federal Energy Regulatory Commission](Federal_Energy_Regulatory_Commission) (FERC) rejected an application submitted by [Talen Energy](Talen_Energy) for approval to supply some electricity from the nuclear power station [Susquehanna](Susquehanna_Steam_Electric_Station) to Amazon's data center.<ref name="Bloomberg20241104"></ref>
+According to the Commission Chairman [Willie L. Phillips](Willie_L._Phillips), it is a burden on the electricity grid as well as a significant cost shifting concern to households and other business sectors.<ref name="Bloomberg20241104" />
+
+In 2025, a report prepared by the IEA estimated the [greenhouse gas emissions](greenhouse_gas_emissions) from the energy consumption of AI at 180 million tons. By 2035, these emissions could rise to 300–500 million tonnes depending on what measures will be taken. This is below 1.5% of the energy sector emissions. The emissions reduction potential of AI was estimated at 5% of the energy sector emissions, but [rebound effects](Rebound_effect_\\(conservation\\)) (for example if people switch from public transport to autonomous cars) can reduce it.<ref></ref>
+
+## Misinformation
+
+
+[YouTube](YouTube), [Facebook](Facebook) and others use [recommender system](recommender_system)s to guide users to more content. These AI programs were given the goal of [maximizing](mathematical_optimization) user engagement (that is, the only goal was to keep people watching). The AI learned that users tended to choose [misinformation](misinformation), [conspiracy theories](conspiracy_theories), and extreme [partisan](partisan_\\(politics\\)) content, and, to keep them watching, the AI recommended more of it. Users also tended to watch more content on the same subject, so the AI led people into [filter bubbles](filter_bubbles) where they received multiple versions of the same misinformation. This convinced many users that the misinformation was true, and ultimately undermined trust in institutions, the media and the government.<ref></ref> The AI program had correctly learned to maximize its goal, but the result was harmful to society. After the U.S. election in 2016, major technology companies took some steps to mitigate the problem.<ref></ref>
+
+In the early 2020s, [generative AI](generative_AI) began to create images, audio, and texts that are virtually indistinguishable from real photographs, recordings, or human writing,<ref></ref> while realistic AI-generated videos became feasible in the mid-2020s.<ref></ref><ref></ref><ref></ref> It is possible for bad actors to use this technology to create massive amounts of misinformation or propaganda; one such potential malicious use is deepfakes for [computational propaganda](computational_propaganda).<ref></ref> AI pioneer and Nobel Prize-winning computer scientist [Geoffrey Hinton](Geoffrey_Hinton) expressed concern about AI enabling "authoritarian leaders to manipulate their electorates" on a large scale, among other risks. The ability to influence electorates has been proved in at least one study. This same study shows more inaccurate statements from the models when they advocate for candidates of the political right.<ref></ref>
+
+AI researchers at [Microsoft](Microsoft), [OpenAI](OpenAI), universities and other organisations have suggested using "[personhood credentials](Proof_of_personhood#Approaches)" as a way to overcome online deception enabled by AI models.<ref></ref>
+
+\\====Algorithmic bias and fairness====
+
+
+Machine learning applications can be [biased](algorithmic_bias) if they learn from biased data. The developers may not be aware that the bias exists. Discriminatory behavior by some LLMs can be observed in their output.<ref></ref> Bias can be introduced by the way [training data](training_data) is selected and by the way a model is deployed. If a biased algorithm is used to make decisions that can seriously [harm](harm) people (as it can in [medicine](health_equity), [finance](credit_rating), [recruitment](recruitment), [housing](public_housing) or [policing](policing)) then the algorithm may cause [discrimination](discrimination).<ref>; ; ; </ref> The field of [fairness](fairness_\\(machine_learning\\)) studies how to prevent harms from algorithmic biases.
+
+On 28 June 2015, [Google Photos](Google_Photos)'s new image labeling feature mistakenly identified Jacky Alcine and a friend as "gorillas" because they were black. The system was trained on a dataset that contained very few images of black people, a problem called "sample size disparity". Google "fixed" this problem by preventing the system from labelling ''anything'' as a "gorilla". Eight years later, in 2023, Google Photos still could not identify a gorilla, and neither could similar products from Apple, Facebook, Microsoft and Amazon.
+
+[COMPAS](COMPAS_\\(software\\)) is a commercial program widely used by [U.S. court](U.S._court)s to assess the likelihood of a [defendant](defendant) becoming a [recidivist](recidivist). In 2016, [Julia Angwin](Julia_Angwin) at [ProPublica](ProPublica) discovered that COMPAS exhibited racial bias, despite the fact that the program was not told the races of the defendants. Although the error rate for both whites and blacks was calibrated equal at exactly 61%, the errors for each race were different—the system consistently overestimated the chance that a black person would re-offend and would underestimate the chance that a white person would not re-offend. In 2017, several researchers showed that it was mathematically impossible for COMPAS to accommodate all possible measures of fairness when the base rates of re-offense were different for whites and blacks in the data.<ref>; </ref>
+
+A program can make biased decisions even if the data does not explicitly mention a problematic feature (such as "race" or "gender"). The feature will correlate with other features (like "address", "shopping history" or "first name"), and the program will make the same decisions based on these features as it would on "race" or "gender".<ref>; ; ; </ref> Moritz Hardt said "the most robust fact in this research area is that fairness through blindness doesn't work."<ref>Quoted in .</ref>
+
+Criticism of COMPAS highlighted that machine learning models are designed to make "predictions" that are only valid if we assume that the future will resemble the past. If they are trained on data that includes the results of racist decisions in the past, machine learning models must predict that racist decisions will be made in the future. If an application then uses these predictions as ''recommendations'', some of these "recommendations" will likely be racist.<ref>; </ref> Thus, machine learning is not well suited to help make decisions in areas where there is hope that the future will be ''better'' than the past. It is descriptive rather than prescriptive.
+
+Bias and unfairness may go undetected because the developers are overwhelmingly white and male: among AI engineers, about 4% are black and 20% are women.
+
+There are various conflicting definitions and mathematical models of fairness. These notions depend on ethical assumptions, and are influenced by beliefs about society. One broad category is [distributive fairness](Distributive_justice), which focuses on the outcomes, often identifying groups and seeking to compensate for statistical disparities. Representational fairness tries to ensure that AI systems do not reinforce negative [stereotype](stereotype)s or render certain groups invisible. Procedural fairness focuses on the decision process rather than the outcome. The most relevant notions of fairness may depend on the context, notably the type of AI application and the stakeholders. The subjectivity in the notions of bias and fairness makes it difficult for companies to operationalize them. Having access to sensitive attributes such as race or gender is also considered by many AI ethicists to be necessary in order to compensate for biases, but it may conflict with [anti-discrimination law](anti-discrimination_law)s.<ref name="Samuel-2022"></ref>
+
+At the 2022 [ACM Conference on Fairness, Accountability, and Transparency](ACM_Conference_on_Fairness,_Accountability,_and_Transparency) a paper reported that a CLIP‑based ([Contrastive Language-Image Pre-training](Contrastive_Language-Image_Pre-training)) robotic system reproduced harmful gender‑ and race‑linked stereotypes in a simulated manipulation task. The authors recommended robot‑learning methods which physically manifest such harms be "paused, reworked, or even wound down when appropriate, until outcomes can be proven safe, effective, and just."<ref></ref><ref>For accessible summaries, see the Georgia Tech release and ScienceDaily coverage of the study's findings.</ref><ref></ref>
+
+## Lack of transparency
+
+
+Many AI systems are so complex that their designers cannot explain how they reach their decisions. Particularly with [deep neural networks](deep_neural_networks), in which there are many non-[linear](linear) relationships between inputs and outputs. But some popular explainability techniques exist.<ref></ref>
+
+It is impossible to be certain that a program is operating correctly if no one knows how exactly it works. There have been many cases where a machine learning program passed rigorous tests, but nevertheless learned something different than what the programmers intended. For example, a system that could identify skin diseases better than medical professionals was found to actually have a strong tendency to classify images with a [ruler](ruler) as "cancerous", because pictures of malignancies typically include a ruler to show the scale. Another machine learning system designed to help effectively allocate medical resources was found to classify patients with asthma as being at "low risk" of dying from pneumonia. Having asthma is actually a severe risk factor, but since the patients having asthma would usually get much more medical care, they were relatively unlikely to die according to the training data. The correlation between asthma and low risk of dying from pneumonia was real, but misleading.
+
+People who have been harmed by an algorithm's decision have a right to an explanation.<ref>; </ref> Doctors, for example, are expected to clearly and completely explain to their colleagues the reasoning behind any decision they make. Early drafts of the European Union's [General Data Protection Regulation](General_Data_Protection_Regulation) in 2016 included an explicit statement that this right exists. Industry experts noted that this is an unsolved problem with no solution in sight. Regulators argued that nevertheless the harm is real: if the problem has no solution, the tools should not be used.
+
+[DARPA](DARPA) established the [XAI](Explainable_Artificial_Intelligence) ("Explainable Artificial Intelligence") program in 2014 to try to solve these problems.
+
+Several approaches aim to address the transparency problem. SHAP enables to visualise the contribution of each feature to the output. LIME can locally approximate a model's outputs with a simpler, interpretable model. [Multitask learning](Multitask_learning) provides a large number of outputs in addition to the target classification. These other outputs can help developers deduce what the network has learned. [Deconvolution](Deconvolution), [DeepDream](DeepDream) and other [generative](generative_AI) methods can allow developers to see what different layers of a deep network for computer vision have learned, and produce output that can suggest what the network is learning. For [generative pre-trained transformer](generative_pre-trained_transformer)s, [Anthropic](Anthropic) developed a technique based on [dictionary learning](dictionary_learning) that associates patterns of neuron activations with human-understandable concepts.<ref></ref>
+
+## Bad actors and weaponized AI
+
+Artificial intelligence provides a number of tools that are useful to [bad actor](bad_actor)s, such as [authoritarian governments](authoritarian), [terrorist](terrorist)s, [criminals](criminals) or [rogue states](rogue_states).
+
+A lethal autonomous weapon is a machine that locates, selects and engages human targets without human supervision. Widely available AI tools can be used by bad actors to develop inexpensive autonomous weapons and, if produced at scale, they are potentially [weapons of mass destruction](weapons_of_mass_destruction). Even when used in conventional warfare, they currently cannot reliably choose targets and could potentially [kill an innocent person](murder). In 2014, 30 nations (including China) supported a ban on autonomous weapons under the [United Nations](United_Nations)' [Convention on Certain Conventional Weapons](Convention_on_Certain_Conventional_Weapons), however the [United States](United_States) and others disagreed. By 2015, over fifty countries were reported to be researching battlefield robots.<ref>; </ref>
+
+AI tools make it easier for authoritarian governments to efficiently control their citizens in several ways. [Face](Facial_recognition_system) and [voice recognition](Speaker_recognition) allow widespread [surveillance](surveillance). [Machine learning](Machine_learning), operating this data, can [classify](classifier_\\(machine_learning\\)) potential enemies of the state and prevent them from hiding. [Recommendation systems](Recommendation_systems) can precisely target [propaganda](propaganda) and [misinformation](misinformation) for maximum effect. [Deepfakes](Deepfakes) and [generative AI](generative_AI) aid in producing misinformation. Advanced AI can make authoritarian [centralized decision-making](technocracy) more competitive than liberal and decentralized systems such as [market](market_\\(economics\\))s. It lowers the cost and difficulty of [digital warfare](digital_warfare) and [advanced spyware](spyware). All these technologies have been available since 2020 or earlier—AI [facial recognition system](facial_recognition_system)s are already being used for [mass surveillance](mass_surveillance) in China.<ref></ref><ref></ref>
+
+There are many other ways in which AI is expected to help bad actors, some of which can not be foreseen. For example, machine-learning AI is able to design tens of thousands of toxic molecules in a matter of hours.
+
+## Technological unemployment
+
+Economists have frequently highlighted the risks of redundancies from AI, and speculated about unemployment if there is no adequate social policy for full employment.
+
+In the past, technology has tended to increase rather than reduce total employment, but economists acknowledge that "we're in uncharted territory" with AI.<ref>;</ref> A survey of economists showed disagreement about whether the increasing use of robots and AI will cause a substantial increase in long-term [unemployment](unemployment), but they generally agree that it could be a net benefit if [productivity](productivity) gains are [redistributed](Redistribution_of_income_and_wealth). Risk estimates vary; for example, in the 2010s, Michael Osborne and [Carl Benedikt Frey](Carl_Benedikt_Frey) estimated 47% of U.S. jobs are at "high risk" of potential automation, while an OECD report classified only 9% of U.S. jobs as "high risk".<ref>; ; </ref> The methodology of speculating about future employment levels has been criticised as lacking evidential foundation, and for implying that technology, rather than social policy, creates unemployment, as opposed to redundancies. In April 2023, it was reported that 70% of the jobs for Chinese video game illustrators had been eliminated by generative artificial intelligence.<ref></ref><ref></ref> Early-career workers showed decreasing [employment rate](employment_rate)s in some AI-exposed occupations.<ref name="o861"></ref>
+
+From the early days of the development of artificial intelligence, there have been arguments, for example, those put forward by [Joseph Weizenbaum](Joseph_Weizenbaum), about whether tasks that can be done by computers actually should be done by them, given the difference between computers and humans, and between quantitative calculation and qualitative, value-based judgement.<ref></ref>
+
+## Substitution for human–human interaction
+
+
+With the increase of [loneliness](loneliness#increasing_prevalence) in the early 21st century, AI is sometimes identified as a potential source of relief to this problem. It would be possible, via [human-like qualities built into AI products](AI_anthropomorphism#Current_anthropomorphic_attributions),<ref name="Anthropomorphism"></ref> for individuals to assume that this need can be met by artificial means.<ref name="ReevesNass1996"></ref><ref name="NassMoon2000"></ref> In some cases, people approach artificial intelligence for companionship when they believe that they would not find acceptance due to feeling outcast.<ref></ref> Examples of harm coming to humans from advanced [chatbots](chatbots) have been reported in courts in the United States, with AI companies accused of creating products that endanger humans through [emotional confusion or deception](illusion_of_understanding).<ref></ref><ref></ref>
+
+## Existential risk
+
+Recent public debates in artificial intelligence have increasingly focused on its broader societal and ethical implications. It has been argued AI will become so powerful that humanity may irreversibly lose control of it. This could, as physicist [Stephen Hawking](Stephen_Hawking) stated, "[spell the end of the human race](Global_catastrophic_risk)". This scenario has been common in science fiction, when a computer or robot suddenly develops a human-like "self-awareness" (or "sentience" or "consciousness") and becomes a malevolent character. These sci-fi scenarios are misleading in several ways.
+
+Second, [Yuval Noah Harari](Yuval_Noah_Harari) argues that AI does not require a robot body or physical control to pose an existential risk. The essential parts of civilization are not physical. Things like [ideologies](ideologies), [law](law), [government](government), [money](money) and the [economy](economy) are built on [language](language); they exist because there are stories that billions of people believe. The current prevalence of [misinformation](misinformation) suggests that an AI could use language to convince people to believe anything, even to take actions that are destructive. Geoffrey Hinton said in 2025 that [modern AI](Large_language_model) is particularly "good at persuasion" and getting better all the time. He asks "Suppose you wanted to invade the capital of the US. Do you have to go there and do it yourself? No. You just have to be good at persuasion."
+
+The opinions amongst experts and industry insiders are mixed, with sizable fractions both concerned and unconcerned by risk from eventual superintelligent AI. Personalities such as Stephen Hawking, [Bill Gates](Bill_Gates), and [Elon Musk](Elon_Musk),<ref>Leaders' concerns about the existential risks of AI around 2015: , , , </ref> as well as AI pioneers such as [Geoffrey Hinton](Geoffrey_Hinton), [Yoshua Bengio](Yoshua_Bengio), [Stuart Russell](Stuart_J._Russell), [Demis Hassabis](Demis_Hassabis), and [Sam Altman](Sam_Altman), have expressed concerns about existential risk from AI.
+
+In May 2023, Geoffrey Hinton announced his resignation from Google in order to be able to "freely speak out about the risks of AI" without "considering how this impacts Google".<ref></ref> He notably mentioned risks of an [AI takeover](AI_takeover),<ref></ref> and stressed that in order to avoid the worst outcomes, establishing safety guidelines will require cooperation among those competing in use of AI.<ref></ref>
+
+In 2023, many leading AI experts endorsed [the joint statement](Statement_on_AI_risk_of_extinction) that "Mitigating the risk of extinction from AI should be a global priority alongside other societal-scale risks such as pandemics and nuclear war".
+
+Some other researchers were more optimistic. AI pioneer [Jürgen Schmidhuber](Jürgen_Schmidhuber) did not sign the joint statement, emphasising that in 95% of all cases, AI research is about making "human lives longer and healthier and easier."<ref></ref> While the tools that are now being used to improve lives can also be used by bad actors, "they can also be used against the bad actors."<ref></ref><ref></ref> [Andrew Ng](Andrew_Ng) also argued that "it's a mistake to fall for the doomsday hype on AI—and that regulators who do will only benefit vested interests."<ref></ref> [Yann LeCun](Yann_LeCun), a Turing Award winner, disagreed with the idea that AI will subordinate humans "simply because they are smarter, let alone destroy [\\[us\\]](\\[us])",<ref></ref> "scoff[\\[ing\\]](\\[ing]) at his peers' dystopian scenarios of supercharged misinformation and even, eventually, human extinction." In contrast, he claimed that "intelligent machines will usher in a new renaissance for humanity, a new era of enlightenment."<ref></ref> In the early 2010s, experts argued that the risks are too distant in the future to warrant research or that humans will be valuable from the perspective of a superintelligent machine.<ref>Arguments that AI is not an imminent risk: , , , </ref> However, after 2016, the study of current and future risks and possible solutions became a serious area of research.
+
+## Ethical machines and alignment
+
+
+Friendly AI are machines that have been designed from the beginning to minimize risks and to make choices that benefit humans. [Eliezer Yudkowsky](Eliezer_Yudkowsky), who coined the term, argues that developing friendly AI should be a higher research priority: it may require a large investment and it must be completed before AI becomes an existential risk.
+
+Other approaches include [Wendell Wallach](Wendell_Wallach)'s "artificial moral agents" and [Stuart J. Russell](Stuart_J._Russell)'s [three principles](Human_Compatible#Russell's_three_principles) for developing provably beneficial machines.
+
+## Open source
+
+
+Active organizations in the AI open-source community include [Hugging Face](Hugging_Face),<ref></ref> [Google](Google),<ref></ref> [EleutherAI](EleutherAI) and [Meta](Meta_Platforms).<ref></ref> Various AI models, such as [Llama 2](LLaMA), [Mistral](Mistral_AI) or [Stable Diffusion](Stable_Diffusion), have been made open-weight,<ref></ref><ref></ref> meaning that their architecture and trained parameters (the "weights") are publicly available. Open-weight models can be freely [fine-tuned](Fine-tuning_\\(deep_learning\\)), which allows companies to specialize them with their own data and for their own use-case.<ref></ref> Open-weight models are useful for research and innovation but can also be misused. Since they can be fine-tuned, any built-in security measure, such as objecting to harmful requests, can be trained away until it becomes ineffective. Some researchers warn that future AI models may develop dangerous capabilities (such as the potential to drastically facilitate [bioterrorism](bioterrorism)) and that once released on the Internet, they cannot be deleted everywhere if needed. They recommend pre-release audits and cost-benefit analyses.<ref></ref>
+
+## Frameworks
+
+Artificial intelligence projects can be guided by ethical considerations during the design, development, and implementation of an AI system. An AI framework such as the Care and Act Framework, developed by the [Alan Turing Institute](Alan_Turing_Institute) and based on the SUM values, outlines four main ethical dimensions, defined as follows:<ref></ref><ref></ref>
+
+* '''Respect''' the dignity of individual people
+* '''Connect''' with other people sincerely, openly, and inclusively
+* '''Care''' for the wellbeing of everyone
+* '''Protect''' social values, justice, and the public interest
+
+Other developments in ethical frameworks include those decided upon during the [Asilomar Conference](Asilomar_Conference_on_Beneficial_AI), the Montreal Declaration for Responsible AI, and the IEEE's Ethics of Autonomous Systems initiative, among others;<ref></ref> however, these principles are not without criticism, especially regarding the people chosen to contribute to these frameworks.<ref></ref>
+
+Promotion of the wellbeing of the people and communities that these technologies affect requires consideration of the social and ethical implications at all stages of AI system design, development and implementation, and collaboration between job roles such as data scientists, product managers, data engineers, domain experts, and delivery managers.<ref></ref>
+
+## Regulation
+
+[upright=1.2|thumb|alt=AI Safety Summit|The first global \\[\\[AI Safety Summit 2023|AI Safety Summit\\]\\] was held in the United Kingdom in November 2023 with a declaration calling for international cooperation.](File:Vice_President_Harris_at_the_group_photo_of_the_2023_AI_Safety_Summit.jpg)
+
+The regulation of artificial intelligence is the development of public sector policies and laws for promoting and regulating AI; it is therefore related to the broader regulation of algorithms.<ref>Regulation of AI to mitigate risks: , , , , </ref> The regulatory and policy landscape for AI is an emerging issue in jurisdictions globally. According to AI Index at [Stanford](Stanford), the annual number of AI-related laws passed in the 127 survey countries jumped from one passed in 2016 to 37 passed in 2022 alone. Between 2016 and 2020, more than 30 countries adopted dedicated strategies for AI. Most EU member states had released national AI strategies, as had [Canada](Artificial_intelligence_industry_in_Canada), China, India, Japan, Mauritius, the Russian Federation, Saudi Arabia, United Arab Emirates, U.S., and Vietnam. Others were in the process of elaborating their own AI strategy, including Bangladesh, Malaysia and Tunisia. The [Global Partnership on Artificial Intelligence](Global_Partnership_on_Artificial_Intelligence) was launched in June 2020, stating a need for AI to be developed in accordance with human rights and democratic values, to ensure public confidence and trust in the technology. [Henry Kissinger](Henry_Kissinger), [Eric Schmidt](Eric_Schmidt), and [Daniel Huttenlocher](Daniel_Huttenlocher) published a joint statement in November 2021 calling for a government commission to regulate AI. In 2023, OpenAI leaders published recommendations for the governance of superintelligence, which they believe may happen in less than 10 years. In 2023, the United Nations also launched an advisory body to provide recommendations on AI governance; the body comprises technology company executives, government officials and academics.<ref></ref> On 1 August 2024, the EU [Artificial Intelligence Act](Artificial_Intelligence_Act) entered into force, establishing the first comprehensive EU-wide AI regulation.<ref></ref> In 2024, the [Council of Europe](Council_of_Europe) created the first international legally binding treaty on AI, called the "[Framework Convention on Artificial Intelligence and Human Rights, Democracy and the Rule of Law](Framework_Convention_on_Artificial_Intelligence_and_Human_Rights,_Democracy_and_the_Rule_of_Law)". It was adopted by the European Union, the United States, the United Kingdom, and other signatories.<ref></ref>
+
+In a 2022 [Ipsos](Ipsos) survey, attitudes towards AI varied greatly by country; 78% of Chinese citizens, but only 35% of Americans, agreed that "products and services using AI have more benefits than drawbacks". A 2023 [Reuters](Reuters)/Ipsos poll found that 61% of Americans agree, and 22% disagree, that AI poses risks to humanity. In a 2023 [Fox News](Fox_News) poll, 35% of Americans thought it "very important", and an additional 41% thought it "somewhat important", for the federal government to regulate AI, versus 13% responding "not very important" and 8% responding "not at all important".
+
+In November 2023, the first global [AI Safety Summit](AI_Safety_Summit_2023) was held in [Bletchley Park](Bletchley_Park) in the UK to discuss the near and far term risks of AI and the possibility of mandatory and voluntary regulatory frameworks.<ref></ref> 28 countries including the United States, China, and the European Union issued a declaration at the start of the summit, calling for international co-operation to manage the challenges and risks of artificial intelligence.<ref></ref><ref></ref> In May 2024 at the [AI Seoul Summit](AI_Seoul_Summit_2024), 16 global AI tech companies agreed to safety commitments on the development of AI.<ref></ref><ref></ref>
+
+In March 2026, the [United Nations](United_Nations) convened the inaugural meeting of the Independent International Scientific Panel on AI, a 40-member expert body established under the [Global Digital Compact](Global_Digital_Compact) to produce annual evidence-based reports on AI's societal impacts.<ref><https://news.un.org/en/story/2026/03/1167075>
+|title       = UN launches independent scientific panel on artificial intelligence
+|publisher   = [UN News](UN_News)
+|date        = 2026-03-03
+|access-date = 2026-03-07
+}}</ref>
+
+## History
+
+
+[thumb |In 2024, AI patents in China and the US numbered more than three-fourths of AI patents worldwide.\\<ref name=RandDworld\\_20241103/> Though China had more AI patents, the US had 35% more patents per AI patent-applicant company than China.\\<ref name=RandDworld\\_20241103>\\</ref>](File:2024_AI_patents_by_country_-_artificial_intelligence.svg)
+
+The study of mechanical or "formal" reasoning began with philosophers and mathematicians in antiquity. The study of logic led directly to [Alan Turing](Alan_Turing)'s [theory of computation](theory_of_computation), which suggested that a machine, by shuffling symbols as simple as "0" and "1", could simulate any conceivable form of mathematical reasoning.<ref name="Clarendon Press-2004" /> This, along with concurrent discoveries in [cybernetics](cybernetics), [information theory](information_theory) and [neurobiology](neurobiology), led researchers to consider the possibility of building an "electronic brain". They developed several areas of research that would become part of AI,<ref>AI's immediate precursors: , , , </ref> such as [McCulloch](Warren_Sturgis_McCulloch) and [Pitts](Walter_Pitts) design for "artificial neurons" in 1943, and Turing's influential 1950 paper '[Computing Machinery and Intelligence](Computing_Machinery_and_Intelligence)', which introduced the [Turing test](Turing_test) and showed that "machine intelligence" was plausible.<ref name="Turing" /><ref name="Clarendon Press-2004"></ref>
+
+The field of AI research was founded at [a workshop](Dartmouth_workshop) at [Dartmouth College](Dartmouth_College) in 1956.[Russell](Stuart_J._Russell) and [Norvig](Norvig) called the conference "the inception of artificial intelligence."}}<ref name="Dartmouth workshop">[Dartmouth workshop](Dartmouth_workshop): , , <br />The proposal: </ref> The attendees became the leaders of AI research in the 1960s.[Russell](Stuart_J._Russell) and [Norvig](Norvig) wrote "for the next 20 years the field would be dominated by these people and their students."
+}} They and their students produced programs that the press described as "astonishing":[Russell](Stuart_J._Russell) and [Norvig](Norvig) wrote, "it was astonishing whenever a computer did anything kind of smartish".
+}} computers were learning [checkers](checkers) strategies, solving word problems in algebra, proving [logical theorems](Theorem) and speaking English.[Arthur Samuel](Arthur_Samuel_\\(computer_scientist\\))'s checkers program for the [IBM 701](IBM_701), [Daniel Bobrow](Daniel_Bobrow)'s [STUDENT](STUDENT), [Newell](Allen_Newell) and [Simon](Herbert_A._Simon)'s [Logic Theorist](Logic_Theorist) and [Terry Winograd](Terry_Winograd)'s [SHRDLU](SHRDLU).
+}}<ref name="Succ1">Successful programs of the 1960s: , , , </ref> Artificial intelligence laboratories were set up at a number of British and U.S. universities in the latter 1950s and early 1960s.<ref name="Clarendon Press-2004"/>
+
+Researchers in the 1960s and the 1970s were convinced that their methods would eventually succeed in creating a machine with [general intelligence](artificial_general_intelligence) and considered this the goal of their field. In 1965 [Herbert Simon](Herbert_A._Simon) predicted, "machines will be capable, within twenty years, of doing any work a man can do".<ref> quoted in </ref> In 1967 [Marvin Minsky](Marvin_Minsky) agreed, writing that "within a generation ... the problem of creating 'artificial intelligence' will substantially be solved".<ref> quoted in </ref> They had, however, underestimated the difficulty of the problem. In 1974, both the U.S. and British governments cut off exploratory research in response to the [criticism](Lighthill_report) of [Sir James Lighthill](Sir_James_Lighthill) and ongoing pressure from the U.S. Congress to [fund more productive projects](Mansfield_Amendment). Minsky and [Papert](Papert)'s book ''[Perceptron](Perceptron)s'' was understood as proving that [artificial neural networks](artificial_neural_networks) would never be useful for solving real-world tasks, thus discrediting the approach altogether. The "[AI winter](AI_winter)", a period when obtaining funding for AI projects was difficult, followed.<ref name="First AI Winter">First [AI Winter](AI_Winter), [Lighthill report](Lighthill_report), [Mansfield Amendment](Mansfield_Amendment): , , , , </ref>
+
+In the early 1980s, AI research was revived by the commercial success of [expert system](expert_system)s,<ref>[Expert systems](Expert_systems): , , , , , </ref> a form of AI program that simulated the knowledge and analytical skills of human experts. By 1985, the market for AI had reached over a billion dollars. At the same time, Japan's [fifth generation computer](fifth_generation_computer) project inspired the U.S. and British governments to restore funding for [academic research](academic_research).<ref name="Fund01">Funding initiatives in the early 1980s: [Fifth Generation Project](Fifth_Generation_Project) (Japan), [Alvey](Alvey) (UK), [Microelectronics and Computer Technology Corporation](Microelectronics_and_Computer_Technology_Corporation) (US), [Strategic Computing Initiative](Strategic_Computing_Initiative) (US): , , , , </ref> However, beginning with the collapse of the [Lisp Machine](Lisp_Machine) market in 1987, AI once again fell into disrepute, and a second, longer-lasting winter began.<ref name="Second AI Winter">Second [AI Winter](AI_Winter): , , , , </ref>
+
+AI gradually restored its reputation in the late 1990s and early 21st century by exploiting formal mathematical methods and by finding specific solutions to specific problems. This "[narrow](narrow_AI)" and "formal" focus allowed researchers to produce verifiable results and collaborate with other fields (such as [statistics](statistics), [economics](economics) and [mathematics](mathematical_optimization)).<ref name="Formal and narrow methods adopted in the 1990s">[Formal](#Neat_vs._scruffy) and [narrow](#Narrow_vs._general_AI) methods adopted in the 1990s: , </ref> By 2000, solutions developed by AI researchers were being widely used, although in the 1990s they were rarely described as "artificial intelligence" (a tendency known as the [AI effect](AI_effect)).<ref>AI widely used in the late 1990s: , , </ref>
+However, several academic researchers became concerned that AI was no longer pursuing its original goal of creating versatile, fully intelligent machines. Beginning around 2002, they founded the subfield of [artificial general intelligence](artificial_general_intelligence) (or "AGI"), which had several well-funded institutions by the 2010s.<ref name="Artificial general intelligence"/>
+
+[Deep learning](Deep_learning) began to dominate industry benchmarks in 2012 and was adopted throughout the field.<ref name="Deep learning revolution">[Deep learning](Deep_learning) revolution, [AlexNet](AlexNet): , , </ref>
+For many specific tasks, other methods were abandoned.
+Deep learning's success was based on both hardware improvements ([faster computers](Moore's_law),<ref>[Moore's Law](Moore's_Law) and AI: </ref> [graphics processing unit](graphics_processing_unit)s, [cloud computing](cloud_computing)) and access to [large amounts of data](big_data)<ref>[Big data](Big_data): </ref> (including curated datasets, such as [ImageNet](ImageNet)). Deep learning's success led to an enormous increase in interest and funding in AI. The amount of machine learning research (measured by total publications) increased by 50% in the years 2015–2019.
+
+[thumb|The number of Google searches for the term "AI" accelerated in 2022.](File:20250202_"AI"_\\(search_term\\)_on_Google_Trends.svg)
+In 2016, issues of [fairness](algorithmic_fairness) and the misuse of technology were catapulted into center stage at machine learning conferences, publications vastly increased, funding became available, and many researchers re-focussed their careers on these issues. The [alignment problem](AI_alignment) became a serious field of academic study.
+
+In the late 2010s and early 2020s, AGI companies began to deliver programs that created enormous interest. In 2015, [AlphaGo](AlphaGo), developed by [DeepMind](DeepMind), beat the world champion [Go player](Go_player). The program taught only the game's rules and developed a strategy by itself. [GPT-3](GPT-3) is a [large language model](large_language_model) that was released in 2020 by [OpenAI](OpenAI) and is capable of generating high-quality human-like text.<ref></ref> [ChatGPT](ChatGPT), launched on 30 November 2022, became the fastest-growing consumer software application in history, gaining over 100 million users in two months.<ref></ref> It marked what is widely regarded as AI's breakout year, bringing it into the public consciousness.<ref></ref> These programs, and others, inspired an aggressive [AI boom](AI_boom), where large companies began investing billions of dollars in AI research. According to AI Impacts, about US$50 billion annually was invested in "AI" around 2022 in the U.S. alone and about 20% of the new U.S. Computer Science PhD graduates have specialized in "AI". About 800,000 "AI"-related U.S. job openings existed in 2022. According to PitchBook research, 22% of newly funded [startups](startups) in 2024 claimed to be AI companies.<ref></ref>
+
+## Philosophy
+
+Philosophical debates have historically sought to determine the nature of intelligence and how to make intelligent machines.<ref></ref> Another major focus has been whether machines can be conscious, and the associated ethical implications.<ref name="Jarow-2024"></ref> Many other topics in philosophy are relevant to AI, such as [epistemology](epistemology) and [free will](free_will).<ref></ref> Rapid advancements have intensified public discussions on the philosophy and [ethics of AI](ethics_of_AI).<ref name="Jarow-2024" />
+
+[Alan Turing](Alan_Turing) investigated whether machines can show intelligent behaviour and think. In 1950, he proposed the [Turing test](Turing_test), which measures the ability of a machine to simulate human conversation.<ref></ref><ref name="Turing">Turing's original publication of the [Turing test](Turing_test) in "[Computing machinery and intelligence](Computing_machinery_and_intelligence)":&#x20;
+Historical influence and philosophical implications: , , , </ref> Since we can only observe the behavior of the machine, it does not matter if it is "actually" thinking or literally has a "mind". Turing notes that [we can not determine these things about other people](Problem_of_other_minds) but "it is usual to have a polite convention that everyone thinks."
+[thumb|The Turing test can provide some evidence of intelligence, but it penalizes non-human intelligent behavior.\\<ref>\\</ref>](File:Weakness_of_Turing_test_1.svg)
+[Russell](Stuart_J._Russell) and [Norvig](Norvig) agree with Turing that intelligence must be defined in terms of external behavior, not internal structure. However, they are critical that the test requires the machine to imitate humans. "[Aeronautical engineering](Aeronautics) texts", they wrote, "do not define the goal of their field as making 'machines that fly so exactly like [pigeon](pigeon)s that they can fool other pigeons. AI founder [John McCarthy](John_McCarthy_\\(computer_scientist\\)) agreed, writing that "Artificial intelligence is not, by definition, simulation of human intelligence".
+
+McCarthy defines intelligence as "the computational part of the ability to achieve goals in the world". Another AI founder, [Marvin Minsky](Marvin_Minsky), similarly describes it as "the ability to solve hard problems". ''[Artificial Intelligence: A Modern Approach](Artificial_Intelligence:_A_Modern_Approach)'' defines it as the study of agents that perceive their environment and take actions that maximize their chances of achieving defined goals.
+
+The many differing definitions of AI have been critically analyzed.<ref></ref><ref></ref><ref></ref> During the 2020s AI boom, the term has been used as a marketing [buzzword](buzzword) to promote products and services which do not use AI.<ref></ref>
+
+## Legal definitions
+
+The [International Organization for Standardization](International_Organization_for_Standardization) describes an AI system as a "an engineered system that generates outputs such as content, forecasts, recommendations, or decisions for a given set of human‑defined objectives, and can operate with varying levels of automation".<ref></ref> The [EU AI Act](Artificial_Intelligence_Act) defines an AI system as "a machine-based system that is designed to operate with varying levels of autonomy and that may exhibit adaptiveness after deployment, and that, for explicit or implicit objectives, infers, from the input it receives, how to generate outputs such as predictions, content, recommendations, or decisions that can influence physical or virtual environments".<ref></ref> In the United States, influential but non‑binding guidance such as the [National Institute of Standards and Technology](National_Institute_of_Standards_and_Technology)'s AI Risk Management Framework describes an AI system as "an engineered or machine-based system that can, for a given set of objectives, generate outputs such as predictions, recommendations, or decisions influencing real or virtual environments. AI systems are designed to operate with varying levels of autonomy".<ref></ref>
+
+## Evaluating approaches to AI
+
+No established unifying theory or [paradigm](paradigm) has guided AI research for most of its history.[Nils Nilsson](Nils_Nilsson_\\(researcher\\)) wrote in 1983: "Simply put, there is wide disagreement in the field about what AI is all about."}} The unprecedented success of statistical machine learning in the 2010s eclipsed all other approaches (so much so that some sources, especially in the business world, use the term "artificial intelligence" to mean "machine learning with neural networks"). This approach is mostly [sub-symbolic](sub-symbolic), [soft](soft_computing) and [narrow](artificial_general_intelligence). Critics argue that these questions may have to be revisited by future generations of AI researchers.
+
+\\====Symbolic AI and its limits====
+[Symbolic AI](Symbolic_AI) (or "[GOFAI](GOFAI)") simulated the high-level conscious reasoning that people use when they solve puzzles, express legal reasoning and do mathematics. They were highly successful at "intelligent" tasks such as algebra or IQ tests. In the 1960s, Newell and Simon proposed the [physical symbol systems hypothesis](physical_symbol_systems_hypothesis): "A physical symbol system has the necessary and sufficient means of general intelligent action."<ref>Physical symbol system hypothesis:&#x20;
+Historical significance: , </ref>
+
+However, the symbolic approach failed on many tasks that humans solve easily, such as learning, recognizing an object or [commonsense reasoning](commonsense_reasoning). [Moravec's paradox](Moravec's_paradox) is the discovery that high-level "intelligent" tasks were easy for AI, but low level "instinctive" tasks were extremely difficult.<ref>[Moravec's paradox](Moravec's_paradox): , , </ref> Philosopher [Hubert Dreyfus](Hubert_Dreyfus) had [argued](Dreyfus'_critique_of_AI) since the 1960s that human expertise depends on unconscious instinct rather than conscious symbol manipulation, and on having a "feel" for the situation, rather than explicit symbolic knowledge.<ref>[Dreyfus' critique of AI](Dreyfus'_critique_of_AI): ,&#x20;
+Historical significance and philosophical implications: , , , </ref> Although his arguments had been ridiculed and ignored when they were first presented, eventually, AI research came to agree with him.<ref name="Psychological evidence of the prevalence of sub"/>
+
+The issue is not resolved: [sub-symbolic](sub-symbolic) reasoning can make many of the same inscrutable mistakes that human intuition does, such as [algorithmic bias](algorithmic_bias). Critics such as [Noam Chomsky](Noam_Chomsky) argue continuing research into symbolic AI will still be necessary to attain general intelligence, in part because sub-symbolic AI is a move away from [explainable AI](explainable_AI): it can be difficult or impossible to understand why a modern statistical AI program made a particular decision. The emerging field of [neuro-symbolic artificial intelligence](Neuro-symbolic_AI) attempts to bridge the two approaches.
+
+## Neat vs. scruffy
+
+## Soft vs. hard computing
+
+Finding a provably correct or optimal solution is [intractable](Intractability_\\(complexity\\)) for many important problems.<ref name="Intractability and efficiency and the combinatorial explosion"/> Soft computing is a set of techniques, including [genetic algorithms](genetic_algorithms), [fuzzy logic](fuzzy_logic) and neural networks, that are tolerant of imprecision, uncertainty, partial truth and approximation. Soft computing was introduced in the late 1980s and most successful AI programs in the 21st century are examples of soft computing with neural networks.
+
+AI researchers are divided as to whether to pursue the goals of artificial general intelligence and [superintelligence](superintelligence) directly or to solve as many specific problems as possible (narrow AI) in hopes these solutions will lead indirectly to the field's long-term goals. General intelligence is difficult to define and difficult to measure, and modern AI has had more verifiable successes by focusing on specific problems with specific solutions. The sub-field of artificial general intelligence studies this area exclusively.
+
+## Machine consciousness, sentience, and mind
+
+There is no settled consensus in [philosophy of mind](philosophy_of_mind) on whether a machine can have a [mind](mind), [consciousness](consciousness) and [mental states](philosophy_of_mind) in the same sense that human beings do. This issue considers the internal experiences of the machine, rather than its external behavior. Mainstream AI research considers this issue irrelevant because it does not affect the goals of the field: to build machines that can solve problems using intelligence. [Russell](Stuart_J._Russell) and [Norvig](Norvig) add that "[\\[t\\]](\\[t])he additional project of making a machine conscious in exactly the way humans are is not one that we are equipped to take on." However, the question has become central to the philosophy of mind. It is also typically the central question at issue in [artificial intelligence in fiction](artificial_intelligence_in_fiction).
+
+## Consciousness
+
+[David Chalmers](David_Chalmers) identified two problems in understanding the mind, which he named the "hard" and "easy" problems of consciousness. The easy problem is understanding how the brain processes signals, makes plans and controls behavior. The hard problem is explaining how this ''feels'' or why it should feel like anything at all, assuming we are right in thinking that it truly does feel like something (Dennett's consciousness illusionism says this is an illusion). While human [information processing](Information_processing_\\(psychology\\)) is easy to explain, human [subjective experience](subjective_experience) is difficult to explain. For example, it is easy to imagine a color-blind person who has learned to identify which objects in their field of view are red, but it is not clear what would be required for the person to ''know what red looks like''.
+
+## Computationalism and functionalism
+
+Computationalism is the position in the [philosophy of mind](philosophy_of_mind) that the human mind is an information processing system and that thinking is a form of computing. Computationalism argues that the relationship between mind and body is similar or identical to the relationship between software and hardware and thus may be a solution to the [mind–body problem](mind–body_problem). This philosophical position was inspired by the work of AI researchers and cognitive scientists in the 1960s and was originally proposed by philosophers [Jerry Fodor](Jerry_Fodor) and [Hilary Putnam](Hilary_Putnam).
+
+Philosopher [John Searle](John_Searle) characterized this position as "[strong AI](Strong_AI_hypothesis)": "The appropriately programmed computer with the right inputs and outputs would thereby have a mind in exactly the same sense human beings have minds."[Russell](Stuart_J._Russell) and [Norvig](Norvig): "Stong AI – the assertion that machines that do so are ''actually'' thinking (as opposed to ''simulating'' thinking)."
+}} Searle challenges this claim with his [Chinese room](Chinese_room) argument, which attempts to show that even a computer capable of perfectly simulating human behavior would not have a mind.<ref>Searle's [Chinese room](Chinese_room) argument: . Searle's original presentation of the thought experiment., .
+Discussion: , , </ref>
+
+## AI welfare and rights
+
+
+It is difficult or impossible to reliably evaluate whether an advanced [AI is sentient](Sentient_AI) (has the ability to feel), and if so, to what degree.<ref></ref> But if there is a significant chance that a given machine can feel and suffer, then it may be entitled to certain rights or welfare protection measures, similarly to animals.<ref name="Thomson-2022"></ref><ref name="Kateman-2023"></ref> [Sapience](Sapience) (a set of capacities related to high intelligence, such as discernment or [self-awareness](self-awareness)) may provide another moral basis for AI rights.<ref name="Thomson-2022"/> [Robot rights](Robot_rights) are also sometimes proposed as a practical way to integrate autonomous agents into society.<ref></ref>
+
+In 2017, the European Union considered granting "electronic personhood" to some of the most capable AI systems. Similarly to the legal status of companies, it would have conferred rights but also responsibilities.<ref></ref> Critics argued in 2018 that granting rights to AI systems would downplay the importance of [human rights](human_rights), and that legislation should focus on user needs rather than speculative futuristic scenarios. They also noted that robots lacked the autonomy to take part in society on their own.<ref></ref><ref></ref>
+
+## Future
+
+## Superintelligence and the singularity
+
+[I. J. Good](I._J._Good)'s "intelligence explosion":&#x20;
+
+[Vernor Vinge](Vernor_Vinge)'s "singularity": </ref>
+
+## Transhumanism
+
+Robot designer [Hans Moravec](Hans_Moravec), cyberneticist [Kevin Warwick](Kevin_Warwick) and inventor [Ray Kurzweil](Ray_Kurzweil) have predicted that humans and machines may merge in the future into [cyborg](cyborg)s that are more capable and powerful than either. This idea, called transhumanism, has roots in the writings of [Aldous Huxley](Aldous_Huxley) and [Robert Ettinger](Robert_Ettinger).<ref>[Transhumanism](Transhumanism): , , </ref>
+
+## In fiction
+
+[thumb|upright=1.2|The word "robot" itself was coined by \\[\\[Karel Čapek\\]\\] in his 1921 play ''\\[\\[R.U.R.\\]\\]'', the title standing for "Rossum's Universal Robots".](File:Capek_play.jpg)
+
+A common [trope](Trope_\\(literature\\)) in these works began with [Mary Shelley](Mary_Shelley)'s ''[Frankenstein](Frankenstein)'', where a human creation becomes a threat to its masters. This includes such works as [Arthur C. Clarke's](2001:_A_Space_Odyssey_\\(novel\\)) and [Stanley Kubrick's](2001:_A_Space_Odyssey) ''2001: A Space Odyssey'' (both 1968), with [HAL 9000](HAL_9000), the murderous computer in charge of the ''[Discovery One](Discovery_One)'' spaceship, as well as ''[Blade Runner](Blade_Runner)'' (1982), ''[The Terminator](The_Terminator)'' (1984) and ''[The Matrix](The_Matrix)'' (1999). In contrast, the rare loyal robots such as Gort from ''[The Day the Earth Stood Still](The_Day_the_Earth_Stood_Still)'' (1951) and Bishop from ''[Aliens](Aliens_\\(film\\))'' (1986) are less prominent in popular culture.
+
+[Isaac Asimov](Isaac_Asimov) introduced the [Three Laws of Robotics](Three_Laws_of_Robotics) in many stories, most notably with the "[Multivac](Multivac)" super-intelligent computer. Asimov's laws are often brought up during lay discussions of machine ethics; while almost all artificial intelligence researchers are familiar with Asimov's laws through popular culture, they generally consider the laws useless for many reasons, one of which is their ambiguity.
+
+*
+*
+*
+* [Artificial intelligence in Wikimedia projects](Artificial_intelligence_in_Wikimedia_projects) – Use of artificial intelligence to develop Wikipedia and other Wikimedia projects
+* [Association for the Advancement of Artificial Intelligence](Association_for_the_Advancement_of_Artificial_Intelligence) (AAAI)
+*
+*
+*
+*
+* DARWIN EU – A [European Union](European_Union) initiative coordinated by the [European Medicines Agency](European_Medicines_Agency) (EMA) to generate and utilize [real world evidence](real_world_evidence) (RWE) to support the evaluation and supervision of medicines across the EU
+*
+*
+*
+*
+*
+*
+*
+* [List of artificial intelligence books](List_of_computer_books#Artificial_intelligence)
+* [List of artificial intelligence algorithms](List_of_artificial_intelligence_algorithms)
+* [List of artificial intelligence journals](List_of_artificial_intelligence_journals)
+* [List of artificial intelligence projects](List_of_artificial_intelligence_projects)
+* [List of chatbots](List_of_chatbots)
+* [Lists of open-source artificial intelligence software](Lists_of_open-source_artificial_intelligence_software)
+*
+* [Organoid intelligence](Organoid_intelligence) – Use of brain cells and brain organoids for intelligent computing
+* [Outline of deep learning](Outline_of_deep_learning)
+* [Outline of machine learning](Outline_of_machine_learning)
+*
+*
+*
+*
+
+## Textbooks
+
+*
+*
+* &#x20;Later edition:&#x20;
+*
+*
+* .
+
+
+## History of AI
+
+*
+*
+*
+
+## Other sources
+
+* [\\[https://suli.pppl.gov/2023/course/Rea-PPPL-SULI2023.pdf AI & ML in Fusion\\]](\\[https://suli.pppl.gov/2023/course/Rea-PPPL-SULI2023.pdf_AI_&_ML_in_Fusion])
+* [\\[https://drive.google.com/file/d/1npCTrJ8XJn20ZGDA\\_DfMpANuQZFMzKPh/view?usp=drive\\_link AI & ML in Fusion, video lecture\\]](\\[https://drive.google.com/file/d/1npCTrJ8XJn20ZGDA_DfMpANuQZFMzKPh/view?usp=drive_link_AI_&_ML_in_Fusion,_video_lecture])&#x20;
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+* &#x20;Presidential Address to the [Association for the Advancement of Artificial Intelligence](Association_for_the_Advancement_of_Artificial_Intelligence).
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+* &#x20;Later published as<br />
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+
+-
+"
+`;

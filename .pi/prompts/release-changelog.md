@@ -2,11 +2,11 @@
 description: Fetch followed project releases from Glance and generate a detailed changelog
 ---
 
-Fetch the release feed from https://glance.knoopx.net/api/pages/home/content/ using transcribe.
+Fetch the release feed from https://glance.knoopx.net/api/pages/home/content/ using web-fetch.
 
-From the Releases section, identify each unique project and its latest tag. Fetch full release notes for every project using gh-view-release or transcribe on the GitHub release page. For projects with multiple recent releases in the window, fetch at least the two most recent tags to capture incremental changes.
+From the Releases section, identify each unique project and its latest tag. Fetch full release notes for every project using gh-view-release or web-fetch on the GitHub release page. For projects with multiple recent releases in the window, fetch at least the two most recent tags to capture incremental changes.
 
-If a release body is empty from the API, fall back to transcribing the release page directly from GitHub. For beta releases that link out to external release notes (e.g., Home Assistant), follow and transcribe those linked pages too.
+If a release body is empty from the API, fall back to fetching the release page directly from GitHub. For beta releases that link out to external release notes (e.g., Home Assistant), follow and fetch those linked pages too.
 
 Output the changelog inline as Markdown — do not write a file unless explicitly asked. Structure it as:
 

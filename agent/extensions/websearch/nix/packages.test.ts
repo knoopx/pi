@@ -1,0 +1,309 @@
+import { it, expect, vi, beforeEach, describe } from "vitest";
+import type { AgentToolResult } from "@earendil-works/pi-agent-core";
+import type { TextContent } from "@earendil-works/pi-ai";
+import type { MockTool } from "../../../shared/testing/test-utils";
+import { setupWebsearchTest } from "../test/setup";
+import { resetSearchUrlCache } from "./query";
+
+const NIX_INDICES_RESPONSE =
+  "index\nnixos-48-unstable-abc123\nnixos-47-unstable-def456";
+
+function createMockNixSearchFetch<T>(items: T[]) {
+  return vi.fn().mockImplementation((url: string) => {
+    if (url.includes("_cat/indices")) {
+      return {
+        ok: true,
+        text: () => Promise.resolve(NIX_INDICES_RESPONSE),
+        preconnect: vi.fn(),
+      };
+    }
+    return {
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          hits: { hits: items.map((item) => ({ _source: item })) },
+        }),
+      preconnect: vi.fn(),
+    };
+  });
+}
+
+function assertFormattedOptionResults(
+  result: AgentToolResult<Record<string, unknown>>,
+  query: string,
+) {
+  expect((result.content[0] as TextContent).text).toMatchSnapshot();
+  expect(result.details.query).toBe(query);
+  expect(result.details.totalFound).toBe(1);
+}
+
+setupWebsearchTest("Nix Extension", (ctx) => {
+  beforeEach(() => {
+    resetSearchUrlCache();
+  });
+
+  describe("given the extension is initialized", () => {
+    describe("when registering tools", () => {
+      it("then it should register nix packages search tool", () => {
+        expect(ctx.mockPi.registerTool).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: "nix-search-packages",
+          }),
+        );
+      });
+
+      it("then it should register nix options search tool", () => {
+        expect(ctx.mockPi.registerTool).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: "nix-search-options",
+          }),
+        );
+      });
+
+      it("then it should register home manager options search tool", () => {
+        expect(ctx.mockPi.registerTool).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: "hm-search-options",
+          }),
+        );
+      });
+    });
+  });
+
+  describe("nix-search-packages", () => {
+    let registeredTool: MockTool;
+
+    beforeEach(() => {
+      const calls = ctx.mockPi.registerTool.mock.calls as [MockTool][];
+      const found = calls.find((c) => c[0].name === "nix-search-packages");
+      if (!found) throw new Error("not found");
+      registeredTool = found[0];
+    });
+
+    describe("given a valid package query", () => {
+      let result: AgentToolResult<Record<string, unknown>>;
+
+      beforeEach(async () => {
+        const mockPackages = [
+          {
+            type: "package",
+            package_attr_name: "hello",
+            package_pname: "hello",
+            package_pversion: "2.12",
+            package_description: "A program that produces a friendly greeting",
+            package_longDescription:
+              'GNU Hello is a program that prints "Hello, world!" when run. It supports multiple languages, demonstrating internationalization.',
+            package_homepage: ["https://www.gnu.org/software/hello/"],
+            package_maintainers: [
+              { name: "NixOS maintainers" },
+              { name: "Wjamesh" },
+            ],
+            package_license_set: ["GPL-3.0-or-later"],
+            package_position:
+              "/pkgs/applications/misc/gnu-hello/default.nix:42",
+          },
+          {
+            type: "package",
+            package_attr_name: "hello-builder",
+            package_pname: "hello-builder",
+            package_pversion: "0.3.1",
+            package_description: "A simple build tool for hello-world projects",
+            package_longDescription:
+              "Hello Builder automates the creation of basic project scaffolds with configurable templates.",
+            package_homepage: ["https://github.com/example/hello-builder"],
+            package_maintainers: [{ name: "example-user" }],
+            package_license_set: ["MIT"],
+            package_position: "/pkgs/tools/build/hello-builder/default.nix:18",
+          },
+        ];
+        globalThis.fetch = createMockNixSearchFetch(
+          mockPackages,
+        ) as typeof globalThis.fetch;
+
+        result = await registeredTool.execute(
+          "tool1",
+          { query: "hello" },
+          undefined,
+          undefined,
+          {},
+        );
+      });
+
+      it("then it should return formatted package results", () => {
+        expect((result.content[0] as TextContent).text).toMatchSnapshot();
+        expect(result.details.query).toBe("hello");
+        expect(result.details.totalFound).toBe(2);
+      });
+    });
+
+    describe("given a network error occurs", () => {
+      it("then it should return error message", async () => {
+        const mockFetch = vi
+          .fn()
+          .mockRejectedValue(new Error("Network error")) as unknown;
+        globalThis.fetch = mockFetch as typeof globalThis.fetch;
+        const result = await registeredTool.execute(
+          "tool1",
+          { query: "test" },
+          undefined,
+          undefined,
+          {},
+        );
+
+        expect((result.content[0] as TextContent).text).toBe(
+          "Error: Network error",
+        );
+      });
+    });
+
+    describe("given an HTTP request returns error", () => {
+      it("then it should return error message", async () => {
+        const mockFetch = vi.fn().mockImplementation((url) => {
+          if (typeof url === "string" && url.includes("_cat/indices")) {
+            return {
+              ok: true,
+              text: () =>
+                Promise.resolve(
+                  "index\nnixos-48-unstable-abc123\nnixos-47-unstable-def456",
+                ),
+              preconnect: vi.fn(),
+            };
+          }
+          return {
+            ok: false,
+            status: 500,
+            preconnect: vi.fn(),
+          };
+        });
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
+        const result = await registeredTool.execute(
+          "tool1",
+          { query: "test" },
+          undefined,
+          undefined,
+          {},
+        );
+
+        expect((result.content[0] as TextContent).text).toMatch(
+          /^Error: HTTP \d+ from Nix search API$/,
+        );
+      });
+    });
+  });
+
+  describe("nix-search-options", () => {
+    let registeredTool: MockTool;
+
+    beforeEach(() => {
+      const calls = ctx.mockPi.registerTool.mock.calls as [MockTool][];
+      const found = calls.find((c) => c[0].name === "nix-search-options");
+      if (!found) throw new Error("not found");
+      registeredTool = found[0];
+    });
+
+    describe("given a valid option query", () => {
+      let result: AgentToolResult<Record<string, unknown>>;
+
+      beforeEach(async () => {
+        const mockOptions = [
+          {
+            type: "option",
+            option_name: "services.httpd.enable",
+            option_description: "Whether to enable the Apache HTTP Server.",
+            option_type: "boolean",
+            option_default: "false",
+            option_example: "true",
+            option_source:
+              "nixos/modules/services/web-servers/apache-httpd/default.nix",
+          },
+        ];
+        globalThis.fetch = createMockNixSearchFetch(
+          mockOptions,
+        ) as typeof globalThis.fetch;
+
+        result = await registeredTool.execute(
+          "tool1",
+          { query: "httpd" },
+          undefined,
+          undefined,
+          {},
+        );
+      });
+
+      it("then it should return formatted option results", () => {
+        assertFormattedOptionResults(result, "httpd");
+      });
+    });
+  });
+
+  describe("hm-search-options", () => {
+    let registeredTool: MockTool;
+
+    beforeEach(() => {
+      const calls = ctx.mockPi.registerTool.mock.calls as [MockTool][];
+      const found = calls.find((c) => c[0].name === "hm-search-options");
+      if (!found) throw new Error("not found");
+      registeredTool = found[0];
+    });
+
+    describe("given a valid Home Manager option query", () => {
+      let result: AgentToolResult<Record<string, unknown>>;
+
+      beforeEach(async () => {
+        const mockOptions = [
+          {
+            title: "programs.git.enable",
+            description: "Whether to enable Git.",
+            type: "boolean",
+            default: "false",
+            example: "true",
+            declarations: [
+              {
+                name: "programs.git.enable",
+                url: "https://github.com/nix-community/home-manager/blob/master/modules/programs/git.nix",
+              },
+            ],
+          },
+          {
+            title: "programs.vim.enable",
+            description: "Whether to enable Vim.",
+            type: "boolean",
+            default: "false",
+            example: "true",
+            declarations: [
+              {
+                name: "programs.vim.enable",
+                url: "https://github.com/nix-community/home-manager/blob/master/modules/programs/vim.nix",
+              },
+            ],
+          },
+        ];
+        const mockFetch = vi.fn().mockImplementation(
+          (..._args) =>
+            ({
+              ok: true,
+              json: () =>
+                Promise.resolve({
+                  last_update: "2024-01-01",
+                  options: mockOptions,
+                }),
+              preconnect: vi.fn(),
+            }) as unknown,
+        );
+        globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
+
+        result = await registeredTool.execute(
+          "tool1",
+          { query: "git" },
+          undefined,
+          undefined,
+          {},
+        );
+      });
+
+      it("then it should return formatted option results", () => {
+        assertFormattedOptionResults(result, "git");
+      });
+    });
+  });
+});

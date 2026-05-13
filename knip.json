@@ -1,16 +1,17 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": ["agent/extensions/*/index.ts"],
-  "project": ["agent/**/*.ts"],
-  "ignore": ["agent/extensions/*/node_modules/**"],
-  "ignoreDependencies": [
-    "axios",
-    "cheerio",
-    "domhandler",
-    "tinyglobby",
-    "picocolors"
-  ],
-  "ignoreBinaries": ["tsc"],
+  "ignore": ["screenshots/**"],
+  "workspaces": {
+    "agent/extensions/*": {
+      "entry": ["./index.ts"],
+      "project": ["**/*.ts"]
+    },
+    "agent/shared": {
+      "entry": ["./guards.ts"],
+      "project": ["**/*.ts"]
+    }
+  },
+  "ignoreDependencies": ["typescript-eslint", "bun-types", "eslint"],
   "rules": {
     "enumMembers": "off"
   }

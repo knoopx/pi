@@ -211,7 +211,7 @@ Search Python packages from PyPI, get version metadata, dependencies, and licens
 
 ![PyPI](screenshots/pypi.png)
 
-### Transcribe — File & URL to Markdown
+### Web Fetch — File & URL to Markdown
 
 Convert web pages and local files to clean Markdown text using the mdast ecosystem. Supports GitHub URLs (repos, PRs, issues, releases, commits), Wikipedia, arXiv, Hugging Face, Reddit, and more.
 

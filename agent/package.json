@@ -7,6 +7,10 @@
     "shell-quote": "^1.8.3"
   },
   "devDependencies": {
-    "@types/shell-quote": "^1.7.5"
+    "@earendil-works/pi-coding-agent": "^0.74.0",
+    "@earendil-works/pi-tui": "^0.74.0",
+    "@types/picomatch": "^4.0.3",
+    "@types/shell-quote": "^1.7.5",
+    "picomatch": "^4.0.4"
   }
 }

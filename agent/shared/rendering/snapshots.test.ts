@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { table } from "./table/renderer";
 import type { Column } from "./types";
 import { detail } from "./detail";
-import { dotJoin, sectionDivider, threadSeparator, stateDot } from "./header";
+import { dotJoin, stateDot } from "./labels";
+import { sectionDivider, threadSeparator } from "./terminal-lines";
 import { actionLine } from "./action";
 
 describe("renderer snapshots", () => {

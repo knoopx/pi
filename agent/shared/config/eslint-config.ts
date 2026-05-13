@@ -1,4 +1,3 @@
-/* fallow-ignore unused-files */
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(...tseslint.configs.recommended, {

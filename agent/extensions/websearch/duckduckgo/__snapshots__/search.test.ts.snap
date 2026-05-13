@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DuckDuckGo (websearch) > Tool Execution > should format search results correctly 1`] = `"Error: DuckDuckGo search failed"`;

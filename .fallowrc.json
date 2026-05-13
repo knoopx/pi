@@ -13,7 +13,23 @@
   ],
   "rules": {
     "unlisted-dependencies": "off",
-    "unused-dependencies": "warn"
+    "unused-dependencies": "warn",
+    "unresolved-imports": "off",
+    "unused-files": "warn"
   },
-  "ignoreDependencies": ["unist-util-visit"]
+  "usedClassMembers": [
+    {
+      "implements": "Terminal",
+      "members": ["*"]
+    },
+    "handleInput",
+    "invalidate"
+  ],
+  "ignoreDependencies": [
+    "unist-util-visit",
+    "@leeoniya/ufuzzy",
+    "picomatch",
+    "shell-quote",
+    "typescript-eslint"
+  ]
 }

@@ -1,0 +1,60 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Reddit parser > snapshot > captures output for https://www.reddit.com/r/programming/hot.json 1`] = `
+"# r/programming — Hot
+
+
+**Announcement: Temporary LLM Content Ban**
+r/programming • u/ChemicalRascal • 2804 points • 324 comments • 1mo ago
+Hey folks,
+[↗ reddit](https://www.reddit.com/r/programming/comments/1s9jkzi/announcement_temporary_llm_content_ban/)
+
+**State of the Subreddit (January 2027): Mods applications and rules updates**
+r/programming • u/ketralnis • 135 points • 102 comments • 3mo ago
+tl;dr: mods applications and minor rules changes. Also it's 2026, lol.
+[↗ reddit](https://www.reddit.com/r/programming/comments/1qoxwdt/state_of_the_subreddit_january_2027_mods/)
+
+**Enabling ai co author by default by cwebster-99 · Pull Request #310226 · microsoft/vscode**
+r/programming • u/Maybe-monad • 155 points • 68 comments • 3h ago
+[github.com](https://github.com/microsoft/vscode/pull/310226)
+[↗ reddit](https://www.reddit.com/r/programming/comments/1t2f3h5/enabling_ai_co_author_by_default_by_cwebster99/)
+
+**Unsigned sizes: a five year mistake**
+r/programming • u/Nuoji • 172 points • 67 comments • 14h ago
+[c3-lang.org](https://c3-lang.org/blog/unsigned-sizes-a-five-year-mistake/)
+[↗ reddit](https://www.reddit.com/r/programming/comments/1t20rdz/unsigned_sizes_a_five_year_mistake/)
+
+**Reading Algorithms Like an Engineer: Implementing ANN**
+r/programming • u/BgA_stan • 10 points • 0 comments • 1h ago
+[dubeykartikay.com](https://dubeykartikay.com/posts/reading-algorithms-like-an-engineer/)
+[↗ reddit](https://www.reddit.com/r/programming/comments/1t2hjka/reading_algorithms_like_an_engineer_implementing/)"
+`;
+
+exports[`Reddit parser > snapshot > captures output for https://www.reddit.com/user/spez/submitted.json 1`] = `
+"# u/spez
+
+**Recent Posts**
+
+
+**[News] Another solid quarter and great start to the year for Reddit. Ask your questions for me, Jen, and Drew in r/RDDT.**
+r/redditstock • u/spez • 191 points • 62 comments • 2d ago
+[↗ reddit](https://www.reddit.com/r/redditstock/comments/1t07i8q/another_solid_quarter_and_great_start_to_the_year/)
+
+**Humans welcome (bots must wear name tags)**
+r/u_spez • u/spez • 740 points • 471 comments • 1mo ago
+**TL;DR:**
+[↗ reddit](https://www.reddit.com/r/u_spez/comments/1s3ezrc/humans_welcome_bots_must_wear_name_tags/)
+
+**[News] Humans welcome (bots must wear name tags)**
+r/redditstock • u/spez • 210 points • 92 comments • 1mo ago
+[↗ reddit](https://www.reddit.com/r/redditstock/comments/1s3f2fe/humans_welcome_bots_must_wear_name_tags/)
+
+**[News] TL;DR: Solid end to a strong year for Reddit. Ask your questions for me, Jen, and Drew in r/RDDT.**
+r/redditstock • u/spez • 201 points • 108 comments • 2mo ago
+[↗ reddit](https://www.reddit.com/r/redditstock/comments/1qwxst2/tldr_solid_end_to_a_strong_year_for_reddit_ask/)
+
+**Beyond the Front Page of the Internet**
+r/u_spez • u/spez • 496 points • 381 comments • 5mo ago
+Hi everyone,
+[↗ reddit](https://www.reddit.com/r/u_spez/comments/1pdb5dc/beyond_the_front_page_of_the_internet/)"
+`;

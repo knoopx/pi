@@ -1,5 +1,5 @@
 import type { AgentToolResult } from "@earendil-works/pi-agent-core";
-import { dotJoin, countLabel } from "../rendering/header";
+import { dotJoin, countLabel } from "../rendering/labels";
 import { table } from "../rendering/table/renderer";
 import type { Column } from "../rendering/types";
 export interface PackageSearchResult {

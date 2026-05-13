@@ -1,0 +1,12 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`HuggingFace Extension > hf-search-models > given a successful search response > then it should return formatted search results 1`] = `
+"1 result(s)
+
+      󰇚 │    󰋑 │ model
+────────┼──────┼─────────────────────────────────────────────────
+ 150.0K │   42 │ unsloth/Qwen3-GGUF
+        │      │ apache-2.0 · text-generation
+        │      │ updated 1y ago
+        │      │ https://huggingface.co/models/unsloth/Qwen3-GGUF"
+`;

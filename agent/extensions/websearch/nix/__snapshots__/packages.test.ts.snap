@@ -1,0 +1,44 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Nix Extension > hm-search-options > given a valid Home Manager option query > then it should return formatted option results 1`] = `
+"1 result(s)
+
+  # │ type        │ option
+────┼─────────────┼───────────────────────────────────────────────────────────────────────────────────
+  1 │ boolean     │ programs.git.enable
+    │             │ Whether to enable Git.
+    │             │ default: false
+    │             │ example: true
+    │             │ https://github.com/nix-community/home-manager/blob/master/modules/programs/git.nix"
+`;
+
+exports[`Nix Extension > nix-search-options > given a valid option query > then it should return formatted option results 1`] = `
+"1 result(s)
+
+  # │ type        │ option
+────┼─────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  1 │ boolean     │ services.httpd.enable
+    │             │ Whether to enable the Apache HTTP Server.
+    │             │ default: false
+    │             │ example: true
+    │             │ https://github.com/NixOS/nixpkgs/blob/nixos-unstable/nixos/modules/services/web-servers/apache-httpd/default.nix"
+`;
+
+exports[`Nix Extension > nix-search-packages > given a valid package query > then it should return formatted package results 1`] = `
+"2 result(s)
+
+  # │ version │ package
+────┼─────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────
+  1 │ 2.12    │ hello
+    │         │ A program that produces a friendly greeting
+    │         │ attr: hello · GPL-3.0-or-later
+    │         │ NixOS maintainers, Wjamesh
+    │         │ https://www.gnu.org/software/hello/
+    │         │ https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/applications/misc/gnu-hello/default.nix#L42
+  2 │ 0.3.1   │ hello-builder
+    │         │ A simple build tool for hello-world projects
+    │         │ attr: hello-builder · MIT
+    │         │ example-user
+    │         │ https://github.com/example/hello-builder
+    │         │ https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/tools/build/hello-builder/default.nix#L18"
+`;

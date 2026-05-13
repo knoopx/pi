@@ -342,4 +342,111 @@ describe("table", () => {
       expect(result).toBe("");
     });
   });
+
+  describe("right-aligned columns", () => {
+    it("right-aligns numeric values precisely", () => {
+      const result = table(
+        [{ key: "name" }, { key: "score", align: "right" }],
+        [
+          { name: "A", score: 1 },
+          { name: "B", score: 999 },
+        ],
+      );
+      const lines = result.split("\n");
+      const endOf1 = lines[2].lastIndexOf("1");
+      const endOf999 = lines[3].lastIndexOf("9");
+      expect(endOf1).toBe(endOf999);
+    });
+
+    it("does not shrink right-aligned columns with minWidth", () => {
+      const result = table(
+        [{ key: "#", align: "right", minWidth: 3 }, { key: "text" }],
+        [{ "#": "1", text: "x".repeat(100) }],
+        { maxTableWidth: 40 },
+      );
+      const headerLine = result.split("\n")[0];
+      expect(headerLine).toMatch(/\s+#\s+│/);
+    });
+  });
+
+  describe("newline handling", () => {
+    function assertNoBlankSeparatorLines(output: string) {
+      const lines = output.split("\n");
+      for (const line of lines) {
+        expect(line).not.toMatch(/^\s*│\s*$/);
+      }
+    }
+
+    it("filters out empty segments from consecutive newlines", () => {
+      const result = table(
+        [
+          { key: "type", maxWidth: 30 },
+          { key: "desc", maxWidth: 40 },
+        ],
+        [
+          {
+            type: "attribute set of string",
+            desc: "Input configuration\n\nwritten to file.\n\nSee docs for more.",
+          },
+          {
+            type: "boolean",
+            desc: "Whether to enable.\n\ndefault: false",
+          },
+        ],
+      );
+      assertNoBlankSeparatorLines(result);
+      expect(result).toContain("Input configuration");
+    });
+
+    it("handles leading and trailing newlines", () => {
+      const result = table(
+        [{ key: "col", maxWidth: 20 }],
+        [{ col: "\n\nhello\n\n" }],
+      );
+      const lines = result.split("\n");
+      const dataLines = lines.slice(2);
+      expect(dataLines[0]).toBe("hello");
+    });
+
+    it("handles many consecutive newlines", () => {
+      const result = table([{ key: "col" }], [{ col: "line1\n\n\n\n\nline2" }]);
+      assertNoBlankSeparatorLines(result);
+      expect(result).toContain("line1");
+      expect(result).toContain("line2");
+    });
+
+    it("handles empty string cells", () => {
+      const result = table([{ key: "col" }], [{ col: "" }]);
+      const lines = result.split("\n");
+      expect(lines[2]).toBe("");
+    });
+
+    it("handles cells with only newlines", () => {
+      const result = table([{ key: "col" }], [{ col: "\n\n\n\n" }]);
+      assertNoBlankSeparatorLines(result);
+      const lines = result.split("\n");
+      expect(lines[2]).toBe("");
+    });
+
+    it("handles multiple rows with varying newline patterns", () => {
+      const result = table(
+        [
+          { key: "#", align: "right", minWidth: 3 },
+          { key: "desc", maxWidth: 30 },
+        ],
+        [
+          { "#": "1", desc: "normal text" },
+          { "#": "2", desc: "with\n\nempty lines" },
+          { "#": "3", desc: "\n\nleading newlines" },
+          { "#": "4", desc: "trailing\n\n" },
+        ],
+      );
+      assertNoBlankSeparatorLines(result);
+      expect(result).toContain("normal text");
+      expect(result).toContain("with");
+      expect(result).toContain("empty lines");
+      expect(result).toContain("leading newlines");
+      expect(result).toContain("trailing");
+    });
+  });
 });

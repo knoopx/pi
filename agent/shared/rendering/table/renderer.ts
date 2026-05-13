@@ -1,122 +1,31 @@
-import { visibleWidth } from "@earendil-works/pi-tui";
-import { wrapPlain } from "../text";
-import type { Column, MeasuredColumn } from "../types";
-import { cellStr, padEnd, padStart } from "./cells";
+import type { Column } from "../types";
+import { formatCells, measureColumns, applyWidthConstraint } from "./columns";
+import { renderHeader, renderSeparator, renderRows } from "./rows";
+
 export function table(
   columns: Column[],
   rows: Record<string, unknown>[],
   options: { indent?: number; maxTableWidth?: number } = {},
 ): string {
   if (rows.length === 0) return "";
+
   const indent = options.indent ?? 0;
   const indentStr = " ".repeat(indent);
   const maxTableWidth =
     options.maxTableWidth ?? process.stdout.columns ?? Infinity;
-  const formatted: string[][] = rows.map((row) =>
-    columns.map((col) => {
-      const raw = row[col.key];
-      return col.format ? col.format(raw, row) : cellStr(raw);
-    }),
-  );
 
-  const measured: MeasuredColumn[] = columns.map((col, ci) => {
-    const headerW = col.key.length;
-    const maxCell = formatted.reduce((max, row) => {
-      const cell = row[ci];
-      const lines = cell.split("\n");
-      const lineMax = Math.max(...lines.map((l) => visibleWidth(l)));
-      return Math.max(max, lineMax);
-    }, 0);
-    let width = Math.max(headerW, maxCell);
-    if (col.minWidth !== undefined) width = Math.max(width, col.minWidth);
-    if (col.maxWidth !== undefined) width = Math.min(width, col.maxWidth);
-    return { ...col, width };
-  });
+  const formatted = formatCells(columns, rows);
+  const measured = measureColumns(columns, formatted);
 
-  const sepWidth = 3; // " │ "
+  const sepWidth = 3;
   const chrome = indent + sepWidth * (measured.length - 1);
   const totalNatural = chrome + measured.reduce((s, c) => s + c.width, 0);
 
-  if (totalNatural > maxTableWidth && maxTableWidth > chrome) {
-    const budget = maxTableWidth - chrome;
-    // Fixed columns: right-aligned or with explicit minWidth matching current width
-    const fixedIndices = new Set(
-      measured
-        .map((c, i) => (c.align === "right" ? i : -1))
-        .filter((i) => i >= 0),
-    );
-    const fixedTotal = measured.reduce(
-      (s, c, i) => s + (fixedIndices.has(i) ? c.width : 0),
-      0,
-    );
-    const flexBudget = budget - fixedTotal;
-    const flexIndices = measured
-      .map((_, i) => i)
-      .filter((i) => !fixedIndices.has(i));
-    const flexTotal = flexIndices.reduce((s, i) => s + measured[i].width, 0);
+  applyWidthConstraint(measured, totalNatural, maxTableWidth);
 
-    if (flexBudget > 0 && flexTotal > flexBudget) {
-      for (const i of flexIndices) {
-        const col = measured[i];
-        const share = Math.max(
-          Math.floor((col.width / flexTotal) * flexBudget),
-          col.minWidth ?? col.key.length,
-        );
-        col.width = Math.min(col.width, share);
-      }
-    }
-  }
-  const sep = " │ ";
-  const headerCells = measured.map((col, i) => {
-    const isLast = i === measured.length - 1;
-    const aligned =
-      col.align === "right"
-        ? padStart(col.key, col.width)
-        : isLast
-          ? col.key
-          : padEnd(col.key, col.width);
-    return aligned;
-  });
-  const headerLine = indentStr + headerCells.join(sep);
-  const separatorParts = measured.map((col) => "─".repeat(col.width));
-  const separatorLine = "─".repeat(indent) + separatorParts.join("─┼─");
-  const rowLines: string[] = [];
-  for (const cells of formatted) {
-    const wrappedCells: string[][] = cells.map((cell, ci) => {
-      const col = measured[ci];
-      const segments = cell.split("\n").filter((s) => s !== "");
-
-      if (segments.length === 0) return [""];
-      const wrapSegment = (seg: string): string[] => {
-        const plain = seg;
-        if (plain.length <= col.width) return [seg];
-        return wrapPlain(plain, col.width);
-      };
-
-      if (segments.length === 1) {
-        const lines = wrapSegment(segments[0]);
-        if (lines.length <= 1) return lines;
-        return [lines[0], ...lines.slice(1).map((l) => `    ${l}`)];
-      }
-      const wrappedSegments = segments.map((seg) =>
-        wrapSegment(seg).join("\n"),
-      );
-      const joined = wrappedSegments.join("\n");
-      return joined.split("\n");
-    });
-    const maxLines = Math.max(...wrappedCells.map((wc) => wc.length));
-
-    for (let lineIdx = 0; lineIdx < maxLines; lineIdx++) {
-      const lineCells = wrappedCells.map((wc, ci) => {
-        const col = measured[ci];
-        const isLast = ci === measured.length - 1;
-        const text = lineIdx < wc.length ? wc[lineIdx] : "";
-        if (col.align === "right") return padStart(text, col.width);
-        return isLast ? text : padEnd(text, col.width);
-      });
-      rowLines.push(indentStr + lineCells.join(sep));
-    }
-  }
+  const headerLine = renderHeader(measured, indentStr);
+  const separatorLine = renderSeparator(measured, indent);
+  const rowLines = renderRows(formatted, measured, indentStr);
 
   return [headerLine, separatorLine, ...rowLines].join("\n");
 }
