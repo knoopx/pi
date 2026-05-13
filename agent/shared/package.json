@@ -4,11 +4,11 @@
   "type": "module",
   "dependencies": {
     "shell-quote": "^1.8.3",
-    "typescript-eslint": "^8.59.1",
     "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {
     "@types/picomatch": "^4.0.3",
+    "typescript-eslint": "^8.59.1",
     "vitest": "^3.2.4"
   }
 }

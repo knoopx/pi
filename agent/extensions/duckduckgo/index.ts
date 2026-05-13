@@ -376,7 +376,7 @@ async function paginateHtmlResults(
   startOffset: number,
 ): Promise<void> {
   let offset = startOffset;
-  let items = $("div.result");
+  let items = cheerio.load("")("div.result");
 
   while (results.length < maxResults && items.length > 0) {
     const nextPage = await fetchHtmlPage(query, offset);

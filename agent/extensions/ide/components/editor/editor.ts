@@ -252,7 +252,9 @@ export class Editor {
     );
     this.cursor = result.cursor;
     this.selectionAnchor = result.selectionAnchor;
-    applyPageMove(
+  }
+
+  private applyPageMove(
     fn: typeof move.movePageUp | typeof move.movePageDown,
     select: boolean,
   ): void {

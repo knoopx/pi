@@ -1,8 +1,7 @@
-import type { StatSyncFn } from "node:fs";
 import type { FileInfo } from "./types";
 export function getMtimeSorter(
   cwd: string,
-  statSync: StatSyncFn,
+  statSync: (path: string) => { mtimeMs: number },
   join: (a: string, b: string) => string,
 ) {
   return (a: FileInfo, b: FileInfo) => {

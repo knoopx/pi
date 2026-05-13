@@ -93,7 +93,8 @@ function tryParseSessionLine(
 ): { type: string; cwd?: string } | null {
   try {
     const parsed = JSON.parse(line) as { type?: string; cwd?: string };
-    if (parsed && parsed.type === "session") return parsed;
+    if (parsed && parsed.type === "session")
+      return { type: parsed.type, cwd: parsed.cwd };
   } catch {}
   return null;
 }

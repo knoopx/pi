@@ -15,7 +15,7 @@ function truncateSingleLine(text: string, maxWidth: number): string {
 
 function getEntryTypeStyle(entry: HistoryEntry): {
   icon: string;
-  color: string;
+  color: "success" | "accent";
 } {
   if (entry.type === "command") return { icon: "󰅩", color: "success" };
   return { icon: "󰈚", color: "accent" };
