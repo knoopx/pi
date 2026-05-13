@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { TUI } from "@earendil-works/pi-tui";
-import { createMockTheme, TestTerminal } from "../ide/lib/test-utils";
-import { HistorySearchComponent, makeHistorySearchRenderer } from "./index";
-import type { HistoryEntry } from "./index";
+import {
+  createMockTheme,
+  TestTerminal,
+} from "../../../shared/testing/mock-theme";
+import { HistorySearchComponent, makeHistorySearchRenderer } from "./component";
+import type { HistoryEntry } from "../types";
 
 // Raw terminal escape sequences for key testing
 const ESC = "\x1b";

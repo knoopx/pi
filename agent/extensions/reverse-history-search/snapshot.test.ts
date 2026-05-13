@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import type { HistoryEntry } from "./index";
-import { createMockTheme } from "../ide/lib/test-utils";
-import { renderHistoryPage } from "./render";
+import type { HistoryEntry } from "./types";
+import { createMockTheme } from "../../shared/testing/mock-theme";
+import { renderHistoryPage } from "./ui/renderer";
 
 function filterEntries(entries: HistoryEntry[], query: string): HistoryEntry[] {
   if (!query) return entries;

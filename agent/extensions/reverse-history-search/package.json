@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "^0.74.0",
-    "@earendil-works/pi-tui": "^0.74.0"
+    "@earendil-works/pi-tui": "^0.74.0",
+    "slice-ansi": "^9.0.0"
   },
   "devDependencies": {
     "@types/node": "^25.7.0",

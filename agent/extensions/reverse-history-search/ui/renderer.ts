@@ -1,5 +1,5 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { pad } from "../ide/lib/text-utils";
+import { pad } from "../../../shared/format/ansi-text";
 
 interface HistoryEntry {
   content: string;
