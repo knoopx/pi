@@ -249,17 +249,6 @@ function deleteWordBackwardBody(lines: string[], cursor: Cursor): void {
   }
 }
 
-function makeDeleteBody(
-  delSelFn: DelSelFn,
-  body: DeleteBody,
-): (lines: string[], cursor: Cursor) => DeleteResult {
-  return (lines, cursor) =>
-    withSelection(false, delSelFn, null, null, () => {
-      body(lines, cursor);
-      return { lines, cursor, selectionAnchor: null };
-    });
-}
-
 export function insertNewline(
   lines: string[],
   cursor: Cursor,

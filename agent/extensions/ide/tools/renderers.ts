@@ -102,10 +102,9 @@ function buildFilePreview(opts: {
   lines: string[];
   total: number;
   maxLines: number;
-  tw: number;
   theme: Theme;
 }): string {
-  const { lines, total, maxLines, tw, theme } = opts;
+  const { lines, total, maxLines, theme } = opts;
   const out = [...lines];
   if (total > maxLines) {
     out.push(

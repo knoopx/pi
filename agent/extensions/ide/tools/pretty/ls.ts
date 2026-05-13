@@ -1,4 +1,3 @@
-import type { Theme } from "@earendil-works/pi-coding-agent";
 import { renderTree } from "../renderers";
 import { countLines } from "./utils";
 import { createPrettyTool } from "./factory";

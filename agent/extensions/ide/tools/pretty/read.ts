@@ -5,7 +5,7 @@ import type { Theme } from "@earendil-works/pi-coding-agent";
 import { fileIconGlyph } from "../icons";
 import { humanSize } from "../images";
 import { renderFileContent } from "../renderers";
-import { termW, shortPath } from "../terminal-utils";
+import { shortPath } from "../terminal-utils";
 import {
   extractTextContent,
   renderError,
@@ -118,7 +118,6 @@ function renderImageResult(
   theme: Theme,
   text: Component & { setText: (s: string) => void },
 ): void {
-  const tw = termW();
   const byteSize = Math.ceil(((details.data as string).length * 3) / 4);
   const sizeStr = humanSize(byteSize);
   const mimeStr = (details.mimeType as string) ?? "image";

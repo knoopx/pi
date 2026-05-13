@@ -2,7 +2,6 @@ import type { AgentToolResult, Theme } from "@earendil-works/pi-coding-agent";
 import type { Component } from "@earendil-works/pi-tui";
 import {
   createExecuteWrapper,
-  countLines,
   buildRenderCall,
   buildRenderResult,
   type ToolExecuteFn,

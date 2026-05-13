@@ -40,7 +40,7 @@ export type WNode =
 
 import { fromMarkdown } from "mdast-util-from-markdown";
 import { gfmFromMarkdown } from "mdast-util-gfm";
-import type { Root as MdastRoot, Content, Link } from "mdast";
+import type { Root as MdastRoot, Link } from "mdast";
 import type {
   Extension as MicromarkExtension,
   Construct,
@@ -179,14 +179,14 @@ function tokenizeAttention(
   ok: (code: number) => void,
   nok: (code: number) => void,
 ): (code: number) => void {
-  let count = 0;
+  let _count = 0;
   let ch = 0;
 
   return start;
 
   function start(code: number) {
     ch = code;
-    count = 1;
+    _count = 1;
     effects.enter("wikitextAttentionSequence");
     effects.consume(code);
     return inside;
