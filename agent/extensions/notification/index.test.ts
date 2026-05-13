@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildNotifySendArgs } from "./notify-send";
+import { buildNotifySendArgs } from "./lib/notify-send";
 const SUMMARY = "Test Notification";
 function assertArgs(
   params: Parameters<typeof buildNotifySendArgs>[0],

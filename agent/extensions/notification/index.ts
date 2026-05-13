@@ -7,7 +7,7 @@ import type {
   ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { buildNotifySendArgs } from "./notify-send";
+import { buildNotifySendArgs } from "./lib/notify-send";
 const SETTINGS_PATH = resolve(homedir(), ".pi/agent/settings.json");
 
 async function loadSettings(): Promise<Record<string, unknown>> {
