@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import defaultsConfig from "./defaults";
+import defaultsConfig from "../config/defaults";
 
 function expectDefaultActive(config: {
   load(): void;
@@ -13,7 +13,7 @@ describe("configLoader", () => {
   describe("given configuration is not loaded yet", () => {
     describe("when reading resolved config", () => {
       it("then throws explicit load-first error", async () => {
-        const { configLoader } = await import("./config");
+        const { configLoader } = await import("./loader");
         expect(() => configLoader.getConfig()).toThrow(
           "Config not loaded. Call load() first.",
         );
@@ -23,7 +23,7 @@ describe("configLoader", () => {
 
   describe("when loading", () => {
     it("then resolves defaults as active config", async () => {
-      const { configLoader } = await import("./config");
+      const { configLoader } = await import("./loader");
       expectDefaultActive(configLoader);
     });
   });

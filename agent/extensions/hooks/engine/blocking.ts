@@ -1,6 +1,6 @@
-import type { HookEvent } from "./schema";
-import type { HookResult } from "./types";
-import { NON_BLOCKING_TOOLS } from "./constants";
+import type { HookEvent } from "../types/schema";
+import type { HookResult } from "../types/results";
+import { NON_BLOCKING_TOOLS } from "../config/constants";
 function checkExitCodeBlock(
   result: HookResult,
 ): { block: true; reason: string } | null {

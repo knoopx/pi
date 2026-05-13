@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateConfig, isValidConfig, parseHookOutput } from "./schema";
+import { validateConfig, isValidConfig, parseHookOutput } from "./validation";
 
 describe("validateConfig", () => {
   it("accepts valid config", () => {

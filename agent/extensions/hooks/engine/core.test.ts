@@ -3,7 +3,7 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import { runEngineHooks } from "./engine";
+import { runEngineHooks } from "./core";
 function createMockPi(): ExtensionAPI {
   return {
     exec: () => Promise.resolve({ code: 0, stdout: "", stderr: "" }),

@@ -6,8 +6,8 @@ import {
   isAbortedToolResult,
   isAbortedTurnEnd,
   isAbortedAgentEnd,
-} from "./abort-detection";
-import { buildHookInput } from "./pattern-matching";
+} from "./abort";
+import { buildHookInput } from "./matching";
 const mockCtx = {
   cwd: "/test",
   hasUI: false,

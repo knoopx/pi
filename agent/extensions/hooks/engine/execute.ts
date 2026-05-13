@@ -2,10 +2,10 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import type { HookInput, HooksGroup, HookRule } from "./schema";
-import { parseHookOutput } from "./schema";
-import type { HookResult, HookVariables } from "./types";
-import { substituteVariables } from "./pattern-matching";
+import type { HookInput, HooksGroup, HookRule } from "../types/schema";
+import { parseHookOutput } from "../config/validation";
+import type { HookResult, HookVariables } from "../types/results";
+import { substituteVariables } from "./matching";
 export async function runHook(
   pi: ExtensionAPI,
   hookRunContext: {

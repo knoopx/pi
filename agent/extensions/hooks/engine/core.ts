@@ -2,15 +2,11 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import type { HookEvent, HooksConfig } from "./schema";
-import type { HookProcessState, HookVariables } from "./types";
-import { shouldExecuteRule, processHookExecution } from "./processing";
-import {
-  getInputField,
-  buildHookInput,
-  isGroupActive,
-} from "./pattern-matching";
-import { processHookGroupExecution } from "./results";
+import type { HookEvent, HooksConfig } from "../types/schema";
+import type { HookProcessState, HookVariables } from "../types/results";
+import { shouldExecuteRule, processHookExecution } from "./process";
+import { getInputField, buildHookInput, isGroupActive } from "./matching";
+import { processHookGroupExecution } from "./output";
 interface ProcessHooksInput {
   event: HookEvent;
   ctx: ExtensionContext;

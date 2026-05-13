@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "lint": "bun ./node_modules/eslint/bin/eslint.js",
-    "test": "bun vitest run *.test.ts",
+    "test": "bun vitest run '**/*.test.ts'",
     "tsc": "tsc --noEmit"
   },
   "pi": {
@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.7.0",
+    "@types/picomatch": "^4.0.3",
     "eslint": "^10.3.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.3",

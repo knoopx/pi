@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import type { HooksGroup, HookRule } from "./schema";
-import { renderGroupHeader, renderHookLine } from "./index";
+import type { HooksGroup, HookRule } from "./types/schema";
+import { renderGroupHeader, renderHookLine } from "./commands/audit";
 
 function formatHooksAudit(groups: HooksGroup[], allActive: boolean): string[] {
   const lines: string[] = [];

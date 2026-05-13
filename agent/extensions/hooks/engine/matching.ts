@@ -1,10 +1,8 @@
 import { readdir } from "node:fs/promises";
-import type { HookEvent, HookInput, HookRule } from "./schema";
-import type { HookVariables } from "./types";
-import {
-  matchCommandPattern,
-  matchFileNamePattern,
-} from "../../shared/matching/pattern-matching";
+import type { HookEvent, HookInput, HookRule } from "../types/schema";
+import type { HookVariables } from "../types/results";
+import { matchCommandPattern } from "../../../shared/matching/command";
+import { matchFileNamePattern } from "../../../shared/matching/pattern";
 export function isGroupActive(pattern: string, root: string): Promise<boolean> {
   if (pattern === "*") return Promise.resolve(true);
 

@@ -1,4 +1,4 @@
-import type { HooksConfig } from "./schema";
+import type { HooksConfig } from "../types/schema";
 const defaults: HooksConfig = [
   {
     group: "javascript",

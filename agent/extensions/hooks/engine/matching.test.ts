@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { join } from "node:path";
 import {
   getContextValue,
   getInputField,
@@ -6,7 +7,7 @@ import {
   isGroupActive,
   substituteVariables,
   doesRuleMatch,
-} from "./pattern-matching";
+} from "./matching";
 
 describe("getContextValue", () => {
   describe("given tool_name context", () => {
@@ -167,7 +168,7 @@ describe("matchValuePattern", () => {
 });
 
 describe("isGroupActive", () => {
-  const testDir = import.meta.dirname;
+  const testDir = join(import.meta.dirname, "..");
 
   describe("given wildcard pattern", () => {
     it("then returns true regardless of directory contents", async () => {

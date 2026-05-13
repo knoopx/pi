@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { shouldExecuteRule } from "./processing";
-import type { HookRule } from "./schema";
+import { shouldExecuteRule } from "./process";
+import type { HookRule } from "../types/schema";
 
 describe("shouldExecuteRule", () => {
   describe("given event mismatch", () => {

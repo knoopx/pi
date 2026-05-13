@@ -1,14 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { HooksGroup, HookRule, HookOutput } from "./schema";
-interface HookResult {
-  success: boolean;
-  exitCode: number;
-  stdout: string;
-  stderr: string;
-  output: HookOutput | undefined;
-  group: string;
-  command: string;
-}
+import type { HooksGroup, HookRule, HookOutput } from "../types/schema";
+import type { HookResult } from "../types/results";
 function groupHookResults(results: HookResult[]): Map<string, HookResult[]> {
   const grouped = new Map<string, HookResult[]>();
   for (const r of results) {

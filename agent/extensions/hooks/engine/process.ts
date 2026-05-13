@@ -2,12 +2,21 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import type { HookEvent, HooksGroup, HookRule, HookInput } from "./schema";
-import { doesRuleMatch } from "./pattern-matching";
-import type { HookProcessState, HookVariables, HookResult } from "./types";
-import { runHook } from "./hook-execution";
-import { shouldBlock } from "./blocking-checks";
-import { READ_ONLY_TOOLS } from "./constants";
+import type {
+  HookEvent,
+  HooksGroup,
+  HookRule,
+  HookInput,
+} from "../types/schema";
+import { doesRuleMatch } from "./matching";
+import type {
+  HookProcessState,
+  HookVariables,
+  HookResult,
+} from "../types/results";
+import { runHook } from "./execute";
+import { shouldBlock } from "./blocking";
+import { READ_ONLY_TOOLS } from "../config/constants";
 export function shouldExecuteRule(
   rule: HookRule,
   event: HookEvent,
