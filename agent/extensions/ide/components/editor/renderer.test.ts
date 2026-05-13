@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { CURSOR_MARKER } from "@earendil-works/pi-tui";
 import { renderEditorView } from "./renderer";
 import type { RenderOptions } from "./renderer";
-import { createMockTheme } from "../../lib/test-utils";
+import { createMockTheme } from "../../test/utils";
 const theme = createMockTheme();
 
 // Helper: simulate syntax-highlighted line (Shiki-style ANSI codes per token)

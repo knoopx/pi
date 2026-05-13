@@ -1,4 +1,4 @@
-import type { Change, FileChange } from "../../lib/types";
+import type { Change, FileChange } from "../../types";
 import type { GraphLayout } from "../../lib/graph";
 interface SelectionState {
   selectedIndex: number;

@@ -1,6 +1,7 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { FileChangeRow } from "./file-change-row";
-import { ensureWidth, getVisibleItems } from "../text-utils";
+import { renderListPane } from "./list-pane-renderer";
+
 interface FileListPaneProps {
   files: Array<{
     status: string;
@@ -14,31 +15,26 @@ interface FileListPaneProps {
   focus: "left" | "right";
   theme: Theme;
 }
+
 export class FileListPane {
   constructor(private readonly props: FileListPaneProps) {}
 
   render(width: number): string[] {
-    if (this.props.files.length === 0) {
-      return [
-        ensureWidth(this.props.theme.fg("dim", " No files changed"), width),
-      ];
-    }
-    const visibleItems = getVisibleItems(
-      this.props.files,
-      this.props.selectedIndex,
-      this.props.height,
-    );
-    const rows: string[] = [];
-    for (const { item: file, index: idx } of visibleItems) {
-      const isSelected = idx === this.props.selectedIndex;
-      const row = new FileChangeRow({
-        file,
-        isSelected,
-        theme: this.props.theme,
-      });
-      rows.push(row.render(width)[0]);
-    }
-
-    return rows;
+    return renderListPane({
+      items: this.props.files,
+      selectedIndex: this.props.selectedIndex,
+      height: this.props.height,
+      width,
+      theme: this.props.theme,
+      emptyMessage: " No files changed",
+      createRow: (file, idx) => {
+        const isSelected = idx === this.props.selectedIndex;
+        return new FileChangeRow({
+          file,
+          isSelected,
+          theme: this.props.theme,
+        });
+      },
+    });
   }
 }

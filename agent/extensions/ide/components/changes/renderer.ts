@@ -4,7 +4,7 @@ import {
   calculateDimensions,
   DEFAULT_SPLIT_CONFIG,
 } from "../../lib/split-panel/layout";
-import { renderSplitPanel } from "../../lib/split-panel/border";
+import { renderSplitPanel } from "../../lib/split-panel/border/renderer";
 import { REVISION_FILTERS } from "./types";
 import { ChangeListPane } from "../../lib/split-panel/change-list-pane";
 import { FileListPane } from "../../lib/split-panel/file-list-pane";

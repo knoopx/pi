@@ -1,5 +1,6 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { applySelectionBackground, truncateAnsi } from "../text-utils";
+import { applySelectionBackground } from "../formatting/text";
+import { truncateAnsi } from "../../../../shared/format/ansi-text";
 import { Row } from "../../../../shared/components/row";
 interface ListRowProps {
   text: string;

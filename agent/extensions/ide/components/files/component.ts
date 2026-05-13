@@ -9,10 +9,10 @@ import { Key } from "@earendil-works/pi-tui";
 import {
   createListPicker,
   type ListPickerComponent,
-} from "../../lib/list-picker";
+} from "../../lib/list-picker/picker";
 import type { SymbolReferenceActionType } from "../symbol-references/types";
 import { getFileIcon } from "../../lib/file-icons";
-import { openEditor } from "../../lib/editor-utils";
+import { openEditor } from "../../lib/open-editor";
 import type { FileInfo, FileResult } from "./types";
 import { getMtimeSorter } from "./helpers";
 import { loadPreviewFromPath } from "../../lib/file-preview";

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AgentWorkspace, FileChange, Change } from "../../lib/types";
-import { TestTerminal, createMockTheme } from "../../lib/test-utils";
-import { createWorkspaceState } from "./data-loading";
-import type { WorkspaceState } from "./data-loading";
+import type { AgentWorkspace, FileChange, Change } from "../../types";
+import { TestTerminal, createMockTheme } from "../../test/utils";
+import { createWorkspaceState } from "./loading";
+import type { WorkspaceState } from "./loading";
 function createMockWorkspace(
   overrides?: Partial<AgentWorkspace>,
 ): AgentWorkspace {
@@ -178,7 +178,7 @@ const defaultChanges = [
 const SHARED_FILES = [
   {
     status: "A" as const,
-    path: "agent/extensions/ide/components/files/component.ts",
+    path: "agent/extensions/ide/components/files/files.ts",
     insertions: 42,
     deletions: 0,
   },

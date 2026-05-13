@@ -1,6 +1,6 @@
 import type { BookmarkEntry } from "./types";
 import { Key } from "@earendil-works/pi-tui";
-import type { BookmarkFilterMode } from "../../lib/types";
+import type { BookmarkFilterMode } from "../../types";
 const BOOKMARK_FILTER_MODES = [
   "all",
   "bookmarks",
@@ -8,7 +8,7 @@ const BOOKMARK_FILTER_MODES = [
   "authors",
 ] as const;
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { formatBookmarkReference } from "../../lib/changes-formatting";
+import { formatBookmarkReference } from "../../lib/formatting/bookmarks";
 function parseBookmark(bookmark: string): { name: string; remote: string } {
   const atIndex = bookmark.lastIndexOf("@");
   if (atIndex === -1) return { name: bookmark, remote: "" };

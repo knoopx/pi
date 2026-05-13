@@ -9,14 +9,14 @@ import {
   createListPicker,
   type ListPickerComponent,
   type ListPickerAction,
-} from "../../lib/list-picker";
-import { formatSymbolListEntry } from "../../lib/symbol-utils";
+} from "../../lib/list-picker/picker";
+import { formatSymbolListEntry } from "./formatting";
 import type { SymbolReferenceActionType } from "../symbol-references/types";
 import type { SymbolResult, SymbolInfo, SymbolTypeFilter } from "./types";
 import { SYMBOL_TYPES } from "./types";
 import { loadPreviewFromPath } from "../../lib/file-preview";
 import { querySymbols } from "./helpers";
-import { openEditor } from "../../lib/editor-utils";
+import { openEditor } from "../../lib/open-editor";
 interface SymbolsComponentOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };

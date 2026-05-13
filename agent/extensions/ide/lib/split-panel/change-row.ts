@@ -1,8 +1,8 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { GraphLayout, Edge } from "../graph";
 import { renderGraphRow } from "../graph";
-import { formatChangeRow, visibleLength } from "../changes-formatting";
-import { ensureWidth, truncateAnsi } from "../text-utils";
+import { formatChangeRow, visibleLength } from "../formatting/changes";
+import { ensureWidth, truncateAnsi } from "../../../../shared/format/ansi-text";
 export interface ChangeRowFlags {
   isCursor: boolean;
   isMarked: boolean;

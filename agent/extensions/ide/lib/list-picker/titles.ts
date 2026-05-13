@@ -1,5 +1,5 @@
 import type { TitleContext, ListPickerItem } from "./types";
-import { truncateAnsi } from "../text-utils";
+import { truncateAnsi } from "../../../../shared/format/ansi-text";
 
 export function buildPickerTitles<T extends ListPickerItem>(
   ctx: TitleContext<T>,

@@ -4,11 +4,11 @@ import {
   calculateDimensions,
   DEFAULT_SPLIT_CONFIG,
 } from "../../lib/split-panel/layout";
-import { renderSplitPanel } from "../../lib/split-panel/border";
+import { renderSplitPanel } from "../../lib/split-panel/border/renderer";
 import { WorkspaceListPane } from "./list-pane";
 import { computeWorkspaceViewTitles } from "./view-titles";
 import { createRightPanes } from "./right-panes";
-import type { WorkspaceViewProps } from "./view-types";
+import type { WorkspaceViewProps } from "./types";
 export class WorkspaceView implements Component {
   constructor(
     private readonly props: WorkspaceViewProps,

@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { ChangesState } from "./state";
 import { getRepoRoot } from "../../jj/files";
-import type { Change } from "../../lib/types";
+import type { Change } from "../../types";
 import { notifyMutation } from "../../jj/core";
 interface ActionHandlersOptions {
   pi: ExtensionAPI;
@@ -103,6 +103,11 @@ Good examples (specific, concrete):
 - If sem shows \`+\` or \`-\` → describe additions/removals
 - Large file counts don't always mean large changes — sem reveals the truth
 </sem-guidance>
+
+<constraints>
+- **NO PARALLEL EXECUTION** — Describe each commit sequentially, one at a time. Complete all steps for one commit before starting the next. Running tool calls in parallel across commits will cause incorrect or mixed results.
+- **PRESERVE COMMIT ORDER** — Describe commits in the order listed above (newer first). The first commit in the list is the newest and should be described first.
+</constraints>
 
 <workflow>
 ${workflowLines}

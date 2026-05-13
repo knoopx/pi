@@ -1,8 +1,8 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { ListRow } from "../../lib/split-panel/list-row";
-import type { AgentWorkspace } from "../../lib/types";
-import { formatFileStats } from "../../lib/formatters";
-import { ensureWidth } from "../../lib/text-utils";
+import type { AgentWorkspace } from "../../types";
+import { formatFileStats } from "../../lib/formatting/stats";
+import { ensureWidth } from "../../../../shared/format/ansi-text";
 const STATUS_TEXT: Record<string, string> = {
   running: "running",
   completed: "done",

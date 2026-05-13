@@ -1,5 +1,18 @@
 import type { Cursor } from "./types";
-import { clampCol, moveWordLeftOnLine, moveWordRightOnLine } from "./helpers";
+import { clampCol } from "./helpers";
+import { moveWordLeftOnLine, moveWordRightOnLine } from "./word-movement";
+
+function withSelection<R>(
+  cursor: Cursor,
+  selectionAnchor: Cursor | null,
+  select: boolean,
+  fn: () => R,
+): { cursor: Cursor; selectionAnchor: Cursor | null } & R {
+  const newAnchor = beginSelection(selectionAnchor, cursor, select);
+  const result = fn();
+  const finalAnchor = finalizeSelection(newAnchor, cursor);
+  return { cursor, selectionAnchor: finalAnchor, ...result };
+}
 
 export function moveCursor(
   lines: string[],
@@ -10,11 +23,10 @@ export function moveCursor(
   direction: "up" | "down" | "left" | "right",
   select = false,
 ): { cursor: Cursor; selectionAnchor: Cursor | null; topLine: number } {
-  const newAnchor = beginSelection(selectionAnchor, cursor, select);
-  executeMove(lines, cursor, direction);
-  const finalAnchor = finalizeSelection(newAnchor, cursor);
-  const newTopLine = adjustScroll(cursor, topLine, viewHeight);
-  return { cursor, selectionAnchor: finalAnchor, topLine: newTopLine };
+  return withSelection(cursor, selectionAnchor, select, () => {
+    executeMove(lines, cursor, direction);
+    return { topLine: adjustScroll(cursor, topLine, viewHeight) };
+  });
 }
 
 export function moveToLineStart(
@@ -23,15 +35,14 @@ export function moveToLineStart(
   line: string,
   select = false,
 ): { cursor: Cursor; selectionAnchor: Cursor | null } {
-  const newAnchor = beginSelection(selectionAnchor, cursor, select);
-  const firstNonSpace = line.search(/\S/);
-  if (firstNonSpace === -1 || cursor.col === firstNonSpace) {
-    cursor.col = 0;
-  } else {
-    cursor.col = firstNonSpace;
-  }
-  const finalAnchor = finalizeSelection(newAnchor, cursor);
-  return { cursor, selectionAnchor: finalAnchor };
+  return withSelection(cursor, selectionAnchor, select, () => {
+    const firstNonSpace = line.search(/\S/);
+    if (firstNonSpace === -1 || cursor.col === firstNonSpace) {
+      cursor.col = 0;
+    } else {
+      cursor.col = firstNonSpace;
+    }
+  });
 }
 
 export function moveToLineEnd(
@@ -40,10 +51,9 @@ export function moveToLineEnd(
   line: string,
   select = false,
 ): { cursor: Cursor; selectionAnchor: Cursor | null } {
-  const newAnchor = beginSelection(selectionAnchor, cursor, select);
-  cursor.col = line.length;
-  const finalAnchor = finalizeSelection(newAnchor, cursor);
-  return { cursor, selectionAnchor: finalAnchor };
+  return withSelection(cursor, selectionAnchor, select, () => {
+    cursor.col = line.length;
+  });
 }
 
 export function setCursor(
@@ -108,21 +118,20 @@ function movePage(
   select: boolean,
   direction: -1 | 1,
 ): { cursor: Cursor; selectionAnchor: Cursor | null; topLine: number } {
-  const newAnchor = beginSelection(selectionAnchor, cursor, select);
-  const pageMoveCount = Math.max(1, viewHeight - 1);
-  const boundary = direction === -1 ? 0 : lines.length - 1;
-  for (let i = 0; i < pageMoveCount; i++) {
-    if (
-      (direction === -1 && cursor.line === 0) ||
-      (direction === 1 && cursor.line >= boundary)
-    )
-      break;
-    cursor.line += direction;
-  }
-  clampCol(lines, cursor);
-  const finalAnchor = finalizeSelection(newAnchor, cursor);
-  const newTopLine = adjustScroll(cursor, topLine, viewHeight);
-  return { cursor, selectionAnchor: finalAnchor, topLine: newTopLine };
+  return withSelection(cursor, selectionAnchor, select, () => {
+    const pageMoveCount = Math.max(1, viewHeight - 1);
+    const boundary = direction === -1 ? 0 : lines.length - 1;
+    for (let i = 0; i < pageMoveCount; i++) {
+      if (
+        (direction === -1 && cursor.line === 0) ||
+        (direction === 1 && cursor.line >= boundary)
+      )
+        break;
+      cursor.line += direction;
+    }
+    clampCol(lines, cursor);
+    return { topLine: adjustScroll(cursor, topLine, viewHeight) };
+  });
 }
 
 export function moveWordLeft(
@@ -131,15 +140,14 @@ export function moveWordLeft(
   selectionAnchor: Cursor | null,
   select = false,
 ): { cursor: Cursor; selectionAnchor: Cursor | null } {
-  const newAnchor = beginSelection(selectionAnchor, cursor, select);
-  if (cursor.col === 0 && cursor.line > 0) {
-    cursor.line--;
-    cursor.col = lines[cursor.line]?.length ?? 0;
-  } else {
-    moveWordLeftOnLine(lines, cursor);
-  }
-  const finalAnchor = finalizeSelection(newAnchor, cursor);
-  return { cursor, selectionAnchor: finalAnchor };
+  return withSelection(cursor, selectionAnchor, select, () => {
+    if (cursor.col === 0 && cursor.line > 0) {
+      cursor.line--;
+      cursor.col = lines[cursor.line]?.length ?? 0;
+    } else {
+      moveWordLeftOnLine(lines, cursor);
+    }
+  });
 }
 
 export function moveWordRight(
@@ -148,16 +156,15 @@ export function moveWordRight(
   selectionAnchor: Cursor | null,
   select = false,
 ): { cursor: Cursor; selectionAnchor: Cursor | null } {
-  const newAnchor = beginSelection(selectionAnchor, cursor, select);
-  const line = lines[cursor.line] ?? "";
-  if (cursor.col >= line.length && cursor.line < lines.length - 1) {
-    cursor.line++;
-    cursor.col = 0;
-  } else {
-    moveWordRightOnLine(lines, cursor);
-  }
-  const finalAnchor = finalizeSelection(newAnchor, cursor);
-  return { cursor, selectionAnchor: finalAnchor };
+  return withSelection(cursor, selectionAnchor, select, () => {
+    const line = lines[cursor.line] ?? "";
+    if (cursor.col >= line.length && cursor.line < lines.length - 1) {
+      cursor.line++;
+      cursor.col = 0;
+    } else {
+      moveWordRightOnLine(lines, cursor);
+    }
+  });
 }
 
 function beginSelection(

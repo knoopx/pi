@@ -9,8 +9,8 @@ import {
   createListPicker,
   type ListPickerComponent,
   type ListPickerAction,
-} from "../../lib/list-picker";
-import { formatSymbolListEntry } from "../../lib/symbol-utils";
+} from "../../lib/list-picker/picker";
+import { formatSymbolListEntry } from "../symbols/formatting";
 import { loadFilePreviewWithShiki } from "../../lib/file-preview";
 import type {
   SymbolReferenceItem,
@@ -19,7 +19,7 @@ import type {
   SymbolReferenceResult,
 } from "./types";
 import { parseSymbolReferenceOutput } from "./helpers";
-import { openEditor } from "../../lib/editor-utils";
+import { openEditor } from "../../lib/open-editor";
 const SYMBOL_ACTION_DEFS: [string, SymbolReferenceActionType][] = [
   [Key.ctrl("t"), "callers"],
   [Key.ctrl("j"), "callees"],

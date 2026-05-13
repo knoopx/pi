@@ -1,4 +1,4 @@
-import type { ListPickerItem } from "../../lib/list-picker";
+import type { ListPickerItem } from "../../lib/list-picker/picker";
 export interface PullRequest extends ListPickerItem {
   number: number;
   title: string;

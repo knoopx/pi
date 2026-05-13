@@ -1,9 +1,9 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { dirname, basename } from "node:path";
 import { highlightCode } from "./shiki/highlight";
-import { MAX_PREVIEW_LINES } from "./shiki-constants";
-import { fileIconGlyph, dirIconGlyph } from "./icons";
-import { termW } from "./terminal-utils";
+import { MAX_PREVIEW_LINES } from "./shiki/constants";
+import { fileIconGlyph, dirIconGlyph } from "../lib/file-icons";
+import { termW } from "../lib/terminal";
 import { lang } from "./language";
 function skipAnsiEscape(code: string, pos: number): number {
   const end = code.indexOf("m", pos);
@@ -102,6 +102,7 @@ function buildFilePreview(opts: {
   lines: string[];
   total: number;
   maxLines: number;
+  tw: number;
   theme: Theme;
 }): string {
   const { lines, total, maxLines, theme } = opts;

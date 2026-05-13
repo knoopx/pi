@@ -7,7 +7,7 @@ import {
   createMockTui,
   createMockPi,
   waitForAsyncHighlight,
-} from "../../lib/test-utils";
+} from "../../test/utils";
 
 describe("syntax highlighting", () => {
   let tui: ReturnType<typeof createMockTui>;

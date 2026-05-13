@@ -1,4 +1,4 @@
-import "../test-setup";
+import "../../test/setup";
 
 import { describe, it, expect, vi } from "vitest";
 import type { KeybindingsManager } from "@earendil-works/pi-coding-agent";
@@ -7,7 +7,7 @@ import {
   createErrorFixture,
   createComponentTest,
   snapshotRender,
-} from "../../lib/test-utils";
+} from "../../test/utils";
 
 const REPO = "/tmp/test-project";
 
@@ -34,7 +34,7 @@ index abc1234..def5678 100644
 @@ -1,5 +1,8 @@
  import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 +import type { Theme } from "@earendil-works/pi-coding-agent";
- import { createListPicker } from "../../lib/list-picker";
+ import { createListPicker } from "../../lib/list-picker/picker";
 +import { createFilePreviewLoader } from "../../lib/preview-utils";
  import { getFileIcon } from "../../lib/file-icons";
  `;

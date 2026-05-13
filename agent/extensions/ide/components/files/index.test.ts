@@ -3,16 +3,16 @@ import type * as fsPromises from "node:fs/promises";
 
 vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof fsPromises>();
-  const { mockReadFileImplementation } = await import("./test-helpers");
+  const { mockReadFileImplementation } = await import("./test-utils");
   return {
     ...actual,
     readFile: vi.fn().mockImplementation(mockReadFileImplementation),
   };
 });
 
-import type { TestTerminal } from "../../lib/test-utils";
-import { createMockPi } from "../../lib/test-utils";
-import { createFilesFixture, makeFilesMockPi } from "./test-helpers";
+import type { TestTerminal } from "../../test/utils";
+import { createMockPi } from "../../test/utils";
+import { createFilesFixture, makeFilesMockPi } from "./test-utils";
 
 describe("files — list row rendering", () => {
   describe("given a list of files", () => {
@@ -25,7 +25,7 @@ describe("files — list row rendering", () => {
     it("renders rows with leading space before file icons", async () => {
       const { component } = await createFilesFixture(
         makeFilesMockPi(
-          "a.ts\nagent/extensions/ide/components/list-picker.test.ts\nagent/extensions/nix/nix.test.ts\n",
+          "a.ts\nagent/extensions/ide/components/list-picker.test.ts\nagent/extensions/websearch/tests/nix.test.ts\n",
         ),
       );
       const result = component.render(120);
@@ -56,7 +56,7 @@ describe("files — list row rendering", () => {
         "agent/extensions/ide/components/files.ts",
         "agent/extensions/ide/components/list-picker.ts",
         "agent/extensions/ide/components/split-panel/border.ts",
-        "agent/extensions/nix/nix.test.ts",
+        "agent/extensions/websearch/tests/nix.test.ts",
         "agent/extensions/gh/index.ts",
         "agent/shared/tool-result.ts",
         "agent/extensions/usage/usage.test.ts",

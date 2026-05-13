@@ -1,4 +1,4 @@
-import "../test-setup";
+import "../../test/setup";
 
 import { describe, it, expect, vi } from "vitest";
 import type { KeybindingsManager } from "@earendil-works/pi-coding-agent";
@@ -7,7 +7,7 @@ import {
   createErrorFixture,
   createComponentTest,
   snapshotRender,
-} from "../../lib/test-utils";
+} from "../../test/utils";
 import type { AstGrepMatch } from "./types";
 
 const REPO = "/tmp/test-project";
@@ -59,7 +59,7 @@ describe("todos — list row rendering", () => {
         makeAstGrepMatches([
           {
             text: "// TODO: implement keyboard shortcut for file preview toggle",
-            file: "agent/extensions/ide/components/files/component.ts",
+            file: "agent/extensions/ide/components/files/files.ts",
           },
         ]),
       );
@@ -73,11 +73,11 @@ describe("todos — list row rendering", () => {
       const result = await renderMatches([
         {
           text: "// TODO: implement keyboard shortcut for file preview toggle",
-          file: "agent/extensions/ide/components/files/component.ts",
+          file: "agent/extensions/ide/components/files/files.ts",
         },
         {
           text: "// TODO: add error handling for jj command failures",
-          file: "agent/extensions/ide/components/bookmarks/component.ts",
+          file: "agent/extensions/ide/components/bookmarks/bookmarks.ts",
         },
         {
           text: "// FIXME: memory leak in split-panel when switching focus",
@@ -95,7 +95,7 @@ describe("todos — list row rendering", () => {
       const result = await renderMatches([
         {
           text: "// TODO: implement file preview toggle",
-          file: "agent/extensions/ide/components/files/component.ts",
+          file: "agent/extensions/ide/components/files/files.ts",
         },
         {
           text: "// FIXME: race condition in list-picker update",
@@ -119,7 +119,7 @@ describe("todos — list row rendering", () => {
       const tasks = [
         {
           text: "// TODO: implement keyboard shortcut for file preview toggle",
-          file: "agent/extensions/ide/components/files/component.ts",
+          file: "agent/extensions/ide/components/files/files.ts",
         },
         {
           text: "// FIXME: race condition in list-picker update cycle",
@@ -191,7 +191,7 @@ describe("todos — list row rendering", () => {
         },
         {
           text: "// XXX: technical debt in workspace state management",
-          file: "agent/extensions/ide/components/workspaces/data-loading.ts",
+          file: "agent/extensions/ide/components/workspaces/loading.ts",
         },
         {
           text: "// TODO: set up GitHub Actions for CI pipeline",

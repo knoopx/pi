@@ -3,7 +3,7 @@ import type {
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 import { createPullRequestsComponent } from "./component";
-import { openBrowserOverlay } from "../../lib/overlay-utils";
+import { openBrowserOverlay } from "../../lib/ui/overlay";
 export async function openPullRequestsBrowser(
   pi: ExtensionAPI,
   ctx: ExtensionContext,

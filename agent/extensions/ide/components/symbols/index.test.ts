@@ -1,4 +1,4 @@
-import "../test-setup";
+import "../../test/setup";
 
 import { describe, it, expect, vi } from "vitest";
 import type { ExecResult } from "@earendil-works/pi-coding-agent";
@@ -12,17 +12,17 @@ import {
   createMockTheme,
   createMockPi,
   createMockTui,
-} from "../../lib/test-utils";
+} from "../../test/utils";
 const theme = createMockTheme();
 const SYMBY_TYPE: Record<string, string> = {
   class:
     "ListPickerComponent|c|./agent/extensions/ide/lib/list-picker.ts|45-120\nSplitPanel|c|./agent/extensions/ide/lib/split-panel/index.ts|30-90",
   function:
-    "createFilesComponent|f|./agent/extensions/ide/components/files/component.ts|28-60\ncreateSymbolsComponent|f|./agent/extensions/ide/components/symbols/component.ts|35-70",
+    "createFilesComponent|f|./agent/extensions/ide/components/files/files.ts|28-60\ncreateSymbolsComponent|f|./agent/extensions/ide/components/symbols/symbols.ts|35-70",
   method:
     "render|m|./agent/extensions/ide/lib/split-panel/renderer.ts|15-40\nhandleInput|m|./agent/extensions/ide/lib/list-picker.ts|130-165",
   enum: "SymbolType|e|./agent/extensions/ide/components/symbols/types.ts|1-8\nFocusState|e|./agent/extensions/ide/components/changes/state.ts|10-16",
-  all: "ListPickerComponent|c|./agent/extensions/ide/lib/list-picker.ts|45-120\ncreateFilesComponent|f|./agent/extensions/ide/components/files/component.ts|28-60\nrender|m|./agent/extensions/ide/lib/split-panel/renderer.ts|15-40\nSymbolType|e|./agent/extensions/ide/components/symbols/types.ts|1-8",
+  all: "ListPickerComponent|c|./agent/extensions/ide/lib/list-picker.ts|45-120\ncreateFilesComponent|f|./agent/extensions/ide/components/files/files.ts|28-60\nrender|m|./agent/extensions/ide/lib/split-panel/renderer.ts|15-40\nSymbolType|e|./agent/extensions/ide/components/symbols/types.ts|1-8",
 };
 function resolveCmOutput(args: string[]): string {
   const typeIdx = args.indexOf("--type");

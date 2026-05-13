@@ -7,7 +7,7 @@ import { Key } from "@earendil-works/pi-tui";
 import {
   createListPicker,
   type ListPickerComponent,
-} from "../../lib/list-picker";
+} from "../../lib/list-picker/picker";
 import type { TodoItem } from "./types";
 import { filterTodosByQuery, findTodos, formatTodoItem } from "./helpers";
 import { loadFilePreviewWithShiki } from "../../lib/file-preview";

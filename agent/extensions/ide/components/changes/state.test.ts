@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { createMockChange } from "../../lib/test-utils";
-import { expectDefaultSelection } from "./test-helpers";
+import { createMockChange } from "../../test/utils";
+import { expectDefaultSelection } from "./test-utils";
 
 describe("changes/state", () => {
   describe("given a new ChangesState instance", () => {

@@ -1,20 +1,13 @@
 import type { ChangesState } from "./state";
-import type { KeyBinding } from "../../keyboard";
-import type { KeyPattern } from "../../lib/types";
+import type { KeyBinding } from "../../lib/keyboard/handler";
+import type { KeyPattern } from "../../types";
 import { Key } from "@earendil-works/pi-tui";
-import { ACTION_KEYS } from "../../keyboard";
+import { ACTION_KEYS } from "../../lib/keyboard/handler";
+import type { Navigation } from "./navigation";
 
 export function buildKeyboardBindings(
   state: ChangesState,
-  navigation: {
-    navigateChanges: (dir: "up" | "down" | "pageUp" | "pageDown") => void;
-    navigateFiles: (dir: "up" | "down" | "pageUp" | "pageDown") => void;
-    scrollDiff: (dir: "up" | "down") => void;
-    switchFocus: () => void;
-    toggleSelection: () => void;
-    enterMoveMode: () => void;
-    cancelMoveMode: () => void;
-  },
+  navigation: Navigation,
   callbacks: {
     cycleFilter: (direction: 1 | -1) => void;
     handleNew: () => void;

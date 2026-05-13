@@ -1,5 +1,5 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { ensureWidth } from "../text-utils";
+import { ensureWidth } from "../../../../shared/format/ansi-text";
 export const BOX = {
   topLeft: "╭",
   topRight: "╮",

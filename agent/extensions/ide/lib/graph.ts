@@ -1,4 +1,4 @@
-import { getChangeIcon } from "./changes-formatting";
+import { getChangeIcon } from "./formatting/changes";
 export interface GraphNode {
   id: string;
   parentIds: string[];

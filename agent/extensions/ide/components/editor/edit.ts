@@ -4,14 +4,15 @@ import {
   findWordBoundaryBackward,
   findWordBoundaryForward,
 } from "./helpers";
+import { findLineForOffset } from "./core/offset";
 
 type DeleteBody = (lines: string[], cursor: Cursor) => void;
 
-type DeleteResult = {
+interface DeleteResult {
   lines: string[];
   cursor: Cursor;
   selectionAnchor: Cursor | null;
-};
+}
 
 type DelSelFn = (
   lines: string[],
@@ -335,25 +336,9 @@ export function replaceSelection(
     selectionRange.end,
     text,
   );
-  const newCursor = cursorFromOffsetForLines(
-    result,
-    selectionRange.start,
-    text.length,
-  );
+  const newCursor = findLineForOffset(result, text.length) ?? {
+    line: Math.max(0, result.length - 1),
+    col: result[result.length - 1]?.length ?? 0,
+  };
   return { lines: result, cursor: newCursor, selectionAnchor: null };
-}
-
-function cursorFromOffsetForLines(
-  lines: string[],
-  start: Cursor,
-  offset: number,
-): Cursor {
-  let remaining = offset;
-  for (let i = 0; i < lines.length; i++) {
-    const length = lines[i]?.length ?? 0;
-    if (remaining <= length) return { line: i, col: remaining };
-    remaining -= length + 1;
-  }
-  const lastLine = Math.max(0, lines.length - 1);
-  return { line: lastLine, col: lines[lastLine]?.length ?? 0 };
 }

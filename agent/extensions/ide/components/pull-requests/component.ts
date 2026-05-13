@@ -8,12 +8,12 @@ import {
   createListPicker,
   type ListPickerComponent,
   type ListPickerAction,
-} from "../../lib/list-picker";
-import { truncateAnsi } from "../../lib/text-utils";
-import { createMarkdownTheme } from "../../lib/markdown-theme";
-import { formatRelativeTime } from "../../lib/formatters";
+} from "../../lib/list-picker/picker";
+import { truncateAnsi } from "../../../../shared/format/ansi-text";
+import { createMarkdownTheme } from "../../lib/formatting/markdown-theme";
+import { formatRelativeTime } from "../../lib/formatting/stats";
 import type { PullRequest } from "./types";
-import { fetchPullRequests } from "./data-fetching";
+import { fetchPullRequests } from "./loading";
 import { executeGhCommand, openPrInBrowser } from "./actions";
 import {
   getPrIcon,

@@ -2,14 +2,14 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import { createChangesComponent } from "./index";
+import { createChangesComponent } from "./component";
 import { createSymbolReferenceComponent } from "../symbol-references/component";
 import type {
   SymbolReferenceResult,
   SymbolReferenceActionResult,
 } from "../symbol-references/types";
 import { SYMBOL_REFERENCE_COMMANDS } from "../symbol-references/types";
-import { FULL_OVERLAY_OPTIONS } from "../../lib/overlay-utils";
+import { FULL_OVERLAY_OPTIONS } from "../../lib/ui/overlay";
 export async function openChangesBrowser(
   pi: ExtensionAPI,
   ctx: ExtensionContext,

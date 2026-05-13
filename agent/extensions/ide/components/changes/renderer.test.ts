@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { createMockChange } from "../../lib/test-utils";
+import { createMockChange } from "../../test/utils";
 import {
   renderSnapshot,
   defaultMockChange,
   setMockChanges,
   loadingStateConfig,
-} from "./test-helpers";
+} from "./test-utils";
 
 describe("loading state", () => {
   it("then renders loading indicator", async () => {
@@ -21,20 +21,20 @@ describe("focus switching", () => {
       state.files = [
         {
           status: "M",
-          path: "agent/extensions/ide/components/files/component.ts",
+          path: "agent/extensions/ide/components/files/files.ts",
           insertions: 42,
           deletions: 18,
         },
       ];
       state.selectionState.fileIndex = 0;
       state.diffContent = [
-        "diff --git a/agent/extensions/ide/components/files/component.ts b/agent/extensions/ide/components/files/component.ts",
+        "diff --git a/agent/extensions/ide/components/files/files.ts b/agent/extensions/ide/components/files/files.ts",
         "index e3b0c44..a1b2c3d 100644",
-        "--- a/agent/extensions/ide/components/files/component.ts",
-        "+++ b/agent/extensions/ide/components/files/component.ts",
+        "--- a/agent/extensions/ide/components/files/files.ts",
+        "+++ b/agent/extensions/ide/components/files/files.ts",
         "@@ -1,5 +1,7 @@",
         " import { Component } from '@earendil-works/pi-tui';",
-        "+import type { FileInfo } from '../../lib/types';",
+        "+import type { FileInfo } from '../../types';",
         "+",
         "  export class FilesComponent extends Component {",
         "-    private items: string[] = [];",

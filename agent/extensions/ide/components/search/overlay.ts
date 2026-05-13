@@ -4,11 +4,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import { createSearchComponent } from "./component";
 import type { SearchResult } from "./types";
-
-const OVERLAY_OPTIONS = {
-  overlay: true,
-  overlayOptions: { width: "95%" as const, anchor: "center" as const },
-};
+import { FULL_OVERLAY_OPTIONS } from "../../lib/ui/overlay";
 
 export async function openSearchPicker(
   pi: ExtensionAPI,
@@ -26,6 +22,6 @@ export async function openSearchPicker(
         initialQuery,
         ctx,
       }),
-    OVERLAY_OPTIONS,
+    FULL_OVERLAY_OPTIONS,
   );
 }

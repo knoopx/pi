@@ -31,7 +31,7 @@ export interface ListPickerConfig<T extends ListPickerItem> {
   onKey?: (key: string, onReload?: () => void) => boolean;
 }
 
-export interface ListPickerTui {
+interface ListPickerTui {
   terminal: { rows: number };
   requestRender: () => void;
 }

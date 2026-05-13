@@ -2,11 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   findWordBoundaryBackward,
   findWordBoundaryForward,
-  moveWordLeftOnLine,
-  moveWordRightOnLine,
   clampCol,
   getLeadingWhitespace,
 } from "./helpers";
+import { moveWordLeftOnLine, moveWordRightOnLine } from "./word-movement";
 
 describe("findWordBoundaryBackward", () => {
   describe("given 'hello world' at column 11", () => {

@@ -2,7 +2,7 @@ import type { Theme } from "@earendil-works/pi-coding-agent";
 import { ChangeListPane } from "../../lib/split-panel/change-list-pane";
 import { FileListPane } from "../../lib/split-panel/file-list-pane";
 import { DiffPane } from "../../lib/split-panel/diff-pane";
-import type { AgentWorkspace, FileChange, Change } from "../../lib/types";
+import type { AgentWorkspace, FileChange, Change } from "../../types";
 interface RightPanesProps {
   selectedWorkspace: AgentWorkspace | null;
   files: FileChange[];

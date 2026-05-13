@@ -1,12 +1,8 @@
 import type { Component } from "@earendil-works/pi-tui";
 import { truncateToWidth } from "@earendil-works/pi-tui";
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import {
-  ensureWidth,
-  renderEmptyRow,
-  renderEmptyRowWithReset,
-  truncateAnsi,
-} from "../text-utils";
+import { renderEmptyRow, renderEmptyRowWithReset } from "../formatting/text";
+import { ensureWidth, truncateAnsi } from "../../../../shared/format/ansi-text";
 export function createEmptyChangeRow(message: string, theme: Theme): Component {
   return {
     render(width: number): string[] {

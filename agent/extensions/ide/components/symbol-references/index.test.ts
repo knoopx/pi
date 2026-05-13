@@ -22,7 +22,7 @@ import {
   createErrorFixture,
   createMockPi,
   createComponentFixture,
-} from "../../lib/test-utils";
+} from "../../test/utils";
 
 const REPO = "/tmp/test-project";
 
@@ -62,8 +62,8 @@ describe("symbol-references — list row rendering", () => {
   describe("given callers results", () => {
     it("renders caller symbols with file paths and line numbers", async () => {
       const output = makeCmOutput([
-        "createFilesComponent|f|./agent/extensions/ide/components/files/component.ts|28-60",
-        "createSymbolsComponent|f|./agent/extensions/ide/components/symbols/component.ts|35-70",
+        "createFilesComponent|f|./agent/extensions/ide/components/files/files.ts|28-60",
+        "createSymbolsComponent|f|./agent/extensions/ide/components/symbols/symbols.ts|35-70",
         "createListPicker|f|./agent/extensions/ide/lib/list-picker.ts|12-40",
       ]);
       const { component } = await createFixture(output, "Callers");
@@ -101,10 +101,10 @@ describe("symbol-references — list row rendering", () => {
   describe("given schema results", () => {
     it("renders schema fields with consistent padding", async () => {
       const output = makeCmOutput([
-        "pi|f|./agent/extensions/ide/components/files/component.ts|3|ExtensionAPI",
-        "tui|f|./agent/extensions/ide/components/files/component.ts|4|TUI",
-        "theme|f|./agent/extensions/ide/components/files/component.ts|5|Theme",
-        "ctx|f|./agent/extensions/ide/components/files/component.ts|6|ExtensionContext",
+        "pi|f|./agent/extensions/ide/components/files/files.ts|3|ExtensionAPI",
+        "tui|f|./agent/extensions/ide/components/files/files.ts|4|TUI",
+        "theme|f|./agent/extensions/ide/components/files/files.ts|5|Theme",
+        "ctx|f|./agent/extensions/ide/components/files/files.ts|6|ExtensionContext",
       ]);
       const { component } = await createFixture(output, "Schema");
       const result = component.render(120);
@@ -125,22 +125,22 @@ describe("symbol-references — list row rendering", () => {
       const symbols = [
         [
           "createFilesComponent",
-          "./agent/extensions/ide/components/files/component.ts",
+          "./agent/extensions/ide/components/files/files.ts",
           "28-60",
         ],
         [
           "createSymbolsComponent",
-          "./agent/extensions/ide/components/symbols/component.ts",
+          "./agent/extensions/ide/components/symbols/symbols.ts",
           "35-70",
         ],
         [
           "createBookmarksComponent",
-          "./agent/extensions/ide/components/bookmarks/component.ts",
+          "./agent/extensions/ide/components/bookmarks/bookmarks.ts",
           "10-45",
         ],
         [
           "createTodosComponent",
-          "./agent/extensions/ide/components/todos/component.ts",
+          "./agent/extensions/ide/components/todos/todos.ts",
           "50-65",
         ],
         [

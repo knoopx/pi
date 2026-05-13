@@ -8,7 +8,7 @@ import { Key } from "@earendil-works/pi-tui";
 import {
   createListPicker,
   type ListPickerComponent,
-} from "../../lib/list-picker";
+} from "../../lib/list-picker/picker";
 import type { SearchResult } from "./types";
 import {
   runSearch,
@@ -79,7 +79,7 @@ export function createSearchComponent(
           key: Key.ctrl("e"),
           label: "edit",
           handler(item) {
-            void import("../../lib/editor-utils").then(({ openEditor }) => {
+            void import("../../lib/open-editor").then(({ openEditor }) => {
               void openEditor(pi, ctx, `${item.path}:${item.lineNum}`);
             });
             done(item);

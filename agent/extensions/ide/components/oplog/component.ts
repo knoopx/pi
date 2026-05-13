@@ -7,8 +7,8 @@ import {
   createListPicker,
   type ListPickerComponent,
   type ListPickerAction,
-} from "../../lib/list-picker";
-import { getChangeIcon } from "../../lib/changes-formatting";
+} from "../../lib/list-picker/picker";
+import { getChangeIcon } from "../../lib/formatting/changes";
 
 import { notifyMutation } from "../../jj/core";
 import { loadOpLog, getOpShow, restoreOp, undoOp } from "../../jj/oplog";

@@ -8,13 +8,13 @@ import {
   createListPicker,
   type ListPickerComponent,
   type ListPickerAction,
-} from "../../lib/list-picker";
+} from "../../lib/list-picker/picker";
 
 import { forgetBookmark } from "../../jj/bookmarks";
 import { renderDiffWithShiki } from "../../tools/diff";
-import { THEME } from "../../tools/shiki-constants";
-import { ACTION_KEYS, createKeyboardHandler } from "../../keyboard";
-import type { BookmarkFilterMode } from "../../lib/types";
+import { THEME } from "../../tools/shiki/constants";
+import { ACTION_KEYS, createKeyboardHandler } from "../../lib/keyboard/handler";
+import type { BookmarkFilterMode } from "../../types";
 import { notifyMutation } from "../../jj/core";
 import { getRawDiff } from "../../jj/files";
 import { listBookmarksByChange } from "../../jj/bookmarks";

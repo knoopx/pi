@@ -1,6 +1,7 @@
 import type { Component } from "@earendil-works/pi-tui";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
-import { applySelectionBackground, truncateAnsi } from "../text-utils";
+import { applySelectionBackground } from "../formatting/text";
+import { truncateAnsi } from "../../../../shared/format/ansi-text";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { hexColor } from "./utils";
 import {

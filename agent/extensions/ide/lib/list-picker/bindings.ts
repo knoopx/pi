@@ -1,6 +1,7 @@
-import type { KeyBinding } from "../../keyboard";
+import type { KeyBinding } from "../../lib/keyboard/handler";
 import { Key } from "@earendil-works/pi-tui";
-import { buildHelpFromBindings } from "../../keyboard";
+import { buildHelpFromBindings } from "../../lib/keyboard/handler";
+import { createNavigationBindings } from "../keyboard/bindings";
 import type { ListPickerItem } from "./types";
 
 export function getActionBindings<T extends ListPickerItem>(
@@ -33,32 +34,7 @@ export function getCoreBindings<T extends ListPickerItem>(
   },
 ): KeyBinding[] {
   return [
-    {
-      key: "up",
-      label: "nav",
-      handler: () => {
-        callbacks.navigate("up");
-      },
-    },
-    {
-      key: "down",
-      handler: () => {
-        callbacks.navigate("down");
-      },
-    },
-    {
-      key: "pageUp",
-      label: "scroll",
-      handler: () => {
-        callbacks.navigate("pageUp");
-      },
-    },
-    {
-      key: "pageDown",
-      handler: () => {
-        callbacks.navigate("pageDown");
-      },
-    },
+    ...createNavigationBindings(callbacks.navigate, { label: "nav" }),
     {
       key: "escape",
       handler: () => {

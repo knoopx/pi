@@ -1,8 +1,11 @@
 import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
 import type { Component, Focusable, TUI } from "@earendil-works/pi-tui";
 
-import { createKeyboardHandler, type KeyBinding } from "../../keyboard";
-import { Editor } from "./editor";
+import {
+  createKeyboardHandler,
+  type KeyBinding,
+} from "../../lib/keyboard/handler";
+import { Editor } from "./core/editor";
 import { buildBindings } from "./bindings";
 import {
   renderHeader,
@@ -11,7 +14,7 @@ import {
   computeHlKey,
   tryHighlight,
   renderWithDisplayLines as renderWithDisplayLinesFn,
-} from "./rendering";
+} from "./layout";
 import {
   createStatusNotifier,
   type StatusMessageState,
@@ -169,6 +172,7 @@ class EditorComponent implements Component, Focusable {
       height,
       cursor,
       topLine,
+      showCursor: this.focused,
       selection,
     });
   }

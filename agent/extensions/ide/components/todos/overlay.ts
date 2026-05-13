@@ -4,10 +4,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import { createTodosComponent } from "./component";
 import type { TodoItem } from "./types";
-const OVERLAY_OPTIONS = {
-  overlay: true,
-  overlayOptions: { width: "95%" as const, anchor: "center" as const },
-};
+import { FULL_OVERLAY_OPTIONS } from "../../lib/ui/overlay";
 export async function openTodosBrowser(
   pi: ExtensionAPI,
   ctx: ExtensionContext,
@@ -24,7 +21,7 @@ export async function openTodosBrowser(
         initialQuery,
         cwd: ctx.cwd,
       }),
-    OVERLAY_OPTIONS,
+    FULL_OVERLAY_OPTIONS,
   );
 
   if (result) {

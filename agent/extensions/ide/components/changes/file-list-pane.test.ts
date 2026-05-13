@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { createMockChange } from "../../lib/test-utils";
+import { createMockChange } from "../../test/utils";
 import {
   renderSnapshot,
   defaultMockChange,
   setMockChanges,
-} from "./test-helpers";
+} from "./test-utils";
 
 describe("file list states", () => {
   it("then renders no files message for empty change", async () => {

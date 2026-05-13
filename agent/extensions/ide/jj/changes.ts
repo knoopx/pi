@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { Change } from "../lib/types";
+import type { Change } from "../types";
 import { sanitizeDescription, parseStdoutLines } from "./core";
 const CHANGE_ID_TEMPLATE =
   'change_id ++ coalesce(if(divergent, "/" ++ stringify(change_offset)), "")';

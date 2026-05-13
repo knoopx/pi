@@ -2,7 +2,7 @@ import { codeToANSI } from "@shikijs/cli";
 import type { BundledLanguage } from "shiki";
 import { getSingletonHighlighter } from "shiki";
 import { createLRUCache } from "../../../../shared/cache/lru-cache";
-import { THEME, MAX_HL_CHARS, CACHE_LIMIT } from "../shiki-constants";
+import { THEME, MAX_HL_CHARS, CACHE_LIMIT } from "./constants";
 import { normalizeShikiContrast } from "./contrast";
 
 void getSingletonHighlighter().catch(() => {});

@@ -9,7 +9,7 @@ import {
   createMockTui,
   createMockPi,
   waitForAsyncHighlight,
-} from "../../lib/test-utils";
+} from "../../test/utils";
 interface TestEditorComponent extends Component, Focusable {
   handleInput(data: string): void;
   dispose(): void;

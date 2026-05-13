@@ -19,45 +19,49 @@ export class Navigation {
   }
 
   navigateChanges(dir: "up" | "down" | "pageUp" | "pageDown"): void {
-    const { changes } = this.state;
-    if (changes.length === 0) return;
-    const maxIndex = changes.length - 1;
-    const pageOffset =
-      this.state.rightListHeight > 1
-        ? this.state.rightListHeight - 1
-        : this.scrollPageOffset;
-    const newIndex = this.calcNewIndex(
+    this.navigateList(
+      this.state.changes,
       this.state.selectionState.selectedIndex,
+      (idx) => (this.state.selectionState.selectedIndex = idx),
+      (item) => {
+        this.state.selectedChange = item;
+        void this.callbacks.onChangeSelected(item.changeId);
+      },
       dir,
-      maxIndex,
-      pageOffset,
     );
-
-    if (newIndex !== this.state.selectionState.selectedIndex) {
-      this.state.selectionState.selectedIndex = newIndex;
-      this.state.selectedChange = changes[newIndex];
-      void this.callbacks.onChangeSelected(changes[newIndex].changeId);
-    }
   }
 
   navigateFiles(dir: "up" | "down" | "pageUp" | "pageDown"): void {
-    const { files, selectedChange } = this.state;
-    if (files.length === 0 || !selectedChange) return;
-    const maxIndex = files.length - 1;
+    if (!this.state.selectedChange) return;
+    this.navigateList(
+      this.state.files,
+      this.state.selectionState.fileIndex,
+      (idx) => (this.state.selectionState.fileIndex = idx),
+      (item) => {
+        void this.callbacks.onFileSelected?.(item.path);
+      },
+      dir,
+    );
+  }
+
+  private navigateList<T>(
+    items: T[],
+    currentIndex: number,
+    setIndex: (idx: number) => void,
+    onSelect: (item: T) => void,
+    dir: "up" | "down" | "pageUp" | "pageDown",
+  ): void {
+    if (items.length === 0) return;
+    const maxIndex = items.length - 1;
     const pageOffset =
       this.state.rightListHeight > 1
         ? this.state.rightListHeight - 1
         : this.scrollPageOffset;
-    const newIndex = this.calcNewIndex(
-      this.state.selectionState.fileIndex,
-      dir,
-      maxIndex,
-      pageOffset,
-    );
+    const newIndex = this.calcNewIndex(currentIndex, dir, maxIndex, pageOffset);
 
-    if (newIndex !== this.state.selectionState.fileIndex) {
-      this.state.selectionState.fileIndex = newIndex;
-      void this.callbacks.onFileSelected?.(files[newIndex].path);
+    if (newIndex !== currentIndex) {
+      setIndex(newIndex);
+      onSelect(items[newIndex]);
     }
   }
 

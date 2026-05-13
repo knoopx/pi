@@ -5,8 +5,8 @@ import {
   createErrorFixture,
   createComponentTest,
   snapshotRender,
-} from "../../lib/test-utils";
-import type { RawPr } from "./data-fetching";
+} from "../../test/utils";
+import type { RawPr } from "./loading";
 
 const REPO = "/tmp/test-project";
 
@@ -20,8 +20,8 @@ function defaultPr(index: number): RawPr {
     author: { login: "alice" },
     headRefName: `feature/branch-${i}`,
     baseRefName: "main",
-    createdAt: "2026-04-01T00:00:00Z",
-    updatedAt: "2026-04-15T12:00:00Z",
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-01-15T12:00:00Z",
     additions: 10,
     deletions: 5,
     reviewDecision: null,

@@ -1,4 +1,4 @@
-import type { AgentWorkspace, FileChange, Change } from "../../lib/types";
+import type { AgentWorkspace, FileChange, Change } from "../../types";
 interface WorkspaceViewTitles {
   leftTitle: string;
   rightTopTitle: string;

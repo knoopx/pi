@@ -2,7 +2,7 @@ import type { AgentToolResult, Theme } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import type { Component } from "@earendil-works/pi-tui";
 import type { ToolRenderContext } from "./types";
-import { shortPath } from "../terminal-utils";
+import { shortPath } from "../../lib/terminal";
 export type ToolExecuteFn = (
   tid: string,
   params: unknown,
