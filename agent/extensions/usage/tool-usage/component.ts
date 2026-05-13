@@ -226,32 +226,45 @@ class ToolUsageComponent {
       return;
     }
 
+    if (this.handleTabNavigation(data, matches)) return;
+    if (this.handleSelectionNavigation(data, matches)) return;
+  }
+
+  private handleTabNavigation(
+    data: string,
+    matches: (key: Parameters<typeof matchesKey>[1]) => boolean,
+  ): boolean {
     if (matches("tab") || matches("right")) {
       this.activeTab = this.cycleTab(this.activeTab, 1);
       this.requestRender();
-      return;
+      return true;
     }
-
     if (matches("shift+tab") || matches("left")) {
       this.activeTab = this.cycleTab(this.activeTab, -1);
       this.requestRender();
-      return;
+      return true;
     }
+    return false;
+  }
 
+  private handleSelectionNavigation(
+    data: string,
+    matches: (key: Parameters<typeof matchesKey>[1]) => boolean,
+  ): boolean {
     if (matches("up") || matches("k")) {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.requestRender();
-      return;
+      return true;
     }
-
     if (matches("down") || matches("j")) {
       this.selectedIndex = Math.min(
         this.getRowCount() - 1,
         this.selectedIndex + 1,
       );
       this.requestRender();
-      return;
+      return true;
     }
+    return false;
   }
 
   private cycleTab(tab: ToolTabName, dir: number): ToolTabName {
