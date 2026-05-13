@@ -1,4 +1,14 @@
-import type { BaseStats } from "../shared/types";
+interface TokenStats {
+  total: number;
+  input: number;
+  output: number;
+  cache: number;
+}
+export interface BaseStats {
+  messages: number;
+  cost: number;
+  tokens: TokenStats;
+}
 interface ModelStats extends BaseStats {
   sessions: Set<string>;
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { ToolStats } from "./types";
 import { ToolUsageComponent } from "./component";
-import { createMockTheme } from "../../ide/lib/test-utils";
+import { createMockTheme } from "../../../shared/testing/mock-theme";
 
 function renderToolUsage(data: ToolStats): string[] {
   const theme = createMockTheme();

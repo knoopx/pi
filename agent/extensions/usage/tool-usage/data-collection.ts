@@ -1,6 +1,6 @@
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { getSessionsDir } from "../usage/data-collection";
+import { getSessionsDir } from "../stats/data-collection";
 import type { ToolCall, ToolStats } from "./types";
 
 async function collectToolSessionFiles(

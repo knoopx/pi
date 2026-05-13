@@ -1,14 +1,9 @@
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth } from "@earendil-works/pi-tui";
-import type { Theme } from "../shared/types";
-import type { BaseStats } from "../shared/types";
-import type { UsageData, TabName, ProviderStats } from "./types";
-import { handleUsageInput } from "../shared/input-handling";
-import { padRight, padLeft } from "../shared/padding";
-import {
-  NAME_COL_WIDTH,
-  DATA_COLUMNS,
-  TABLE_WIDTH,
-} from "../shared/ui-helpers";
+import type { UsageData, TabName, ProviderStats, BaseStats } from "./types";
+import { handleUsageInput } from "./input";
+import { padRight, padLeft } from "./padding";
+import { NAME_COL_WIDTH, DATA_COLUMNS, TABLE_WIDTH } from "./table";
 interface IUsageComponent {
   render(): string[];
   handleInput(data: string): void;

@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { getSessionsDir } from "./usage/data-collection";
-import { UsageComponent } from "./usage/component";
-import { formatCost, formatTokens, formatNumber } from "./shared/formatters";
-import { padLeft, padRight } from "./shared/padding";
-import type { UsageData } from "./usage/types";
-import { emptyTimeFilteredStats } from "./usage/types";
+import { getSessionsDir } from "./data-collection";
+import { UsageComponent } from "./component";
+import { formatCost, formatTokens, formatNumber } from "./formatting";
+import { padLeft, padRight } from "./padding";
+import type { UsageData } from "./types";
+import { emptyTimeFilteredStats } from "./types";
 
 // Helper Functions
 function createMockUsageData(): UsageData {

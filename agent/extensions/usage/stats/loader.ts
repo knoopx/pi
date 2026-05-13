@@ -1,7 +1,7 @@
 import { CancellableLoader } from "@earendil-works/pi-tui";
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { BorderedView } from "../../../shared/components/bordered-view";
-import type { Theme } from "../shared/types";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 export async function loadAndDisplay<
   TData,
   TComponent extends {

@@ -1,6 +1,6 @@
 import { matchesKey, truncateToWidth } from "@earendil-works/pi-tui";
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { formatNumber } from "../shared/formatters";
+import { formatNumber } from "../stats/formatting";
 import type { ToolStats, ToolTabName } from "./types";
 const TOOL_TAB_LABELS: Record<ToolTabName, string> = {
   byTool: "By Tool",

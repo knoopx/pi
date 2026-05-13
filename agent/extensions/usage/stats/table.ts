@@ -1,5 +1,5 @@
 import type { BaseStats } from "./types";
-import { formatNumber, formatCost, formatTokens } from "./formatters";
+import { formatNumber, formatCost, formatTokens } from "./formatting";
 interface DataColumn {
   label: string;
   width: number;

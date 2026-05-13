@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { UsageComponent } from "./component";
 import { emptyTimeFilteredStats, type UsageData } from "./types";
-import { createMockTheme } from "../../ide/lib/test-utils";
+import { createMockTheme } from "../../../shared/testing/mock-theme";
 
 function createMockUsageData(): UsageData {
   return {

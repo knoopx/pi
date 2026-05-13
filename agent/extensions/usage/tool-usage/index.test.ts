@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { collectToolStats } from "./tool-usage/data-collection";
-import { ToolUsageComponent } from "./tool-usage/component";
+import { collectToolStats } from "./data-collection";
+import { ToolUsageComponent } from "./component";
 
 describe("tool-usage", () => {
   describe("collectToolStats", () => {

@@ -1,8 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { BorderedView } from "../../shared/components/bordered-view";
-import { loadAndDisplay } from "./usage/ui-loading";
-import { UsageComponent } from "./usage/component";
-import { collectUsageData } from "./usage/data-collection";
+import { loadAndDisplay } from "./stats/loader";
+import { UsageComponent } from "./stats/component";
+import { collectUsageData } from "./stats/data-collection";
 import { ToolUsageComponent } from "./tool-usage/component";
 import { collectToolStats } from "./tool-usage/data-collection";
 
