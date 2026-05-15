@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "@leeoniya/ufuzzy": "^1.0.19",
+    "typebox": "^1.1.38",
     "shell-quote": "^1.8.3"
   },
   "devDependencies": {

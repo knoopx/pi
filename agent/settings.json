@@ -16,8 +16,6 @@
   },
   "enabledModels": [
     "local/Qwen3.6-27B",
-    "local/Qwen3.6-35B-A3B",
-    "deepseek/deepseek-v4-pro",
-    "deepseek/deepseek-v4-flash"
+    "local/Qwen3.6-35B-A3B"
   ]
 }

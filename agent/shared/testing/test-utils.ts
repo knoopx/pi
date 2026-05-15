@@ -1,5 +1,34 @@
 import { vi } from "vitest";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
 import type { AgentToolResult } from "@earendil-works/pi-coding-agent";
+import { parseSkillFile } from "../skill-frontmatter";
+
+export function findSkillDirs(dir: string): string[] {
+  return readdirSync(dir)
+    .filter((f) => {
+      const fullPath = join(dir, f);
+      return existsSync(join(fullPath, "SKILL.md"));
+    })
+    .map((f) => join(dir, f));
+}
+
+export function forEachSkillFile(
+  dir: string,
+  fn: (
+    parsed: NonNullable<ReturnType<typeof parseSkillFile>>,
+    name: string,
+  ) => void,
+): void {
+  for (const skillDir of findSkillDirs(dir)) {
+    const parsed = parseSkillFile(
+      readFileSync(join(skillDir, "SKILL.md"), "utf-8"),
+    );
+    const name = dirname(skillDir);
+    if (!parsed) throw new Error(`${name} failed to parse`);
+    fn(parsed, name);
+  }
+}
 export interface MockTool {
   name: string;
   label?: string;

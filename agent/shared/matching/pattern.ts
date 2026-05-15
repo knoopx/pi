@@ -1,5 +1,4 @@
 import picomatch from "picomatch";
-export { matchCommandPattern, parsePattern } from "./command";
 
 export function matchFileNamePattern(
   filePath: string,

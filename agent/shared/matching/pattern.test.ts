@@ -1,11 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { tokenizeCommand } from "./tokenizer";
-import {
-  matchCommandPattern,
-  matchContentPattern,
-  matchFileNamePattern,
-  parsePattern,
-} from "./pattern";
+import { matchCommandPattern, parsePattern } from "./command";
+import { matchContentPattern, matchFileNamePattern } from "./pattern";
 
 describe("pattern", () => {
   describe("tokenizeCommand", () => {

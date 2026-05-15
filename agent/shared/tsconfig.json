@@ -33,6 +33,7 @@
     "components/**/*.ts",
     "config/**/*.ts",
     "embeddings/**/*.ts",
+    "evidence-store.ts",
     "format/**/*.ts",
     "guardrails/**/*.ts",
     "indexing/**/*.ts",
@@ -40,7 +41,9 @@
     "network/**/*.ts",
     "rendering/**/*.ts",
     "result/**/*.ts",
+    "skill-frontmatter.ts",
+    "skills-registry.ts",
     "testing/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "config/eslint-config.ts"]
 }
