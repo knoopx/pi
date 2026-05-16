@@ -53,6 +53,32 @@ describe("file list states", () => {
     expect(visibleLines.join("\n")).toMatchSnapshot();
   });
 
+  it("then renders conflicted files with warning icon", async () => {
+    const visibleLines = await renderSnapshot(120, (state) => {
+      setMockChanges(state, [defaultMockChange()]);
+      state.files = [
+        {
+          status: "M",
+          path: "another-conflict.ts",
+          insertions: 0,
+          deletions: 0,
+          conflicted: true,
+        },
+        {
+          status: "M",
+          path: "conflict.ts",
+          insertions: 0,
+          deletions: 0,
+          conflicted: true,
+        },
+        { status: "A", path: "new.ts", insertions: 0, deletions: 0 },
+        { status: "M", path: "mod.ts", insertions: 0, deletions: 0 },
+      ];
+      state.selectionState.fileIndex = 0;
+    });
+    expect(visibleLines.join("\n")).toMatchSnapshot();
+  });
+
   it("then renders selected file with different index", async () => {
     const visibleLines = await renderSnapshot(120, (state) => {
       setMockChanges(state, [defaultMockChange()]);

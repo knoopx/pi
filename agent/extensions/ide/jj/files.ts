@@ -15,7 +15,7 @@ export async function loadChangedFiles(
       "-n1",
       "--no-graph",
       "-T",
-      'self.diff().stat().files().map(|f| f.status_char() ++ " " ++ f.path() ++ " " ++ f.lines_added() ++ " " ++ f.lines_removed()).join("\\n")',
+      'self.diff().files().map(|f| f.status_char() ++ " " ++ if(f.target().conflict(), "1", "0") ++ " " ++ f.path() ++ " 0 0").join("\\n")',
     ],
     { cwd },
   );
@@ -23,17 +23,22 @@ export async function loadChangedFiles(
   if (result.code !== 0) return [];
 
   return parseStdoutLines(result.stdout, (line) => {
-    const match = /^([AMDRE?])\s+(.+)\s+(\d+)\s+(\d+)$/.exec(line);
+    const match = /^([AMDREC?])\s+([01])\s+(.+)\s+(\d+)\s+(\d+)$/.exec(line);
     if (match) {
       return {
         status: match[1],
-        path: match[2],
-        insertions: parseInt(match[3], 10),
-        deletions: parseInt(match[4], 10),
+        path: match[3],
+        insertions: parseInt(match[4], 10),
+        deletions: parseInt(match[5], 10),
+        conflicted: match[2] === "1",
       };
     }
     return null;
-  }).sort((a, b) => a.path.localeCompare(b.path));
+  }).sort((a, b) => {
+    if (a.conflicted && !b.conflicted) return -1;
+    if (!a.conflicted && b.conflicted) return 1;
+    return a.path.localeCompare(b.path);
+  });
 }
 export async function getRawDiff(
   pi: ExtensionAPI,

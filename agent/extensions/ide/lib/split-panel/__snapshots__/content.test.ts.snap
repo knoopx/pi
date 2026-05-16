@@ -86,6 +86,12 @@ exports[`renderFileChangeRows — status icon and file icon layout > given an em
 ]
 `;
 
+exports[`renderFileChangeRows — status icon and file icon layout > given conflicted files > renders with warning icon instead of file icon 1`] = `
+[
+  "[48;2;50;36;93m[38;2;250;208;0m⚠[39m [38;2;250;208;0mconflict.ts[39m                                                                [38;2;250;208;0m 󰏫[39m [49m",
+]
+`;
+
 exports[`renderFileChangeRows — status icon and file icon layout > given deleted files > when selected and focused > renders long deleted file truncated with selection highlight 1`] = `
 [
   "[48;2;50;36;93m[38;2;49;120;198m󰛦[39m [38;2;255;98;140m__tests__/extract/__fixtures__/very-long-deleted-file-name.ts[39m           [38;2;255;98;140m󰍴 200[39m [49m",

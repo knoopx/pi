@@ -40,6 +40,7 @@ export interface FileChange {
   path: string;
   insertions?: number;
   deletions?: number;
+  conflicted?: boolean;
 }
 export interface Change {
   changeId: string;

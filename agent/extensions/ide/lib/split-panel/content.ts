@@ -62,6 +62,7 @@ export function renderFileChangeRows(options: {
     path: string;
     insertions?: number;
     deletions?: number;
+    conflicted?: boolean;
   }[];
   width: number;
   height: number;

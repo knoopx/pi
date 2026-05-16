@@ -300,19 +300,37 @@ describe("jj module", () => {
 
   describe("given changed files output", () => {
     describe("when jj log returns add, modify, delete statuses", () => {
-      it("then parses each file with correct status and line counts", async () => {
+      it("then parses each file with correct status and conflict flag", async () => {
         execMock.mockResolvedValue({
           code: 0,
           stdout:
-            "A src/new.ts 42 0\nM src/old.ts 5 3\nD src/deleted.ts 0 18\n",
+            "A 0 src/new.ts 0 0\nM 0 src/old.ts 0 0\nD 0 src/deleted.ts 0 0\n",
           stderr: "",
         });
         const result = await loadChangedFiles(pi, "/repo", "abc123");
 
         expect(result).toEqual([
-          { status: "D", path: "src/deleted.ts", insertions: 0, deletions: 18 },
-          { status: "A", path: "src/new.ts", insertions: 42, deletions: 0 },
-          { status: "M", path: "src/old.ts", insertions: 5, deletions: 3 },
+          {
+            status: "D",
+            path: "src/deleted.ts",
+            insertions: 0,
+            deletions: 0,
+            conflicted: false,
+          },
+          {
+            status: "A",
+            path: "src/new.ts",
+            insertions: 0,
+            deletions: 0,
+            conflicted: false,
+          },
+          {
+            status: "M",
+            path: "src/old.ts",
+            insertions: 0,
+            deletions: 0,
+            conflicted: false,
+          },
         ]);
       });
     });
@@ -321,13 +339,19 @@ describe("jj module", () => {
       it("then parses renames with the new path", async () => {
         execMock.mockResolvedValue({
           code: 0,
-          stdout: "R src/new-name.ts 0 0\n",
+          stdout: "R 0 src/new-name.ts 0 0\n",
           stderr: "",
         });
         const result = await loadChangedFiles(pi, "/repo", "abc123");
 
         expect(result).toEqual([
-          { status: "R", path: "src/new-name.ts", insertions: 0, deletions: 0 },
+          {
+            status: "R",
+            path: "src/new-name.ts",
+            insertions: 0,
+            deletions: 0,
+            conflicted: false,
+          },
         ]);
       });
     });
@@ -336,18 +360,25 @@ describe("jj module", () => {
       it("then parses E and ? statuses correctly", async () => {
         execMock.mockResolvedValue({
           code: 0,
-          stdout: "E shared/lib.ts 2 1\n? misc/file.json 10 0\n",
+          stdout: "E 0 shared/lib.ts 0 0\n? 0 misc/file.json 0 0\n",
           stderr: "",
         });
         const result = await loadChangedFiles(pi, "/repo", "abc123");
 
         expect(result).toEqual([
-          { status: "?", path: "misc/file.json", insertions: 10, deletions: 0 },
+          {
+            status: "?",
+            path: "misc/file.json",
+            insertions: 0,
+            deletions: 0,
+            conflicted: false,
+          },
           {
             status: "E",
             path: "shared/lib.ts",
-            insertions: 2,
-            deletions: 1,
+            insertions: 0,
+            deletions: 0,
+            conflicted: false,
           },
         ]);
       });
@@ -366,7 +397,7 @@ describe("jj module", () => {
         execMock.mockResolvedValue({
           code: 0,
           stdout:
-            "R src/renamed.ts 5 3\nM src/existing.ts 10 2\nA src/new.ts 42 0\n",
+            "R 0 src/renamed.ts 0 0\nM 0 src/existing.ts 0 0\nA 0 src/new.ts 0 0\n",
           stderr: "",
         });
         const result = await loadChangedFiles(pi, "/repo", "abc123");
@@ -375,15 +406,102 @@ describe("jj module", () => {
           {
             status: "M",
             path: "src/existing.ts",
-            insertions: 10,
-            deletions: 2,
+            insertions: 0,
+            deletions: 0,
+            conflicted: false,
           },
-          { status: "A", path: "src/new.ts", insertions: 42, deletions: 0 },
+          {
+            status: "A",
+            path: "src/new.ts",
+            insertions: 0,
+            deletions: 0,
+            conflicted: false,
+          },
           {
             status: "R",
             path: "src/renamed.ts",
-            insertions: 5,
-            deletions: 3,
+            insertions: 0,
+            deletions: 0,
+            conflicted: false,
+          },
+        ]);
+      });
+    });
+
+    describe("when jj log returns copied files", () => {
+      it("then parses copied files normally (C=status, not conflict)", async () => {
+        execMock.mockResolvedValue({
+          code: 0,
+          stdout:
+            "A 0 src/new.ts 0 0\nC 0 src/copied.ts 0 0\nM 0 src/old.ts 0 0\n",
+          stderr: "",
+        });
+        const result = await loadChangedFiles(pi, "/repo", "abc123");
+
+        expect(result).toEqual([
+          {
+            status: "C",
+            path: "src/copied.ts",
+            insertions: 0,
+            deletions: 0,
+            conflicted: false,
+          },
+          {
+            status: "A",
+            path: "src/new.ts",
+            insertions: 0,
+            deletions: 0,
+            conflicted: false,
+          },
+          {
+            status: "M",
+            path: "src/old.ts",
+            insertions: 0,
+            deletions: 0,
+            conflicted: false,
+          },
+        ]);
+      });
+    });
+
+    describe("when jj log returns conflicted files", () => {
+      it("then puts conflicted files first via f.target().conflict()", async () => {
+        execMock.mockResolvedValue({
+          code: 0,
+          stdout:
+            "A 0 src/new.ts 0 0\nM 1 z-conflict.ts 0 0\nM 0 src/old.ts 0 0\nM 1 a-conflict.ts 0 0\n",
+          stderr: "",
+        });
+        const result = await loadChangedFiles(pi, "/repo", "abc123");
+
+        expect(result).toEqual([
+          {
+            status: "M",
+            path: "a-conflict.ts",
+            insertions: 0,
+            deletions: 0,
+            conflicted: true,
+          },
+          {
+            status: "M",
+            path: "z-conflict.ts",
+            insertions: 0,
+            deletions: 0,
+            conflicted: true,
+          },
+          {
+            status: "A",
+            path: "src/new.ts",
+            insertions: 0,
+            deletions: 0,
+            conflicted: false,
+          },
+          {
+            status: "M",
+            path: "src/old.ts",
+            insertions: 0,
+            deletions: 0,
+            conflicted: false,
           },
         ]);
       });

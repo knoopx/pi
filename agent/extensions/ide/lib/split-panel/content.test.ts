@@ -9,6 +9,7 @@ interface FileChange {
   path: string;
   insertions: number;
   deletions: number;
+  conflicted?: boolean;
 }
 function renderHighlighted(files: FileChange[]): void {
   const result = renderFileChangeRows({
@@ -36,6 +37,7 @@ function selectedAndFocused(
     path: string;
     insertions: number;
     deletions: number;
+    conflicted?: boolean;
   }[],
 ) {
   describe("when selected and focused", () => {
@@ -229,6 +231,29 @@ describe("renderFileChangeRows — status icon and file icon layout", () => {
     });
 
     selectedAndFocused(short);
+  });
+
+  describe("given conflicted files", () => {
+    const short = [
+      {
+        status: "M" as const,
+        path: "conflict.ts",
+        insertions: 0,
+        deletions: 0,
+        conflicted: true,
+      },
+    ];
+
+    it("renders with warning icon instead of file icon", () => {
+      const result = renderFileChangeRows({
+        files: short,
+        width,
+        height,
+        fileIndex: 0,
+        theme,
+      });
+      expect(result).toMatchSnapshot();
+    });
   });
 
   describe("given unknown-status files", () => {
