@@ -1,0 +1,5 @@
+{
+  "extends": "../../shared/tsconfig.json",
+  "include": ["index.ts", "**/*.ts"],
+  "exclude": ["node_modules", "eslint.config.ts"]
+}
