@@ -21,10 +21,15 @@ function checkToolNames(
 }
 
 function checkRepeatedToolCalls(
+  text: string,
   toolCalls: ToolCall[],
   recentToolCalls: ToolCall[],
 ): boolean {
   if (toolCalls.length === 0 || recentToolCalls.length === 0) return false;
+  // If the agent wrote explanatory text alongside the repeated call,
+  // it's intentional re-verification (e.g., re-running a linter after
+  // formatting), not a loop. Only flag when there's no text at all.
+  if (text.trim().length > 0) return false;
   for (const tc of toolCalls) {
     for (const prev of recentToolCalls) {
       if (
@@ -60,7 +65,7 @@ export function assessResponse(
   const toolNameIssue = checkToolNames(toolCalls, knownTools);
   if (toolNameIssue) return toolNameIssue;
 
-  if (checkRepeatedToolCalls(toolCalls, recentToolCalls)) {
+  if (checkRepeatedToolCalls(text, toolCalls, recentToolCalls)) {
     return { ok: false, reason: "repeated_tool_call" };
   }
 
