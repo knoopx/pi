@@ -16,6 +16,7 @@ interface ChangeRowProps {
     immutable: boolean;
     description: string;
     author?: string;
+    hasConflicts?: boolean;
   };
   idx: number;
   width: number;
@@ -44,13 +45,16 @@ export class ChangeRow {
       theme: this.props.theme,
       immutable: this.props.change.immutable,
     });
+    const conflictIcon = this.props.change.hasConflicts
+      ? this.props.theme.fg("warning", "⚠ ")
+      : "";
     const { leftText, rightText } = formatChangeRow(this.props.theme, {
       isImmutable: this.props.change.immutable,
       isSelected: this.props.flags.isMarked,
       isFocused: this.props.flags.isFocused,
       isMoving: this.props.flags.isMoving,
       bookmarks: this.props.bookmarks,
-      description: this.props.change.description,
+      description: conflictIcon + this.props.change.description,
     });
 
     return assembleChangeRow({

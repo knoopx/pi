@@ -80,6 +80,8 @@ exports[`ChangeRow marked snapshots > with working copy icon 1`] = `"[48;2;50;3
 
 exports[`ChangeRow marked snapshots > working copy + state 1`] = `"[48;2;50;36;93m[38;2;250;208;0m  [39m[38;2;250;208;0m✓ [39mwip                                                                         [49m"`;
 
+exports[`ChangeRow snapshots > conflicted change with warning icon 1`] = `"[38;2;250;208;0m⚠ [39mfeat: add login[0m                                                               "`;
+
 exports[`ChangeRow snapshots > empty description, no author 1`] = `"[0m                                                                                "`;
 
 exports[`ChangeRow snapshots > immutable change 1`] = `"[38;2;76;62;118m[39m[38;2;76;62;118mimmutable[39m[0m                                                                       "`;

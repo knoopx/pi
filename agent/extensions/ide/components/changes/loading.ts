@@ -4,6 +4,10 @@ import { REVISION_FILTERS } from "./types";
 import { formatErrorMessage } from "../../lib/ui/footer";
 import { calculateGraphLayout } from "../../lib/graph";
 
+function hasConflictingFiles(files: FileChange[]): boolean {
+  return files.some((f) => f.conflicted);
+}
+
 interface DataLoadingCallbacks {
   loadChanges: (revision: string) => Promise<Change[]>;
   getCurrentChangeIdShort: () => Promise<string | null>;
@@ -70,6 +74,12 @@ export function createDataLoading(
     state.graphLayout = null;
   }
 
+  function updateConflictState(files: FileChange[]): void {
+    if (state.selectedChange) {
+      state.selectedChange.hasConflicts = hasConflictingFiles(files);
+    }
+  }
+
   async function handleSelectedChange(): Promise<void> {
     const matchedIndex = state.changes.findIndex(
       (c) => c.changeId === state.selectedChange?.changeId,
@@ -85,6 +95,7 @@ export function createDataLoading(
     state.files = await callbacks.loadChangedFiles(
       state.selectedChange.changeId,
     );
+    updateConflictState(state.files);
     state.selectionState.fileIndex = Math.min(
       state.selectionState.fileIndex,
       state.files.length - 1,
@@ -113,6 +124,7 @@ export function createDataLoading(
     if (!state.selectedChange) return;
     try {
       state.files = await callbacks.loadChangedFiles(change.changeId);
+      updateConflictState(state.files);
       state.selectionState.fileIndex = 0;
       await loadDiff(change, state.files[0]?.path);
     } catch (error) {
@@ -196,5 +208,7 @@ export function createDataLoading(
     refreshAfterMutation,
     restoreSelectionAndDiff,
     getCachedFileCache,
+    loadFilesAndDiff,
+    loadDiff,
   };
 }

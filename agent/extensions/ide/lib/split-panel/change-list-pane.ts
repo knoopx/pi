@@ -11,6 +11,7 @@ interface ChangeListPaneProps {
     immutable: boolean;
     description: string;
     author?: string;
+    hasConflicts?: boolean;
   }>;
   selectedIndex: number;
   selectedChangeIds: Set<string>;
@@ -60,7 +61,13 @@ export class ChangeListPane {
         const bookmarks =
           this.props.bookmarksByChange.get(change.changeId) ?? [];
         return new ChangeRow({
-          change,
+          change: {
+            changeId: change.changeId,
+            immutable: change.immutable,
+            description: change.description,
+            author: change.author,
+            hasConflicts: change.hasConflicts,
+          },
           idx,
           flags,
           bookmarks,

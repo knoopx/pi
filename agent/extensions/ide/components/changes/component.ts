@@ -143,11 +143,11 @@ class ChangesComponent implements Component, ChangesComponentAPI {
           this.state.changes[this.state.selectionState.selectedIndex];
         if (!change) return;
         this.state.selectedChange = change;
-        await this.loadFilesAndDiff(change);
+        await this.dataLoading.loadFilesAndDiff(change);
       },
       onFileSelected: async (filePath) => {
         if (!this.state.selectedChange) return;
-        await this.loadDiff(this.state.selectedChange, filePath);
+        await this.dataLoading.loadDiff(this.state.selectedChange, filePath);
       },
       onSwitchFocus: () => {
         tui.requestRender();
@@ -214,7 +214,7 @@ class ChangesComponent implements Component, ChangesComponentAPI {
           this.state.changes[this.state.selectionState.selectedIndex];
         if (!change) return;
         this.state.selectedChange = change;
-        return this.loadFilesAndDiff(change);
+        return this.dataLoading.loadFilesAndDiff(change);
       },
       ...this.serviceCallbacks,
       getRawDiff: (changeId, filePath) =>
@@ -265,37 +265,6 @@ class ChangesComponent implements Component, ChangesComponentAPI {
 
   private async restoreSelectionAndDiff(prevIndex: number): Promise<void> {
     await this.dataLoading.restoreSelectionAndDiff(prevIndex);
-  }
-
-  private async loadFilesAndDiff(change: Change): Promise<void> {
-    if (!this.state.selectedChange) return;
-    try {
-      this.state.files = await this.service.loadChangedFiles(change.changeId);
-      this.state.selectionState.fileIndex = 0;
-      await this.loadDiff(change, this.state.files[0]?.path);
-    } catch (error) {
-      const msg = formatErrorMessage(error);
-      this.state.files = [];
-      this.state.diffContent = [`Error loading files: ${msg}`];
-      this.tui.requestRender();
-    }
-  }
-
-  private async loadDiff(
-    change: Change,
-    filePath?: string,
-    options?: { preserveScroll?: boolean },
-  ): Promise<void> {
-    try {
-      const diff = await this.service.getRawDiff(change.changeId, filePath);
-      this.state.diffContent = await renderDiffWithShiki(diff, THEME);
-      if (!options?.preserveScroll) this.state.selectionState.diffScroll = 0;
-      this.tui.requestRender();
-    } catch (error) {
-      const msg = formatErrorMessage(error);
-      this.state.diffContent = [`Error: ${msg}`];
-      this.tui.requestRender();
-    }
   }
 
   private cycleFilter(direction: 1 | -1): void {

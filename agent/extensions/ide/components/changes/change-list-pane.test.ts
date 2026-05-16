@@ -232,6 +232,27 @@ describe("linear chain graph renders with tree structure", () => {
     });
     expect(visibleLines.join("\n")).toMatchSnapshot();
   });
+
+  it("then renders conflicted commit with warning icon", async () => {
+    const visibleLines = await renderSnapshot(120, (state) => {
+      setMockChanges(state, [
+        createMockChange({
+          changeId: "conflict",
+          description: "feat: resolve merge",
+          author: "Alice",
+          hasConflicts: true,
+          parentIds: [],
+        }),
+        createMockChange({
+          changeId: "clean",
+          description: "fix: minor tweak",
+          author: "Bob",
+          parentIds: ["conflict"],
+        }),
+      ]);
+    });
+    expect(visibleLines.join("\n")).toMatchSnapshot();
+  });
 });
 
 describe("selected / marked changes", () => {

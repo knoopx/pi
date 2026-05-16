@@ -51,6 +51,7 @@ export interface Change {
   empty: boolean;
   immutable: boolean;
   parentIds?: string[];
+  hasConflicts?: boolean;
 }
 export type BookmarkFilterMode =
   | "all"

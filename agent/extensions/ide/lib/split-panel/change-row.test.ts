@@ -26,6 +26,7 @@ interface MakeRowOpts {
   flags?: Partial<typeof defaultFlags>;
   layout?: GraphLayout | null;
   bookmarks?: string[];
+  hasConflicts?: boolean;
 }
 function makeRow(opts: MakeRowOpts = {}): ChangeRow {
   const {
@@ -34,6 +35,7 @@ function makeRow(opts: MakeRowOpts = {}): ChangeRow {
     flags: overrides = {},
     layout = null,
     bookmarks = [],
+    hasConflicts = false,
   } = opts;
   return new ChangeRow({
     change: {
@@ -41,6 +43,7 @@ function makeRow(opts: MakeRowOpts = {}): ChangeRow {
       immutable: desc.includes("immutable"),
       description: desc,
       author,
+      hasConflicts,
     },
     idx: 0,
     flags: { ...defaultFlags, ...overrides },
@@ -127,6 +130,15 @@ describe("ChangeRow snapshots", () => {
 
   it("no author column", () => {
     const [line] = makeRow({ desc: "", author: "" }).render(80);
+    expect(line).toMatchSnapshot();
+  });
+
+  it("conflicted change with warning icon", () => {
+    const [line] = makeRow({
+      desc: "feat: add login",
+      author: "Alice",
+      hasConflicts: true,
+    }).render(80);
     expect(line).toMatchSnapshot();
   });
 });
