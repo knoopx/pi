@@ -55,7 +55,7 @@ const defaults: GuardrailsGroup[] = [
   },
   {
     group: "uv",
-    pattern: "pyproject.toml",
+    pattern: "{pyproject.toml,.venv}",
     rules: [
       {
         context: "command",
@@ -67,23 +67,8 @@ const defaults: GuardrailsGroup[] = [
     ],
   },
   {
-    group: "no-truncate-output",
-    pattern: "*",
-    rules: [
-      {
-        context: "command",
-        pattern:
-          "{nix,node,python,uv,tsc,bun,cargo,cmake} * | {head,tail,grep} *",
-        action: "block",
-        reason:
-          "piping stdout through head/tail/grep hides errors and failures. Run the command raw so the user can see the output",
-      },
-    ],
-  },
-  {
     group: "nix",
-    pattern: "flake.nix",
-    excludePattern: ".jj",
+    pattern: "*",
     rules: [
       {
         context: "command",
