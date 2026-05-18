@@ -90,3 +90,4 @@ jj-hunk commit --spec-file /tmp/commit-spec.yaml "fix: handle edge case"
 - Use `--files` for a quick summary without full hunk details
 - Read spec from stdin: `cat spec.yaml | jj-hunk commit - "message"`
 - Use `-r <rev>` with split/squash to target any revision
+- When verifying after operations, always use the original change ID — see **jj-core** skill for template syntax (`concat()`, `description` field)

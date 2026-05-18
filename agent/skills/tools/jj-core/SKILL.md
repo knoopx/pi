@@ -110,8 +110,55 @@ git rev-parse @                        # Also works in colocated repos
 
 **Operation history:** `jj op log` — see all jj operations.
 
+## Template Syntax (`-T` / `--template`)
+
+Templates use jj's own language — NOT JavaScript, NOT shell interpolation.
+
+**String concatenation requires `concat()`:**
+
+```bash
+# ❌ WRONG — no implicit joining
+jj log -r @ -T 'commit_id.short() description'
+# ❌ WRONG — method chaining without concat
+jj log -r @ -T 'change_id.short() " | " commit_id.short()'
+
+# ✅ RIGHT — explicit concat
+jj log -r @ -T 'concat(change_id.short(), " | ", description)'
+```
+
+**Common fields:** `change_id`, `commit_id`, `description`, `author`, `committer`, `signature`
+
+**Field name is `description`, NOT `desc`:**
+
+```bash
+# ❌ WRONG — undefined field
+jj log -r @ -T 'desc'
+# ✅ RIGHT
+jj log -r @ -T 'description'
+```
+
+**Double quotes for pipe alternation in bash:**
+
+```bash
+# ✅ RIGHT — double quotes around revision set with pipe
+jj log -r "id1 | id2" -T 'concat(change_id.short(), "\n", description)'
+# ❌ WRONG — single quotes don't expand variables and can nest incorrectly
+jj log -r 'id1 | id2' -T 'description'
+```
+
+**After `jj desc`, the working copy (`@`) moves:**
+
+```bash
+# Always verify with the original change ID, not @
+jj desc -r <change-id> -m "new description"
+jj log --no-graph -r <change-id> -T 'concat(change_id.short(), " | ", description)'
+```
+
 ## Common Pitfalls
 
 - ❌ Use `@~1` → ✅ Use `@-` (parent)
 - ❌ Use `a,b,c` for union → ✅ Use `a | b | c` (pipe, not comma)
 - ❌ Use `jj changes` → ✅ Use `jj log` or `jj diff`
+- ❌ Template: implicit string joining → ✅ Always use `concat(a, b)`
+- ❌ Template: `desc` → ✅ Always use `description`
+- ❌ Verify with `@` after `jj desc` → ✅ Always use original change ID
