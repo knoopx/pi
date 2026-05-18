@@ -5,6 +5,13 @@
 // extension via session.followUp() to nudge the model back onto native
 // tool-calling for subsequent turns.
 
+function escapeControlChar(ch: string): string | null {
+  if (ch === "\n") return "\\n";
+  if (ch === "\t") return "\\t";
+  if (ch === "\r") return "\\r";
+  return null;
+}
+
 export function escapeNewlinesInJsonStrings(text: string): string {
   const out: string[] = [];
   let inString = false;
@@ -19,14 +26,9 @@ export function escapeNewlinesInJsonStrings(text: string): string {
     if (ch === '"') {
       inString = !inString;
       out.push(ch);
-    } else if (inString && ch === "\n") {
-      out.push("\\n");
-    } else if (inString && ch === "\t") {
-      out.push("\\t");
-    } else if (inString && ch === "\r") {
-      out.push("\\r");
     } else {
-      out.push(ch);
+      const escaped = inString ? escapeControlChar(ch) : null;
+      out.push(escaped ?? ch);
     }
     i++;
   }

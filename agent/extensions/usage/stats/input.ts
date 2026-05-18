@@ -1,4 +1,4 @@
-import { matchesKey } from "@earendil-works/pi-tui";
+import { KeyId, matchesKey } from "@earendil-works/pi-tui";
 function createKeyMatcher(
   data: string,
 ): (key: Parameters<typeof matchesKey>[1]) => boolean {
@@ -16,6 +16,27 @@ function handleEscape(
   }
   return false;
 }
+interface NavAction {
+  keys: KeyId[];
+  handler: () => void;
+}
+
+function buildNavActions(
+  matches: ReturnType<typeof createKeyMatcher>,
+  opts: Parameters<typeof handleUsageInput>[1],
+): NavAction[] {
+  const actions: NavAction[] = [
+    { keys: ["tab", "right"], handler: opts.onTabForward },
+    { keys: ["shift+tab", "left"], handler: opts.onTabBackward },
+    { keys: ["up"], handler: opts.onUp },
+    { keys: ["down"], handler: opts.onDown },
+  ];
+  if (opts.onEnter) {
+    actions.push({ keys: ["enter", "space"], handler: opts.onEnter });
+  }
+  return actions;
+}
+
 export function handleUsageInput(
   data: string,
   opts: {
@@ -31,10 +52,10 @@ export function handleUsageInput(
 
   if (handleEscape(matches, opts.done)) return;
 
-  if (matches("tab") || matches("right")) opts.onTabForward();
-  else if (matches("shift+tab") || matches("left")) opts.onTabBackward();
-  else if (matches("up")) opts.onUp();
-  else if (matches("down")) opts.onDown();
-  else if (opts.onEnter && (matches("enter") || matches("space")))
-    opts.onEnter();
+  for (const action of buildNavActions(matches, opts)) {
+    if (action.keys.some(matches)) {
+      action.handler();
+      return;
+    }
+  }
 }

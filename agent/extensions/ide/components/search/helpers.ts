@@ -79,34 +79,50 @@ function buildResult(
   };
 }
 
+function extractPathFromData(data: RgMatchData): string | undefined {
+  return data.path?.text;
+}
+
+interface ParseState {
+  currentPath: string | null;
+  results: SearchResult[];
+}
+
+function processRgLine(line: string, state: ParseState): boolean {
+  const parsed = parseRgJsonLine(line);
+  if (!parsed?.data) return false;
+
+  const data = parsed.data;
+
+  if (parsed.type === "path") {
+    state.currentPath = data.path?.text ?? null;
+    return true;
+  }
+
+  const extracted = extractPathFromData(data);
+  if (extracted !== undefined) {
+    state.currentPath = extracted;
+  }
+
+  if (!state.currentPath) return true;
+
+  const result = buildResult(state.currentPath, data);
+  if (result) {
+    state.results.push(result);
+  }
+  return true;
+}
+
 export function parseRgOutput(stdout: string): SearchResult[] {
-  const results: SearchResult[] = [];
-  let currentPath: string | null = null;
+  const state: ParseState = { currentPath: null, results: [] };
 
   for (const line of stdout.split("\n")) {
-    if (!line.trim()) continue;
-
-    const parsed = parseRgJsonLine(line);
-    if (!parsed || !parsed.data) continue;
-
-    if (parsed.type === "path") {
-      currentPath = parsed.data?.path?.text ?? null;
-      continue;
-    }
-
-    const data = parsed.data;
-    if (data.path?.text !== undefined) {
-      currentPath = data.path.text;
-    }
-
-    if (!currentPath) continue;
-    const result = buildResult(currentPath, data);
-    if (result) {
-      results.push(result);
+    if (line.trim()) {
+      processRgLine(line, state);
     }
   }
 
-  return results;
+  return state.results;
 }
 
 export async function runSearch(
