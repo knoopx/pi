@@ -13,6 +13,9 @@ export interface PartialRunDetails {
 }
 
 export interface RunDetails {
+  command?: string;
+  passed?: boolean;
+  parsedMetrics?: Record<string, number> | null;
   phase?: string;
   elapsed?: string;
   truncation?: TruncationResult;
