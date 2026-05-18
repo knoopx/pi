@@ -23,6 +23,19 @@ function makeError(text: string) {
   };
 }
 
+const FIELD_ERRORS: Record<string, string> = {
+  source: "source is required (URL or identifier)",
+  note: "note is required (1-line summary of the snippet)",
+  snippet: "snippet is required",
+};
+
+function firstMissing(values: Record<string, string>): string | null {
+  for (const key of ["source", "note", "snippet"] as const) {
+    if (!values[key]) return FIELD_ERRORS[key];
+  }
+  return null;
+}
+
 function validateEvidenceAdd(
   source: string,
   note: string,
@@ -34,26 +47,22 @@ function validateEvidenceAdd(
       content: { type: "text"; text: string }[];
       details: Record<string, never>;
     } {
-  const src = (source ?? "").trim();
-  const n = (note ?? "").trim();
-  let sn = snippet ?? "";
+  const trimmed = {
+    source: (source ?? "").trim(),
+    note: (note ?? "").trim(),
+    snippet: snippet ?? "",
+  };
+  const missing = firstMissing(trimmed);
+  if (missing) return makeError(`Error: ${missing}`);
 
-  if (!src) {
-    return makeError("Error: source is required (URL or identifier)");
-  }
-  if (!n) {
-    return makeError("Error: note is required (1-line summary of the snippet)");
-  }
-  if (!sn) {
-    return makeError("Error: snippet is required");
-  }
+  let sn = trimmed.snippet;
   if (sn.length > SNIPPET_CAP) {
     sn =
       sn.slice(0, SNIPPET_CAP) +
       `\n[... snippet truncated, kept ${SNIPPET_CAP} chars ...]`;
   }
 
-  return { source: src, note: n, snippet: sn };
+  return { source: trimmed.source, note: trimmed.note, snippet: sn };
 }
 
 export default function (pi: ExtensionAPI) {
