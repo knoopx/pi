@@ -16,10 +16,11 @@
     "@earendil-works/pi-ai": "^0.74.0",
     "@earendil-works/pi-coding-agent": "^0.74.0",
     "@earendil-works/pi-tui": "^0.74.0",
+    "@leeoniya/ufuzzy": "^1.0.19",
     "@shikijs/cli": "^4.0.2",
     "chalk": "^5.6.2",
+    "eta": "^4.6.0",
     "shiki": "^4.0.2",
-    "slice-ansi": "^9.0.0",
     "string-width": "^8.2.1"
   },
   "devDependencies": {

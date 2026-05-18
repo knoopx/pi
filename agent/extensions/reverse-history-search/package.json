@@ -15,12 +15,14 @@
   "dependencies": {
     "@earendil-works/pi-coding-agent": "^0.74.0",
     "@earendil-works/pi-tui": "^0.74.0",
-    "slice-ansi": "^9.0.0"
+    "@leeoniya/ufuzzy": "^1.0.19"
   },
   "devDependencies": {
+    "@earendil-works/pi-agent-core": "^0.74.0",
     "@types/node": "^25.7.0",
     "eslint": "^10.3.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.3"
+    "typescript-eslint": "^8.59.3",
+    "vitest": "^4.1.6"
   }
 }

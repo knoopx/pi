@@ -9,7 +9,9 @@ export function setupWebsearchTest(
   name: string,
   fn: (ctx: { mockPi: MockExtensionAPI }) => void,
 ) {
-  const ctx: { mockPi: MockExtensionAPI } = { mockPi: null as any };
+  const ctx: { mockPi: MockExtensionAPI } = {
+    mockPi: undefined as unknown as MockExtensionAPI,
+  };
   let originalFetch: typeof globalThis.fetch;
 
   describe(name, () => {

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, beforeAll, vi } from "vitest";
+import { afterAll, vi } from "vitest";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

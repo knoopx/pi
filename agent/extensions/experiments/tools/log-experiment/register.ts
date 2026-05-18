@@ -7,11 +7,7 @@ import type { TextContent } from "@earendil-works/pi-ai";
 import { Text } from "@earendil-works/pi-tui";
 import * as fs from "node:fs";
 import type { ExperimentRuntime } from "../../lib/state";
-import {
-  computeConfidence,
-  findBestMetric,
-  formatNum,
-} from "../../lib/metrics";
+import { computeConfidence, findBestMetric } from "../../lib/metrics";
 import { experimentJsonlPath } from "../../lib/paths";
 import { ensureWorkDir } from "../../lib/config";
 import {

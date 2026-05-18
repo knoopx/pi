@@ -24,15 +24,15 @@ const HookRuleSchema = Type.Object({
   timeout: Type.Optional(Type.Number({ minimum: 0 })),
   notify: Type.Optional(Type.Boolean()),
 });
-const HooksGroupSchema = Type.Object({
+const _HooksGroupSchema = Type.Object({
   group: Type.String(),
   pattern: Type.String(),
   hooks: Type.Array(HookRuleSchema),
 });
 export type HookEvent = Static<typeof HookEventSchema>;
 export type HookRule = Static<typeof HookRuleSchema>;
-export type HooksGroup = Static<typeof HooksGroupSchema>;
-export type HooksConfig = Static<typeof HooksGroupSchema>[];
+export type HooksGroup = Static<typeof _HooksGroupSchema>;
+export type HooksConfig = Static<typeof _HooksGroupSchema>[];
 export interface HookInput {
   session_id?: string;
   cwd: string;

@@ -26,7 +26,6 @@
   "engines": {
     "node": ">=22"
   },
-  "packageManager": "pnpm@10.28.2",
   "pi": {
     "extensions": [
       "./index.ts"
@@ -57,12 +56,15 @@
     "typebox": "*"
   },
   "devDependencies": {
+    "@earendil-works/pi-agent-core": "^0.74.0",
+    "@earendil-works/pi-ai": "^0.74.0",
     "@earendil-works/pi-coding-agent": "^0.74.0",
     "@earendil-works/pi-tui": "^0.74.0",
     "@types/node": "^25.7.0",
     "eslint": "^10.3.0",
     "typebox": "^1.1.38",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.3"
+    "typescript-eslint": "^8.59.3",
+    "vitest": "^4.1.6"
   }
 }

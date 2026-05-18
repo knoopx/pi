@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "^0.74.0",
+    "picomatch": "^4.0.4",
     "typebox": "^1.1.38"
   },
   "devDependencies": {

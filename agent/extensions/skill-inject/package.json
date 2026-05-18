@@ -1,21 +1,22 @@
 {
-  "name": "write-guard",
+  "name": "skill-inject",
   "version": "1.0.0",
-  "description": "Write tool with guardrails",
   "type": "module",
   "pi": {
     "extensions": [
       "./index.ts"
     ]
   },
+  "scripts": {
+    "test": "vitest run"
+  },
   "dependencies": {
-    "@earendil-works/pi-agent-core": "^0.74.0",
-    "@earendil-works/pi-ai": "^0.74.0",
     "@earendil-works/pi-coding-agent": "^0.74.0",
-    "typebox": "^1.1.38"
+    "yaml": "^2.7.0"
   },
   "devDependencies": {
     "@types/node": "^25.7.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.6"
   }
 }

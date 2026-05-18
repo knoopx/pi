@@ -150,7 +150,7 @@ function buildParsedSuffix(d: RunDetails, theme: ThemeFn): string {
 }
 
 function needsTruncationNote(d: RunDetails): boolean {
-  return (d.truncation?.truncated === true ?? false) && !!d.fullOutputPath;
+  return d.truncation?.truncated === true && !!d.fullOutputPath;
 }
 
 function buildStatusHeader(

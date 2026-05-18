@@ -108,7 +108,7 @@ export default function experimentsExtension(pi: ExtensionAPI): void {
   function isExperimentLogEntry(entry: {
     type: string;
     message?: unknown;
-  }): boolean {
+  }): entry is { type: string; message?: unknown } {
     if (entry.type !== "message") return false;
     const msg = entry.message as
       | {
