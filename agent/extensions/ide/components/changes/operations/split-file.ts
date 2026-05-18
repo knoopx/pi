@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { ChangesState } from "../state";
 import type { FileChange, Change } from "../../../types";
 import { getRepoRoot } from "../../../jj/files";
-import { notifyMutation } from "../../../jj/core";
+
 import { formatErrorMessage } from "../../../lib/ui/footer";
 
 interface SplitFileContext {
@@ -20,8 +20,8 @@ export async function splitFile(ctx: SplitFileContext): Promise<void> {
   try {
     const msg = buildSplitMessage(file, ctx.state.selectedChange);
     const repoRoot = await getRepoRoot(ctx.pi, ctx.cwd);
-    const splitResult = await executeSplit(ctx, repoRoot, file, msg);
-    await restoreSelectionAfterSplit(ctx, splitResult, msg);
+    await executeSplit(ctx, repoRoot, file, msg);
+    await restoreSelectionAfterSplit(ctx, msg);
   } catch (error) {
     ctx.notify(`Failed to split file: ${formatErrorMessage(error)}`, "error");
   }
@@ -56,7 +56,6 @@ async function executeSplit(
 
 async function restoreSelectionAfterSplit(
   ctx: SplitFileContext,
-  splitResult: { stderr: string; stdout: string },
   msg: string,
 ): Promise<void> {
   const previous = capturePreviousState(ctx.state);
@@ -71,7 +70,7 @@ async function restoreSelectionAfterSplit(
   if (restoredIndex < 0) return;
 
   applyRestoredSelection(ctx.state, restoredIndex, previous.fileIndex);
-  await finalizeRestoration(ctx, splitResult, msg);
+  await finalizeRestoration(ctx, msg);
 }
 
 function capturePreviousState(
@@ -108,7 +107,6 @@ function applyRestoredSelection(
 
 async function finalizeRestoration(
   ctx: SplitFileContext,
-  splitResult: { stderr: string; stdout: string },
   msg: string,
 ): Promise<void> {
   if (!ctx.state.selectedChange) return;
@@ -117,7 +115,7 @@ async function finalizeRestoration(
     ctx.state.selectedChange.changeId,
   );
   selectFileByAdjustedIndex(ctx.state, prevFileIndex);
-  notifyMutation(ctx.pi, msg, splitResult.stderr || splitResult.stdout);
+  ctx.notify(msg);
 }
 
 function selectFileByAdjustedIndex(

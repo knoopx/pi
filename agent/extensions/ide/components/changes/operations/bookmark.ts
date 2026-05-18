@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { ChangesState } from "../state";
 import type { Change } from "../../../types";
-import { notifyMutation } from "../../../jj/core";
+
 import { formatErrorMessage } from "../../../lib/ui/footer";
 
 interface BookmarkOpsContext {
@@ -26,10 +26,10 @@ export async function pushBookmarks(ctx: BookmarkOpsContext): Promise<void> {
   if (bookmarks.length === 0) return;
 
   try {
-    const outputs = await pushBookmarksToRemote(ctx, bookmarks);
+    await pushBookmarksToRemote(ctx, bookmarks);
     await ctx.refreshAfterMutation();
     const msg = `Pushed bookmark${pluralize(bookmarks.length, "", "s")}: ${bookmarks.join(", ")}`;
-    notifyMutation(ctx.pi, msg, outputs.join("\n"));
+    ctx.notify(msg);
   } catch (error) {
     ctx.notify(`Failed to push: ${formatErrorMessage(error)}`, "error");
   }
@@ -88,12 +88,7 @@ function notifyBookmarkSet(
   bookmarkName: string,
   changeId: string,
 ): void {
-  const msg = `Updated bookmark '${bookmarkName}' to ${changeId}`;
-  notifyMutation(
-    ctx.pi,
-    msg,
-    `Set bookmark '${bookmarkName}' to ${changeId.slice(0, 8)}`,
-  );
+  ctx.notify(`Updated bookmark '${bookmarkName}' to ${changeId.slice(0, 8)}`);
 }
 
 export async function reloadBookmarks(ctx: BookmarkOpsContext): Promise<void> {

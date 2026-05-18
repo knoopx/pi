@@ -24,7 +24,6 @@ import { ChangesState } from "./state";
 import { Navigation } from "./navigation";
 import type { NavigationCallbacks } from "./navigation";
 import { Renderer } from "./renderer";
-import { createActionHandlers } from "./actions";
 import {
   REVISION_FILTERS,
   type ChangesComponentFactory,
@@ -65,7 +64,6 @@ class ChangesComponent implements Component, ChangesComponentAPI {
 
   private navigation: Navigation;
   private renderer: Renderer;
-  private actions: ReturnType<typeof createActionHandlers>;
   private refreshInterval: ReturnType<typeof setInterval> | null = null;
   private helpText = "";
 
@@ -127,7 +125,6 @@ class ChangesComponent implements Component, ChangesComponentAPI {
     const notify: (msg: string, type?: string) => void = (msg, _type) => {
       this.notify(msg);
     };
-    this.actions = this.createActions(pi, init.ctx.cwd, notify);
     this.dataLoading = this.createDataLoading(tui);
     this.operations = this.createOperations(pi, init.ctx.cwd, notify, tui);
 
@@ -154,25 +151,6 @@ class ChangesComponent implements Component, ChangesComponentAPI {
       },
     };
     return new Navigation(this.state, tui, navigationCallbacks);
-  }
-
-  private createActions(
-    pi: ExtensionAPI,
-    cwd: string,
-    notify: (msg: string, type?: string) => void,
-  ) {
-    return createActionHandlers({
-      pi,
-      cwd,
-      state: this.state,
-      finish: this.finish,
-      refreshAfterMutation: () => this.refreshAfterMutation(),
-      restoreSelection: (prevIndex: number) =>
-        this.restoreSelectionAndDiff(prevIndex),
-      notify,
-      onBookmark: this.onBookmark,
-      onFileCmAction: this.onFileCmAction,
-    });
   }
 
   private createDataLoading(tui: { requestRender: () => void }) {
@@ -228,14 +206,14 @@ class ChangesComponent implements Component, ChangesComponentAPI {
     const { moveBindings, leftBindings, rightBindings, globalBindings } =
       buildKeyboardBindings(this.state, this.navigation, {
         cycleFilter: (direction) => this.cycleFilter(direction),
-        handleNew: () => void this.actions.handleNew(),
-        handleEdit: () => void this.actions.handleEdit(),
-        handleRevert: () => void this.actions.handleRevert(),
-        handleDescribe: () => void this.actions.handleDescribe(),
-        handleSplit: () => void this.actions.handleSplit(),
-        handleInspectChange: () => void this.actions.handleInspectChange(),
-        handleSquash: () => void this.actions.handleSquash(),
-        handleDrop: () => void this.actions.handleDrop(),
+        handleNew: () => void this.operations.newChange(),
+        handleEdit: () => void this.operations.editChange(),
+        handleRevert: () => void this.operations.revertChange(),
+        handleDescribe: () => void this.operations.describeChanges(),
+        handleSplit: () => void this.operations.splitChange(),
+        handleInspectChange: () => void this.operations.inspectChange(),
+        handleSquash: () => void this.operations.squashChange(),
+        handleDrop: () => void this.operations.dropChange(),
         setBookmark: () => void this.operations.setBookmark(),
         pushBookmarks: () => void this.operations.pushBookmarks(),
         splitFile: () => void this.operations.splitFile(),

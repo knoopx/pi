@@ -1,0 +1,82 @@
+Describe jujutsu changes <%= ids %> using Conventional Commits format.
+
+<context>
+- Current working directory: `<%= cwd %>`
+- Jujutsu workspace root: `<%= repoRoot %>`
+- File paths in change diffs are relative to the workspace root. Run jj commands from `<%= repoRoot %>` when they take file paths.
+</context>
+
+Use the **conventional-commits** skill for type/scope rules.
+Use the **sem** skill to understand actual code changes vs cosmetic modifications.
+
+<format>
+`<type>(<scope>): <description>`
+
+**Scope is required** - always include a scope in parentheses.
+
+Examples:
+- `feat(auth): add passwordless login`
+- `fix(api): handle empty pagination cursor`
+- `chore(deps): bump react to 18.3.0`
+
+Type selection:
+- Users see new behavior → `feat`
+- Users see corrected behavior → `fix`
+- Otherwise → `chore` or more specific type (`refactor`, `build`, `ci`, `test`, `docs`, `perf`, `style`)
+
+Scope guidelines:
+- Use a short noun: `api`, `auth`, `ui`, `db`, `cli`, `deps`, `docs`, `agent`, `lint`, `build`
+- Use repo/module/package name when working in a monorepo
+- If unsure, use a generic scope like `core`, `general`, or `misc`
+
+Description guidelines:
+- Use imperative mood: "add", "fix", "remove", "update"
+- No ending punctuation
+- Be specific; avoid "changes", "stuff", "update things"
+- Describe actual content, not generic categories. Name what was added/changed, not that "rules" or "principles" were added.
+
+Bad examples (vague, generic):
+- "add behavioral guidelines and core principles"
+- "add agent operating principles"
+- "add behavior rules"
+
+Good examples (specific, concrete):
+- "add rules for dead code removal, build verification, security, debugging, architecture, and tool usage"
+</format>
+
+<sem-guidance>
+- If sem shows all changes are `~` (cosmetic) → use `style:` or `format:`
+- If sem shows `∆` (modified) → describe the actual behavior change
+- If sem shows `+` or `-` → describe additions/removals
+- Large file counts don't always mean large changes — sem reveals the truth
+</sem-guidance>
+
+<constraints>
+- **NO PARALLEL EXECUTION** — Describe each commit sequentially, one at a time. Complete all steps for one commit before starting the next. Running tool calls in parallel across commits will cause incorrect or mixed results.
+- **PRESERVE COMMIT ORDER** — Describe commits in the order listed above (newer first). The first commit in the list is the newest and should be described first.
+</constraints>
+
+<workflow>
+<% changeIds.forEach((id, idx) => { %><%= idx + 1 %>. Get git hash: `jj log -r <%= id %> -T 'commit_id' --no-graph`
+   Check semantic changes: `sem diff --commit <hash-from-step-1>` (use the hash, NOT parent!)
+   Check changed files: `jj diff --name-only -r <%= id %>`
+   If needed for context, inspect patch: `jj diff --git --color never -r <%= id %>`
+   Describe: `jj desc -r <%= id %> -m "<type>(<scope>): <description>"`
+
+   **VERIFY AFTER DESCRIBE** — `jj desc` moves the working copy. Never use `@` to verify; always re-query by the original change ID:
+   ```
+   jj log --no-graph -r <%= id %> -T 'concat(change_id.short(), " | ", description)'
+   ```
+   Confirm the output shows the correct change ID and your new description. If verification fails, the change ID may have been rebased — search with `jj log --no-graph -T 'concat(change_id.short(), "\n", description)'` to find it.
+<% }) %>
+</workflow>
+
+<template-notes>
+- jj templates use `concat(a, b)` for string concatenation — `+` works on integers only, no implicit joining
+- The field name is `description`, NOT `desc`
+- When using multiple change IDs with pipe alternation in bash, always use double quotes around the revision set to avoid quoting issues:
+  `jj log --no-graph -r "id1 | id2" -T 'commit_id'`
+- NEVER nest single quotes inside single-quoted bash strings
+- After `jj desc`, the working copy (`@`) moves — always verify with the original change ID, not `@`
+- Use `-r <change-id>` for ALL post-desc commands: log, diff, show — the change ID is stable even after rebase
+</template-notes>

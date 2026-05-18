@@ -5,6 +5,15 @@ import { splitFile } from "./split-file";
 import { pushBookmarks, setBookmark, reloadBookmarks } from "./bookmark";
 import { discardFile } from "./restore";
 import { applyMoveMode, navigateMove } from "./move";
+import { describeChanges, inspectChange, splitChange } from "./describe";
+import {
+  editChange,
+  squashChange,
+  dropChange,
+  newChange,
+  revertChange,
+  getSelectedChangesFn,
+} from "./mutate";
 
 interface OperationsOptions {
   pi: ExtensionAPI;
@@ -90,6 +99,22 @@ export function createOperations(opts: OperationsOptions) {
     onChangeSelected: opts.onChangeSelected,
   };
 
+  const describeCtx = {
+    pi,
+    cwd,
+    state,
+    finish: opts.finish,
+  };
+
+  const mutateCtx = {
+    pi,
+    cwd,
+    state,
+    refreshAfterMutation: opts.refreshAfterMutation,
+    restoreSelection: opts.restoreSelection,
+    notify,
+  };
+
   return {
     splitFile: () => splitFile(splitCtx),
     discardFile: () => discardFile(restoreCtx),
@@ -98,5 +123,14 @@ export function createOperations(opts: OperationsOptions) {
     applyMoveMode: () => applyMoveMode(moveCtx),
     navigateMove: () => navigateMove(moveCtx),
     reloadBookmarks: () => reloadBookmarks(bookmarkCtx),
+    describeChanges: () => describeChanges(describeCtx),
+    inspectChange: () => inspectChange(describeCtx),
+    splitChange: () => void splitChange(describeCtx),
+    editChange: () => editChange(mutateCtx),
+    squashChange: () => squashChange(mutateCtx),
+    dropChange: () => dropChange(mutateCtx),
+    newChange: () => newChange(mutateCtx),
+    revertChange: () => revertChange(mutateCtx),
+    getSelectedChanges: () => getSelectedChangesFn(mutateCtx),
   };
 }

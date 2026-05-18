@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { ChangesState } from "../state";
 import type { FileChange, Change } from "../../../types";
 import { restoreFile } from "../../../jj/files";
-import { notifyMutation } from "../../../jj/core";
+
 import { formatErrorMessage } from "../../../lib/ui/footer";
 
 interface RestoreFileContext {
@@ -27,11 +27,7 @@ export async function discardFile(ctx: RestoreFileContext): Promise<void> {
   if (restoreOutput === undefined) return;
 
   await refreshFilesAndSelection(ctx, prevFileIndex, ctx.state.selectedChange);
-  notifyMutation(
-    ctx.pi,
-    buildRestoreMessage(file, ctx.state.selectedChange),
-    restoreOutput,
-  );
+  ctx.notify(buildRestoreMessage(file, ctx.state.selectedChange));
 }
 
 function getSelectedFile(state: ChangesState): FileChange | undefined {

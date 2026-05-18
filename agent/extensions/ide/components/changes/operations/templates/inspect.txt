@@ -1,0 +1,13 @@
+Review the jujutsu change <%= changeId %> using entity-level code analysis.
+
+<workflow>
+1. Get git hash: `jj log -r <%= changeId %> -T 'commit_id' --no-graph`
+2. Run inspect diff: `inspect diff --format markdown <hash-from-step-1>`
+3. Analyze the entity-level review output (risk scores, changed entities, blast radius)
+4. Address all issues found by inspect
+</workflow>
+
+<template-notes>
+- Always use `-r <%= changeId %>` for ALL jj commands — never use `@` unless explicitly targeting the working copy
+- jj templates use `concat(a, b)` for string concatenation, never implicit joining or method chaining
+</template-notes>

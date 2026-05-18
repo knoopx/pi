@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { ChangesState } from "../state";
 import type { Change } from "../../../types";
-import { notifyMutation } from "../../../jj/core";
+
 import { formatErrorMessage } from "../../../lib/ui/footer";
 
 interface MoveOpsContext {
@@ -41,16 +41,14 @@ async function performRebase(ctx: MoveOpsContext): Promise<void> {
   const plan = resolveRebasePlan(ctx.state);
   if (!plan) return;
   const change = ctx.state.selectedChange;
-  const result = await ctx.pi.exec(
+  await ctx.pi.exec(
     "jj",
     ["rebase", "-r", change.changeId, plan.flag, plan.targetChangeId],
     { cwd: ctx.cwd },
   );
 
-  notifyMutation(
-    ctx.pi,
+  ctx.notify(
     `Moved change ${change.changeId.slice(0, 8)} after ${plan.targetChangeId}`,
-    pickOutput(result.stderr, result.stdout),
   );
 }
 
@@ -121,9 +119,4 @@ function selectChangeAt(ctx: MoveOpsContext): void {
       );
     });
   }
-}
-
-function pickOutput(stderr: string, stdout: string): string {
-  if (stderr) return stderr;
-  return stdout || "";
 }
