@@ -123,6 +123,36 @@ function parseMetrics(output: string, state: ExperimentRuntime["state"]) {
   return { parsedMetricMap, parsedPrimary, parsedMetrics };
 }
 
+function successPrefix(
+  d: RunDetails,
+  parsedSuffix: string,
+  theme: ThemeFn,
+): string {
+  return (
+    theme.fg("success", `✅ wall: ${d.durationSeconds.toFixed(1)}s`) +
+    parsedSuffix
+  );
+}
+
+function getPlainText(
+  content: Array<{ type?: string; text?: string }>,
+): string {
+  const t = content[0];
+  return t?.type === "text" ? (t.text ?? "") : "";
+}
+
+function buildParsedSuffix(d: RunDetails, theme: ThemeFn): string {
+  if (d.parsedPrimary === null) return "";
+  return theme.fg(
+    "accent",
+    `, ${d.metricName}: ${formatNum(d.parsedPrimary, d.metricUnit)}`,
+  );
+}
+
+function needsTruncationNote(d: RunDetails): boolean {
+  return (d.truncation?.truncated === true ?? false) && !!d.fullOutputPath;
+}
+
 function buildStatusHeader(
   d: RunDetails,
   parsedSuffix: string,
@@ -134,21 +164,14 @@ function buildStatusHeader(
       outputToAppend: d.tailOutput,
     };
   }
-  if (d.checksTimedOut) {
+  if (d.checksTimedOut || d.checksPass === false) {
     return {
       text:
-        theme.fg("success", `✅ wall: ${d.durationSeconds.toFixed(1)}s`) +
-        parsedSuffix +
-        theme.fg("error", ` ⏰ checks timeout ${d.checksDuration.toFixed(1)}s`),
-      outputToAppend: d.checksOutput,
-    };
-  }
-  if (d.checksPass === false) {
-    return {
-      text:
-        theme.fg("success", `✅ wall: ${d.durationSeconds.toFixed(1)}s`) +
-        parsedSuffix +
-        theme.fg("error", ` 💥 checks failed ${d.checksDuration.toFixed(1)}s`),
+        successPrefix(d, parsedSuffix, theme) +
+        theme.fg(
+          "error",
+          ` ${d.checksTimedOut ? "⏰ checks timeout" : "💥 checks failed"} ${d.checksDuration.toFixed(1)}s`,
+        ),
       outputToAppend: d.checksOutput,
     };
   }
@@ -162,10 +185,7 @@ function buildStatusHeader(
       outputToAppend: d.tailOutput,
     };
   }
-  return {
-    text: buildSuccessHeader(d, theme),
-    outputToAppend: d.tailOutput,
-  };
+  return { text: buildSuccessHeader(d, theme), outputToAppend: d.tailOutput };
 }
 
 interface BuildRunDetailsOptions {
@@ -229,6 +249,32 @@ function resolveChecks(
   };
 }
 
+function validateMaxExperiments(
+  state: ExperimentRuntime["state"],
+): string | null {
+  if (state.maxExperiments === null) return null;
+  const segCount = state.results.filter(
+    (r) => r.segment === state.currentSegment,
+  ).length;
+  if (segCount >= state.maxExperiments) {
+    return `🛑 Maximum experiments reached (${state.maxExperiments}). The experiment loop is done. To continue, call experiment-init to start a new segment.`;
+  }
+  return null;
+}
+
+function validateExperimentSh(workDir: string, command: string): string | null {
+  const experimentShPath = experimentScriptPath(workDir);
+  if (!fs.existsSync(experimentShPath) || isExperimentShCommand(command)) {
+    return null;
+  }
+  return `❌ experiment.sh exists — you must run it instead of a custom command.
+
+Found: ${experimentShPath}
+Your command: ${command}
+
+Use: experiment-run({ command: "bash experiment.sh" }) or experiment-run({ command: "./experiment.sh" })`;
+}
+
 function validateRunExperimentParams(
   params: { command: string; timeout_seconds?: number },
   state: ExperimentRuntime["state"],
@@ -237,42 +283,17 @@ function validateRunExperimentParams(
   | { ok: true; workDir: string; timeout: number }
   | { ok: false; error: string } {
   const workDirResult = ensureWorkDir(cwd);
-  if (!workDirResult.ok) {
-    return { ok: false, error: workDirResult.error };
-  }
-  const workDir = workDirResult.workDir;
+  if (!workDirResult.ok) return { ok: false, error: workDirResult.error };
 
-  if (state.maxExperiments !== null) {
-    const segCount = state.results.filter(
-      (r) => r.segment === state.currentSegment,
-    ).length;
-    if (segCount >= state.maxExperiments) {
-      return {
-        ok: false,
-        error: `🛑 Maximum experiments reached (${state.maxExperiments}). The experiment loop is done. To continue, call experiment-init to start a new segment.`,
-      };
-    }
-  }
+  const maxError = validateMaxExperiments(state);
+  if (maxError) return { ok: false, error: maxError };
 
-  const experimentShPath = experimentScriptPath(workDir);
-  if (
-    fs.existsSync(experimentShPath) &&
-    !isExperimentShCommand(params.command)
-  ) {
-    return {
-      ok: false,
-      error: `❌ experiment.sh exists — you must run it instead of a custom command.
-
-Found: ${experimentShPath}
-Your command: ${params.command}
-
-Use: experiment-run({ command: "bash experiment.sh" }) or experiment-run({ command: "./experiment.sh" })`,
-    };
-  }
+  const shError = validateExperimentSh(workDirResult.workDir, params.command);
+  if (shError) return { ok: false, error: shError };
 
   return {
     ok: true,
-    workDir,
+    workDir: workDirResult.workDir,
     timeout: (params.timeout_seconds ?? 600) * 1000,
   };
 }
@@ -511,27 +532,18 @@ export function registerRunExperiment(
 
       const d = result.details as RunDetails | undefined;
       if (!d) {
-        const t = result.content[0];
-        return new Text(t?.type === "text" ? t.text : "", 0, 0);
+        return new Text(getPlainText(result.content), 0, 0);
       }
 
-      const parsedSuffix =
-        d.parsedPrimary !== null
-          ? theme.fg(
-              "accent",
-              `, ${d.metricName}: ${formatNum(d.parsedPrimary, d.metricUnit)}`,
-            )
-          : "";
-
+      const parsedSuffix = buildParsedSuffix(d, theme);
       const { text: headerText, outputToAppend } = buildStatusHeader(
         d,
         parsedSuffix,
         theme,
       );
-
       let text = appendOutput(headerText, outputToAppend, expanded, 5, theme);
 
-      if (expanded && d.truncation?.truncated && d.fullOutputPath) {
+      if (needsTruncationNote(d)) {
         text += "\n" + formatTruncationNote(d, theme);
       }
 

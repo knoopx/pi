@@ -116,19 +116,25 @@ export function collectChildOutput(
       trimChunks();
     };
 
-    const trimChunks = () => {
+    const trimLeadingChunks = () => {
       while (chunksBytes > maxChunksBytes && chunks.length > 1) {
-        const removed = chunks.shift()!;
-        chunksBytes -= removed.length;
+        chunksBytes -= chunks.shift()!.length;
       }
-      if (chunks.length > 0 && chunksBytes > maxChunksBytes) {
-        const buf = chunks[0];
-        const nlIdx = buf.indexOf(0x0a);
-        if (nlIdx !== -1 && nlIdx < buf.length - 1) {
-          chunks[0] = buf.subarray(nlIdx + 1);
-          chunksBytes -= nlIdx + 1;
-        }
+    };
+
+    const trimToLastLine = () => {
+      if (chunks.length === 0 || chunksBytes <= maxChunksBytes) return;
+      const buf = chunks[0];
+      const nlIdx = buf.indexOf(0x0a);
+      if (nlIdx > 0 && nlIdx < buf.length - 1) {
+        chunks[0] = buf.subarray(nlIdx + 1);
+        chunksBytes -= nlIdx + 1;
       }
+    };
+
+    const trimChunks = () => {
+      trimLeadingChunks();
+      trimToLastLine();
     };
 
     if (child.stdout) child.stdout.on("data", handleData);

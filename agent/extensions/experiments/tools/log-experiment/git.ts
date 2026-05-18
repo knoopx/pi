@@ -21,11 +21,7 @@ async function runGit(
   args: string[],
   timeout: number,
 ): Promise<{ code: number; stdout: string; stderr: string }> {
-  try {
-    return await pi.exec("git", args, { cwd: workDir, timeout });
-  } catch (e) {
-    throw e;
-  }
+  return await pi.exec("git", args, { cwd: workDir, timeout });
 }
 
 export async function handleGitCommit(
@@ -34,10 +30,15 @@ export async function handleGitCommit(
   result: { description: string },
 ): Promise<GitResult> {
   try {
-    const addResult = await runGit(pi, workDir, ["add", "-A"], 30);
-    if (addResult.code !== 0) {
-      return gitError("git add", addResult);
-    }
+    const addResult = await runGitOrError(
+      pi,
+      workDir,
+      "git add",
+      ["add", "-A"],
+      30,
+    );
+    if (!addResult.ok) return addResult;
+
     const commitResult = await runGit(
       pi,
       workDir,
@@ -45,11 +46,7 @@ export async function handleGitCommit(
       30,
     );
     if (commitResult.code !== 0) {
-      const stderr = commitResult.stderr || commitResult.stdout;
-      if (stderr.includes("nothing to commit")) {
-        return { ok: true, output: "No changes to commit" };
-      }
-      return gitError("git commit", { stdout: stderr, stderr: stderr });
+      return handleCommitError(commitResult);
     }
     return { ok: true, output: commitResult.stdout || "Committed" };
   } catch (e) {
@@ -57,44 +54,71 @@ export async function handleGitCommit(
   }
 }
 
+function handleCommitError(result: {
+  stdout: string;
+  stderr: string;
+}): GitResult {
+  const stderr = result.stderr || result.stdout;
+  if (stderr.includes("nothing to commit")) {
+    return { ok: true, output: "No changes to commit" };
+  }
+  return gitError("git commit", { stdout: stderr, stderr: stderr });
+}
+
+async function runGitOrError(
+  pi: ExtensionAPI,
+  workDir: string,
+  label: string,
+  args: string[],
+  timeout: number,
+): Promise<GitResult> {
+  const result = await runGit(pi, workDir, args, timeout);
+  if (result.code !== 0) return gitError(label, result);
+  return { ok: true, output: "ok" };
+}
+
+async function revertGitChanges(
+  pi: ExtensionAPI,
+  workDir: string,
+): Promise<GitResult> {
+  const statusResult = await runGit(pi, workDir, ["status", "--porcelain"], 10);
+  if (statusResult.code !== 0 || !(statusResult.stdout || "").trim()) {
+    return { ok: true, output: "No changes to revert" };
+  }
+
+  const restore = await runGitOrError(
+    pi,
+    workDir,
+    "git restore --staged",
+    ["restore", "--staged", "."],
+    30,
+  );
+  if (!restore.ok) return restore;
+
+  const checkout = await runGitOrError(
+    pi,
+    workDir,
+    "git checkout",
+    ["checkout", "."],
+    30,
+  );
+  if (!checkout.ok) return checkout;
+
+  return { ok: true, output: "Changes reverted" };
+}
+
 export async function handleGitRevert(
   pi: ExtensionAPI,
   workDir: string,
   result: { status: string },
 ): Promise<GitResult> {
-  const isDiscard = result.status === "discard" || result.status === "crash";
-  if (!isDiscard) return { ok: true, output: "No revert needed" };
-
+  if (result.status !== "discard" && result.status !== "crash") {
+    return { ok: true, output: "No revert needed" };
+  }
   try {
-    const statusResult = await runGit(
-      pi,
-      workDir,
-      ["status", "--porcelain"],
-      10,
-    );
-    const hasChanges =
-      statusResult.code === 0 && (statusResult.stdout || "").trim().length > 0;
-    if (!hasChanges) {
-      return { ok: true, output: "No changes to revert" };
-    }
-
-    const restoreResult = await runGit(
-      pi,
-      workDir,
-      ["restore", "--staged", "."],
-      30,
-    );
-    if (restoreResult.code !== 0) {
-      return gitError("git restore --staged", restoreResult);
-    }
-
-    const checkoutResult = await runGit(pi, workDir, ["checkout", "."], 30);
-    if (checkoutResult.code !== 0) {
-      return gitError("git checkout", checkoutResult);
-    }
-
-    return { ok: true, output: "Changes reverted" };
+    return await revertGitChanges(pi, workDir);
   } catch (e) {
-    return { ok: false, output: e instanceof Error ? e.message : String(e) };
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, output: msg };
   }
 }

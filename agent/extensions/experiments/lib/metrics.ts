@@ -90,14 +90,13 @@ export function computeConfidence(
   const median = sortedMedian(values);
   const deviations = values.map((v) => Math.abs(v - median));
   const mad = sortedMedian(deviations);
-
   if (mad === 0) return null;
 
   const baseline = findBaselineMetric(results, segment);
-  if (baseline === null) return null;
-
   const bestKept = findBestKeptMetric(cur, direction);
-  if (bestKept === null || bestKept === baseline) return null;
+  if (baseline === null || bestKept === null || bestKept === baseline) {
+    return null;
+  }
 
   return Math.abs(bestKept - baseline) / mad;
 }

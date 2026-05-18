@@ -26,22 +26,25 @@ function buildSessionSnapshot(state: ExperimentState): SessionSnapshot {
   };
 }
 
+function isRunEntry(entry: unknown): entry is Record<string, unknown> {
+  return (
+    typeof entry === "object" &&
+    entry !== null &&
+    "run" in entry &&
+    typeof (entry as Record<string, unknown>).run === "number"
+  );
+}
+
 function readLastRun(workDir: string): Record<string, unknown> | null {
   const jsonlPath = experimentJsonlPath(workDir);
   if (!fs.existsSync(jsonlPath)) return null;
   const lines = fs.readFileSync(jsonlPath, "utf-8").split("\n").filter(Boolean);
+
   for (let i = lines.length - 1; i >= 0; i--) {
     try {
-      const entry = JSON.parse(lines[i]);
-      if (
-        typeof entry === "object" &&
-        entry !== null &&
-        typeof (entry as Record<string, unknown>).run === "number"
-      ) {
-        return entry;
-      }
+      if (isRunEntry(JSON.parse(lines[i]))) return JSON.parse(lines[i]);
     } catch {
-      // skip
+      // skip malformed lines
     }
   }
   return null;

@@ -36,6 +36,27 @@ export interface ThemeFn {
   bold(text: string): string;
 }
 
+function extractOutputText(
+  content: Array<{ type?: string; text?: string }>,
+): string {
+  const first = content[0];
+  if (first?.type === "text") return first.text ?? "";
+  return "";
+}
+
+function renderTailPreview(
+  outputText: string,
+  expanded: boolean,
+  previewLines: number,
+  theme: ThemeFn,
+): string {
+  if (!outputText) return "";
+  const lines = outputText.split("\n");
+  const tail = lines.slice(-(expanded ? 20 : previewLines)).join("\n");
+  if (!tail.trim()) return "";
+  return "\n" + theme.fg("dim", tail);
+}
+
 export function renderPartialResult(
   result: {
     content: Array<{ type: string; text?: string }>;
@@ -45,21 +66,11 @@ export function renderPartialResult(
   previewLines: number,
   theme: ThemeFn,
 ): Text {
-  const d = result.details;
-  const elapsed = d?.elapsed ?? "";
-  const outputText =
-    result.content[0]?.type === "text" ? result.content[0].text : "";
+  const elapsed = result.details?.elapsed ?? "";
+  const outputText = extractOutputText(result.content);
 
   let text = theme.fg("warning", `⏳ Running${elapsed ? ` ${elapsed}` : ""}…`);
-
-  if (outputText) {
-    const lines = outputText.split("\n");
-    const maxLines = expanded ? 20 : previewLines;
-    const tail = lines.slice(-maxLines).join("\n");
-    if (tail.trim()) {
-      text += "\n" + theme.fg("dim", tail);
-    }
-  }
+  text += renderTailPreview(outputText, expanded, previewLines, theme);
 
   return new Text(text, 0, 0);
 }

@@ -27,15 +27,21 @@ import { registerRunExperiment } from "./tools/run-experiment/register";
 import { registerLogExperiment } from "./tools/log-experiment/register";
 import { registerCommand } from "./command";
 
+function migrateResult(r: {
+  metrics?: Record<string, number>;
+  confidence?: number | null;
+}): void {
+  if (!r.metrics) r.metrics = {};
+  if (r.confidence === undefined) r.confidence = null;
+}
+
 function migrateSessionState(state: ExperimentState): ExperimentState {
   if (!state.secondaryMetrics) state.secondaryMetrics = [];
   if (state.metricUnit === "s" && state.metricName === "metric") {
     state.metricUnit = "";
   }
-  for (const r of state.results) {
-    if (!r.metrics) r.metrics = {};
-    if (r.confidence === undefined) r.confidence = null;
-  }
+  for (const r of state.results) migrateResult(r);
+
   if (state.confidence === undefined) {
     state.confidence = computeConfidence(
       state.results,
@@ -99,16 +105,34 @@ export default function experimentsExtension(pi: ExtensionAPI): void {
     }
   };
 
+  function isExperimentLogEntry(entry: {
+    type: string;
+    message?: unknown;
+  }): boolean {
+    if (entry.type !== "message") return false;
+    const msg = entry.message as
+      | {
+          role?: string;
+          toolName?: string;
+          details?: { state?: ExperimentState };
+        }
+      | undefined;
+    return (
+      msg?.role === "toolResult" &&
+      msg.toolName === "experiment-log" &&
+      !!msg.details?.state
+    );
+  }
+
   const loadFromSessionHistory = (
     ctx: ExtensionContext,
     runtime: ReturnType<typeof runtimeStore.ensure>,
   ): boolean => {
     for (const entry of ctx.sessionManager.getBranch()) {
-      if (entry.type !== "message") continue;
-      const msg = entry.message;
-      if (msg.role !== "toolResult" || msg.toolName !== "experiment-log")
-        continue;
-      const details = msg.details as { state?: ExperimentState } | undefined;
+      if (!isExperimentLogEntry(entry)) continue;
+      const details = (
+        entry.message as { details?: { state?: ExperimentState } }
+      ).details;
       if (!details?.state) continue;
 
       runtime.state = migrateSessionState(details.state);
