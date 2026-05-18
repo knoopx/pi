@@ -44,7 +44,7 @@ function validateMaxExperiments(
     (r) => r.segment === state.currentSegment,
   ).length;
   if (segCount >= state.maxExperiments) {
-    return `🛑 Maximum experiments reached (${state.maxExperiments}). The experiment loop is done. To continue, call experiment-init to start a new segment.`;
+    return `󰓛 Maximum experiments reached (${state.maxExperiments}). The experiment loop is done. To continue, call experiment-init to start a new segment.`;
   }
   return null;
 }
@@ -54,7 +54,7 @@ function validateExperimentSh(workDir: string, command: string): string | null {
   if (!fs.existsSync(experimentShPath) || isExperimentShCommand(command)) {
     return null;
   }
-  return `❌ experiment.sh exists — you must run it instead of a custom command.
+  return `󰅗 experiment.sh exists — you must run it instead of a custom command.
 
 Found: ${experimentShPath}
 Your command: ${command}

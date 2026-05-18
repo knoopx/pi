@@ -82,7 +82,7 @@ function successPrefix(
   theme: ThemeFn,
 ): string {
   return (
-    theme.fg("success", `✅ wall: ${d.durationSeconds.toFixed(1)}s`) +
+    theme.fg("success", `󰄬 wall: ${d.durationSeconds.toFixed(1)}s`) +
     parsedSuffix
   );
 }
@@ -113,7 +113,10 @@ function buildStatusHeader(
   const parsedSuffix = buildParsedSuffix(d, theme);
   if (d.timedOut) {
     return {
-      text: theme.fg("error", `⏰ TIMEOUT ${d.durationSeconds.toFixed(1)}s`),
+      text: theme.fg(
+        "error",
+        `󰥔 TIMEOUT after ${d.durationSeconds.toFixed(1)}s`,
+      ),
       outputToAppend: d.tailOutput,
     };
   }
@@ -123,7 +126,7 @@ function buildStatusHeader(
         successPrefix(d, parsedSuffix, theme) +
         theme.fg(
           "error",
-          ` ${d.checksTimedOut ? "⏰ checks timeout" : "💥 checks failed"} ${d.checksDuration.toFixed(1)}s`,
+          ` ${d.checksTimedOut ? "󰥔 checks timeout" : "󰚑 checks failed"} ${d.checksDuration.toFixed(1)}s`,
         ),
       outputToAppend: d.checksOutput,
     };
@@ -133,7 +136,7 @@ function buildStatusHeader(
       text:
         theme.fg(
           "error",
-          `💥 FAIL exit=${d.exitCode} ${d.durationSeconds.toFixed(1)}s`,
+          `󰚑 exit=${d.exitCode} ${d.durationSeconds.toFixed(1)}s`,
         ) + parsedSuffix,
       outputToAppend: d.tailOutput,
     };

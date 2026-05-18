@@ -72,14 +72,14 @@ export function renderPartialResult(
   const elapsed = result.details?.elapsed ?? "";
   const outputText = extractOutputText(result.content);
 
-  let text = theme.fg("warning", `⏳ Running${elapsed ? ` ${elapsed}` : ""}…`);
+  let text = theme.fg("warning", `󰌦 Running${elapsed ? ` ${elapsed}` : ""}…`);
   text += renderTailPreview(outputText, expanded, previewLines, theme);
 
   return new Text(text, 0, 0);
 }
 
 export function buildSuccessHeader(d: RunDetails, theme: ThemeFn): string {
-  let text = theme.fg("success", "✅ ");
+  let text = theme.fg("success", "󰄬 ");
   const parts: string[] = [`wall: ${d.durationSeconds.toFixed(1)}s`];
   if (d.parsedPrimary !== null) {
     parts.push(`${d.metricName}: ${formatNum(d.parsedPrimary, d.metricUnit)}`);
@@ -87,7 +87,7 @@ export function buildSuccessHeader(d: RunDetails, theme: ThemeFn): string {
   text += theme.fg("accent", parts.join(", "));
 
   if (d.checksPass === true) {
-    text += theme.fg("success", ` ✓ checks ${d.checksDuration.toFixed(1)}s`);
+    text += theme.fg("success", ` ✔ checks ${d.checksDuration.toFixed(1)}s`);
   }
 
   if (d.truncation?.truncated && d.fullOutputPath) {

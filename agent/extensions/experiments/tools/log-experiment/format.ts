@@ -58,10 +58,10 @@ function formatASI(asi: ASI): string {
 function formatConfidence(confidence: number): string {
   const confStr = confidence.toFixed(1);
   if (confidence >= 2.0)
-    return `📊 Confidence: ${confStr}× noise floor — improvement is likely real`;
+    return `▪ Confidence: ${confStr}× noise floor — improvement is likely real`;
   if (confidence >= 1.0)
-    return `📊 Confidence: ${confStr}× noise floor — improvement is above noise but marginal`;
-  return `⚠️ Confidence: ${confStr}× noise floor — improvement is within noise. Consider re-running to confirm before keeping.`;
+    return `▪ Confidence: ${confStr}× noise floor — improvement is above noise but marginal`;
+  return `⚠ Confidence: ${confStr}× noise floor — improvement is within noise. Consider re-running to confirm before keeping.`;
 }
 
 function statusColor(status: string): "success" | "error" | "warning" {
@@ -73,15 +73,15 @@ function statusColor(status: string): "success" | "error" | "warning" {
 function statusIcon(status: string): string {
   switch (status) {
     case "keep":
-      return "✅";
+      return "✔";
     case "discard":
-      return "🗑️";
+      return "✘";
     case "crash":
-      return "💥";
+      return "☠";
     case "checks_failed":
-      return "🔴";
+      return "⛔";
     default:
-      return "❓";
+      return "?";
   }
 }
 

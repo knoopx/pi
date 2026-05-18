@@ -69,7 +69,7 @@ async function runGitAction(
     return {
       ok: false,
       content: [
-        { type: "text", text: `❌ Git operation failed: ${gitResult.output}` },
+        { type: "text", text: `󰅗 Git operation failed: ${gitResult.output}` },
       ],
     };
   }

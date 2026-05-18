@@ -5,15 +5,15 @@
 
 set -euo pipefail
 
-readonly TITLE="🏆 experiment: new best"
+readonly TITLE="★ experiment: new best"
 
 is_new_best() {
-  local status="$1" metric="$2" best="$3"
-  [ "$status" = "keep" ] && [ -n "$best" ] && [ "$metric" = "$best" ]
+	local status="$1" metric="$2" best="$3"
+	[ "$status" = "keep" ] && [ -n "$best" ] && [ "$metric" = "$best" ]
 }
 
 send_mac_notification() {
-  osascript -e "display notification \"$1\" with title \"$TITLE\"" >/dev/null
+	osascript -e "display notification \"$1\" with title \"$TITLE\"" >/dev/null
 }
 
 input="$(cat)"
@@ -27,4 +27,4 @@ is_new_best "$status" "$metric" "$best" || exit 0
 
 body="$name = $metric$unit"
 send_mac_notification "$body"
-echo "🏆 New best: $body"
+echo "★ New best: $body"

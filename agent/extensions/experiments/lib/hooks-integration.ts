@@ -114,7 +114,7 @@ export function buildSystemPromptExtra(
   }
 
   if (hasIdeas) {
-    extra += `\n\n💡 Ideas backlog exists at ${ideasPath} — check it for promising experiment paths. Prune stale entries.`;
+    extra += `\n\n󰌗 Ideas backlog exists at ${ideasPath} — check it for promising experiment paths. Prune stale entries.`;
   }
 
   return extra;

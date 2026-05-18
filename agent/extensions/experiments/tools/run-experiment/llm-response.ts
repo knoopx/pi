@@ -40,7 +40,7 @@ export function buildLlmResponse(
 
   if (state.bestMetric !== null) {
     lines.push(
-      `📊 Current best ${state.metricName}: ${formatNum(state.bestMetric, state.metricUnit)}`,
+      `󰂀 Current best ${state.metricName}: ${formatNum(state.bestMetric, state.metricUnit)}`,
     );
   }
 
@@ -71,16 +71,16 @@ function buildStatusLine(
   durationSeconds: number,
 ): string {
   if (timedOut) {
-    return `⏰ TIMEOUT after ${durationSeconds.toFixed(1)}s\n`;
+    return `󰥔 TIMEOUT after ${durationSeconds.toFixed(1)}s\n`;
   }
   if (!benchmarkPassed) {
-    return `💥 FAILED (exit code ${exitCode}) in ${durationSeconds.toFixed(1)}s\n`;
+    return `󰚑 FAILED (exit code ${exitCode}) in ${durationSeconds.toFixed(1)}s\n`;
   }
   if (checksTimedOut) {
     return (
       [
-        `✅ Benchmark PASSED in ${durationSeconds.toFixed(1)}s`,
-        `⏰ CHECKS TIMEOUT (experiment.checks.sh) after ${checksDuration.toFixed(1)}s`,
+        `󰄬 Benchmark PASSED in ${durationSeconds.toFixed(1)}s`,
+        `󰥔 CHECKS TIMEOUT (experiment.checks.sh) after ${checksDuration.toFixed(1)}s`,
         `Log this as 'checks_failed' — the benchmark metric is valid but checks timed out.`,
       ].join("\n") + "\n"
     );
@@ -88,15 +88,15 @@ function buildStatusLine(
   if (checksPass === false) {
     return (
       [
-        `✅ Benchmark PASSED in ${durationSeconds.toFixed(1)}s`,
-        `💥 CHECKS FAILED (experiment.checks.sh) in ${checksDuration.toFixed(1)}s`,
+        `󰄬 Benchmark PASSED in ${durationSeconds.toFixed(1)}s`,
+        `󰚑 CHECKS FAILED (experiment.checks.sh) in ${checksDuration.toFixed(1)}s`,
         `Log this as 'checks_failed' — the benchmark metric is valid but correctness checks did not pass.`,
       ].join("\n") + "\n"
     );
   }
-  let text = `✅ PASSED in ${durationSeconds.toFixed(1)}s\n`;
+  let text = `󰄬 PASSED in ${durationSeconds.toFixed(1)}s\n`;
   if (checksPass === true) {
-    text += `✅ Checks passed in ${checksDuration.toFixed(1)}s\n`;
+    text += `󰄬 Checks passed in ${checksDuration.toFixed(1)}s\n`;
   }
   return text;
 }
@@ -116,7 +116,7 @@ function buildMetricsSection(
     ([k]) => k !== state.metricName,
   );
 
-  let section = `\n📐 Parsed metrics:`;
+  let section = `\n󰂀 Parsed metrics:`;
   if (parsedPrimary !== null) {
     section += ` ★ ${state.metricName}=${formatNum(parsedPrimary, state.metricUnit)}`;
   }

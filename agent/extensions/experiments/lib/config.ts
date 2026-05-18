@@ -36,7 +36,7 @@ export function ensureWorkDir(
   ctxCwd: string,
 ): { ok: false; error: string } | { ok: true; workDir: string } {
   const error = validateWorkDir(ctxCwd);
-  if (error) return { ok: false, error: `❌ ${error}` };
+  if (error) return { ok: false, error: `󰅗 ${error}` };
   return { ok: true, workDir: resolveWorkDir(ctxCwd) };
 }
 

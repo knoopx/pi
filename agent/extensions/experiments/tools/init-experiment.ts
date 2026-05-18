@@ -97,7 +97,7 @@ function buildInitResponse(
   const content: TextContent[] = [
     {
       type: "text",
-      text: `✅ Experiment initialized: "${state.name}"${reinitNote}\nMetric: ${state.metricName} (${state.metricUnit || "unitless"}, ${state.bestDirection} is better)${limitNote}${workDirNote}\nConfig written to experiment.jsonl. Now run the baseline with experiment-run.`,
+      text: `󰄬 Experiment initialized: "${state.name}"${reinitNote}\nMetric: ${state.metricName} (${state.metricUnit || "unitless"}, ${state.bestDirection} is better)${limitNote}${workDirNote}\nConfig written to experiment.jsonl. Now run the baseline with experiment-run.`,
     },
   ];
   return {
@@ -149,7 +149,7 @@ export function registerInitExperiment(
         const content: TextContent[] = [
           {
             type: "text",
-            text: `⚠️ Failed to write experiment.jsonl: ${e instanceof Error ? e.message : String(e)}`,
+            text: `⚠ Failed to write experiment.jsonl: ${e instanceof Error ? e.message : String(e)}`,
           },
         ];
         return {

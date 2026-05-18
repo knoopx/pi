@@ -1,9 +1,5 @@
 import { Type } from "typebox";
-import type {
-  ASI,
-  ExperimentResult,
-  ExperimentState,
-} from "../../lib/state";
+import type { ASI, ExperimentResult, ExperimentState } from "../../lib/state";
 
 export const LogParams = Type.Object({
   commit: Type.String({ description: "Git commit hash (short, 7 chars)" }),
@@ -66,12 +62,12 @@ export function validateSecondaryMetrics(
 
   const missing = [...knownNames].filter((n) => !providedNames.has(n));
   if (missing.length > 0) {
-    return `❌ Missing secondary metrics: ${missing.join(", ")}\n\nYou must provide all previously tracked metrics. Expected: ${[...knownNames].join(", ")}\nGot: ${[...providedNames].join(", ") || "(none)"}\n\nFix: include ${missing.map((m) => `"${m}": <value>`).join(", ")} in the metrics parameter.`;
+    return `󰅗 Missing secondary metrics: ${missing.join(", ")}\n\nYou must provide all previously tracked metrics. Expected: ${[...knownNames].join(", ")}\nGot: ${[...providedNames].join(", ") || "(none)"}\n\nFix: include ${missing.map((m) => `"${m}": <value>`).join(", ")} in the metrics parameter.`;
   }
 
   const newMetrics = [...providedNames].filter((n) => !knownNames.has(n));
   if (newMetrics.length > 0 && !params.force) {
-    return `❌ New secondary metric${newMetrics.length > 1 ? "s" : ""} not previously tracked: ${newMetrics.join(", ")}\n\nExisting metrics: ${[...knownNames].join(", ")}\n\nIf this metric has proven very valuable to watch, call experiment-log again with force: true to add it. Otherwise, remove it from the metrics parameter.`;
+    return `󰅗 New secondary metric${newMetrics.length > 1 ? "s" : ""} not previously tracked: ${newMetrics.join(", ")}\n\nExisting metrics: ${[...knownNames].join(", ")}\n\nIf this metric has proven very valuable to watch, call experiment-log again with force: true to add it. Otherwise, remove it from the metrics parameter.`;
   }
   return null;
 }
