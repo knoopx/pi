@@ -255,9 +255,12 @@ export default function (pi: ExtensionAPI) {
     }
   }
 
-  pi.on("before_agent_start", async (event, ctx) => {
-    if (!sessionActive) return;
-    if (registry.getTargetTools().length === 0) return;
+  async function handleBeforeAgentStart(
+    event: unknown,
+    ctx: unknown,
+    pi: ExtensionAPI,
+  ): Promise<{ systemPrompt: string } | void> {
+    if (!sessionActive || registry.getTargetTools().length === 0) return;
 
     const typed = event as { prompt?: string; systemPrompt?: string };
     const prompt = typed.prompt ?? "";
@@ -266,7 +269,7 @@ export default function (pi: ExtensionAPI) {
     const selected = selectSkills(prompt, SKILL_TOKEN_BUDGET, activeTools);
     const researchTask = looksLikeResearchTask(prompt);
 
-    if (selected.length === 0 && !researchTask) return;
+    if (!hasSelection(selected, researchTask)) return;
 
     notifySkillInject(
       ctx as { ui: { notify(msg: string, type: string): void } },
@@ -275,9 +278,28 @@ export default function (pi: ExtensionAPI) {
     );
 
     const skillBlock = buildBlock(selected);
-    const directive = researchTask ? buildResearchDirective(activeTools) : "";
-    const base = typed.systemPrompt ?? "";
+    const directive = buildDirective(researchTask, activeTools);
+    return {
+      systemPrompt: (typed.systemPrompt ?? "") + skillBlock + directive,
+    };
+  }
 
-    return { systemPrompt: base + skillBlock + directive };
-  });
+  function hasSelection(
+    selected: SkillEntry[],
+    researchTask: boolean,
+  ): boolean {
+    return selected.length > 0 || researchTask;
+  }
+
+  function buildDirective(
+    researchTask: boolean,
+    activeTools: Set<string>,
+  ): string {
+    if (!researchTask) return "";
+    return buildResearchDirective(activeTools);
+  }
+
+  pi.on("before_agent_start", async (event, ctx) =>
+    handleBeforeAgentStart(event, ctx, pi),
+  );
 }
