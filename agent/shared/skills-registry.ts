@@ -14,7 +14,6 @@ export interface SkillEntry {
   lineCount: number;
   lastModified: number;
   targetTool: string | null;
-  triggers: string[]; // deprecated, use keywords
   tokenCost: number;
   topic: string;
   keywords: string[];
@@ -84,7 +83,6 @@ function parseSkillEntry(mdPath: string): SkillEntry | null {
     const explicitTargetTool = safeString(fm.target_tool);
     const isInToolsDir = mdPath.includes("/tools/");
     const targetTool = explicitTargetTool || (isInToolsDir ? rawName : "");
-    const triggers = safeStringArray(fm.triggers);
     const topic = safeString(fm.topic) || rawName;
     const keywords = safeStringArray(fm.keywords).map((k) =>
       typeof k === "string" ? k.toLowerCase() : "",
@@ -101,7 +99,6 @@ function parseSkillEntry(mdPath: string): SkillEntry | null {
       lineCount: lines,
       lastModified: stat.mtimeMs,
       targetTool,
-      triggers,
       tokenCost: safeNumber(fm.token_cost, 150),
       topic,
       keywords,
@@ -119,7 +116,6 @@ function parseSkillEntry(mdPath: string): SkillEntry | null {
 class SkillRegistry {
   private skills = new Map<string, SkillEntry>();
   private byTool = new Map<string, SkillEntry[]>();
-  private byTrigger = new Map<string, SkillEntry[]>();
   private keywordIndex = new Map<string, SkillEntry[]>();
   private loaded = false;
 
@@ -129,7 +125,6 @@ class SkillRegistry {
 
     this.skills.clear();
     this.byTool.clear();
-    this.byTrigger.clear();
     this.keywordIndex.clear();
 
     for (const dir of getSkillDirs()) {
@@ -170,12 +165,6 @@ class SkillRegistry {
       this.byTool.set(entry.targetTool, list);
     }
 
-    for (const trigger of entry.triggers) {
-      const trigList = this.byTrigger.get(trigger) ?? [];
-      trigList.push(entry);
-      this.byTrigger.set(trigger, trigList);
-    }
-
     for (const kw of entry.keywords) {
       if (!kw) continue;
       const kwList = this.keywordIndex.get(kw) ?? [];
@@ -213,11 +202,6 @@ class SkillRegistry {
     return entry.related
       .map((name) => this.skills.get(name.toLowerCase()))
       .filter((e): e is SkillEntry => e !== undefined);
-  }
-
-  getByTrigger(trigger: string): SkillEntry[] {
-    this.load();
-    return this.byTrigger.get(trigger) ?? [];
   }
 
   getByKeyword(keyword: string): SkillEntry[] {
