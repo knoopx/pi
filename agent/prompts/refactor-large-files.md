@@ -14,7 +14,7 @@ find <dir> -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.
   -exec wc -l {} + | sort -n | tail -20
 ```
 
-Focus on production code over **400 lines**. No minimum divider count — every large file is a candidate regardless of whether it has section comments.
+Focus on production code over **300 lines**. No minimum divider count — every large file is a candidate regardless of whether it has section comments.
 
 ### Find large test files separately
 
