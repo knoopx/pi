@@ -36,11 +36,16 @@ interface ToolExecutionEvent {
 // a correction user message with deliverAs:"steer" so the model gets it
 // immediately on its next turn rather than waiting for the next user input.
 
-// Session-scoped state. Pi reuses extensions across turns within a session;
-// a fresh extension instance is loaded per session via the session lifecycle.
-let previousToolCalls: ToolCall[] = [];
-let consecutiveFailures = 0;
+interface SteeringState {
+  previousToolCalls: ToolCall[];
+  consecutiveFailures: number;
+}
+
 const MAX_CONSECUTIVE_CORRECTIONS = 2;
+
+function createSteeringState(): SteeringState {
+  return { previousToolCalls: [], consecutiveFailures: 0 };
+}
 
 function extractContent(raw: unknown): { text: string; calls: ToolCall[] } {
   const content = (Array.isArray(raw) ? raw : []) as MessageContent[];
@@ -55,17 +60,19 @@ function extractContent(raw: unknown): { text: string; calls: ToolCall[] } {
 }
 
 export default function (pi: ExtensionAPI) {
+  const state = createSteeringState();
+  const knownTools = new Set<string>();
+
   // Populate the known-tools set lazily by observing tool_execution events.
   // This avoids needing to read pi's tool registry directly.
-  const knownTools = new Set<string>();
   pi.on("tool_execution_start", async (event) => {
     const name = (event as ToolExecutionEvent).toolName;
     if (typeof name === "string") knownTools.add(name);
   });
 
   pi.on("session_start", async () => {
-    previousToolCalls = [];
-    consecutiveFailures = 0;
+    state.previousToolCalls = [];
+    state.consecutiveFailures = 0;
   });
 
   pi.on("turn_end", async (event, ctx) => {
@@ -85,18 +92,23 @@ export default function (pi: ExtensionAPI) {
 
     const { text, calls } = extractContent(message.content);
 
-    const verdict = assessResponse(text, calls, previousToolCalls, knownTools);
-    previousToolCalls = calls;
+    const verdict = assessResponse(
+      text,
+      calls,
+      state.previousToolCalls,
+      knownTools,
+    );
+    state.previousToolCalls = calls;
 
     if (verdict.ok) {
-      consecutiveFailures = 0;
+      state.consecutiveFailures = 0;
       return;
     }
 
-    consecutiveFailures++;
-    if (consecutiveFailures > MAX_CONSECUTIVE_CORRECTIONS) {
+    state.consecutiveFailures++;
+    if (state.consecutiveFailures > MAX_CONSECUTIVE_CORRECTIONS) {
       ctx.ui.notify(
-        `auto-steering: ${verdict.reason} (suppressed after ${consecutiveFailures} in a row)`,
+        `auto-steering: ${verdict.reason} (suppressed after ${state.consecutiveFailures} in a row)`,
         "warning",
       );
       return;

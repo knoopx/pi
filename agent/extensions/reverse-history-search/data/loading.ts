@@ -76,7 +76,9 @@ function tryParseSessionLine(
     const parsed = JSON.parse(line) as { type?: string; cwd?: string };
     if (parsed && parsed.type === "session")
       return { type: parsed.type, cwd: parsed.cwd };
-  } catch {}
+  } catch {
+    // Not valid JSON — fallback below returns null
+  }
   return null;
 }
 
@@ -115,7 +117,9 @@ function processSessionFile(
     for (const line of content.trim().split("\n")) {
       processSessionLine(line, opts);
     }
-  } catch {}
+  } catch {
+    // Graceful degradation: unreadable session file skipped silently
+  }
 }
 
 function shouldProcessSession(content: string, targetCwd: string): boolean {
@@ -228,7 +232,9 @@ function processDirEntry(
     if (isRecentJsonlFile(fullPath, entry, opts.cutoffTimestamp)) {
       processSessionFile(fullPath, opts);
     }
-  } catch {}
+  } catch {
+    // Graceful degradation: directory stat failure, skip entry
+  }
 }
 
 function walkDir(dir: string, opts: ProcessSessionFileOpts): void {
@@ -236,7 +242,9 @@ function walkDir(dir: string, opts: ProcessSessionFileOpts): void {
     for (const entry of readdirSync(dir)) {
       processDirEntry(join(dir, entry), entry, opts);
     }
-  } catch {}
+  } catch {
+    // Graceful degradation: cannot read session directory
+  }
 }
 
 export function loadSessionHistoryForCwd(targetCwd: string): HistoryEntry[] {
@@ -247,7 +255,9 @@ export function loadSessionHistoryForCwd(targetCwd: string): HistoryEntry[] {
   try {
     const sessionsDir = join(homedir(), ".pi", "agent", "sessions");
     walkDir(sessionsDir, { targetCwd, cutoffTimestamp, history, seen });
-  } catch {}
+  } catch {
+    // Graceful degradation: sessions directory inaccessible
+  }
 
   return history.sort((a, b) => b.timestamp - a.timestamp);
 }

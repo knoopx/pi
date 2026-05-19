@@ -1,24 +1,28 @@
 const DEFAULT_MIN_INTERVAL_MS = 1000;
 
-let disabled = false;
-export function disableThrottle(): void {
-  disabled = true;
-}
 interface HostState {
   lastRequest: number;
-
   queue: (() => void)[];
-
   draining: boolean;
 }
-const hosts = new Map<string, HostState>();
+
+interface ThrottleConfig {
+  disabled: boolean;
+  hosts: Map<string, HostState>;
+}
+
+const config: ThrottleConfig = { disabled: false, hosts: new Map() };
+export function disableThrottle(): void {
+  config.disabled = true;
+}
+
 function getState(host: string): HostState {
-  let state = hosts.get(host);
-  if (!state) {
-    state = { lastRequest: 0, queue: [], draining: false };
-    hosts.set(host, state);
+  let hostState = config.hosts.get(host);
+  if (!hostState) {
+    hostState = { lastRequest: 0, queue: [], draining: false };
+    config.hosts.set(host, hostState);
   }
-  return state;
+  return hostState;
 }
 function drain(state: HostState, minInterval: number): void {
   if (state.draining) return;
@@ -52,7 +56,7 @@ export function acquireSlot(
   host: string,
   minIntervalMs = DEFAULT_MIN_INTERVAL_MS,
 ): Promise<void> {
-  if (disabled) return Promise.resolve();
+  if (config.disabled) return Promise.resolve();
   const state = getState(host);
   const now = Date.now();
   const elapsed = now - state.lastRequest;
@@ -85,6 +89,6 @@ export async function throttledFetch(
   return fetch(input, init);
 }
 export function resetThrottleState(): void {
-  hosts.clear();
-  disabled = false;
+  config.hosts.clear();
+  config.disabled = false;
 }

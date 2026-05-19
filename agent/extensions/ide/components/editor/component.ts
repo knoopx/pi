@@ -243,7 +243,9 @@ class EditorComponent implements Component, Focusable {
       const { writeFileSync } = await import("node:fs");
       writeFileSync(this.opts.filePath, this.editor.getContent());
       this.saved = true;
-    } catch {}
+    } catch {
+      // Save failed, silently ignore — user can retry
+    }
   }
 
   private async quit(): Promise<void> {

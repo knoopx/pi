@@ -14,7 +14,9 @@ async function collectToolSessionFiles(
       if (file.endsWith(".jsonl"))
         result.push({ dir, file: join(dirPath, file) });
     }
-  } catch {}
+  } catch {
+    // Graceful degradation: session subdirectory unreadable
+  }
   return result;
 }
 
@@ -30,7 +32,9 @@ async function findToolSessionFiles(
       const files = await collectToolSessionFiles(dirPath, dir);
       results.push(...files);
     }
-  } catch {}
+  } catch {
+    // Graceful degradation: sessions root directory unreadable
+  }
   return results;
 }
 function collectToolCallsFromContents(
@@ -81,7 +85,9 @@ function parseSessionEntry(
         parseTimestamp(entry.timestamp),
       ),
     };
-  } catch {}
+  } catch {
+    // Graceful degradation: invalid JSON line skipped
+  }
   return { sessionId, toolCalls: [] };
 }
 interface SessionEntry {
@@ -159,7 +165,9 @@ export async function collectToolStats(
       const { sessionId, toolCalls } = await parseToolSession(file);
       if (sessionId) sessionCount++;
       allToolCalls.push(...toolCalls);
-    } catch {}
+    } catch {
+      // Graceful degradation: session file parse failure
+    }
     await new Promise<void>((resolve) => setImmediate(resolve));
   }
 

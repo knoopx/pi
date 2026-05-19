@@ -14,14 +14,18 @@ const COMMON_HEADERS: Record<string, string> = {
   Authorization: `Bearer ${AUTH_TOKEN}`,
 };
 
-let cachedSearchUrl: string | null = null;
+interface SearchConfig {
+  searchUrl: string | null;
+}
+
+const searchConfig: SearchConfig = { searchUrl: null };
 
 export function resetSearchUrlCache(): void {
-  cachedSearchUrl = null;
+  searchConfig.searchUrl = null;
 }
 
 async function resolveSearchUrl(): Promise<string> {
-  if (cachedSearchUrl) return cachedSearchUrl;
+  if (searchConfig.searchUrl) return searchConfig.searchUrl;
 
   const indicesResponse = await throttledFetch(
     `${SEARCH_BASE_URL}/_cat/indices?v&h=index`,
@@ -54,8 +58,8 @@ async function resolveSearchUrl(): Promise<string> {
     throw new Error("No nixos-*-unstable index found");
   }
 
-  cachedSearchUrl = `${SEARCH_BASE_URL}/latest-${bestVersion}-${NIX_SEARCH_CHANNEL}/_search`;
-  return cachedSearchUrl;
+  searchConfig.searchUrl = `${SEARCH_BASE_URL}/latest-${bestVersion}-${NIX_SEARCH_CHANNEL}/_search`;
+  return searchConfig.searchUrl;
 }
 
 interface NixPackage {

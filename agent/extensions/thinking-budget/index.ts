@@ -13,13 +13,23 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 //     this, fast-streaming local backends drop the follow-up silently and
 //     the agent appears to stop.
 
-// Per-run rolling state (reset on agent_start)
 const DEFAULT_BUDGET = 2048;
 
-let thinkingChars = 0;
-let budgetForTurn = DEFAULT_BUDGET;
-let aborted = false;
-let recoveryPending = false;
+interface BudgetState {
+  thinkingChars: number;
+  budgetForTurn: number;
+  aborted: boolean;
+  recoveryPending: boolean;
+}
+
+function createBudgetState(): BudgetState {
+  return {
+    thinkingChars: 0,
+    budgetForTurn: DEFAULT_BUDGET,
+    aborted: false,
+    recoveryPending: false,
+  };
+}
 
 function charsToTokens(chars: number): number {
   // Matches local/context_manager.estimate_tokens (len/3.5)
@@ -27,24 +37,26 @@ function charsToTokens(chars: number): number {
 }
 
 export default function (pi: ExtensionAPI) {
+  const state = createBudgetState();
+
   // Hard reset between conversations. agent_start fires once per /run; if a
   // previous run aborted, `aborted` and `recoveryPending` would otherwise
   // leak into the next conversation.
   pi.on("agent_start", async () => {
-    thinkingChars = 0;
-    aborted = false;
-    recoveryPending = false;
+    state.thinkingChars = 0;
+    state.aborted = false;
+    state.recoveryPending = false;
   });
 
   pi.on("before_agent_start", async () => {
-    budgetForTurn = DEFAULT_BUDGET;
+    state.budgetForTurn = DEFAULT_BUDGET;
   });
 
   pi.on("turn_start", async () => {
-    thinkingChars = 0;
+    state.thinkingChars = 0;
     // Don't clear `aborted` if a recovery is mid-flight — the recovery
     // turn_end handler clears it once the follow-up has been queued.
-    if (!recoveryPending) aborted = false;
+    if (!state.recoveryPending) state.aborted = false;
   });
 
   pi.on("message_update", async (event, ctx) => {
@@ -53,14 +65,14 @@ export default function (pi: ExtensionAPI) {
     ).assistantMessageEvent;
     if (!ev || ev.type !== "thinking_delta") return;
     const delta = typeof ev.delta === "string" ? ev.delta : "";
-    thinkingChars += delta.length;
-    if (aborted || recoveryPending) return;
-    const tokens = charsToTokens(thinkingChars);
-    if (tokens > budgetForTurn) {
-      aborted = true;
-      recoveryPending = true;
+    state.thinkingChars += delta.length;
+    if (state.aborted || state.recoveryPending) return;
+    const tokens = charsToTokens(state.thinkingChars);
+    if (tokens > state.budgetForTurn) {
+      state.aborted = true;
+      state.recoveryPending = true;
       ctx.ui.notify(
-        `thinking-budget: ${tokens} > ${budgetForTurn} — aborting turn`,
+        `thinking-budget: ${tokens} > ${state.budgetForTurn} — aborting turn`,
 
         "warning",
       );
@@ -69,7 +81,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("turn_end", async (_event, _ctx) => {
-    if (!recoveryPending) return;
+    if (!state.recoveryPending) return;
     // Yield one tick so pi's abort barrier settles before we queue the
     // follow-up. On fast-streaming local backends (qwen3.6 / llama.cpp)
     // queuing immediately after ctx.abort() drops the follow-up silently
@@ -79,7 +91,7 @@ export default function (pi: ExtensionAPI) {
       "[thinking budget exceeded] Please commit to an implementation now. Stop deliberating and use your tools to make progress.",
       { deliverAs: "followUp" },
     );
-    recoveryPending = false;
-    aborted = false;
+    state.recoveryPending = false;
+    state.aborted = false;
   });
 }

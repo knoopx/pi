@@ -169,7 +169,9 @@ async function fetchReadme(
     if (readmeEntry) {
       return await fetchRaw(parsed, "main", "README.md", signal);
     }
-  } catch {}
+  } catch {
+    // Graceful degradation: cannot fetch repo README
+  }
   return "";
 }
 

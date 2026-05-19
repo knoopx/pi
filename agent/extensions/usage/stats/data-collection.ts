@@ -29,7 +29,9 @@ async function getAllSessionFiles(signal?: AbortSignal): Promise<string[]> {
         if (signal?.aborted) return result;
         if (file.endsWith(".jsonl")) result.push(join(cwdPath, file));
       }
-    } catch {}
+    } catch {
+      // Graceful degradation: session directory unreadable
+    }
     return result;
   }
   const files: string[] = [];
@@ -43,7 +45,9 @@ async function getAllSessionFiles(signal?: AbortSignal): Promise<string[]> {
       const sessionFiles = await collectSessionFiles(cwdPath, signal);
       files.push(...sessionFiles);
     }
-  } catch {}
+  } catch {
+    // Graceful degradation: sessions root directory unreadable
+  }
 
   return files;
 }
@@ -215,7 +219,9 @@ function parseSessionLine(
       seenHashes,
     );
     if (message) return { message };
-  } catch {}
+  } catch {
+    // Graceful degradation: invalid JSON line skipped
+  }
   return {};
 }
 function checkSignalAborted(signal?: AbortSignal): boolean {

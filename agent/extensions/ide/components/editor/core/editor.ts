@@ -123,8 +123,9 @@ export class Editor {
 
     if (parts.length === 1) {
       this.saveState();
-      this.state.lines[this.state.cursor.line] = before + parts[0]! + after;
-      this.state.cursor.col += parts[0]!.length;
+      const inserted = parts[0] ?? "";
+      this.state.lines[this.state.cursor.line] = before + inserted + after;
+      this.state.cursor.col += inserted.length;
     } else {
       this.saveState();
       const first = parts[0] ?? "";

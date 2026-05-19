@@ -118,7 +118,9 @@ export function collectChildOutput(
 
     const trimLeadingChunks = () => {
       while (chunksBytes > maxChunksBytes && chunks.length > 1) {
-        chunksBytes -= chunks.shift()!.length;
+        const removed = chunks.shift();
+        if (removed === undefined) break;
+        chunksBytes -= removed.length;
       }
     };
 

@@ -303,7 +303,9 @@ async function handleRepo(
       { signal },
     );
     readme = Buffer.from(b64, "base64").toString("utf-8");
-  } catch {}
+  } catch {
+    // Graceful degradation: GitHub API not available, use fallback info only
+  }
 
   return readme || info;
 }

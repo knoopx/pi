@@ -3,9 +3,18 @@ import { bundledThemes } from "shiki";
 import type { BundledLanguage, BundledTheme } from "shiki";
 import { createLRUCache } from "../../../shared/cache/lru-cache";
 import { lang } from "./language";
-let addBg: string | null = null;
-let removeBg: string | null = null;
-let currentTheme: BundledTheme | null = null;
+
+interface DiffConfig {
+  addBg: string | null;
+  removeBg: string | null;
+  currentTheme: BundledTheme | null;
+}
+
+const diffConfig: DiffConfig = {
+  addBg: null,
+  removeBg: null,
+  currentTheme: null,
+};
 function readTerminalResponse(): Buffer {
   let response = Buffer.alloc(0);
   for (;;) {
@@ -51,7 +60,12 @@ function getTerminalBgColor(): [number, number, number] | null {
 }
 
 async function initShiki(theme: BundledTheme): Promise<void> {
-  if (addBg && removeBg && currentTheme === theme) return;
+  if (
+    diffConfig.addBg &&
+    diffConfig.removeBg &&
+    diffConfig.currentTheme === theme
+  )
+    return;
   const themeModule = await bundledThemes[theme]?.();
   const themeData = themeModule?.default;
   const colors = themeData?.colors || {};
@@ -96,9 +110,9 @@ async function initShiki(theme: BundledTheme): Promise<void> {
     terminalBg,
   );
 
-  addBg = `\x1b[48;2;${addBgR};${addBgG};${addBgB}m`;
-  removeBg = `\x1b[48;2;${removeBgR};${removeBgG};${removeBgB}m`;
-  currentTheme = theme;
+  diffConfig.addBg = `\x1b[48;2;${addBgR};${addBgG};${addBgB}m`;
+  diffConfig.removeBg = `\x1b[48;2;${removeBgR};${removeBgG};${removeBgB}m`;
+  diffConfig.currentTheme = theme;
 }
 const CACHE_LIMIT = 64;
 const _cache = createLRUCache<string, string[]>(CACHE_LIMIT);
@@ -184,9 +198,6 @@ function parseContextLine(
     };
   return null;
 }
-function parseEmptyLine(): { line: DiffLine } | null {
-  return { line: { type: "empty", content: "" } };
-}
 function parseDiffLine(
   line: string,
   addLineNo: number | null,
@@ -206,10 +217,7 @@ function parseDiffLine(
   if (context) return context;
 
   if (line === "") {
-    const empty = parseEmptyLine();
-    if (empty) {
-      return { ...empty, addLineNo, removeLineNo };
-    }
+    return { line: { type: "empty", content: "" }, addLineNo, removeLineNo };
   }
 
   return null;
@@ -336,10 +344,10 @@ async function highlightLine(
   }
 }
 function colorDiffLine(line: DiffLine, highlightedContent: string): string {
-  if (line.type === "add" && addBg)
-    return `${addBg + highlightedContent}\x1b[0m`;
-  if (line.type === "remove" && removeBg)
-    return `${removeBg + highlightedContent}\x1b[0m`;
+  if (line.type === "add" && diffConfig.addBg)
+    return `${diffConfig.addBg}${highlightedContent}\x1b[0m`;
+  if (line.type === "remove" && diffConfig.removeBg)
+    return `${diffConfig.removeBg}${highlightedContent}\x1b[0m`;
   return highlightedContent;
 }
 interface ProcessHunkOptions {

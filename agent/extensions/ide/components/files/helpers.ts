@@ -9,10 +9,14 @@ export function getMtimeSorter(
     let mtimeB = 0;
     try {
       mtimeA = statSync(join(cwd, a.path)).mtimeMs;
-    } catch {}
+    } catch {
+      // File not accessible, default to 0
+    }
     try {
       mtimeB = statSync(join(cwd, b.path)).mtimeMs;
-    } catch {}
+    } catch {
+      // File not accessible, default to 0
+    }
     return mtimeB - mtimeA;
   };
 }

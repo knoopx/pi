@@ -156,7 +156,9 @@ export function createFooter(
       ]);
       state.vcsLabel = vcsLabel;
       state.usage = usage;
-    } catch {}
+    } catch {
+      // Graceful degradation: VCS/usage fetch failed, show previous state
+    }
     requestRender?.();
   }
   function register(): () => void {

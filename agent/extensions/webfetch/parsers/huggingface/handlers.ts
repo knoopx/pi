@@ -111,7 +111,9 @@ export async function handleDiscussion(
         signal,
       );
       return renderDiscussionDetail(parsed, detail as HFDiscussionDetail);
-    } catch {}
+    } catch {
+      // Graceful degradation: single discussion fetch failed, fall through to list
+    }
   }
 
   try {
@@ -131,7 +133,9 @@ export async function handleDiscussion(
       signal,
     );
     return renderDiscussionsList(parsed, result.discussions);
-  } catch {}
+  } catch {
+    // Graceful degradation: discussions list fetch failed
+  }
 
   return buildDiscussionFallback(parsed, url);
 }

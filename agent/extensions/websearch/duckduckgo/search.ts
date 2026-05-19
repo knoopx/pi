@@ -184,7 +184,9 @@ export async function searchDuckDuckGo(
   try {
     const results = await searchDuckDuckGoPreloadUrl(query, limit);
     if (results.length > 0) return results;
-  } catch {}
+  } catch {
+    // Graceful degradation: preload URL failed, falling back to direct search
+  }
 
   try {
     return await searchDuckDuckGoHtml(query, limit);

@@ -25,7 +25,9 @@ export async function openEditor(
   let content = "";
   try {
     content = readFileSync(fullPath, "utf-8");
-  } catch {}
+  } catch {
+    // Graceful degradation: file unreadable, open with empty content
+  }
 
   await ctx.ui.custom((tui, theme, _keybindings, done) => {
     return createEditorComponent({
