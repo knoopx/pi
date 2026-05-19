@@ -200,6 +200,7 @@ const BASE_VIEW_PROPS = {
   focus: "left" as "left" | "right",
   selectedIndex: 0,
   loading: false,
+  helpText: "",
 };
 
 async function renderView(

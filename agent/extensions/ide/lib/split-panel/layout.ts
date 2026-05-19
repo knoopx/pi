@@ -47,7 +47,7 @@ export function calculateDimensions(
   const leftW = Math.floor(width * leftRatio);
   const rightW = width - leftW - 3; // 3 for border chars
   const overlayHeight = terminalRows;
-  const borderLines = config.rightSplit ? 8 : 5;
+  const borderLines = 6;
   const contentH = overlayHeight - borderLines;
   const result: SplitPanelDimensions = {
     width,

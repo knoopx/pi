@@ -194,7 +194,7 @@ class EditorComponent implements Component, Focusable {
       return this.cachedLines;
     }
     const innerWidth = width - 2;
-    const contentHeight = this.tui.terminal.rows - 4;
+    const contentHeight = this.tui.terminal.rows - 5;
     const result = this.renderEditorContentSync(innerWidth, contentHeight);
     const output = [
       ...renderHeader(this.theme, this.filePath, innerWidth),

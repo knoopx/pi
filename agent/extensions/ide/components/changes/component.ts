@@ -228,6 +228,11 @@ class ChangesComponent implements Component, ChangesComponentAPI {
         requestRender: () => this.tui.requestRender(),
       });
 
+    this.moveBindings = moveBindings;
+    this.leftPaneBindings = leftBindings;
+    this.rightPaneBindings = rightBindings;
+    this.globalBindings = globalBindings;
+
     this.leftHandler = createKeyboardHandler({
       bindings: [...globalBindings, ...leftBindings] as KeyBinding[],
     });

@@ -24,7 +24,7 @@ export class WorkspaceView implements Component {
       ...DEFAULT_SPLIT_CONFIG,
       leftTitle: "",
       rightTitle: "",
-      helpText: "",
+      helpText: this.props.helpText,
       leftFocus: this.props.focus === "left",
       rightFocus: this.props.focus === "right",
     });
@@ -67,7 +67,7 @@ export class WorkspaceView implements Component {
         rightTitle: titles.rightTopTitle,
         rightTopTitle: titles.rightTopTitle,
         rightBottomTitle: titles.rightBottomTitle,
-        helpText: "",
+        helpText: this.props.helpText,
         leftFocus: this.props.focus === "left",
         rightFocus: this.props.focus === "right",
         rightSplit: true,

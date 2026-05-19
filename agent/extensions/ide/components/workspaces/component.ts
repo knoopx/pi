@@ -6,6 +6,8 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import {
+  buildHelpFromBindings,
+  filterActiveBindings,
   createKeyboardHandler,
   type KeyBinding,
 } from "../../lib/keyboard/handler";
@@ -78,6 +80,11 @@ class WorkspaceComponent implements Component, WorkspacesComponentAPI {
   private leftHandler: (data: string) => void;
   private rightHandler: (data: string) => void;
 
+  private leftPaneBindings: KeyBinding[] = [];
+  private rightPaneBindings: KeyBinding[] = [];
+  private globalBindings: KeyBinding[] = [];
+  private actionBindings: KeyBinding[] = [];
+
   constructor(options: WorkspacesComponentOptions) {
     const { pi, tui, theme, keybindings: _keybindings, done, ctx } = options;
     this.pi = pi;
@@ -88,18 +95,28 @@ class WorkspaceComponent implements Component, WorkspacesComponentAPI {
     this.state = createWorkspaceState();
     this.cacheStore = createCacheStore();
 
+    const globalBindings = this.getGlobalBindings();
+    const actionBindings = this.getWorkspaceActionBindings();
+    const leftBindings = getLeftPaneBindings(this.getBindingsContext());
+    const rightBindings = getRightPaneBindings(this.getBindingsContext());
+
+    this.globalBindings = globalBindings;
+    this.actionBindings = actionBindings;
+    this.leftPaneBindings = leftBindings;
+    this.rightPaneBindings = rightBindings;
+
     this.leftHandler = createKeyboardHandler({
       bindings: [
-        ...this.getGlobalBindings(),
-        ...this.getWorkspaceActionBindings(),
-        ...getLeftPaneBindings(this.getBindingsContext()),
+        ...globalBindings,
+        ...actionBindings,
+        ...leftBindings,
       ] as KeyBinding[],
     });
     this.rightHandler = createKeyboardHandler({
       bindings: [
-        ...this.getGlobalBindings(),
-        ...this.getWorkspaceActionBindings(),
-        ...getRightPaneBindings(this.getBindingsContext()),
+        ...globalBindings,
+        ...actionBindings,
+        ...rightBindings,
       ] as KeyBinding[],
     });
 
@@ -279,7 +296,7 @@ class WorkspaceComponent implements Component, WorkspacesComponentAPI {
   }
 
   private get availableListHeight(): number {
-    return Math.max(1, this.tui.terminal.rows - 8);
+    return Math.max(1, this.tui.terminal.rows - 6);
   }
 
   private async navigateFile(
@@ -325,8 +342,26 @@ class WorkspaceComponent implements Component, WorkspacesComponentAPI {
     return getWorkspaceActionBindings(this.getBindingsContext());
   }
 
+  private buildHelpText(): string {
+    const bindings =
+      this.focus === "left"
+        ? [
+            ...this.globalBindings,
+            ...this.actionBindings,
+            ...this.leftPaneBindings,
+          ]
+        : [
+            ...this.globalBindings,
+            ...this.actionBindings,
+            ...this.rightPaneBindings,
+          ];
+    const activeBindings = filterActiveBindings(bindings);
+    return buildHelpFromBindings(activeBindings);
+  }
+
   render(width: number): string[] {
     this.terminalWidth = width;
+    const helpText = this.buildHelpText();
     const view = new WorkspaceView(
       {
         workspaces: this.state.workspaces,
@@ -339,6 +374,7 @@ class WorkspaceComponent implements Component, WorkspacesComponentAPI {
         focus: this.focus,
         selectedIndex: this.selectedIndex,
         loading: this.state.loading,
+        helpText,
       },
       this.tui,
       this.theme,

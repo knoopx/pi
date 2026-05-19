@@ -10,4 +10,5 @@ export interface WorkspaceViewProps {
   focus: "left" | "right";
   selectedIndex: number;
   loading: boolean;
+  helpText: string;
 }
