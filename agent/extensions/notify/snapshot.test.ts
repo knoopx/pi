@@ -1,14 +1,17 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { createMockExtensionAPI } from "../../shared/testing/test-utils";
-import type { MockExtensionAPI, MockTool } from "../../shared/testing/test-utils";
+import type {
+  MockExtensionAPI,
+  MockTool,
+} from "../../shared/testing/test-utils";
 const mockCtx = {
   cwd: "/tmp",
   abort: () => {},
   hasUI: false,
 };
 
-describe("notification output snapshots", () => {
+describe("notify output snapshots", () => {
   let mockPi: MockExtensionAPI;
   let tool: MockTool;
 
@@ -26,7 +29,7 @@ describe("notification output snapshots", () => {
     mockPi.exec.mockResolvedValue({ code: 0, stdout: "", stderr: "" });
     const result = await tool.execute(
       "id",
-      { summary: "Build complete", body: "All tests passed" },
+      { message: "Build complete — all tests passed" },
       undefined,
       undefined,
       mockCtx,
@@ -44,7 +47,7 @@ describe("notification output snapshots", () => {
     });
     const result = await tool.execute(
       "id",
-      { summary: "Test" },
+      { message: "Test" },
       undefined,
       undefined,
       mockCtx,

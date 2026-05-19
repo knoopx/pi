@@ -7,7 +7,7 @@ import type {
   ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { buildNotifySendArgs } from "./lib/notify-send";
+
 const SETTINGS_PATH = resolve(homedir(), ".pi/agent/settings.json");
 
 async function loadSettings(): Promise<Record<string, unknown>> {
@@ -36,17 +36,33 @@ async function loadTtsEnabled(): Promise<boolean> {
   const notification = settings.notification as { tts?: boolean } | undefined;
   return notification?.tts ?? false;
 }
+
 interface NotifyToolParams {
-  summary: string;
-  body?: string;
-  expireTime?: number;
-  appName?: string;
-  icon?: string;
-  category?: string;
+  message: string;
 }
-const buildSpeechText = (summary: string, body?: string): string =>
-  body ? `${summary}. ${body}` : summary;
-const runTts = (pi: ExtensionAPI, text: string): void => {
+
+function buildErrorResult(
+  errorMessage: string,
+  result: { code: number; stdout: string; stderr: string },
+): AgentToolResult<{
+  exitCode: number;
+  output: string;
+}> {
+  return {
+    content: [
+      {
+        type: "text" as const,
+        text: `Failed to send notification: ${errorMessage}`,
+      },
+    ],
+    details: {
+      exitCode: result.code,
+      output: result.stdout || result.stderr,
+    },
+  };
+}
+
+function runTts(pi: ExtensionAPI, text: string): void {
   if (!text.trim()) return;
   const escaped = text.replace(/'/g, "'\\''");
   void pi.exec("sh", [
@@ -58,35 +74,8 @@ tts '"'"'${escaped}'"'"' &>/dev/null
 for player in $playing; do playerctl -p "$player" play 2>/dev/null; done
 ' &`,
   ]);
-};
-function buildErrorResult(
-  message: string,
-  result: { code: number; stdout: string; stderr: string },
-): AgentToolResult<{
-  exitCode: number;
-  output: string;
-}> {
-  return {
-    content: [
-      {
-        type: "text" as const,
-        text: `Failed to send notification: ${message}`,
-      },
-    ],
-    details: {
-      exitCode: result.code,
-      output: result.stdout || result.stderr,
-    },
-  };
 }
-function runTtsIfNeeded(
-  isTtsEnabled: boolean,
-  pi: ExtensionAPI,
-  params: { summary: string; body?: string },
-): void {
-  if (!isTtsEnabled) return;
-  runTts(pi, buildSpeechText(params.summary, params.body));
-}
+
 function createExecuteNotify(
   isTtsEnabledRef: { value: boolean },
   pi: ExtensionAPI,
@@ -97,8 +86,7 @@ function createExecuteNotify(
     signal: AbortSignal | undefined,
   ): Promise<AgentToolResult<Record<string, unknown>>> {
     const options = signal ? { signal } : undefined;
-    const args = buildNotifySendArgs(params);
-    const result = await pi.exec("notify-send", args, options);
+    const result = await pi.exec("notify-send", [params.message], options);
 
     if (result.code !== 0) {
       const message =
@@ -108,7 +96,9 @@ function createExecuteNotify(
       return buildErrorResult(message, result);
     }
 
-    runTtsIfNeeded(isTtsEnabledRef.value, pi, params);
+    if (isTtsEnabledRef.value) {
+      runTts(pi, params.message);
+    }
 
     return {
       content: [
@@ -122,45 +112,32 @@ function createExecuteNotify(
     };
   };
 }
+
 function makeNotifyTool(isTtsEnabledRef: { value: boolean }, pi: ExtensionAPI) {
   return {
     name: "notify",
-    label: "Send Notification",
+    label: "Inform User",
     description:
-      "Send a desktop notification using notify-send. Mandatory to use on phase changes, long-running operations, and task completion — never skip sending notifications when these events occur. Supports expiration, app name, icon, and category.",
+      "Inform the user what is happening. Mandatory on every phase change and task completion. Never skip — always tell the user what you are doing and when you are done.",
     parameters: Type.Object({
-      summary: Type.String({ description: "Notification summary/title" }),
-      body: Type.Optional(
-        Type.String({ description: "Notification body text" }),
-      ),
-      expireTime: Type.Optional(
-        Type.Number({
-          description:
-            "Expiration time in milliseconds (default: system default)",
-        }),
-      ),
-      appName: Type.Optional(
-        Type.String({ description: "Application name to display" }),
-      ),
-      icon: Type.Optional(
-        Type.String({ description: "Icon filename or stock icon name" }),
-      ),
-      category: Type.Optional(
-        Type.String({ description: "Notification category" }),
-      ),
+      message: Type.String({
+        description: "The notification message",
+      }),
     }),
 
     execute: createExecuteNotify(isTtsEnabledRef, pi),
   };
 }
+
 const ttsDescription =
-  "Toggle text-to-speech for notifications (usage: /tts [on|off|toggle])";
+  "Toggle text-to-speech for notifications (usage: /tts [on|off])";
+
 function createTtsHandler(isTtsEnabledRef: { value: boolean }) {
   return async function handler(
     _args: string,
     ctx: ExtensionCommandContext,
   ): Promise<void> {
-    const action = _args.toLowerCase().trim() || "toggle";
+    const action = _args.toLowerCase().trim();
     let message: string;
 
     switch (action) {
@@ -174,23 +151,23 @@ function createTtsHandler(isTtsEnabledRef: { value: boolean }) {
         await saveTtsEnabled(false);
         message = "TTS disabled for notifications";
         break;
-      case "toggle":
-        isTtsEnabledRef.value = !isTtsEnabledRef.value;
-        await saveTtsEnabled(isTtsEnabledRef.value);
-        message = isTtsEnabledRef.value
-          ? "TTS enabled for notifications"
-          : "TTS disabled for notifications";
-        break;
       default:
-        message = `TTS is ${isTtsEnabledRef.value ? "on" : "off"}. Use /tts [on|off|toggle].`;
+        if (action === "") {
+          isTtsEnabledRef.value = !isTtsEnabledRef.value;
+          await saveTtsEnabled(isTtsEnabledRef.value);
+          message = isTtsEnabledRef.value
+            ? "TTS enabled for notifications"
+            : "TTS disabled for notifications";
+        } else {
+          message = `TTS is ${isTtsEnabledRef.value ? "on" : "off"}. Use /tts [on|off].`;
+        }
     }
 
     if (ctx.hasUI) ctx.ui?.notify(message, "info");
   };
 }
-export default async function notificationExtension(
-  pi: ExtensionAPI,
-): Promise<void> {
+
+export default async function notifyExtension(pi: ExtensionAPI): Promise<void> {
   const isTtsEnabledRef = { value: false };
   isTtsEnabledRef.value = await loadTtsEnabled();
 
