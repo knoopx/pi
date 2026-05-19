@@ -16,15 +16,13 @@ const WriteParams = Type.Object({
 });
 type WriteParamsType = Static<typeof WriteParams>;
 
-function countLines(content: string): number {
-  return (
-    content.split("\n").length -
-    (content.endsWith("\n") ? 1 : 0) +
-    (content.length > 0 && !content.endsWith("\n") ? 1 : 0)
-  );
+export function countLines(content: string): number {
+  if (content.length === 0) return 0;
+  const parts = content.split("\n");
+  return content.endsWith("\n") ? parts.length - 1 : parts.length;
 }
 
-function buildRefusalRecipe(file_path: string): string {
+export function buildRefusalRecipe(file_path: string): string {
   return (
     `Error: Write refused — ${file_path} already exists.\n` +
     `\n` +
