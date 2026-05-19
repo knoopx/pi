@@ -21,16 +21,9 @@ export function handleSessionStart(
   footer.register();
   void footer.refresh();
 
-  void createNewChange(pi, ctx.cwd)
-    .then((changeResult) => {
-      handleCreateChangeResult(changeResult, ctx);
-    })
-    .catch((error) => {
-      ctx.ui.notify(
-        `Failed to create jj change: ${error instanceof Error ? error.message : String(error)}`,
-        "warning",
-      );
-    });
+  // Fire-and-forget — do not capture ctx in the callback.
+  // The promise may outlive this session and ctx would be stale.
+  void createNewChange(pi, ctx.cwd).catch(() => {});
 }
 
 export function handleModelSelect(
@@ -40,41 +33,6 @@ export function handleModelSelect(
   const footer = createFooter(pi, ctx);
   footer.register();
   void footer.refresh();
-}
-
-function notifyChangeResult(opts: {
-  success: boolean;
-  created: boolean;
-  error: string | undefined;
-  changeId: string | undefined;
-  ui: ExtensionContext["ui"];
-}): void {
-  if (!opts.success) {
-    opts.ui.notify(`Failed to create jj change: ${opts.error}`, "warning");
-    return;
-  }
-  if (opts.created) {
-    opts.ui.notify(`New jj change: ${opts.changeId ?? "(no id)"}`, "info");
-  }
-}
-
-function handleCreateChangeResult(
-  changeResult: {
-    success: boolean;
-    created: boolean;
-    error?: string;
-    changeId?: string;
-  },
-  ctx: ExtensionContext,
-): void {
-  if (!ctx.hasUI) return;
-  notifyChangeResult({
-    success: changeResult.success,
-    created: changeResult.created,
-    error: changeResult.error,
-    changeId: changeResult.changeId,
-    ui: ctx.ui,
-  });
 }
 
 export function handleSymbolsCommand(

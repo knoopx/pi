@@ -30,20 +30,20 @@ export async function runEngineHooks(
   config: HooksConfig,
   input: ProcessHooksInput,
 ): Promise<BlockResult | undefined> {
+  const ctx = input.ctx;
   const filePath = getInputField(input.toolInfo?.input, "path");
   const vars: HookVariables = {
     file: filePath,
     tool: input.toolInfo?.toolName,
-    cwd: input.ctx.cwd,
+    cwd: ctx.cwd,
   };
-  const hookInput = buildHookInput(input.event, input.ctx, {
+  const hookInput = buildHookInput(input.event, ctx, {
     toolName: input.toolInfo?.toolName,
     input: input.toolInfo?.input,
     toolCallId: input.toolInfo?.toolCallId,
     toolResponse: input.toolInfo?.toolResponse,
   });
   const state: HookProcessState = { results: [], additionalContexts: [] };
-  const ctx = input.ctx;
 
   await processHookGroupExecution(pi, state, config, async (rule, group) => {
     if (!(await isGroupActive(group.pattern, ctx.cwd))) return undefined;

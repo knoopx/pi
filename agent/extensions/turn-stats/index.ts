@@ -226,21 +226,25 @@ function createTurnEndHandler(
 
     if (!timing) return;
     if (event.message.role !== "assistant") return;
-    const turnEndTimestamp = Date.now();
-    agentState.lastTurnEndTimestamp = turnEndTimestamp;
-    const durationMs = Math.max(0, turnEndTimestamp - timing.turnStartMs);
-    const generationMs =
-      timing.totalGenerationMs > 0 ? timing.totalGenerationMs : undefined;
+    try {
+      const turnEndTimestamp = Date.now();
+      agentState.lastTurnEndTimestamp = turnEndTimestamp;
+      const durationMs = Math.max(0, turnEndTimestamp - timing.turnStartMs);
+      const generationMs =
+        timing.totalGenerationMs > 0 ? timing.totalGenerationMs : undefined;
 
-    agentState.totalGenerationMs =
-      (agentState.totalGenerationMs ?? 0) + timing.totalGenerationMs;
-    const notificationStr = formatSimpleOutput(
-      event.message.usage.output,
-      durationMs,
-      event.message.usage,
-      generationMs,
-    );
-    ctx.ui.notify(notificationStr, "info");
+      agentState.totalGenerationMs =
+        (agentState.totalGenerationMs ?? 0) + timing.totalGenerationMs;
+      const notificationStr = formatSimpleOutput(
+        event.message.usage.output,
+        durationMs,
+        event.message.usage,
+        generationMs,
+      );
+      ctx.ui.notify(notificationStr, "info");
+    } catch {
+      // ctx is stale after session replacement or reload
+    }
   };
 }
 function computeAgentRunStats(messages: AgentEndEvent["messages"]): {
@@ -284,22 +288,26 @@ function createAgentEndHandler(agentState: {
 }) {
   return (event: AgentEndEvent, ctx: ExtensionContext): void => {
     if (agentState.agentStartTime === null) return;
-    const endTimestamp = agentState.lastTurnEndTimestamp ?? Date.now();
-    const totalDurationMs = endTimestamp - agentState.agentStartTime;
-    const stats = computeAgentRunStats(event.messages);
-    if (!stats) return;
-    const agentRunStats: AgentRunStats = {
-      ...stats,
-      totalCacheReadTokens: 0,
-      totalCacheWriteTokens: 0,
-      totalTokens: stats.totalInputTokens + stats.totalOutputTokens,
-      totalGenerationMs: agentState.totalGenerationMs ?? 0,
-    };
-    const notificationStr = formatAggregateOutput(
-      agentRunStats,
-      totalDurationMs,
-    );
-    if (ctx.hasUI) ctx.ui.notify(notificationStr, "info");
+    try {
+      const endTimestamp = agentState.lastTurnEndTimestamp ?? Date.now();
+      const totalDurationMs = endTimestamp - agentState.agentStartTime;
+      const stats = computeAgentRunStats(event.messages);
+      if (!stats) return;
+      const agentRunStats: AgentRunStats = {
+        ...stats,
+        totalCacheReadTokens: 0,
+        totalCacheWriteTokens: 0,
+        totalTokens: stats.totalInputTokens + stats.totalOutputTokens,
+        totalGenerationMs: agentState.totalGenerationMs ?? 0,
+      };
+      const notificationStr = formatAggregateOutput(
+        agentRunStats,
+        totalDurationMs,
+      );
+      if (ctx.hasUI) ctx.ui.notify(notificationStr, "info");
+    } catch {
+      // ctx is stale after session replacement or reload
+    }
   };
 }
 function createAgentStartHandler(state: {
