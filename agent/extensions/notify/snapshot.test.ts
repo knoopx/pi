@@ -25,35 +25,24 @@ describe("notify output snapshots", () => {
     tool = found[0];
   });
 
-  it("renders success output with TTS enabled", async () => {
-    const result = await tool.execute(
-      "id",
-      { message: "Build complete — all tests passed" },
-      undefined,
-      undefined,
-      mockCtx,
-    );
-    expect((result.content[0] as { text: string }).text).toBe(
-      "Notification sent via TTS",
-    );
-    // verify notify-send was not called (only tts via sh)
-    const calls = mockPi.exec.mock.calls as [string, unknown[], unknown][];
-    expect(calls.some(([cmd]) => cmd === "notify-send")).toBe(false);
-  });
-
-  it("skips notify-send when TTS enabled", async () => {
-    const result = await tool.execute(
-      "id",
-      { message: "Test" },
-      undefined,
-      undefined,
-      mockCtx,
-    );
-    expect((result.content[0] as { text: string }).text).toBe(
-      "Notification sent via TTS",
-    );
-    // verify notify-send was not called
-    const calls = mockPi.exec.mock.calls as [string, unknown[], unknown][];
-    expect(calls.some(([cmd]) => cmd === "notify-send")).toBe(false);
-  });
+  it.each([
+    { message: "Build complete — all tests passed" },
+    { message: "Test" },
+  ])(
+    "sends TTS notification and skips notify-send for: $message",
+    async ({ message }) => {
+      const result = await tool.execute(
+        "id",
+        { message },
+        undefined,
+        undefined,
+        mockCtx,
+      );
+      expect((result.content[0] as { text: string }).text).toBe(
+        "Notification sent via TTS",
+      );
+      const calls = mockPi.exec.mock.calls as [string, unknown[], unknown][];
+      expect(calls.some(([cmd]) => cmd === "notify-send")).toBe(false);
+    },
+  );
 });

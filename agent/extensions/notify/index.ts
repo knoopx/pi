@@ -122,7 +122,7 @@ function makeNotifyTool(isTtsEnabledRef: { value: boolean }, pi: ExtensionAPI) {
     name: "notify",
     label: "Inform User",
     description:
-      "Inform the user what is happening. Mandatory on every phase change and task completion. Never skip — always tell the user what you are doing and when you are done.",
+      "Inform the user what is happening. Notify on phase changes, mutations, and task completion. Skip notifications for passive lookups (find, read, ls, grep). Keep messages high-level — never include IDs, codes, hashes, or filenames.",
     parameters: Type.Object({
       message: Type.String({
         description: "The notification message",

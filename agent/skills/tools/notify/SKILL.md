@@ -1,6 +1,6 @@
 ---
 name: notify
-description: "Inform the user what is happening — mandatory on every single step, no exceptions."
+description: "Inform the user what is happening — skip passive lookups"
 token_cost: 1
 keywords: ["inform", "progress", "status"]
 ---
@@ -13,30 +13,30 @@ REQUIRED: message (one-line text)
 
 ## When to notify
 
-Every step. No exceptions. Reading files, editing code, running builds, checking output, fixing errors — always notify.
+Every step that produces effects. Editing code, running builds, checking output, fixing errors — always notify. Pure reads (find, read, ls, grep) are passive lookups and do not warrant notification.
 
-- Before every tool call that does work (read, edit, bash, find, grep)
-- After every tool call returns results
+- Before every mutating tool call (edit, bash with side effects, write)
+- After every tool call that changes state or produces output worth surfacing
 - On errors and unexpected output
 - On completion
 
 ## Message format
 
 - **message**: One-line text describing the action. Max 70 chars.
+- Never include IDs, codes, hashes, filenames, or specific references — keep it high-level.
 
 ```tool
-{"name": "notify", "input": {"message": "Running test suite — 247 tests"}}
+{"name": "notify", "input": {"message": "Running test suite"}}
 ```
 
 ## Workflow examples
 
 ### Implementation task
 
-1. `notify("Reading index.ts")` — before reading
-2. `notify("Editing index.ts to add TTS")` — before editing
-3. `notify("Running typecheck")` — before running
-4. `notify("Typecheck passed")` — after results
-5. `notify("Done!")` — on completion
+1. `notify("Editing config file")` — before editing
+2. `notify("Running typecheck")` — before running
+3. `notify("Typecheck passed")` — after results
+4. `notify("Done!")` — on completion
 
 ### Research task
 
@@ -51,6 +51,6 @@ Every step. No exceptions. Reading files, editing code, running builds, checking
 
 ## Best practices
 
-- Notify before every action and after every result
+- Skip notifications for passive lookups (find, read, ls, grep)
+- Notify before mutations and after state-changing results
 - Keep messages short and specific
-- Never skip notifying — every step warrants it

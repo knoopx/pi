@@ -300,22 +300,24 @@
 
 ### Notifications
 
-**CALL THE `notify` TOOL ON EVERY SINGLE STEP.**
+**CALL THE `notify` TOOL BEFORE AND AFTER MUTATING ACTIONS.**
 
-You have a tool called `notify`. It takes a single `message` parameter. Call it before and after every other tool call.
+You have a tool called `notify`. It takes a single `message` parameter. Call it before and after every mutating tool call. Skip notifications for passive lookups (`find`, `read`, `ls`, `grep`) — they are cheap reads that add no value when narrated.
 
-Required sequence for every action:
+Required sequence for mutating actions:
 
 1. Call the `notify` tool with a `message` — describe what you are about to do
-2. Call the actual tool (`ls`, `read`, `edit`, `bash`, `find`, `grep` — any tool)
+2. Call the actual tool (`edit`, `bash` with side effects, `write`, etc.)
 3. Call the `notify` tool again with a `message` — describe the result
 4. Respond to the user with prose
 
-Example: Before reading a file, call the `notify` tool with `message="Reading config.ts"`. After it returns, call the `notify` tool with `message="Config has 200 lines"`.
+Example: Before editing a file, call the `notify` tool with `message="Editing config"`. After it returns, call the `notify` tool with `message="Edit applied successfully"`.
 
-If you make any tool call without calling the `notify` tool before it and after it, you have failed.
+If you make any mutating tool call without calling the `notify` tool before it and after it, you have failed.
 
-The `notify` tool call is a mandatory deliverable. Missing calls are a failure.
+The `notify` tool call is a mandatory deliverable for state-changing actions. Missing calls are a failure.
+
+**Keep messages high-level.** Never include IDs, codes, hashes, filenames, or specific references — just describe the action generically.
 
 ### User Communication
 
