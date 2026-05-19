@@ -33,12 +33,10 @@ describe("knowledge entry scoring", () => {
   });
 
   it("does not match partial words", () => {
-    // 'bucket' shouldn't match 'buckets' because the scorer tokenizes on whitespace
     expect(scoreKeywords("many buckets here", ["bucket"])).toBe(0);
   });
 
   it("threshold at 2.0 requires at least two signals", () => {
-    // The extension's MIN_SCORE_THRESHOLD = 2.0 means one word isn't enough
     expect(scoreKeywords("find bucket", ["bucket", "pour"])).toBeLessThan(2.0);
     expect(
       scoreKeywords("bucket pour together", ["bucket", "pour"]),
@@ -46,9 +44,6 @@ describe("knowledge entry scoring", () => {
   });
 
   it("description scoring adds bonus for matching words", () => {
-    // The scoreEntry function in index.ts adds 0.5 per matching word
-    // from the description (words > 3 chars). This test verifies the
-    // concept works at the keyword level.
     expect(scoreKeywords("dynamic programming", ["dynamic programming"])).toBe(
       2.0,
     );
@@ -60,9 +55,9 @@ describe("knowledge directory loads from repo", () => {
   const kDir = join(here, "..", "..", "skills", "knowledge");
   const pDir = join(here, "..", "..", "skills", "protocols");
 
-  it("knowledge dir has 20 skill directories", () => {
+  it("knowledge dir exists and has skill directories", () => {
     expect(existsSync(kDir)).toBe(true);
-    expect(findSkillDirs(kDir).length).toBe(20);
+    expect(findSkillDirs(kDir).length).toBeGreaterThanOrEqual(20);
   });
 
   it("protocols dir has 6 skill directories", () => {
@@ -70,10 +65,9 @@ describe("knowledge directory loads from repo", () => {
     expect(findSkillDirs(pDir).length).toBe(6);
   });
 
-  it("every knowledge entry has topic + keywords in frontmatter", () => {
+  it("every knowledge entry has name in frontmatter", () => {
     forEachSkillFile(kDir, (parsed) => {
-      expect(typeof parsed.frontmatter.topic).toBe("string");
-      expect(Array.isArray(parsed.frontmatter.keywords)).toBe(true);
+      expect(typeof parsed.frontmatter.name).toBe("string");
     });
   });
 

@@ -22,7 +22,6 @@ const makeSkill = (
   lineCount: 0,
   lastModified: 0,
   targetTool,
-  triggers: [],
   tokenCost: 0,
   topic: targetTool,
   keywords,
@@ -90,8 +89,6 @@ describe("intent prediction (frontmatter keywords)", () => {
   });
   it("returns skill names not tool names", () => {
     const p = predictTools("read file", toolSkills, activeTools);
-    // Skill name === tool name in makeSkill, but the point is predictTools
-    // returns skill names so collisions (nix vs nix-flake) are resolved
     expect(p.every((n) => toolSkills.some((s) => s.name === n))).toBe(true);
   });
 
@@ -107,7 +104,6 @@ describe("intent prediction (frontmatter keywords)", () => {
       }),
     ];
     const active = new Set(["read", "edit"]);
-    // "source" is not a keyword but appears in read's description
     const p = predictTools("read source code", skillsWithDesc, active);
     expect(p).toContain("read");
   });
@@ -119,7 +115,6 @@ describe("intent prediction (frontmatter keywords)", () => {
       }),
     ];
     const active = new Set(["read"]);
-    // Short words (<=3 chars) should not contribute to description bonus
     const p = predictTools("read a b c", skillsWithDesc, active);
     expect(p).toContain("read");
   });
@@ -164,7 +159,7 @@ describe("skills directory loads from repo", () => {
 
   it("exists and has skill directories", () => {
     expect(existsSync(toolsDir)).toBe(true);
-    expect(findSkillDirs(toolsDir).length).toBe(29);
+    expect(findSkillDirs(toolsDir).length).toBe(30);
   });
 
   it("every tool skill has name in frontmatter", () => {

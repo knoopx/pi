@@ -1,5 +1,5 @@
 {
-  "name": "skill-inject",
+  "name": "context-injection",
   "version": "1.0.0",
   "type": "module",
   "pi": {
