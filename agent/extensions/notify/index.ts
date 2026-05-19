@@ -85,6 +85,14 @@ function createExecuteNotify(
     params: NotifyToolParams,
     signal: AbortSignal | undefined,
   ): Promise<AgentToolResult<Record<string, unknown>>> {
+    if (isTtsEnabledRef.value) {
+      runTts(pi, params.message);
+      return {
+        content: [{ type: "text" as const, text: "Notification sent via TTS" }],
+        details: {},
+      };
+    }
+
     const options = signal ? { signal } : undefined;
     const result = await pi.exec("notify-send", [params.message], options);
 
@@ -94,10 +102,6 @@ function createExecuteNotify(
         result.stdout ||
         "notify-send failed. Is notify-send installed and available in PATH?";
       return buildErrorResult(message, result);
-    }
-
-    if (isTtsEnabledRef.value) {
-      runTts(pi, params.message);
     }
 
     return {
