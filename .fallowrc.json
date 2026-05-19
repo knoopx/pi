@@ -1,4 +1,5 @@
 {
+  "ignorePatterns": ["agent/skills/**/*.css"],
   "entry": [
     "agent/extensions/**/index.ts",
     "agent/extensions/**/*.test.ts",

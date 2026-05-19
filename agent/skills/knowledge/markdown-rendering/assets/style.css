@@ -1,0 +1,262 @@
+/* Derived from ~/.nix/modules/nixos/defaults/colors.nix — base16 palette */
+:root {
+  --bg: #191033; /* base00 */
+  --bg-alt: #211641; /* base01 */
+  --border: #32245d; /* base02 */
+  --muted: #4c3e76; /* base03 */
+  --text-dim: #6e6194; /* base04 */
+  --text: #f8f8f8; /* base05 */
+  --text-light: #f1f0f4; /* base06 */
+  --accent: #fad000; /* base07 */
+  --red: #ff628c; /* base08 */
+  --orange: #ffb454; /* base09 */
+  --yellow: #fad000; /* base0A */
+  --green: #a5ff90; /* base0B */
+  --cyan: #80fcff; /* base0C */
+  --blue: #fad000; /* base0D */
+  --purple: #faefa5; /* base0E */
+  --magenta: #fb94ff; /* base0F */
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text);
+  background: var(--bg);
+  margin: 0;
+  padding: 2rem 4rem;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--accent);
+  line-height: 1.3;
+  margin: 1.8em 0 0.6em;
+}
+h1:first-child {
+  margin-top: 0;
+}
+h1 {
+  font-size: 2em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.3em;
+}
+h2 {
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.25em;
+}
+h3 {
+  font-size: 1.25em;
+}
+
+p {
+  margin: 0.8em 0;
+}
+
+a {
+  color: var(--cyan);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+strong {
+  color: var(--text-light);
+}
+em {
+  color: var(--purple);
+}
+
+code {
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+  font-size: 0.9em;
+  background: var(--bg-alt);
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+}
+
+pre {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+pre code {
+  background: none;
+  padding: 0;
+}
+
+blockquote {
+  border-left: 3px solid var(--muted);
+  color: var(--text-dim);
+  padding: 0.5em 1em;
+  margin: 1em 0;
+}
+
+ul,
+ol {
+  padding-left: 1.5em;
+  margin: 0.8em 0;
+}
+li {
+  margin: 0.3em 0;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+th,
+td {
+  border: 1px solid var(--border);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+th {
+  background: var(--bg-alt);
+  color: var(--accent);
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2em 0;
+}
+
+img {
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+mark {
+  background: var(--orange);
+  color: var(--bg);
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+}
+
+/* Syntax highlighting — overrides pandoc defaults with theme colors */
+code span.al {
+  color: #ff628c;
+  font-weight: bold;
+} /* alert → red */
+code span.an {
+  color: #6e6194;
+  font-weight: bold;
+  font-style: italic;
+} /* annotation → dim */
+code span.at {
+  color: #fb94ff;
+} /* attribute → magenta */
+code span.bn {
+  color: #ffb454;
+} /* built-in constant → orange */
+code span.bu {
+  color: #80fcff;
+} /* built-in → cyan */
+code span.cf {
+  color: #fad000;
+  font-weight: bold;
+} /* control flow → accent */
+code span.ch {
+  color: #a5ff90;
+} /* char → green */
+code span.cn {
+  color: #ff628c;
+} /* constant → red */
+code span.co {
+  color: #6e6194;
+  font-style: italic;
+} /* comment → dim */
+code span.cv {
+  color: #6e6194;
+  font-weight: bold;
+  font-style: italic;
+} /* variable comment → dim */
+code span.do {
+  color: #6e6194;
+  font-style: italic;
+} /* doc comment → dim */
+code span.dt {
+  color: #fad000;
+} /* type/class → accent */
+code span.dv {
+  color: #ffb454;
+} /* decimal value → orange */
+code span.er {
+  color: #ff628c;
+  font-weight: bold;
+} /* error → red */
+code span.fl {
+  color: #ffb454;
+} /* float → orange */
+code span.fu {
+  color: #80fcff;
+} /* function → cyan */
+code span.im {
+  color: #a5ff90;
+  font-weight: bold;
+} /* import → green */
+code span.in {
+  color: #6e6194;
+  font-weight: bold;
+  font-style: italic;
+} /* info string → dim */
+code span.kw {
+  color: #fad000;
+  font-weight: bold;
+} /* keyword → accent */
+code span.op {
+  color: #4c3e76;
+} /* operator → muted */
+code span.ot {
+  color: #fad000;
+} /* other keyword → accent */
+code span.pp {
+  color: #faefa5;
+} /* preprocessor → purple */
+code span.sc {
+  color: #80fcff;
+} /* special char → cyan */
+code span.ss {
+  color: #fb94ff;
+} /* special string → magenta */
+code span.st {
+  color: #a5ff90;
+} /* string → green */
+code span.va {
+  color: #f8f8f8;
+} /* variable → text */
+code span.vs {
+  color: #a5ff90;
+} /* quoted string → green */
+code span.wa {
+  color: #6e6194;
+  font-weight: bold;
+  font-style: italic;
+} /* warning → dim */
