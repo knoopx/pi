@@ -10,3 +10,14 @@ exports[`NPM Extension > npm-search-packages > given a valid search query > then
     │         │ util, functional, server, client, browser
     │         │ John-David Dalton"
 `;
+
+exports[`NPM Extension npm-search-packages given a valid search query then it should return formatted search results 1`] = `
+"1 result(s)
+
+  # │ version │ package
+────┼─────────┼──────────────────────────────────────────
+  1 │ 4.17.21 │ lodash
+    │         │ A modern JavaScript utility library
+    │         │ util, functional, server, client, browser
+    │         │ John-David Dalton"
+`;

@@ -25,3 +25,29 @@ exports[`hooks audit output > renders single group with file_name context hook >
   → tool_result [file_name: *.nix]: alejandra -q "%file%"
   → tool_result [file_name: *.nix]: nix-instantiate --parse "%file%""
 `;
+
+exports[`hooks audit output renders audit output with active groups and hooks: renders audit output with active groups and hooks 1`] = `
+"✓ javascript (*)
+  → tool_result [file_name: *.{js,jsx,ts,tsx,json,css}]: bunx prettier --write "%file%"
+✓ typescript ({tsconfig.json,tsconfig.*.json})
+  → tool_result [file_name: *.{ts,tsx,js,jsx}]: bun run typecheck 2>&1 | { grep "%file%" || true; }
+✓ eslint (eslint-config.*)
+  → tool_result: bunx eslint "%file%"
+✓ shell (*)
+  → tool_result [file_name: *.{sh,bash}]: shfmt -w "%file%"
+✓ nu (*)
+  → tool_result [file_name: *.nu]: nu --ide-check 10 "%file%""
+`;
+
+exports[`hooks audit output renders mixed event types: renders mixed event types with context patterns 1`] = `
+"✓ lifecycle (*)
+  → session_start: echo session started
+  → turn_end: echo turn ended
+  → tool_call [command: rm *]: echo "dangerous command detected""
+`;
+
+exports[`hooks audit output renders single group with file_name context hook: renders single group with multiple hooks 1`] = `
+"✓ nix (*)
+  → tool_result [file_name: *.nix]: alejandra -q "%file%"
+  → tool_result [file_name: *.nix]: nix-instantiate --parse "%file%""
+`;
