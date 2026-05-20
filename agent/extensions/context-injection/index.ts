@@ -100,9 +100,7 @@ function addCliTools(
   const cliSkills = detectCliTools(prompt, toolSkills);
   for (const skill of cliSkills) {
     if (state.used >= budget) break;
-    if (state.selected.includes(skill)) continue;
-    state.selected.push(skill);
-    state.used += skill.tokenCost;
+    state.tryAddEntry(skill);
   }
 }
 
