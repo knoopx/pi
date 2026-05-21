@@ -3,9 +3,18 @@ import defaultsConfig from "../defaults/all";
 
 vi.mock("node:fs/promises", () => ({
   readFile: vi.fn(),
-  writeFile: vi.fn(),
-  mkdir: vi.fn(),
+  writeFile: vi.fn().mockResolvedValue(undefined),
+  mkdir: vi.fn().mockResolvedValue(undefined),
 }));
+
+function mockFsPromises(content: string): void {
+  vi.resetModules();
+  vi.doMock("node:fs/promises", () => ({
+    readFile: vi.fn().mockResolvedValue(content),
+    writeFile: vi.fn().mockResolvedValue(undefined),
+    mkdir: vi.fn().mockResolvedValue(undefined),
+  }));
+}
 
 function expectDefaultActive(config: {
   load(): void;
@@ -32,6 +41,24 @@ describe("guardrails configLoader", () => {
     it("then resolves defaults as active config", async () => {
       const { configLoader } = await import("./loader");
       expectDefaultActive(configLoader);
+    });
+  });
+
+  describe("loadGuardrailsSettings", () => {
+    it("loads settings with enabled=true", async () => {
+      mockFsPromises('{"guardrails":{"enabled":true}}');
+      const { loadGuardrailsSettings } = await import("./loader");
+      const settings = await loadGuardrailsSettings();
+      expect(settings.enabled).toBe(true);
+    });
+  });
+
+  describe("saveGuardrailsSettings", () => {
+    it("saves settings updates", async () => {
+      mockFsPromises('{"guardrails":{"enabled":true}}');
+      const { saveGuardrailsSettings } = await import("./loader");
+      const result = await saveGuardrailsSettings({ enabled: false });
+      expect(result.enabled).toBe(false);
     });
   });
 });

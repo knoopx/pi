@@ -21,16 +21,43 @@ function isValidAction(action: unknown): boolean {
   return action === "block" || action === "confirm";
 }
 
+function validateRequiredFields(r: Record<string, unknown>): boolean {
+  return ["pattern", "reason"].every((key) => isStringField(r, key));
+}
+
+function validateOptionalFields(r: Record<string, unknown>): boolean {
+  return ["file_pattern", "includes", "excludes"].every((key) =>
+    isOptionalStringField(r, key),
+  );
+}
+
+function isNullObject(rule: unknown): boolean {
+  return typeof rule !== "object" || rule === null;
+}
+
 function isValidRule(rule: unknown): boolean {
   const r = rule as Record<string, unknown>;
-  if (typeof rule !== "object" || rule === null) return false;
-  if (!isStringField(r, "pattern")) return false;
-  if (!isOptionalStringField(r, "file_pattern")) return false;
-  if (!isOptionalStringField(r, "includes")) return false;
-  if (!isOptionalStringField(r, "excludes")) return false;
-  if (!isValidScope(r.scope)) return false;
-  if (!isValidAction(r.action)) return false;
-  return typeof r.reason === "string";
+  if (isNullObject(rule)) return false;
+  if (!validateRuleFields(r)) return false;
+  return isValidScope(r.scope) && isValidAction(r.action);
+}
+
+function validateRuleFields(r: Record<string, unknown>): boolean {
+  return validateRequiredFields(r) && validateOptionalFields(r);
+}
+
+function isValidRulesArray(rules: unknown): boolean {
+  return (
+    Array.isArray(rules) && rules.every((rule: unknown) => isValidRule(rule))
+  );
+}
+
+function isValidGroupFields(g: Record<string, unknown>): boolean {
+  return (
+    typeof g.group === "string" &&
+    typeof g.pattern === "string" &&
+    isOptionalStringField(g, "excludePattern")
+  );
 }
 
 export function isValidGroup(group: unknown): group is GuardrailsGroup {
@@ -38,10 +65,7 @@ export function isValidGroup(group: unknown): group is GuardrailsGroup {
   return (
     typeof group === "object" &&
     group !== null &&
-    typeof g.group === "string" &&
-    typeof g.pattern === "string" &&
-    (g.excludePattern === undefined || typeof g.excludePattern === "string") &&
-    Array.isArray(g.rules) &&
-    g.rules.every((rule: unknown) => isValidRule(rule))
+    isValidGroupFields(g) &&
+    isValidRulesArray(g.rules)
   );
 }

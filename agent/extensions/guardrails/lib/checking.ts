@@ -1,6 +1,6 @@
 import { glob } from "tinyglobby";
 import type { GuardrailsRule } from "../types";
-import { matchCommandPattern } from "../../../shared/matching/command";
+import { matchCommandPattern } from "../../../shared/matching/command-match";
 import {
   matchContentPattern,
   matchFileNamePattern,
@@ -19,52 +19,57 @@ async function hasMatchingFiles(
   return matches.length > 0;
 }
 
+async function hasMatchingPath(
+  pattern: string,
+  root: string,
+): Promise<boolean> {
+  return pattern === "*" || (await hasMatchingFiles(pattern, root));
+}
+
+async function checkExcludePattern(
+  excludePattern: string | undefined,
+  root: string,
+): Promise<boolean> {
+  if (!excludePattern) return true;
+  return !(await hasMatchingFiles(excludePattern, root));
+}
+
 export async function isGroupActive(
   pattern: string,
   root: string,
   excludePattern?: string,
 ): Promise<boolean> {
   try {
-    if (pattern === "*") {
-      if (excludePattern) {
-        const excludeMatches = await glob(excludePattern, {
-          cwd: root,
-          absolute: false,
-          dot: true,
-          onlyDirectories: false,
-        });
-        if (excludeMatches.length > 0) return false;
-      }
-      return true;
-    }
-    if (!(await hasMatchingFiles(pattern, root))) return false;
-    if (excludePattern) {
-      const excludeMatches = await glob(excludePattern, {
-        cwd: root,
-        absolute: false,
-        dot: true,
-        onlyDirectories: false,
-      });
-      if (excludeMatches.length > 0) return false;
-    }
-    return true;
+    if (!(await hasMatchingPath(pattern, root))) return false;
+    return checkExcludePattern(excludePattern, root);
   } catch {
     return false;
   }
+}
+
+function coerceToString(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean")
+    return String(value);
+  return undefined;
+}
+
+function isPlainObjectValue(input: unknown): boolean {
+  return !!input && typeof input === "object";
+}
+
+function isNullish(value: unknown): boolean {
+  return value === undefined || value === null;
 }
 
 export function getInputFieldAsString(
   input: unknown,
   field: string,
 ): string | undefined {
-  if (!input || typeof input !== "object") return undefined;
+  if (!isPlainObjectValue(input)) return undefined;
   const value = (input as Record<string, unknown>)[field];
-  if (value === undefined || value === null) return undefined;
-
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean")
-    return String(value);
-  return undefined;
+  if (isNullish(value)) return undefined;
+  return coerceToString(value);
 }
 
 export function matchesPattern(

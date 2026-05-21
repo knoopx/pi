@@ -9,6 +9,7 @@ import {
   type Mock,
 } from "vitest";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
 let guardrailsExtension: (pi: ExtensionAPI) => Promise<void>;
 let isGroupActive: (
   pattern: string,
@@ -37,7 +38,7 @@ beforeAll(async () => {
   vi.doMock("tinyglobby", () => ({ glob: globMock }));
   const extensionMod = await import("./index");
   guardrailsExtension = extensionMod.default;
-  const utilsMod = await import("./core/checking");
+  const utilsMod = await import("./lib/checking");
   isGroupActive = utilsMod.isGroupActive;
   const configModule = await import("./config/loader");
   configLoader = configModule.configLoader as unknown as typeof configLoader;
@@ -727,3 +728,5 @@ describe("guardrails extension", () => {
     });
   });
 });
+
+

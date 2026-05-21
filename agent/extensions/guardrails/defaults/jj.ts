@@ -175,7 +175,7 @@ const defaults: GuardrailsGroup[] = [
       {
         context: "command",
         pattern: "jj {squash,split,describe,desc,commit} *",
-        excludes: "* -m *",
+        excludes: "* {-m,--help} *",
         action: "block",
         reason:
           "opens an editor without `-m`. Use non-interactive form with `-m 'message'` (read skill: jujutsu)",

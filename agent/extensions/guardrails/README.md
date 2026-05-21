@@ -14,7 +14,6 @@ The `enabled` flag is stored in `~/.pi/agent/settings.json` under the `guardrail
 
 - `/guardrails on` — enable guardrails
 - `/guardrails off` — disable guardrails
-- `/guardrails:audit` — validate patterns and list active rules
 
 A rule has:
 
