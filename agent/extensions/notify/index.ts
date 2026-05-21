@@ -86,34 +86,49 @@ function createExecuteNotify(
     signal: AbortSignal | undefined,
   ): Promise<AgentToolResult<Record<string, unknown>>> {
     if (isTtsEnabledRef.value) {
-      runTts(pi, params.message);
-      return {
-        content: [{ type: "text" as const, text: "Notification sent via TTS" }],
-        details: {},
-      };
+      return sendTtsNotification(pi, params.message);
     }
+    return sendNotifySend(pi, params.message, signal);
+  };
+}
 
-    const options = signal ? { signal } : undefined;
-    const result = await pi.exec("notify-send", [params.message], options);
+function sendTtsNotification(
+  pi: ExtensionAPI,
+  message: string,
+): AgentToolResult<Record<string, unknown>> {
+  runTts(pi, message);
+  return {
+    content: [{ type: "text" as const, text: "Notification sent via TTS" }],
+    details: {},
+  };
+}
 
-    if (result.code !== 0) {
-      const message =
-        result.stderr ||
-        result.stdout ||
-        "notify-send failed. Is notify-send installed and available in PATH?";
-      return buildErrorResult(message, result);
-    }
+async function sendNotifySend(
+  pi: ExtensionAPI,
+  message: string,
+  signal: AbortSignal | undefined,
+): Promise<AgentToolResult<Record<string, unknown>>> {
+  const result = await pi.exec("notify-send", [message], {
+    signal: signal ?? undefined,
+  });
 
-    return {
-      content: [
-        { type: "text" as const, text: "Notification sent successfully" },
-      ],
-      details: {
-        exitCode: result.code,
-        stdout: result.stdout,
-        stderr: result.stderr,
-      } as Record<string, unknown>,
-    };
+  if (result.code !== 0) {
+    return buildErrorResult(
+      result.stderr ||
+        "notify-send failed. Is notify-send installed and available in PATH?",
+      result,
+    );
+  }
+
+  return {
+    content: [
+      { type: "text" as const, text: "Notification sent successfully" },
+    ],
+    details: {
+      exitCode: result.code,
+      stdout: result.stdout,
+      stderr: result.stderr,
+    } as Record<string, unknown>,
   };
 }
 
@@ -122,7 +137,7 @@ function makeNotifyTool(isTtsEnabledRef: { value: boolean }, pi: ExtensionAPI) {
     name: "notify",
     label: "Inform User",
     description:
-      "Inform the user what is happening. Notify on phase changes, mutations, and task completion. Skip notifications for passive lookups (find, read, ls, grep). Keep messages high-level — never include IDs, codes, hashes, or filenames.",
+      "Inform the user what is happening. Notify on phase changes, mutations, and task completion. Keep messages high-level.",
     parameters: Type.Object({
       message: Type.String({
         description: "The notification message",
@@ -136,39 +151,49 @@ function makeNotifyTool(isTtsEnabledRef: { value: boolean }, pi: ExtensionAPI) {
 const ttsDescription =
   "Toggle text-to-speech for notifications (usage: /tts [on|off])";
 
+async function handleTtsToggle(isTtsEnabledRef: {
+  value: boolean;
+}): Promise<string> {
+  isTtsEnabledRef.value = !isTtsEnabledRef.value;
+  await saveTtsEnabled(isTtsEnabledRef.value);
+  return isTtsEnabledRef.value
+    ? "TTS enabled for notifications"
+    : "TTS disabled for notifications";
+}
+
+function handleTtsSet(
+  isTtsEnabledRef: { value: boolean },
+  enabled: boolean,
+): Promise<string> {
+  isTtsEnabledRef.value = enabled;
+  return saveTtsEnabled(enabled).then(() =>
+    enabled
+      ? "TTS enabled for notifications"
+      : "TTS disabled for notifications",
+  );
+}
+
 function createTtsHandler(isTtsEnabledRef: { value: boolean }) {
   return async function handler(
     _args: string,
     ctx: ExtensionCommandContext,
   ): Promise<void> {
     const action = _args.toLowerCase().trim();
-    let message: string;
-
-    switch (action) {
-      case "on":
-        isTtsEnabledRef.value = true;
-        await saveTtsEnabled(true);
-        message = "TTS enabled for notifications";
-        break;
-      case "off":
-        isTtsEnabledRef.value = false;
-        await saveTtsEnabled(false);
-        message = "TTS disabled for notifications";
-        break;
-      default:
-        if (action === "") {
-          isTtsEnabledRef.value = !isTtsEnabledRef.value;
-          await saveTtsEnabled(isTtsEnabledRef.value);
-          message = isTtsEnabledRef.value
-            ? "TTS enabled for notifications"
-            : "TTS disabled for notifications";
-        } else {
-          message = `TTS is ${isTtsEnabledRef.value ? "on" : "off"}. Use /tts [on|off].`;
-        }
-    }
+    const message = await resolveTtsMessage(action, isTtsEnabledRef);
 
     if (ctx.hasUI) ctx.ui?.notify(message, "info");
   };
+}
+
+async function resolveTtsMessage(
+  action: string,
+  ref: { value: boolean },
+): Promise<string> {
+  if (action === "") return handleTtsToggle(ref);
+  if (action === "on" || action === "off") {
+    return handleTtsSet(ref, action === "on");
+  }
+  return `TTS is ${ref.value ? "on" : "off"}. Use /tts [on|off].`;
 }
 
 export default async function notifyExtension(pi: ExtensionAPI): Promise<void> {

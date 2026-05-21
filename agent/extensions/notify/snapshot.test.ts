@@ -1,10 +1,10 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { createMockExtensionAPI } from "../../shared/testing/test-utils";
+import { createMockExtensionAPI } from "../../shared/testing/test-factories";
 import type {
   MockExtensionAPI,
   MockTool,
-} from "../../shared/testing/test-utils";
+} from "../../shared/testing/test-factories";
 const mockCtx = {
   cwd: "/tmp",
   abort: () => {},
