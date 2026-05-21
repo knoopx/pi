@@ -3,7 +3,7 @@ import type {
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 import type { HistoryEntry } from "./types";
-import { loadSessionHistoryForCwd } from "./data/loading";
+import { loadSessionHistoryForCwd } from "./lib/loading";
 import { makeHistorySearchRenderer } from "./ui/component";
 
 function applyHistoryResult(ctx: ExtensionContext, result: HistoryEntry): void {

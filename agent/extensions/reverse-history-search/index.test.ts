@@ -8,8 +8,8 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import setupExtension from "./index";
 import { fuzzyMatch } from "../../shared/matching/fuzzy";
-import type { MockExtensionAPI } from "../../shared/testing/test-utils";
-import { createMockExtensionAPI } from "../../shared/testing/test-utils";
+import type { MockExtensionAPI } from "../../shared/testing/test-factories";
+import { createMockExtensionAPI } from "../../shared/testing/test-factories";
 
 describe("Reverse History Search Extension", () => {
   let mockPi: MockExtensionAPI;

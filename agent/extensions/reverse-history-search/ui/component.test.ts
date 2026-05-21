@@ -3,7 +3,7 @@ import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { TUI } from "@earendil-works/pi-tui";
 import {
   createMockTheme,
-  TestTerminal,
+  createMockTui,
 } from "../../../shared/testing/mock-theme";
 import { HistorySearchComponent, makeHistorySearchRenderer } from "./component";
 import type { HistoryEntry } from "../types";
@@ -20,20 +20,6 @@ const END = `${ESC}[F`;
 const BACKSPACE = "\x7f";
 const DELETE = `${ESC}[3~`;
 const CTRL_SLASH = `${ESC}[27;5;47~`; // Kitty protocol ctrl+/
-
-function createMockTui(): TUI {
-  const terminal = new TestTerminal(120, 30);
-  return {
-    terminal,
-    requestRender: vi.fn(),
-    children: [],
-    focusedComponent: null,
-    inputListeners: new Set(),
-    render: vi.fn().mockReturnValue([]),
-    invalidate: vi.fn(),
-    setFocus: vi.fn(),
-  } as unknown as TUI;
-}
 
 function createSampleHistory(): HistoryEntry[] {
   const now = Date.now();
@@ -313,7 +299,7 @@ describe("makeHistorySearchRenderer", () => {
     theme = createMockTheme();
     history = createSampleHistory();
     doneCallback = vi.fn();
-    mockTui = createMockTui();
+    mockTui = createMockTui() as unknown as TUI;
   });
 
   describe("given a renderer with history", () => {
@@ -324,7 +310,7 @@ describe("makeHistorySearchRenderer", () => {
         theme,
         history,
         doneCallback,
-        mockTui,
+        mockTui as unknown as TUI,
       );
     });
 
@@ -437,7 +423,7 @@ describe("full integration: makeHistorySearchRenderer → ctx.ui.custom flow", (
     theme = createMockTheme();
     history = createSampleHistory();
     doneCallback = vi.fn();
-    mockTui = createMockTui();
+    mockTui = createMockTui() as unknown as TUI;
   });
 
   describe("when user selects a command entry", () => {
@@ -446,7 +432,7 @@ describe("full integration: makeHistorySearchRenderer → ctx.ui.custom flow", (
         theme,
         history,
         doneCallback,
-        mockTui,
+        mockTui as unknown as TUI,
       );
       renderer.handleInput(ENTER);
 
@@ -462,7 +448,7 @@ describe("full integration: makeHistorySearchRenderer → ctx.ui.custom flow", (
         theme,
         history,
         doneCallback,
-        mockTui,
+        mockTui as unknown as TUI,
       );
 
       renderer.handleInput("F");
@@ -483,7 +469,7 @@ describe("full integration: makeHistorySearchRenderer → ctx.ui.custom flow", (
         theme,
         history,
         doneCallback,
-        mockTui,
+        mockTui as unknown as TUI,
       );
 
       renderer.handleInput(DOWN);
@@ -499,7 +485,7 @@ describe("full integration: makeHistorySearchRenderer → ctx.ui.custom flow", (
         theme,
         history,
         doneCallback,
-        mockTui,
+        mockTui as unknown as TUI,
       );
 
       renderer.handleInput(CTRL_SLASH);

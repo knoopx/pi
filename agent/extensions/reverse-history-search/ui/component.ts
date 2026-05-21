@@ -1,7 +1,6 @@
 import { fuzzyMatch } from "../../../shared/matching/fuzzy";
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { matchesKey } from "@earendil-works/pi-tui";
-import type { TUI } from "@earendil-works/pi-tui";
+import { matchesKey, type TUI } from "@earendil-works/pi-tui";
 import { renderHistoryPage } from "./renderer";
 import type { HistoryEntry, HistoryFilter } from "../types";
 
