@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import type {
-  ExtensionAPI,
-  ExtensionContext,
-  ExtensionUIContext,
-} from "@earendil-works/pi-coding-agent";
-import { assessResponse, buildCorrectionMessage } from "./auto-steering";
-import setupExtension from "./index";
-import { createMockExtensionAPI } from "../../shared/testing/test-utils";
-import type { MockExtensionAPI } from "../../shared/testing/test-utils";
+import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { assessResponse, buildCorrectionMessage } from "./self-correction";
+import setupExtension from "../index";
+import {
+  createExtensionFixture,
+  createToolCall,
+  expectEarlyReturnOnNullMessage,
+  expectNoToolFollowUp,
+} from "../../../shared/testing/test-factories";
 
 const known = new Set(["read", "write", "edit", "bash", "ls", "find", "grep"]);
 
@@ -18,19 +18,19 @@ describe("assessResponse", () => {
     });
   });
   it("accepts text with tool calls", () => {
-    const calls = [{ name: "read", input: { path: "/a" } }];
+    const calls = [createToolCall()];
     expect(assessResponse("reading the file", calls, [], known)).toEqual({
       ok: true,
     });
   });
   it("accepts valid tool calls without text", () => {
-    const calls = [{ name: "read", input: { path: "/a" } }];
+    const calls = [createToolCall()];
     expect(assessResponse("", calls, [], known)).toEqual({ ok: true });
   });
   it("accepts multiple valid tool calls", () => {
     const calls = [
-      { name: "read", input: { path: "/a" } },
-      { name: "edit", input: { path: "/b" } },
+      createToolCall(),
+      createToolCall({ name: "edit", input: { path: "/b" } }),
     ];
     expect(assessResponse("", calls, [], known)).toEqual({ ok: true });
   });
@@ -232,31 +232,23 @@ describe("buildCorrectionMessage", () => {
 });
 
 describe("turn_end handler", () => {
-  let mockPi: MockExtensionAPI;
-  let turnEndHandler: (event: unknown, ctx: ExtensionContext) => Promise<void>;
-  let sessionStartHandler: (event: unknown) => Promise<void>;
-  let toolExecHandler: (event: unknown) => Promise<void>;
-  let mockCtx: ExtensionContext;
+  const fixture = createExtensionFixture(setupExtension);
+  let mockPi = fixture.mockPi;
+  let mockCtx = fixture.mockCtx;
+  let turnEndHandler: (
+    event: unknown,
+    ctx: ExtensionContext,
+  ) => unknown = async () => {};
+  let sessionStartHandler: (event: unknown) => unknown = async () => {};
+  let toolExecHandler: (event: unknown) => Promise<void> = async () => {};
 
   beforeEach(() => {
-    mockPi = createMockExtensionAPI();
-    setupExtension(mockPi as ExtensionAPI);
-
-    const onCalls = (mockPi.on as ReturnType<typeof vi.fn>).mock
-      .calls as any[][];
-    turnEndHandler = onCalls.find((c) => c[0] === "turn_end")![1];
-    sessionStartHandler = onCalls.find((c) => c[0] === "session_start")![1];
-    toolExecHandler = onCalls.find((c) => c[0] === "tool_execution_start")![1];
-
-    mockCtx = {
-      cwd: "/test",
-      hasUI: true,
-      ui: {
-        notify: vi.fn(),
-        theme: {} as ExtensionUIContext["theme"],
-      } as unknown as ExtensionUIContext,
-    } as ExtensionContext;
-
+    fixture.setup();
+    mockPi = fixture.mockPi;
+    mockCtx = fixture.mockCtx;
+    turnEndHandler = fixture.getHandler("turn_end");
+    sessionStartHandler = fixture.getHandler("session_start");
+    toolExecHandler = fixture.getHandler("tool_execution_start");
     // Reset module-level state before each test
     void sessionStartHandler({});
   });
@@ -299,14 +291,10 @@ describe("turn_end handler", () => {
 
   it("returns early when message is missing", async () => {
     await turnEndHandler({}, mockCtx);
-    expect(mockPi.sendUserMessage).not.toHaveBeenCalled();
-    expect(mockCtx.ui.notify).not.toHaveBeenCalled();
+    expectNoToolFollowUp(mockPi, mockCtx);
   });
 
-  it("returns early when message is null", async () => {
-    await turnEndHandler({ message: null }, mockCtx);
-    expect(mockPi.sendUserMessage).not.toHaveBeenCalled();
-  });
+  expectEarlyReturnOnNullMessage(turnEndHandler, mockPi, mockCtx);
 
   it("skips check when stopReason is 'aborted'", async () => {
     await turnEndHandler(
@@ -314,8 +302,7 @@ describe("turn_end handler", () => {
       mockCtx,
     );
 
-    expect(mockPi.sendUserMessage).not.toHaveBeenCalled();
-    expect(mockCtx.ui.notify).not.toHaveBeenCalled();
+    expectNoToolFollowUp(mockPi, mockCtx);
   });
 
   it("skips check when stopReason is 'error'", async () => {
