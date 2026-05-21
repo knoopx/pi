@@ -76,6 +76,17 @@ function buildContentsEndpoint(
   return endpoint;
 }
 
+function resolveErrorMessage(result: {
+  stderr: string;
+  stdout: string;
+}): string {
+  return result.stderr || result.stdout || "command exited with non-zero code";
+}
+
+function formatRefSuffix(ref: string | undefined): string {
+  return ref ? ` at ref ${ref}` : "";
+}
+
 function throwFileError(opts: {
   result: { exitCode: number; stderr: string; stdout: string };
   owner: string;
@@ -83,10 +94,10 @@ function throwFileError(opts: {
   filePath: string;
   ref: string | undefined;
 }): never {
-  const message = opts.result.stderr || opts.result.stdout || "Unknown error";
+  const message = resolveErrorMessage(opts.result);
   if (isNotFound(message)) {
     throw new Error(
-      `File not found: ${opts.owner}/${opts.repo}/${opts.filePath}${opts.ref ? ` at ref ${opts.ref}` : ""}`,
+      `File not found: ${opts.owner}/${opts.repo}/${opts.filePath}${formatRefSuffix(opts.ref)}`,
     );
   }
   throw new Error(message);

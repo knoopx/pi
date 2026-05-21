@@ -4,10 +4,9 @@ import type {
   AgentToolResult,
 } from "@earendil-works/pi-coding-agent";
 import { type Static, Type } from "typebox";
-import { dotJoin } from "../../../shared/rendering/labels";
+import { dotJoin, stateDot } from "../../../shared/rendering/labels";
 import { table } from "../../../shared/rendering/table/renderer";
-import { detail } from "../../../shared/rendering/detail";
-import { stateDot } from "../../../shared/rendering/labels";
+import { detail } from "../lib/detail";
 import type { Column } from "../../../shared/rendering/types";
 import { ghCmd } from "../../../shared/process/gh-cmd";
 import { createErrorResult } from "../lib/registration";
@@ -110,18 +109,7 @@ function createListReleasesTool() {
   return {
     name: "gh-list-releases",
     label: "List Releases",
-    description: `List releases in a GitHub repository.
-
-Use this to:
-- View all published releases and versions
-- Find release dates and version tags
-- Check for pre-release or draft releases
-- Discover available download assets
-
-Examples:
-- gh-list-releases(owner='facebook', repo='react')
-- gh-list-releases(owner='microsoft', repo='vscode', limit=50)
-- gh-list-releases(owner='golang', repo='go', limit=10)`,
+    description: `List releases in a GitHub repository.`,
     parameters: ListReleasesParams,
 
     async execute(
@@ -194,7 +182,17 @@ async function executeViewRelease(
   params: ViewReleaseParamsType,
 ): Promise<AgentToolResult<{ release: GHRelease }>> {
   const release = await viewRelease(params.owner, params.repo, params.tag);
-  const fields = [
+  const fields = buildReleaseFields(release);
+  return {
+    content: [{ type: "text", text: detail(fields) }],
+    details: { release },
+  };
+}
+
+function buildReleaseFields(
+  release: GHRelease,
+): Array<{ label: string; value: string }> {
+  return [
     { label: "tag", value: release.tagName },
     { label: "name", value: release.name || release.tagName },
     {
@@ -208,37 +206,22 @@ async function executeViewRelease(
       label: "prerelease",
       value: `${stateDot(release.isPrerelease)} prerelease`,
     },
-    { label: "url", value: release.url ? release.url : "" },
-    {
-      label: "assets",
-      value: release.assets?.length
-        ? release.assets
-            .map((a) => `${a.name} (${(a.size / 1024).toFixed(1)} KB)`)
-            .join(", ")
-        : "none",
-    },
+    { label: "url", value: release.url ?? "" },
+    { label: "assets", value: formatAssets(release.assets) },
   ];
-  return {
-    content: [{ type: "text", text: detail(fields) }],
-    details: { release },
-  };
+}
+
+function formatAssets(assets: GHRelease["assets"]): string {
+  if (!assets?.length) return "none";
+  return assets
+    .map((a) => `${a.name} (${(a.size / 1024).toFixed(1)} KB)`)
+    .join(", ");
 }
 function createViewReleaseTool() {
   return {
     name: "gh-view-release",
     label: "View Release",
-    description: `View details of a specific release.
-
-Use this to:
-- Read release notes and changelogs
-- See release metadata (draft, prerelease status)
-- List available download assets
-- Check publication date
-
-Examples:
-- gh-view-release(owner='facebook', repo='react', tag='v18.2.0')
-- gh-view-release(owner='microsoft', repo='vscode', tag='1.85.0')
-- gh-view-release(owner='golang', repo='go', tag='go1.21.0')`,
+    description: `View details of a specific release.`,
     parameters: ViewReleaseParams,
 
     async execute(

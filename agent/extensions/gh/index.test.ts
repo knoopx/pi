@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { MockExtensionAPI } from "../../shared/testing/test-utils";
-import { createMockExtensionAPI } from "../../shared/testing/test-utils";
+import type { MockExtensionAPI } from "../../shared/testing/test-factories";
+import { createMockExtensionAPI } from "../../shared/testing/test-factories";
 
 import setupGhExtension from "./index";
 

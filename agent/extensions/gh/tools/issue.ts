@@ -41,18 +41,7 @@ function createListIssuesTool() {
   return {
     toolName: "gh-list-issues",
     toolLabel: "Issues",
-    toolDescription: `List issues in a GitHub repository.
-
-Use this to:
-- View open or closed issues in a repository
-- Filter issues by state (open/closed/all)
-- Track bug reports and feature requests
-- Monitor issue activity
-
-Examples:
-- gh-list-issues(owner='facebook', repo='react')
-- gh-list-issues(owner='microsoft', repo='vscode', state='open', limit=50)
-- gh-list-issues(owner='torvalds', repo='linux', state='closed')`,
+    toolDescription: `List issues in a GitHub repository.`,
     paramsSchema: createListParamsSchema(
       "List issues in a GitHub repository",
       ["open", "closed", "all"],
@@ -68,17 +57,7 @@ function createViewIssueTool() {
   return {
     toolName: "gh-view-issue",
     toolLabel: "Issue",
-    toolDescription: `View details of a specific issue.
-
-Use this to:
-- Read the full issue content and description
-- See issue metadata (author, labels, milestone)
-- Check issue state and creation date
-- Access the issue URL
-
-Examples:
-- gh-view-issue(owner='facebook', repo='react', number=123)
-- gh-view-issue(owner='microsoft', repo='vscode', number=456)`,
+    toolDescription: `View details of a specific issue.`,
     paramsSchema: ViewParamsSchema,
     viewFn: viewIssue,
     fields: createIssueFields(),
@@ -90,18 +69,7 @@ function createCreateIssueTool() {
   return {
     toolName: "gh-create-issue",
     toolLabel: "Create Issue",
-    toolDescription: `Create a new issue in a repository.
-
-Use this to:
-- Report bugs or problems
-- Request new features
-- Ask questions about the project
-- Track tasks and to-dos
-
-Examples:
-- gh-create-issue(owner='facebook', repo='react', title='Bug: Component crashes')
-- gh-create-issue(owner='microsoft', repo='vscode', title='Feature request', body='Would love to see...')
-- gh-create-issue(owner='torvalds', repo='linux', title='Kernel issue', labels=['bug', 'high-priority'])`,
+    toolDescription: `Create a new issue in a repository.`,
     paramsSchema: CreateIssueParams,
     createFn: (params: {
       owner: string;

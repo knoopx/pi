@@ -101,18 +101,7 @@ function createListWorkflowsTool() {
   return {
     name: "gh-list-workflows",
     label: "List Workflows",
-    description: `List GitHub Actions workflows in a repository.
-
-Use this to:
-- Discover all CI/CD workflows configured in a repository
-- Check workflow status (active/inactive)
-- Find workflow file paths and IDs
-- Explore automation setups
-
-Examples:
-- gh-list-workflows(owner='facebook', repo='react')
-- gh-list-workflows(owner='microsoft', repo='vscode', limit=50)
-- gh-list-workflows(owner='golang', repo='go', limit=20)`,
+    description: `List GitHub Actions workflows in a repository.`,
     parameters: ListWorkflowsParams,
 
     async execute(
@@ -182,18 +171,7 @@ function createListRunsTool() {
   return {
     name: "gh-list-runs",
     label: "List Workflow Runs",
-    description: `List recent GitHub Actions workflow runs.
-
-Use this to:
-- View recent CI/CD job executions
-- Check build/test status and results
-- Filter runs by specific workflow
-- Track workflow history
-
-Examples:
-- gh-list-runs(owner='facebook', repo='react')
-- gh-list-runs(owner='microsoft', repo='vscode', workflow='ci.yml', limit=50)
-- gh-list-runs(owner='golang', repo='go', limit=20)`,
+    description: `List recent GitHub Actions workflow runs.`,
     parameters: ListRunsParams,
 
     async execute(

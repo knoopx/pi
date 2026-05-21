@@ -5,7 +5,6 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import type { Static, TSchema } from "typebox";
 import { table } from "../../../shared/rendering/table/renderer";
-import { detail } from "../../../shared/rendering/detail";
 import type { Column } from "../../../shared/rendering/types";
 import { dangerousOperationConfirmation } from "../../../shared/result/tool";
 import {
@@ -45,17 +44,33 @@ export function buildFilterArgs(
   author?: string,
   assignee?: string,
 ): string[] {
-  const args: string[] = ["search", command, `--limit=${limit}`];
-
+  const args = ["search", command, `--limit=${limit}`];
   if (query) args.push(query);
+  pushArrayFlags(args, owner, repo, label);
+  pushSingleFlags(args, state, author, assignee);
+  return args;
+}
+
+function pushArrayFlags(
+  args: string[],
+  owner?: string[],
+  repo?: string[],
+  label?: string[],
+): void {
   pushArrayFlag(args, owner, "owner");
   pushArrayFlag(args, repo, "repo");
-  if (state) args.push(`--state=${state}`);
   pushArrayFlag(args, label, "label");
+}
+
+function pushSingleFlags(
+  args: string[],
+  state?: "open" | "closed",
+  author?: string,
+  assignee?: string,
+): void {
+  if (state) args.push(`--state=${state}`);
   if (author) args.push(`--author=${author}`);
   if (assignee) args.push(`--assignee=${assignee}`);
-
-  return args;
 }
 
 type ToolExecuteFn = (
@@ -159,6 +174,29 @@ interface RegisterViewToolOptions<TItem> {
   includeBody?: boolean;
 }
 
+function extractBody<TItem>(
+  item: TItem,
+  includeBody: boolean,
+): string | undefined {
+  if (!includeBody) return;
+  if (typeof item !== "object" || item === null) return;
+  const body = (item as Record<string, unknown>).body;
+  if (typeof body !== "string") return;
+  return `\n${body}`;
+}
+
+function buildViewOutput<TItem>(
+  item: TItem,
+  fields: (item: TItem) => { label: string; value: string }[],
+  includeBody: boolean,
+): string {
+  const bodyStr = extractBody(item, includeBody) ?? "";
+  const fieldsStr = fields(item)
+    .map((f) => `${f.label}: ${f.value}`)
+    .join("\n");
+  return [fieldsStr, bodyStr].filter(Boolean).join("");
+}
+
 export function registerViewTool<TItem>(
   pi: ExtensionAPI,
   options: RegisterViewToolOptions<TItem>,
@@ -178,15 +216,10 @@ export function registerViewTool<TItem>(
       params.repo as string,
       params.number as number,
     );
-    if (!item || typeof item !== "object")
+    if (!item || typeof item !== "object") {
       throw new Error(`Invalid response from ${toolName}`);
-    const itemFields = fields(item);
-    const bodyValue =
-      includeBody && "body" in item
-        ? (item as Record<string, unknown>).body
-        : undefined;
-    const bodyStr = typeof bodyValue === "string" ? `\n${bodyValue}` : "";
-    const output = [detail(itemFields), bodyStr].filter(Boolean).join("");
+    }
+    const output = buildViewOutput(item, fields, includeBody);
     return {
       content: [{ type: "text", text: output }],
       details: { [toolName.replace("gh-", "")]: item },
@@ -238,24 +271,41 @@ async function executeCreateTool<TParams extends TSchema>(
     confirmationDescription(params),
   );
   if (denied) return denied;
+  return runCreateWithErrorHandling(createFn, params, successMessagePrefix);
+}
+
+async function runCreateWithErrorHandling<TParams extends TSchema>(
+  createFn: (params: Static<TParams>) => Promise<{
+    stdout: string;
+    stderr: string;
+    exitCode: number;
+  }>,
+  params: Static<TParams>,
+  successMessagePrefix: string,
+): Promise<AgentToolResult<Record<string, unknown>>> {
   try {
     const result = await createFn(params);
-    if (result.exitCode !== 0)
-      return createErrorResult(result.stderr || result.stdout);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `${successMessagePrefix}\n${result.stdout.trim()}`,
-        },
-      ],
-      details: { stdout: result.stdout },
-    };
+    if (result.exitCode !== 0) {
+      return createErrorResult(
+        result.stderr || result.stdout || "command exited with non-zero code",
+      );
+    }
+    return buildCreateSuccessResult(result, successMessagePrefix);
   } catch (error) {
-    return createErrorResult(
-      error instanceof Error ? error.message : String(error),
-    );
+    return createErrorResult(String(error));
   }
+}
+
+function buildCreateSuccessResult(
+  result: { exitCode: number; stderr: string | undefined; stdout: string },
+  prefix: string,
+) {
+  return {
+    content: [
+      { type: "text" as const, text: `${prefix}\n${result.stdout.trim()}` },
+    ],
+    details: { stdout: result.stdout } as Record<string, unknown>,
+  };
 }
 
 export function registerCreateTool<TParams extends TSchema>(

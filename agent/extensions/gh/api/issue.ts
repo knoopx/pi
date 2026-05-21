@@ -1,4 +1,4 @@
-import { ghCmd } from "../../../shared/process/gh-cmd";
+import { ghCmd, ghCmdJson } from "../../../shared/process/gh-cmd";
 import type { Column } from "../../../shared/rendering/types";
 import { createBasicColumns } from "../lib/types";
 import {
@@ -11,7 +11,14 @@ import {
 const ISSUE_JSON_FIELDS =
   "number,title,state,createdAt,updatedAt,author,body,url,labels,milestone";
 
-interface GHIssue {
+export interface GHIssueComment {
+  id: string;
+  body: string;
+  createdAt: string;
+  author: { login: string; avatar_url: string; html_url: string } | null;
+}
+
+export interface GHIssue {
   number: number;
   title: string;
   state: string;
@@ -22,6 +29,7 @@ interface GHIssue {
   html_url: string;
   labels: { name: string; description: string; color: string }[];
   milestone: { title: string; description: string; dueOn: string } | null;
+  comments: GHIssueComment[];
 }
 
 export function listIssues(
@@ -36,15 +44,32 @@ export function listIssues(
   );
 }
 
-export function viewIssue(
+async function fetchIssueComments(
+  owner: string,
+  repo: string,
+  issueNumber: number,
+): Promise<GHIssueComment[]> {
+  return ghCmdJson<GHIssueComment[]>(
+    [
+      "api",
+      `repos/${owner}/${repo}/issues/${issueNumber}/comments`,
+      "--jq", ".[] | {id: .node_id, body: .body, createdAt: .created_at, author: {login: .user.login, avatar_url: .user.avatar_url, html_url: .user.html_url}}",
+    ],
+    "issue comments",
+  );
+}
+
+export async function viewIssue(
   owner: string,
   repo: string,
   issueNumber: number,
 ): Promise<GHIssue> {
-  return viewResource<GHIssue>(
+  const issue = await viewResource<GHIssue>(
     buildViewArgs("issue", owner, repo, issueNumber, ISSUE_JSON_FIELDS),
     "issue view",
   );
+  const comments = await fetchIssueComments(owner, repo, issueNumber);
+  return { ...issue, comments };
 }
 
 interface CreateIssueOpts {
@@ -94,20 +119,35 @@ export function createIssueRowMapper() {
   });
 }
 
+function formatIssueLabels(labels: GHIssue["labels"]): string {
+  return labels?.map((l) => l.name).join(", ") || "none";
+}
+
+function formatComments(comments: GHIssueComment[]): string {
+  if (!comments || comments.length === 0) return "none";
+  const lines = comments.map((c) => {
+    const author = c.author?.login ?? "unknown";
+    const date = new Date(c.createdAt).toLocaleString();
+    return `@${author} (${date})\n${c.body}`;
+  });
+  return lines.join("\n---\n");
+}
+
 export function createIssueFields() {
   return (issue: GHIssue) => [
     { label: "title", value: `#${issue.number} ${issue.title}` },
     { label: "state", value: issue.state },
     { label: "author", value: issue.author?.login ?? "unknown" },
-    {
-      label: "labels",
-      value: issue.labels?.map((l) => l.name).join(", ") || "none",
-    },
+    { label: "labels", value: formatIssueLabels(issue.labels) },
     { label: "milestone", value: issue.milestone?.title || "none" },
     {
       label: "created",
       value: new Date(issue.createdAt).toLocaleString(),
     },
     { label: "url", value: issue.html_url },
+    {
+      label: "comments",
+      value: formatComments(issue.comments),
+    },
   ];
 }

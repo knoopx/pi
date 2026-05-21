@@ -1,4 +1,7 @@
 {
   "extends": "../../shared/tsconfig.json",
+  "compilerOptions": {
+    "types": ["vitest", "node"]
+  },
   "exclude": ["node_modules"]
 }

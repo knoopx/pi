@@ -4,8 +4,7 @@ import type {
   AgentToolResult,
   Theme,
 } from "@earendil-works/pi-coding-agent";
-import { Type } from "typebox";
-import type { Static } from "typebox";
+import { Type, type Static } from "typebox";
 import { Text } from "@earendil-works/pi-tui";
 import { dangerousOperationConfirmation } from "../../../shared/result/tool";
 import { createErrorResult } from "../lib/registration";
@@ -167,16 +166,7 @@ function createListGistsTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
   return {
     name: "gh-list-gists",
     label: "List Gists",
-    description: `List GitHub gists.
-
-Use this to:
-- View your own gists (requires auth)
-- Browse gists by a specific user
-- Find recently created or updated gists
-
-Examples:
-- gh-list-gists() - List your gists (requires GITHUB_TOKEN)
-- gh-list-gists(userId='octocat', limit=10)`,
+    description: `List GitHub gists.`,
     parameters: ListGistsParams,
 
     async execute(
@@ -212,16 +202,7 @@ function createGetGistTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
   return {
     name: "gh-get-gist",
     label: "Get Gist",
-    description: `Get details of a specific GitHub gist.
-
-Use this to:
-- View full content of a gist
-- See all files in a gist
-- Check gist metadata
-
-Examples:
-- gh-get-gist(gistId='abc123')
-- gh-get-gist(gistId='0123456789abcdef')`,
+    description: `Get details of a specific GitHub gist.`,
     parameters: GetGistParams,
 
     async execute(
@@ -256,21 +237,17 @@ Examples:
   };
 }
 
+function extractGistDescription(
+  a: Record<string, unknown>,
+): string | undefined {
+  return typeof a.description === "string" ? a.description : undefined;
+}
+
 function createCreateGistTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
   return {
     name: "gh-create-gist",
     label: "Create Gist",
-    description: `Create a new GitHub gist.
-
-Use this to:
-- Share code snippets
-- Create temporary code files
-- Save configuration examples
-- Collaborate on small code samples
-
-Examples:
-- gh-create-gist(files={'test.py': {content: 'print("hello")'}, 'README.md': {content: '# Test'}})
-- gh-create-gist(files={'main.ts': {content: 'consoleLog("hi")'}}, description='My test gist', public=true)`,
+    description: `Create a new GitHub gist.`,
     parameters: CreateGistParams,
 
     async execute(
@@ -297,8 +274,7 @@ Examples:
       let text = theme.fg("toolTitle", theme.bold("gh-create-gist"));
       const fileCount = Object.keys(a.files || {}).length;
       if (fileCount > 0) text += theme.fg("muted", ` ${fileCount} file(s)`);
-      const description =
-        typeof a.description === "string" ? a.description : undefined;
+      const description = extractGistDescription(a);
       if (description) text += theme.fg("dim", ` "${description}"`);
       return new Text(text, 0, 0);
     },
@@ -311,16 +287,7 @@ function createUpdateGistTool(): Parameters<ExtensionAPI["registerTool"]>[0] {
   return {
     name: "gh-update-gist",
     label: "Update Gist",
-    description: `Update an existing GitHub gist.
-
-Use this to:
-- Modify file contents in a gist
-- Update gist description
-- Add or remove files from a gist
-
-Examples:
-- gh-update-gist(gistId='abc123', files={'test.py': {content: 'updated code'}})
-- gh-update-gist(gistId='abc123', description='Updated description')`,
+    description: `Update an existing GitHub gist.`,
     parameters: UpdateGistParams,
 
     async execute(
@@ -349,20 +316,34 @@ Examples:
     renderCall(args: unknown, theme: Theme) {
       const a = args as Record<string, unknown>;
       let text = theme.fg("toolTitle", theme.bold("gh-update-gist"));
-      const gistId = typeof a.gistId === "string" ? a.gistId : undefined;
-      if (gistId) text += theme.fg("muted", ` ${gistId}`);
-      if (a.files) {
-        const fileCount = Object.keys(a.files).length;
-        text += theme.fg("dim", ` ${fileCount} file(s) updated`);
-      }
-      const description =
-        typeof a.description === "string" ? a.description : undefined;
-      if (description) text += theme.fg("dim", ` desc="${description}"`);
+      text += renderGistId(a, theme);
+      text += renderGistFiles(a, theme);
+      text += renderGistDescription(a, theme);
       return new Text(text, 0, 0);
     },
 
     renderResult: createTextResultRender(),
   };
+}
+
+function renderGistId(a: Record<string, unknown>, theme: Theme): string {
+  const gistId = typeof a.gistId === "string" ? a.gistId : undefined;
+  return gistId ? theme.fg("muted", ` ${gistId}`) : "";
+}
+
+function renderGistFiles(a: Record<string, unknown>, theme: Theme): string {
+  if (!a.files) return "";
+  const fileCount = Object.keys(a.files as Record<string, unknown>).length;
+  return theme.fg("dim", ` ${fileCount} file(s) updated`);
+}
+
+function renderGistDescription(
+  a: Record<string, unknown>,
+  theme: Theme,
+): string {
+  const description =
+    typeof a.description === "string" ? a.description : undefined;
+  return description ? theme.fg("dim", ` desc="${description}"`) : "";
 }
 
 export function registerGistTools(pi: ExtensionAPI) {

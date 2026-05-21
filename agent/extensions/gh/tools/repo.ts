@@ -4,8 +4,7 @@ import type {
   AgentToolResult,
   Theme,
 } from "@earendil-works/pi-coding-agent";
-import { Type } from "typebox";
-import type { Static } from "typebox";
+import { Type, type Static } from "typebox";
 import { Text } from "@earendil-works/pi-tui";
 import { createErrorResult } from "../lib/registration";
 import { createTextResultRender } from "../lib/rendering";
@@ -138,16 +137,45 @@ async function executeListRepoFiles(
   return createRepoResult(output, result);
 }
 
+function formatOwnerRepoPath(
+  owner: string | undefined,
+  repo: string | undefined,
+  path: string | undefined,
+  theme: Theme,
+): string {
+  if (owner && repo && path)
+    return theme.fg("muted", ` (${owner}/${repo}/${path})`);
+  return "";
+}
+
+function formatRepoPathSection(
+  args: Record<string, unknown>,
+  theme: Theme,
+): string {
+  let text = "";
+  const path = args.path as string;
+  if (path) text += theme.fg("dim", `/${path}`);
+  const maxFiles = args.maxFiles as number;
+  if (maxFiles) text += theme.fg("dim", ` (max=${maxFiles})`);
+  return text;
+}
+
+function formatRepoCallArgs(
+  args: Record<string, unknown>,
+  theme: Theme,
+): string {
+  let text = "";
+  const owner = args.owner as string;
+  const repo = args.repo as string;
+  if (owner && repo) text += theme.fg("muted", ` (${owner}/${repo})`);
+  return text + formatRepoPathSection(args, theme);
+}
+
 function createRepoRenderCall(toolName: string) {
   return (args: Record<string, unknown>, theme: Theme): Text => {
-    let text = theme.fg("toolTitle", theme.bold(toolName));
-    const owner = args.owner as string;
-    const repo = args.repo as string;
-    if (owner && repo) text += theme.fg("muted", ` (${owner}/${repo})`);
-    const path = args.path as string;
-    if (path) text += theme.fg("dim", `/${path}`);
-    const maxFiles = args.maxFiles as number;
-    if (maxFiles) text += theme.fg("dim", ` (max=${maxFiles})`);
+    const text =
+      theme.fg("toolTitle", theme.bold(toolName)) +
+      formatRepoCallArgs(args, theme);
     return new Text(text, 0, 0);
   };
 }
@@ -156,17 +184,7 @@ function createRepoContentsTool() {
   return {
     name: "gh-list-contents",
     label: "Repository Contents",
-    description: `Browse the contents of a GitHub repository.
-
-Use this to:
-- List files and directories in a repo
-- Explore project structure
-- Navigate through directories
-- Find specific files or folders
-
-Examples:
-- gh-list-contents(owner='facebook', repo='react', path='packages')
-- gh-list-contents(owner='microsoft', repo='vscode')`,
+    description: `Browse the contents of a GitHub repository.`,
     parameters: GetRepoContentsParams,
 
     execute: createRepoExecute(executeGetRepoContents),
@@ -180,30 +198,20 @@ function createFileContentTool() {
   return {
     name: "gh-get-file",
     label: "File Content",
-    description: `Get the content of a specific file from a GitHub repository.
-
-Use this to:
-- Read source code files
-- View configuration files
-- Examine documentation
-- Check specific file contents
-
-Examples:
-- gh-get-file(owner='facebook', repo='react', path='README.md')
-- gh-get-file(owner='microsoft', repo='vscode', path='package.json')
-- gh-get-file(owner='pytorch', repo='pytorch', path='setup.py', ref='main')`,
+    description: `Get the content of a specific file from a GitHub repository.`,
     parameters: GetFileContentParams,
 
     execute: createRepoExecute(executeGetFileContent),
 
     renderCall(args: Record<string, unknown>, theme: Theme) {
+      const str = (val: unknown): string | undefined =>
+        typeof val === "string" ? val : undefined;
       let text = theme.fg("toolTitle", theme.bold("gh-get-file"));
-      const owner = typeof args.owner === "string" ? args.owner : undefined;
-      const repo = typeof args.repo === "string" ? args.repo : undefined;
-      const path = typeof args.path === "string" ? args.path : undefined;
-      if (owner && repo && path)
-        text += theme.fg("muted", ` (${owner}/${repo}/${path})`);
-      const ref = typeof args.ref === "string" ? args.ref : undefined;
+      const owner = str(args.owner);
+      const repo = str(args.repo);
+      const path = str(args.path);
+      text += formatOwnerRepoPath(owner, repo, path, theme);
+      const ref = str(args.ref);
       if (ref) text += theme.fg("dim", ` @${ref}`);
       return new Text(text, 0, 0);
     },
@@ -216,17 +224,7 @@ function createListRepoFilesTool() {
   return {
     name: "gh-list-repo-files",
     label: "List Repository Files",
-    description: `List files in a GitHub repository with a preview of directory contents.
-
-Use this to:
-- Quickly see what files exist in a repo
-- Get a preview of directory structure
-- Find files without browsing the web
-- Explore project organization
-
-Examples:
-- gh-list-repo-files(owner='facebook', repo='react')
-- gh-list-repo-files(owner='microsoft', repo='vscode', path='src', maxFiles=100)`,
+    description: `List files in a GitHub repository with a preview of directory contents.`,
     parameters: ListRepoFilesParams,
 
     execute: createRepoExecute(executeListRepoFiles),

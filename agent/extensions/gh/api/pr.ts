@@ -1,4 +1,4 @@
-import { ghCmd } from "../../../shared/process/gh-cmd";
+import { ghCmd, ghCmdJson } from "../../../shared/process/gh-cmd";
 import type { Column } from "../../../shared/rendering/types";
 import { createBasicColumns } from "../lib/types";
 import {
@@ -13,7 +13,15 @@ const PR_JSON_FIELDS =
 const PR_LIST_JSON_FIELDS =
   "number,title,state,createdAt,updatedAt,baseRefName,headRefName,author,url,mergeable,reviewDecision";
 
-interface GHPR {
+export interface GHPRReview {
+  id: string;
+  body: string;
+  state: "APPROVED" | "CHANGES_REQUESTED" | "COMMENTED" | "DISMISSED" | "PENDING";
+  createdAt: string;
+  author: { login: string; avatar_url: string; html_url: string } | null;
+}
+
+export interface GHPR {
   number: number;
   title: string;
   state: string;
@@ -26,6 +34,7 @@ interface GHPR {
   html_url: string;
   mergeable: string;
   reviewDecision: string;
+  reviews: GHPRReview[];
 }
 
 export function listPRs(
@@ -40,15 +49,32 @@ export function listPRs(
   );
 }
 
-export function viewPR(
+async function fetchPRReviews(
+  owner: string,
+  repo: string,
+  prNumber: number,
+): Promise<GHPRReview[]> {
+  return ghCmdJson<GHPRReview[]>(
+    [
+      "api",
+      `repos/${owner}/${repo}/pulls/${prNumber}/reviews`,
+      "--jq", ".[] | {id: .node_id, body: .body, state: .state, createdAt: .submitted_at, author: (if .user then {login: .user.login, avatar_url: .user.avatar_url, html_url: .user.html_url} else null end)}",
+    ],
+    "pr reviews",
+  );
+}
+
+export async function viewPR(
   owner: string,
   repo: string,
   prNumber: number,
 ): Promise<GHPR> {
-  return viewResource<GHPR>(
+  const pr = await viewResource<GHPR>(
     buildViewArgs("pr", owner, repo, prNumber, PR_JSON_FIELDS),
     "pr view",
   );
+  const reviews = await fetchPRReviews(owner, repo, prNumber);
+  return { ...pr, reviews };
 }
 
 interface CreatePROpts {
@@ -61,27 +87,32 @@ interface CreatePROpts {
   draft?: boolean;
 }
 
-export function createPR({
-  owner,
-  repo,
-  title,
-  body,
-  head,
-  base,
-  draft,
-}: CreatePROpts): Promise<{
+function appendOptionalPrArgs(args: string[], opts: CreatePROpts): void {
+  if (opts.body) args.push("--body", opts.body);
+  if (opts.head) args.push("--head", opts.head);
+  if (opts.base) args.push("--base", opts.base);
+  if (opts.draft) args.push("--draft");
+}
+
+function buildCreatePrArgs(opts: CreatePROpts): string[] {
+  const args = [
+    "pr",
+    "create",
+    "-R",
+    `${opts.owner}/${opts.repo}`,
+    "--title",
+    opts.title,
+  ];
+  appendOptionalPrArgs(args, opts);
+  return args;
+}
+
+export function createPR(opts: CreatePROpts): Promise<{
   stdout: string;
   stderr: string;
   exitCode: number;
 }> {
-  const args = ["pr", "create", "-R", `${owner}/${repo}`, "--title", title];
-
-  if (body) args.push("--body", body);
-  if (head) args.push("--head", head);
-  if (base) args.push("--base", base);
-  if (draft) args.push("--draft");
-
-  return ghCmd(args);
+  return ghCmd(buildCreatePrArgs(opts));
 }
 
 export function createPrColumns(): Column[] {
@@ -103,6 +134,16 @@ export function createPrRowMapper() {
   });
 }
 
+function formatReviews(reviews: GHPRReview[]): string {
+  if (!reviews || reviews.length === 0) return "none";
+  const lines = reviews.map((r) => {
+    const author = r.author?.login ?? "unknown";
+    const date = new Date(r.createdAt).toLocaleString();
+    return `@${author} (${date}) — ${r.state}\n${r.body}`;
+  });
+  return lines.join("\n---\n");
+}
+
 export function createPrFields() {
   return (pr: GHPR) => [
     { label: "title", value: `#${pr.number} ${pr.title}` },
@@ -113,5 +154,6 @@ export function createPrFields() {
     { label: "review", value: pr.reviewDecision || "none" },
     { label: "created", value: new Date(pr.createdAt).toLocaleString() },
     { label: "url", value: pr.html_url },
+    { label: "reviews", value: formatReviews(pr.reviews) },
   ];
 }

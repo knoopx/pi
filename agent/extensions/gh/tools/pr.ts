@@ -53,18 +53,7 @@ function createListPRsTool() {
   return {
     toolName: "gh-list-prs",
     toolLabel: "PRs",
-    toolDescription: `List pull requests in a GitHub repository.
-
-Use this to:
-- View open, closed, or merged PRs
-- Track pending reviews and changes
-- Monitor PR activity in a repository
-- Find PRs by state
-
-Examples:
-- gh-list-prs(owner='facebook', repo='react')
-- gh-list-prs(owner='microsoft', repo='vscode', state='open', limit=50)
-- gh-list-prs(owner='torvalds', repo='linux', state='merged')`,
+    toolDescription: `List pull requests in a GitHub repository.`,
     paramsSchema: createListParamsSchema(
       "List pull requests in a GitHub repository",
       ["open", "closed", "merged", "all"],
@@ -80,17 +69,7 @@ function createViewPRTool() {
   return {
     toolName: "gh-view-pr",
     toolLabel: "Pull Request",
-    toolDescription: `View details of a specific pull request.
-
-Use this to:
-- Read the full PR description and changes
-- See PR metadata (author, branches, merge status)
-- Check review status and mergeability
-- Access the PR URL
-
-Examples:
-- gh-view-pr(owner='facebook', repo='react', number=123)
-- gh-view-pr(owner='microsoft', repo='vscode', number=456)`,
+    toolDescription: `View details of a specific pull request.`,
     paramsSchema: ViewParamsSchema,
     viewFn: viewPR,
     fields: createPrFields(),
@@ -102,18 +81,7 @@ function createCreatePRTool() {
   return {
     toolName: "gh-create-pr",
     toolLabel: "Create Pull Request",
-    toolDescription: `Create a new pull request.
-
-Use this to:
-- Submit code changes for review
-- Propose new features or fixes
-- Create draft PRs for work in progress
-- Merge branches together
-
-Examples:
-- gh-create-pr(owner='facebook', repo='react', title='Fix bug', head='fix-branch', base='main')
-- gh-create-pr(owner='microsoft', repo='vscode', title='New feature', body='Description...', draft=true)
-- gh-create-pr(owner='torvalds', repo='linux', title='Kernel patch', head='feature')`,
+    toolDescription: `Create a new pull request.`,
     paramsSchema: CreatePRParams,
     createFn: (params: {
       owner: string;

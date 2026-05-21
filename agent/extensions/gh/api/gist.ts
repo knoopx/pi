@@ -1,5 +1,9 @@
-import { ghCmd, ghCmdJson, ghCmdJsonWithInput } from "../../../shared/process/gh-cmd";
-import { detail } from "../../../shared/rendering/detail";
+import {
+  ghCmd,
+  ghCmdJson,
+  ghCmdJsonWithInput,
+} from "../../../shared/process/gh-cmd";
+import { detail } from "../lib/detail";
 import { stateDot } from "../../../shared/rendering/labels";
 
 interface GistFile {
@@ -27,23 +31,22 @@ export interface Gist {
   } | null;
 }
 
-export async function listGists(userId?: string, limit = 30): Promise<Gist[]> {
-  if (userId && userId !== "@me") {
-    const endpoint = `/users/${userId}/gists?per_page=${limit}`;
-    return ghCmdJson<Gist[]>(
-      [
-        "api",
-        endpoint,
-        "--jq",
-        "[.[] | {id, description, public, created_at, updated_at, html_url, files, user: (.owner // null)}]",
-      ],
-      "api gists",
-    );
-  }
-  const result = await ghCmd(["gist", "list", `--limit=${limit}`]);
+function resolveGistError(result: {
+  exitCode: number;
+  stderr: string;
+  stdout: string;
+}): void {
+  if (result.exitCode === 0) return;
+  const message =
+    result.stderr ||
+    result.stdout ||
+    "gh gist list exited with code " + result.exitCode;
+  throw new Error(`gh gist list failed: ${message}`);
+}
 
-  if (result.exitCode !== 0)
-    throw new Error(`gh gist list failed: ${result.stderr || result.stdout}`);
+async function listOwnGists(limit: number): Promise<Gist[]> {
+  const result = await ghCmd(["gist", "list", `--limit=${limit}`]);
+  resolveGistError(result);
   const lines = result.stdout.trim().split("\n").filter(Boolean);
   const gistIds = lines.map((line) => line.split(/\s+/)[0]);
   const gists: Gist[] = [];
@@ -55,12 +58,69 @@ export async function listGists(userId?: string, limit = 30): Promise<Gist[]> {
       console.error(`Failed to fetch gist ${gistId}:`, err);
     }
   }
-
   return gists;
+}
+
+async function fetchUserGists(userId: string, limit: number): Promise<Gist[]> {
+  const endpoint = `/users/${userId}/gists?per_page=${limit}`;
+  return ghCmdJson<Gist[]>(
+    [
+      "api",
+      endpoint,
+      "--jq",
+      "[.[] | {id, description, public, created_at, updated_at, html_url, files, user: (.owner // null)}]",
+    ],
+    "api gists",
+  );
+}
+
+export async function listGists(userId?: string, limit = 30): Promise<Gist[]> {
+  if (userId && userId !== "@me") {
+    return fetchUserGists(userId, limit);
+  }
+  return listOwnGists(limit);
 }
 
 export function getGist(gistId: string): Promise<Gist> {
   return ghCmdJson<Gist>(["api", `/gists/${gistId}`], "api gist");
+}
+
+async function createTempFiles(
+  files: Record<string, { content: string; filename?: string }>,
+): Promise<{ paths: string[]; cleanup: () => void }> {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const path = await import("node:path");
+  const tempDir = os.tmpdir();
+  const paths: string[] = [];
+
+  for (const [filename, fileData] of Object.entries(files)) {
+    const tempFile = path.join(tempDir, `gist-${filename}`);
+    fs.writeFileSync(tempFile, fileData.content);
+    paths.push(tempFile);
+  }
+
+  return {
+    paths,
+    cleanup: () => {
+      for (const p of paths) {
+        try {
+          fs.unlinkSync(p);
+        } catch (err) {
+          console.error(`Failed to remove temp file ${p}:`, err);
+        }
+      }
+    },
+  };
+}
+
+function validateGistResult(result: {
+  exitCode: number;
+  stderr: string;
+  stdout: string;
+}): void {
+  if (result.exitCode === 0) return;
+  throw new Error(`gh gist create failed: ${result.stderr ?? result.stdout}`);
 }
 
 export async function createGist(
@@ -68,38 +128,34 @@ export async function createGist(
   description = "",
   isPublic = false,
 ): Promise<Gist> {
-  const fs = await import("node:fs");
-  const os = await import("node:os");
-  const path = await import("node:path");
-  const tempDir = os.tmpdir();
-  const fileArgs: string[] = [];
+  const { paths: fileArgs, cleanup } = await createTempFiles(files);
 
-  for (const [filename, fileData] of Object.entries(files)) {
-    const tempFile = path.join(tempDir, `gist-${filename}`);
-    fs.writeFileSync(tempFile, fileData.content);
-    fileArgs.push(tempFile);
-  }
   const args = ["gist", "create", ...fileArgs];
   if (description) args.push("--desc", description);
   if (isPublic) args.push("--public");
   const result = await ghCmd(args);
+  cleanup();
 
-  for (const tempFile of fileArgs) {
-    try {
-      fs.unlinkSync(tempFile);
-    } catch (err) {
-      console.error(`Failed to remove temp file ${tempFile}:`, err);
-    }
-  }
-
-  if (result.exitCode !== 0)
-    throw new Error(`gh gist create failed: ${result.stderr || result.stdout}`);
+  validateGistResult(result);
   const gistUrl = result.stdout.trim();
   const gistId = gistUrl.split("/").pop();
   if (!gistId)
     throw new Error(`Failed to extract gist ID from output: ${gistUrl}`);
 
   return getGist(gistId);
+}
+
+function buildApiFiles(
+  files: Record<string, { content: string; filename?: string }>,
+): Record<string, { content: string; filename?: string }> {
+  const apiFiles: Record<string, { content: string; filename?: string }> = {};
+  for (const [filename, fileData] of Object.entries(files)) {
+    apiFiles[filename] = { content: fileData.content };
+    if (fileData.filename) {
+      apiFiles[filename].filename = fileData.filename;
+    }
+  }
+  return apiFiles;
 }
 
 export function updateGist(
@@ -109,14 +165,7 @@ export function updateGist(
 ): Promise<Gist> {
   const apiBody: Record<string, unknown> = {};
   if (description !== undefined) apiBody.description = description;
-  if (files) {
-    const apiFiles: Record<string, { content: string; filename?: string }> = {};
-    for (const [filename, fileData] of Object.entries(files)) {
-      apiFiles[filename] = { content: fileData.content };
-      if (fileData.filename) apiFiles[filename].filename = fileData.filename;
-    }
-    apiBody.files = apiFiles;
-  }
+  if (files) apiBody.files = buildApiFiles(files);
 
   return ghCmdJsonWithInput<Gist>(
     ["api", `/gists/${gistId}`, "-X", "PATCH", "--input", "-"],

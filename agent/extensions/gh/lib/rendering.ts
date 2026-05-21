@@ -4,7 +4,7 @@ import type {
   ToolRenderResultOptions,
 } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
-import { renderTextToolResult } from "../../../shared/rendering/render-utils";
+import { renderTextToolResult } from "./render-results";
 
 export function createTextResultRender() {
   return function renderResult(
@@ -18,16 +18,20 @@ export function createTextResultRender() {
 
 export function createListRenderCall(toolName: string) {
   return function renderCall(args: Record<string, unknown>, theme: Theme) {
-    return createGithubRenderCallContent(toolName, args, theme, (a) => {
-      let text = "";
-      const owner = typeof a.owner === "string" ? a.owner : undefined;
-      const repo = typeof a.repo === "string" ? a.repo : undefined;
-      if (owner && repo) text += theme.fg("muted", ` ${owner}/${repo}`);
-      const state = typeof a.state === "string" ? a.state : undefined;
-      if (state) text += theme.fg("dim", ` --state=${state}`);
-      return text;
-    });
+    return createGithubRenderCallContent(toolName, args, theme, (a) =>
+      formatListArgs(a, theme),
+    );
   };
+}
+
+function formatListArgs(a: Record<string, unknown>, theme: Theme): string {
+  let text = "";
+  const owner = safeString(a.owner);
+  const repo = safeString(a.repo);
+  if (owner && repo) text += theme.fg("muted", ` ${owner}/${repo}`);
+  const state = safeString(a.state);
+  if (state) text += theme.fg("dim", ` --state=${state}`);
+  return text;
 }
 
 export function createCreateRenderCall(toolName: string) {
@@ -40,19 +44,36 @@ export function createCreateRenderCall(toolName: string) {
   };
 }
 
+function buildViewPath(
+  a: Record<string, unknown>,
+): { owner: string; repo: string; number: string } | null {
+  const owner = safeString(a.owner);
+  const repo = safeString(a.repo);
+  if (!owner || !repo) return null;
+  const number = isNumberLike(a.number) ? String(a.number) : undefined;
+  if (!number) return null;
+  return { owner, repo, number };
+}
+
+function formatViewArgs(a: Record<string, unknown>, theme: Theme): string {
+  const path = buildViewPath(a);
+  if (!path) return "";
+  return theme.fg("muted", ` ${path.owner}/${path.repo}#${path.number}`);
+}
+
+function safeString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function isNumberLike(value: unknown): boolean {
+  return typeof value === "number" || typeof value === "string";
+}
+
 export function createViewRenderCall(toolName: string) {
   return function renderCall(args: Record<string, unknown>, theme: Theme) {
-    return createGithubRenderCallContent(toolName, args, theme, (a) => {
-      const owner = typeof a.owner === "string" ? a.owner : undefined;
-      const repo = typeof a.repo === "string" ? a.repo : undefined;
-      const number =
-        typeof a.number === "number" || typeof a.number === "string"
-          ? String(a.number)
-          : undefined;
-      if (owner && repo && number)
-        return theme.fg("muted", ` ${owner}/${repo}#${number}`);
-      return "";
-    });
+    return createGithubRenderCallContent(toolName, args, theme, (a) =>
+      formatViewArgs(a, theme),
+    );
   };
 }
 

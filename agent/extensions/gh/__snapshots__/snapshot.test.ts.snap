@@ -1,0 +1,105 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`gh-view-issue output snapshots > renders issue with multiple comments 1`] = `
+"title: #5 Security vulnerability in auth
+state: CLOSED
+author: sec-team
+labels: security, critical
+milestone: v1.1
+created: 1/3/2024, 1:00:00
+url: https://github.com/owner/repo/issues/5
+comments: @lead (1/3/2024, 2:00:00)
+Confirmed, patching now.
+---
+@lead (2/3/2024, 13:00:00)
+Fix merged in #99.
+---
+@tester (5/3/2024, 10:00:00)
+Verified the fix works.
+Token validation bypass in /api/auth."
+`;
+
+exports[`gh-view-issue output snapshots > renders issue with null comment author 1`] = `
+"title: #7 Ghost issue
+state: OPEN
+author: ghost
+labels: none
+milestone: none
+created: 1/1/2024, 1:00:00
+url: https://github.com/owner/repo/issues/7
+comments: @unknown (2/1/2024, 1:00:00)
+Comment from deleted user
+Something weird happened."
+`;
+
+exports[`gh-view-issue output snapshots > renders issue with single comment 1`] = `
+"title: #10 Add dark mode
+state: OPEN
+author: designer
+labels: enhancement
+milestone: v2.0
+created: 1/2/2024, 9:00:00
+url: https://github.com/owner/repo/issues/10
+comments: @dev (1/2/2024, 11:00:00)
+I can work on this next sprint.
+Users want a dark mode option."
+`;
+
+exports[`gh-view-issue output snapshots > renders issue without comments 1`] = `
+"title: #42 Fix crash on startup
+state: OPEN
+author: octocat
+labels: bug
+milestone: none
+created: 15/1/2024, 11:00:00
+url: https://github.com/owner/repo/issues/42
+comments: none
+The app crashes when opened."
+`;
+
+exports[`gh-view-pr output snapshots > renders PR with approved review 1`] = `
+"title: #55 Add CI pipeline
+state: OPEN
+author: devops
+branch: main ← add-ci
+mergeable: true
+review: APPROVED
+created: 10/2/2024, 9:00:00
+url: https://github.com/owner/repo/pull/55
+reviews: @lead (10/2/2024, 11:00:00) — APPROVED
+LGTM, looks good.
+Add GitHub Actions workflow."
+`;
+
+exports[`gh-view-pr output snapshots > renders PR with multiple reviews including changes requested 1`] = `
+"title: #60 Rewrite parser
+state: OPEN
+author: senior-dev
+branch: main ← rewrite-parser
+mergeable: true
+review: CHANGES_REQUESTED
+created: 1/3/2024, 1:00:00
+url: https://github.com/owner/repo/pull/60
+reviews: @reviewer (1/3/2024, 13:00:00) — CHANGES_REQUESTED
+Please add error handling for edge cases.
+---
+@senior-dev (2/3/2024, 10:00:00) — COMMENTED
+Updated with error handling.
+---
+@reviewer (3/3/2024, 11:00:00) — APPROVED
+Looks good now.
+Complete rewrite of the parser module."
+`;
+
+exports[`gh-view-pr output snapshots > renders PR without reviews 1`] = `
+"title: #50 Refactor auth module
+state: OPEN
+author: dev
+branch: main ← refactor-auth
+mergeable: true
+review: none
+created: 20/1/2024, 11:00:00
+url: https://github.com/owner/repo/pull/50
+reviews: none
+Clean up the auth module."
+`;
