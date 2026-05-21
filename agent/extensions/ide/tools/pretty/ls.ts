@@ -1,5 +1,5 @@
 import { renderTree } from "../renderers";
-import { countLines } from "./utils";
+import { countLines } from "./tool-rendering";
 import { createPrettyTool } from "./factory";
 
 interface LsParams {

@@ -1,3 +1,4 @@
+import type { Change } from "../../types";
 import type { ChangesState } from "./state";
 import { computeNewIndex } from "../../lib/list-picker/navigation";
 export interface NavigationCallbacks {
@@ -125,18 +126,24 @@ export class Navigation {
     this.state.selectionState.diffScroll = 0;
   }
 
+  isWorkingCopyChange(current: Change): boolean {
+    return (
+      this.state.currentChangeId !== null &&
+      current.changeId === this.state.currentChangeId
+    );
+  }
+
+  computeTargetIndex(dir: "up" | "down", currentIndex: number): number {
+    return dir === "up" ? currentIndex - 1 : currentIndex + 1;
+  }
+
   moveChange(dir: "up" | "down"): void {
     const currentIndex = this.state.selectionState.selectedIndex;
-    const targetIndex = dir === "up" ? currentIndex - 1 : currentIndex + 1;
+    const targetIndex = this.computeTargetIndex(dir, currentIndex);
 
     if (targetIndex < 0 || targetIndex >= this.state.changes.length) return;
     const current = this.state.changes[currentIndex];
-    const isWorkingCopy =
-      this.state.currentChangeId !== null &&
-      current.changeId === this.state.currentChangeId;
-    if (isWorkingCopy) {
-      return;
-    }
+    if (this.isWorkingCopyChange(current)) return;
 
     [this.state.changes[currentIndex], this.state.changes[targetIndex]] = [
       this.state.changes[targetIndex],

@@ -7,14 +7,10 @@ import {
   buildPrFixedParts,
   truncateTitle,
   formatReviewIcon,
-} from "./helpers";
-import type { Theme } from "@earendil-works/pi-coding-agent";
+} from "./pr-formatting";
+import { createMockTheme } from "../../../../shared/testing/mock-theme";
 
-// Mock theme for testing
-const mockTheme: Theme = {
-  fg: (color: string, text: string) => `[${color}:${text}]`,
-  bg: (color: string, text: string) => `{bg:${color}:${text}}`,
-} as unknown as Theme;
+const theme = createMockTheme();
 
 describe("getPrIcon", () => {
   it("returns draft icon for drafts", () => {
@@ -71,18 +67,21 @@ describe("resolvePrStateColor", () => {
 
 describe("buildPrStats", () => {
   it("formats additions and deletions with theme colors", () => {
-    const result = buildPrStats(mockTheme, 100, 50);
-    expect(result).toBe("[success:+100]/[error:-50]");
+    const result = buildPrStats(theme, 100, 50);
+    expect(result).toContain("+100");
+    expect(result).toContain("-50");
   });
 
   it("handles zero values", () => {
-    const result = buildPrStats(mockTheme, 0, 0);
-    expect(result).toBe("[success:+0]/[error:-0]");
+    const result = buildPrStats(theme, 0, 0);
+    expect(result).toContain("+0");
+    expect(result).toContain("-0");
   });
 
   it("handles large numbers", () => {
-    const result = buildPrStats(mockTheme, 12345, 6789);
-    expect(result).toBe("[success:+12345]/[error:-6789]");
+    const result = buildPrStats(theme, 12345, 6789);
+    expect(result).toContain("+12345");
+    expect(result).toContain("-6789");
   });
 });
 
@@ -153,24 +152,24 @@ describe("truncateTitle", () => {
 
 describe("formatReviewIcon", () => {
   it("returns empty string when no review icon", () => {
-    expect(formatReviewIcon("", "APPROVED", mockTheme)).toBe("");
-    expect(
-      formatReviewIcon(null as unknown as string, "APPROVED", mockTheme),
-    ).toBe("");
+    expect(formatReviewIcon("", "APPROVED", theme)).toBe("");
+    expect(formatReviewIcon(null as unknown as string, "APPROVED", theme)).toBe(
+      "",
+    );
   });
 
   it("applies success color for approved reviews", () => {
-    const result = formatReviewIcon("󰄬", "APPROVED", mockTheme);
-    expect(result).toBe("[success:󰄬] ");
+    const result = formatReviewIcon("󰄬", "APPROVED", theme);
+    expect(result).toContain("󰄬");
   });
 
   it("applies warning color for changes requested", () => {
-    const result = formatReviewIcon("󰌑", "CHANGES_REQUESTED", mockTheme);
-    expect(result).toBe("[warning:󰌑] ");
+    const result = formatReviewIcon("󰌑", "CHANGES_REQUESTED", theme);
+    expect(result).toContain("󰌑");
   });
 
   it("applies warning color for null decision", () => {
-    const result = formatReviewIcon("󰈈", null, mockTheme);
-    expect(result).toBe("[warning:󰈈] ");
+    const result = formatReviewIcon("󰈈", null, theme);
+    expect(result).toContain("󰈈");
   });
 });

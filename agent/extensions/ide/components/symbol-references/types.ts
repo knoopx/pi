@@ -1,6 +1,6 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { ListPickerItem } from "../../lib/list-picker/picker";
-import { makeCommandDef } from "./helpers";
+import { makeCommandDef } from "./reference-parsing";
 export interface SymbolReferenceItem extends ListPickerItem {
   name: string;
   type: string;

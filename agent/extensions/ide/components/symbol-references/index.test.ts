@@ -20,9 +20,9 @@ import type {
 import { createSymbolReferenceComponent } from "./component";
 import {
   createErrorFixture,
-  createMockPi,
   createComponentFixture,
-} from "../../test/utils";
+} from "../../test/mock-factory";
+import { createMockPi } from "../../../../shared/testing/test-factories";
 
 const REPO = "/tmp/test-project";
 

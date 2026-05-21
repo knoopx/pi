@@ -3,7 +3,7 @@ import type { GraphLayout } from "../graph";
 import { ChangeRow } from "./change-row";
 import type { ChangeRowFlags } from "./change-row";
 import { createEmptyChangeRow } from "./empty-rows";
-import { createMockTheme } from "../../test/utils";
+import { createMockTheme } from "../../test/mock-factory";
 const mockLayout = {
   positions: new Map([
     ["a", { x: 0, y: 0 }],

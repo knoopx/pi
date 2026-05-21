@@ -17,7 +17,7 @@ import {
   getCenterBorderColor,
   renderPanelRow,
   getOrPad,
-} from "./utils";
+} from "./border-rendering";
 
 function renderSimplePanel(args: SimplePanelArgs): string[] {
   const {
@@ -184,6 +184,22 @@ function renderBottomSeparatorLine(
   );
 }
 
+function hasSplitRightDims(
+  dims: SplitPanelDimensions,
+): dims is SplitPanelDimensions & {
+  rightTopH: number;
+  rightBottomH: number;
+} {
+  return !!(dims.rightTopH && dims.rightBottomH);
+}
+
+function shouldRenderSplitRight(
+  config: SplitPanelConfig,
+  dims: SplitPanelDimensions,
+): boolean {
+  return !!(config.rightSplit && hasSplitRightDims(dims));
+}
+
 export function renderPanelContent(
   theme: Theme,
   config: SplitPanelConfig,
@@ -192,23 +208,48 @@ export function renderPanelContent(
 ): string[] {
   const { leftW, rightW, contentH } = dims;
 
-  if (config.rightSplit && dims.rightTopH && dims.rightBottomH) {
-    return renderSplitRightPanel({
-      leftRows: rows.left,
-      rightTopRows: rows.rightTop ?? [],
-      rightBottomRows: rows.rightBottom ?? [],
-      leftW,
-      rightW,
-      rightTopH: dims.rightTopH,
-      rightBottomH: dims.rightBottomH,
-      leftFocus: config.leftFocus,
-      rightFocus: config.rightFocus,
-      rightBottomTitle: config.rightBottomTitle ?? " Preview",
-      theme,
-    });
+  if (shouldRenderSplitRight(config, dims)) {
+    return renderSplitRightPanel(buildSplitParams(theme, config, dims, rows));
   }
 
-  return renderSimplePanel({
+  return renderSimplePanel(
+    buildSimpleParams(config, rows, leftW, rightW, contentH, theme),
+  );
+}
+
+function buildSplitParams(
+  theme: Theme,
+  config: SplitPanelConfig,
+  dims: SplitPanelDimensions,
+  rows: SplitPanelRows,
+): Parameters<typeof renderSplitRightPanel>[0] {
+  if (!dims.rightTopH || !dims.rightBottomH) {
+    throw new Error("split panel dimensions missing");
+  }
+  return {
+    leftRows: rows.left,
+    rightTopRows: rows.rightTop ?? [],
+    rightBottomRows: rows.rightBottom ?? [],
+    leftW: dims.leftW,
+    rightW: dims.rightW,
+    rightTopH: dims.rightTopH,
+    rightBottomH: dims.rightBottomH,
+    leftFocus: config.leftFocus,
+    rightFocus: config.rightFocus,
+    rightBottomTitle: config.rightBottomTitle ?? " Preview",
+    theme,
+  };
+}
+
+function buildSimpleParams(
+  config: SplitPanelConfig,
+  rows: SplitPanelRows,
+  leftW: number,
+  rightW: number,
+  contentH: number,
+  theme: Theme,
+): Parameters<typeof renderSimplePanel>[0] {
+  return {
     leftRows: rows.left,
     rightRows: rows.right ?? [],
     leftW,
@@ -217,5 +258,5 @@ export function renderPanelContent(
     leftFocus: config.leftFocus,
     rightFocus: config.rightFocus,
     theme,
-  });
+  };
 }

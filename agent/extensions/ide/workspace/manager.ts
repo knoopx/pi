@@ -10,7 +10,7 @@ import type {
   DiffStats,
 } from "../types";
 import { getRepoRoot } from "../jj/files";
-import { sanitizeDescription, updateStaleWorkspace } from "../jj/core";
+import { sanitizeDescription, updateStaleWorkspace } from "../jj/jj-base";
 import { formatFileStats } from "../lib/formatting/stats";
 const WORKSPACE_PREFIX = "ide-";
 const CHECK_INTERVAL = 5000;
@@ -98,25 +98,42 @@ async function getDiffStats(
 
   return parseDiffStats(result.stdout);
 }
+function isAddedFile(insertions: number, deletions: number): boolean {
+  return deletions === 0 && insertions > 0;
+}
+
+function inferFileStatus(
+  insertions: number,
+  deletions: number,
+): "added" | "modified" | "deleted" {
+  if (isAddedFile(insertions, deletions)) return "added";
+  if (insertions === 0 && deletions > 0) return "deleted";
+  return "modified";
+}
+
+function countChars(str: string, char: string): number {
+  const escaped = char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const matches = str.match(new RegExp(escaped, "g"));
+  return matches ? matches.length : 0;
+}
+
 export function parseDiffStats(output: string): DiffStats {
   const files: DiffStats["files"] = [];
   let totalInsertions = 0;
   let totalDeletions = 0;
-  const lines = output.trim().split("\n");
-  for (const line of lines) {
-    const fileMatch = /^\s*(.+?)\s*\|\s*(\d+)\s*([+-]*)\s*$/.exec(line);
-    if (fileMatch) {
-      const path = fileMatch[1].trim();
-      const insertions = (fileMatch[3].match(/\+/g) || []).length;
-      const deletions = (fileMatch[3].match(/-/g) || []).length;
-      let status: "added" | "modified" | "deleted" = "modified";
-      if (deletions === 0 && insertions > 0) status = "added";
-      if (insertions === 0 && deletions > 0) status = "deleted";
 
-      files.push({ path, status, insertions, deletions });
-      totalInsertions += insertions;
-      totalDeletions += deletions;
-    }
+  for (const line of output.trim().split("\n")) {
+    const fileMatch = /^\s*(.+?)\s*\|\s*(\d+)\s*([+-]*)\s*$/.exec(line);
+    if (!fileMatch) continue;
+
+    const path = fileMatch[1].trim();
+    const insertions = countChars(fileMatch[3], "+");
+    const deletions = countChars(fileMatch[3], "-");
+    const status = inferFileStatus(insertions, deletions);
+
+    files.push({ path, status, insertions, deletions });
+    totalInsertions += insertions;
+    totalDeletions += deletions;
   }
 
   return { files, totalInsertions, totalDeletions };
@@ -144,15 +161,15 @@ export async function getTmuxSessionStatus(
   ]);
 
   if (result.code !== 0) return "idle";
-  const command = result.stdout.trim();
-  if (
+  return isRunningCommand(result.stdout.trim()) ? "running" : "idle";
+}
+
+function isRunningCommand(command: string): boolean {
+  return (
     command.includes("pi") ||
     command.includes("node") ||
     command.includes("bun")
-  )
-    return "running";
-
-  return "idle";
+  );
 }
 export function forkSessionToWorkspace(
   sourceSessionPath: string | undefined,
@@ -258,6 +275,20 @@ export async function forgetWorkspace(
 
   await cleanupWorkspaceDir(pi, workspaceName);
 }
+async function runWorkspaceCheck(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+  workspaceName: string,
+): Promise<void> {
+  const workspaces = await loadAgentWorkspaces(pi);
+  const ws = workspaces.find((w) => w.name === workspaceName);
+
+  if (!ws) return;
+  if (ws.status !== "running") {
+    await handleCompletedWorkspace(pi, ctx, workspaceName, ws);
+  }
+}
+
 export function monitorWorkspace(
   pi: ExtensionAPI,
   workspaceName: string,
@@ -266,21 +297,12 @@ export function monitorWorkspace(
   const startTime = Date.now();
   const check = async (): Promise<void> => {
     if (Date.now() - startTime > MAX_WAIT) return;
-
     try {
-      const workspaces = await loadAgentWorkspaces(pi);
-      const ws = workspaces.find((w) => w.name === workspaceName);
-
-      if (!ws) return;
-      if (ws.status === "running") {
-        scheduleNextCheck(check);
-        return;
-      }
-
-      await handleCompletedWorkspace(pi, ctx, workspaceName, ws);
+      await runWorkspaceCheck(pi, ctx, workspaceName);
     } catch {
-      scheduleNextCheck(check);
+      // ignore
     }
+    scheduleNextCheck(check);
   };
 
   setTimeout(() => void check(), CHECK_INTERVAL);

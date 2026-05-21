@@ -2,8 +2,7 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import { Key } from "@earendil-works/pi-tui";
-import type { KeyId } from "@earendil-works/pi-tui";
+import { Key, type KeyId } from "@earendil-works/pi-tui";
 import { openFilesPicker } from "../components/files/overlay";
 import { openSymbolsPicker } from "../components/symbols/overlay";
 import { openBookmarksBrowser } from "../components/bookmarks/overlay";

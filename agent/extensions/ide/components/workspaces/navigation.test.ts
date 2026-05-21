@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentWorkspace, FileChange, Change } from "../../types";
-import { TestTerminal, createMockTheme } from "../../test/utils";
+import { TestTerminal, createMockTheme } from "../../test/mock-factory";
 import { createWorkspaceState } from "./loading";
 import type { WorkspaceState } from "./loading";
 function createMockWorkspace(

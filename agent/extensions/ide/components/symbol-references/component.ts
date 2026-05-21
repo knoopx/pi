@@ -4,7 +4,7 @@ import type {
   KeybindingsManager,
 } from "@earendil-works/pi-coding-agent";
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { Key } from "@earendil-works/pi-tui";
+import { Key, type TUI } from "@earendil-works/pi-tui";
 import {
   createListPicker,
   type ListPickerComponent,
@@ -18,7 +18,7 @@ import type {
   SymbolReferenceActionType,
   SymbolReferenceResult,
 } from "./types";
-import { parseSymbolReferenceOutput } from "./helpers";
+import { parseSymbolReferenceOutput } from "./reference-parsing";
 import { openEditor } from "../../lib/open-editor";
 const SYMBOL_ACTION_DEFS: [string, SymbolReferenceActionType][] = [
   [Key.ctrl("t"), "callers"],
@@ -28,7 +28,7 @@ const SYMBOL_ACTION_DEFS: [string, SymbolReferenceActionType][] = [
 ];
 interface SymbolReferenceComponentOptions {
   pi: ExtensionAPI;
-  tui: { terminal: { rows: number }; requestRender: () => void };
+  tui: TUI;
   theme: Theme;
   keybindings: KeybindingsManager;
   done: (result: SymbolReferenceResult | null) => void;
@@ -56,6 +56,7 @@ function buildSymbolActions(
 }
 function buildSymbolPickerOptions(
   pi: ExtensionAPI,
+  tui: TUI,
   theme: Theme,
   config: SymbolReferenceConfig,
   actions: ListPickerAction<SymbolReferenceItem>[],
@@ -65,7 +66,7 @@ function buildSymbolPickerOptions(
     actions,
     async onEdit(item: SymbolReferenceItem) {
       const line = item.callLine ?? item.startLine;
-      await openEditor(pi, config.ctx, `${item.path}:${String(line)}`);
+      await openEditor(tui, config.ctx, `${item.path}:${String(line)}`);
     },
     async loadItems(_query: string) {
       const result = await pi.exec("cm", [...config.args, "--format", "ai"], {
@@ -131,7 +132,13 @@ export function createSymbolReferenceComponent(
     return { item };
   }
   const actions = buildSymbolActions(doneWithAction);
-  const pickerOptions = buildSymbolPickerOptions(pi, theme, config, actions);
+  const pickerOptions = buildSymbolPickerOptions(
+    pi,
+    tui,
+    theme,
+    config,
+    actions,
+  );
   const internalDone = (item: SymbolReferenceItem | null) => {
     if (item) done({ item });
     else done(null);

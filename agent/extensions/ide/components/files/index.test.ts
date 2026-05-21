@@ -3,16 +3,16 @@ import type * as fsPromises from "node:fs/promises";
 
 vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof fsPromises>();
-  const { mockReadFileImplementation } = await import("./test-utils");
+  const { mockReadFileImplementation } = await import("./test-factories");
   return {
     ...actual,
     readFile: vi.fn().mockImplementation(mockReadFileImplementation),
   };
 });
 
-import type { TestTerminal } from "../../test/utils";
-import { createMockPi } from "../../test/utils";
-import { createFilesFixture, makeFilesMockPi } from "./test-utils";
+import type { TestTerminal } from "../../test/mock-factory";
+import { createMockPi } from "../../../../shared/testing/test-factories";
+import { createFilesFixture, makeFilesMockPi } from "./test-factories";
 
 describe("files — list row rendering", () => {
   describe("given a list of files", () => {

@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { TestTerminal, createMockChange } from "../../test/utils";
+import { TestTerminal, createMockChange } from "../../test/mock-factory";
 import { calculateGraphLayout } from "../../lib/graph";
 import type { Change } from "../../types";
 import { buildGraphInput } from "./types";
 import { Navigation } from "./navigation";
-import { loadingStateConfig } from "./test-utils";
-import { createMockTheme } from "../../test/utils";
+import { loadingStateConfig } from "./test-factories";
+import { createMockTheme } from "../../test/mock-factory";
 import type { ChangesState } from "./state";
 function makeNav(state: ChangesState): Navigation {
   return new Navigation(

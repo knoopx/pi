@@ -1,13 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { createMockChange } from "../../test/utils";
+import { createMockChange } from "../../test/mock-factory";
 import {
   renderSnapshot,
   defaultMockChange,
   featureBookmarkChange,
   setMockChanges,
   wcPrevChanges,
-} from "./test-utils";
-import { createMockTheme } from "../../test/utils";
+} from "./test-factories";
+import { createMockTheme } from "../../test/mock-factory";
 
 async function createChangeListPaneLines(
   changes: ReturnType<typeof createMockChange>[],

@@ -1,8 +1,13 @@
 import { codeToANSI } from "@shikijs/cli";
-import { bundledThemes } from "shiki";
-import type { BundledLanguage, BundledTheme } from "shiki";
-import { createLRUCache } from "../../../shared/cache/lru-cache";
-import { lang } from "./language";
+import { bundledThemes, type BundledLanguage, type BundledTheme } from "shiki";
+import { createLRUCache } from "../lib/lru-cache";
+import { lang } from "../lib/language";
+import {
+  parseGitDiff,
+  type DiffHunk,
+  type DiffHunkBlock,
+  type DiffLine,
+} from "../lib/diff-parsing";
 
 interface DiffConfig {
   addBg: string | null;
@@ -15,16 +20,20 @@ const diffConfig: DiffConfig = {
   removeBg: null,
   currentTheme: null,
 };
+function shouldStopReading(response: Buffer): boolean {
+  const respStr = response.toString("hex");
+  return (
+    respStr.endsWith("1b5c") || respStr.endsWith("07") || response.length > 256
+  );
+}
+
 function readTerminalResponse(): Buffer {
   let response = Buffer.alloc(0);
-  for (;;) {
-    const result: Buffer | null = process.stdin.read(1) as Buffer | null;
-    if (result === null) break;
-    if (result.length === 0) break;
-    response = Buffer.concat([response, result]);
-    const respStr = response.toString("hex");
-    if (respStr.endsWith("1b5c") || respStr.endsWith("07")) break;
-    if (response.length > 256) break;
+  while (true) {
+    const chunk = process.stdin.read(1) as Buffer | null;
+    if (!chunk || chunk.length === 0) break;
+    response = Buffer.concat([response, chunk]);
+    if (shouldStopReading(response)) break;
   }
   return response;
 }
@@ -41,286 +50,107 @@ function parseColorResponse(response: Buffer): [number, number, number] | null {
     .map((x: string) => parseInt(x, 16) >> 8);
   return [r, g, b];
 }
+function isTerminalInteractive(): boolean {
+  return !!(process.stdout.isTTY && process.stdin.isTTY);
+}
+
 function getTerminalBgColor(): [number, number, number] | null {
-  if (!process.stdout.isTTY || !process.stdin.isTTY) return null;
-
+  if (!isTerminalInteractive()) return null;
   try {
-    const original = process.stdin.isRaw ?? false;
-    if (!original) process.stdin.setRawMode(true);
-
-    process.stdout.write("\x1b]11;?\x1b\\");
-    const response = readTerminalResponse();
-
-    if (!original) process.stdin.setRawMode(false);
-
-    return parseColorResponse(response);
+    return queryTerminalBgColor();
   } catch {
     return null;
   }
 }
 
-async function initShiki(theme: BundledTheme): Promise<void> {
-  if (
+function queryTerminalBgColor(): [number, number, number] | null {
+  const wasRaw = process.stdin.isRaw ?? false;
+  if (!wasRaw) process.stdin.setRawMode(true);
+
+  process.stdout.write("\x1b]11;?\x1b\\");
+  const response = readTerminalResponse();
+
+  if (!wasRaw) process.stdin.setRawMode(false);
+  return parseColorResponse(response);
+}
+
+function hexToRGBA(hex: string): [number, number, number, number] {
+  const clean = hex.startsWith("#") ? hex.slice(1) : hex;
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  if (clean.length === 8) {
+    const a = parseInt(clean.slice(6, 8), 16) / 255;
+    return [r, g, b, a];
+  }
+  return [r, g, b, 1];
+}
+
+function blendColor(
+  fg: [number, number, number, number],
+  bg: [number, number, number],
+): [number, number, number] {
+  const [fgR, fgG, fgB, alpha] = fg;
+  const [bgR, bgG, bgB] = bg;
+  const invAlpha = 1 - alpha;
+  return [
+    Math.round(fgR * alpha + bgR * invAlpha),
+    Math.round(fgG * alpha + bgG * invAlpha),
+    Math.round(fgB * alpha + bgB * invAlpha),
+  ];
+}
+
+function isDiffCacheValid(theme: BundledTheme): boolean {
+  return !!(
     diffConfig.addBg &&
     diffConfig.removeBg &&
     diffConfig.currentTheme === theme
-  )
-    return;
-  const themeModule = await bundledThemes[theme]?.();
-  const themeData = themeModule?.default;
-  const colors = themeData?.colors || {};
-  const green = colors["diffEditor.insertedTextBackground"];
-  const red = colors["diffEditor.removedTextBackground"];
-  const hexToRGBA = (hex: string): [number, number, number, number] => {
-    const clean = hex.startsWith("#") ? hex.slice(1) : hex;
-    if (clean.length === 8) {
-      const hexR = parseInt(clean.slice(0, 2), 16);
-      const hexG = parseInt(clean.slice(2, 4), 16);
-      const hexB = parseInt(clean.slice(4, 6), 16);
-      const hexA = parseInt(clean.slice(6, 8), 16) / 255;
-      return [hexR, hexG, hexB, hexA];
-    }
-    const hexR2 = parseInt(clean.slice(0, 2), 16);
-    const hexG2 = parseInt(clean.slice(2, 4), 16);
-    const hexB2 = parseInt(clean.slice(4, 6), 16);
-    return [hexR2, hexG2, hexB2, 1];
-  };
-  const blend = (
-    fg: [number, number, number, number],
-    bg: [number, number, number],
-  ): [number, number, number] => {
-    const [fgR, fgG, fgB, fgAlpha] = fg;
-    const [bgR, bgG, bgB] = bg;
-    const oneMinusAlpha = 1 - fgAlpha;
-    return [
-      Math.round(fgR * fgAlpha + bgR * oneMinusAlpha),
-      Math.round(fgG * fgAlpha + bgG * oneMinusAlpha),
-      Math.round(fgB * fgAlpha + bgB * oneMinusAlpha),
-    ];
-  };
-  const [greenR, greenG, greenB, greenAlpha] = hexToRGBA(green);
-  const [redR, redG, redB, redAlpha] = hexToRGBA(red);
-  const terminalBg = getTerminalBgColor() ?? [0, 0, 0];
-  const [addBgR, addBgG, addBgB] = blend(
-    [greenR, greenG, greenB, greenAlpha],
-    terminalBg,
   );
-  const [removeBgR, removeBgG, removeBgB] = blend(
-    [redR, redG, redB, redAlpha],
-    terminalBg,
-  );
+}
 
-  diffConfig.addBg = `\x1b[48;2;${addBgR};${addBgG};${addBgB}m`;
-  diffConfig.removeBg = `\x1b[48;2;${removeBgR};${removeBgG};${removeBgB}m`;
+function extractDiffColors(
+  themeModule: {
+    default?: { colors?: Record<string, string> };
+  } | null,
+): { green: string | undefined; red: string | undefined } {
+  const colors = themeModule?.default?.colors || {};
+  return {
+    green: colors["diffEditor.insertedTextBackground"],
+    red: colors["diffEditor.removedTextBackground"],
+  };
+}
+
+async function initShiki(theme: BundledTheme): Promise<void> {
+  if (isDiffCacheValid(theme)) return;
+  await applyDiffTheme(theme);
+}
+
+async function applyDiffTheme(theme: BundledTheme): Promise<void> {
+  const themeModule = await bundledThemes[theme]?.();
+  const { green, red } = extractDiffColors(themeModule);
+  const terminalBg = resolveTerminalBg();
+  applyDiffConfig(green, red, terminalBg, theme);
+}
+
+function resolveTerminalBg(): [number, number, number] {
+  return getTerminalBgColor() ?? [0, 0, 0];
+}
+
+function applyDiffConfig(
+  green: string | undefined,
+  red: string | undefined,
+  terminalBg: [number, number, number],
+  theme: BundledTheme,
+): void {
+  const addBgRGB = blendColor(hexToRGBA(green ?? "#00ff00"), terminalBg);
+  const removeBgRGB = blendColor(hexToRGBA(red ?? "#ff0000"), terminalBg);
+  diffConfig.addBg = `\x1b[48;2;${addBgRGB.join(";")}m`;
+  diffConfig.removeBg = `\x1b[48;2;${removeBgRGB.join(";")}m`;
   diffConfig.currentTheme = theme;
 }
 const CACHE_LIMIT = 64;
 const _cache = createLRUCache<string, string[]>(CACHE_LIMIT);
 
-interface DiffHunk {
-  file: string;
-  hunks: DiffHunkBlock[];
-}
-interface DiffHunkBlock {
-  header: string;
-  lines: DiffLine[];
-}
-interface DiffLine {
-  type: "add" | "remove" | "context" | "header" | "empty";
-  content: string;
-  lineNo?: number;
-}
-function extractFileNameFromDiffLine(line: string): string | null {
-  const match = line.match(/diff --git "?(a\/)?(.+?)"?"?"?( b\/.+)?$/);
-  if (!match) return null;
-  const fileName = match[2]?.replace(/^a\//, "").replace(/^b\//, "");
-  return fileName ?? null;
-}
-function parseHunkHeader(line: string): {
-  removeLineNo: number;
-  addLineNo: number;
-} | null {
-  const match = line.match(/@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
-  if (!match) return null;
-  return {
-    removeLineNo: parseInt(match[1], 10),
-    addLineNo: parseInt(match[3], 10),
-  };
-}
-function parseAddedLine(
-  line: string,
-  addLineNo: number | null,
-): { line: DiffLine; addLineNo: number | null } | null {
-  if (line.startsWith("+") && !line.startsWith("+++"))
-    return {
-      line: {
-        type: "add",
-        content: line.slice(1),
-        lineNo: addLineNo ?? undefined,
-      },
-      addLineNo: addLineNo !== null ? addLineNo + 1 : null,
-    };
-  return null;
-}
-function parseRemovedLine(
-  line: string,
-  removeLineNo: number | null,
-): { line: DiffLine; removeLineNo: number | null } | null {
-  if (line.startsWith("-") && !line.startsWith("---"))
-    return {
-      line: {
-        type: "remove",
-        content: line.slice(1),
-        lineNo: removeLineNo ?? undefined,
-      },
-      removeLineNo: removeLineNo !== null ? removeLineNo + 1 : null,
-    };
-  return null;
-}
-function parseContextLine(
-  line: string,
-  addLineNo: number | null,
-  removeLineNo: number | null,
-): {
-  line: DiffLine;
-  addLineNo: number | null;
-  removeLineNo: number | null;
-} | null {
-  if (line.startsWith(" "))
-    return {
-      line: {
-        type: "context",
-        content: line.slice(1),
-        lineNo: removeLineNo ?? undefined,
-      },
-      addLineNo: addLineNo !== null ? addLineNo + 1 : null,
-      removeLineNo: removeLineNo !== null ? removeLineNo + 1 : null,
-    };
-  return null;
-}
-function parseDiffLine(
-  line: string,
-  addLineNo: number | null,
-  removeLineNo: number | null,
-): {
-  line: DiffLine;
-  addLineNo: number | null;
-  removeLineNo: number | null;
-} | null {
-  const added = parseAddedLine(line, addLineNo);
-  if (added) return { ...added, removeLineNo };
-
-  const removed = parseRemovedLine(line, removeLineNo);
-  if (removed) return { ...removed, addLineNo };
-
-  const context = parseContextLine(line, addLineNo, removeLineNo);
-  if (context) return context;
-
-  if (line === "") {
-    return { line: { type: "empty", content: "" }, addLineNo, removeLineNo };
-  }
-
-  return null;
-}
-function isMetadataLine(line: string): boolean {
-  return (
-    line.startsWith("index ") ||
-    line.startsWith("--- ") ||
-    line.startsWith("+++ ")
-  );
-}
-function handleGitLine(
-  line: string,
-  result: DiffHunk[],
-): {
-  currentFile: DiffHunk | null;
-  currentHunk: DiffHunkBlock | null;
-  addLineNo: number | null;
-  removeLineNo: number | null;
-} {
-  const fileName = extractFileNameFromDiffLine(line);
-  if (fileName) {
-    const currentFile = { file: fileName, hunks: [] };
-    result.push(currentFile);
-    return {
-      currentFile,
-      currentHunk: null,
-      addLineNo: null,
-      removeLineNo: null,
-    };
-  }
-  return {
-    currentFile: null,
-    currentHunk: null,
-    addLineNo: null,
-    removeLineNo: null,
-  };
-}
-function handleHunkHeader(
-  line: string,
-  currentFile: DiffHunk | null,
-): {
-  currentHunk: DiffHunkBlock | null;
-  addLineNo: number | null;
-  removeLineNo: number | null;
-} {
-  const parsedHeader = parseHunkHeader(line);
-  if (parsedHeader && currentFile) {
-    const { removeLineNo } = parsedHeader;
-    const { addLineNo } = parsedHeader;
-    const currentHunk = { header: line, lines: [] };
-    currentFile.hunks.push(currentHunk);
-    return { currentHunk, addLineNo, removeLineNo };
-  }
-  return { currentHunk: null, addLineNo: null, removeLineNo: null };
-}
-function handleDiffLine(
-  line: string,
-  currentHunk: DiffHunkBlock | null,
-  addLineNo: number | null,
-  removeLineNo: number | null,
-): { addLineNo: number | null; removeLineNo: number | null } {
-  if (!currentHunk) return { addLineNo, removeLineNo };
-  const parsedLine = parseDiffLine(line, addLineNo, removeLineNo);
-  if (parsedLine) {
-    currentHunk.lines.push(parsedLine.line);
-    return {
-      addLineNo: parsedLine.addLineNo,
-      removeLineNo: parsedLine.removeLineNo,
-    };
-  }
-  return { addLineNo, removeLineNo };
-}
-function parseGitDiff(diff: string): DiffHunk[] {
-  const result: DiffHunk[] = [];
-  const lines = diff.split("\n");
-  let currentFile: DiffHunk | null = null;
-  let currentHunk: DiffHunkBlock | null = null;
-  let addLineNo: number | null = null;
-  let removeLineNo: number | null = null;
-
-  for (const line of lines) {
-    if (line.startsWith("diff --git")) {
-      const state = handleGitLine(line, result);
-      currentFile = state.currentFile;
-      currentHunk = state.currentHunk;
-      addLineNo = state.addLineNo;
-      removeLineNo = state.removeLineNo;
-    } else if (isMetadataLine(line)) {
-    } else if (line.startsWith("@@")) {
-      const state = handleHunkHeader(line, currentFile);
-      currentHunk = state.currentHunk;
-      addLineNo = state.addLineNo;
-      removeLineNo = state.removeLineNo;
-    } else {
-      const state = handleDiffLine(line, currentHunk, addLineNo, removeLineNo);
-      addLineNo = state.addLineNo;
-      removeLineNo = state.removeLineNo;
-    }
-  }
-
-  return result;
-}
 function _touch(k: string, v: string[]): string[] {
   return _cache.touch(k, v);
 }
@@ -332,22 +162,39 @@ async function highlightLine(
 ): Promise<string> {
   if (!language || !content) return content;
   const k = `${theme}\0${language}\0${content}`;
-  const hit = _cache.get(k);
-  if (hit) return _touch(k, hit).join("\n");
+  const cached = _cache.get(k);
+  if (cached) return _touch(k, cached).join("\n");
+  return await highlightLineCached(content, language, theme, k);
+}
 
+async function highlightLineCached(
+  content: string,
+  language: BundledLanguage,
+  theme: BundledTheme,
+  cacheKey: string,
+): Promise<string> {
   try {
     const ansi = await codeToANSI(content, language, theme);
-    const out = (ansi.endsWith("\n") ? ansi.slice(0, -1) : ansi).split("\n");
-    return _touch(k, out).join("\n");
+    const out = stripTrailingNewline(ansi).split("\n");
+    return _touch(cacheKey, out).join("\n");
   } catch {
     return content;
   }
 }
+
+function stripTrailingNewline(text: string): string {
+  return text.endsWith("\n") ? text.slice(0, -1) : text;
+}
+function applyBgColor(bg: string | null, content: string): string {
+  if (bg) return `${bg}${content}\x1b[0m`;
+  return content;
+}
+
 function colorDiffLine(line: DiffLine, highlightedContent: string): string {
-  if (line.type === "add" && diffConfig.addBg)
-    return `${diffConfig.addBg}${highlightedContent}\x1b[0m`;
-  if (line.type === "remove" && diffConfig.removeBg)
-    return `${diffConfig.removeBg}${highlightedContent}\x1b[0m`;
+  if (line.type === "add")
+    return applyBgColor(diffConfig.addBg, highlightedContent);
+  if (line.type === "remove")
+    return applyBgColor(diffConfig.removeBg, highlightedContent);
   return highlightedContent;
 }
 interface ProcessHunkOptions {

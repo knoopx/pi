@@ -11,7 +11,7 @@ import {
   getBorderColor,
   getCenterBorderColor,
   createFocusedRowRenderer,
-} from "./utils";
+} from "./border-rendering";
 
 export function renderTopBorder(args: TopBorderArgs): string {
   const { leftW, rightW, leftFocus, rightFocus, theme } = args;

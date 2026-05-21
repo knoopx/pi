@@ -10,21 +10,20 @@ import {
   type ListPickerAction,
 } from "../../lib/list-picker/picker";
 
-import { forgetBookmark } from "../../jj/bookmarks";
+import { forgetBookmark, listBookmarksByChange } from "../../jj/bookmarks";
 import { renderDiffWithShiki } from "../../tools/diff";
-import { THEME } from "../../tools/shiki/constants";
+import { THEME } from "../../lib/shiki/constants";
 import { ACTION_KEYS, createKeyboardHandler } from "../../lib/keyboard/handler";
 import type { BookmarkFilterMode } from "../../types";
-import { notifyMutation } from "../../jj/core";
+import { notifyMutation } from "../../jj/jj-base";
 import { getRawDiff } from "../../jj/files";
-import { listBookmarksByChange } from "../../jj/bookmarks";
 import { type BookmarkEntry } from "./types";
 import {
   groupBookmarksByChange,
   createToggleFilterBinding,
   formatBookmarkLine,
   filterBookmarksByMode,
-} from "./helpers";
+} from "./bookmark-formatting";
 interface BookmarksComponentOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };

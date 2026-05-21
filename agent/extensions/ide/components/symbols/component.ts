@@ -4,7 +4,7 @@ import type {
   KeybindingsManager,
 } from "@earendil-works/pi-coding-agent";
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { Key, matchesKey } from "@earendil-works/pi-tui";
+import { Key, matchesKey, type TUI } from "@earendil-works/pi-tui";
 import {
   createListPicker,
   type ListPickerComponent,
@@ -12,14 +12,13 @@ import {
 } from "../../lib/list-picker/picker";
 import { formatSymbolListEntry } from "./formatting";
 import type { SymbolReferenceActionType } from "../symbol-references/types";
-import type { SymbolResult, SymbolInfo, SymbolTypeFilter } from "./types";
-import { SYMBOL_TYPES } from "./types";
+import { SYMBOL_TYPES, type SymbolResult, type SymbolInfo, type SymbolTypeFilter } from "./types";
 import { loadPreviewFromPath } from "../../lib/file-preview";
-import { querySymbols } from "./helpers";
+import { querySymbols } from "./symbol-parsing";
 import { openEditor } from "../../lib/open-editor";
 interface SymbolsComponentOptions {
   pi: ExtensionAPI;
-  tui: { terminal: { rows: number }; requestRender: () => void };
+  tui: TUI;
   theme: Theme;
   keybindings: KeybindingsManager;
   done: (result: SymbolResult | null) => void;
@@ -28,6 +27,7 @@ interface SymbolsComponentOptions {
 }
 
 async function goToFirstResult(
+  tui: TUI,
   pi: ExtensionAPI,
   ctx: ExtensionContext,
   command: string,
@@ -36,15 +36,23 @@ async function goToFirstResult(
   const result = await pi.exec("cm", [command, ...args, "--format", "ai"], {
     cwd: ctx.cwd,
   });
-  if (result.code !== 0 || !result.stdout.trim()) return;
+  const location = parseFirstResultLocation(result);
+  if (!location) return;
+  await openEditor(tui, ctx, `${location.filePath}:${location.line}`);
+}
+
+function parseFirstResultLocation(result: {
+  code: number;
+  stdout: string;
+}): { filePath: string; line: number } | null {
+  if (result.code !== 0 || !result.stdout.trim()) return null;
   const firstLine = result.stdout
     .split("\n")
     .find((l) => l.includes("|") && !l.startsWith("["));
-  if (!firstLine) return;
+  if (!firstLine) return null;
   const match = /\|([^|]+)\|(\d+)-/.exec(firstLine);
-  if (!match) return;
-  const [, filePath, line] = match;
-  await openEditor(pi, ctx, `${filePath}:${line}`);
+  if (!match) return null;
+  return { filePath: match[1], line: parseInt(match[2], 10) };
 }
 const PICKER_ACTIONS: [string, SymbolReferenceActionType][] = [
   [Key.ctrl("j"), "callees"],
@@ -86,19 +94,20 @@ function buildSymbolActions(
   ];
 }
 function buildSymbolPickerOptions(options: {
+  tui: TUI;
   pi: ExtensionAPI;
   ctx: ExtensionContext;
   theme: Theme;
   currentTypeRef: { value: SymbolTypeFilter };
   actions: ListPickerAction<SymbolInfo>[];
 }) {
-  const { pi, ctx, theme, currentTypeRef, actions } = options;
+  const { tui, pi, ctx, theme, currentTypeRef, actions } = options;
   return {
     title: () =>
       `Symbols [${currentTypeRef.value === "all" ? "*" : currentTypeRef.value}]`,
     actions,
     async onEdit(item: SymbolInfo) {
-      await openEditor(pi, ctx, `${item.path}:${String(item.startLine)}`);
+      await openEditor(tui, ctx, `${item.path}:${String(item.startLine)}`);
     },
     loadItems: (query: string) =>
       querySymbols(pi, ctx.cwd, query, currentTypeRef.value),
@@ -142,9 +151,10 @@ export function createSymbolsComponent(
     pendingInsertType = undefined;
   }
   const actions = buildSymbolActions(doneWithAction, (name) => {
-    void goToFirstResult(pi, ctx, "types", [name]);
+    void goToFirstResult(tui, pi, ctx, "types", [name]);
   });
   const pickerOptions = buildSymbolPickerOptions({
+    tui,
     pi,
     ctx,
     theme,

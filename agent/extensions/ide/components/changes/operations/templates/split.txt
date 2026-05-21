@@ -12,13 +12,13 @@ Split jujutsu change <%= changeId %> into semantically logical commits.
 3. List changed files: `jj diff --name-only -r <%= changeId %>`
 4. Identify logical groupings by domain/purpose using sem output
 5. Split iteratively:
-   - First split: `jj split -r <%= changeId %> --insert-after <%= changeId %> "<file-pattern>" -m "type(scope): description"`
+   - First split: `jj split -r <%= changeId %> --insert-after <%= changeId %> "<file-pattern>" -m "feat(scope): add feature A"`
    - This creates a new child commit with the selected files; note its change ID (shown in output)
-   - Subsequent splits: `jj split -r <%= changeId %> --insert-after <new-commit-change-id-from-previous-split> "<file-pattern>" -m "type(scope): description"`
+   - Subsequent splits: `jj split -r <%= changeId %> --insert-after <new-commit-change-id-from-previous-split> "<file-pattern>" -m "fix(scope): resolve issue B"`
    - Each iteration extracts more files from the original change, inserting the new commit after the previous split's result
    - Continue until all logical groupings are separated
-6. Update remaining change description: `jj desc -r <%= changeId %> -m "type(scope): description"`
-7. **VERIFY** — After each `jj desc`, verify using the original change ID (not `@`):
+6. Update remaining change description: `jj describe -r <%= changeId %> -m "chore(scope): update remaining files"`
+7. **VERIFY** — After each `jj describe`, verify using the original change ID (not `@`):
    ```
    jj log --no-graph -r <%= changeId %> -T 'concat(change_id.short(), " | ", description)'
    ```
@@ -42,5 +42,7 @@ Split jujutsu change <%= changeId %> into semantically logical commits.
 - Large file counts don't always mean large changes — sem reveals the truth
 </sem-guidance>
 
-Use the **conventional-commits** skill for commit message format.
-Use the **sem** skill to understand actual code changes vs cosmetic modifications.
+**All commit messages MUST use Conventional Commits format: `type(scope): description`.**
+- Scope is always required. Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`.
+- Use the **conventional-commits** skill for full rules.
+- Use the **sem** skill to understand actual code changes vs cosmetic modifications.

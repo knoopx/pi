@@ -1,6 +1,5 @@
 import type { AgentToolResult, Theme } from "@earendil-works/pi-coding-agent";
-import { Text } from "@earendil-works/pi-tui";
-import type { Component } from "@earendil-works/pi-tui";
+import { Text, type Component } from "@earendil-works/pi-tui";
 import type { ToolRenderContext } from "./types";
 import { shortPath } from "../../lib/terminal";
 export type ToolExecuteFn = (

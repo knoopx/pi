@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderSplitPanel } from "./renderer";
 import type { SplitPanelConfig, SplitPanelDimensions } from "../layout";
-import { createMockTheme } from "../../../test/utils";
+import { createMockTheme } from "../../../test/mock-factory";
 
 function getDims(
   width: number = 80,

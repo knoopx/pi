@@ -32,25 +32,40 @@ export interface KeyboardHandlerConfig<TContext = void> {
   getContext?: () => TContext;
 }
 
+type HandlerBuilder = (data: string) => boolean;
+
+function buildHandlers<TContext>(
+  config: KeyboardHandlerConfig<TContext>,
+): HandlerBuilder[] {
+  const ctx = config.getContext?.() as TContext;
+  const bindings = config.bindings;
+  const builders: Array<() => HandlerBuilder | null> = [
+    () =>
+      bindings
+        ? (data: string) => handleCustomBindings(data, bindings, ctx)
+        : null,
+    () => (config.onEscape ? buildEscapeHandler(config.onEscape) : null),
+    () => (config.onEnter ? buildEnterHandler(config.onEnter) : null),
+    () =>
+      config.navigation && config.onNavigate
+        ? buildNavigationHandler(config.navigation, config.onNavigate)
+        : null,
+    () =>
+      config.onBackspace ? buildBackspaceHandler(config.onBackspace) : null,
+    () =>
+      config.onTextInput ? buildTextInputHandler(config.onTextInput) : null,
+  ];
+
+  return builders.flatMap((build) => {
+    const handler = build();
+    return handler ? [handler] : [];
+  });
+}
+
 export function createKeyboardHandler<TContext = void>(
   config: KeyboardHandlerConfig<TContext>,
 ): (data: string) => boolean {
-  const handlers: Array<(data: string) => boolean> = [];
-
-  if (config.bindings) {
-    const ctx = config.getContext?.() as TContext;
-    const bindings = config.bindings;
-    handlers.push((data) => handleCustomBindings(data, bindings, ctx));
-  }
-
-  if (config.onEscape) handlers.push(buildEscapeHandler(config.onEscape));
-  if (config.onEnter) handlers.push(buildEnterHandler(config.onEnter));
-  if (config.navigation && config.onNavigate)
-    handlers.push(buildNavigationHandler(config.navigation, config.onNavigate));
-  if (config.onBackspace)
-    handlers.push(buildBackspaceHandler(config.onBackspace));
-  if (config.onTextInput)
-    handlers.push(buildTextInputHandler(config.onTextInput));
+  const handlers = buildHandlers(config);
 
   return (data: string): boolean => {
     for (const handler of handlers) {

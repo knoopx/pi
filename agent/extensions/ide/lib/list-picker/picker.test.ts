@@ -10,14 +10,8 @@ import type {
   ListPickerConfig,
   ListPickerComponent,
 } from "./picker";
-import { createMockTheme } from "../../test/utils";
+import { createMockTheme, createMockTui } from "../../test/mock-factory";
 const theme = createMockTheme();
-function createMockTui(rows = 30) {
-  return {
-    terminal: { rows },
-    requestRender: vi.fn(),
-  };
-}
 function createBaseConfig<T extends ListPickerItem>(
   overrides?: Partial<ListPickerConfig<T>>,
 ) {

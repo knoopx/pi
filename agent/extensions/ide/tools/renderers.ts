@@ -1,10 +1,10 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { dirname, basename } from "node:path";
-import { highlightCode } from "./shiki/highlight";
-import { MAX_PREVIEW_LINES } from "./shiki/constants";
+import { highlightCode } from "../lib/shiki/highlight";
+import { MAX_PREVIEW_LINES } from "../lib/shiki/constants";
 import { fileIconGlyph, dirIconGlyph } from "../lib/file-icons";
 import { termW } from "../lib/terminal";
-import { lang } from "./language";
+import { lang } from "../lib/language";
 function skipAnsiEscape(code: string, pos: number): number {
   const end = code.indexOf("m", pos);
   return end !== -1 ? end + 1 : pos + 1;

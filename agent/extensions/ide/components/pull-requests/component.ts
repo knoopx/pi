@@ -23,7 +23,7 @@ import {
   buildPrFixedParts,
   truncateTitle,
   formatReviewIcon,
-} from "./helpers";
+} from "./pr-formatting";
 interface PullRequestsComponentOptions {
   pi: ExtensionAPI;
   tui: { terminal: { rows: number }; requestRender: () => void };

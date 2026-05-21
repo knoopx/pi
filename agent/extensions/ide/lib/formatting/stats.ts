@@ -1,12 +1,21 @@
 import type { AgentWorkspace } from "../../types";
+function buildFileStatParts(stats: {
+  added: number;
+  modified: number;
+  deleted: number;
+}): string[] {
+  const parts: string[] = [];
+  if (stats.added > 0) parts.push(`+${stats.added}`);
+  if (stats.modified > 0) parts.push(`~${stats.modified}`);
+  if (stats.deleted > 0) parts.push(`-${stats.deleted}`);
+  return parts;
+}
+
 export function formatFileStats(ws: AgentWorkspace): string {
   if (!ws.fileStats) return "";
-  const { added, modified, deleted } = ws.fileStats;
-  const parts: string[] = [];
-  if (added > 0) parts.push(`+${added}`);
-  if (modified > 0) parts.push(`~${modified}`);
-  if (deleted > 0) parts.push(`-${deleted}`);
-  return parts.length > 0 ? `[${parts.join(" ")}]` : "";
+  const parts = buildFileStatParts(ws.fileStats);
+  if (parts.length === 0) return "";
+  return `[${parts.join(" ")}]`;
 }
 export function formatRelativeTime(
   dateStr: string,

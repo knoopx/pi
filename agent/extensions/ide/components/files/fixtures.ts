@@ -1,7 +1,6 @@
 const TS_FILES_IDE: Record<string, string> = {
   "agent/extensions/ide/components/files.ts": `
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { Theme } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, Theme, KeybindingsManager } from "@earendil-works/pi-coding-agent";
 import { createListPicker } from "../../lib/list-picker/picker";
 import { getFileIcon } from "../../lib/file-icons";
 
@@ -18,10 +17,9 @@ export function createFilesComponent(options) {
   });
 }`,
   "agent/extensions/ide/lib/list-picker.ts": `
-import type { Component } from "@earendil-works/pi-tui";
-import { Key, matchesKey } from "@earendil-works/pi-tui";
+import { Key, matchesKey, type Component, type Terminal } from "@earendil-works/pi-tui";
 import { createSplitPanel } from "../split-panel";
-import { truncateAnsi, ensureWidth } from "./text-utils";
+import { ensureWidth } from "./text-utils";
 import { applyFocusedStyle } from "./style-utils";
 import { calculateDimensions } from "../split-panel/layout";
 import { renderSplitPanel } from "../split-panel/border/renderer";
@@ -138,9 +136,7 @@ export function createListPicker<T>(options: {
   return new ListPickerComponent(tui, theme, config);
 }`,
   "agent/extensions/ide/lib/split-panel/index.ts": `
-import type { Terminal } from "@earendil-works/pi-tui";
-import type { Theme } from "@earendil-works/pi-coding-agent";
-import { renderSplitPanel } from "./border";
+import { renderSplitPanel, renderBorder } from "./border";
 import { calculateDimensions } from "./layout";
 
 export interface SplitPanelState {
@@ -199,8 +195,6 @@ export function createSplitPanel(terminal: Terminal, theme: Theme): SplitPanel {
   return new SplitPanel(terminal, theme);
 }`,
   "agent/extensions/ide/lib/split-panel/renderer.ts": `
-import type { Theme } from "@earendil-works/pi-coding-agent";
-import { renderBorder } from "./border";
 
 export class PanelRenderer {
   private leftContent: string[] = [];
@@ -242,11 +236,7 @@ export function renderSplitPanel(
   return lines[0].map((line, i) => line.padEnd(maxWidth));
 }`,
   "agent/extensions/ide/components/files/files.ts": `
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { Theme } from "@earendil-works/pi-coding-agent";
-import { createListPicker } from "../../lib/list-picker/picker";
-import { getFileIcon } from "../../lib/file-icons";
-import type { FileInfo } from "./types";
+import type { FileInfo, SymbolInfo, SymbolResult, SymbolTypeFilter } from "./types";
 
 export function rg(pi: ExtensionAPI, cwd: string, query: string): Promise<FileInfo[]> {
   return pi.exec("rg", ["--files", "-g", query]).then((r) =>
@@ -326,7 +316,6 @@ export function createInitialState(): ChangesState {
   return { items: [], focusedIndex: 0, loading: true, error: null, focus: FocusState.Changes };
 }`,
   "agent/extensions/ide/lib/file-preview.ts": `
-import type { Theme } from "@earendil-works/pi-coding-agent";
 
 export async function loadFilePreviewWithShiki(
   path: string,
@@ -344,8 +333,6 @@ import { describe, it, expect, vi } from "vitest";
 
 vi.mock("node:fs/promises");
 
-import { createNixComponent } from "./nix";
-
 describe("nix search", () => {
   it("returns formatted results", async () => {
     const result = await searchPackages("hello");
@@ -354,12 +341,7 @@ describe("nix search", () => {
   });
 });`,
   "agent/extensions/ide/components/symbols/symbols.ts": `
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { Theme } from "@earendil-works/pi-coding-agent";
-import type { KeybindingsManager } from "@earendil-works/pi-coding-agent";
-import { createListPicker } from "../../lib/list-picker/picker";
 import { formatSymbolListEntry } from "../../lib/symbol-utils";
-import type { SymbolInfo, SymbolResult, SymbolTypeFilter } from "./types";
 
 export function querySymbols(
   pi: ExtensionAPI,
@@ -421,7 +403,6 @@ export function createSymbolsComponent(options: {
   });
 }`,
   "agent/extensions/ide/lib/symbol-utils.ts": `
-import type { Theme } from "@earendil-works/pi-coding-agent";
 
 export function formatSymbolListEntry(
   theme: Theme,
@@ -431,7 +412,6 @@ export function formatSymbolListEntry(
   return \\" \${icon} \\$\{symbol.name\} \\$\{symbol.path}:\${symbol.startLine}\";
 }`,
   "agent/extensions/gh/index.ts": `
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export function register(pi: ExtensionAPI) {
   pi.registerCommand("gh-pr", {
@@ -455,7 +435,6 @@ export async function runTool(
   });
 }`,
   "agent/extensions/usage/usage.test.ts": `
-import { describe, it, expect } from "vitest";
 
 describe("usage formatting", () => {
   it("formats provider data correctly", () => {
@@ -464,24 +443,20 @@ describe("usage formatting", () => {
   });
 });`,
   "src/main.ts": `
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export function register(pi: ExtensionAPI) {
   pi.registerCommand("main", {
     description: "Main entry point",
     async handler(_args, ctx) {
-      console.log("Hello");
     },
   });
 }`,
   "src/index.ts": `
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export function register(pi: ExtensionAPI) {
   pi.registerCommand("test", {
     description: "Test command",
     async handler(_args, ctx) {
-      console.log("Hello");
     },
   });
 }`,
@@ -495,11 +470,9 @@ export function padRight(str: string, width: number): string {
 }`,
   "a.ts": `
 export function hello(): void {
-  console.log("Hello");
 }
 `,
   "agent/extensions/ide/components/split-panel/border.ts": `
-import type { Theme } from "@earendil-works/pi-coding-agent";
 
 export function renderBorder(theme: Theme): string {
   return theme.colors.border;

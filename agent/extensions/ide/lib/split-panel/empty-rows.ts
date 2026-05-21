@@ -1,5 +1,4 @@
-import type { Component } from "@earendil-works/pi-tui";
-import { truncateToWidth } from "@earendil-works/pi-tui";
+import { truncateToWidth, type Component } from "@earendil-works/pi-tui";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { renderEmptyRow, renderEmptyRowWithReset } from "../formatting/text";
 import { ensureWidth, truncateAnsi } from "../../../../shared/format/ansi-text";

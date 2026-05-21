@@ -1,6 +1,20 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { FileChange } from "../types";
-import { parseStdoutLines, updateStaleWorkspace } from "./core";
+import { parseStdoutLines, updateStaleWorkspace } from "./jj-base";
+
+function compareConflicted(a: boolean, b: boolean): number {
+  if (a === b) return 0;
+  return a ? -1 : 1;
+}
+
+function compareFileChanges(a: FileChange, b: FileChange): number {
+  const conflictDiff = compareConflicted(
+    a.conflicted ?? false,
+    b.conflicted ?? false,
+  );
+  if (conflictDiff !== 0) return conflictDiff;
+  return a.path.localeCompare(b.path);
+}
 export async function loadChangedFiles(
   pi: ExtensionAPI,
   cwd: string,
@@ -34,11 +48,7 @@ export async function loadChangedFiles(
       };
     }
     return null;
-  }).sort((a, b) => {
-    if (a.conflicted && !b.conflicted) return -1;
-    if (!a.conflicted && b.conflicted) return 1;
-    return a.path.localeCompare(b.path);
-  });
+  }).sort(compareFileChanges);
 }
 export async function getRawDiff(
   pi: ExtensionAPI,

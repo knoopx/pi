@@ -1,6 +1,5 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import type { GraphLayout, Edge } from "../graph";
-import { renderGraphRow } from "../graph";
+import { renderGraphRow, type GraphLayout, type Edge } from "../graph";
 import { formatChangeRow, visibleLength } from "../formatting/changes";
 import { ensureWidth, truncateAnsi } from "../../../../shared/format/ansi-text";
 export interface ChangeRowFlags {
@@ -69,6 +68,17 @@ export class ChangeRow {
     });
   }
 }
+function applyGraphPrefixStyle(
+  text: string,
+  isWorkingCopy: boolean,
+  immutable: boolean,
+  theme: Theme,
+): string {
+  if (isWorkingCopy) return theme.fg("accent", text);
+  if (immutable) return theme.fg("dim", text);
+  return text;
+}
+
 function renderGraphPrefix(options: {
   layout: GraphLayout | null;
   changeId: string;
@@ -81,6 +91,7 @@ function renderGraphPrefix(options: {
   if (!layout) return "";
   const pos = layout.positions.get(changeId);
   if (!pos) return "";
+
   const edges = layout.edges[idx] ?? ([] as Edge[]);
   const graphLine = renderGraphRow({
     edges,
@@ -90,9 +101,12 @@ function renderGraphPrefix(options: {
     maxX: layout.maxX,
   });
 
-  if (isWorkingCopy) return theme.fg("accent", graphLine + " ");
-  if (immutable) return theme.fg("dim", graphLine + " ");
-  return graphLine + " ";
+  return applyGraphPrefixStyle(
+    graphLine + " ",
+    isWorkingCopy,
+    immutable,
+    theme,
+  );
 }
 function assembleChangeRow(options: {
   graphPrefix: string;

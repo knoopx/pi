@@ -29,12 +29,10 @@ vi.mock("../../lib/file-preview", async (importOriginal) => {
 
 import { createSearchComponent } from "./component";
 import type { SearchResult } from "./types";
-import {
-  createMockPi,
-  createMockTui,
-  createMockTheme,
-} from "../../test/utils";
+import { createMockTui, createMockTheme } from "../../test/mock-factory";
+import { createMockPi } from "../../../../shared/testing/test-factories";
 import type { KeybindingsManager } from "@earendil-works/pi-coding-agent";
+import type { TUI } from "@earendil-works/pi-tui";
 
 function buildRgOutput(items: SearchResult[]): string {
   const lines: string[] = [];
@@ -107,7 +105,7 @@ async function createActionTest(
         stderr: "",
       }),
     }),
-    tui,
+    tui: tui as unknown as TUI,
     theme,
     keybindings,
     done,
@@ -126,8 +124,8 @@ async function createActionTest(
       { timeout: 1000 },
     );
     const result = done.mock.calls[0][0] as SearchResult | null;
-    expect(result).not.toBeNull();
-    assertResult(result!);
+    if (!result) throw new Error("expected search result");
+    assertResult(result);
   }
 
   return { component, done };
@@ -155,7 +153,7 @@ function createComponent(overrides?: {
 
   const component = createSearchComponent({
     pi,
-    tui,
+    tui: tui as unknown as TUI,
     theme,
     keybindings,
     done: () => {},
@@ -421,7 +419,7 @@ describe("createSearchComponent — behavior", () => {
 
     const component = createSearchComponent({
       pi: createMockPi(),
-      tui,
+      tui: tui as unknown as TUI,
       theme,
       keybindings,
       done,

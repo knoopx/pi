@@ -4,7 +4,7 @@ import type {
   KeybindingsManager,
 } from "@earendil-works/pi-coding-agent";
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { Key } from "@earendil-works/pi-tui";
+import { Key, type TUI } from "@earendil-works/pi-tui";
 import {
   createListPicker,
   type ListPickerComponent,
@@ -15,17 +15,40 @@ import {
   filterResults,
   formatSearchResult,
   countAnsiBytes,
-} from "./helpers";
+} from "./rg-parsing";
 import { loadPreviewFromPath } from "../../lib/file-preview";
 
 interface SearchComponentOptions {
   pi: ExtensionAPI;
-  tui: { terminal: { rows: number }; requestRender: () => void };
+  tui: TUI;
   theme: Theme;
   keybindings: KeybindingsManager;
   done: (result: SearchResult | null) => void;
   initialQuery: string;
   ctx: ExtensionContext;
+}
+
+function highlightMatchInPreview(
+  preview: string[],
+  item: SearchResult,
+  theme: Theme,
+): string[] {
+  const idx = item.lineText
+    .toLowerCase()
+    .indexOf(item.matchedText.toLowerCase());
+  if (idx === -1) return preview;
+
+  const before = item.lineText.slice(0, idx);
+  const matched = item.matchedText;
+  const ansiBefore = countAnsiBytes(preview[0], before);
+  const remaining = preview[0].slice(ansiBefore);
+  const ansiMatched = countAnsiBytes(remaining, matched);
+  const ansiAfterStart = ansiBefore + ansiMatched;
+  preview[0] =
+    preview[0].slice(0, ansiBefore) +
+    theme.fg("accent", theme.bold(matched)) +
+    preview[0].slice(ansiAfterStart);
+  return preview;
 }
 
 export function createSearchComponent(
@@ -47,29 +70,9 @@ export function createSearchComponent(
       formatItem: (item, width) => formatSearchResult(width, theme, item),
       async loadPreview(item: SearchResult) {
         try {
-          const fullPreview = await loadPreviewFromPath(
-            ctx.cwd,
-            item.path,
-            theme,
-          );
-          if (item.matchedText && fullPreview.length > 0) {
-            const idx = item.lineText
-              .toLowerCase()
-              .indexOf(item.matchedText.toLowerCase());
-            if (idx !== -1) {
-              const before = item.lineText.slice(0, idx);
-              const matched = item.matchedText;
-              const ansiBefore = countAnsiBytes(fullPreview[0], before);
-              const remaining = fullPreview[0].slice(ansiBefore);
-              const ansiMatched = countAnsiBytes(remaining, matched);
-              const ansiAfterStart = ansiBefore + ansiMatched;
-              fullPreview[0] =
-                fullPreview[0].slice(0, ansiBefore) +
-                theme.fg("accent", theme.bold(matched)) +
-                fullPreview[0].slice(ansiAfterStart);
-            }
-          }
-          return fullPreview;
+          const preview = await loadPreviewFromPath(ctx.cwd, item.path, theme);
+          if (!item.matchedText || preview.length === 0) return preview;
+          return highlightMatchInPreview(preview, item, theme);
         } catch {
           return [];
         }
@@ -80,7 +83,7 @@ export function createSearchComponent(
           label: "edit",
           handler(item) {
             void import("../../lib/open-editor").then(({ openEditor }) => {
-              void openEditor(pi, ctx, `${item.path}:${item.lineNum}`);
+              void openEditor(tui, ctx, `${item.path}:${item.lineNum}`);
             });
             done(item);
           },

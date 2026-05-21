@@ -4,6 +4,7 @@
   "description": "Manage pi subagents in isolated jujutsu workspaces",
   "scripts": {
     "lint": "bun ./node_modules/eslint/bin/eslint.js",
+    "test": "vitest run --coverage",
     "tsc": "tsc --noEmit"
   },
   "type": "module",
@@ -13,9 +14,10 @@
     ]
   },
   "dependencies": {
-    "@earendil-works/pi-ai": "^0.74.0",
-    "@earendil-works/pi-coding-agent": "^0.74.0",
-    "@earendil-works/pi-tui": "^0.74.0",
+    "@earendil-works/pi-agent-core": "0.74.2",
+    "@earendil-works/pi-ai": "^0.78.0",
+    "@earendil-works/pi-coding-agent": "^0.78.0",
+    "@earendil-works/pi-tui": "^0.78.0",
     "@leeoniya/ufuzzy": "^1.0.19",
     "@shikijs/cli": "^4.0.2",
     "chalk": "^5.6.2",
@@ -29,6 +31,7 @@
     "eslint": "^10.3.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.3",
+    "@vitest/coverage-v8": "^4.1.7",
     "vitest": "^4.1.6"
   }
 }

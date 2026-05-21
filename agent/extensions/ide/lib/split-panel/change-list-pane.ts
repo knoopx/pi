@@ -1,7 +1,6 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { GraphLayout } from "../graph";
-import { ChangeRow } from "./change-row";
-import type { ChangeRowFlags } from "./change-row";
+import { ChangeRow, type ChangeRowFlags } from "./change-row";
 import { ensureWidth } from "../../../../shared/format/ansi-text";
 import { renderListPane } from "./list-pane-renderer";
 
@@ -29,6 +28,10 @@ interface ChangeListPaneProps {
 }
 
 export class ChangeListPane {
+  private resolveSide(): string {
+    return this.props.side ?? "left";
+  }
+
   constructor(private readonly props: ChangeListPaneProps) {}
 
   render(width: number): string[] {
@@ -46,8 +49,7 @@ export class ChangeListPane {
       createRow: (change, idx) => {
         const isCursor = idx === this.props.selectedIndex;
         const isMarked = this.props.selectedChangeIds.has(change.changeId);
-        const isFocused =
-          isCursor && this.props.focus === (this.props.side ?? "left");
+        const isFocused = isCursor && this.props.focus === this.resolveSide();
         const isWorkingCopy = this.props.currentChangeId === change.changeId;
         const isMoving =
           this.props.mode === "move" && idx === this.props.selectedIndex;

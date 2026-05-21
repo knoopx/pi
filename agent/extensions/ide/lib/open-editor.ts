@@ -1,43 +1,42 @@
-import type {
-  ExtensionAPI,
-  ExtensionContext,
-} from "@earendil-works/pi-coding-agent";
-const OVERLAY_OPTIONS = {
-  overlay: true,
-  overlayOptions: { width: "95%" as const, anchor: "center" as const },
-};
+import { spawnSync } from "node:child_process";
+import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { TUI } from "@earendil-works/pi-tui";
+
+function parseFilePath(filePath: string): {
+  path: string;
+  line?: number;
+} {
+  const match = filePath.match(/^(.+?):(\d+)$/);
+  if (!match) return { path: filePath };
+  return { path: match[1], line: parseInt(match[2], 10) };
+}
+
 export async function openEditor(
-  pi: ExtensionAPI,
+  tui: TUI,
   ctx: ExtensionContext,
   filePath: string,
 ): Promise<void> {
   if (!ctx.hasUI) return;
-  const { createEditorComponent } =
-    await import("../components/editor/component");
   const { isAbsolute, join } = await import("node:path");
-  const { readFileSync } = await import("node:fs");
-  const match = filePath.match(/^(.+?):(\d+)$/);
-  const targetPath = match ? match[1] : filePath;
-  const targetLine = match ? parseInt(match[2], 10) - 1 : undefined;
+  const { path: targetPath, line } = parseFilePath(filePath);
   const fullPath = isAbsolute(targetPath)
     ? targetPath
     : join(ctx.cwd, targetPath);
-  let content = "";
-  try {
-    content = readFileSync(fullPath, "utf-8");
-  } catch {
-    // Graceful degradation: file unreadable, open with empty content
+  const editor = process.env.EDITOR;
+  if (!editor) throw new Error("EDITOR environment variable is not set");
+  const args: string[] = [];
+  if (line !== undefined) {
+    args.push(`+${line}`);
   }
+  args.push(fullPath);
 
-  await ctx.ui.custom((tui, theme, _keybindings, done) => {
-    return createEditorComponent({
-      pi,
-      tui,
-      theme,
-      done,
-      filePath: fullPath,
-      content,
-      cursorLine: targetLine,
-    });
-  }, OVERLAY_OPTIONS);
+  tui.stop();
+  process.stdout.write("\x1b[2J\x1b[H");
+  spawnSync(editor, args, {
+    stdio: "inherit",
+    env: process.env,
+    cwd: ctx.cwd,
+  });
+  tui.start();
+  tui.requestRender(true);
 }

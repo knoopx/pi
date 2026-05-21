@@ -5,7 +5,7 @@ import { formatBookmarkReference } from "../lib/formatting/bookmarks";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import stringWidth from "string-width";
 
-describe("utils", () => {
+describe("ide utilities", () => {
   describe("loadFilePreviewWithShiki", () => {
     let mockTheme: Theme;
 

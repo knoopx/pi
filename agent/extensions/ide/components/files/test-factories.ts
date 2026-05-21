@@ -4,26 +4,36 @@ import type {
   ExtensionContext,
   KeybindingsManager,
 } from "@earendil-works/pi-coding-agent";
-import {
-  createMockPi,
-  createMockTui,
-  createMockTheme,
-} from "../../test/utils";
+import type { TUI } from "@earendil-works/pi-tui";
+import { createMockTui, createMockTheme } from "../../test/mock-factory";
+import { createMockPi } from "../../../../shared/testing/test-factories";
 import { TS_FILES, FILENAME_CONTENTS, EXTENSION_CONTENTS } from "./fixtures";
+
+function lookupInTsFiles(path: string): string | null {
+  for (const [key, content] of Object.entries(TS_FILES)) {
+    if (path.includes(key)) return content;
+  }
+  return null;
+}
+
+function lookupByExtension(path: string): string | null {
+  const ext = path.split(".").pop()?.toLowerCase() ?? "";
+  return EXTENSION_CONTENTS[ext] ?? null;
+}
 
 export async function mockReadFileImplementation(
   path: string | URL,
   _opts: unknown,
 ): Promise<string> {
   const p = typeof path === "string" ? path : path.toString();
-  for (const [key, content] of Object.entries(TS_FILES)) {
-    if (p.includes(key)) return content;
-  }
-  const ext = p.split(".").pop()?.toLowerCase() ?? "";
+  const byTs = lookupInTsFiles(p);
+  if (byTs) return byTs;
+
   const base = p.split("/").pop() ?? "";
   const byName = FILENAME_CONTENTS[base];
   if (byName) return byName;
-  const byExt = EXTENSION_CONTENTS[ext];
+
+  const byExt = lookupByExtension(p);
   if (byExt) return byExt;
 
   throw new Error(
@@ -37,7 +47,7 @@ const DEFAULT_FILES_OUTPUT =
 
 export function makeFilesMockPi(
   stdout = DEFAULT_FILES_OUTPUT,
-  overrides?: Partial<ExtensionAPI>,
+  overrides?: Record<string, unknown>,
 ): ExtensionAPI {
   return createMockPi({
     exec: vi.fn().mockResolvedValue({ code: 0, stdout, stderr: "" }),
@@ -55,7 +65,7 @@ export async function createFilesFixture(
   const { createFilesComponent } = await import("./component");
   const component = createFilesComponent({
     pi: mockPi,
-    tui,
+    tui: tui as unknown as TUI,
     theme,
     keybindings: {} as unknown as KeybindingsManager,
     done: () => {},

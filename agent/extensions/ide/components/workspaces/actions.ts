@@ -2,6 +2,7 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
+import type { TUI } from "@earendil-works/pi-tui";
 import type { AgentWorkspace } from "../../types";
 import type { WorkspaceState, WorkspaceCacheStore } from "./loading";
 import { formatErrorMessage } from "../../lib/ui/footer";
@@ -19,6 +20,7 @@ import {
 
 export interface WorkspaceActionsContext {
   pi: ExtensionAPI;
+  tui: TUI;
   ctx: ExtensionContext;
   state: WorkspaceState;
   cacheStore: WorkspaceCacheStore;
@@ -64,6 +66,7 @@ async function handleWorkspaceAction(
 function getActionsContext(ctx: WorkspaceActionsContext) {
   return {
     pi: ctx.pi,
+    tui: ctx.tui,
     ctx: ctx.ctx,
     onDone: ctx.onDone,
     onSendTask: ctx.onSendTask,

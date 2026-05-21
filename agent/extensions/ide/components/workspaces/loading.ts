@@ -4,13 +4,11 @@ import {
   getCurrentChangeId,
   loadAgentWorkspaces,
 } from "../../workspace/manager";
-import { getRepoRoot } from "../../jj/files";
+import { getRepoRoot, loadChangedFiles, getRawDiff } from "../../jj/files";
 import { renderDiffWithShiki } from "../../tools/diff";
-import { THEME } from "../../tools/shiki/constants";
+import { THEME } from "../../lib/shiki/constants";
 import { formatErrorMessage } from "../../lib/ui/footer";
 import { loadChanges } from "../../jj/changes";
-import { loadChangedFiles } from "../../jj/files";
-import { getRawDiff } from "../../jj/files";
 export interface WorkspaceState {
   workspaces: AgentWorkspace[];
   selectedWorkspace: AgentWorkspace | null;
@@ -126,24 +124,41 @@ function ensureCache(
   cacheStore.set(wsName, newCache);
   return newCache;
 }
+function findFirstChangeDiff(
+  cache: WorkspaceCache,
+  state: WorkspaceState,
+): string[] | null {
+  const changeId = state.changes[0]?.changeId ?? "";
+  return cache.diffs.get(changeId) ?? null;
+}
+
+function tryChangesCacheHit(
+  state: WorkspaceState,
+  cache: WorkspaceCache | undefined,
+): boolean {
+  if (!cache || !cache.changes.length) return false;
+  applyCachedChanges(state, cache);
+  const cachedDiff = findFirstChangeDiff(cache, state);
+  if (!cachedDiff) return false;
+  applyCacheHit(state, cachedDiff);
+  return true;
+}
+
+function resolveFirstChangeId(state: WorkspaceState): string {
+  return state.changes[0]?.changeId ?? "";
+}
+
 export async function loadDefaultWorkspace(
   pi: ExtensionAPI,
   ws: AgentWorkspace,
   state: WorkspaceState,
   cacheStore: WorkspaceCacheStore,
 ): Promise<void> {
-  let cache = cacheStore.get(ws.name);
+  const existingCache = cacheStore.get(ws.name);
 
-  if (cache && cache.changes.length > 0) {
-    applyCachedChanges(state, cache);
-    const cachedDiff = cache.diffs.get(state.changes[0]?.changeId ?? "");
-    if (cachedDiff) {
-      applyCacheHit(state, cachedDiff);
-      return;
-    }
-  }
+  if (tryChangesCacheHit(state, existingCache)) return;
 
-  cache = ensureCache(ws.name, cache, cacheStore);
+  const cache = ensureCache(ws.name, existingCache, cacheStore);
   if (!hasCachedChanges(cache)) {
     const changes = await loadChanges(pi, ws.path);
     state.changes = changes;
@@ -155,37 +170,68 @@ export async function loadDefaultWorkspace(
   state.diffContent = await loadChangeDiff(
     pi,
     ws,
-    state.changes[0]?.changeId ?? "",
+    resolveFirstChangeId(state),
     cache,
   );
 }
+function tryFilesCacheHit(
+  state: WorkspaceState,
+  cache: WorkspaceCache,
+): boolean {
+  applyCachedFiles(state, cache);
+  const cachedDiff = cache.diffs.get(state.files[0]?.path ?? "");
+  if (cachedDiff) {
+    applyCacheHit(state, cachedDiff);
+    return true;
+  }
+  return false;
+}
+
+function resolveFirstFilePath(state: WorkspaceState): string {
+  return state.files[0]?.path ?? "";
+}
+
 export async function loadWorkspaceFiles(
   pi: ExtensionAPI,
   ws: AgentWorkspace,
   state: WorkspaceState,
   cacheStore: WorkspaceCacheStore,
 ): Promise<void> {
-  let cache = cacheStore.get(ws.name);
+  const existing = cacheStore.get(ws.name);
+  if (tryExistingCacheHit(state, existing)) return;
 
-  if (cache && cache.files.length > 0) {
-    applyCachedFiles(state, cache);
-    const cachedDiff = cache.diffs.get(state.files[0]?.path ?? "");
-    if (cachedDiff) {
-      applyCacheHit(state, cachedDiff);
-      return;
-    }
-  }
-
-  cache = ensureCache(ws.name, cache, cacheStore);
+  let cache = ensureCache(ws.name, existing, cacheStore);
   if (!hasCachedFiles(cache)) {
-    const files = await loadChangedFiles(pi, ws.path, ws.changeId);
-    state.files = files;
-    state.changes = [];
-    cache.files = files;
+    cache = await refreshFileCache(pi, ws, state, cache);
   }
 
   state.fileIndex = 0;
-  state.diffContent = await loadFileDiff(pi, ws, state.files[0]?.path, cache);
+  state.diffContent = await loadFileDiff(
+    pi,
+    ws,
+    resolveFirstFilePath(state),
+    cache,
+  );
+}
+
+function tryExistingCacheHit(
+  state: WorkspaceState,
+  cache: WorkspaceCache | undefined,
+): boolean {
+  return !!(cache && hasCachedFiles(cache) && tryFilesCacheHit(state, cache));
+}
+
+async function refreshFileCache(
+  pi: ExtensionAPI,
+  ws: AgentWorkspace,
+  state: WorkspaceState,
+  cache: WorkspaceCache,
+): Promise<WorkspaceCache> {
+  const files = await loadChangedFiles(pi, ws.path, ws.changeId);
+  state.files = files;
+  state.changes = [];
+  cache.files = files;
+  return cache;
 }
 function hasCachedChanges(cache: WorkspaceCache | undefined): boolean {
   return !!cache && cache.changes.length > 0;

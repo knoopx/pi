@@ -1,6 +1,5 @@
 import type { ImageContent, TextContent } from "@earendil-works/pi-ai";
-import { Text } from "@earendil-works/pi-tui";
-import type { Component } from "@earendil-works/pi-tui";
+import { Text, type Component } from "@earendil-works/pi-tui";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { fileIconGlyph } from "../../lib/file-icons";
 import { humanSize } from "../images";
@@ -12,7 +11,7 @@ import {
   getTextComponent,
   type ToolExecuteFn,
   type WrappedToolHandler,
-} from "./utils";
+} from "./tool-rendering";
 import type { ToolRenderContext } from "./types";
 interface ReadParams {
   path: string;

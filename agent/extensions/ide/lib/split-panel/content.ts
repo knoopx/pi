@@ -1,9 +1,41 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { expandTabs } from "./utils";
+import { expandTabs } from "./text-transforms";
 import { highlightCodeLines } from "../file-preview";
 import { FileChangeRow } from "./file-change-row";
 import { DiffRow } from "./diff-row";
 import { createEmptyDiffRow, createEmptyFileChangeRow } from "./empty-rows";
+function isInHighlightRange(
+  lineNum: number,
+  highlightRange: { start: number; end: number } | undefined,
+): boolean {
+  return !!(
+    highlightRange &&
+    lineNum >= highlightRange.start &&
+    lineNum <= highlightRange.end
+  );
+}
+
+function renderSourceLine(
+  text: string,
+  lineNum: number,
+  theme: Theme,
+  highlightRange: { start: number; end: number } | undefined,
+  width: number,
+): string {
+  const isHighlighted = isInHighlightRange(lineNum, highlightRange);
+  const styledLine = highlightCodeLines(
+    text,
+    theme,
+    isHighlighted ? "accent" : undefined,
+  );
+  const row = new DiffRow({
+    line: ` ${styledLine}`,
+    isDivider: false,
+    theme,
+  });
+  return row.render(width)[0];
+}
+
 export function renderSourceRows(options: {
   lines: string[];
   width: number;
@@ -22,21 +54,9 @@ export function renderSourceRows(options: {
 
   for (let i = 0; i < visible.length; i++) {
     const lineNum = scroll + i + 1;
-    const isHighlighted =
-      highlightRange &&
-      lineNum >= highlightRange.start &&
-      lineNum <= highlightRange.end;
-    const styledLine = highlightCodeLines(
-      visible[i],
-      theme,
-      isHighlighted ? "accent" : undefined,
+    rows.push(
+      renderSourceLine(visible[i], lineNum, theme, highlightRange, width),
     );
-    const row = new DiffRow({
-      line: ` ${styledLine}`,
-      isDivider: false,
-      theme,
-    });
-    rows.push(row.render(width)[0]);
   }
 
   return rows;
@@ -56,6 +76,13 @@ export function renderDiffLinesToRows(
   }
   return rows;
 }
+function computeFileScrollStart(
+  fileIndex: number,
+  visibleCount: number,
+): number {
+  return fileIndex >= visibleCount ? fileIndex - visibleCount + 1 : 0;
+}
+
 export function renderFileChangeRows(options: {
   files: {
     status: string;
@@ -83,8 +110,7 @@ export function renderFileChangeRows(options: {
     return empty.render(width);
   }
   const visibleCount = height;
-  let startIdx = 0;
-  if (fileIndex >= visibleCount) startIdx = fileIndex - visibleCount + 1;
+  const startIdx = computeFileScrollStart(fileIndex, visibleCount);
   const rows: string[] = [];
   for (let i = 0; i < visibleCount && startIdx + i < files.length; i++) {
     const idx = startIdx + i;

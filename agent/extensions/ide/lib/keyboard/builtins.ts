@@ -1,5 +1,4 @@
-import { Key, matchesKey } from "@earendil-works/pi-tui";
-import type { KeyId } from "@earendil-works/pi-tui";
+import { Key, matchesKey, type KeyId } from "@earendil-works/pi-tui";
 import type { KeyBinding } from "./bindings";
 
 interface NavigationState {
@@ -8,34 +7,65 @@ interface NavigationState {
   pageSize?: number;
 }
 
-function handleNavigation(
+function handleUpKey(
+  data: string,
+  nav: NavigationState,
+  onNavigate: (index: number) => void,
+): boolean {
+  if (matchesKey(data, Key.up) && nav.index > 0) {
+    onNavigate(nav.index - 1);
+    return true;
+  }
+  return false;
+}
+
+function handleArrowNavigation(
+  data: string,
+  nav: NavigationState,
+  onNavigate: (index: number) => void,
+): boolean {
+  if (handleUpKey(data, nav, onNavigate)) return true;
+  if (matchesKey(data, Key.down) && nav.index < nav.maxIndex) {
+    onNavigate(nav.index + 1);
+    return true;
+  }
+  return false;
+}
+
+function handlePageNavigation(
   data: string,
   nav: NavigationState,
   onNavigate: (index: number) => void,
 ): boolean {
   const pageSize = nav.pageSize ?? 10;
-
-  if (matchesKey(data, Key.up) && nav.index > 0) {
-    onNavigate(nav.index - 1);
-    return true;
-  }
-
-  if (matchesKey(data, Key.down) && nav.index < nav.maxIndex) {
-    onNavigate(nav.index + 1);
-    return true;
-  }
-
   if (matchesKey(data, Key.pageUp)) {
     onNavigate(Math.max(0, nav.index - pageSize));
     return true;
   }
-
   if (matchesKey(data, Key.pageDown)) {
     onNavigate(Math.min(nav.maxIndex, nav.index + pageSize));
     return true;
   }
-
   return false;
+}
+
+function handleNavigation(
+  data: string,
+  nav: NavigationState,
+  onNavigate: (index: number) => void,
+): boolean {
+  return (
+    handleArrowNavigation(data, nav, onNavigate) ||
+    handlePageNavigation(data, nav, onNavigate)
+  );
+}
+
+function passesWhenCheck<TContext>(
+  binding: KeyBinding<TContext>,
+  ctx: TContext,
+): boolean {
+  if (!binding.when) return true;
+  return binding.when(ctx);
 }
 
 function tryMatchBinding<TContext>(
@@ -45,8 +75,18 @@ function tryMatchBinding<TContext>(
 ): boolean {
   if (typeof binding.key !== "string") return false;
   if (!matchesKey(data, binding.key as KeyId)) return false;
-  if (binding.when && !binding.when(ctx)) return false;
-  return true;
+  return passesWhenCheck(binding, ctx);
+}
+
+function handleBindingResult(
+  result: boolean | void | Promise<boolean | void>,
+): boolean {
+  if (result === true || result === undefined) return true;
+  if (result instanceof Promise) {
+    void result.catch(() => {});
+    return true;
+  }
+  return false;
 }
 
 export function handleCustomBindings<TContext>(
@@ -56,12 +96,7 @@ export function handleCustomBindings<TContext>(
 ): boolean {
   for (const binding of bindings) {
     if (!tryMatchBinding(data, binding, ctx)) continue;
-    const result = binding.handler(ctx);
-    if (result === true || result === undefined) return true;
-    if (result instanceof Promise) {
-      void result.catch(() => {});
-      return true;
-    }
+    if (handleBindingResult(binding.handler(ctx))) return true;
   }
   return false;
 }

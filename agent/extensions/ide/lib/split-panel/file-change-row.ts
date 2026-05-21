@@ -1,9 +1,8 @@
-import type { Component } from "@earendil-works/pi-tui";
-import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { truncateToWidth, visibleWidth, type Component } from "@earendil-works/pi-tui";
 import { applySelectionBackground } from "../formatting/text";
 import { truncateAnsi } from "../../../../shared/format/ansi-text";
 import type { Theme, ThemeColor } from "@earendil-works/pi-coding-agent";
-import { hexColor } from "./utils";
+import { hexColor } from "./text-transforms";
 import {
   getFileIcon,
   getFileStatusIcon,

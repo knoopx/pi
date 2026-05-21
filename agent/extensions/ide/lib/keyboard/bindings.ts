@@ -25,15 +25,28 @@ export function buildHelpFromBindings(bindings: KeyBinding[]): string {
     .join("  ");
 }
 
+function isActiveBinding<TContext>(
+  binding: KeyBinding<TContext>,
+  ctx?: TContext,
+): boolean {
+  if (!binding.label) return false;
+  if (!evaluateBindingCondition(binding.when, ctx)) return false;
+  return true;
+}
+
+function evaluateBindingCondition<TContext>(
+  when: ((ctx: TContext) => boolean) | undefined,
+  ctx: TContext | undefined,
+): boolean {
+  if (!when || ctx == null) return true;
+  return when(ctx);
+}
+
 export function filterActiveBindings<TContext>(
   bindings: KeyBinding<TContext>[],
   ctx?: TContext,
 ): KeyBinding<TContext>[] {
-  return bindings.filter((b) => {
-    if (!b.label) return false;
-    if (b.when && ctx != null && !b.when(ctx)) return false;
-    return true;
-  });
+  return bindings.filter((b) => isActiveBinding(b, ctx));
 }
 
 type NavigationDirection = "up" | "down" | "pageUp" | "pageDown";

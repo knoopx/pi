@@ -1,10 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { loadOpLog } from "./oplog";
-import { createMockExecPi } from "../test/utils";
-import { sanitizeDescription } from "./core";
+import { createMockExecPi } from "../test/mock-factory";
+import { sanitizeDescription } from "./jj-base";
 import { loadChanges } from "./changes";
-import { hasFileChanges } from "./changes";
-import { createNewChange } from "./changes";
 import { loadChangedFiles } from "./files";
 import { getRawDiff } from "./files";
 import { restoreFile } from "./files";
@@ -250,54 +248,6 @@ describe("jj module", () => {
     });
   });
 
-  describe("given current jj change", () => {
-    describe("when checking if change has file modifications", () => {
-      describe("and current change is empty", () => {
-        it("then returns false", async () => {
-          execMock.mockResolvedValue({
-            code: 0,
-            stdout: "empty\n",
-            stderr: "",
-          });
-          const result = await hasFileChanges(pi, "/repo");
-
-          expect(execMock).toHaveBeenCalledWith(
-            "jj",
-            expect.arrayContaining(["log", "-r", "@"]),
-            { cwd: "/repo" },
-          );
-          expect(result).toBe(false);
-        });
-      });
-
-      describe("and current change has modifications", () => {
-        it("then returns true", async () => {
-          execMock.mockResolvedValue({
-            code: 0,
-            stdout: "changed\n",
-            stderr: "",
-          });
-          const result = await hasFileChanges(pi, "/repo");
-
-          expect(result).toBe(true);
-        });
-      });
-
-      describe("when jj log fails", () => {
-        it("then returns false", async () => {
-          execMock.mockResolvedValue({
-            code: 1,
-            stdout: "",
-            stderr: "not a git repo",
-          });
-          const result = await hasFileChanges(pi, "/repo");
-
-          expect(result).toBe(false);
-        });
-      });
-    });
-  });
-
   describe("given changed files output", () => {
     describe("when jj log returns add, modify, delete statuses", () => {
       it("then parses each file with correct status and conflict flag", async () => {
@@ -504,103 +454,6 @@ describe("jj module", () => {
             conflicted: false,
           },
         ]);
-      });
-    });
-  });
-
-  describe("given session start", () => {
-    describe("when current change is empty", () => {
-      it("then does not create new change and returns created=false", async () => {
-        execMock.mockResolvedValueOnce({
-          code: 0,
-          stdout: "empty\n",
-          stderr: "",
-        });
-        const result = await createNewChange(pi, "/repo");
-
-        expect(result).toEqual({ success: true, created: false });
-        expect(execMock).toHaveBeenCalledTimes(1);
-      });
-    });
-
-    describe("when current change has modifications", () => {
-      describe("and jj new succeeds", () => {
-        it("then creates new change and returns change id", async () => {
-          execMock
-            .mockResolvedValueOnce({
-              code: 0,
-              stdout: "changed\n",
-              stderr: "",
-            })
-            .mockResolvedValueOnce({
-              code: 0,
-              stdout: "",
-              stderr: "",
-            })
-            .mockResolvedValueOnce({
-              code: 0,
-              stdout: "newchange123\n",
-              stderr: "",
-            });
-          const result = await createNewChange(pi, "/repo");
-
-          expect(result).toEqual({
-            success: true,
-            changeId: "newchange123",
-            created: true,
-          });
-          expect(execMock).toHaveBeenCalledTimes(3);
-        });
-      });
-
-      describe("and jj new fails", () => {
-        it("then returns success=false with error", async () => {
-          execMock
-            .mockResolvedValueOnce({
-              code: 0,
-              stdout: "changed\n",
-              stderr: "",
-            })
-            .mockResolvedValueOnce({
-              code: 1,
-              stdout: "",
-              stderr: "worktree locked",
-            });
-          const result = await createNewChange(pi, "/repo");
-
-          expect(result).toEqual({
-            success: false,
-            created: false,
-            error: "worktree locked",
-          });
-        });
-      });
-
-      describe("and jj log fails after new", () => {
-        it("then returns success=true with created=true but no change id", async () => {
-          execMock
-            .mockResolvedValueOnce({
-              code: 0,
-              stdout: "changed\n",
-              stderr: "",
-            })
-            .mockResolvedValueOnce({
-              code: 0,
-              stdout: "",
-              stderr: "",
-            })
-            .mockResolvedValueOnce({
-              code: 1,
-              stdout: "",
-              stderr: "error",
-            });
-          const result = await createNewChange(pi, "/repo");
-
-          expect(result).toEqual({
-            success: true,
-            created: true,
-          });
-        });
       });
     });
   });

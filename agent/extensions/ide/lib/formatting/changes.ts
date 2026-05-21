@@ -9,6 +9,19 @@ export function getChangeIcon(
   return isEmpty ? "○" : "◆";
 }
 
+function styleDescription(
+  theme: Theme,
+  description: string,
+  isMoving: boolean | undefined,
+  isFocused: boolean | undefined,
+  isImmutable: boolean,
+): string {
+  if (isMoving) return theme.fg("warning", theme.bold(description));
+  if (isFocused) return theme.fg("accent", theme.bold(description));
+  if (isImmutable) return theme.fg("dim", description);
+  return description;
+}
+
 export function formatChangeRow(
   theme: Theme,
   opts: {
@@ -25,13 +38,13 @@ export function formatChangeRow(
     ? theme.fg("dim", formatBookmarkLabels(theme, opts.bookmarks))
     : formatBookmarkLabels(theme, opts.bookmarks);
   const moveIndicator = opts.isMoving ? theme.fg("warning", "↕ ") : "";
-  const description = opts.isMoving
-    ? theme.fg("warning", theme.bold(opts.description))
-    : opts.isFocused
-      ? theme.fg("accent", theme.bold(opts.description))
-      : opts.isImmutable
-        ? theme.fg("dim", opts.description)
-        : opts.description;
+  const description = styleDescription(
+    theme,
+    opts.description,
+    opts.isMoving,
+    opts.isFocused,
+    opts.isImmutable,
+  );
   const leftText = `${selectMarker}${moveIndicator}${bookmarkLabel}${description}`;
 
   return { leftText, rightText: "" };

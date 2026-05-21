@@ -7,7 +7,7 @@ import {
   TestTerminal,
   createMockChange,
   createMockTheme,
-} from "../../test/utils";
+} from "../../test/mock-factory";
 export function expectDefaultSelection(
   state: ChangesState,
   expect: ExpectStatic,

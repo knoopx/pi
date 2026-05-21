@@ -6,7 +6,7 @@ import type {
   WorkspaceCache,
 } from "./loading";
 import { formatErrorMessage } from "../../lib/ui/footer";
-import { THEME } from "../../tools/shiki/constants";
+import { THEME } from "../../lib/shiki/constants";
 import { renderDiffWithShiki } from "../../tools/diff";
 
 export interface DiffLoadingContext {

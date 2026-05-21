@@ -58,24 +58,30 @@ function parseRgJsonLine(line: string): RgJsonOutput | null {
   }
 }
 
+function hasValidMatch(
+  data: RgMatchData,
+): data is RgMatchData & { lines: { text: string }; line_number: number } {
+  return !!data.lines && data.line_number !== undefined;
+}
+
 function buildResult(
   currentPath: string,
   data: RgMatchData,
 ): SearchResult | null {
-  if (!data.lines || data.line_number === undefined) {
-    return null;
-  }
+  if (!hasValidMatch(data)) return null;
   const matchedText = data.submatches?.[0]?.match.text ?? "";
+  const lineNum = data.line_number;
+  const colNum = data.column ?? 0;
   return {
-    id: `${currentPath}:${String(data.line_number)}:${String(data.column ?? 0)}`,
+    id: `${currentPath}:${String(lineNum)}:${String(colNum)}`,
     label: data.lines.text.trim(),
     path: currentPath,
-    lineNum: data.line_number,
-    colNum: data.column ?? 0,
+    lineNum,
+    colNum,
     lineText: data.lines.text,
     matchedText,
-    startLine: data.line_number,
-    endLine: data.line_number,
+    startLine: lineNum,
+    endLine: lineNum,
   };
 }
 
@@ -88,27 +94,29 @@ interface ParseState {
   results: SearchResult[];
 }
 
-function processRgLine(line: string, state: ParseState): boolean {
-  const parsed = parseRgJsonLine(line);
-  if (!parsed?.data) return false;
+function handleRgPathType(data: RgMatchData, state: ParseState): void {
+  state.currentPath = data.path?.text ?? null;
+}
 
-  const data = parsed.data;
-
-  if (parsed.type === "path") {
-    state.currentPath = data.path?.text ?? null;
-    return true;
-  }
-
+function handleRgMatch(data: RgMatchData, state: ParseState): void {
   const extracted = extractPathFromData(data);
   if (extracted !== undefined) {
     state.currentPath = extracted;
   }
+  if (state.currentPath) {
+    const result = buildResult(state.currentPath, data);
+    if (result) state.results.push(result);
+  }
+}
 
-  if (!state.currentPath) return true;
+function processRgLine(line: string, state: ParseState): boolean {
+  const parsed = parseRgJsonLine(line);
+  if (!parsed?.data) return false;
 
-  const result = buildResult(state.currentPath, data);
-  if (result) {
-    state.results.push(result);
+  if (parsed.type === "path") {
+    handleRgPathType(parsed.data, state);
+  } else {
+    handleRgMatch(parsed.data, state);
   }
   return true;
 }
@@ -193,6 +201,17 @@ function skipAnsiSequence(ansiText: string, pos: number): number {
   return pos < ansiText.length ? pos + 1 : pos;
 }
 
+function advanceAnsiPosition(ansiText: string, ansiIndex: number): number {
+  if (
+    ansiIndex < ansiText.length &&
+    ansiIndex >= 2 &&
+    ansiText[ansiIndex - 2] === "\x1b"
+  ) {
+    return skipAnsiSequence(ansiText, ansiIndex);
+  }
+  return ansiIndex;
+}
+
 export function countAnsiBytes(ansiText: string, textPrefix: string): number {
   let charIndex = 0;
   let ansiIndex = 0;
@@ -207,13 +226,5 @@ export function countAnsiBytes(ansiText: string, textPrefix: string): number {
     }
   }
 
-  if (
-    ansiIndex < ansiText.length &&
-    ansiIndex >= 2 &&
-    ansiText[ansiIndex - 2] === "\x1b"
-  ) {
-    return skipAnsiSequence(ansiText, ansiIndex);
-  }
-
-  return ansiIndex;
+  return advanceAnsiPosition(ansiText, ansiIndex);
 }

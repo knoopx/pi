@@ -10,11 +10,11 @@ import {
 } from "../../lib/list-picker/picker";
 import { getChangeIcon } from "../../lib/formatting/changes";
 
-import { notifyMutation } from "../../jj/core";
+import { notifyMutation } from "../../jj/jj-base";
 import { loadOpLog, getOpShow, restoreOp, undoOp } from "../../jj/oplog";
 import type { OpLogItem } from "./types";
 function formatError(error: string | undefined): string {
-  return `Failed: ${error ?? "Unknown error"}`;
+  return `Failed: ${error ?? "operation failed without details"}`;
 }
 
 async function getCurrentOpId(

@@ -4,8 +4,7 @@ import type {
   KeybindingsManager,
 } from "@earendil-works/pi-coding-agent";
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import type { Component } from "@earendil-works/pi-tui";
-import { Key } from "@earendil-works/pi-tui";
+import { Key, type Component, type TUI } from "@earendil-works/pi-tui";
 import {
   createListPicker,
   type ListPickerComponent,
@@ -14,7 +13,7 @@ import type { SymbolReferenceActionType } from "../symbol-references/types";
 import { getFileIcon } from "../../lib/file-icons";
 import { openEditor } from "../../lib/open-editor";
 import type { FileInfo, FileResult } from "./types";
-import { getMtimeSorter } from "./helpers";
+import { getMtimeSorter } from "./file-sorting";
 import { loadPreviewFromPath } from "../../lib/file-preview";
 
 const BINARY_EXTENSIONS = new Set([
@@ -74,7 +73,7 @@ function isBinaryFile(path: string): boolean {
 }
 interface FilesComponentOptions {
   pi: ExtensionAPI;
-  tui: { terminal: { rows: number }; requestRender: () => void };
+  tui: TUI;
   theme: Theme;
   keybindings: KeybindingsManager;
   done: (result: FileResult | null) => void;
@@ -158,7 +157,7 @@ class FilesView implements Component {
           })),
         ],
         async onEdit(item) {
-          await openEditor(pi, ctx, item.path);
+          await openEditor(tui, ctx, item.path);
         },
       },
     });

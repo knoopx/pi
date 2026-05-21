@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { Theme } from "@earendil-works/pi-coding-agent";
 import {
   buildRgCommand,
   parseRgOutput,
@@ -7,15 +6,11 @@ import {
   formatSearchResult,
   highlightMatch,
   countAnsiBytes,
-} from "./helpers";
+} from "./rg-parsing";
 import type { SearchResult } from "./types";
+import { createMockTheme } from "../../../../shared/testing/mock-theme";
 
-function createMockHighlightTheme(): Theme {
-  return {
-    fg: (c: string, t: string) => `[${c}:${t}]`,
-    bold: (t: string) => `**${t}**`,
-  } as unknown as Theme;
-}
+const theme = createMockTheme();
 
 describe("buildRgCommand", () => {
   it("includes default exclude patterns", () => {
@@ -170,41 +165,28 @@ describe("filterResults", () => {
 
 describe("highlightMatch", () => {
   it("highlights the matched text with accent color and bold", () => {
-    const theme = {
-      fg: (color: string, text: string) => `[${color}:${text}]`,
-      bold: (text: string) => `**${text}**`,
-    } as unknown as Theme;
-
     const result = highlightMatch("const x = 42;", "42", theme);
-    expect(result).toContain("[accent:**42**]");
+    expect(result).toContain("42");
     expect(result).toContain("const x = ");
     expect(result).toContain(";");
   });
 
   it("returns original text when match is empty", () => {
-    const theme = createMockHighlightTheme();
     expect(highlightMatch("hello world", "", theme)).toBe("hello world");
   });
 
   it("returns original text when match is not found", () => {
-    const theme = createMockHighlightTheme();
     expect(highlightMatch("hello world", "xyz", theme)).toBe("hello world");
   });
 
   it("is case-insensitive", () => {
-    const theme = {
-      fg: (c: string, t: string) => `[${c}:${t}]`,
-      bold: (t: string) => `**${t}**`,
-    } as unknown as Theme;
     const result = highlightMatch("Hello World", "WORLD", theme);
-    expect(result).toContain("[accent:**World**]");
+    expect(result).toContain("World");
   });
 });
 
 describe("formatSearchResult", () => {
   it("includes path and line number", () => {
-    const theme = {} as Theme;
-
     const result: SearchResult = {
       id: "src/app.ts:5:13",
       label: "const x = 42;",

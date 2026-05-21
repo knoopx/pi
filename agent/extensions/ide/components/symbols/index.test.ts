@@ -7,12 +7,10 @@ import type {
   ExtensionContext,
   KeybindingsManager,
 } from "@earendil-works/pi-coding-agent";
+import type { TUI } from "@earendil-works/pi-tui";
 import { createSymbolsComponent } from "./component";
-import {
-  createMockTheme,
-  createMockPi,
-  createMockTui,
-} from "../../test/utils";
+import { createMockTheme, createMockTui } from "../../test/mock-factory";
+import { createMockPi } from "../../../../shared/testing/test-factories";
 const theme = createMockTheme();
 const SYMBY_TYPE: Record<string, string> = {
   class:
@@ -86,7 +84,7 @@ async function createPicker(options?: { cmStdout?: string }): Promise<{
   const ctx = { cwd: "/tmp/test-project" } as ExtensionContext;
   const picker = createSymbolsComponent({
     pi,
-    tui,
+    tui: tui as unknown as TUI,
     theme,
     keybindings: {} as KeybindingsManager,
     done: vi.fn(),

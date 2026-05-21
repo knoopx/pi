@@ -7,7 +7,7 @@ import {
   createErrorFixture,
   createComponentTest,
   snapshotRender,
-} from "../../test/utils";
+} from "../../test/mock-factory";
 import type { AstGrepMatch } from "./types";
 
 const REPO = "/tmp/test-project";

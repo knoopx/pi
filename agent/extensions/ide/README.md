@@ -6,14 +6,14 @@ A development environment extension for pi that provides code browsing, Codemapp
 
 - **Search** - Fuzzy search across all files with source preview
 - **Code browsing** - Browse files and symbols with syntax-highlighted previews
-- **Codemapper integration** - Inspect symbols, callers, callees, tests, types, schema, and impact
+- **Codemapper integration** - Inspect symbols, callers, callees, types, schema, and impact
 - **Jujutsu integration** - Browse mutable changes, diff files, split/fixup/drop/new changes, and manage bookmarks
 - **Operation log** - Browse and restore/undo jujutsu operations
 - **Bookmark workflows** - Fuzzy bookmark picker, create bookmark from input, browse and push bookmarks (`name@remote`)
 - **Move mode for changes** - Reorder mutable changes in the stack (`Ctrl+M`, then `↑/↓`, `Enter`)
 - **Workspace management** - Create isolated jj workspaces and spawn subagents
 - **Pull request browser** - Browse GitHub PRs with diff preview, checkout, approve, and merge
-- **Symbol reference analysis** - Browse callers, callees, tests, types, schema, and dependencies for any symbol via Codemapper
+- **Symbol reference analysis** - Browse callers, callees, types, schema, and dependencies for any symbol via Codemapper
 - **Command palette** - Fuzzy-search slash commands and shortcuts from one overlay
 - **Rich diffs** - Colorized diffs via delta
 - **Quick navigation** - Keyboard shortcuts for fast access
@@ -32,7 +32,7 @@ Fuzzy-search across all files with syntax-highlighted source preview. Type to fi
 | --------- | ---------------- |
 | `↑/↓`     | Navigate         |
 | Enter     | Select result    |
-| Ctrl+E    | Open in VS Code  |
+| Ctrl+E    | Open in editor   |
 | Ctrl+I    | Insert path:line |
 | PgUp/PgDn | Scroll preview   |
 | Esc       | Exit             |
@@ -47,7 +47,7 @@ Browse files with syntax-highlighted preview. Type to filter, enter to insert pa
 | -------- | -------------------- |
 | `↑/↓`    | Navigate             |
 | `Enter`  | Insert path          |
-| `Ctrl+E` | Open in VS Code      |
+| `Ctrl+E` | Open in editor       |
 | `Ctrl+T` | Inspect file symbols |
 | `Ctrl+I` | Insert path          |
 | `Ctrl+D` | Show dependencies    |
@@ -65,13 +65,12 @@ Browse code symbols (functions, classes, methods) with source preview. Enter ins
 | `↑/↓`    | Navigate           |
 | `Ctrl+/` | Cycle type filter  |
 | `Enter`  | Insert path:line   |
-| `Ctrl+E` | Open in VS Code    |
+| `Ctrl+E` | Open in editor     |
 | `Ctrl+T` | Show callers       |
 | `Ctrl+I` | Insert symbol name |
-| `Ctrl+L` | Show callees       |
-| `Ctrl+J` | Show tests         |
+| `Ctrl+J` | Show callees       |
+| `Ctrl+K` | Show schema        |
 | `Ctrl+Y` | Show types         |
-| `Ctrl+S` | Show schema        |
 | `Esc`    | Exit               |
 
 ### `/todos [query]`
@@ -137,7 +136,7 @@ Browse all mutable jujutsu changes with file/diff preview.
 | ----------------- | ---------------------- |
 | `Tab`             | Switch focus           |
 | `↑/↓`             | Navigate               |
-| `e`               | Open file in VS Code   |
+| `e`               | Open file in editor    |
 | `d`               | Discard file changes   |
 | `Ctrl+T`          | Inspect file symbols   |
 | `Ctrl+I`          | Insert file path       |
@@ -174,7 +173,7 @@ Review all workspaces and their changes.
 | `n`      | New workspace + pi     |
 | `a`      | Attach to tmux session |
 | `r`      | Rebase & describe      |
-| `e`      | Open in VS Code        |
+| `e`      | Open in editor         |
 | `t`      | Open terminal          |
 | `Ctrl+D` | Delete workspace       |
 
@@ -190,18 +189,17 @@ Review all workspaces and their changes.
 
 ### Symbol References (from `/symbols`)
 
-From the symbols picker, press action keys to open a split-panel overlay showing callers, callees, tests, types, schema, or file dependencies for any symbol. Uses `cm` (Codemapper) for AST-level code analysis.
+From the symbols picker, press action keys to open a split-panel overlay showing callers, callees, types, schema, or file dependencies for any symbol. Uses `cm` (Codemapper) for AST-level code analysis.
 
 ![Symbol References](../../../screenshots/symbol-references.png)
 
 | Key      | Action                             |
 | -------- | ---------------------------------- |
 | `Ctrl+T` | Show callers of focused symbol     |
-| `Ctrl+L` | Show callees of focused symbol     |
-| `Ctrl+J` | Show tests for focused symbol      |
+| `Ctrl+J` | Show callees of focused symbol     |
+| `Ctrl+K` | Show schema of focused symbol      |
 | `Ctrl+Y` | Show types used by focused symbol  |
-| `Ctrl+S` | Show schema of focused symbol      |
-| `Ctrl+E` | Open file in VS Code               |
+| `Ctrl+E` | Open file in editor                |
 | `↑/↓`    | Navigate                           |
 | `PgUp`   | Scroll                             |
 | `Enter`  | Select / drill into sub-references |
@@ -302,7 +300,7 @@ This enables parallel development workflows with isolated version control.
 - `rg` - Fast file search
 - `cm` - Codemapper for symbol indexing
 - `tmux` - Session management for subagents
-- `code` - VS Code CLI for opening files from overlays
+- `$EDITOR` — external editor for opening files
 
 ## Syntax Highlighting
 

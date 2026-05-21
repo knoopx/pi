@@ -1,4 +1,4 @@
-import type { Component } from "@earendil-works/pi-tui";
+import type { Component, TUI } from "@earendil-works/pi-tui";
 import type {
   ExtensionAPI,
   ExtensionContext,
@@ -44,7 +44,7 @@ import {
 
 export interface WorkspacesComponentOptions {
   pi: ExtensionAPI;
-  tui: { terminal: { rows: number }; requestRender: () => void };
+  tui: TUI;
   theme: Theme;
   keybindings: KeybindingsManager;
   done: (result?: void) => void;
@@ -67,7 +67,7 @@ export function createWorkspacesComponent(
 
 class WorkspaceComponent implements Component, WorkspacesComponentAPI {
   private pi: ExtensionAPI;
-  private tui: { terminal: { rows: number }; requestRender: () => void };
+  private tui: TUI;
   private theme: Theme;
   private done: (result?: void) => void;
   private ctx: ExtensionContext;
@@ -201,6 +201,7 @@ class WorkspaceComponent implements Component, WorkspacesComponentAPI {
   private getActionsContext(): WorkspaceActionsContext {
     return {
       pi: this.pi,
+      tui: this.tui,
       ctx: this.ctx,
       state: this.state,
       cacheStore: this.cacheStore,

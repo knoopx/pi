@@ -259,6 +259,30 @@ function getEdgeChar(flags: ReturnType<typeof getEdgeFlags>): string {
   }
   return " ";
 }
+function renderCommitPosition(
+  chars: string[],
+  pos: number,
+  width: number,
+  isWorkingCopy: boolean,
+  isEmpty: boolean,
+  branchRight: boolean,
+): void {
+  chars[pos] = getChangeIcon(isWorkingCopy, isEmpty);
+  if (branchRight && pos + 1 < width) chars[pos + 1] = GRAPH_CHARS.horizontal;
+}
+
+function renderEdgePosition(
+  chars: string[],
+  pos: number,
+  width: number,
+  posEdges: Edge[],
+): void {
+  const flags = getEdgeFlags(posEdges);
+  chars[pos] = getEdgeChar(flags);
+  if (flags.hasHorizontal && pos + 1 < width)
+    chars[pos + 1] = GRAPH_CHARS.horizontal;
+}
+
 export function renderGraphRow(options: {
   edges: Edge[];
   commitX: number;
@@ -276,16 +300,17 @@ export function renderGraphRow(options: {
   for (const [posX, posEdges] of edgesByPos) {
     const pos = posX * 2;
     if (pos >= width) continue;
-
     if (posX === commitX) {
-      chars[pos] = getChangeIcon(isWorkingCopy, isEmpty);
-      if (branchRight && pos + 1 < width)
-        chars[pos + 1] = GRAPH_CHARS.horizontal;
+      renderCommitPosition(
+        chars,
+        pos,
+        width,
+        isWorkingCopy,
+        isEmpty,
+        branchRight,
+      );
     } else {
-      const flags = getEdgeFlags(posEdges);
-      chars[pos] = getEdgeChar(flags);
-      if (flags.hasHorizontal && pos + 1 < width)
-        chars[pos + 1] = GRAPH_CHARS.horizontal;
+      renderEdgePosition(chars, pos, width, posEdges);
     }
   }
 

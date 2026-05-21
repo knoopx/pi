@@ -5,7 +5,7 @@ import {
   createErrorFixture,
   createComponentTest,
   snapshotRender,
-} from "../../test/utils";
+} from "../../test/mock-factory";
 import type { RawPr } from "./loading";
 
 const REPO = "/tmp/test-project";

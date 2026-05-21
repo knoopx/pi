@@ -6,16 +6,16 @@ export function makeCommandDef(
 ): SymbolReferenceCommandDef {
   return { titleFn: (t) => title.replace("{}", t), command, argsFn };
 }
+const SKIP_PREFIXES = new Set(["[", "#", "-", "("]);
+
+function isOutputLine(line: string): boolean {
+  if (!line.trim()) return false;
+  if (SKIP_PREFIXES.has(line[0])) return false;
+  return line.includes("|");
+}
+
 function filterOutputLines(output: string): string[] {
-  return output.split("\n").filter((line) => {
-    if (!line.trim()) return false;
-    if (line.startsWith("[")) return false;
-    if (line.startsWith("#")) return false;
-    if (line.startsWith("-")) return false;
-    if (line.startsWith("(")) return false;
-    if (!line.includes("|")) return false;
-    return true;
-  });
+  return output.split("\n").filter(isOutputLine);
 }
 function extractExtraInfo(parts: string[]): {
   signature: string | undefined;
@@ -32,23 +32,34 @@ function extractExtraInfo(parts: string[]): {
 
   return { signature, callLine };
 }
+function parseLineRange(
+  lineRangeMatch: RegExpExecArray,
+  headerFile: string,
+): { path: string; startLine: number; endLine: number } {
+  return {
+    path: headerFile,
+    startLine: parseInt(lineRangeMatch[1], 10),
+    endLine: parseInt(lineRangeMatch[2], 10),
+  };
+}
+
+function parseStartLine(locationPart: string, colonIdx: number): number {
+  const parsed = parseInt(locationPart.slice(colonIdx + 1), 10);
+  return Number.isNaN(parsed) ? 1 : parsed;
+}
+
 function parseLocation(
   locationPart: string,
   headerFile: string | undefined,
 ): { path: string; startLine: number; endLine: number } {
   const lineRangeMatch = /^(\d+)-(\d+)$/.exec(locationPart);
   if (lineRangeMatch && headerFile) {
-    return {
-      path: headerFile,
-      startLine: parseInt(lineRangeMatch[1], 10),
-      endLine: parseInt(lineRangeMatch[2], 10),
-    };
+    return parseLineRange(lineRangeMatch, headerFile);
   }
   if (locationPart.includes(":")) {
     const colonIdx = locationPart.lastIndexOf(":");
     const path = locationPart.slice(0, colonIdx);
-    const parsedStartLine = parseInt(locationPart.slice(colonIdx + 1), 10);
-    const startLine = Number.isNaN(parsedStartLine) ? 1 : parsedStartLine;
+    const startLine = parseStartLine(locationPart, colonIdx);
     return { path, startLine, endLine: startLine };
   }
   return { path: locationPart, startLine: 1, endLine: 1 };
@@ -60,11 +71,14 @@ function normalizeName(name: string, path: string): string {
   }
   return name;
 }
+function extractHeaderFile(output: string): string | undefined {
+  return /\[FILE:([^\]]+)\]/.exec(output)?.[1];
+}
+
 export function parseSymbolReferenceOutput(
   output: string,
 ): SymbolReferenceItem[] {
-  const fileMatch = /\[FILE:([^\]]+)\]/.exec(output);
-  const headerFile = fileMatch?.[1];
+  const headerFile = extractHeaderFile(output);
   const lines = filterOutputLines(output);
   const items: SymbolReferenceItem[] = [];
 

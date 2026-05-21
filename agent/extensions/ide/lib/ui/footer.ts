@@ -22,15 +22,29 @@ async function detectAndFetchUsage(_model: {
 }): Promise<UsageSnapshot | undefined> {
   return undefined;
 }
+function extractEntryCost(
+  entry: ReturnType<ExtensionContext["sessionManager"]["getEntries"]>[number],
+): number {
+  if (entry.type !== "message") return 0;
+  const msg = entry.message;
+  if (!msg || msg.role !== "assistant") return 0;
+  return resolveTotalCost(msg.usage);
+}
+
+function extractTotalCost(u: { cost?: { total?: number } }): number {
+  return u.cost?.total ?? 0;
+}
+
+function resolveTotalCost(usage: unknown): number {
+  if (typeof usage !== "object" || !usage) return 0;
+  return extractTotalCost(usage as { cost?: { total?: number } });
+}
+
 function calculateTotalCost(
   sessionManager: ExtensionContext["sessionManager"],
 ): number {
   return sessionManager.getEntries().reduce((sum, entry) => {
-    const cost =
-      entry.type === "message" && entry.message?.role === "assistant"
-        ? (entry.message.usage?.cost?.total ?? 0)
-        : 0;
-    return sum + cost;
+    return sum + extractEntryCost(entry);
   }, 0);
 }
 function formatCostText(totalCost: number, ctx: ExtensionContext): string {
@@ -92,22 +106,36 @@ function buildCenterText(
   const quotaText = formatCompactQuota(usage, theme);
   return quotaText ? `${modelText} ${quotaText}` : modelText;
 }
+function hasContextWindow(
+  obj: { contextWindow?: number } | undefined,
+): number | null {
+  return obj?.contextWindow ?? null;
+}
+
+function resolveContextWindow(
+  usage: { contextWindow?: number } | undefined,
+  model: { contextWindow?: number } | undefined,
+): number {
+  const fromUsage = hasContextWindow(usage);
+  if (fromUsage) return fromUsage;
+  return hasContextWindow(model) ?? 0;
+}
+
 function buildRightText(
   ctx: ExtensionContext,
-  pi: ExtensionAPI,
+  _pi: ExtensionAPI,
   theme: Theme,
 ): string {
   const totalCost = calculateTotalCost(ctx.sessionManager);
   const costText = formatCostText(totalCost, ctx);
   const usage = ctx.getContextUsage();
-  const window = usage?.contextWindow ?? ctx.model?.contextWindow ?? 0;
+  const window = resolveContextWindow(usage, ctx.model);
   const percent = usage?.percent ?? null;
   const contextText = colorizePercent(
     buildContextText(percent, window),
     percent,
     theme,
   );
-
   return `${theme.fg("dim", costText)} ${contextText}`;
 }
 function buildLeftText(
@@ -199,8 +227,8 @@ function formatTokenCount(value: number): string {
   return String(value);
 }
 function shortenHomePath(cwd: string): string {
-  const home = process.env.HOME ?? undefined;
-  if (home === undefined) return cwd;
+  const home = process.env.HOME;
+  if (!home) return cwd;
   if (cwd === home) return "~";
   if (cwd.startsWith(`${home}/`)) return `~${cwd.slice(home.length)}`;
   return cwd;

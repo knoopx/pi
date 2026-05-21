@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { sanitizeDescription } from "./core";
+import { sanitizeDescription } from "./jj-base";
 export async function loadOpLog(
   pi: ExtensionAPI,
   cwd: string,

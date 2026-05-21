@@ -262,32 +262,44 @@ function getExt(filePath: string): string {
   if (dotIndex > 0) return filename.slice(dotIndex + 1).toLowerCase();
   return "";
 }
-export function getFileIcon(filePath: string): string {
-  if (filePath.endsWith("/")) return "󰉋";
-  const filename = getFilename(filePath);
+function isDirectoryEntry(filePath: string): boolean {
+  return filePath.endsWith("/");
+}
 
-  if (FILENAME_ICONS[filename]) return FILENAME_ICONS[filename];
+function findFileIcon(filename: string): string | null {
   const dotIndex = filename.lastIndexOf(".");
   if (dotIndex > 0) {
     const ext = filename.slice(dotIndex).toLowerCase();
-    if (FILE_ICONS[ext]) return FILE_ICONS[ext];
+    return FILE_ICONS[ext] ?? null;
   }
+  return null;
+}
 
+export function getFileIcon(filePath: string): string {
+  if (isDirectoryEntry(filePath)) return "󰉋";
+  const filename = getFilename(filePath);
+  if (FILENAME_ICONS[filename]) return FILENAME_ICONS[filename];
+  const icon = findFileIcon(filename);
+  if (icon) return icon;
   return "󰈙";
 }
 export function getFileStatusIcon(status: string): string {
   return FILE_STATUS_ICONS[status] || status;
 }
-export function getFileIconColor(filePath: string): string | null {
-  if (filePath.endsWith("/")) return "#90a4ae";
-  const filename = getFilename(filePath);
-
-  if (FILENAME_COLORS[filename]) return FILENAME_COLORS[filename];
+function findFileIconColor(filename: string): string | null {
   const dotIndex = filename.lastIndexOf(".");
   if (dotIndex > 0) {
     const ext = filename.slice(dotIndex).toLowerCase();
-    if (FILE_ICON_COLORS[ext]) return FILE_ICON_COLORS[ext];
+    return FILE_ICON_COLORS[ext] ?? null;
   }
+  return null;
+}
 
+export function getFileIconColor(filePath: string): string | null {
+  if (isDirectoryEntry(filePath)) return "#90a4ae";
+  const filename = getFilename(filePath);
+  if (FILENAME_COLORS[filename]) return FILENAME_COLORS[filename];
+  const color = findFileIconColor(filename);
+  if (color) return color;
   return null;
 }

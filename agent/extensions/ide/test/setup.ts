@@ -5,7 +5,7 @@ type ImportOriginal = () => Promise<typeof fsPromises>;
 vi.mock("node:fs/promises", async (importOriginal: ImportOriginal) => {
   const actual = await importOriginal();
   const { mockReadFileImplementation } =
-    await import("../components/files/test-utils");
+    await import("../components/files/test-factories");
   return {
     ...actual,
     readFile: vi.fn().mockImplementation(mockReadFileImplementation),

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { Eta } from "eta";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { ChangesState } from "../state";
-import { getSelectedChanges } from "../state-utils";
+import { getSelectedChanges } from "../changes-selection";
 import { getRepoRoot } from "../../../jj/files";
 
 const TEMPLATES_DIR = resolve(

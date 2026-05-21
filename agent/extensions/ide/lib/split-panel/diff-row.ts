@@ -1,6 +1,6 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { ensureWidth, truncateAnsi } from "../../../../shared/format/ansi-text";
-import { Row } from "../../../../shared/components/row";
+import { Row } from "../row";
 interface DiffRowProps {
   line: string;
   isDivider?: boolean;

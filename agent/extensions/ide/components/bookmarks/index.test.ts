@@ -7,7 +7,7 @@ import {
   createErrorFixture,
   createComponentTest,
   snapshotRender,
-} from "../../test/utils";
+} from "../../test/mock-factory";
 
 const REPO = "/tmp/test-project";
 

@@ -11,10 +11,8 @@ function filterBookmarksByChange(
     .map((e) => e.bookmark);
 }
 import { listBookmarksByChange } from "../../jj/bookmarks";
-import { loadChanges } from "../../jj/changes";
-import { getCurrentChangeIdShort } from "../../jj/changes";
-import { loadChangedFiles } from "../../jj/files";
-import { getRawDiff } from "../../jj/files";
+import { loadChanges, getCurrentChangeIdShort } from "../../jj/changes";
+import { loadChangedFiles, getRawDiff } from "../../jj/files";
 export class DataService {
   constructor(
     public readonly pi: ExtensionAPI,

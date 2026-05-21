@@ -9,7 +9,7 @@ import {
   type ListPickerComponent,
 } from "../../lib/list-picker/picker";
 import type { TodoItem } from "./types";
-import { filterTodosByQuery, findTodos, formatTodoItem } from "./helpers";
+import { filterTodosByQuery, findTodos, formatTodoItem } from "./todo-scanning";
 import { loadFilePreviewWithShiki } from "../../lib/file-preview";
 import { join } from "node:path";
 interface TodosComponentOptions {

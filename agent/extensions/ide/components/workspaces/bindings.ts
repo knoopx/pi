@@ -1,5 +1,4 @@
-import type { KeyBinding } from "../../lib/keyboard/handler";
-import { ACTION_KEYS } from "../../lib/keyboard/handler";
+import { ACTION_KEYS, type KeyBinding } from "../../lib/keyboard/handler";
 import { createNavigationBindings } from "../../lib/keyboard/bindings";
 
 interface BindingsContext {

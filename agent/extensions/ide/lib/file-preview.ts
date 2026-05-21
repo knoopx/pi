@@ -1,6 +1,6 @@
 import type { Theme, ThemeColor } from "@earendil-works/pi-coding-agent";
-import { highlightCode } from "../tools/shiki/highlight";
-import { lang } from "../tools/language";
+import { highlightCode } from "./shiki/highlight";
+import { lang } from "./language";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 export function highlightCodeLines(

@@ -1,6 +1,5 @@
 import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
-import type { Component } from "@earendil-works/pi-tui";
-import { Input } from "@earendil-works/pi-tui";
+import { Input, type Component } from "@earendil-works/pi-tui";
 import { buildHelpText } from "../../../../shared/format/ansi-text";
 import { applyFocusedStyle } from "../../lib/ui/theme";
 import { createKeyboardHandler } from "../../lib/keyboard/handler";
@@ -62,6 +61,18 @@ class BookmarkPrompt implements Component {
     return this.options.cwd;
   }
 
+  parseBookmarkList(output: string): string[] {
+    const seen = new Set<string>();
+    const loaded: string[] = [];
+    for (const line of output.split("\n")) {
+      const name = line.trim();
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      loaded.push(name);
+    }
+    return loaded;
+  }
+
   async loadBookmarks(): Promise<void> {
     try {
       this.loading = true;
@@ -78,17 +89,7 @@ class BookmarkPrompt implements Component {
         this.bookmarks = [];
         return;
       }
-      const seen = new Set<string>();
-      const loaded: string[] = [];
-
-      for (const line of result.stdout.split("\n")) {
-        const name = line.trim();
-        if (!name || seen.has(name)) continue;
-        seen.add(name);
-        loaded.push(name);
-      }
-
-      this.bookmarks = loaded;
+      this.bookmarks = this.parseBookmarkList(result.stdout);
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e);
       this.bookmarks = [];
@@ -125,54 +126,90 @@ class BookmarkPrompt implements Component {
     detail?: string,
     footerHelp?: string[],
   ): string[] {
-    const lines: string[] = [];
+    const { message, color, help } = this.resolveEmptyStateConfig(
+      state,
+      detail,
+      footerHelp,
+    );
 
-    if (state === "loading") {
-      lines.push(
-        borderedLine(
-          this.theme,
-          this.theme.fg("dim", " Loading bookmarks..."),
-          innerWidth,
-        ),
-      );
-      lines.push(borderedLine(this.theme, "", innerWidth));
-      lines.push(
-        ...this.renderFooter(
-          innerWidth,
-          footerHelp ?? ["enter set", "↑↓ nav", "esc cancel"],
-        ),
-      );
-    } else if (state === "error") {
-      lines.push(
-        borderedLine(
-          this.theme,
-          this.theme.fg("error", ` Error: ${detail}`),
-          innerWidth,
-        ),
-      );
-      lines.push(borderedLine(this.theme, "", innerWidth));
-      lines.push(...this.renderFooter(innerWidth, ["esc cancel"]));
+    return [
+      borderedLine(this.theme, this.theme.fg(color, message), innerWidth),
+      borderedLine(this.theme, "", innerWidth),
+      ...this.renderFooter(innerWidth, help),
+    ];
+  }
+
+  private resolveEmptyStateConfig(
+    state: "loading" | "error" | "empty",
+    detail?: string,
+    footerHelp?: string[],
+  ): { message: string; color: "error" | "dim"; help: string[] } {
+    const config = this.EMPTY_STATE_CONFIGS[state];
+    return {
+      message: detail ?? config.message,
+      color: config.color,
+      help: footerHelp ?? config.help,
+    };
+  }
+
+  EMPTY_STATE_CONFIGS: Record<
+    "loading" | "error" | "empty",
+    { message: string; color: "error" | "dim"; help: string[] }
+  > = {
+    loading: {
+      message: " Loading bookmarks...",
+      color: "dim",
+      help: ["enter set", "↑↓ nav", "esc cancel"],
+    },
+    error: {
+      message: "",
+      color: "error",
+      help: ["esc cancel"],
+    },
+    empty: {
+      message: " No bookmarks yet. Type to create one.",
+      color: "dim",
+      help: ["type bookmark", "enter set", "esc cancel"],
+    },
+  };
+
+  private renderCandidateRow(
+    candidate: string,
+    isFocused: boolean,
+    isCreateOption: boolean,
+    innerWidth: number,
+  ): string {
+    let rowContent: string;
+    if (isCreateOption) {
+      const icon = this.theme.fg("warning", "󰐕");
+      const label = this.theme.fg("warning", "new");
+      rowContent = ` ${icon} ${label} ${candidate}`;
     } else {
-      lines.push(
-        borderedLine(
-          this.theme,
-          this.theme.fg(
-            "dim",
-            detail ?? " No bookmarks yet. Type to create one.",
-          ),
-          innerWidth,
-        ),
-      );
-      lines.push(borderedLine(this.theme, "", innerWidth));
-      lines.push(
-        ...this.renderFooter(
-          innerWidth,
-          footerHelp ?? ["type bookmark", "enter set", "esc cancel"],
-        ),
-      );
+      rowContent = ` 󰃀 ${candidate}`;
     }
 
-    return lines;
+    if (isFocused) {
+      return borderedLine(
+        this.theme,
+        applyFocusedStyle(this.theme, rowContent, true, innerWidth),
+        innerWidth,
+      );
+    }
+    return borderedLine(this.theme, rowContent, innerWidth);
+  }
+
+  private isCreateOption(candidate: string, query: string): boolean {
+    return !!(
+      query.length > 0 &&
+      candidate === query &&
+      !this.bookmarks.includes(candidate)
+    );
+  }
+
+  private computeScrollStart(maxVisible: number): number {
+    return this.selectedIndex >= maxVisible
+      ? this.selectedIndex - maxVisible + 1
+      : 0;
   }
 
   private renderCandidateRows(
@@ -182,39 +219,20 @@ class BookmarkPrompt implements Component {
   ): string[] {
     const lines: string[] = [];
     const maxVisible = 5;
-    let startIdx = 0;
-    if (this.selectedIndex >= maxVisible)
-      startIdx = this.selectedIndex - maxVisible + 1;
+    const startIdx = this.computeScrollStart(maxVisible);
     const visibleCount = Math.min(maxVisible, candidates.length - startIdx);
 
     for (let i = 0; i < visibleCount; i++) {
       const idx = startIdx + i;
       const candidate = candidates[idx];
-      const isFocused = idx === this.selectedIndex;
-      const isCreateOption =
-        query.length > 0 &&
-        candidate === query &&
-        !this.bookmarks.includes(candidate);
-      let rowContent: string;
-      if (isCreateOption) {
-        const icon = this.theme.fg("warning", "󰐕");
-        const label = this.theme.fg("warning", "new");
-        rowContent = ` ${icon} ${label} ${candidate}`;
-      } else {
-        rowContent = ` 󰃀 ${candidate}`;
-      }
-
-      if (isFocused) {
-        lines.push(
-          borderedLine(
-            this.theme,
-            applyFocusedStyle(this.theme, rowContent, true, innerWidth),
-            innerWidth,
-          ),
-        );
-      } else {
-        lines.push(borderedLine(this.theme, rowContent, innerWidth));
-      }
+      lines.push(
+        this.renderCandidateRow(
+          candidate,
+          idx === this.selectedIndex,
+          this.isCreateOption(candidate, query),
+          innerWidth,
+        ),
+      );
     }
 
     for (let i = visibleCount; i < maxVisible; i++) {

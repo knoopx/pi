@@ -2,7 +2,7 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import type { Component } from "@earendil-works/pi-tui";
+import type { Component, TUI } from "@earendil-works/pi-tui";
 import {
   buildHelpFromBindings,
   filterActiveBindings,
@@ -17,12 +17,11 @@ import {
 import type { Change } from "../../types";
 
 import { renderDiffWithShiki } from "../../tools/diff";
-import { THEME } from "../../tools/shiki/constants";
+import { THEME } from "../../lib/shiki/constants";
 
 import { DataService } from "./service";
 import { ChangesState } from "./state";
-import { Navigation } from "./navigation";
-import type { NavigationCallbacks } from "./navigation";
+import { Navigation, type NavigationCallbacks } from "./navigation";
 import { Renderer } from "./renderer";
 import {
   REVISION_FILTERS,
@@ -58,7 +57,7 @@ class ChangesComponent implements Component, ChangesComponentAPI {
   private state: ChangesState;
   private statusState: StatusMessageState;
   private notify: (message: string, type?: "info" | "error") => void;
-  private tui: { requestRender: () => void };
+  private tui: TUI;
   private pi: ExtensionAPI;
   private ctx: ExtensionContext;
 
@@ -220,7 +219,7 @@ class ChangesComponent implements Component, ChangesComponentAPI {
         discardFile: () => void this.operations.discardFile(),
         applyMoveMode: () => void this.operations.applyMoveMode(),
         navigateMove: (direction) => this.navigateMove(direction),
-        openEditor: (path) => openEditor(this.pi, this.ctx, path),
+        openEditor: (path) => openEditor(this.tui, this.ctx, path),
         onInsert: this.onInsert,
         onBookmark: this.onBookmark,
         onFileCmAction: this.onFileCmAction,

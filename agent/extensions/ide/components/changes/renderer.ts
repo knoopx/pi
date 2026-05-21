@@ -31,9 +31,7 @@ export class Renderer {
       leftFocus: this.state.selectionState.focus === "left",
       rightFocus: this.state.selectionState.focus === "right",
     });
-    const filterName =
-      REVISION_FILTERS[this.state.currentFilterIndex % REVISION_FILTERS.length]
-        ?.name ?? "Stack";
+    const filterName = this.resolveFilterName();
     const helpTextWithStatus = this.formatHelpText(helpText);
     const leftTitle = ` ${filterName} (${this.state.changes.length})`;
     const rightTopTitle = this.renderRightTopTitle(dims.rightW);
@@ -58,7 +56,7 @@ export class Renderer {
       files: this.state.files,
       selectedIndex: this.state.selectionState.fileIndex,
       title: rightTopTitle,
-      height: dims.rightTopH ?? 5,
+      height: this.resolveRightTopH(dims),
       focus: this.state.selectionState.focus,
       theme: this.theme,
     });
@@ -66,7 +64,7 @@ export class Renderer {
       lines: this.state.diffContent,
       scroll: this.state.selectionState.diffScroll,
       width: dims.rightW,
-      height: dims.rightBottomH ?? 10,
+      height: this.resolveRightBottomH(dims),
       title: rightBottomTitle,
       focus: this.state.selectionState.focus,
       theme: this.theme,
@@ -96,6 +94,20 @@ export class Renderer {
   setStatusMsg(msg: string | null): void {
     this.statusText = msg;
     this.tui.requestRender();
+  }
+
+  private resolveFilterName(): string {
+    const filter =
+      REVISION_FILTERS[this.state.currentFilterIndex % REVISION_FILTERS.length];
+    return filter?.name ?? "Stack";
+  }
+
+  private resolveRightTopH(dims: { rightTopH?: number }): number {
+    return dims.rightTopH ?? 5;
+  }
+
+  private resolveRightBottomH(dims: { rightBottomH?: number }): number {
+    return dims.rightBottomH ?? 10;
   }
 
   private renderRightTopTitle(width: number): string {

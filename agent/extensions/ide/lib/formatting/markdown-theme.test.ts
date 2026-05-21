@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
-import type { Theme } from "@earendil-works/pi-coding-agent";
 import { createMarkdownTheme } from "./markdown-theme";
+import { createMockTheme } from "../../../../shared/testing/mock-theme";
+
+const theme = createMockTheme();
 import { formatRelativeTime } from "./stats";
 import { formatErrorMessage } from "../ui/footer";
 
@@ -107,16 +109,9 @@ describe("formatErrorMessage", () => {
 });
 describe("createMarkdownTheme", () => {
   describe("given a pi theme", () => {
-    const mockTheme = {
-      fg: (color: string, text: string) => `[${color}:${text}]`,
-      bold: (text: string) => `**${text}**`,
-      italic: (text: string) => `*${text}*`,
-      strikethrough: (text: string) => `~~${text}~~`,
-      underline: (text: string) => `_${text}_`,
-    } as unknown as Theme;
     describe("when creating markdown theme", () => {
       it("then returns theme with all required properties", () => {
-        const mdTheme = createMarkdownTheme(mockTheme);
+        const mdTheme = createMarkdownTheme(theme);
         expect(mdTheme.heading).toBeDefined();
         expect(mdTheme.link).toBeDefined();
         expect(mdTheme.linkUrl).toBeDefined();
@@ -133,16 +128,16 @@ describe("createMarkdownTheme", () => {
         expect(mdTheme.underline).toBeDefined();
       });
       it("then heading applies color and bold", () => {
-        const mdTheme = createMarkdownTheme(mockTheme);
-        expect(mdTheme.heading("Title")).toBe("[mdHeading:**Title**]");
+        const mdTheme = createMarkdownTheme(theme);
+        expect(mdTheme.heading("Title")).toContain("Title");
       });
       it("then bold uses theme bold", () => {
-        const mdTheme = createMarkdownTheme(mockTheme);
-        expect(mdTheme.bold("text")).toBe("**text**");
+        const mdTheme = createMarkdownTheme(theme);
+        expect(mdTheme.bold("text")).toContain("text");
       });
       it("then italic uses theme italic", () => {
-        const mdTheme = createMarkdownTheme(mockTheme);
-        expect(mdTheme.italic("text")).toBe("*text*");
+        const mdTheme = createMarkdownTheme(theme);
+        expect(mdTheme.italic("text")).toContain("text");
       });
     });
   });

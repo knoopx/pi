@@ -3,7 +3,6 @@ import type {
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 import { createFooter } from "../lib/ui/footer";
-import { createNewChange } from "../jj/changes";
 import { openFilesPicker } from "../components/files/overlay";
 import { openSymbolsPicker } from "../components/symbols/overlay";
 import { openBookmarksBrowser } from "../components/bookmarks/overlay";
@@ -20,10 +19,6 @@ export function handleSessionStart(
   const footer = createFooter(pi, ctx);
   footer.register();
   void footer.refresh();
-
-  // Fire-and-forget — do not capture ctx in the callback.
-  // The promise may outlive this session and ctx would be stale.
-  void createNewChange(pi, ctx.cwd).catch(() => {});
 }
 
 export function handleModelSelect(

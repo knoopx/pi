@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { ListPickerComponent } from "../../lib/list-picker/picker";
-import { notifyMutation } from "../../jj/core";
+import { notifyMutation } from "../../jj/jj-base";
 export async function executeGhCommand(options: {
   pi: ExtensionAPI;
   args: string[];

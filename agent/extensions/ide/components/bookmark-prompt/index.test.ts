@@ -1,11 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { createBookmarkPromptComponent } from "./component";
-import type { TestTerminal } from "../../test/utils";
-import {
-  createMockPi,
-  createMockTui,
-  createMockTheme,
-} from "../../test/utils";
+import type { TestTerminal } from "../../test/mock-factory";
+import { createMockTui, createMockTheme } from "../../test/mock-factory";
+import { createMockPi } from "../../../../shared/testing/test-factories";
 const REPO = "/home/user/project";
 
 async function createComponentFromExec(execReturn: {

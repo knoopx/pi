@@ -3,9 +3,10 @@ import { expect, vi } from "vitest";
 import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
 import type { TUI } from "@earendil-works/pi-tui";
 import type { Change } from "../types";
-import { createMockExtensionAPI } from "../../../shared/testing/test-utils";
+import { createMockPi } from "../../../shared/testing/test-factories";
 import {
   createMockTheme as createMockThemeBase,
+  createMockTui as _createMockTui,
   TestTerminal,
 } from "../../../shared/testing/mock-theme";
 
@@ -37,7 +38,10 @@ export function createMockTheme(): Theme {
   } as Theme;
 }
 
-export { TestTerminal };
+export { _createMockTui as createMockTui, TestTerminal };
+
+// Internal reference for use within this file
+const createMockTui = _createMockTui;
 export function createMockChange(overrides?: Partial<Change>): Change {
   return {
     changeId: "a",
@@ -52,38 +56,18 @@ export function createMockChange(overrides?: Partial<Change>): Change {
   };
 }
 
-export function createMockPi(overrides?: Partial<ExtensionAPI>): ExtensionAPI {
-  return {
-    ...createMockExtensionAPI(),
-    getFlag: vi.fn().mockReturnValue(null),
-    exec: vi.fn().mockResolvedValue({
-      code: 0,
-      stdout: "",
-      stderr: "",
-    }),
-    ...overrides,
-  } as unknown as ExtensionAPI;
-}
-export function createMockTui() {
-  const terminal = new TestTerminal(120, 30);
-  return {
-    terminal,
-    requestRender: vi.fn(),
-    setFocus: vi.fn(),
-  } as unknown as TUI;
-}
-
+// Cast shared mock to ExtensionAPI for IDE component tests
 export function createComponentFixture<T extends Record<string, unknown>>(
   factory: (options: T) => { render: (cols: number) => string[] },
   options: Partial<T> & {
     pi?: ExtensionAPI;
-    tui?: ReturnType<typeof createMockTui>;
+    tui?: TUI;
     theme?: ReturnType<typeof createMockTheme>;
   },
 ): {
   component: ReturnType<typeof factory>;
   mockPi: ExtensionAPI;
-  tui: ReturnType<typeof createMockTui>;
+  tui: TUI;
 } {
   const mockPi = options.pi ?? createMockPi();
   const tui = options.tui ?? createMockTui();
@@ -94,7 +78,7 @@ export function createComponentFixture<T extends Record<string, unknown>>(
     tui,
     theme,
   } as unknown as T) as ReturnType<typeof factory>;
-  return { component, mockPi, tui };
+  return { component, mockPi, tui: tui as unknown as TUI };
 }
 
 export async function createComponentTest<T extends Record<string, unknown>>(
@@ -124,15 +108,11 @@ export async function createComponentTest<T extends Record<string, unknown>>(
     pi: mockPi,
   } as Partial<T> & {
     pi?: ExtensionAPI;
-    tui?: ReturnType<typeof createMockTui>;
+    tui?: TUI;
     theme?: ReturnType<typeof createMockTheme>;
   });
   await new Promise((r) => setTimeout(r, 50));
-  return { component, tui };
-}
-
-export function waitForAsyncHighlight(ms = 500): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
+  return { component, tui: tui as unknown as ReturnType<typeof createMockTui> };
 }
 
 export function snapshotRender(component: {
@@ -184,6 +164,10 @@ export async function createErrorFixture<T extends Record<string, unknown>>(
   const { component } = createComponentFixture(componentFactory, {
     ...config,
     pi: mockPi,
+  } as unknown as Partial<T> & {
+    pi?: ExtensionAPI;
+    tui?: TUI;
+    theme?: ReturnType<typeof createMockTheme>;
   });
   await new Promise((r) => setTimeout(r, 50));
   return component.render(120);

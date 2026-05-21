@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { renderFileChangeRows } from "./content";
-import { createMockTheme } from "../../test/utils";
+import { createMockTheme } from "../../test/mock-factory";
 const theme = createMockTheme();
 const width = 80;
 const height = 10;

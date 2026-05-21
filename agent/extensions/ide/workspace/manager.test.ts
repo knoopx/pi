@@ -11,7 +11,7 @@ import {
 import {
   createMockExecPi,
   createMockExecPiWithRoutes,
-} from "../test/utils";
+} from "../test/mock-factory";
 const { execMock, pi } = createMockExecPi();
 beforeEach(() => execMock.mockReset());
 

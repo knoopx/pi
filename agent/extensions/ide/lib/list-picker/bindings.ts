@@ -1,6 +1,5 @@
-import type { KeyBinding } from "../../lib/keyboard/handler";
+import { buildHelpFromBindings, type KeyBinding } from "../../lib/keyboard/handler";
 import { Key } from "@earendil-works/pi-tui";
-import { buildHelpFromBindings } from "../../lib/keyboard/handler";
 import { createNavigationBindings } from "../keyboard/bindings";
 import type { ListPickerItem } from "./types";
 

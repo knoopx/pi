@@ -3,13 +3,10 @@ import type {
   ExtensionContext,
   Theme,
 } from "@earendil-works/pi-coding-agent";
-interface ComponentTui {
-  terminal: { rows: number };
-  requestRender: () => void;
-}
+import type { TUI } from "@earendil-works/pi-tui";
 interface ChangesComponentInit {
   pi: ExtensionAPI;
-  tui: ComponentTui;
+  tui: TUI;
   theme: Theme;
   ctx: ExtensionContext;
 }

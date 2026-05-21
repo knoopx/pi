@@ -1,7 +1,7 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { TUI } from "@earendil-works/pi-tui";
 import type { AgentWorkspace } from "../../types";
-import { notifyMutation } from "../../jj/core";
+import { notifyMutation } from "../../jj/jj-base";
 import {
   forgetWorkspace,
   killTmuxSession,
@@ -12,6 +12,7 @@ import { openEditor } from "../../lib/open-editor";
 
 interface ActionsContext {
   pi: ExtensionAPI;
+  tui: TUI;
   ctx: ExtensionContext;
   onDone: () => void;
   onSendTask: (task: string) => void;
@@ -47,9 +48,9 @@ export function handleRebase(ctx: ActionsContext, ws: AgentWorkspace): void {
   const task = `Integrate changes from workspace "${ws.name}":
 1. List changed files: \`jj diff --summary -r ${ws.name}@\`
 2. Review specific files if needed: \`jj diff -r ${ws.name}@ <file>\`
-3. Rebase onto current: \`jj rebase -s ${ws.name}@ -d @\`
+3. Rebase onto current: \`jj rebase -s ${ws.name}@ -o @\`
 4. Squash into parent: \`jj squash -r ${ws.name}@\`
-5. Set description: \`jj desc -m "type(scope): description"\`
+5. Set description: \`jj describe -m "type(scope): description"\`
 Types: feat, fix, docs, style, refactor, perf, test, chore`;
   ctx.onSendTask(task);
 }
@@ -58,7 +59,7 @@ export async function handleEdit(
   ctx: ActionsContext,
   ws: AgentWorkspace,
 ): Promise<void> {
-  await openEditor(ctx.pi, ctx.ctx, ws.path);
+  await openEditor(ctx.tui, ctx.ctx, ws.path);
 }
 
 export async function handleTerminal(

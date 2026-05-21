@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { createMockChange } from "../../test/utils";
+import { createMockChange } from "../../test/mock-factory";
 import { Navigation } from "./navigation";
 import { ChangesState } from "./state";
-import { expectDefaultSelection } from "./test-utils";
+import { expectDefaultSelection } from "./test-factories";
 function expectMovedOrder(state: ChangesState) {
   expect(state.changes[0].changeId).toBe("a");
   expect(state.changes[1].changeId).toBe("c");

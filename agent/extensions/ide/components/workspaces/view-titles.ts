@@ -4,6 +4,24 @@ interface WorkspaceViewTitles {
   rightTopTitle: string;
   rightBottomTitle: string;
 }
+function computeRightBottomTitle(
+  selectedWorkspace: AgentWorkspace | null,
+  isDefault: boolean,
+  files: FileChange[],
+  changes: Change[],
+  fileIndex: number,
+): string {
+  if (!selectedWorkspace) return " Diff";
+  const label = isDefault
+    ? formatChangeId(changes[fileIndex])
+    : (files[fileIndex]?.path ?? "all");
+  return ` Diff: ${label}`;
+}
+
+function formatChangeId(change: Change | undefined): string {
+  return change?.changeId?.slice(0, 8) ?? "none";
+}
+
 export function computeWorkspaceViewTitles(
   selectedWorkspace: AgentWorkspace | null,
   files: FileChange[],
@@ -11,18 +29,15 @@ export function computeWorkspaceViewTitles(
   fileIndex: number,
 ): WorkspaceViewTitles {
   const isDefault = selectedWorkspace?.name === "default";
-  const leftTitle = " Workspaces";
-  const rightTopTitle = isDefault ? " Changes" : " Files";
-  let rightBottomTitle: string;
-  if (!selectedWorkspace) {
-    rightBottomTitle = " Diff";
-  } else if (isDefault) {
-    const changeId = changes[fileIndex]?.changeId?.slice(0, 8);
-    rightBottomTitle = ` Diff: ${changeId ?? "none"}`;
-  } else {
-    const filePath = files[fileIndex]?.path;
-    rightBottomTitle = ` Diff: ${filePath ?? "all"}`;
-  }
-
-  return { leftTitle, rightTopTitle, rightBottomTitle };
+  return {
+    leftTitle: " Workspaces",
+    rightTopTitle: isDefault ? " Changes" : " Files",
+    rightBottomTitle: computeRightBottomTitle(
+      selectedWorkspace,
+      isDefault,
+      files,
+      changes,
+      fileIndex,
+    ),
+  };
 }

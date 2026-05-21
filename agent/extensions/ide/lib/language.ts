@@ -52,11 +52,22 @@ const EXT_LANG: Record<string, BundledLanguage> = {
   erb: "erb",
   hbs: "handlebars",
 };
+const SPECIAL_FILES: Record<string, BundledLanguage> = {
+  dockerfile: "dockerfile",
+  "flake.lock": "json",
+  makefile: "make",
+  gnumakefile: "make",
+  ".envrc": "bash",
+  ".env": "bash",
+};
+
+function resolveSpecialFilename(base: string): BundledLanguage | null {
+  return SPECIAL_FILES[base] ?? null;
+}
+
 export function lang(fp: string): BundledLanguage | undefined {
   const base = basename(fp).toLowerCase();
-  if (base === "dockerfile") return "dockerfile";
-  if (base === "flake.lock") return "json";
-  if (base === "makefile" || base === "gnumakefile") return "make";
-  if (base === ".envrc" || base === ".env") return "bash";
+  const special = resolveSpecialFilename(base);
+  if (special) return special;
   return EXT_LANG[extname(fp).slice(1).toLowerCase()];
 }

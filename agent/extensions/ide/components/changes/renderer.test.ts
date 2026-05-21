@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { createMockChange } from "../../test/utils";
+import { createMockChange } from "../../test/mock-factory";
 import {
   renderSnapshot,
   defaultMockChange,
   setMockChanges,
   loadingStateConfig,
-} from "./test-utils";
+} from "./test-factories";
 
 describe("loading state", () => {
   it("then renders loading indicator", async () => {

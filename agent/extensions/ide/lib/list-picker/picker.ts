@@ -10,8 +10,7 @@ import { applyFocusedStyle } from "../ui/theme";
 import { calculateDimensions } from "../split-panel/layout";
 import { renderSplitPanel } from "../split-panel/border/renderer";
 import { renderSourceRows } from "../split-panel/content";
-import { createStatusNotifier, formatHelpWithStatus } from "../ui/status";
-import type { StatusMessageState } from "../ui/status";
+import { createStatusNotifier, formatHelpWithStatus, type StatusMessageState } from "../ui/status";
 
 import type {
   ListPickerItem,
@@ -151,47 +150,46 @@ class ListPickerImpl<T extends ListPickerItem>
     const cacheKey = item.path ?? item.id;
     const cached = this.previewCache.get(cacheKey);
     if (cached) {
-      this.sourceLines = cached;
-      this.sourceScroll = item.startLine ? Math.max(0, item.startLine - 3) : 0;
-      this.invalidate();
-      this.tui.requestRender();
+      this.applyPreview(cached, item.startLine);
       return;
     }
 
     try {
       const result = await this.config.loadPreview(item);
       this.previewCache.set(cacheKey, result);
-      this.sourceLines = result;
-      this.sourceScroll = item.startLine ? Math.max(0, item.startLine - 3) : 0;
-      this.invalidate();
-      this.tui.requestRender();
+      this.applyPreview(result, item.startLine);
     } catch {
-      this.sourceLines = [];
-      this.invalidate();
-      this.tui.requestRender();
+      this.applyPreview([]);
     }
   }
 
-  private getItemRows(width: number, height: number): string[] {
-    const rows: string[] = [];
+  private applyPreview(lines: string[], startLine?: number): void {
+    this.sourceLines = lines;
+    this.sourceScroll = computePreviewScroll(startLine);
+    this.invalidate();
+    this.tui.requestRender();
+  }
 
+  private renderStateRows(width: number): string[] | null {
     if (this.loading) {
-      rows.push(this.theme.fg("dim", pad(" Loading...", width)));
-      return rows;
+      return [this.theme.fg("dim", pad(" Loading...", width))];
     }
-
     if (this.error) {
-      rows.push(this.theme.fg("error", pad(` Error: ${this.error}`, width)));
-      return rows;
+      return [this.theme.fg("error", pad(` Error: ${this.error}`, width))];
     }
-
     if (this.filteredItems.length === 0) {
-      rows.push(this.theme.fg("dim", pad(" No items found", width)));
-      return rows;
+      return [this.theme.fg("dim", pad(" No items found", width))];
     }
-    let startIdx = 0;
-    if (this._focusedIndex >= height)
-      startIdx = this._focusedIndex - height + 1;
+    return null;
+  }
+
+  private computeScrollStart(height: number): number {
+    return this._focusedIndex >= height ? this._focusedIndex - height + 1 : 0;
+  }
+
+  private renderVisibleRows(width: number, height: number): string[] {
+    const rows: string[] = [];
+    const startIdx = this.computeScrollStart(height);
 
     for (
       let i = 0;
@@ -201,8 +199,8 @@ class ListPickerImpl<T extends ListPickerItem>
       const idx = startIdx + i;
       const item = this.filteredItems[idx];
       const isFocused = idx === this._focusedIndex;
-      const formatted = this.config.formatItem(item, width - 1, this.theme);
-      const text = ` ${formatted}`;
+      const text = ` ${this.config.formatItem(item, width - 1, this.theme)}`;
+
       if (isFocused) {
         rows.push(
           applyFocusedStyle(this.theme, truncateAnsi(text, width), true, width),
@@ -213,6 +211,12 @@ class ListPickerImpl<T extends ListPickerItem>
     }
 
     return rows;
+  }
+
+  private getItemRows(width: number, height: number): string[] {
+    const stateRows = this.renderStateRows(width);
+    if (stateRows) return stateRows;
+    return this.renderVisibleRows(width, height);
   }
 
   render(width: number): string[] {
@@ -264,19 +268,22 @@ class ListPickerImpl<T extends ListPickerItem>
     );
   }
 
-  private navigate(direction: "up" | "down" | "pageUp" | "pageDown"): void {
+  private computeNewIndex(
+    direction: "up" | "down" | "pageUp" | "pageDown",
+  ): number {
     const pageOffset = Math.max(1, this.listHeight - 1);
-    const newIndex =
-      direction === "up"
-        ? Math.max(0, this._focusedIndex - 1)
-        : direction === "pageUp"
-          ? Math.max(0, this._focusedIndex - pageOffset)
-          : direction === "pageDown"
-            ? Math.min(
-                this.filteredItems.length - 1,
-                this._focusedIndex + pageOffset,
-              )
-            : Math.min(this.filteredItems.length - 1, this._focusedIndex + 1);
+    const maxIdx = this.filteredItems.length - 1;
+
+    if (direction === "up") return Math.max(0, this._focusedIndex - 1);
+    if (direction === "pageUp")
+      return Math.max(0, this._focusedIndex - pageOffset);
+    if (direction === "pageDown")
+      return Math.min(maxIdx, this._focusedIndex + pageOffset);
+    return Math.min(maxIdx, this._focusedIndex + 1);
+  }
+
+  private navigate(direction: "up" | "down" | "pageUp" | "pageDown"): void {
+    const newIndex = this.computeNewIndex(direction);
     if (newIndex !== this._focusedIndex) {
       this._focusedIndex = newIndex;
       const item = this.getFocusedItem();
@@ -402,6 +409,10 @@ class ListPickerImpl<T extends ListPickerItem>
   getSearchQuery(): string {
     return this.searchQuery;
   }
+}
+
+function computePreviewScroll(startLine: number | undefined): number {
+  return startLine ? Math.max(0, startLine - 3) : 0;
 }
 
 export function createListPicker<T extends ListPickerItem>(

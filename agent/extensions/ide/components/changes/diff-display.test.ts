@@ -3,7 +3,7 @@ import {
   renderSnapshot,
   defaultMockChange,
   setMockChanges,
-} from "./test-utils";
+} from "./test-factories";
 
 describe("diff states", () => {
   it("then renders no content for empty diff", async () => {

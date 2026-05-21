@@ -7,7 +7,7 @@ import {
   buildRenderResult,
   type ToolExecuteFn,
   type WrappedToolHandler,
-} from "./utils";
+} from "./tool-rendering";
 import type { ToolRenderContext } from "./types";
 interface GrepParams {
   pattern: string;
