@@ -1,9 +1,10 @@
 import type {
   ExtensionAPI,
+  ExtensionContext,
   TurnEndEvent,
 } from "@earendil-works/pi-coding-agent";
 import type { Message } from "@earendil-works/pi-ai";
-import { parseTextToolCalls } from "./parser";
+import { parseTextToolCalls } from "./lib/parser";
 
 // Detects malformed/fenced tool calls in assistant text and nudges the model
 // back onto native tool-calling. Active-repair (executing extracted calls
@@ -51,7 +52,7 @@ function extractCallsFromEvent(
 
 function handleTurnEnd(
   event: TurnEndEvent,
-  ctx: { ui: { notify(msg: string, type: string): void } },
+  ctx: ExtensionContext,
   pi: ExtensionAPI,
 ): void {
   const result = extractCallsFromEvent(event);
@@ -75,6 +76,6 @@ function handleTurnEnd(
 
 export default function (pi: ExtensionAPI) {
   pi.on("turn_end", async (event, ctx) => {
-    handleTurnEnd(event as TurnEndEvent, ctx as any, pi);
+    handleTurnEnd(event as TurnEndEvent, ctx, pi);
   });
 }
