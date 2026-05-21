@@ -1,0 +1,42 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`parseLine > full cycle 1`] = `
+[
+  0,
+  0.25,
+  0.75,
+  1,
+]
+`;
+
+exports[`widget render output > renders nothing when null 1`] = `[]`;
+
+exports[`widget render output > renders progress bar at 0% 1`] = `
+[
+  "█░░░░░░░░░░░░░░░░░░░",
+]
+`;
+
+exports[`widget render output > renders progress bar at 25% 1`] = `
+[
+  "█████░░░░░░░░░░░░░░░",
+]
+`;
+
+exports[`widget render output > renders progress bar at 50% 1`] = `
+[
+  "██████████░░░░░░░░░░",
+]
+`;
+
+exports[`widget render output > renders progress bar at 99% 1`] = `
+[
+  "████████████████████",
+]
+`;
+
+exports[`widget render output > renders progress bar at 100% 1`] = `
+[
+  "████████████████████",
+]
+`;
