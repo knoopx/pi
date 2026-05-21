@@ -1,6 +1,19 @@
 import { formatShortDate } from "../../../../shared/format/time-formatting";
-import type { YoutubeSearchResponse } from "./types";
+import type { YoutubeSearchResponse, YoutubeSearchItem } from "./types";
 import { fetchYoutube } from "./client";
+
+function formatSearchItem(item: YoutubeSearchItem): string[] | null {
+  const videoId = item.id?.videoId;
+  if (!videoId) return null;
+  const title = item.snippet.title || "(no title)";
+  const channel = item.snippet.channelTitle;
+  const published = formatShortDate(item.snippet.publishedAt);
+  return [
+    `**${title}**`,
+    `by ${channel} • ${published}`,
+    `[Watch](https://www.youtube.com/watch?v=${videoId})`,
+  ];
+}
 
 export async function handleSearch(
   query: string,
@@ -19,17 +32,11 @@ export async function handleSearch(
   ];
 
   for (const item of items) {
-    const videoId = item.id?.videoId;
-    if (!videoId) continue;
-    const title = item.snippet.title || "(no title)";
-    const channel = item.snippet.channelTitle;
-    const published = formatShortDate(item.snippet.publishedAt);
-    parts.push(
-      "",
-      `**${title}**`,
-      `by ${channel} • ${published}`,
-      `[Watch](https://www.youtube.com/watch?v=${videoId})`,
-    );
+    const formatted = formatSearchItem(item);
+    if (formatted) {
+      parts.push("");
+      parts.push(...formatted);
+    }
   }
 
   return parts.join("\n");

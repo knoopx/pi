@@ -5,7 +5,7 @@ import {
   defineParser,
   requireVersion,
   type VersionedPackagePath,
-} from "../lib/parser-utils";
+} from "../lib/parser-factory";
 import { formatDate } from "../../../shared/format/time-formatting";
 import { pluralize } from "../../../shared/format/text-formatting";
 
@@ -69,19 +69,19 @@ function extractAuthorName(
   return null;
 }
 
+function appendNpmMetadata(parts: string[], data: NpmPackageInfo): void {
+  const license = extractLicenseString(data.license);
+  if (license) parts.push(`license: ${license}`);
+  const author = extractAuthorName(data.author);
+  if (author) parts.push(`author: ${author}`);
+}
+
 function formatNpmPackageHeader(data: NpmPackageInfo): string[] {
   const parts: string[] = [`# ${data.name}`];
   if (data.description) parts.push(data.description);
-
   const latest = data["dist-tags"]?.latest || data.version || "unknown";
   parts.push(`version: ${latest}`);
-
-  const license = extractLicenseString(data.license);
-  if (license) parts.push(`license: ${license}`);
-
-  const author = extractAuthorName(data.author);
-  if (author) parts.push(`author: ${author}`);
-
+  appendNpmMetadata(parts, data);
   return parts;
 }
 
@@ -146,20 +146,24 @@ function formatBinEntries(
   bin: string | Record<string, string> | undefined,
 ): string[] {
   if (typeof bin === "string") return [`- bin: ${bin}`];
-  if (bin && typeof bin === "object" && !Array.isArray(bin)) {
-    const entries: string[] = [];
-    for (const [name, path] of Object.entries(bin)) {
-      entries.push(`- ${name}: ${path}`);
-    }
-    return entries;
+  if (!isObjectRecord(bin)) return [];
+  const entries: string[] = [];
+  for (const [name, path] of Object.entries(bin)) {
+    entries.push(`- ${name}: ${path}`);
   }
-  return [];
+  return entries;
+}
+
+function isObjectRecord(value: unknown): value is Record<string, string> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function hasEntryPoints(data: NpmPackageInfo): boolean {
+  return !!(data.main || data.browser || data.bin);
 }
 
 function formatEntryPoints(data: NpmPackageInfo): string[] {
-  const hasEntries = data.main || data.browser || data.bin;
-  if (!hasEntries) return [];
-
+  if (!hasEntryPoints(data)) return [];
   const lines: string[] = ["", "**Entry points:**"];
   if (data.main) lines.push(`- main: ${data.main}`);
   if (data.browser) lines.push(`- browser: ${data.browser}`);
@@ -212,6 +216,15 @@ const handleVersion = createPackageVersionHandler<NpmPackageInfo>({
     `[View on npm](https://www.npmjs.com/package/${name}/v/${version})`,
 });
 
+function formatDistTags(distTags: Record<string, string>): string[] {
+  if (Object.keys(distTags).length === 0) return [];
+  const lines: string[] = ["", "**Dist tags:**"];
+  for (const [tag, version] of Object.entries(distTags)) {
+    lines.push(`- ${tag}: ${version}`);
+  }
+  return lines;
+}
+
 async function handleVersions(
   name: string,
   signal?: AbortSignal,
@@ -220,34 +233,23 @@ async function handleVersions(
     `https://registry.npmjs.org/${name}`,
     signal,
   );
-
   if (!data.name) throw new Error(`Package ${name} not found on npm`);
+  return renderVersionsList(name, data);
+}
 
+function renderVersionsList(name: string, data: NpmPackageInfo): string {
   const versions = Object.keys(data.versions ?? {});
   const distTags = data["dist-tags"] ?? {};
-  const parts: string[] = [
+  return [
     `# ${name}`,
     `**${pluralize(versions.length, "version")}**`,
-  ];
-
-  if (Object.keys(distTags).length > 0) {
-    parts.push("", "**Dist tags:**");
-    for (const [tag, version] of Object.entries(distTags)) {
-      parts.push(`- ${tag}: ${version}`);
-    }
-  }
-
-  parts.push("", "**All versions:**");
-  for (const v of versions) {
-    parts.push(`- ${v}`);
-  }
-
-  parts.push(
+    ...formatDistTags(distTags),
+    "",
+    "**All versions:**",
+    ...versions.map((v) => `- ${v}`),
     "",
     `[View on npm](https://www.npmjs.com/package/${name}/v/${versions[versions.length - 1]})`,
-  );
-
-  return parts.join("\n");
+  ].join("\n");
 }
 
 function dispatchNpm(parsed: NpmPath, signal?: AbortSignal): Promise<string> {

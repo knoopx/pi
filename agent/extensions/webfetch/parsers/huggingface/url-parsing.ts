@@ -27,6 +27,13 @@ function tryParseBarePath(rest: string): HFPath | null {
   return parseSubpath("model", owner, name, subpath ?? null);
 }
 
+function parseKnownSubpath(base: HFPath, parts: string[]): HFPath {
+  const first = parts[0].toLowerCase();
+  if (first === "blob") return tryParseBlobPath(base, parts);
+  if (first === "tree") return parseTreePath(base, parts);
+  return base;
+}
+
 function parseSubpath(
   kind: HFRepo["kind"],
   owner: string,
@@ -36,11 +43,9 @@ function parseSubpath(
   const base: HFPath = { kind, owner, name, type: "repo" };
   if (!subpath) return base;
   const parts = subpath.split("/");
-  const first = parts[0].toLowerCase();
-  if (first === "blob") return tryParseBlobPath(base, parts);
-  if (first === "tree") return parseTreePath(base, parts);
-  if (first === "discussions") return parseDiscussionPath(base, parts);
-  return base;
+  if (parts[0].toLowerCase() === "discussions")
+    return parseDiscussionPath(base, parts);
+  return parseKnownSubpath(base, parts);
 }
 
 function tryParseBlobPath(base: HFPath, parts: string[]): HFPath {

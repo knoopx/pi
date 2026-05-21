@@ -119,7 +119,7 @@ describe("HuggingFace parser", () => {
 
   describe("snapshot", () => {
     beforeAll(async () => {
-      const { mockFetchWithFixtures } = await import("../../test/utils");
+      const { mockFetchWithFixtures } = await import("../../test/fixture-mock");
       mockFetchWithFixtures();
     });
     it("captures output for https://huggingface.co/openai/whisper-large-v3", async () => {

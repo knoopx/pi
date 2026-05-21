@@ -41,6 +41,16 @@ export function createWikitextFromMarkdown() {
     this.enter({ type: "heading", depth: 2, children: [] }, token);
   }
 
+  function pushHeadingText(
+    stack: Array<{ children: unknown[] }>,
+    text: string,
+  ): void {
+    const node = stack[stack.length - 1];
+    if (node && "children" in node && Array.isArray(node.children)) {
+      node.children.push({ type: "text", value: text });
+    }
+  }
+
   function exitHeading(
     this: {
       exit: (token: unknown) => void;
@@ -51,12 +61,7 @@ export function createWikitextFromMarkdown() {
   ) {
     const cleaned = cleanHeadingText(this.sliceSerialize(token));
     if (cleaned) {
-      const node = this.stack[this.stack.length - 1] as
-        | { children: unknown[] }
-        | undefined;
-      if (node && "children" in node && Array.isArray(node.children)) {
-        node.children.push({ type: "text", value: cleaned });
-      }
+      pushHeadingText(this.stack, cleaned);
     }
     this.exit(token);
   }
@@ -139,6 +144,17 @@ export function createWikitextFromMarkdown() {
     this.exit(token);
   }
 
+  function tryReplaceLastChild(
+    children: unknown[],
+    target: unknown,
+    replacement: unknown,
+  ): void {
+    const lastIdx = children.length - 1;
+    if (lastIdx >= 0 && children[lastIdx] === target) {
+      children[lastIdx] = replacement;
+    }
+  }
+
   function replaceWikiLinkInStack(
     stack: Array<Record<string, unknown>>,
     linkNode: Link,
@@ -149,11 +165,8 @@ export function createWikitextFromMarkdown() {
     if (currentNode.type !== "wikiLink") return;
 
     const parent = stack[stack.length - 2] as { children?: unknown[] };
-    if (!parent || !Array.isArray(parent.children)) return;
+    if (!Array.isArray(parent.children)) return;
 
-    const lastIdx = parent.children.length - 1;
-    if (lastIdx >= 0 && parent.children[lastIdx] === currentNode) {
-      parent.children[lastIdx] = linkNode;
-    }
+    tryReplaceLastChild(parent.children, currentNode, linkNode);
   }
 }

@@ -17,13 +17,15 @@ export interface YoutubeVideoContentDetails {
   caption?: string;
 }
 
+export interface YoutubeApiItem {
+  id?: string;
+  snippet?: YoutubeVideoSnippet;
+  contentDetails?: YoutubeVideoContentDetails;
+  statistics?: Record<string, string>;
+}
+
 export interface YoutubeApiResponse {
-  items?: Array<{
-    id?: string;
-    snippet?: YoutubeVideoSnippet;
-    contentDetails?: YoutubeVideoContentDetails;
-    statistics?: Record<string, string>;
-  }>;
+  items?: YoutubeApiItem[];
 }
 
 export interface YoutubeCommentsResponse {
@@ -49,9 +51,11 @@ export interface YoutubePlaylistItemsResponse {
   }>;
 }
 
+export interface YoutubeSearchItem {
+  id?: { videoId?: string };
+  snippet: YoutubeVideoSnippet;
+}
+
 export interface YoutubeSearchResponse {
-  items?: Array<{
-    id?: { videoId?: string };
-    snippet: YoutubeVideoSnippet;
-  }>;
+  items?: YoutubeSearchItem[];
 }

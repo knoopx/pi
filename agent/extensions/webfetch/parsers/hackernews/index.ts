@@ -1,4 +1,4 @@
-import { defineParser } from "../../lib/parser-utils";
+import { defineParser } from "../../lib/parser-factory";
 import { parseHnUrl } from "./url-parsing";
 import { dispatchHN } from "./handlers";
 

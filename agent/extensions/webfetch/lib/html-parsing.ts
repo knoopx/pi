@@ -2,7 +2,7 @@ import type { Root as HastRoot } from "hast";
 import type { Root as MdastRoot } from "mdast";
 import type { Node } from "unist";
 import { fromHtml } from "hast-util-from-html";
-import { removeNodesByIndex } from "./tree-utils";
+import { removeNodesByIndex } from "./tree-mutation";
 import { toMdast } from "hast-util-to-mdast";
 import { visit } from "unist-util-visit";
 const README_HTML_TAGS =

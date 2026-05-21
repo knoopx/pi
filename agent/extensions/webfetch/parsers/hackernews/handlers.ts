@@ -114,16 +114,47 @@ async function handleFirebasePath(
   path: string,
   signal?: AbortSignal,
 ): Promise<string> {
-  const itemId = tryParseItemId(path);
-  if (itemId !== null) {
-    const item = await fetchItem(itemId, signal);
-    if (item) return renderItem(item);
-  }
-  const username = tryParseUsername(path);
-  if (username) return handleUser(username, signal);
-  const kind = tryParseStoryKind(path);
-  if (kind) return handleStories(kind, 20, signal);
+  const itemResult = await tryHandleItem(path, signal);
+  if (itemResult) return itemResult;
+  const userResult = await tryHandleUser(path, signal);
+  if (userResult) return userResult;
+  const storiesResult = await tryHandleStories(path, signal);
+  if (storiesResult) return storiesResult;
+  return renderRawFirebaseJson(path, signal);
+}
 
+async function tryHandleItem(
+  path: string,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  const itemId = tryParseItemId(path);
+  if (itemId === null) return null;
+  const item = await fetchItem(itemId, signal);
+  return item ? renderItem(item) : null;
+}
+
+async function tryHandleUser(
+  path: string,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  const username = tryParseUsername(path);
+  if (!username) return null;
+  return handleUser(username, signal);
+}
+
+async function tryHandleStories(
+  path: string,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  const kind = tryParseStoryKind(path);
+  if (!kind) return null;
+  return handleStories(kind, 20, signal);
+}
+
+async function renderRawFirebaseJson(
+  path: string,
+  signal?: AbortSignal,
+): Promise<string> {
   const data = await fetchRawJson(path, signal);
   const jsonBlock = "\`\`\`json\n" + JSON.stringify(data, null, 2) + "\n\`\`\`";
   return `# Firebase API: /v0/${path}\n\n${jsonBlock}`;

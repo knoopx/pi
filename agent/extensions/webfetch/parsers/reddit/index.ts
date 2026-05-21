@@ -1,4 +1,4 @@
-import { createRetryFetch, defineParser } from "../../lib/parser-utils";
+import { createRetryFetch, defineParser } from "../../lib/parser-factory";
 import type { ParsedRedditUrl, RedditListing } from "./types";
 import { parseRedditUrl } from "./url-parsing";
 import { handleThread } from "./thread";
@@ -21,16 +21,34 @@ async function fetchRedditJson<T>(
   return redditFetch(url.toString(), signal);
 }
 
+function resolveLimit(parsed: ParsedRedditUrl): number {
+  return parsed.limit ?? 25;
+}
+
+function isTopSort(parsed: ParsedRedditUrl): boolean {
+  return (parsed.sort || "hot") === "top";
+}
+
+function buildSubredditParams(parsed: ParsedRedditUrl): Record<string, string> {
+  const params: Record<string, string> = {
+    limit: String(resolveLimit(parsed)),
+  };
+  if (isTopSort(parsed) && parsed.time) {
+    params.t = parsed.time;
+  }
+  return params;
+}
+
 async function handleSubreddit(
   parsed: ParsedRedditUrl,
   signal?: AbortSignal,
 ): Promise<string> {
-  if (!parsed.sub) throw new Error("Missing subreddit");
   const sub = parsed.sub;
+  if (!sub) throw new Error("Missing subreddit");
+
   const sort = parsed.sort || "hot";
-  const limit = parsed.limit ?? 25;
-  const params: Record<string, string> = { limit: String(limit) };
-  if (parsed.time && sort === "top") params.t = parsed.time;
+  const params = buildSubredditParams(parsed);
+
   const data = await fetchRedditJson<RedditListing>(
     `/r/${sub}/${sort}.json`,
     params,
@@ -49,15 +67,25 @@ async function handleFrontpage(signal?: AbortSignal): Promise<string> {
   return renderListing(`# Reddit — Hot`, data);
 }
 
+function resolveSearchParams(parsed: ParsedRedditUrl): {
+  query: string;
+  sort: string;
+  limit: number;
+} {
+  return {
+    query: parsed.query || "",
+    sort: parsed.sort || "relevance",
+    limit: parsed.limit ?? 25,
+  };
+}
+
 async function handleSearch(
   parsed: ParsedRedditUrl,
   signal?: AbortSignal,
 ): Promise<string> {
   if (!parsed.sub) throw new Error("Missing subreddit for search");
   const sub = parsed.sub;
-  const query = parsed.query || "";
-  const sort = parsed.sort || "relevance";
-  const limit = parsed.limit ?? 25;
+  const { query, sort, limit } = resolveSearchParams(parsed);
   const data = await fetchRedditJson<RedditListing>(
     `/r/${sub}/search.json`,
     {

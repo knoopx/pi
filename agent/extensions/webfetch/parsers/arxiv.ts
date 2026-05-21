@@ -1,5 +1,5 @@
 import { FETCH_OPTIONS } from "../lib/constants";
-import { defineParser } from "../lib/parser-utils";
+import { defineParser } from "../lib/parser-factory";
 import { retry } from "../lib/retry";
 const API_BASE = "https://export.arxiv.org/api/query";
 interface ArxivEntry {
@@ -21,19 +21,31 @@ interface ArxivPath {
   limit?: number;
 }
 function parseArxivUrl(url: string): ArxivPath | null {
+  const path = extractArxivPath(url);
+  if (!path) return null;
+  return tryParsePath(path);
+}
+
+function extractArxivPath(url: string): string | null {
   const match = url.match(/^https?:\/\/arxiv\.org\/(.+)$/);
   if (!match) return null;
   const rest = match[1].replace(/\/+$/, "");
-  if (!rest) return null;
-  const paperResult = tryParsePaperPath(rest);
-  if (paperResult) return paperResult;
-  const searchResult = tryParseSearchPath(rest);
-  if (searchResult) return searchResult;
-  const listResult = tryParseListPath(rest);
-  if (listResult) return listResult;
+  return rest || null;
+}
 
+function tryParsePath(rest: string): ArxivPath | null {
+  for (const parser of ARXIV_PATH_PARSERS) {
+    const result = parser(rest);
+    if (result) return result;
+  }
   return null;
 }
+
+const ARXIV_PATH_PARSERS: ((rest: string) => ArxivPath | null)[] = [
+  tryParsePaperPath,
+  tryParseSearchPath,
+  tryParseListPath,
+];
 function tryParsePaperPath(rest: string): ArxivPath | null {
   const match = rest.match(/^(?:abs|pdf|html)\/([^/]+)$/);
   if (match) return { type: "paper", id: match[1].replace(/\.pdf$/, "") };
@@ -78,19 +90,32 @@ function parseEntries(xml: string): ArxivEntry[] {
   }
   return entries;
 }
-function parseSingleEntry(e: string): ArxivEntry {
-  const rawId = extract(e, "id");
-  const arxivId = rawId
+function normalizeArxivId(rawId: string): string {
+  return rawId
     .replace(/^https?:\/\/arxiv\.org\/abs\//, "")
     .replace(/v\d+$/, "");
-  const summary = extract(e, "summary").replace(/\s+/g, " ");
-  const commentTag = extract(e, "arxiv:comment");
-  const primary = rawId.match(/primary_category.+term="([^"]+)"/)?.[1] ?? null;
+}
+
+function extractPrimaryCategory(rawId: string): string | null {
+  return rawId.match(/primary_category.+term="([^"]+)"/)?.[1] ?? null;
+}
+
+function extractSecondaryCategories(e: string): string[] {
   const secondary: string[] = [];
   for (const cat of extractAll(e, "arxiv:subject_category")) {
     const term = cat.match(/term="([^"]+)"/);
     if (term) secondary.push(term[1]);
   }
+  return secondary;
+}
+
+function parseSingleEntry(e: string): ArxivEntry {
+  const rawId = extract(e, "id");
+  const arxivId = normalizeArxivId(rawId);
+  const summary = extract(e, "summary").replace(/\s+/g, " ");
+  const commentTag = extract(e, "arxiv:comment");
+  const primary = extractPrimaryCategory(rawId);
+  const secondary = extractSecondaryCategories(e);
   const categories = mergeCategories(primary, secondary);
 
   return {
@@ -193,12 +218,25 @@ function renderEntry(entry: ArxivEntry): string {
 function renderEntryMeta(entry: ArxivEntry): string {
   return `**ID:** [${entry.id}](${entry.url})\n**Published:** ${entry.published}`;
 }
+function appendEntryFields(entry: ArxivEntry, parts: string[]): void {
+  const fields = buildEntryFields(entry);
+  parts.push(...fields);
+}
+
+function buildEntryFields(entry: ArxivEntry): string[] {
+  const fields: string[] = [];
+  if (entry.authors) fields.push(`**Authors:** ${entry.authors}`);
+  if (entry.categories?.length)
+    fields.push(`**Categories:** ${entry.categories.join(", ")}`);
+  if (entry.comments) {
+    fields.push("", `> ${entry.comments}`);
+  }
+  return fields;
+}
+
 function renderEntryOptional(entry: ArxivEntry): string[] {
   const parts: string[] = [];
-  if (entry.authors) parts.push(`**Authors:** ${entry.authors}`);
-  if (entry.categories?.length)
-    parts.push(`**Categories:** ${entry.categories.join(", ")}`);
-  if (entry.comments) parts.push("", `> ${entry.comments}`);
+  appendEntryFields(entry, parts);
   return parts;
 }
 function renderSearchResults(label: string, entries: ArxivEntry[]): string {

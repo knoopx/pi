@@ -99,7 +99,7 @@ describe("Reddit parser", () => {
 
   describe("snapshot", () => {
     beforeAll(async () => {
-      const { mockFetchWithFixtures } = await import("../../test/utils");
+      const { mockFetchWithFixtures } = await import("../../test/fixture-mock");
       mockFetchWithFixtures();
     });
     it("captures output for https://www.reddit.com/r/programming/hot.json", async () => {
@@ -113,6 +113,14 @@ describe("Reddit parser", () => {
     it("captures output for https://www.reddit.com/user/spez/submitted.json", async () => {
       const result = await parse(
         "https://www.reddit.com/user/spez/submitted.json",
+      );
+      expect(
+        typeof result === "string" ? result : String(result),
+      ).toMatchSnapshot();
+    });
+    it("captures output for thread https://www.reddit.com/r/typescript/comments/1t1p1ex/", async () => {
+      const result = await parse(
+        "https://www.reddit.com/r/typescript/comments/1t1p1ex/a_more_accurate_dts_bundler_for_rollup_powered_by/",
       );
       expect(
         typeof result === "string" ? result : String(result),

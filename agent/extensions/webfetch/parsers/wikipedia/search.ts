@@ -1,4 +1,4 @@
-import { createRetryFetchText } from "../../lib/parser-utils";
+import { createRetryFetchText } from "../../lib/parser-factory";
 
 const wikiFetchText = createRetryFetchText({ apiName: "Wikipedia" });
 
@@ -8,6 +8,24 @@ interface SearchResult {
   size?: number;
   timestamp?: number;
   pageid?: number;
+}
+
+function renderSearchResults(
+  query: string,
+  results: SearchResult[],
+  lang: string,
+): string {
+  const parts: string[] = [
+    `# Wikipedia — "${query}"`,
+    "",
+    `${results.length} result(s)`,
+  ];
+
+  for (const r of results) {
+    parts.push("", ...renderSearchResult(r, lang));
+  }
+
+  return parts.join("\n");
 }
 
 export async function handleSearch(
@@ -26,17 +44,11 @@ export async function handleSearch(
   if (!results?.length) {
     return `# Wikipedia Search: "${query}"\n\nNo articles found. Try a different search term.`;
   }
-  const parts: string[] = [
-    `# Wikipedia — "${query}"`,
-    "",
-    `${results.length} result(s)`,
-  ];
+  return renderSearchResults(query, results, lang);
+}
 
-  for (const r of results) {
-    parts.push("", ...renderSearchResult(r, lang));
-  }
-
-  return parts.join("\n");
+function stripHtmlTags(html: string): string {
+  return html.replace(/<[^>]*>/g, "");
 }
 
 function renderSearchResult(r: SearchResult, lang: string): string[] {
@@ -44,14 +56,7 @@ function renderSearchResult(r: SearchResult, lang: string): string[] {
   const lines: string[] = [`## [${r.title}](${pageUrl})`, ""];
 
   if (r.snippet) {
-    let clean = "";
-    let inTag = false;
-    for (const ch of r.snippet) {
-      if (ch === "<") inTag = true;
-      else if (ch === ">") inTag = false;
-      else if (!inTag) clean += ch;
-    }
-    lines.push(clean);
+    lines.push(stripHtmlTags(r.snippet));
   }
 
   return lines;

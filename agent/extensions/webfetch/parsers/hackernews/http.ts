@@ -1,4 +1,4 @@
-import { createRetryFetch, createRetryFetchText } from "../../lib/parser-utils";
+import { createRetryFetch, createRetryFetchText } from "../../lib/parser-factory";
 import type { HNItem, HNUser, StoryKind } from "./types";
 import { FIREBASE, ALGOLIA } from "./constants";
 

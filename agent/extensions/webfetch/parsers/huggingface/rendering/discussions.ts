@@ -1,4 +1,4 @@
-import { fmtAuthorBase } from "../../../../../shared/rendering/author";
+import { fmtAuthorBase } from "../../../lib/author";
 import { BASE } from "../http";
 import type { HFPath, HFDiscussionEvent, HFDiscussionDetail } from "../types";
 
@@ -23,15 +23,30 @@ function fmtReactions(
   return total > 0 ? `+${total}` : "";
 }
 
+function formatOrgName(org: { name: string; fullname?: string }): string {
+  if (org.fullname && org.fullname !== org.name) {
+    return `${org.name} (${org.fullname})`;
+  }
+  return org.name;
+}
+
 function fmtOrgName(detail: {
   org?: { name: string; fullname?: string };
 }): string | undefined {
   if (!detail.org) return undefined;
-  const orgName =
-    detail.org.fullname && detail.org.fullname !== detail.org.name
-      ? `${detail.org.name} (${detail.org.fullname})`
-      : detail.org.name;
+  const orgName = formatOrgName(detail.org);
   return `**Org:** ${orgName}`;
+}
+
+function buildCommentFlags(event: HFDiscussionEvent): string[] {
+  const flags: string[] = [];
+  if (event.data?.edited) flags.push("edited");
+  if (event.data?.hidden) flags.push("hidden");
+  return flags;
+}
+
+function buildCommentBody(event: HFDiscussionEvent): string {
+  return event.data?.latest?.raw?.trim() ?? "(empty)";
 }
 
 function renderEventComment(
@@ -40,10 +55,8 @@ function renderEventComment(
   author: string,
   date: string,
 ): void {
-  const flags: string[] = [];
-  if (event.data?.edited) flags.push("edited");
-  if (event.data?.hidden) flags.push("hidden");
-  const body = event.data?.latest?.raw?.trim() ?? "(empty)";
+  const flags = buildCommentFlags(event);
+  const body = buildCommentBody(event);
   const reactions = fmtReactions(event.data?.reactions ?? []);
   const footer = [flags.join(" "), reactions].filter(Boolean).join("  ");
   const content = footer ? `${body}\n\n${footer}` : body;
@@ -62,15 +75,43 @@ function renderEventStatusChange(
   parts.push(`status → ${status}`);
 }
 
+function resolveCommitRef(data: HFDiscussionEvent["data"]): string {
+  return data?.subject ?? data?.oid?.slice(0, 8) ?? "unknown";
+}
+
+function formatOidSuffix(data: HFDiscussionEvent["data"]): string {
+  return data?.oid ? ` (${data.oid.slice(0, 12)})` : "";
+}
+
 function renderEventCommit(
   parts: string[],
   event: HFDiscussionEvent,
   date: string,
 ): void {
-  const ref = event.data?.subject ?? event.data?.oid?.slice(0, 8) ?? "unknown";
-  const oid = event.data?.oid ? ` (${event.data.oid.slice(0, 12)})` : "";
+  const data = event.data;
   parts.push(`commit • ${date}`);
-  parts.push(`${ref}${oid}`);
+  parts.push(`${resolveCommitRef(data)}${formatOidSuffix(data)}`);
+}
+
+function dispatchEventRender(
+  parts: string[],
+  event: HFDiscussionEvent,
+  author: string,
+  date: string,
+): void {
+  switch (event.type) {
+    case "comment":
+      renderEventComment(parts, event, author, date);
+      return;
+    case "status-change":
+      renderEventStatusChange(parts, event, author, date);
+      return;
+    case "commit":
+      renderEventCommit(parts, event, date);
+      return;
+  }
+  parts.push(`${event.type} • ${date}`);
+  parts.push(author);
 }
 
 function renderEvent(parts: string[], event: HFDiscussionEvent): void {
@@ -78,22 +119,7 @@ function renderEvent(parts: string[], event: HFDiscussionEvent): void {
   const date = new Date(event.createdAt).toISOString().split("T")[0];
   parts.push("");
   parts.push(`---`);
-
-  switch (event.type) {
-    case "comment":
-      renderEventComment(parts, event, author, date);
-      break;
-    case "status-change":
-      renderEventStatusChange(parts, event, author, date);
-      break;
-    case "commit":
-      renderEventCommit(parts, event, date);
-      break;
-    default:
-      parts.push(`${event.type} • ${date}`);
-      parts.push(author);
-      break;
-  }
+  dispatchEventRender(parts, event, author, date);
 }
 
 function buildDiscussionHeader(
@@ -101,20 +127,35 @@ function buildDiscussionHeader(
   parsed: HFPath,
   url: string,
 ): string[] {
+  const createdDate = new Date(detail.createdAt).toISOString().split("T")[0];
   const header: string[] = [
     `# Discussion #${detail.num}`,
     `**Repo:** \`${parsed.owner}/${parsed.name}\``,
     `**Title:** ${detail.title}`,
-    `**Status:** ${detail.status === "closed" ? "closed" : "open"}`,
-    `**Type:** ${detail.isPullRequest ? "PR" : "Discussion"}`,
+    `**Status:** ${discussStatus(detail.status)}`,
+    `**Type:** ${discussType(detail.isPullRequest)}`,
     `**URL:** [${url}](${url})`,
-    `**Opened by:** ${fmtAuthor(detail.author)} on ${new Date(detail.createdAt).toISOString().split("T")[0]}`,
+    `**Opened by:** ${fmtAuthor(detail.author)} on ${createdDate}`,
   ];
-  if (detail.pinned) header.push("**Pinned:** yes");
-  if (detail.locked) header.push("**Locked:** yes");
-  const orgName = fmtOrgName(detail);
-  if (orgName) header.push(orgName);
+  header.push(...buildOptionalHeaderFields(detail));
   return header;
+}
+
+function buildOptionalHeaderFields(detail: HFDiscussionDetail): string[] {
+  const fields: string[] = [];
+  if (detail.pinned) fields.push("**Pinned:** yes");
+  if (detail.locked) fields.push("**Locked:** yes");
+  const orgName = fmtOrgName(detail);
+  if (orgName) fields.push(orgName);
+  return fields;
+}
+
+function discussStatus(status: string): string {
+  return status === "closed" ? "closed" : "open";
+}
+
+function discussType(isPullRequest: boolean): string {
+  return isPullRequest ? "PR" : "Discussion";
 }
 
 export function renderDiscussionDetail(
@@ -129,6 +170,33 @@ export function renderDiscussionDetail(
   return parts.join("\n");
 }
 
+function formatDiscussionItem(
+  d: {
+    num: number;
+    title: string;
+    status: string;
+    isPullRequest: boolean;
+    pinned: boolean;
+  },
+  url: string,
+): string {
+  const type = d.isPullRequest ? "PR" : "Disc";
+  const status = d.status === "closed" ? "○ closed" : "● open";
+  const pinned = d.pinned ? " ⓟ" : "";
+  return `- [${d.num}](${url}/${d.num}) ${status} ${type}${pinned} — ${d.title}`;
+}
+
+function buildDiscussionsHeader(parsed: HFPath): string[] {
+  const header: string[] = [
+    `# Discussions`,
+    `**Repo:** \`${parsed.owner}/${parsed.name}\``,
+  ];
+  if (parsed.kind !== "model") {
+    header.push(`**Kind:** ${parsed.kind}`);
+  }
+  return header;
+}
+
 export function renderDiscussionsList(
   parsed: HFPath,
   discussions: Array<{
@@ -141,22 +209,13 @@ export function renderDiscussionsList(
 ): string {
   const url = `${BASE}/${parsed.owner}/${parsed.name}/discussions`;
   const parts: string[] = [
-    `# Discussions`,
-    `**Repo:** \`${parsed.owner}/${parsed.name}\``,
+    ...buildDiscussionsHeader(parsed),
     "",
     `${discussions.length} discussion(s) found`,
   ];
-  if (parsed.kind !== "model") {
-    parts.push(`**Kind:** ${parsed.kind}`);
-  }
   for (const d of discussions) {
-    const type = d.isPullRequest ? "PR" : "Disc";
-    const status = d.status === "closed" ? "○ closed" : "● open";
-    const pinned = d.pinned ? " ⓟ" : "";
     parts.push("");
-    parts.push(
-      `- [${d.num}](${url}/${d.num}) ${status} ${type}${pinned} — ${d.title}`,
-    );
+    parts.push(formatDiscussionItem(d, url));
   }
   return parts.join("\n");
 }

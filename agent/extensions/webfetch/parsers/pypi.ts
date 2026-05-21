@@ -5,7 +5,7 @@ import {
   defineParser,
   requireVersion,
   type VersionedPackagePath,
-} from "../lib/parser-utils";
+} from "../lib/parser-factory";
 
 interface PypiPath extends VersionedPackagePath {
   kind: "package" | "version";
@@ -48,33 +48,46 @@ interface PypiPackageInfo {
   }>;
 }
 
+function extractLicenseFromObject(license: object): string | null {
+  const licenseObj = license as {
+    license_expression?: string;
+    name?: string;
+  };
+  const val = licenseObj.license_expression ?? licenseObj.name;
+  return typeof val === "string" ? val : null;
+}
+
+function resolveLicense(value: string | object | undefined): string | null {
+  if (typeof value === "string") return value.trim() || null;
+  if (typeof value !== "object" || value === null) return null;
+  return extractLicenseFromObject(value);
+}
+
 function extractLicense(info: PypiPackageInfo["info"]): string | null {
   if (info.license_expression) return info.license_expression;
-  if (typeof info.license === "string" && info.license.trim()) {
-    return info.license.trim();
-  }
-  if (typeof info.license === "object" && info.license !== null) {
-    const licenseObj = info.license as {
-      license_expression?: string;
-      name?: string;
-    };
-    const val = licenseObj.license_expression ?? licenseObj.name;
-    if (typeof val === "string") return val;
-  }
-  return null;
+  return resolveLicense(info.license);
+}
+
+function appendAuthorInfo(
+  parts: string[],
+  info: PypiPackageInfo["info"],
+): void {
+  if (info.author) parts.push(`author: ${info.author}`);
+  if (info.maintainer) parts.push(`maintainer: ${info.maintainer}`);
+}
+
+function appendMetadata(parts: string[], info: PypiPackageInfo["info"]): void {
+  const license = extractLicense(info);
+  if (license) parts.push(`license: ${license}`);
+  appendAuthorInfo(parts, info);
+  if (info.requires_python) parts.push(`python: >=${info.requires_python}`);
 }
 
 function formatPypiHeader(info: PypiPackageInfo["info"]): string[] {
   const parts: string[] = [`# ${info.name}`];
   if (info.summary) parts.push(info.summary);
   parts.push(`version: ${info.version || "unknown"}`);
-
-  const license = extractLicense(info);
-  if (license) parts.push(`license: ${license}`);
-  if (info.author) parts.push(`author: ${info.author}`);
-  if (info.maintainer) parts.push(`maintainer: ${info.maintainer}`);
-  if (info.requires_python) parts.push(`python: >=${info.requires_python}`);
-
+  appendMetadata(parts, info);
   return parts;
 }
 
@@ -84,20 +97,32 @@ function formatPypiKeywords(keywords: string): string[] {
   return ["", `**Keywords:** ${tags.join(", ")}`];
 }
 
+function ensureGroup(grouped: Record<string, string[]>, key: string): void {
+  if (!grouped[key]) grouped[key] = [];
+}
+
 function groupClassifiers(classifiers: string[]): Record<string, string[]> {
   const grouped: Record<string, string[]> = {};
   for (const c of classifiers) {
     const parts2 = c.split(" :: ");
     if (parts2.length >= 2) {
       const key = parts2[0];
-      if (!grouped[key]) grouped[key] = [];
+      ensureGroup(grouped, key);
       grouped[key].push(parts2.slice(1).join(" :: "));
     } else {
-      if (!grouped["Other"]) grouped["Other"] = [];
+      ensureGroup(grouped, "Other");
       grouped["Other"].push(c);
     }
   }
   return grouped;
+}
+
+function renderClassifierGroup(category: string, values: string[]): string[] {
+  const lines: string[] = ["", `**${category}:**`];
+  for (const v of values) {
+    lines.push(`- ${v}`);
+  }
+  return lines;
 }
 
 function formatPypiClassifiers(classifiers: string[] | undefined): string[] {
@@ -105,12 +130,19 @@ function formatPypiClassifiers(classifiers: string[] | undefined): string[] {
   const grouped = groupClassifiers(classifiers);
   const lines: string[] = [];
   for (const [category, values] of Object.entries(grouped)) {
-    lines.push("", `**${category}:**`);
-    for (const v of values) {
-      lines.push(`- ${v}`);
-    }
+    lines.push(...renderClassifierGroup(category, values));
   }
   return lines;
+}
+
+function addUniqueLink(
+  links: Array<{ label: string; url: string }>,
+  label: string,
+  url: string,
+): void {
+  if (!links.find((l) => l.url === url)) {
+    links.push({ label, url });
+  }
 }
 
 function collectPypiLinks(
@@ -120,9 +152,7 @@ function collectPypiLinks(
   if (info.home_page) links.push({ label: "Homepage", url: info.home_page });
   if (info.project_urls) {
     for (const [label, url] of Object.entries(info.project_urls)) {
-      if (!links.find((l) => l.url === url)) {
-        links.push({ label, url });
-      }
+      addUniqueLink(links, label, url);
     }
   }
   return links;
@@ -148,15 +178,30 @@ function formatPypiDownloads(info: PypiPackageInfo["info"]): string[] {
   ];
 }
 
+function formatWheelEntry(u: {
+  filename: string;
+  url: string;
+  size?: number;
+}): string {
+  const size = u.size ? `(${(u.size / 1024).toFixed(1)} KB)` : "";
+  return `- [${u.filename}](${u.url}) ${size}`;
+}
+
+function getWheelUrls(
+  urls: PypiPackageInfo["urls"],
+): Array<{ filename: string; url: string; size?: number }> {
+  if (!urls) return [];
+  return urls.filter((u) => u.packagetype === "bdist_wheel");
+}
+
 function formatPypiWheels(urls: PypiPackageInfo["urls"] | undefined): string[] {
   if (!urls?.length) return [];
-  const dists = urls.filter((u) => u.packagetype === "bdist_wheel");
-  if (dists.length === 0) return [];
+  const dists = getWheelUrls(urls);
+  if (!dists.length) return [];
 
   const lines: string[] = ["", `**Releases (${dists.length} wheel(s)):**`];
   for (const u of dists) {
-    const size = u.size ? `(${(u.size / 1024).toFixed(1)} KB)` : "";
-    lines.push(`- [${u.filename}](${u.url}) ${size}`);
+    lines.push(formatWheelEntry(u));
   }
   return lines;
 }
@@ -198,17 +243,25 @@ function formatVersionFiles(
   return lines;
 }
 
+function formatVersionWheelEntry(u: {
+  filename: string;
+  url: string;
+  size?: number;
+}): string {
+  const size = u.size ? ` (${(u.size / 1024).toFixed(1)} KB)` : "";
+  return `- [${u.filename}](${u.url})${size}`;
+}
+
 function formatVersionWheels(
   urls: PypiPackageInfo["urls"] | undefined,
 ): string[] {
   if (!urls?.length) return [];
-  const wheels = urls.filter((u) => u.packagetype === "bdist_wheel");
-  if (wheels.length === 0) return [];
+  const wheels = getWheelUrls(urls);
+  if (!wheels.length) return [];
 
   const lines: string[] = ["", `**Download (${wheels.length} wheel(s)):**`];
   for (const u of wheels) {
-    const size = u.size ? ` (${(u.size / 1024).toFixed(1)} KB)` : "";
-    lines.push(`- [${u.filename}](${u.url})${size}`);
+    lines.push(formatVersionWheelEntry(u));
   }
   return lines;
 }
@@ -226,7 +279,7 @@ const handleVersion = createPackageVersionHandler<PypiPackageInfo>({
     if (info.summary) header.push(info.summary);
     const license = extractLicense(info);
     if (license) header.push(`license: ${license}`);
-    if (info.author) header.push(`author: ${info.author}`);
+    appendAuthorInfo(header, info);
     if (info.requires_python) header.push(`python: >=${info.requires_python}`);
     return header;
   },

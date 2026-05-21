@@ -1,20 +1,7 @@
-type RetryDecision = "throw" | "retry" | "abort";
-
-function classifyError(error: Error): "throw" | null {
-  if (error.message.includes("Aborted")) return "throw";
+function classifyError(error: Error): boolean {
+  if (error.message.includes("Aborted")) return true;
   const statusMatch = error.message.match(/HTTP (\d+)/);
-  if (statusMatch && parseInt(statusMatch[1], 10) < 500) return "throw";
-  return null;
-}
-
-function determineAction(
-  error: Error,
-  attempt: number,
-  maxRetries: number,
-): RetryDecision {
-  if (classifyError(error) === "throw") return "throw";
-  if (attempt >= maxRetries) return "abort";
-  return "retry";
+  return !!(statusMatch && parseInt(statusMatch[1], 10) < 500);
 }
 
 function computeDelay(attempt: number, baseDelay: number, cap: number): number {
@@ -27,23 +14,33 @@ export interface RetryOptions {
   maxDelay?: number;
 }
 
+function resolveRetryOptions(options: RetryOptions = {}): {
+  maxRetries: number;
+  retryDelay: number;
+  maxDelay: number;
+} {
+  return {
+    maxRetries: options.maxRetries ?? 2,
+    retryDelay: options.retryDelay ?? 500,
+    maxDelay: options.maxDelay ?? 5000,
+  };
+}
+
 export async function retry<T>(
   fn: () => Promise<T>,
   options?: RetryOptions,
 ): Promise<T> {
-  const maxRetries = options?.maxRetries ?? 2;
-  const retryDelay = options?.retryDelay ?? 500;
-  const maxDelay = options?.maxDelay ?? 5000;
+  const opts = resolveRetryOptions(options);
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const result = await runAttempt(fn, attempt, {
-      maxRetries,
-      retryDelay,
-      maxDelay,
-    });
+  for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
+    const result = await runAttempt(fn, attempt, opts);
     if (result !== undefined) return result;
   }
   throw new Error("Retry loop completed without error");
+}
+
+function captureError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
 }
 
 async function runAttempt<T>(
@@ -54,21 +51,15 @@ async function runAttempt<T>(
   try {
     return await fn();
   } catch (error) {
-    const lastError = error instanceof Error ? error : new Error(String(error));
-    const decision = determineAction(lastError, attempt, opts.maxRetries);
-    switch (decision) {
-      case "throw":
-        throw lastError;
-      case "retry":
-        await new Promise((resolve) =>
-          setTimeout(
-            resolve,
-            computeDelay(attempt, opts.retryDelay, opts.maxDelay),
-          ),
-        );
-        return undefined;
-      case "abort":
-        throw lastError;
-    }
+    const lastError = captureError(error);
+    if (classifyError(lastError)) throw lastError;
+    if (attempt >= opts.maxRetries) throw lastError;
+    await new Promise((resolve) =>
+      setTimeout(
+        resolve,
+        computeDelay(attempt, opts.retryDelay, opts.maxDelay),
+      ),
+    );
+    return undefined;
   }
 }

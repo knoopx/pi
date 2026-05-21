@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Root as MdastRoot } from "mdast";
-import { markdownToMdast, cleanTree } from "./mdast-utils";
+import { markdownToMdast, cleanTree } from "./mdast-cleaner";
 
 function expectLinkPreserved(md: string): void {
   const tree = cleanTree(markdownToMdast(md));

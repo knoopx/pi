@@ -1,4 +1,4 @@
-import { defineParser } from "../../lib/parser-utils";
+import { defineParser } from "../../lib/parser-factory";
 import { parseYoutubeUrl, type YoutubePath } from "./url-parsing";
 import { handleVideo } from "./video";
 import { handlePlaylist } from "./playlist";

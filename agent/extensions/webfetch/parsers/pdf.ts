@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import type { Parser } from "../types";
-import { spawnChild } from "../lib/spawn-utils";
+import { spawnChild } from "../lib/child-spawn";
 
 function parsePdfUrl(url: string): { fileName: string } | null {
   try {
@@ -18,11 +18,18 @@ async function downloadPdf(url: string): Promise<Buffer> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
   const buffer = Buffer.from(await res.arrayBuffer());
-  const contentType = res.headers.get("content-type") || "";
-  if (!contentType.includes("pdf") && !contentType.includes("octet-stream")) {
-    throw new Error(`Expected PDF but got ${contentType.split(";")[0]}`);
-  }
+  validatePdfContentType(res);
   return buffer;
+}
+
+function validatePdfContentType(res: Response): void {
+  const contentType = res.headers.get("content-type") || "";
+  if (isPdfContentType(contentType)) return;
+  throw new Error(`Expected PDF but got ${contentType.split(";")[0]}`);
+}
+
+function isPdfContentType(contentType: string): boolean {
+  return contentType.includes("pdf") || contentType.includes("octet-stream");
 }
 
 interface PdfMetadata {
@@ -48,28 +55,26 @@ function extractPdfField(
 async function getMetadataFromPdf(data: Buffer): Promise<PdfMetadata> {
   const raw = await spawnChild("pdfinfo", ["-", "-json"], { data });
   const parsed = JSON.parse(raw) as Record<string, unknown>;
+  return buildPdfMetadata(parsed);
+}
 
-  const meta: PdfMetadata = { totalPages: 0 };
-
-  meta.title = extractPdfField(parsed, "Title");
-  meta.author = extractPdfField(parsed, "Author");
-  meta.subject = extractPdfField(parsed, "Subject");
-  meta.creator = extractPdfField(parsed, "Creator");
-  meta.producer = extractPdfField(parsed, "Producer");
-
-  if (typeof parsed.Pages === "number") {
-    meta.totalPages = parsed.Pages;
-  }
-
-  if (parsed.Encrypted === "yes") {
-    meta.encrypted = true;
-  }
-
-  if (meta.totalPages > 0) {
-    meta.pageSize = `${meta.totalPages} page${meta.totalPages !== 1 ? "s" : ""}`;
-  }
-
+function buildPdfMetadata(parsed: Record<string, unknown>): PdfMetadata {
+  const meta: PdfMetadata = {
+    totalPages: typeof parsed.Pages === "number" ? parsed.Pages : 0,
+    title: extractPdfField(parsed, "Title"),
+    author: extractPdfField(parsed, "Author"),
+    subject: extractPdfField(parsed, "Subject"),
+    creator: extractPdfField(parsed, "Creator"),
+    producer: extractPdfField(parsed, "Producer"),
+    encrypted: parsed.Encrypted === "yes",
+  };
+  meta.pageSize = formatPageSize(meta.totalPages);
   return meta;
+}
+
+function formatPageSize(totalPages: number): string | undefined {
+  if (totalPages <= 0) return undefined;
+  return `${totalPages} page${totalPages !== 1 ? "s" : ""}`;
 }
 
 async function extractTextFromPdf(
@@ -102,22 +107,36 @@ async function processPdfFile(
   return processPdfData(data, fileName, signal);
 }
 
-function formatPdfHeader(meta: PdfMetadata, fileName: string): string[] {
-  const title = meta.title || fileName.replace(/[-_]/g, " ");
-  const lines: string[] = [`# ${title}`, ""];
-
+function collectPdfFields(meta: PdfMetadata): string[] {
   const fields: string[] = [];
   if (meta.author) fields.push(`**Author:** ${meta.author}`);
   if (meta.subject) fields.push(`**Subject:** ${meta.subject}`);
-  if (meta.creator) fields.push(`**Creator:** ${meta.creator}`);
-  if (meta.producer) fields.push(`**Producer:** ${meta.producer}`);
-  if (meta.pageSize) fields.push(`**Pages:** ${meta.pageSize}`);
+  appendPdfField(fields, "Creator", meta.creator);
+  appendPdfField(fields, "Producer", meta.producer);
+  appendPdfField(fields, "Pages", String(meta.pageSize ?? ""));
+  return fields;
+}
 
-  if (fields.length > 0) {
-    lines.push(fields.join(" • "));
-  }
+function appendPdfField(
+  fields: string[],
+  label: string,
+  value: string | number | undefined,
+): void {
+  if (value) fields.push(`**${label}:** ${value}`);
+}
 
+function formatPdfHeader(meta: PdfMetadata, fileName: string): string[] {
+  const title = meta.title || fileName.replace(/[-_]/g, " ");
+  const lines: string[] = [`# ${title}`, ""];
+  const fields = collectPdfFields(meta);
+  if (fields.length > 0) lines.push(fields.join(" • "));
   return lines;
+}
+
+function wrapPdfError(action: string, err: unknown): never {
+  throw new Error(
+    `${action} failed: ${err instanceof Error ? err.message : String(err)}`,
+  );
 }
 
 async function processPdfData(
@@ -129,9 +148,7 @@ async function processPdfData(
   try {
     meta = await getMetadataFromPdf(data);
   } catch (err) {
-    throw new Error(
-      `pdfinfo failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
+    wrapPdfError("pdfinfo", err);
   }
 
   if (meta.encrypted) {
@@ -142,9 +159,7 @@ async function processPdfData(
   try {
     text = await extractTextFromPdf(data, meta.totalPages, signal);
   } catch (err) {
-    throw new Error(
-      `pdftotext failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
+    wrapPdfError("pdftotext", err);
   }
 
   const lines: string[] = [...formatPdfHeader(meta, fileName)];

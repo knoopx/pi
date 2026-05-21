@@ -1,4 +1,4 @@
-import { createRetryFetch, createRetryFetchText } from "../../lib/parser-utils";
+import { createRetryFetch, createRetryFetchText } from "../../lib/parser-factory";
 import type { HFRepo } from "./types";
 
 const BASE = "https://huggingface.co";

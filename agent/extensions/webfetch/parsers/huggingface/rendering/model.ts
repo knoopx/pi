@@ -1,13 +1,18 @@
 import { filterUserTags } from "../../../../../shared/format/hf-tags";
-import { fetchJSON, BASE } from "../http";
+import { fetchJSON } from "../http";
 import type { HFModelDetail, HFTreeEntry, HFPath } from "../types";
 import { renderLicenseAndBase } from "./repo";
+import { renderFileListSection } from "./files";
 
 async function fetchModelDetail(
   modelId: string,
   signal?: AbortSignal,
 ): Promise<HFModelDetail> {
   return fetchJSON<HFModelDetail>(`models/${modelId}`, signal);
+}
+
+function captureError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
 }
 
 async function fetchModelTree(
@@ -24,35 +29,68 @@ async function fetchModelTree(
         signal,
       );
     } catch (error) {
-      if (error instanceof Error) lastError = error;
+      lastError = captureError(error);
     }
   }
   throw lastError ?? new Error("Failed to fetch model tree");
 }
 
-function renderTransformersInfo(parts: string[], detail: HFModelDetail): void {
+function buildTransformerMeta(detail: HFModelDetail): string[] {
   const ti = detail.transformersInfo;
-  if (!ti) return;
+  if (!ti) return [];
   const meta: string[] = [];
   if (ti.auto_model) meta.push(`auto_model=${ti.auto_model}`);
   if (ti.processor) meta.push(`processor=${ti.processor}`);
+  return meta;
+}
+
+function renderTransformersInfo(parts: string[], detail: HFModelDetail): void {
+  const meta = buildTransformerMeta(detail);
   if (meta.length) {
     parts.push(`**Transformers:** ${meta.join(", ")}`);
   }
 }
 
+function hasConfigData(detail: HFModelDetail): boolean {
+  return !!(detail.config?.architectures?.length || detail.config?.model_type);
+}
+
 function renderConfigInfo(parts: string[], detail: HFModelDetail): void {
-  if (!detail.config?.architectures?.length && !detail.config?.model_type)
-    return;
+  const config = detail.config;
+  if (!hasConfigData(detail) || !config) return;
   parts.push("");
   parts.push("## Configuration");
-  if (detail.config.architectures?.length) {
-    parts.push(`**Architecture:** ${detail.config.architectures.join(", ")}`);
-  }
-  if (detail.config.model_type) {
-    parts.push(`**Model type:** ${detail.config.model_type}`);
-  }
+  appendArchitectures(parts, config);
+  appendModelType(parts, config);
   renderTransformersInfo(parts, detail);
+}
+
+function appendArchitectures(
+  parts: string[],
+  config: HFModelDetail["config"],
+): void {
+  if (config?.architectures?.length) {
+    parts.push(`**Architecture:** ${config.architectures.join(", ")}`);
+  }
+}
+
+function appendModelType(
+  parts: string[],
+  config: HFModelDetail["config"],
+): void {
+  if (config?.model_type) {
+    parts.push(`**Model type:** ${config.model_type}`);
+  }
+}
+
+function formatTag(tag: string): string {
+  const colon = tag.indexOf(":");
+  if (colon <= 0) return tag;
+  return `${tag.slice(0, colon)}: ${tag.slice(colon + 1)}`;
+}
+
+function shouldRenderTags(cardTags: string[]): boolean {
+  return cardTags.length > 0 && cardTags.length <= 10;
 }
 
 function renderCardData(parts: string[], detail: HFModelDetail): void {
@@ -60,16 +98,18 @@ function renderCardData(parts: string[], detail: HFModelDetail): void {
   if (!Array.isArray(detail.tags)) return;
   const cardTags = filterUserTags(detail.tags);
   renderLicenseAndBase(parts, detail.tags, cardData);
-  if (cardTags.length > 0 && cardTags.length <= 10) {
+  if (shouldRenderTags(cardTags)) {
     parts.push("");
     parts.push("**Tags:**");
     for (const tag of cardTags) {
-      const colon = tag.indexOf(":");
-      const formatted =
-        colon > 0 ? `${tag.slice(0, colon)}: ${tag.slice(colon + 1)}` : tag;
-      parts.push(`- ${formatted}`);
+      parts.push(`- ${formatTag(tag)}`);
     }
   }
+}
+
+function joinValue(value: unknown): string {
+  if (Array.isArray(value)) return (value as string[]).join(", ");
+  return String(value);
 }
 
 function renderCardDataFields(
@@ -79,31 +119,26 @@ function renderCardDataFields(
   if (!cardData) return;
   if (cardData.language) {
     parts.push("");
-    parts.push(
-      "**Languages:** " +
-        (Array.isArray(cardData.language)
-          ? (cardData.language as string[]).join(", ")
-          : String(cardData.language)),
-    );
+    parts.push("**Languages:** " + joinValue(cardData.language));
   }
   if (cardData.datasets) {
-    parts.push(
-      "**Datasets:** " +
-        (Array.isArray(cardData.datasets)
-          ? (cardData.datasets as string[]).join(", ")
-          : String(cardData.datasets)),
-    );
+    parts.push("**Datasets:** " + joinValue(cardData.datasets));
   }
 }
 
+function formatGatedStatus(gated: string | boolean): string {
+  return `gated: ${typeof gated === "string" ? gated : "yes"}`;
+}
+
+function collectStatusParts(detail: HFModelDetail): string[] {
+  const parts: string[] = [];
+  if (detail.gated) parts.push(formatGatedStatus(detail.gated));
+  if (detail.private) parts.push("private: yes");
+  return parts;
+}
+
 function renderStatusInfo(parts: string[], detail: HFModelDetail): void {
-  const statusParts: string[] = [];
-  if (detail.gated) {
-    statusParts.push(
-      `gated: ${typeof detail.gated === "string" ? detail.gated : "yes"}`,
-    );
-  }
-  if (detail.private) statusParts.push("private: yes");
+  const statusParts = collectStatusParts(detail);
   if (detail.disabled) statusParts.push("disabled: yes");
   if (statusParts.length) {
     parts.push("");
@@ -111,16 +146,21 @@ function renderStatusInfo(parts: string[], detail: HFModelDetail): void {
   }
 }
 
+function extractWidgetText(w: {
+  text?: string;
+  messages?: Array<{ role?: string; content: string }>;
+}): string | null {
+  if (w.text) return w.text;
+  const msg = w.messages?.find((m) => m.role === "user");
+  return msg ? msg.content : null;
+}
+
 function extractWidgetExamples(detail: HFModelDetail): string[] {
   if (!Array.isArray(detail.widgetData)) return [];
   const examples: string[] = [];
   for (const w of detail.widgetData) {
-    if (w.text) {
-      examples.push(w.text);
-    } else if (w.messages?.length) {
-      const msg = w.messages.find((m) => m.role === "user");
-      if (msg) examples.push(msg.content);
-    }
+    const text = extractWidgetText(w);
+    if (text) examples.push(text);
   }
   return examples;
 }
@@ -135,16 +175,36 @@ function renderWidgetExamples(parts: string[], detail: HFModelDetail): void {
   }
 }
 
-function formatBenchmarkResult(r: Record<string, unknown>): string {
+function extractDatasetName(rm: { dataset?: { name?: string } }): string {
+  return rm.dataset?.name ?? "?";
+}
+
+function extractMetricName(
+  metric: { type?: string; name?: string } | undefined,
+): string {
+  if (metric?.name) return metric.name;
+  if (metric?.type) return metric.type;
+  return "score";
+}
+
+function extractBenchmarkFields(r: Record<string, unknown>): {
+  datasetName: string;
+  metricName: string;
+  value: string;
+} {
   const rm = r as { dataset?: { name?: string }; metrics?: unknown[] };
   const metric = rm.metrics?.[0] as
     | { type?: string; name?: string; value?: number }
     | undefined;
+  return {
+    datasetName: extractDatasetName(rm),
+    metricName: extractMetricName(metric),
+    value: formatMetricValue(metric?.value),
+  };
+}
 
-  const datasetName = rm.dataset?.name ?? "?";
-  const metricName = metric?.name ?? metric?.type ?? "score";
-  const value = formatMetricValue(metric?.value);
-
+function formatBenchmarkResult(r: Record<string, unknown>): string {
+  const { datasetName, metricName, value } = extractBenchmarkFields(r);
   return `- ${datasetName}: ${metricName} = ${value}`;
 }
 
@@ -153,9 +213,14 @@ function formatMetricValue(value: unknown): string {
   return String(value ?? "?");
 }
 
-function renderBenchmarks(parts: string[], detail: HFModelDetail): void {
+function hasModelIndex(detail: HFModelDetail): boolean {
   const modelIndex = detail["model-index"];
-  if (!Array.isArray(modelIndex) || modelIndex.length === 0) return;
+  return Array.isArray(modelIndex) && modelIndex.length > 0;
+}
+
+function renderBenchmarks(parts: string[], detail: HFModelDetail): void {
+  if (!hasModelIndex(detail)) return;
+  const modelIndex = detail["model-index"] as Record<string, unknown>[];
   const results = modelIndex.flatMap(
     (mi) =>
       ((mi as { results?: unknown[] }).results ?? []) as Record<
@@ -163,7 +228,7 @@ function renderBenchmarks(parts: string[], detail: HFModelDetail): void {
         unknown
       >[],
   );
-  if (results.length === 0) return;
+  if (!results.length) return;
   parts.push("");
   parts.push("## Benchmarks");
   for (const r of results) {
@@ -180,124 +245,30 @@ function renderSpaces(parts: string[], detail: HFModelDetail): void {
   }
 }
 
-function formatSize(bytes: number): string {
-  const gb = bytes / 1_073_741_824;
-  if (gb >= 1) return `${gb.toFixed(1)}GB`;
-  const mb = bytes / 1_048_576;
-  if (mb >= 1) return `${mb.toFixed(0)}MB`;
-  return `${(bytes / 1024).toFixed(0)}KB`;
+function isGgufModel(info: Record<string, unknown>): boolean {
+  return Array.isArray(info.tags) && info.tags.includes("gguf");
 }
 
-function hasAnyDigit(value: string): boolean {
-  for (const char of value) {
-    if (char >= "0" && char <= "9") return true;
-  }
-  return false;
-}
-
-function isQuantFormat(c: string): boolean {
-  return isQFormat(c) || isFloatFormat(c) || isMxfpFormat(c) || isUdFormat(c);
-}
-
-function isQFormat(c: string): boolean {
-  return (c.startsWith("IQ") || c.startsWith("Q")) && hasAnyDigit(c);
-}
-
-function isFloatFormat(c: string): boolean {
-  return c === "BF16" || c === "F16" || c === "F32";
-}
-
-function isMxfpFormat(c: string): boolean {
-  return c.startsWith("MXFP");
-}
-
-function isUdFormat(c: string): boolean {
-  return c.startsWith("UD") && hasAnyDigit(c);
-}
-
-function guessQuantFormat(path: string): string {
-  const file = path.slice(path.lastIndexOf("/") + 1);
-  const base = file.endsWith(".gguf") ? file.slice(0, -5) : file;
-  const chunks = base
-    .split("-")
-    .flatMap((chunk) => chunk.split("."))
-    .map((chunk) => chunk.toUpperCase());
-
-  for (let i = chunks.length - 1; i >= 0; i -= 1) {
-    const c = chunks[i];
-    if (c.length === 0) continue;
-    if (isQuantFormat(c)) return c;
-  }
-  return "UNKNOWN";
-}
-
-function renderGgufFiles(
+async function renderModelTreeSection(
   parts: string[],
   parsed: HFPath,
-  tree: HFTreeEntry[],
-): void {
-  const ggufFiles = tree.filter(
-    (f) => f.type === "file" && f.path.endsWith(".gguf"),
-  );
-  if (ggufFiles.length === 0) return;
-  parts.push("");
-  parts.push(`## Quant files (${ggufFiles.length})`);
-  for (const f of ggufFiles) {
-    const size = (f.lfs as { size?: number } | undefined)?.size ?? f.size ?? 0;
-    const format = guessQuantFormat(f.path);
-    parts.push(
-      `- ${format} — [${f.path}](${BASE}/${parsed.owner}/${parsed.name}/blob/main/${encodeURIComponent(f.path)}) (${formatSize(size)})`,
-    );
-  }
-}
-
-function renderWeightFiles(
-  parts: string[],
-  parsed: HFPath,
-  tree: HFTreeEntry[],
-): void {
-  const weightExts = [".safetensors", ".bin", ".pt", ".onnx"];
-  const weights = tree
-    .filter(
-      (f) =>
-        f.type === "file" && weightExts.some((ext) => f.path.endsWith(ext)),
-    )
-    .sort((a, b) => (a.size ?? 0) - (b.size ?? 0));
-  if (weights.length === 0) return;
-  parts.push("");
-  const totalSize = weights.reduce((s, f) => s + (f.size ?? 0), 0);
-  parts.push(
-    `## Model weights (${weights.length} files, ${formatSize(totalSize)} total)`,
-  );
-  for (const w of weights) {
-    const size = (w.lfs as { size?: number } | undefined)?.size ?? w.size ?? 0;
-    parts.push(
-      `- [${w.path}](${BASE}/${parsed.owner}/${parsed.name}/blob/main/${encodeURIComponent(w.path)}) (${formatSize(size)})`,
-    );
-  }
-}
-
-function renderFileListSection(
-  parts: string[],
-  parsed: HFPath,
-  tree: HFTreeEntry[],
   isGguf: boolean,
-): void {
-  if (isGguf) {
-    renderGgufFiles(parts, parsed, tree);
-  } else {
-    renderWeightFiles(parts, parsed, tree);
-  }
-}
-
-export async function renderModelDetails(
-  parts: string[],
-  parsed: HFPath,
-  info: Record<string, unknown>,
   signal?: AbortSignal,
 ): Promise<void> {
-  const isGguf = Array.isArray(info.tags) && info.tags.includes("gguf");
+  try {
+    const tree = await fetchModelTree(parsed.owner + "/" + parsed.name, signal);
+    renderFileListSection(parts, parsed, tree, isGguf);
+  } catch {
+    // tree fetch is optional
+  }
+}
 
+async function renderModelDetailSections(
+  parts: string[],
+  parsed: HFPath,
+  isGguf: boolean,
+  signal?: AbortSignal,
+): Promise<void> {
   try {
     const detail = await fetchModelDetail(
       parsed.owner + "/" + parsed.name,
@@ -315,16 +286,18 @@ export async function renderModelDetails(
     renderBenchmarks(parts, detail);
     renderSpaces(parts, detail);
 
-    try {
-      const tree = await fetchModelTree(
-        parsed.owner + "/" + parsed.name,
-        signal,
-      );
-      renderFileListSection(parts, parsed, tree, isGguf);
-    } catch {
-      // tree fetch is optional
-    }
+    await renderModelTreeSection(parts, parsed, isGguf, signal);
   } catch {
     // model detail fetch failed
   }
+}
+
+export async function renderModelDetails(
+  parts: string[],
+  parsed: HFPath,
+  info: Record<string, unknown>,
+  signal?: AbortSignal,
+): Promise<void> {
+  const isGguf = isGgufModel(info);
+  await renderModelDetailSections(parts, parsed, isGguf, signal);
 }

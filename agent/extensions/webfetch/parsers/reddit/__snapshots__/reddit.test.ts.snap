@@ -58,3 +58,31 @@ r/u_spez • u/spez • 496 points • 381 comments • 5mo ago
 Hi everyone,
 [↗ reddit](https://www.reddit.com/r/u_spez/comments/1pdb5dc/beyond_the_front_page_of_the_internet/)"
 `;
+
+exports[`Reddit parser > snapshot > captures output for thread https://www.reddit.com/r/typescript/comments/1t1p1ex/ 1`] = `
+"# A more accurate .d.ts bundler for Rollup, powered by @microsoft/api-extractor
+by u/barhatsor • 10 points • 11 comments • 22h ago
+[github.com](https://github.com/benhatsor/rollup-dts-bundler)
+
+If you ship a TypeScript library, your \`.d.ts\` is part of the public API. But the existing bundlers ([rollup-plugin-dts](https://github.com/Swatinem/rollup-plugin-dts), [rolldown-plugin-dts](https://github.com/sxzz/rolldown-plugin-dts), [dts-bundle-generator](https://github.com/timocov/dts-bundle-generator)) all get it subtly wrong in different ways — garbled type names, types dropped behind re-exports, etc. Enough libraries have hit this that some ([Rollup included](https://github.com/rollup/rollup/blob/24fe07f39da8e4225f4bc4f797331930d8405ec2/src/rollup/types.d.ts)) just hand-write their declaration file.
+
+[@microsoft/api-extractor](https://github.com/microsoft/rushstack/tree/main/apps/api-extractor) handles all of it correctly, but it's CLI-only with a fairly involved config, which is awkward if the rest of your build is already in Rollup. So I put together a small plugin that runs it from inside a normal Rollup config. Curious if it holds up on weirder setups.
+
+## Comments
+
+**markus_obsidian** (14)
+Stop bundling typescript libraries. All you need is \`tsc\`.
+
+  **bzbub2** (4)
+  agree. my old post about this [https://cmdcolin.github.io/posts/2022-05-27-youmaynotneedabundler/](https://cmdcolin.github.io/posts/2022-05-27-youmaynotneedabundler/)
+
+    **vincentdesmet** (2)
+    i also like the turborepo guidelines which are pretty clear where you bundle
+    
+    and with private shared pkgs you just JIT the ts
+
+**Randomboy89** (3)
+I just removed the plugin today because it was a real pain. It's better to edit it manually.
+
+[View on Reddit](https://www.reddit.com/r/typescript/comments/1t1p1ex/a_more_accurate_dts_bundler_for_rollup_powered_by/)"
+`;

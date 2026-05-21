@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isHtmlContent, stripHtmlComments } from "./html-utils";
+import { isHtmlContent, stripHtmlComments } from "./html-parsing";
 
 describe("isHtmlContent", () => {
   it("detects <html> tag", () => {

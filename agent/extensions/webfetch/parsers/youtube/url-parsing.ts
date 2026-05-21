@@ -31,7 +31,10 @@ function tryParsePlaylist(urlObj: URL): YoutubePath | null {
 function tryParseChannel(pathname: string): YoutubePath | null {
   const channelMatch = pathname.match(/^\/(?:channel|c|user|@[^/]+)(?:\/|$)/);
   if (channelMatch) {
-    const channelIdOrHandle = pathname.split("/")[2];
+    const parts = pathname.split("/");
+    // /channel/ID → parts[2], /c/name → parts[2], /user/name → parts[2]
+    // /@handle → parts[1] (only 2 segments)
+    const channelIdOrHandle = parts[2] || parts[1];
     if (channelIdOrHandle) {
       return { kind: "channel", channelId: channelIdOrHandle };
     }
@@ -40,8 +43,22 @@ function tryParseChannel(pathname: string): YoutubePath | null {
 }
 
 function tryParseSearch(urlObj: URL): YoutubePath | null {
-  const q = urlObj.searchParams.get("q");
+  const q = urlObj.searchParams.get("search_query");
   if (q) return { kind: "search", query: q };
+  return null;
+}
+
+function tryParsePathVideo(path: string, urlObj: URL): YoutubePath | null {
+  if (path === "/watch") return tryParseVideoFromParams(urlObj);
+  return tryParseEmbeddedVideo(path);
+}
+
+function tryParsePathBrowse(path: string, urlObj: URL): YoutubePath | null {
+  if (path === "/playlist") return tryParsePlaylist(urlObj);
+  if (path === "/results") return tryParseSearch(urlObj);
+  const channel = tryParseChannel(path);
+  if (channel) return channel;
+  if (path === "/search") return tryParseSearch(urlObj);
   return null;
 }
 
@@ -50,14 +67,8 @@ export function parseYoutubeUrl(url: string): YoutubePath | null {
   if (!isYoutubeHostname(urlObj.hostname)) return null;
 
   const path = urlObj.pathname;
+  const videoResult = tryParsePathVideo(path, urlObj);
+  if (videoResult) return videoResult;
 
-  if (path === "/watch") return tryParseVideoFromParams(urlObj);
-  const embedded = tryParseEmbeddedVideo(path);
-  if (embedded) return embedded;
-  if (path === "/playlist") return tryParsePlaylist(urlObj);
-  const channel = tryParseChannel(path);
-  if (channel) return channel;
-  if (path === "/search") return tryParseSearch(urlObj);
-
-  return null;
+  return tryParsePathBrowse(path, urlObj);
 }

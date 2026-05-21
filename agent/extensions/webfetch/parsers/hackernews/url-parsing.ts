@@ -1,27 +1,30 @@
 import type { ParsedHNUrl, StoryKind } from "./types";
 
+function dispatchHnPath(
+  path: string | undefined,
+  params: URLSearchParams,
+): ParsedHNUrl | null {
+  const itemResult = tryParseItemPath(path, params);
+  if (itemResult) return itemResult;
+  const userResult = tryParseUserRelatedPath(path, params);
+  if (userResult) return userResult;
+  const storiesResult = tryParseStoriesPath(path, params);
+  if (storiesResult) return storiesResult;
+  return tryParseSearchParams(params);
+}
+
 function parseHnUrl(url: string): ParsedHNUrl | null {
   const firebase = tryParseFirebaseUrl(url);
   if (firebase) return firebase;
+
   const match = url.match(
     /^https?:\/\/news\.ycombinator\.com(?:\/(.+))?(?:\?(.+))?$/,
   );
   if (!match) return null;
+
   const [, path, queryString] = match;
-  const params = new URLSearchParams(queryString || "");
-  const parsers: Array<() => ParsedHNUrl | null> = [
-    () => tryParseItemPath(path, params),
-    () => tryParseUserRelatedPath(path, params),
-    () => tryParseStoriesPath(path, params),
-    () => tryParseSearchParams(params),
-  ];
-
-  for (const parser of parsers) {
-    const result = parser();
-    if (result) return result;
-  }
-
-  return null;
+  const params = new URLSearchParams(queryString ?? "");
+  return dispatchHnPath(path, params);
 }
 
 function tryParseFirebaseUrl(url: string): ParsedHNUrl | null {

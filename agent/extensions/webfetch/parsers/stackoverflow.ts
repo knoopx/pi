@@ -1,9 +1,14 @@
-import { createRetryFetch, defineParser } from "../lib/parser-utils";
+import { createRetryFetch, defineParser } from "../lib/parser-factory";
 import { formatAge } from "../../../shared/format/time-formatting";
-import { formatNumber, stripHtml } from "../../../shared/format/text-formatting";
+import {
+  formatNumber,
+  stripHtml,
+} from "../../../shared/format/text-formatting";
 const BASE = "https://stackoverflow.com";
 const API = "https://api.stackexchange.com/2.3";
-const SO_FILTER = "!)3nIZKx6WpNKLbI7rOJ]GqFyHlAeLXvT4MR1YjUuQ0oCmDfE2gSb5t8w";
+const SO_SITE = "stackoverflow";
+// Unsafe filter: includes post bodies, owner details, and search excerpts
+const SO_FILTER = ")GoSPge5Pi-NGAn";
 interface SoQuestion {
   question_id: number;
   title: string;
@@ -41,7 +46,7 @@ interface SoApiPage<T> {
   items: T[];
   has_more: boolean;
   quota_remaining: number;
-  total: number;
+  total?: number;
 }
 type SoKind = "question" | "questions" | "search" | "tagged" | "users" | "user";
 interface ParsedSoUrl {
@@ -53,12 +58,16 @@ interface ParsedSoUrl {
   userId?: number;
   userName?: string;
 }
+function extractFullPath(match: RegExpMatchArray): string {
+  return match[1]?.replace(/\/+$/, "") || "";
+}
+
 function parseStackOverflowUrl(url: string): ParsedSoUrl | null {
   const match = url.match(
     /^https?:\/\/(?:www\.)?stackoverflow\.com(?:\/(.+))?$/,
   );
   if (!match) return null;
-  const fullPath = match[1]?.replace(/\/+$/, "") || "";
+  const fullPath = extractFullPath(match);
   if (!fullPath) return { kind: "questions" };
   const [pathPart, queryString] = fullPath.split("?");
   const parts = pathPart.split("/").filter(Boolean);
@@ -82,19 +91,22 @@ function tryParseSearch(params: URLSearchParams): ParsedSoUrl {
   const tab = params.get("tab") || "relevance";
   const sortMap: Record<string, string> = {
     relevance: "relevance",
-    newest: "creation_date",
+    newest: "creation",
     votes: "votes",
     active: "activity",
   };
   return { kind: "search", query: q, sort: sortMap[tab] || "relevance" };
 }
+function extractSortTab(params: URLSearchParams): string {
+  return params.get("tab") || "votes";
+}
+
 function tryParseQuestionsPath(
   parts: string[],
   params: URLSearchParams,
 ): ParsedSoUrl | null {
   if (parts[1] === "tagged" && parts[2]) {
-    const tab = params.get("tab") || "votes";
-    return { kind: "tagged", tag: parts[2], sort: tab };
+    return { kind: "tagged", tag: parts[2], sort: extractSortTab(params) };
   }
   const idResult = tryParseQuestionId(parts);
   if (idResult) return idResult;
@@ -125,6 +137,7 @@ async function fetchSoApi<T>(
   signal?: AbortSignal,
 ): Promise<SoApiPage<T>> {
   const url = new URL(`${API}/${endpoint}`);
+  url.searchParams.set("site", SO_SITE);
   for (const [k, v] of Object.entries(params)) {
     url.searchParams.set(k, v);
   }
@@ -148,7 +161,7 @@ async function handleQuestion(
   if (!question) throw new Error(`Question ${questionId} not found`);
   const parts: string[] = [`# ${question.title}`];
   if (question.tags.length) parts.push(formatTags(question.tags));
-  parts.push(buildQuestionMeta(question), buildQuestionStats(question));
+  parts.push(buildQuestionAuthorLine(question), buildQuestionStats(question));
 
   if (question.snippet) {
     parts.push("", stripHtml(question.snippet));
@@ -160,7 +173,7 @@ async function handleQuestion(
   parts.push(`[View on Stack Overflow](${question.link})`);
   return parts.join("\n");
 }
-function buildQuestionMeta(q: SoQuestion): string {
+function buildQuestionAuthorLine(q: SoQuestion): string {
   const meta: string[] = [];
   if (q.owner) {
     meta.push(
@@ -198,6 +211,14 @@ async function appendAnswers(
     parts.push(...renderAnswer(answers[i]));
   }
 }
+function formatOwnerLine(owner: {
+  display_name: string;
+  link?: string;
+  user_id: number;
+}): string {
+  return `by [${owner.display_name}](${owner.link || `${BASE}/users/${owner.user_id}`})`;
+}
+
 function renderAnswer(a: SoAnswer): string[] {
   const acceptedBadge = a.is_accepted ? "\u2713 " : "";
   const lines: string[] = [
@@ -205,9 +226,7 @@ function renderAnswer(a: SoAnswer): string[] {
   ];
 
   if (a.owner) {
-    lines.push(
-      `by [${a.owner.display_name}](${a.owner.link || `${BASE}/users/${a.owner.user_id}`})`,
-    );
+    lines.push(formatOwnerLine(a.owner));
   }
 
   if (a.body) {
@@ -227,7 +246,7 @@ function renderQuestionList(title: string, questions: SoQuestion[]): string[] {
 
   return lines;
 }
-function renderQuestionItem(rank: number, q: SoQuestion): string[] {
+function buildQuestionStatsLine(q: SoQuestion): string[] {
   const meta: string[] = [
     `${formatNumber(q.score)} votes`,
     `${q.answer_count} answers`,
@@ -235,6 +254,11 @@ function renderQuestionItem(rank: number, q: SoQuestion): string[] {
   ];
   if (q.owner) meta.push(`by ${q.owner.display_name}`);
   if (q.last_activity_date) meta.push(formatAge(q.last_activity_date));
+  return meta;
+}
+
+function renderQuestionItem(rank: number, q: SoQuestion): string[] {
+  const meta = buildQuestionStatsLine(q);
   const lines: string[] = [`**${rank}. ${q.title}**`, meta.join(" \u2022 ")];
   if (q.tags.length) lines.push(formatTags(q.tags));
 
@@ -252,17 +276,19 @@ async function handleSearch(
   sort: string,
   signal?: AbortSignal,
 ): Promise<string> {
-  const data = await fetchSoApi<SoQuestion>(
-    "search",
-    {
-      q: query,
-      order: "desc",
-      sort,
-      pagesize: "20",
-      filter: SO_FILTER,
-    },
-    signal,
-  );
+  const params: Record<string, string> = {
+    order: "desc",
+    sort,
+    pagesize: "20",
+    filter: SO_FILTER,
+  };
+  if (sort === "relevance") {
+    params.q = query;
+    params.intitle = query;
+  } else {
+    params.intitle = query;
+  }
+  const data = await fetchSoApi<SoQuestion>("search", params, signal);
   const lines = renderQuestionList(
     `Stack Overflow — Search "${query}"`,
     data.items,
@@ -276,16 +302,14 @@ async function handleTagged(
   signal?: AbortSignal,
 ): Promise<string> {
   const sortMap: Record<string, string> = {
-    newest: "creation_date",
+    newest: "creation",
     active: "activity",
-    bounties: "bounty",
-    unanswered: "unanswered",
-    frequent: "frequent",
     votes: "votes",
   };
   const data = await fetchSoApi<SoQuestion>(
-    `questions/tagged/${tag}`,
+    "questions",
     {
+      tagged: tag,
       order: "desc",
       sort: sortMap[sort] || "votes",
       pagesize: "20",
@@ -293,10 +317,12 @@ async function handleTagged(
     },
     signal,
   );
-  const lines = renderQuestionList(
-    `Stack Overflow — Tagged [${tag}] (${data.total} questions)`,
-    data.items,
-  );
+  const totalStr =
+    typeof data.total === "number" ? `${data.total} questions` : "";
+  const title = totalStr
+    ? `Stack Overflow — Tagged [${tag}] (${totalStr})`
+    : `Stack Overflow — Tagged [${tag}]`;
+  const lines = renderQuestionList(title, data.items);
   return lines.join("\n");
 }
 
@@ -305,7 +331,7 @@ async function handleQuestions(signal?: AbortSignal): Promise<string> {
     "questions",
     {
       order: "desc",
-      sort: "creation_date",
+      sort: "creation",
       pagesize: "20",
       filter: SO_FILTER,
     },

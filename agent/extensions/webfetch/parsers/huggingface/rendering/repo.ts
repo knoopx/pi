@@ -15,15 +15,21 @@ function renderTags(
   filterFn?: (tag: string) => boolean,
   limit?: number,
 ): void {
+  const rendered = formatTagList(tags, filterFn, limit);
+  if (!rendered.length) return;
+  parts.push("");
+  parts.push("**Tags:**");
+  parts.push(...rendered);
+}
+
+function formatTagList(
+  tags: string[],
+  filterFn?: (tag: string) => boolean,
+  limit?: number,
+): string[] {
   const filtered = filterFn ? tags.filter(filterFn) : tags;
   const sliced = limit ? filtered.slice(0, limit) : filtered;
-  if (sliced.length) {
-    parts.push("");
-    parts.push("**Tags:**");
-    for (const tag of sliced) {
-      parts.push(`- ${tagToBullet(tag)}`);
-    }
-  }
+  return sliced.map((tag) => `- ${tagToBullet(tag)}`);
 }
 
 function extractLicense(
@@ -35,15 +41,15 @@ function extractLicense(
   return tag ? tag.replace("license:", "") : null;
 }
 
-function extractBaseModel(
-  tags: string[],
-  cardData?: Record<string, unknown>,
+function extractBaseModelFromCard(
+  cardData: Record<string, unknown>,
 ): string | null {
-  if (cardData?.base_model) {
-    return Array.isArray(cardData.base_model)
-      ? (cardData.base_model as string[]).join(", ")
-      : String(cardData.base_model);
-  }
+  const base = cardData.base_model;
+  if (!base) return null;
+  return Array.isArray(base) ? (base as string[]).join(", ") : String(base);
+}
+
+function extractBaseModelFromTags(tags: string[]): string | null {
   for (const prefix of [
     "base_model:quantized:",
     "base_model:finetune:",
@@ -55,38 +61,61 @@ function extractBaseModel(
   return null;
 }
 
+function extractBaseModel(
+  tags: string[],
+  cardData?: Record<string, unknown>,
+): string | null {
+  if (cardData?.base_model) return extractBaseModelFromCard(cardData);
+  return extractBaseModelFromTags(tags);
+}
+
 function renderLicenseAndBase(
   parts: string[],
   tags: string[] | undefined,
   cardData?: Record<string, unknown>,
 ): void {
   if (!tags) return;
+  const line = buildLicenseAndBaseLine(tags, cardData);
+  if (!line) return;
+  parts.push("");
+  parts.push(line);
+}
+
+function buildLicenseAndBaseLine(
+  tags: string[],
+  cardData?: Record<string, unknown>,
+): string | null {
   const license = extractLicense(tags, cardData);
   const baseModel = extractBaseModel(tags, cardData);
-  if (license || baseModel) {
-    parts.push("");
-    parts.push(
-      [
-        license ? `**License:** ${license}` : "",
-        baseModel ? `**Base model:** ${baseModel}` : "",
-      ]
-        .filter(Boolean)
-        .join(" • "),
-    );
+  const fields = [formatLicense(license), formatBaseModel(baseModel)].filter(
+    Boolean,
+  );
+  return fields.length > 0 ? fields.join(" • ") : null;
+}
+
+function formatLicense(license: string | null): string | null {
+  return license ? `**License:** ${license}` : null;
+}
+
+function formatBaseModel(baseModel: string | null): string | null {
+  return baseModel ? `**Base model:** ${baseModel}` : null;
+}
+
+function buildMetaParts(opts: RepoBodyOptions): string[] {
+  const metaParts: string[] = [];
+  if (opts.downloads !== undefined) {
+    metaParts.push(`downloads: ${formatDownloadsShort(opts.downloads)}`);
   }
+  if (opts.lastModified) {
+    metaParts.push(`updated: ${formatIsoAge(opts.lastModified)}`);
+  }
+  return metaParts;
 }
 
 function renderRepoMetadata(parts: string[], opts: RepoBodyOptions): void {
-  const downloadsShort =
-    opts.downloads !== undefined ? formatDownloadsShort(opts.downloads) : null;
-  const lastModifiedAge = opts.lastModified
-    ? formatIsoAge(opts.lastModified)
-    : null;
-  if (!downloadsShort && !lastModifiedAge) return;
+  const metaParts = buildMetaParts(opts);
+  if (metaParts.length === 0) return;
   parts.push("");
-  const metaParts: string[] = [];
-  if (downloadsShort) metaParts.push(`downloads: ${downloadsShort}`);
-  if (lastModifiedAge) metaParts.push(`updated: ${lastModifiedAge}`);
   parts.push(metaParts.join(" • "));
 }
 
@@ -95,11 +124,21 @@ function addKindSpecificHeader(
   kind: HFPath["kind"],
   info: Record<string, unknown>,
 ): void {
+  const header = buildKindHeader(kind, info);
+  if (header) parts.push(header);
+}
+
+function buildKindHeader(
+  kind: HFPath["kind"],
+  info: Record<string, unknown>,
+): string | null {
   if (kind === "model" && typeof info.pipeline_tag === "string") {
-    parts.push(`**Pipeline:** ${info.pipeline_tag}`);
-  } else if (kind === "space" && typeof info.sdk === "string") {
-    parts.push(`**SDK:** ${info.sdk}`);
+    return `**Pipeline:** ${info.pipeline_tag}`;
   }
+  if (kind === "space" && typeof info.sdk === "string") {
+    return `**SDK:** ${info.sdk}`;
+  }
+  return null;
 }
 
 function makeTagFilter(
@@ -135,6 +174,14 @@ function safeString(val: unknown, fallback?: string): string | undefined {
   return typeof val === "string" ? val : fallback;
 }
 
+function extractGatedValue(
+  info: Record<string, unknown>,
+): boolean | string | undefined {
+  const gated = info.gated;
+  if (typeof gated === "boolean" || typeof gated === "string") return gated;
+  return undefined;
+}
+
 function buildRepoBodyOptions(
   info: Record<string, unknown>,
   parsed: HFPath,
@@ -146,10 +193,7 @@ function buildRepoBodyOptions(
     downloads: safeNumber(info.downloads),
     likes: safeNumber(info.likes),
     lastModified: safeString(info.lastModified),
-    gated:
-      typeof info.gated === "boolean" || typeof info.gated === "string"
-        ? info.gated
-        : undefined,
+    gated: extractGatedValue(info),
     tagFilter: makeTagFilter(parsed.kind),
     tagLimit: parsed.kind === "dataset" ? 20 : undefined,
     extraDescription: datasetDesc,
@@ -182,6 +226,23 @@ function appendReadme(parts: string[], readme: string): void {
   }
 }
 
+async function renderRepoReadme(
+  parts: string[],
+  opts: RepoBodyOptions,
+  parsed: HFPath,
+  signal: AbortSignal | undefined,
+): Promise<void> {
+  const readme = await fetchReadme(parsed, signal);
+  if (readme) {
+    appendReadme(parts, readme);
+    return;
+  }
+  if (opts.extraDescription) {
+    parts.push("");
+    parts.push(opts.extraDescription);
+  }
+}
+
 async function renderRepoBody(
   parts: string[],
   opts: RepoBodyOptions,
@@ -193,13 +254,7 @@ async function renderRepoBody(
   }
   renderLicenseAndBase(parts, opts.tags);
   renderRepoMetadata(parts, opts);
-  const readme = await fetchReadme(parsed, signal);
-  if (readme) {
-    appendReadme(parts, readme);
-  } else if (opts.extraDescription) {
-    parts.push("");
-    parts.push(opts.extraDescription);
-  }
+  await renderRepoReadme(parts, opts, parsed, signal);
 }
 
 export async function renderRepo(

@@ -186,6 +186,13 @@ function createBracketPairTokenizer(
         return inside;
       }
 
+      function handleCloseCode(code: number): boolean {
+        if (code !== closeCode) return false;
+        effects.consume(code);
+        depth--;
+        return depth === 0;
+      }
+
       function inside(code: number) {
         if (shouldReject(code)) {
           effects.exit(type);
@@ -196,14 +203,9 @@ function createBracketPairTokenizer(
           effects.consume(code);
           return inside;
         }
-        if (code === closeCode) {
-          effects.consume(code);
-          depth--;
-          if (depth === 0) {
-            effects.exit(type);
-            return ok;
-          }
-          return inside;
+        if (handleCloseCode(code)) {
+          effects.exit(type);
+          return ok;
         }
 
         effects.consume(code);

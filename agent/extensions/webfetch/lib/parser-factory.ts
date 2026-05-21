@@ -1,6 +1,5 @@
 import { BROWSER_HEADERS, FETCH_OPTIONS } from "./constants";
-import { retry } from "./retry";
-import type { RetryOptions } from "./retry";
+import { retry, type RetryOptions } from "./retry";
 import type { Parser } from "../types";
 
 export function defineParser<T>(
@@ -25,6 +24,15 @@ export interface VersionedPackagePath {
   version?: string;
 }
 
+function isVersionString(s: string): boolean {
+  return /^\d+\./.test(s) || s.startsWith("v");
+}
+
+function extractRestPath(url: string, pattern: RegExp): string | null {
+  const fullMatch = url.match(new RegExp(pattern.source + "(?:\\/(.+))?$"));
+  return fullMatch?.[2] ?? null;
+}
+
 export function createVersionedPackageParser(
   pattern: RegExp,
 ): (url: string) => VersionedPackagePath | null {
@@ -33,13 +41,9 @@ export function createVersionedPackageParser(
     if (!match) return null;
 
     const name = decodeURIComponent(match[1]);
-
-    const fullMatch = url.match(new RegExp(pattern.source + "(?:\\/(.+))?$"));
-    if (fullMatch?.[2]) {
-      const rest = fullMatch[2];
-      if (/^\d+\./.test(rest) || rest.startsWith("v")) {
-        return { kind: "version", name, version: rest };
-      }
+    const rest = extractRestPath(url, pattern);
+    if (rest && isVersionString(rest)) {
+      return { kind: "version", name, version: rest };
     }
 
     return { kind: "package", name };

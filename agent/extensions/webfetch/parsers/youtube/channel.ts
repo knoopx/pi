@@ -20,6 +20,18 @@ function formatChannelDescription(description: string): string[] {
   return ["", description];
 }
 
+function validateChannel(
+  data: YoutubeApiResponse,
+  channelId: string,
+): YoutubeVideoSnippet {
+  const channel = data.items?.[0];
+  if (!channel) throw new Error(`Channel ${channelId} not found`);
+  if (!channel.snippet) {
+    throw new Error(`Missing snippet for channel ${channelId}`);
+  }
+  return channel.snippet;
+}
+
 export async function handleChannel(
   channelId: string,
   signal?: AbortSignal,
@@ -29,13 +41,9 @@ export async function handleChannel(
     signal,
   );
 
+  const snippet = validateChannel(data, channelId);
   const channel = data.items?.[0];
-  if (!channel) throw new Error(`Channel ${channelId} not found`);
-  if (!channel.snippet)
-    throw new Error(`Missing snippet for channel ${channelId}`);
-
-  const snippet: YoutubeVideoSnippet = channel.snippet;
-  const stats = channel.statistics || {};
+  const stats = channel?.statistics || {};
 
   const parts: string[] = [`# ${snippet.title}`];
   parts.push(`joined: ${formatDate(snippet.publishedAt)}`);

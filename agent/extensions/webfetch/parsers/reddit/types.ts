@@ -61,8 +61,14 @@ export interface RedditCommentData {
   };
 }
 
-export interface RedditThreadResponse {
+export interface RedditThreadListing {
+  kind: "Listing";
   data: {
-    children: Array<{ data: RedditPostData | RedditCommentData }>;
+    children: Array<{
+      kind?: string;
+      data: RedditPostData | RedditCommentData;
+    }>;
   };
 }
+
+export type RedditThreadResponse = [RedditThreadListing, RedditThreadListing];

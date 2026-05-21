@@ -1,10 +1,18 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { toMarkdown } from "mdast-util-to-markdown";
 import { gfmToMarkdown } from "mdast-util-gfm";
 import { parse } from "../lib/registry";
+
+function mockParserUtils(content: string): void {
+  vi.doMock("../lib/parser-factory", () => ({
+    createRetryFetchText: vi
+      .fn()
+      .mockReturnValue(vi.fn().mockResolvedValue(content)),
+  }));
+}
 
 describe("Generic parser", () => {
   let dir: string;
@@ -106,5 +114,38 @@ describe("Generic parser", () => {
       expect(output).toContain("This is **markdown** content.");
       expect(output).toMatchSnapshot();
     });
+  });
+});
+
+describe("genericParser matches", () => {
+  it("matches all URLs", async () => {
+    mockParserUtils("ok");
+    const mod = await import("./generic");
+    expect(mod.genericParser.matches("https://example.com")).toBe(true);
+  });
+
+  it("matches local file paths", async () => {
+    mockParserUtils("ok");
+    const mod = await import("./generic");
+    expect(mod.genericParser.matches("/path/to/file.txt")).toBe(true);
+  });
+
+  it("matches any string", async () => {
+    mockParserUtils("ok");
+    const mod = await import("./generic");
+    expect(mod.genericParser.matches("anything")).toBe(true);
+  });
+
+  it("converts HTML content to mdast", async () => {
+    vi.doMock("../lib/parser-factory", () => ({
+      createRetryFetchText: vi
+        .fn()
+        .mockReturnValue(
+          vi.fn().mockResolvedValue("<html><body>Test</body></html>"),
+        ),
+    }));
+    const mod = await import("./generic");
+    const result = await mod.genericParser.convert("https://example.com");
+    expect((result as { type: string }).type).toBe("root");
   });
 });

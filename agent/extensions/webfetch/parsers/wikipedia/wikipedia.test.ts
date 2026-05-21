@@ -76,7 +76,7 @@ describe("Wikipedia parser", () => {
 
   describe("snapshot", () => {
     beforeAll(async () => {
-      const { mockFetchWithFixtures } = await import("../../test/utils");
+      const { mockFetchWithFixtures } = await import("../../test/fixture-mock");
       mockFetchWithFixtures();
     });
     it("captures output for https://en.wikipedia.org/wiki/Artificial_intelligence", async () => {

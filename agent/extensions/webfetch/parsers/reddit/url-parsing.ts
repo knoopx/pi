@@ -2,7 +2,7 @@ import type { ParsedRedditUrl } from "./types";
 
 export function parseRedditUrl(url: string): ParsedRedditUrl | null {
   const match = url.match(
-    /^https?:\/\/(?:www\.|old\.)?reddit\.com(?:\/(.+))?$/,
+    /^https?:\/\/(?:www\.|old\.)?reddit\.com(?:\/(.+))?\/?$/,
   );
   if (!match) return null;
   const path = match[1]?.replace(/\/+$/, "") || "";
@@ -28,17 +28,32 @@ function dispatchRedditPath(
   return handler ? handler() : null;
 }
 
-function parseSubredditPath(parts: string[]): ParsedRedditUrl {
+function parseShortSubredditPath(parts: string[]): ParsedRedditUrl | null {
   if (parts.length === 0) return { kind: "frontpage" };
+  if (parts.length === 1)
+    return { kind: "subreddit", sub: parts[0], sort: "hot" };
+  return null;
+}
+
+function parseSubredditPath(parts: string[]): ParsedRedditUrl {
+  const shortResult = parseShortSubredditPath(parts);
+  if (shortResult) return shortResult;
+
   const sub = parts[0];
-  if (parts.length === 1) return { kind: "subreddit", sub, sort: "hot" };
   const second = parts[1].toLowerCase();
   const threadResult = tryParseThreadPath(second, parts);
   if (threadResult) return threadResult;
-  if (second === "search")
-    return { kind: "search", sub, query: "", sort: "relevance" };
 
-  return { kind: "subreddit", sub, sort: tryParseSortKind(second) || "hot" };
+  if (second === "search") {
+    return { kind: "search", sub, query: "", sort: "relevance" };
+  }
+
+  const sortKind = resolveSortKind(second);
+  return { kind: "subreddit", sub, sort: sortKind };
+}
+
+function resolveSortKind(segment: string): string {
+  return tryParseSortKind(segment) || "hot";
 }
 
 function tryParseThreadPath(

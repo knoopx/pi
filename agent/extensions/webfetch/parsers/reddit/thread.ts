@@ -46,13 +46,15 @@ function renderRedditLink(post: RedditPostData): string {
 }
 
 function buildThreadMeta(post: RedditPostData): string {
-  const meta: string[] = [];
-  if (post.author) meta.push(`by u/${post.author}`);
-  if (post.score) meta.push(`${formatNumber(post.score)} points`);
-  if (post.num_comments !== undefined)
-    meta.push(`${formatNumber(post.num_comments)} comments`);
-  if (post.created_utc) meta.push(formatAge(post.created_utc));
-  return meta.join(" • ");
+  const parts = [
+    post.author ? `by u/${post.author}` : null,
+    post.score ? `${formatNumber(post.score)} points` : null,
+    post.num_comments !== undefined
+      ? `${formatNumber(post.num_comments)} comments`
+      : null,
+    post.created_utc ? formatAge(post.created_utc) : null,
+  ].filter((p): p is string => p != null);
+  return parts.join(" • ");
 }
 
 function appendThreadComments(
@@ -85,18 +87,20 @@ export async function handleThread(
   const id = parsed.id;
   const limit = parsed.limit ?? 50;
   const sort = parsed.sort || "best";
-  const data = await fetchJson<RedditThreadResponse>(
+  const [postListing, commentsListing] = await fetchJson<RedditThreadResponse>(
     `/comments/${id}.json`,
     { limit: String(limit), sort },
     signal,
   );
-  const postData = data.data.children[0].data as RedditPostData;
+  const postChildren = postListing.data.children;
+  if (!postChildren.length) throw new Error("No post found in thread response");
+  const postData = postChildren[0].data as RedditPostData;
   const parts: string[] = [];
   parts.push(`# ${postData.title}`);
   parts.push(buildThreadMeta(postData));
   parts.push(...renderThreadLink(postData));
   parts.push(...renderThreadBody(postData));
-  appendThreadComments(parts, data.data.children.slice(1));
+  appendThreadComments(parts, commentsListing.data.children);
   parts.push(renderRedditLink(postData));
 
   return parts.join("\n");

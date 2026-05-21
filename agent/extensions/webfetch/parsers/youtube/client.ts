@@ -1,4 +1,4 @@
-import { createRetryFetch } from "../../lib/parser-utils";
+import { createRetryFetch } from "../../lib/parser-factory";
 
 const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3";
 

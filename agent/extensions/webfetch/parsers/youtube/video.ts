@@ -1,5 +1,6 @@
 import { formatDate } from "../../../../shared/format/time-formatting";
 import type {
+  YoutubeApiItem,
   YoutubeVideoSnippet,
   YoutubeVideoContentDetails,
   YoutubeApiResponse,
@@ -7,16 +8,29 @@ import type {
 } from "./types";
 import { fetchYoutube } from "./client";
 
-function toHumanDuration(iso: string): string {
-  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!match) return iso;
+function parseNum(value: string | undefined): number | undefined {
+  return value ? parseInt(value, 10) : undefined;
+}
 
+function parseDurationComponents(iso: string): {
+  h?: number;
+  m?: number;
+  s?: number;
+} {
+  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return {};
   const [, h, m, s] = match;
-  const parts: string[] = [];
-  if (h) parts.push(`${parseInt(h, 10)}h`);
-  if (m) parts.push(`${parseInt(m, 10)}m`);
-  if (s) parts.push(`${parseInt(s, 10)}s`);
-  return parts.join(" ") || "0s";
+  return { h: parseNum(h), m: parseNum(m), s: parseNum(s) };
+}
+
+function toHumanDuration(iso: string): string {
+  const { h, m, s } = parseDurationComponents(iso);
+  const parts = [
+    h !== undefined ? `${h}h` : null,
+    m !== undefined ? `${m}m` : null,
+    s !== undefined ? `${s}s` : null,
+  ].filter((p): p is string => p != null);
+  return parts.length === 0 ? "0s" : parts.join(" ");
 }
 
 function formatVideoSnippet(snippet: YoutubeVideoSnippet): string[] {
@@ -27,14 +41,23 @@ function formatVideoSnippet(snippet: YoutubeVideoSnippet): string[] {
   ];
 }
 
+function formatVideoDetailsExtra(
+  details: YoutubeVideoContentDetails,
+): string[] {
+  const parts: string[] = [];
+  if (details.definition) parts.push(`${details.definition} video`);
+  if (details.caption) parts.push("closed captions available");
+  return parts;
+}
+
 function formatVideoDetailsMeta(
   details: YoutubeVideoContentDetails | undefined,
 ): string[] {
   const parts: string[] = [];
-  const duration = toHumanDuration(details?.duration || "");
-  if (duration) parts.push(`duration: ${duration}`);
-  if (details?.definition) parts.push(`${details.definition} video`);
-  if (details?.caption) parts.push("closed captions available");
+  if (details?.duration) {
+    parts.push(`duration: ${toHumanDuration(details.duration)}`);
+  }
+  if (details) parts.push(...formatVideoDetailsExtra(details));
   return parts;
 }
 
@@ -58,21 +81,59 @@ function formatVideoMeta(
   return metaParts.length ? [metaParts.join(" • ")] : [];
 }
 
-function formatVideoComments(commentsData: YoutubeCommentsResponse): string[] {
-  const comments = commentsData.items || [];
-  if (comments.length === 0) return [];
+function formatCommentEntry(thread: {
+  snippet: { topLevelComment?: { snippet?: unknown } };
+}): string[] | null {
+  const comment = thread.snippet.topLevelComment?.snippet as
+    | { authorDisplayName: string; likeCount?: number; textDisplay?: string }
+    | undefined;
+  if (!comment) return null;
+  return [
+    `**${comment.authorDisplayName}** (${comment.likeCount ?? 0} likes)`,
+    comment.textDisplay ?? "",
+    "",
+  ];
+}
 
-  const lines: string[] = ["", "## Top Comments", ""];
-  for (const thread of comments) {
-    const comment = thread.snippet.topLevelComment?.snippet;
-    if (!comment) continue;
-    lines.push(
-      `**${comment.authorDisplayName}** (${comment.likeCount ?? 0} likes)`,
-    );
-    lines.push(comment.textDisplay || "");
-    lines.push("");
-  }
+function formatVideoComments(commentsData: YoutubeCommentsResponse): string[] {
+  const comments = commentsData.items ?? [];
+  if (comments.length === 0) return [];
+  const lines = ["", "## Top Comments", "", ...flattenCommentEntries(comments)];
   return lines;
+}
+
+function flattenCommentEntries(
+  comments: Array<{ snippet: { topLevelComment?: { snippet?: unknown } } }>,
+): string[] {
+  const entries: string[] = [];
+  for (const thread of comments) {
+    const entry = formatCommentEntry(thread);
+    if (entry) entries.push(...entry);
+  }
+  return entries;
+}
+
+function validateVideo(
+  video: YoutubeApiItem | undefined,
+  videoId: string,
+): YoutubeVideoSnippet {
+  if (!video) throw new Error(`Video ${videoId} not found`);
+  if (!video.snippet) throw new Error(`Missing snippet for video ${videoId}`);
+  return video.snippet;
+}
+
+function buildVideoParts(
+  snippet: YoutubeVideoSnippet,
+  stats: Record<string, string>,
+  details: YoutubeVideoContentDetails | undefined,
+): string[] {
+  const parts: string[] = [
+    ...formatVideoSnippet(snippet),
+    ...formatVideoMeta(details, stats),
+  ];
+  const desc = snippet.description || "";
+  if (desc) parts.push("", desc);
+  return parts;
 }
 
 export async function handleVideo(
@@ -91,23 +152,12 @@ export async function handleVideo(
   ]);
 
   const video = videosData.items?.[0];
-  if (!video) throw new Error(`Video ${videoId} not found`);
-  if (!video.snippet) throw new Error(`Missing snippet for video ${videoId}`);
+  const snippet = validateVideo(video, videoId);
+  const stats: Record<string, string> = video?.statistics || {};
+  const details: YoutubeVideoContentDetails | undefined = video?.contentDetails;
 
-  const snippet: YoutubeVideoSnippet = video.snippet;
-  const stats: Record<string, string> = video.statistics || {};
-  const details: YoutubeVideoContentDetails | undefined = video.contentDetails;
-
-  const parts: string[] = [
-    ...formatVideoSnippet(snippet),
-    ...formatVideoMeta(details, stats),
-  ];
-
-  const desc = snippet.description || "";
-  if (desc) parts.push("", desc);
-
+  const parts = buildVideoParts(snippet, stats, details);
   parts.push(...formatVideoComments(commentsData));
-
   parts.push(
     "",
     `[Watch on YouTube](https://www.youtube.com/watch?v=${videoId})`,

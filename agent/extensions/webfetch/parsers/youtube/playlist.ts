@@ -9,6 +9,15 @@ function formatPlaylistHeader(snippet: YoutubeVideoSnippet): string[] {
   return [`# ${snippet.title}`, `by **${snippet.channelTitle}**`];
 }
 
+function formatPlaylistItem(item: {
+  snippet: { title: string; resourceId?: { videoId?: string } };
+}): string | null {
+  const videoId = item.snippet.resourceId?.videoId;
+  if (!videoId) return null;
+  const title = item.snippet.title || "(no title)";
+  return `- [${title}](https://www.youtube.com/watch?v=${videoId})`;
+}
+
 function formatPlaylistItems(
   items: Array<{
     snippet: { title: string; resourceId?: { videoId?: string } };
@@ -17,12 +26,21 @@ function formatPlaylistItems(
   if (items.length === 0) return [];
   const lines: string[] = ["", `## Videos (${items.length})`, ""];
   for (const item of items) {
-    const videoId = item.snippet.resourceId?.videoId;
-    if (!videoId) continue;
-    const title = item.snippet.title || "(no title)";
-    lines.push(`- [${title}](https://www.youtube.com/watch?v=${videoId})`);
+    const line = formatPlaylistItem(item);
+    if (line) lines.push(line);
   }
   return lines;
+}
+
+function resolvePlaylist(
+  playlistData: YoutubeApiResponse,
+  playlistId: string,
+): { snippet: YoutubeVideoSnippet } {
+  const playlist = playlistData.items?.[0];
+  if (!playlist) throw new Error(`Playlist ${playlistId} not found`);
+  if (!playlist.snippet)
+    throw new Error(`Missing snippet for playlist ${playlistId}`);
+  return { snippet: playlist.snippet };
 }
 
 export async function handlePlaylist(
@@ -40,14 +58,12 @@ export async function handlePlaylist(
     ).catch(() => ({ items: [] })),
   ]);
 
-  const playlist = playlistData.items?.[0];
-  if (!playlist) throw new Error(`Playlist ${playlistId} not found`);
-  if (!playlist.snippet)
-    throw new Error(`Missing snippet for playlist ${playlistId}`);
+  const playlist = resolvePlaylist(playlistData, playlistId);
+  const items = itemsData.items || [];
 
   const parts: string[] = [
     ...formatPlaylistHeader(playlist.snippet),
-    ...formatPlaylistItems(itemsData.items || []),
+    ...formatPlaylistItems(items),
   ];
 
   parts.push(

@@ -26,27 +26,44 @@ interface RenderListingOptions {
   emptyMessage?: string;
 }
 
+function renderEmptyListing(header: string, emptyMessage: string): string {
+  return [header, "", emptyMessage].join("\n");
+}
+
+function prependPreamble(parts: string[], preamble: string[]): void {
+  if (preamble.length > 0) parts.push(...preamble, "");
+}
+
+function shouldRenderEmpty(
+  listing: RedditListing,
+  opts: RenderListingOptions,
+): opts is RenderListingOptions & { emptyMessage: string } {
+  return !listing.data.children.length && !!opts.emptyMessage;
+}
+
+function appendPostRows(
+  parts: string[],
+  posts: Array<{ data: RedditPostData }>,
+): void {
+  for (const { data: post } of posts) {
+    if (parts.length > 1) parts.push("");
+    parts.push(...renderPost(post));
+  }
+}
+
 export function renderListing(
   header: string,
   listing: RedditListing,
   opts: RenderListingOptions = {},
 ): string {
   const parts: string[] = [header, ``];
-  const posts = listing.data.children;
-  if (!posts.length && opts.emptyMessage) {
-    parts.push(opts.emptyMessage);
-    return parts.join("\n");
+
+  if (shouldRenderEmpty(listing, opts)) {
+    return renderEmptyListing(header, opts.emptyMessage);
   }
 
-  if (opts.preamble?.length) {
-    parts.push(...opts.preamble, "");
-  }
-
-  for (const { data: post } of posts) {
-    if (parts.length > 1) parts.push("");
-    parts.push(...renderPost(post));
-  }
-
+  prependPreamble(parts, opts.preamble ?? []);
+  appendPostRows(parts, listing.data.children);
   return parts.join("\n");
 }
 

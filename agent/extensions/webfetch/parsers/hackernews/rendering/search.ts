@@ -13,6 +13,10 @@ function renderSearchHit(rank: number, hit: Record<string, unknown>): string[] {
   return lines;
 }
 
+function extractNumber(value: unknown, fallback: number): number {
+  return Number(value || fallback);
+}
+
 function extractSearchFields(hit: Record<string, unknown>): {
   title: string;
   url: string | null;
@@ -24,8 +28,8 @@ function extractSearchFields(hit: Record<string, unknown>): {
   return {
     title: safeString(hit.title) || "(no title)",
     url: safeString(hit.url),
-    points: Number(hit.points || 0),
-    numComments: Number(hit.num_comments || 0),
+    points: extractNumber(hit.points, 0),
+    numComments: extractNumber(hit.num_comments, 0),
     author: safeString(hit.author) || "",
     createdAt: safeString(hit.created_at),
   };

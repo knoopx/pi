@@ -4,5 +4,10 @@ export default defineConfig({
     include: ["**/*.test.ts"],
     globals: false,
     environment: "node",
+    coverage: {
+      provider: "v8",
+      include: ["**/*.ts"],
+      exclude: ["eslint.config.ts", "vitest.config.ts", "**/*.test.ts"],
+    },
   },
 });

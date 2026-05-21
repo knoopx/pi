@@ -1,5 +1,5 @@
 import type { Parser } from "../types";
-import { spawnChild } from "../lib/spawn-utils";
+import { spawnChild } from "../lib/child-spawn";
 
 interface GitHubPath {
   owner: string;
@@ -91,6 +91,17 @@ function tryParseCommit(
   return { owner, repo, type: "commit", ref: parts[1] };
 }
 
+function tryParseReleaseOrCommit(
+  owner: string,
+  repo: string,
+  first: string,
+  parts: string[],
+): GitHubPath | null {
+  if (first === "releases") return tryParseRelease(owner, repo, parts);
+  if (first === "commit") return tryParseCommit(owner, repo, parts);
+  return null;
+}
+
 function parseNumberedPath(
   owner: string,
   repo: string,
@@ -100,13 +111,7 @@ function parseNumberedPath(
   if (first === "pull" || first === "issues") {
     return tryParsePullOrIssue(owner, repo, first, parts);
   }
-  if (first === "releases") {
-    return tryParseRelease(owner, repo, parts);
-  }
-  if (first === "commit") {
-    return tryParseCommit(owner, repo, parts);
-  }
-  return null;
+  return tryParseReleaseOrCommit(owner, repo, first, parts);
 }
 
 function buildRefArgs(ref: string): string[] {
@@ -151,6 +156,12 @@ async function handleTree(
   return `# ${parsed.path ?? `${parsed.owner}/${parsed.repo}`}\n\n${entries}`;
 }
 
+function classifyDiffLine(line: string): "file" | "hunk" | "content" {
+  if (line.startsWith("diff --git")) return "file";
+  if (line.startsWith("@@ ")) return "hunk";
+  return "content";
+}
+
 async function handleCompare(
   parsed: GitHubPath,
   signal?: AbortSignal,
@@ -167,24 +178,37 @@ async function handleCompare(
     ],
     { signal },
   );
+  const mdLines = processDiffOutput(diff);
+  return `# Compare: ${parsed.ref}\n\n${mdLines.join("\n")}`;
+}
 
-  const mdLines: string[] = [];
+function processDiffContentLine(
+  line: string,
+  inHunk: boolean,
+  lines: string[],
+): void {
+  const processed = processDiffLine(line, inHunk);
+  if (processed !== null) lines.push(processed);
+}
+
+function processDiffOutput(diff: string): string[] {
+  const lines: string[] = [];
   let inHunk = false;
 
   for (const line of diff.split("\n")) {
-    if (line.startsWith("diff --git")) {
-      handleDiffHeader(line, mdLines);
+    const kind = classifyDiffLine(line);
+    if (kind === "file") {
+      handleDiffHeader(line, lines);
       inHunk = false;
-    } else if (line.startsWith("@@ ")) {
-      handleHunkStart(mdLines);
+    } else if (kind === "hunk") {
+      handleHunkStart(lines);
       inHunk = true;
     } else {
-      const processed = processDiffLine(line, inHunk);
-      if (processed !== null) mdLines.push(processed);
+      processDiffContentLine(line, inHunk, lines);
     }
   }
 
-  return `# Compare: ${parsed.ref}\n\n${mdLines.join("\n")}`;
+  return lines;
 }
 
 function handleDiffHeader(line: string, mdLines: string[]): void {
@@ -201,11 +225,17 @@ function handleHunkStart(mdLines: string[]): void {
   mdLines.push("");
 }
 
-function processDiffLine(line: string, inHunk: boolean): string | null {
+function processSignLine(line: string): string | null {
   if (line.startsWith("+")) return `+ ${line.slice(1)}`;
   if (line.startsWith("-")) return `- ${line.slice(1)}`;
-  if (inHunk && line.length > 0) return `  ${line}`;
-  return line.length > 0 ? line : null;
+  return null;
+}
+
+function processDiffLine(line: string, inHunk: boolean): string | null {
+  const signed = processSignLine(line);
+  if (signed) return signed;
+  if (!line.length) return null;
+  return inHunk ? `  ${line}` : line;
 }
 
 async function handlePr(

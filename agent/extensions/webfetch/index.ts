@@ -1,6 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { Type } from "typebox";
-import type { Static } from "typebox";
+import { Type, type Static } from "typebox";
 import { toMarkdown } from "mdast-util-to-markdown";
 import { gfmToMarkdown } from "mdast-util-gfm";
 import { parse } from "./lib/registry";
@@ -18,15 +17,7 @@ export default function (pi: ExtensionAPI): void {
   pi.registerTool({
     name: "web-fetch",
     label: "Web Fetch",
-    description: `Fetch web content and convert files to Markdown text.
-
-Use this to:
-- Fetch web pages and convert to Markdown
-- Convert documents to readable text
-- Extract content from PDFs and Office files
-- Process various file formats
-
-Supports URLs and local files.`,
+    description: `Fetch web content and convert files to Markdown text.`,
     parameters: WebfetchParams,
 
     async execute(_toolCallId, params, _signal) {

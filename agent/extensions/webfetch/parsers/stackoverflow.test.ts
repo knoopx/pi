@@ -127,7 +127,7 @@ describe("Stack Overflow parser", () => {
 
   describe("snapshot", () => {
     beforeAll(async () => {
-      const { mockFetchWithFixtures } = await import("../test/utils");
+      const { mockFetchWithFixtures } = await import("../test/fixture-mock");
       mockFetchWithFixtures();
     });
     it("captures output for https://stackoverflow.com/questions/79935417", async () => {
