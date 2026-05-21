@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import type { Theme } from "@earendil-works/pi-coding-agent";
 import { getSessionsDir } from "./data-collection";
 import { UsageComponent } from "./component";
 import { formatCost, formatTokens, formatNumber } from "./formatting";
 import { padLeft, padRight } from "./padding";
 import type { UsageData } from "./types";
 import { emptyTimeFilteredStats } from "./types";
+import { createMockTheme } from "../../../shared/testing/mock-theme";
+
+const theme = createMockTheme();
 
 // Helper Functions
 function createMockUsageData(): UsageData {
@@ -80,12 +82,6 @@ function createEmptyUsageData(): UsageData {
     allTime: emptyTimeFilteredStats(),
   };
 }
-
-// Mock Theme object
-const mockTheme = {
-  fg: (_name: string, text: string) => text,
-  bold: (text: string) => text,
-} as Theme;
 
 describe("getSessionsDir", () => {
   const originalEnv = process.env.PI_CODING_AGENT_DIR;
@@ -271,7 +267,7 @@ describe("UsageComponent", () => {
     mockData = createMockUsageData();
 
     component = new UsageComponent(
-      mockTheme,
+      theme,
       mockData,
       mockRequestRender as () => void,
       mockDone as () => void,
@@ -481,7 +477,7 @@ describe("UsageComponent", () => {
     it("then renders empty state message", () => {
       const emptyData = createEmptyUsageData();
       const emptyComponent = new UsageComponent(
-        mockTheme,
+        theme,
         emptyData,
         mockRequestRender as () => void,
         mockDone as () => void,

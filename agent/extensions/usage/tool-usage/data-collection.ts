@@ -1,175 +1,65 @@
-import { readdir } from "node:fs/promises";
-import { join } from "node:path";
-import { getSessionsDir } from "../stats/data-collection";
-import type { ToolCall, ToolStats } from "./types";
+import type { ToolStats } from "./types";
+import {
+  findSessionFiles,
+  processSessionFiles,
+  aggregateStats,
+  getSessionsDir,
+  type UsageCall,
+} from "../lib/session-parser";
 
-async function collectToolSessionFiles(
-  dirPath: string,
-  dir: string,
-): Promise<{ dir: string; file: string }[]> {
-  const result: { dir: string; file: string }[] = [];
-  try {
-    const files = await readdir(dirPath);
-    for (const file of files) {
-      if (file.endsWith(".jsonl"))
-        result.push({ dir, file: join(dirPath, file) });
-    }
-  } catch {
-    // Graceful degradation: session subdirectory unreadable
-  }
-  return result;
-}
-
-async function findToolSessionFiles(
-  sessionsDir: string,
-): Promise<{ dir: string; file: string }[]> {
-  const results: { dir: string; file: string }[] = [];
-  try {
-    const sessionDirs = await readdir(sessionsDir);
-    for (const dir of sessionDirs) {
-      if (dir === "subagents") continue;
-      const dirPath = join(sessionsDir, dir);
-      const files = await collectToolSessionFiles(dirPath, dir);
-      results.push(...files);
-    }
-  } catch {
-    // Graceful degradation: sessions root directory unreadable
-  }
-  return results;
-}
-function collectToolCallsFromContents(
+function extractToolCalls(
   contents: unknown[],
   sessionId: string,
   timestamp: number,
-): ToolCall[] {
-  const toolCalls: ToolCall[] = [];
+): UsageCall[] {
+  const calls: UsageCall[] = [];
   for (const content of contents) {
-    if (
-      (content as { type?: string; name?: string })?.type === "toolCall" &&
-      (content as { name?: string }).name
-    ) {
-      toolCalls.push({
-        name: (content as { name: string }).name,
-        sessionId,
-        timestamp: String(timestamp),
-      });
-    }
-  }
-  return toolCalls;
-}
-function parseSessionEntry(
-  line: string,
-  sessionId: string | null,
-): { sessionId: string | null; toolCalls: ToolCall[] } {
-  if (!line.trim()) return { sessionId, toolCalls: [] };
-  try {
-    const entry = JSON.parse(line) as SessionEntry;
-
-    if (entry.type === "session" && typeof entry.id === "string") {
-      return { sessionId: entry.id, toolCalls: [] };
-    }
-
-    if (
-      entry.type !== "message" ||
-      !entry.message?.content ||
-      sessionId === null
-    ) {
-      return { sessionId, toolCalls: [] };
-    }
-    const contents = normalizeContents(entry.message.content);
-    return {
+    const c = content as { type?: string; name?: string };
+    if (c?.type !== "toolCall" || !c.name) continue;
+    calls.push({
+      name: c.name,
       sessionId,
-      toolCalls: collectToolCallsFromContents(
-        contents,
-        sessionId,
-        parseTimestamp(entry.timestamp),
-      ),
-    };
-  } catch {
-    // Graceful degradation: invalid JSON line skipped
+      timestamp: String(timestamp),
+    });
   }
-  return { sessionId, toolCalls: [] };
-}
-interface SessionEntry {
-  type?: string;
-  id?: string;
-  timestamp?: string;
-  message?: { content?: unknown };
-}
-function normalizeContents(content: unknown): unknown[] {
-  return Array.isArray(content) ? content : [content];
-}
-function parseTimestamp(timestamp: string | undefined): number {
-  if (!timestamp) return 0;
-  return new Date(timestamp).getTime();
+  return calls;
 }
 
-async function parseToolSession(
-  filePath: string,
-): Promise<{ sessionId: string | null; toolCalls: ToolCall[] }> {
-  const content = await import("node:fs/promises").then((m) =>
-    m.readFile(filePath, "utf-8"),
-  );
-  const lines = content.trim().split("\n");
-  let sessionId: string | null = null;
-  const toolCalls: ToolCall[] = [];
-
-  for (const line of lines) {
-    const result = parseSessionEntry(line, sessionId);
-    sessionId = result.sessionId;
-    toolCalls.push(...result.toolCalls);
-  }
-  return { sessionId, toolCalls };
-}
-function aggregateToolStats(
-  allToolCalls: ToolCall[],
-  sessionCount: number,
-): ToolStats {
-  const stats: ToolStats = {
-    totalSessions: sessionCount,
-    totalToolCalls: allToolCalls.length,
-    byTool: {},
-    bySession: {},
-    byDate: {},
+function mapToToolStats(agg: ReturnType<typeof aggregateStats>): ToolStats {
+  const mapBuckets = (
+    buckets: Record<string, { count: number; items: Record<string, number> }>,
+  ): Record<string, { count: number; tools: Record<string, number> }> => {
+    const result: Record<
+      string,
+      { count: number; tools: Record<string, number> }
+    > = {};
+    for (const [key, { count, items }] of Object.entries(buckets)) {
+      result[key] = { count, tools: items };
+    }
+    return result;
   };
 
-  for (const call of allToolCalls) {
-    stats.byTool[call.name] = (stats.byTool[call.name] || 0) + 1;
-
-    if (!stats.bySession[call.sessionId])
-      stats.bySession[call.sessionId] = { count: 0, tools: {} };
-    stats.bySession[call.sessionId].count++;
-    stats.bySession[call.sessionId].tools[call.name] =
-      (stats.bySession[call.sessionId].tools[call.name] || 0) + 1;
-    const date = call.timestamp?.split("T")[0] || "unknown";
-    if (!stats.byDate[date]) stats.byDate[date] = { count: 0, tools: {} };
-    stats.byDate[date].count++;
-    stats.byDate[date].tools[call.name] =
-      (stats.byDate[date].tools[call.name] || 0) + 1;
-  }
-
-  return stats;
+  return {
+    totalSessions: agg.totalSessions,
+    totalToolCalls: agg.totalCalls,
+    byTool: agg.byItem,
+    bySession: mapBuckets(agg.bySession),
+    byDate: mapBuckets(agg.byDate),
+  };
 }
+
 export async function collectToolStats(
   signal?: AbortSignal,
 ): Promise<ToolStats | null> {
   const sessionsDir = getSessionsDir();
-  const sessionFiles = await findToolSessionFiles(sessionsDir);
+  const filePaths = await findSessionFiles(sessionsDir);
   if (signal?.aborted) return null;
-  const allToolCalls: ToolCall[] = [];
-  let sessionCount = 0;
 
-  for (const { file } of sessionFiles) {
-    if (signal?.aborted) return null;
-    try {
-      const { sessionId, toolCalls } = await parseToolSession(file);
-      if (sessionId) sessionCount++;
-      allToolCalls.push(...toolCalls);
-    } catch {
-      // Graceful degradation: session file parse failure
-    }
-    await new Promise<void>((resolve) => setImmediate(resolve));
-  }
+  const { calls, sessionCount } = await processSessionFiles(
+    filePaths,
+    extractToolCalls,
+    signal,
+  );
 
-  return aggregateToolStats(allToolCalls, sessionCount);
+  return mapToToolStats(aggregateStats(calls, sessionCount));
 }

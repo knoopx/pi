@@ -5,12 +5,7 @@ import { createMockTheme } from "../../../shared/testing/mock-theme";
 
 function renderToolUsage(data: ToolStats): string[] {
   const theme = createMockTheme();
-  const component = new ToolUsageComponent(
-    theme,
-    data,
-    () => {},
-    () => {},
-  );
+  const component = new ToolUsageComponent(theme, data);
   return component.render();
 }
 
@@ -33,6 +28,21 @@ describe("tool-usage component rendering", () => {
       byTool: {},
       byDate: {},
       bySession: {},
+    });
+    expect(lines.join("\n")).toMatchSnapshot();
+  });
+
+  it("renders session tab with per-session breakdown", () => {
+    const lines = renderToolUsage({
+      totalSessions: 3,
+      totalToolCalls: 42,
+      byTool: { bash: 25, read: 17 },
+      byDate: {},
+      bySession: {
+        "sess-aaa-111": { count: 20, tools: { bash: 15, read: 5 } },
+        "sess-bbb-222": { count: 15, tools: { bash: 8, read: 7 } },
+        "sess-ccc-333": { count: 7, tools: { bash: 2, read: 5 } },
+      },
     });
     expect(lines.join("\n")).toMatchSnapshot();
   });

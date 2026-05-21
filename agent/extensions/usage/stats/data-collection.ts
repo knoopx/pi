@@ -1,8 +1,5 @@
-import { readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { homedir } from "node:os";
-import type { FileEntry, SessionEntry } from "@earendil-works/pi-coding-agent";
-import type { AssistantMessage } from "@earendil-works/pi-ai";
+import { readFile } from "node:fs/promises";
+import type { FileEntry } from "@earendil-works/pi-coding-agent";
 import {
   emptyTimeFilteredStats,
   emptyProviderStats,
@@ -10,158 +7,12 @@ import {
   accumulateStats,
 } from "./types";
 import type { UsageData, TabName } from "./types";
-export function getSessionsDir(): string {
-  const agentDir =
-    process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi", "agent");
-  return join(agentDir, "sessions");
-}
-
-async function getAllSessionFiles(signal?: AbortSignal): Promise<string[]> {
-  const sessionsDir = getSessionsDir();
-  async function collectSessionFiles(
-    cwdPath: string,
-    signal?: AbortSignal,
-  ): Promise<string[]> {
-    const result: string[] = [];
-    try {
-      const sessionFiles = await readdir(cwdPath);
-      for (const file of sessionFiles) {
-        if (signal?.aborted) return result;
-        if (file.endsWith(".jsonl")) result.push(join(cwdPath, file));
-      }
-    } catch {
-      // Graceful degradation: session directory unreadable
-    }
-    return result;
-  }
-  const files: string[] = [];
-
-  try {
-    const cwdDirs = await readdir(sessionsDir, { withFileTypes: true });
-    for (const dir of cwdDirs) {
-      if (signal?.aborted) return files;
-      if (!dir.isDirectory()) continue;
-      const cwdPath = join(sessionsDir, dir.name);
-      const sessionFiles = await collectSessionFiles(cwdPath, signal);
-      files.push(...sessionFiles);
-    }
-  } catch {
-    // Graceful degradation: sessions root directory unreadable
-  }
-
-  return files;
-}
-interface SessionMessage {
-  provider: string;
-  model: string;
-  cost: number;
-  input: number;
-  output: number;
-  cacheRead: number;
-  cacheWrite: number;
-  timestamp: number;
-}
-function validateEntry(
-  entry: FileEntry,
-): entry is Extract<SessionEntry, { type: "message" }> {
-  return entry.type === "message";
-}
-function validateMessage(msg: unknown): msg is AssistantMessage {
-  if (!msg || typeof msg !== "object") return false;
-  const m = msg as {
-    role?: string;
-    usage?: unknown;
-    provider?: string;
-    model?: string;
-  };
-  return (
-    m.role === "assistant" &&
-    typeof m.usage === "object" &&
-    m.usage !== null &&
-    typeof m.provider === "string" &&
-    typeof m.model === "string"
-  );
-}
-function extractMessageFromEntry(
-  entry: FileEntry,
-  seenHashes: Set<string>,
-): SessionMessage | null {
-  if (!validateEntry(entry)) return null;
-  const msg = entry.message;
-  if (!validateMessage(msg)) return null;
-  const { usage } = msg;
-  const tokens = extractTokenCounts(usage);
-  const timestamp = resolveTimestamp(entry, msg);
-
-  if (isDuplicate(tokens, timestamp, seenHashes)) return null;
-  markSeen(tokens, timestamp, seenHashes);
-
-  return {
-    provider: msg.provider,
-    model: msg.model,
-    cost: usage.cost.total || 0,
-    input: tokens.input,
-    output: tokens.output,
-    cacheRead: tokens.cacheRead,
-    cacheWrite: tokens.cacheWrite,
-    timestamp,
-  };
-}
-interface TokenUsage {
-  input: number;
-  output: number;
-  cacheRead: number;
-  cacheWrite: number;
-}
-
-function extractTokenCounts(usage: TokenUsage): {
-  input: number;
-  output: number;
-  cacheRead: number;
-  cacheWrite: number;
-} {
-  return {
-    input: Number(usage.input) || 0,
-    output: Number(usage.output) || 0,
-    cacheRead: Number(usage.cacheRead) || 0,
-    cacheWrite: Number(usage.cacheWrite) || 0,
-  };
-}
-function resolveTimestamp(entry: FileEntry, msg: AssistantMessage): number {
-  const msgTs = Number(msg.timestamp);
-  if (msgTs) return msgTs;
-  if (!entry.timestamp) return 0;
-  const fallbackTs = new Date(entry.timestamp).getTime();
-  return Number.isNaN(fallbackTs) ? 0 : fallbackTs;
-}
-function isDuplicate(
-  tokens: {
-    input: number;
-    output: number;
-    cacheRead: number;
-    cacheWrite: number;
-  },
-  timestamp: number,
-  seenHashes: Set<string>,
-): boolean {
-  const totalTokens =
-    tokens.input + tokens.output + tokens.cacheRead + tokens.cacheWrite;
-  return seenHashes.has(`${timestamp}:${totalTokens}`);
-}
-function markSeen(
-  tokens: {
-    input: number;
-    output: number;
-    cacheRead: number;
-    cacheWrite: number;
-  },
-  timestamp: number,
-  seenHashes: Set<string>,
-): void {
-  const totalTokens =
-    tokens.input + tokens.output + tokens.cacheRead + tokens.cacheWrite;
-  seenHashes.add(`${timestamp}:${totalTokens}`);
-}
+import { getAllSessionFiles } from "./session-files";
+import {
+  extractMessageFromEntry,
+  type SessionMessage,
+} from "./message-extraction";
+export { getSessionsDir } from "./session-files";
 
 async function parseSessionFile(
   filePath: string,
@@ -179,6 +30,21 @@ async function parseSessionFile(
   }
 }
 
+function applyParseResult(
+  result: { sessionId?: string; message?: SessionMessage },
+  sessionId: string,
+  _messages: SessionMessage[],
+): string {
+  return result.sessionId ?? sessionId;
+}
+
+function collectMessage(
+  result: { message?: SessionMessage },
+  messages: SessionMessage[],
+): void {
+  if (result.message) messages.push(result.message);
+}
+
 async function parseSessionLines(
   lines: string[],
   seenHashes: Set<string>,
@@ -189,40 +55,60 @@ async function parseSessionLines(
 
   for (let i = 0; i < lines.length; i++) {
     if (checkSignalAborted(signal)) return null;
-    if (i % 500 === 0)
-      await new Promise<void>((resolve) => setImmediate(resolve));
+    await yieldIfNeeded(i);
     const result = parseSessionLine(lines[i], seenHashes);
-    if (result.sessionId) sessionId = result.sessionId;
-    if (result.message) messages.push(result.message);
+    sessionId = applyParseResult(result, sessionId, messages);
+    collectMessage(result, messages);
   }
 
   return sessionId ? { sessionId, messages } : null;
 }
+
+async function yieldIfNeeded(index: number): Promise<void> {
+  if (index % 500 === 0)
+    await new Promise<void>((resolve) => setImmediate(resolve));
+}
+function parseJsonLine(line: string): unknown | null {
+  if (!line.trim()) return null;
+  try {
+    return JSON.parse(line);
+  } catch {
+    return null;
+  }
+}
+
+function isSessionEntry(entry: {
+  type?: string;
+  id?: string;
+}): entry is { type: "session"; id: string } {
+  return entry.type === "session" && typeof entry.id === "string";
+}
+
+function isMessageEntry(entry: { type?: string; message?: unknown }): boolean {
+  return entry.type === "message" && !!entry.message;
+}
+
+function parseMessageEntry(
+  entry: { message?: unknown },
+  seenHashes: Set<string>,
+): { message?: SessionMessage } {
+  const message = extractMessageFromEntry(entry as FileEntry, seenHashes);
+  return message ? { message } : {};
+}
+
 function parseSessionLine(
   line: string,
   seenHashes: Set<string>,
 ): { sessionId?: string; message?: SessionMessage } {
-  if (!line.trim()) return {};
-  try {
-    const raw = JSON.parse(line) as unknown;
-    const entry = raw as { type?: string; id?: string };
-    if (entry.type === "session" && typeof entry.id === "string")
-      return { sessionId: entry.id, message: undefined };
-    const messageEntry = raw as {
-      type?: string;
-      id?: string;
-      message?: unknown;
-    };
-    if (messageEntry.type !== "message" || !messageEntry.message) return {};
-    const message = extractMessageFromEntry(
-      messageEntry as FileEntry,
-      seenHashes,
-    );
-    if (message) return { message };
-  } catch {
-    // Graceful degradation: invalid JSON line skipped
-  }
-  return {};
+  const raw = parseJsonLine(line);
+  if (!raw) return {};
+
+  const entry = raw as { type?: string; id?: string; message?: unknown };
+
+  if (isSessionEntry(entry)) return { sessionId: entry.id };
+  if (!isMessageEntry(entry)) return {};
+
+  return parseMessageEntry(entry, seenHashes);
 }
 function checkSignalAborted(signal?: AbortSignal): boolean {
   return signal?.aborted === true;
@@ -257,6 +143,45 @@ function getTimePeriods(
   if (timestamp >= weekStartMs) periods.push("thisWeek");
   return periods;
 }
+function getOrCreateProviderStats(
+  stats: ReturnType<typeof emptyTimeFilteredStats>,
+  provider: string,
+): ReturnType<typeof emptyProviderStats> {
+  let providerStats = stats.providers.get(provider);
+  if (!providerStats) {
+    providerStats = emptyProviderStats();
+    stats.providers.set(provider, providerStats);
+  }
+  return providerStats;
+}
+
+function getOrCreateModelStats(
+  providerStats: ReturnType<typeof emptyProviderStats>,
+  model: string,
+): ReturnType<typeof emptyModelStats> {
+  let modelStats = providerStats.models.get(model);
+  if (!modelStats) {
+    modelStats = emptyModelStats();
+    providerStats.models.set(model, modelStats);
+  }
+  return modelStats;
+}
+
+function accumulateForPeriod(
+  stats: ReturnType<typeof emptyTimeFilteredStats>,
+  msg: SessionMessage,
+  sessionId: string,
+  tokens: { total: number; input: number; output: number; cache: number },
+): void {
+  const providerStats = getOrCreateProviderStats(stats, msg.provider);
+  const modelStats = getOrCreateModelStats(providerStats, msg.model);
+  modelStats.sessions.add(sessionId);
+  accumulateStats(modelStats, msg.cost, tokens);
+  providerStats.sessions.add(sessionId);
+  accumulateStats(providerStats, msg.cost, tokens);
+  accumulateStats(stats.totals, msg.cost, tokens);
+}
+
 function processMessage(
   msg: SessionMessage,
   opts: {
@@ -276,24 +201,9 @@ function processMessage(
   const sessionContributed = { today: false, thisWeek: false, allTime: false };
 
   for (const period of periods) {
-    const raw = opts.data[period];
-    if (!raw || typeof raw !== "object" || raw === null) continue;
-    const stats = raw;
-    let providerStats = stats.providers.get(msg.provider);
-    if (!providerStats) {
-      providerStats = emptyProviderStats();
-      stats.providers.set(msg.provider, providerStats);
-    }
-    let modelStats = providerStats.models.get(msg.model);
-    if (!modelStats) {
-      modelStats = emptyModelStats();
-      providerStats.models.set(msg.model, modelStats);
-    }
-    modelStats.sessions.add(opts.sessionId);
-    accumulateStats(modelStats, msg.cost, tokens);
-    providerStats.sessions.add(opts.sessionId);
-    accumulateStats(providerStats, msg.cost, tokens);
-    accumulateStats(stats.totals, msg.cost, tokens);
+    const stats = opts.data[period];
+    if (!stats || typeof stats !== "object") continue;
+    accumulateForPeriod(stats, msg, opts.sessionId, tokens);
     sessionContributed[period] = true;
   }
   return sessionContributed;

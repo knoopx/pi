@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`skill-usage component rendering > renders empty skill usage when no skills 1`] = `
+"[38;2;250;208;0m[1mSkill Usage[22m[39m
+Sessions: -  |  Skill Calls: -
+
+[38;2;250;208;0m[Current Session][39m  [38;2;76;62;118m All Sessions [39m
+
+[38;2;76;62;118m  No session data[39m
+
+[38;2;76;62;118m[Tab/←→] switch tab  [↑↓] cycle sessions  [q] close[39m"
+`;
+
+exports[`skill-usage component rendering > renders session tab with per-session breakdown 1`] = `
+"[38;2;250;208;0m[1mSkill Usage[22m[39m
+Sessions: 3  |  Skill Calls: 24
+
+[38;2;250;208;0m[Current Session][39m  [38;2;76;62;118m All Sessions [39m
+
+[38;2;110;97;148m1 / 3 sessions  |  12 calls[39m
+
+  bash             8  [38;2;76;62;118m( 66.7%)[39m  [38;2;250;208;0m██████████████████████████████[39m
+  duckdb           4  [38;2;76;62;118m( 33.3%)[39m  [38;2;250;208;0m███████████████[39m
+
+[38;2;76;62;118m[Tab/←→] switch tab  [↑↓] cycle sessions  [q] close[39m"
+`;
+
+exports[`skill-usage component rendering > renders skill usage dashboard with per-skill stats 1`] = `
+"[38;2;250;208;0m[1mSkill Usage[22m[39m
+Sessions: 12  |  Skill Calls: 142
+
+[38;2;250;208;0m[Current Session][39m  [38;2;76;62;118m All Sessions [39m
+
+[38;2;76;62;118m  No session data[39m
+
+[38;2;76;62;118m[Tab/←→] switch tab  [↑↓] cycle sessions  [q] close[39m"
+`;

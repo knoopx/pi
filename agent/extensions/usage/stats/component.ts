@@ -1,6 +1,7 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth } from "@earendil-works/pi-tui";
-import type { UsageData, TabName, ProviderStats, BaseStats } from "./types";
+import { formatTabBar } from "../lib/tab-bar";
+import { emptyProviderStats, type UsageData, type TabName, type ProviderStats, type BaseStats } from "./types";
 import { handleUsageInput } from "./input";
 import { padRight, padLeft } from "./padding";
 import { NAME_COL_WIDTH, DATA_COLUMNS, TABLE_WIDTH } from "./table";
@@ -124,14 +125,10 @@ export class UsageComponent implements IUsageComponent {
   }
 
   private renderTabs(): string[] {
-    const th = this.theme;
-    const tabs = TAB_ORDER.map((tab) => {
-      const label = TAB_LABELS[tab];
-      return tab === this.activeTab
-        ? th.fg("accent", `[${label}]`)
-        : th.fg("dim", ` ${label} `);
-    }).join("  ");
-    return [tabs, ""];
+    return [
+      formatTabBar(TAB_ORDER, TAB_LABELS, this.activeTab, this.theme),
+      "",
+    ];
   }
 
   private renderHeader(): string[] {
@@ -148,6 +145,12 @@ export class UsageComponent implements IUsageComponent {
     ];
   }
 
+  private styleName(name: string, selected: boolean, dimAll: boolean): string {
+    if (selected) return this.theme.fg("accent", name);
+    if (dimAll) return this.theme.fg("dim", name);
+    return name;
+  }
+
   private renderDataRow(
     name: string,
     stats: BaseStats & { sessions: Set<string> | number },
@@ -158,11 +161,7 @@ export class UsageComponent implements IUsageComponent {
     const indentStr = " ".repeat(indent);
     const nameWidth = NAME_COL_WIDTH - indent;
     const truncName = truncateToWidth(name, nameWidth - 1);
-    const styledName = selected
-      ? th.fg("accent", truncName)
-      : dimAll
-        ? th.fg("dim", truncName)
-        : truncName;
+    const styledName = this.styleName(truncName, selected, dimAll);
     let row = indentStr + padRight(styledName, nameWidth);
 
     for (const col of DATA_COLUMNS) {
@@ -176,39 +175,53 @@ export class UsageComponent implements IUsageComponent {
     return row;
   }
 
+  private renderProviderRow(
+    providerName: string,
+    providerStats: ReturnType<typeof emptyProviderStats>,
+    isSelected: boolean,
+    isExpanded: boolean,
+  ): string {
+    const arrow = isExpanded ? "▾" : "▸";
+    const prefix = isSelected
+      ? this.theme.fg("accent", `${arrow} `)
+      : this.theme.fg("dim", `${arrow} `);
+    const dataRow = this.renderDataRow(providerName, providerStats, {
+      indent: 2,
+      selected: isSelected,
+    });
+    return prefix + dataRow.slice(2);
+  }
+
   private renderRows(): string[] {
-    const th = this.theme;
     const stats = this.data[this.activeTab];
-    const lines: string[] = [];
-
     if (this.providerOrder.length === 0) {
-      lines.push(th.fg("dim", "  No usage data for this period"));
-      return lines;
+      return [this.theme.fg("dim", "  No usage data for this period")];
     }
+    return this.renderProviderRows(stats);
+  }
 
+  private renderProviderRows(stats: {
+    providers: Map<string, ProviderStats>;
+  }): string[] {
+    const lines: string[] = [];
     for (let i = 0; i < this.providerOrder.length; i++) {
       const providerName = this.providerOrder[i];
       const providerStats = stats.providers.get(providerName);
+      if (!providerStats) continue;
       const isSelected = i === this.selectedIndex;
       const isExpanded = this.expanded.has(providerName);
-      const arrow = isExpanded ? "▾" : "▸";
-      const prefix = isSelected
-        ? th.fg("accent", `${arrow} `)
-        : th.fg("dim", `${arrow} `);
-      if (providerStats) {
-        const dataRow = this.renderDataRow(providerName, providerStats, {
-          indent: 2,
-          selected: isSelected,
-        });
-        lines.push(prefix + dataRow.slice(2));
-
-        if (isExpanded) {
-          const modelLines = this.renderModelRows(providerStats);
-          lines.push(...modelLines);
-        }
+      lines.push(
+        this.renderProviderRow(
+          providerName,
+          providerStats,
+          isSelected,
+          isExpanded,
+        ),
+      );
+      if (isExpanded) {
+        lines.push(...this.renderModelRows(providerStats));
       }
     }
-
     return lines;
   }
 

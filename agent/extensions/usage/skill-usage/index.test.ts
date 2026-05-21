@@ -1,29 +1,29 @@
 import { describe, it, expect } from "vitest";
 import { createMockTheme } from "../lib/test-factories";
-import { collectToolStats } from "./data-collection";
-import { ToolUsageComponent } from "./component";
+import { collectSkillStats } from "./data-collection";
+import { SkillUsageComponent } from "./component";
 
-describe("tool-usage", () => {
-  describe("collectToolStats", () => {
+describe("skill-usage", () => {
+  describe("collectSkillStats", () => {
     it("then returns null when signal is aborted immediately", async () => {
       const controller = new AbortController();
       controller.abort();
-      const result = await collectToolStats(controller.signal);
+      const result = await collectSkillStats(controller.signal);
       expect(result).toBeNull();
     });
   });
 
-  describe("ToolUsageComponent", () => {
+  describe("SkillUsageComponent", () => {
     it("then renders without crashing", () => {
       const theme = createMockTheme();
       const data = {
         totalSessions: 0,
-        totalToolCalls: 0,
-        byTool: {},
+        totalSkillCalls: 0,
+        bySkill: {},
         bySession: {},
         byDate: {},
       };
-      const component = new ToolUsageComponent(theme, data);
+      const component = new SkillUsageComponent(theme, data);
       const lines = component.render();
       expect(lines).toBeInstanceOf(Array);
     });
