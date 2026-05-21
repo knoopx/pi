@@ -1,5 +1,6 @@
+import { vi } from "vitest";
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import type { Terminal } from "@earendil-works/pi-tui";
+import type { TUI, Terminal } from "@earendil-works/pi-tui";
 
 export class TestTerminal implements Terminal {
   private _columns: number;
@@ -86,6 +87,15 @@ function fgAnsi(hex: string): string {
 function bgAnsi(hex: string): string {
   const [r, g, b] = parseHexRgb(hex);
   return `\x1b[48;2;${r};${g};${b}m`;
+}
+
+export function createMockTui(columns = 120, rows = 30): TUI {
+  const terminal = new TestTerminal(columns, rows);
+  return {
+    terminal,
+    requestRender: vi.fn(),
+    setFocus: vi.fn(),
+  } as unknown as TUI;
 }
 
 export function createMockTheme(): Theme {

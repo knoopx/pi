@@ -1,6 +1,6 @@
 # kPI
 
-Personal [Pi Coding Agent](https://buildwithpi.ai/) configuration with 14 extensions and 28 skills.
+Personal [Pi Coding Agent](https://buildwithpi.ai/) configuration.
 
 https://github.com/user-attachments/assets/054693ae-40b8-4ec3-88bf-7dcca312fcb1
 
@@ -8,13 +8,21 @@ https://github.com/user-attachments/assets/054693ae-40b8-4ec3-88bf-7dcca312fcb1
 
 Full terminal IDE built as a pi extension: file/symbol browsing, jujutsu version control, GitHub pull requests, workspace management, and operation log. Built with overlay TUIs, Shiki syntax highlighting, and keyboard-driven navigation.
 
+### Search
+
+Fuzzy-search across all files with syntax-highlighted source preview. Type to filter, enter to select a result.
+
+![Search](screenshots/search.png)
+
+**Keys:** `↑/↓` navigate · `Enter` select result · `Ctrl+E` open in editor · `Ctrl+I` insert path:line · `PgUp/PgDn` scroll preview · `Esc` exit
+
 ### File Browser
 
 Browse files with syntax-highlighted preview. Type to filter, enter to insert path into editor.
 
 ![Files](screenshots/files.png)
 
-**Keys:** `↑/↓` navigate · `Enter` insert path · `Ctrl+I` insert path · `Ctrl+E` edit in internal editor · `Ctrl+T` inspect symbols · `Ctrl+D` remove from Codemapper index · `Ctrl+U` show used-by · `Esc` exit
+**Keys:** `↑/↓` navigate · `Enter` insert path · `Ctrl+I` insert path · `Ctrl+E` open in editor · `Ctrl+T` inspect symbols · `Ctrl+D` show dependencies · `Ctrl+U` show used-by · `Esc` exit
 
 ### Symbol Browser
 
@@ -22,7 +30,7 @@ Browse code symbols (functions, classes, methods) with source preview. Enter ins
 
 ![Symbols](screenshots/symbols.png)
 
-**Keys:** `↑/↓` navigate · `Ctrl+/` cycle type filter · `Enter` insert path:line · `Ctrl+I` insert symbol name · `Ctrl+E` edit in internal editor · `Ctrl+T` callers · `Ctrl+Y` types · `Ctrl+J` callees · `Ctrl+K` schema · `Esc` exit
+**Keys:** `↑/↓` navigate · `Ctrl+/` cycle type filter · `Enter` insert path:line · `Ctrl+I` insert symbol name · `Ctrl+E` open in editor · `Ctrl+T` callers · `Ctrl+Y` types · `Ctrl+J` callees · `Ctrl+K` schema · `Esc` exit
 
 ### Symbol References
 
@@ -38,7 +46,7 @@ Browse all mutable jujutsu changes with file/diff preview. Split, fixup, drop, n
 
 ![Changes](screenshots/changes.png)
 
-**Keys:** `Tab` switch focus · `↑/↓` navigate · `Ctrl+/` cycle revision filter · `Space` toggle selected · `n` new change · `e` edit · `r` revert · `d` describe · `s` split · `f` fixup · `i` insert change ID · `b` bookmark · `Ctrl+M` move mode · `Ctrl+P` push bookmarks · `Ctrl+D` drop · `Esc` exit
+**Keys:** `Tab` switch focus · `↑/↓` navigate · `Ctrl+/` cycle revision filter · `Space` toggle selected · `n` new change · `e` edit · `r` revert · `d` describe · `s` split · `f` fixup · `i` inspect · `Ctrl+I` insert change ID · `b` bookmark · `Ctrl+M` move mode · `Ctrl+P` push bookmarks · `Ctrl+D` drop · `Esc` exit
 
 ### Describe Workflow
 
@@ -82,7 +90,7 @@ Create isolated jj workspaces and spawn pi subagents via tmux. Rebase, describe,
 
 ![Workspaces](screenshots/workspaces.png)
 
-**Keys:** `Tab` switch focus · `↑/↓` navigate · `n` new workspace + pi · `a` attach to tmux · `r` rebase & describe · `e` open in internal editor · `t` open terminal · `Ctrl+D` delete · `Esc` exit
+**Keys:** `Tab` switch focus · `↑/↓` navigate · `n` new workspace + pi · `a` attach to tmux · `r` rebase & describe · `e` open in editor · `t` open terminal · `Ctrl+D` delete · `Esc` exit
 
 ### Pull Requests
 
@@ -100,29 +108,20 @@ Browse and restore/undo jujutsu operations.
 
 **Keys:** `↑/↓` navigate · `r` restore · `u` undo last operation · `Esc` exit
 
-### Internal Editor
-
-Edit files directly in the terminal with line numbers, syntax-aware pair insertion (parentheses, brackets, braces), undo/redo, comment toggling, and word-level deletion. Open from File Browser (`Ctrl+E`), Symbol Browser (`Ctrl+E`), Changes (`e` on a file), Workspaces (`e`), or Symbol References (`Enter`).
-
-![Editor](screenshots/editor.png)
-
-**Keys:** `↑/↓/←/→` move cursor · `PageUp/PageDown` scroll · `Home/End` line start/end · `Ctrl+S` save · `Ctrl+Z` undo · `Ctrl+Y` redo · `Ctrl+A` select all · `Ctrl+/` toggle comment · `Delete` delete forward · `Shift+Delete` delete line · `Ctrl+Backspace` delete word backward · `Ctrl+Delete` delete word forward · `Type` insert text · `Esc` exit
-
 ### Commands
 
-| Command                  | Description                                  |
-| ------------------------ | -------------------------------------------- |
-| `/files [query]`         | Browse files with syntax-highlighted preview |
-| `/symbols [query]`       | Browse code symbols with source preview      |
-| `/todos [query]`         | Browse TODO/FIXME/HACK/XXX comments          |
-| `/bookmarks`             | Browse bookmarks in `name@remote` format     |
-| `/changes`               | Browse mutable jujutsu changes               |
-| `/oplog`                 | Browse jujutsu operation log                 |
-| `/workspaces`            | Review all workspaces                        |
-| `/pull-requests`         | Browse GitHub PRs with diff preview          |
-| `/workspace <task desc>` | Create jj workspace + spawn subagent         |
-| `/guardrails`            | Audit guardrails config and rules            |
-| `/hooks`                 | Audit hooks config and active rules          |
+| Command                  | Description                                       |
+| ------------------------ | ------------------------------------------------- |
+| `/search [query]`        | Fuzzy-search across all files with source preview |
+| `/files [query]`         | Browse files with syntax-highlighted preview      |
+| `/symbols [query]`       | Browse code symbols with source preview           |
+| `/todos [query]`         | Browse TODO/FIXME/HACK/XXX comments               |
+| `/bookmarks`             | Browse bookmarks in `name@remote` format          |
+| `/changes`               | Browse mutable jujutsu changes                    |
+| `/oplog`                 | Browse jujutsu operation log                      |
+| `/workspaces`            | Review all workspaces                             |
+| `/pull-requests`         | Browse GitHub PRs with diff preview               |
+| `/workspace <task desc>` | Create jj workspace + spawn subagent              |
 
 ### Keyboard Shortcuts
 
@@ -141,22 +140,6 @@ Edit files directly in the terminal with line numbers, syntax-aware pair inserti
 
 Rich status footer displaying working directory, VCS state (jujutsu change ID/bookmark), session name, model, API quota usage (Anthropic, OpenAI, Gemini, GitHub Copilot, Z.AI), session cost, and context window percentage. Quota refreshes every 5 minutes with color coding (green <70%, yellow 70-90%, red >90%).
 
-## Guardrails
-
-Security rules that block or confirm risky tool calls (destructive shell commands, force pushes, etc.). Rules match on `command`, `file_name`, or `file_content` context with optional `scope` filtering (`project`/`external`). Actions are `block` or `confirm`. Audit output shows all active groups with their rules and validation status.
-
-![Guardrails](screenshots/guardrails.png)
-
-- `/guardrails` — audit config (default), or toggle with `on`/`off`
-
-## Hooks
-
-Run shell commands at specific lifecycle events: `session_start`, `session_shutdown`, `turn_start`, `turn_end`, `agent_start`, `agent_end`, `tool_call`, `tool_result`. Supports pattern-based matching with variable substitution (`%file%`, `%tool%`, `%cwd%`), blocking rules (exit code 2, `continue: false`, or `decision: "block"` in hook output can block any event; hook failures block on `tool_call` and `agent_end`), and audit logging.
-
-![Hooks](screenshots/hooks.png)
-
-- `/hooks` — audit config (default), or toggle with `on`/`off`
-
 ## Reverse History Search
 
 Fuzzy search through user messages and bash commands across all pi sessions. Results show bash commands (prefixed with `$`) and user messages (prefixed with `󰆉`). Sorted by recency, deduplicated, limited to 10 visible results.
@@ -167,95 +150,114 @@ Fuzzy search through user messages and bash commands across all pi sessions. Res
 
 ## Extensions
 
-### DuckDuckGo — Web Search
+### Change Orchestration
 
-Finds the DuckDuckGo preload API URL via cheerio (from `<link rel="preload">` or `<script>` tags) and fetches results. Renders formatted result tables with title, description, and URL.
+Enforces sequential edit lifecycle — one active edit at a time. Registers `begin-edit` and `finish-edit` tools. On each turn end, reminds the agent to call `finish-edit()` if an edit is still open. Aborted turns are skipped.
 
-![DuckDuckGo](screenshots/duckduckgo.png)
+### REPL Tools
 
-### GitHub (gh) — GitHub Integration
+Inline code evaluation for JavaScript, Nushell, DuckDB SQL, and Python.
 
-Search repos, code, issues, PRs; browse repository contents and files; view releases; create issues and PRs. Powered by the local `gh` CLI.
+- `bun-repl` — evaluate JS/TS inline
+- `nu-repl` — evaluate Nushell expressions
+- `duckdb-repl` — evaluate SQL against in-memory database
+- `python-repl` — evaluate Python code inline
+
+### Change Orchestration
+
+Enforces sequential edit lifecycle — one active edit at a time. Registers `begin-edit` and `finish-edit` tools that gate all file modifications. On each turn end, reminds the agent to call `finish-edit()` if an edit is still open, running verification, cleanup, and self-improvement phases before allowing the next edit.
+
+### GitHub CLI
+
+Full GitHub integration powered by the `gh` CLI — search repos, code, issues, and PRs. Browse repo contents, view files, manage pull requests (checkout, approve, merge), create issues, list releases and workflows, and manage gists. Mutation operations require confirmation.
 
 ![GitHub](screenshots/gh.png)
 
-### HuggingFace — Model Search & Discussions
+### Guardrails
 
-Search Hugging Face models with filters (tags, author, pipeline, library, date windows, gated). Lists community discussions for any model with status, comments, and reactions. Results include download counts, likes, license, and pipeline tag.
+Safety rules that block or require confirmation for dangerous operations before they execute. Default rules prevent running `nix search` instead of using the tool, npm/npx (use bun equivalents), direct VCS internal file access (`sudo`, `dd`, `mkfs`), wrong test runners (`bun test` vs `bun vitest run`), and git commands in jujutsu projects. Toggle with `/guardrails [on|off]`.
 
-![HuggingFace](screenshots/huggingface.png)
+### Hooks
 
-### Nix — Package & Config Search
+Event-driven automation that runs shell commands after tool executions. Default hooks auto-format files with prettier (JS/TS/CSS/HTML/Markdown), typecheck TypeScript changes, run eslint on lint config changes, format shell scripts with shfmt, and format Nushell scripts with nu fmt. Hooks can also block tool calls by returning denial decisions. Toggle with `/hooks [on|off]`.
 
-Three tools: search NixOS packages, NixOS options, and Home Manager options. Public APIs, no installation required. Results include package version, description, license, maintainer, and source location.
+### IDE
 
-![Nix](screenshots/nix.png)
+Full terminal IDE built as a pi extension: file/symbol browsing, jujutsu version control, GitHub pull requests, workspace management, and operation log. Built with overlay TUIs, Shiki syntax highlighting, and keyboard-driven navigation.
 
-### Notification — Desktop Notifications
+### Llama Progress
 
-Desktop notifications via `notify-send` with optional TTS (text-to-speech) mode.
+Shows a progress bar while llama.cpp processes prompts via podman-llm.service. Tails journalctl logs and parses progress updates. Widget appears after user input, hides when assistant response arrives.
 
-### Path Suggester — Semantic File Suggestions
+### Notification
 
-Embeds the project file tree at session start, then matches user prompts against file paths using cosine similarity. When a prompt closely matches files in the project, relevant paths are auto-suggested inline. Configured via `pathSuggester` in `~/.pi/agent/settings.json`. Uses an OpenAI-compatible embeddings API (Ollama by default).
+Sends desktop notifications via `notify-send` with optional TTS (text-to-speech) mode for audible alerts.
 
-### npm — Package Search
+### Output Parser
 
-Search npm packages, get package info and versions. Results include name, version, license, author, description, homepage, repository, keywords, and dependency count.
+Detects malformed or fenced tool calls in assistant text output — when the model embeds tool calls as text instead of using native tool calling. Logs detected calls via notifications and queues a follow-up nudge for the next turn to steer the model back onto proper tool-calling behavior.
 
-![npm](screenshots/npm.png)
+### Path Injection
 
-### PyPI — Python Package Search
+Detects directory paths mentioned in user prompts and automatically attaches `tree` output for those directories before the prompt reaches the model. The agent sees the directory structure without being asked. Notifies when trees are attached.
 
-Search Python packages from PyPI, get version metadata, dependencies, and licensing information.
+### REPL Tools
 
-![PyPI](screenshots/pypi.png)
+Inline code evaluation for JavaScript (`bun-repl`), Nushell (`nu-repl`), DuckDB SQL (`duckdb-repl`), and Python (`python-repl`). Executes code snippets and returns stdout/stderr output.
 
-### Web Fetch — File & URL to Markdown
+### Reverse History Search
 
-Convert web pages and local files to clean Markdown text using the mdast ecosystem. Supports GitHub URLs (repos, PRs, issues, releases, commits), Wikipedia, arXiv, Hugging Face, Reddit, and more.
+Fuzzy search through user messages and bash commands across all pi sessions in the current directory. Sorted by recency, deduplicated. Press `Ctrl+R` to open, type to filter, enter to insert result into editor.
 
-### Turn Stats — Per-Turn Telemetry
+![Reverse History Search](screenshots/reverse-history-search.png)
 
-Two notifications per session: a per-turn notification (output tokens, duration, tokens/sec, cost) and an end-of-run aggregate (turn count, total input/output tokens, duration, tokens/sec, cost). Only counts assistant messages; cost omitted when < $0.005.
+### Self-Correction
+
+Monitors assistant turns and detects when the model is stuck in a loop of failed tool calls or unproductive corrections. Detects empty responses, hallucinated tools, malformed arguments, and repeated calls without explanatory text. After consecutive failures, injects a correction message to redirect the model. Resets on successful turns.
+
+### Skillful
+
+Keyword-based skill discovery that matches user prompts against all installed skills by scoring keyword overlap. When relevant skills are detected, their paths and descriptions are appended to the prompt. Tracks which skills have been read in the current session to avoid duplicates. Also enforces a tool gate that blocks tool calls until the corresponding skill has been read.
+
+### Turn Stats
+
+Per-turn and end-of-run telemetry: output tokens, duration, tokens/sec, and cost per turn. End-of-run aggregate includes turn count, total input/output tokens, and overall cost.
 
 ![Turn Stats](screenshots/turn-stats.png)
 
-### Usage — Session Analytics
+### Usage
 
 Interactive dashboards from session logs (`~/.pi/agent/sessions/*.jsonl`):
 
-**Usage Dashboard** — provider/model breakdown with Today/This Week/All Time tabs.
+- `/usage` — provider/model usage with Today/This Week/All Time tabs (sessions, message count, cost, tokens)
+- `/tool-usage` — tool call analytics by Tool/Date/Session
+- `/skill-usage` — skill invocation stats by Skill/Date/Session
 
 ![Usage](screenshots/usage.png)
 
-**Tool Usage** — per-tool call analytics grouped by Tool, Date, or Session.
-
 ![Tool Usage](screenshots/tool-usage.png)
 
-- `/usage` — provider/model usage with Today/This Week/All Time tabs (sessions, message count, cost, tokens)
-- `/tool-usage` — tool call analytics by Tool/Date/Session
+![Skill Usage](screenshots/skill-usage.png)
 
-### Skill Reminder — Semantic Skill Discovery
+### Web Fetch
 
-Embeds all `~/.pi/agent/skills/*.md` files into a vector index and uses cosine similarity to surface relevant skills at two points:
+Converts web pages and local files to clean Markdown text using the mdast ecosystem. Supports GitHub URLs (repos, PRs, issues, releases, commits), Wikipedia, arXiv, Hugging Face, Reddit, and more. Results are cached for repeated access.
 
-- **Error-time** — When a tool call fails, the full invocation (tool name, all arguments) plus the error output are searched against the skill index. Matching skill snippets (with score, file path, and section) are appended to the tool result so the LLM can self-correct.
-- **Prompt-time** — Before each turn, the user's prompt is embedded and matched. Relevant skills are injected into the system prompt as a `## Relevant Skills` section, priming the agent before it starts working.
+### Web Search
 
-Configured via `skillReminder` in `~/.pi/agent/settings.json`. Uses an OpenAI-compatible embeddings API (Ollama by default). Cache stored in `~/.cache/pi-skill-reminder/index.json`, invalidated on skill file changes.
+Unified search across multiple platforms — DuckDuckGo web search, npm and PyPI package registries, NixOS packages and options, Home Manager options, Hugging Face models, Sourcegraph code search across ~1M OSS repositories, and Context7 curated library documentation.
 
-## Skills (28)
+![DuckDuckGo](screenshots/duckduckgo.png)
+
+## Skills
 
 Reusable instruction sets for specific domains:
 
-**Development:** ast-grep, conventional-commits, gtkx, helix, jj-hunk, jujutsu, nh, nix, nix-flakes, nu-shell, pi-tui, podman, retype, typescript, uv, vhs, vicinae, vitest, vscode
+**Development Tools:** bash, cm (CodeMapper), duckdb, edit, find, grep, grit, hx (Helix), jj-core, jj-hunk, kuva (CLI charts), lychee (link checker), nh (Nix switch), nix, nix-flake, notify, nu (Nushell), podman, read, retype (refactoring), sem (semantic analysis), sg (ast-grep), shell-session, tmux, transcribe-audio, uv, vhs (terminal recording), vitest, write
 
-**Data & System:** firefox-bookmarks, gritql, lychee, pi-logs, sem, tmux
+**Knowledge:** bfs-state-space, binary-search, dfs-vs-bfs, dynamic-programming, firefox-bookmarks, gtkx, hash-vs-tree, io-wrapper, markdown-rendering, pi-session-logs, pi-tui, recursion-backtracking, reporting, rule-string-transform, sorting-choice, tree-rerooting, tree-zipper, two-pointers, typescript, vicinae, vscode, workspace-docs
 
-**Agent Config:** pi-prompt-authoring, skill-authoring
-
-**Documentation:** transcribe-audio
+**Protocols:** cite-before-answer, conventional-commits, pi-prompt-authoring, research-protocol, skill-authoring, task-decomposition
 
 ## Credits
 

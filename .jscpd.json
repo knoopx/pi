@@ -6,6 +6,7 @@
     "**/node_modules/**",
     "**/dist/**",
     "**/.jj/**",
+    "**/coverage/**",
     "**/*.test.ts",
     "**/*.test.js"
   ]

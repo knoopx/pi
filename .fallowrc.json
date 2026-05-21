@@ -1,16 +1,16 @@
 {
-  "ignorePatterns": ["agent/skills/**/*.css"],
+  "ignorePatterns": ["**/coverage/**"],
   "entry": [
     "agent/extensions/**/index.ts",
     "agent/extensions/**/*.test.ts",
     "agent/shared/**/*.test.ts",
     "agent/shared/config/eslint-config.ts",
-    "agent/shared/embeddings/chunker.ts",
     "screenshots/render-screenshots.ts",
-    "agent/extensions/path-suggester/eval.ts",
-    "agent/extensions/skill-reminder/eval/prompt.ts",
-    "agent/extensions/skill-reminder/eval/shared.ts",
-    "agent/extensions/skill-reminder/eval/tool-call.ts"
+    "agent/skills/knowledge/**/scripts/**/*.ts",
+    "agent/skills/knowledge/**/scripts/**/*.tsx",
+    "agent/skills/knowledge/**/scripts/**/*.js",
+    "agent/skills/**/*.css",
+    "agent/**/vitest.config.js"
   ],
   "rules": {
     "unlisted-dependencies": "off",
@@ -24,7 +24,10 @@
       "members": ["*"]
     },
     "handleInput",
-    "invalidate"
+    "invalidate",
+    "navigateUp",
+    "navigateDown",
+    "toggleExpand"
   ],
   "ignoreDependencies": [
     "unist-util-visit",

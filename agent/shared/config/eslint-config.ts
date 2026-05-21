@@ -1,7 +1,7 @@
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(...tseslint.configs.recommended, {
-  ignores: ["node_modules/**", "dist/**"],
+  ignores: ["node_modules/**", "dist/**", "coverage/**"],
   rules: {
     "@typescript-eslint/no-unused-vars": [
       "error",

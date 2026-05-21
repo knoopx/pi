@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { table } from "./table/renderer";
 import type { Column } from "./types";
-import { detail } from "./detail";
 import { dotJoin, stateDot } from "./labels";
-import { sectionDivider, threadSeparator } from "./terminal-lines";
-import { actionLine } from "./action";
 
 describe("renderer snapshots", () => {
   describe("table", () => {
@@ -53,32 +50,6 @@ describe("renderer snapshots", () => {
     });
   });
 
-  describe("detail", () => {
-    it("renders key-value pairs with right-aligned labels", () => {
-      expect(
-        detail([
-          { label: "name", value: "express" },
-          { label: "version", value: "5.2.1" },
-          { label: "license", value: "MIT" },
-          { label: "description", value: "Fast web framework" },
-        ]),
-      ).toMatchSnapshot();
-    });
-
-    it("renders multi-line values", () => {
-      expect(
-        detail([
-          { label: "tags", value: "web\nhttp\nserver\nframework" },
-          { label: "author", value: "TJ Holowaychuk" },
-        ]),
-      ).toMatchSnapshot();
-    });
-
-    it("renders empty fields", () => {
-      expect(detail([])).toBe("");
-    });
-  });
-
   describe("dotJoin", () => {
     it("joins multiple segments", () => {
       expect(dotJoin("r/linux", "hot", "12 results")).toBe(
@@ -88,28 +59,6 @@ describe("renderer snapshots", () => {
 
     it("handles single segment", () => {
       expect(dotJoin("only")).toBe("only");
-    });
-  });
-
-  describe("sectionDivider", () => {
-    it("renders plain rule", () => {
-      expect(sectionDivider()).toMatchSnapshot();
-    });
-
-    it("renders labeled divider", () => {
-      expect(sectionDivider("Quant Files (25)")).toMatchSnapshot();
-    });
-  });
-
-  describe("threadSeparator", () => {
-    it("renders author and date", () => {
-      expect(threadSeparator("alice", "2026-03-05")).toMatchSnapshot();
-    });
-
-    it("renders with suffix", () => {
-      expect(
-        threadSeparator("bob", "2026-03-06", "status → closed"),
-      ).toMatchSnapshot();
     });
   });
 
@@ -125,18 +74,6 @@ describe("renderer snapshots", () => {
     it("accepts booleans", () => {
       expect(stateDot(true)).toBe("●");
       expect(stateDot(false)).toBe("○");
-    });
-  });
-
-  describe("actionLine", () => {
-    it("renders action only", () => {
-      expect(actionLine("Task created")).toBe("Task created");
-    });
-
-    it("renders action with detail", () => {
-      expect(actionLine("Toggled light.living_room", "● on → ● off")).toBe(
-        "Toggled light.living_room • ● on → ● off",
-      );
     });
   });
 });

@@ -16,7 +16,6 @@ const IDE_SNAPS = join(
 );
 const USAGE_SNAPS = join(SCRIPT_DIR, "..", "agent", "extensions", "usage");
 const EXT_SNAPS = join(SCRIPT_DIR, "..", "agent", "extensions");
-const FREEZE_CMD = [process.env.FREEZE_BIN || "freeze"];
 const FONT_FAMILY = process.env.FONT_FAMILY || "JetBrainsMono Nerd Font";
 const FREEZE_ARGS: string[] = [
   "--language",
@@ -95,33 +94,58 @@ const FEATURES: Record<string, { snap: string; test: string }> = {
     test: "renders caller symbols with file paths and line numbers",
   },
   duckduckgo: {
-    snap: join(EXT_SNAPS, "duckduckgo", "__snapshots__", "index.test.ts.snap"),
+    snap: join(
+      EXT_SNAPS,
+      "websearch",
+      "duckduckgo",
+      "__snapshots__",
+      "search.test.ts.snap",
+    ),
     test: "should format search results correctly",
   },
+  gh: {
+    snap: join(EXT_SNAPS, "gh", "__snapshots__", "snapshot.test.ts.snap"),
+    test: "renders issue with multiple comments",
+  },
   nix: {
-    snap: join(EXT_SNAPS, "nix", "__snapshots__", "nix.test.ts.snap"),
+    snap: join(
+      EXT_SNAPS,
+      "websearch",
+      "nix",
+      "__snapshots__",
+      "packages.test.ts.snap",
+    ),
     test: "then it should return formatted package results",
   },
   npm: {
-    snap: join(EXT_SNAPS, "npm", "__snapshots__", "npm.test.ts.snap"),
+    snap: join(
+      EXT_SNAPS,
+      "websearch",
+      "npm",
+      "__snapshots__",
+      "search.test.ts.snap",
+    ),
     test: "then it should return formatted search results",
   },
   pypi: {
-    snap: join(EXT_SNAPS, "pypi", "__snapshots__", "pypi.test.ts.snap"),
+    snap: join(
+      EXT_SNAPS,
+      "websearch",
+      "pypi",
+      "__snapshots__",
+      "search.test.ts.snap",
+    ),
     test: "then it should return formatted search results",
   },
   huggingface: {
-    snap: join(EXT_SNAPS, "huggingface", "__snapshots__", "index.test.ts.snap"),
-    test: "then it should return formatted search results",
-  },
-  guardrails: {
     snap: join(
       EXT_SNAPS,
-      "guardrails",
+      "websearch",
+      "huggingface",
       "__snapshots__",
-      "snapshot.test.ts.snap",
+      "models.test.ts.snap",
     ),
-    test: "renders audit output with active groups and rules",
+    test: "then it should return formatted search results",
   },
   "reverse-history-search": {
     snap: join(
@@ -133,7 +157,7 @@ const FEATURES: Record<string, { snap: string; test: string }> = {
     test: "renders history search results with query filter",
   },
   usage: {
-    snap: join(USAGE_SNAPS, "usage", "__snapshots__", "snapshot.test.ts.snap"),
+    snap: join(USAGE_SNAPS, "stats", "__snapshots__", "snapshot.test.ts.snap"),
     test: "renders usage dashboard with provider data and totals",
   },
   "tool-usage": {
@@ -145,10 +169,6 @@ const FEATURES: Record<string, { snap: string; test: string }> = {
     ),
     test: "renders tool usage dashboard with per-tool stats",
   },
-  editor: {
-    snap: join(IDE_SNAPS, "editor", "__snapshots__", "highlight.test.ts.snap"),
-    test: "then applies JavaScript highlighting",
-  },
   "bookmark-prompt": {
     snap: join(
       IDE_SNAPS,
@@ -157,10 +177,6 @@ const FEATURES: Record<string, { snap: string; test: string }> = {
       "index.test.ts.snap",
     ),
     test: "renders multiple bookmarks with consistent padding",
-  },
-  hooks: {
-    snap: join(EXT_SNAPS, "hooks", "__snapshots__", "snapshot.test.ts.snap"),
-    test: "renders audit output with active groups and hooks",
   },
   "turn-stats": {
     snap: join(
@@ -171,9 +187,14 @@ const FEATURES: Record<string, { snap: string; test: string }> = {
     ),
     test: "renders end-of-run aggregate with all fields",
   },
-  gh: {
-    snap: join(EXT_SNAPS, "gh", "__snapshots__", "index.test.ts.snap"),
-    test: "then it should return formatted repo list",
+  "skill-usage": {
+    snap: join(
+      USAGE_SNAPS,
+      "skill-usage",
+      "__snapshots__",
+      "snapshot.test.ts.snap",
+    ),
+    test: "renders skill usage dashboard with per-skill stats",
   },
 };
 
@@ -192,14 +213,11 @@ function parseSnapFile(path: string): Record<string, string> {
   return exports;
 }
 
+const FREEZE_CMD = process.env.FREEZE_BIN || "freeze";
+
 function renderToPNG(text: string, output: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(FREEZE_CMD[0], [
-      ...FREEZE_CMD.slice(1),
-      ...FREEZE_ARGS,
-      "-o",
-      output,
-    ]);
+    const child = spawn(FREEZE_CMD, [...FREEZE_ARGS, "-o", output]);
     child.stdin.write(text);
     child.stdin.end();
     child.on("close", (code) =>

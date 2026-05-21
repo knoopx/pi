@@ -13,16 +13,21 @@ function isMissingFileError(error: unknown): boolean {
   );
 }
 
-function readSettingsSafe(): Promise<Record<string, unknown>> {
-  return _readSettingsSafe();
+function isValidSettingsObject(
+  parsed: unknown,
+): parsed is Record<string, unknown> {
+  return (
+    typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+  );
 }
 
 async function _readSettingsSafe(): Promise<Record<string, unknown>> {
   try {
     const content = await readFile(SETTINGS_PATH, "utf-8");
     const parsed = JSON.parse(content) as Record<string, unknown>;
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
+    if (!isValidSettingsObject(parsed)) {
       throw new Error("settings.json must contain a JSON object");
+    }
     return parsed;
   } catch (error) {
     if (isMissingFileError(error)) return {};
@@ -33,28 +38,29 @@ async function _readSettingsSafe(): Promise<Record<string, unknown>> {
   }
 }
 
+function extractEnabled(raw: unknown, defaultEnabled: boolean): boolean {
+  if (typeof raw !== "object" || raw === null) return defaultEnabled;
+  const record = raw as Record<string, unknown>;
+  return typeof record.enabled === "boolean" ? record.enabled : defaultEnabled;
+}
+
 export async function loadEnabledSetting<T extends { enabled: boolean }>(
   key: string,
   defaults: T,
 ): Promise<T> {
   const settings = await _readSettingsSafe();
   const raw = settings[key];
-
-  if (raw === undefined || Array.isArray(raw)) {
-    return { ...defaults };
-  }
-
-  if (typeof raw !== "object" || raw === null)
-    throw new Error(`Invalid ${key} settings format in settings.json`);
-  const rawRecord = raw as Record<string, unknown>;
-
+  if (raw === undefined || Array.isArray(raw)) return { ...defaults };
+  validateSettingsObject(key, raw);
   return {
     ...defaults,
-    enabled:
-      typeof rawRecord.enabled === "boolean"
-        ? rawRecord.enabled
-        : defaults.enabled,
+    enabled: extractEnabled(raw, defaults.enabled),
   };
+}
+
+function validateSettingsObject(key: string, raw: unknown): void {
+  if (typeof raw === "object" && raw !== null) return;
+  throw new Error(`Invalid ${key} settings format in settings.json`);
 }
 
 export async function saveEnabledSetting<T extends { enabled: boolean }>(

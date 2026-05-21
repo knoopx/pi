@@ -17,7 +17,7 @@ export function tokenizeCommand(command: string): string[][] {
 
   const tokens = parseShell(trimmed);
   const segments: string[][] = [];
-  let current: string[] = [];
+  const current: string[] = [];
 
   for (const token of tokens) {
     processToken(token, current, SEGMENT_SPLITTERS, segments);
