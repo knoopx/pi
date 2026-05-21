@@ -3,7 +3,6 @@ import type {
   ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
 import { saveHooksSettings } from "../config/loader";
-import { handleHooksAudit } from "./audit";
 
 function createHooksHandler(ref: { value: boolean }) {
   return async function handler(
@@ -25,8 +24,6 @@ function createHooksHandler(ref: { value: boolean }) {
       ctx.ui?.notify("Hooks disabled", "warning");
       return;
     }
-
-    await handleHooksAudit(args, ctx);
   };
 }
 
@@ -35,8 +32,7 @@ export function registerCommands(
   hooksEnabledRef: { value: boolean },
 ): void {
   pi.registerCommand("hooks", {
-    description:
-      "Audit hooks config, or toggle with on|off (usage: /hooks [on|off])",
+    description: "Toggle hooks with on|off (usage: /hooks [on|off])",
     handler: createHooksHandler(hooksEnabledRef),
   });
 }

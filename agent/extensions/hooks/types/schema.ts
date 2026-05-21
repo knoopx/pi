@@ -1,5 +1,4 @@
-import { Type } from "typebox";
-import type { Static } from "typebox";
+import { Type, type Static } from "typebox";
 const HookEventSchema = Type.Union([
   Type.Literal("session_start"),
   Type.Literal("session_shutdown"),

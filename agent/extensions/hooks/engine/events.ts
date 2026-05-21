@@ -12,7 +12,7 @@ import {
   isAbortedTurnEnd,
   isAbortedAgentEnd,
 } from "./abort";
-import { runEngineHooks } from "./core";
+import { runEngineHooks } from "./hook-execution";
 
 interface ProcessHooksParams {
   pi: ExtensionAPI;

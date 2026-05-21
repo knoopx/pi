@@ -56,13 +56,17 @@ export function validateConfig(data: unknown): HooksConfig {
 export function isValidConfig(data: unknown): data is HooksConfig {
   return vc(HooksConfigSchema, data);
 }
+function isJsonObject(parsed: unknown): boolean {
+  return typeof parsed === "object" && parsed !== null;
+}
+
 export function parseHookOutput(stdout: string): HookOutput | undefined {
   const trimmed = stdout.trim();
   if (!trimmed.startsWith("{")) return undefined;
 
   try {
     const parsed: unknown = JSON.parse(trimmed);
-    if (typeof parsed !== "object" || parsed === null) return undefined;
+    if (!isJsonObject(parsed)) return undefined;
     return parsed as HookOutput;
   } catch {
     return undefined;

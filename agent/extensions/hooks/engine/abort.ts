@@ -7,20 +7,22 @@ export function containsAbortText(text: string): boolean {
     normalized.includes("canceled")
   );
 }
+function extractItemText(item: unknown): string {
+  if (typeof item === "string") return item;
+  if (!isTextObject(item)) return "";
+  const value = (item as { text?: unknown }).text;
+  return typeof value === "string" ? value : "";
+}
+
+function isTextObject(item: unknown): boolean {
+  return !!item && typeof item === "object" && "text" in item;
+}
+
 export function extractTextContent(
   content: unknown[] | undefined,
   extraText?: string,
 ): string {
-  const contentText = (content ?? [])
-    .map((item) => {
-      if (typeof item === "string") return item;
-      if (item && typeof item === "object" && "text" in item) {
-        const value = (item as { text?: unknown }).text;
-        return typeof value === "string" ? value : "";
-      }
-      return "";
-    })
-    .join("\n");
+  const contentText = (content ?? []).map(extractItemText).join("\n");
 
   return [contentText, extraText ?? ""].filter(Boolean).join("\n");
 }
@@ -31,16 +33,31 @@ export function isAbortedToolResult(event: {
   if (!event.isError) return false;
   return containsAbortText(extractTextContent(event.content));
 }
+function isAbortedByStopReason(message: {
+  role?: string;
+  stopReason?: string;
+}): boolean {
+  return message.role === "assistant" && message.stopReason === "aborted";
+}
+
 export function isAbortedTurnEnd(event: {
   message?: { role?: string; stopReason?: string; errorMessage?: string };
 }): boolean {
   const message = event.message;
   if (!message) return false;
-  if (message.role === "assistant" && message.stopReason === "aborted")
-    return true;
-
+  if (isAbortedByStopReason(message)) return true;
   return containsAbortText(message.errorMessage ?? "");
 }
+function isAbortedAssistantMessage(message: {
+  role?: string;
+  stopReason?: string;
+  errorMessage?: string;
+}): boolean {
+  if (message.role !== "assistant") return false;
+  if (message.stopReason === "aborted") return true;
+  return containsAbortText(message.errorMessage ?? "");
+}
+
 export function isAbortedAgentEnd(event: { messages?: unknown[] }): boolean {
   const messages = event.messages ?? [];
 
@@ -51,9 +68,7 @@ export function isAbortedAgentEnd(event: { messages?: unknown[] }): boolean {
       errorMessage?: string;
     };
 
-    if (message.role !== "assistant") continue;
-    if (message.stopReason === "aborted") return true;
-    if (containsAbortText(message.errorMessage ?? "")) return true;
+    if (isAbortedAssistantMessage(message)) return true;
   }
 
   return false;

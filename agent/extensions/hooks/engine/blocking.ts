@@ -19,12 +19,20 @@ function checkJsonBlock(
   if (!result.output) return null;
   const { output } = result;
 
-  if (checkContinueBlock(output)) return checkContinueBlock(output);
-  if (checkDecisionBlock(output)) return checkDecisionBlock(output);
+  const continueBlock = checkContinueBlock(output);
+  if (continueBlock) return continueBlock;
+  const decisionBlock = checkDecisionBlock(output);
+  if (decisionBlock) return decisionBlock;
+  return checkHookSpecificBlock(event, output);
+}
+
+function checkHookSpecificBlock(
+  event: HookEvent,
+  output: NonNullable<HookResult["output"]>,
+): { block: true; reason: string } | null {
   if (event === "tool_call" && output.hookSpecificOutput) {
     return checkPermissionBlock(output.hookSpecificOutput);
   }
-
   return null;
 }
 function checkContinueBlock(
@@ -51,23 +59,31 @@ function checkPermissionBlock(
     reason: hookOutput.permissionDecisionReason || "Hook denied permission",
   };
 }
+function isBlockingEvent(event: HookEvent): boolean {
+  return event === "tool_call" || event === "agent_end";
+}
+
+function isBlockingTool(toolName: string | undefined): boolean {
+  return toolName === undefined || !NON_BLOCKING_TOOLS.has(toolName);
+}
+
 function checkErrorBlock(
   result: HookResult,
   event: HookEvent,
   toolName?: string,
 ): { block: true; reason: string } | null {
-  if (
-    !result.success &&
-    (event === "tool_call" || event === "agent_end") &&
-    (!toolName || !NON_BLOCKING_TOOLS.has(toolName))
-  ) {
-    const reason = result.stderr || result.stdout || "Hook failed";
-    return {
-      block: true,
-      reason: `Hook failed: ${result.group}: ${result.command}\n${reason}`,
-    };
-  }
-  return null;
+  if (result.success) return null;
+  if (!isBlockingEvent(event)) return null;
+  if (!isBlockingTool(toolName)) return null;
+  const reason = resolveHookErrorReason(result);
+  return {
+    block: true,
+    reason: `Hook failed: ${result.group}: ${result.command}\n${reason}`,
+  };
+}
+
+function resolveHookErrorReason(result: HookResult): string {
+  return result.stderr || result.stdout || "Hook failed";
 }
 export function shouldBlock(
   result: HookResult,

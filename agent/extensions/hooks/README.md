@@ -118,4 +118,5 @@ A hook can block when:
 
 ## Commands
 
-- `/hooks:audit` — validate patterns and list active rules
+- `/hooks on` — enable hooks
+- `/hooks off` — disable hooks

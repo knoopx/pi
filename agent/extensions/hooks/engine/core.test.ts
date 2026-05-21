@@ -1,26 +1,22 @@
 import { describe, it, expect } from "vitest";
-import type {
-  ExtensionAPI,
-  ExtensionContext,
-} from "@earendil-works/pi-coding-agent";
-import { runEngineHooks } from "./core";
-function createMockPi(): ExtensionAPI {
-  return {
-    exec: () => Promise.resolve({ code: 0, stdout: "", stderr: "" }),
-    sendMessage: () => {},
-  } as unknown as ExtensionAPI;
-}
-function createMockCtx(cwd: string): ExtensionContext {
-  return { cwd, hasUI: false, abort: () => {} } as unknown as ExtensionContext;
-}
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import {
+  createMockContext,
+  createMockPi,
+} from "../../../shared/testing/test-factories";
+import { runEngineHooks } from "./hook-execution";
 
 describe("processHooks", () => {
   describe("given empty config", () => {
     it("then returns undefined without executing anything", async () => {
-      const result = await runEngineHooks(createMockPi(), [], {
-        event: "session_start",
-        ctx: createMockCtx("/test"),
-      });
+      const result = await runEngineHooks(
+        createMockPi() as unknown as ExtensionAPI,
+        [],
+        {
+          event: "session_start",
+          ctx: createMockContext({ cwd: "/test", hasUI: false }),
+        },
+      );
 
       expect(result).toBeUndefined();
     });
@@ -29,7 +25,7 @@ describe("processHooks", () => {
   describe("given group with non-matching pattern", () => {
     it("then skips groups that are inactive", async () => {
       let sendMessageCalled = false;
-      const pi = createMockPi() as ExtensionAPI & {
+      const pi = createMockPi() as unknown as ExtensionAPI & {
         sendMessage: () => void;
       };
       pi.sendMessage = () => {
@@ -52,7 +48,7 @@ describe("processHooks", () => {
         ],
         {
           event: "session_start",
-          ctx: createMockCtx("/test"),
+          ctx: createMockContext({ cwd: "/test", hasUI: false }),
         },
       );
 
