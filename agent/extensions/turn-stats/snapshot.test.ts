@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { formatSimpleOutput, formatAggregateOutput } from "./index";
 import type { AgentRunStats } from "./index";
-import { createUsage } from "./test/utils";
+import { createUsage } from "./test/usage-factory";
 
 function createStats(overrides: Partial<AgentRunStats> = {}): AgentRunStats {
   return {

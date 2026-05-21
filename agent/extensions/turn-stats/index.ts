@@ -33,8 +33,12 @@ export function formatDuration(ms: number): string {
   return `${String(Math.floor(seconds))}s`;
 }
 export function formatTokens(tokens: number | undefined | null): string {
-  if (tokens === undefined || tokens === null) return "N/A";
+  if (tokens == null) return "N/A";
   if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M`;
+  return formatSmallTokens(tokens);
+}
+
+function formatSmallTokens(tokens: number): string {
   if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}K`;
   return tokens.toString();
 }
@@ -77,6 +81,14 @@ export interface AgentRunStats {
   totalCost: Usage["cost"];
   totalGenerationMs: number;
 }
+function formatAggregateCost(total: number): string {
+  return total < 0.005 ? "" : `$${total.toFixed(2)}`;
+}
+
+function pushIfSet(arr: string[], value: string, prefix?: string): void {
+  if (value) arr.push(prefix ? `${prefix} ${value}` : value);
+}
+
 export function formatAggregateOutput(
   stats: AgentRunStats,
   durationMs: number,
@@ -93,13 +105,12 @@ export function formatAggregateOutput(
     stats.totalOutputTokens,
     stats.totalGenerationMs,
   );
-  const costStr =
-    stats.totalCost.total < 0.005 ? "" : `$${stats.totalCost.total.toFixed(2)}`;
+  const costStr = formatAggregateCost(stats.totalCost.total);
   const parts = [turnsStr];
-  if (tokensStr) parts.push(tokensStr);
+  pushIfSet(parts, tokensStr);
   parts.push(` ${durationStr}`);
-  if (tokPerSecStr) parts.push(` ${tokPerSecStr}`);
-  if (costStr) parts.push(costStr);
+  pushIfSet(parts, tokPerSecStr, "");
+  pushIfSet(parts, costStr);
 
   return parts.join(" · ");
 }
@@ -132,8 +143,11 @@ function isAssistantMessage(message: unknown): boolean {
   if (!message || typeof message !== "object") return false;
   const msg = message as Record<string, unknown>;
   if (msg.role !== "assistant") return false;
-  if (typeof msg.usage !== "object" || msg.usage === null) return false;
-  return true;
+  return hasUsageObject(msg);
+}
+
+function hasUsageObject(msg: Record<string, unknown>): boolean {
+  return typeof msg.usage === "object" && msg.usage !== null;
 }
 function createTurnStartHandler(currentTiming: {
   value: TurnTiming | null;
@@ -166,6 +180,19 @@ function createMessageStartHandler(currentTiming: {
     timing.inStall = false;
   };
 }
+function updateStallState(timing: TurnTiming, now: number): void {
+  const gap = now - timing.lastUpdateMs;
+  if (gap >= STALL_THRESHOLD_MS) {
+    if (!timing.inStall) {
+      timing.stallCount++;
+    }
+    timing.inStall = true;
+    timing.stallMs += gap;
+  } else {
+    timing.inStall = false;
+  }
+}
+
 function createMessageUpdateHandler(currentTiming: {
   value: TurnTiming | null;
 }): (event: MessageUpdateEvent) => void {
@@ -180,21 +207,19 @@ function createMessageUpdateHandler(currentTiming: {
       timing.lastUpdateMs = now;
       return;
     }
-    const gap = now - timing.lastUpdateMs;
 
-    if (gap >= STALL_THRESHOLD_MS) {
-      if (!timing.inStall) {
-        timing.stallCount++;
-      }
-      timing.inStall = true;
-      timing.stallMs += gap;
-    } else {
-      timing.inStall = false;
-    }
-
+    updateStallState(timing, now);
     timing.lastUpdateMs = now;
   };
 }
+function applyMessageEnd(timing: TurnTiming, now: number): void {
+  if (timing.currentMessageStartMs) {
+    const messageGenerationMs = now - timing.currentMessageStartMs;
+    timing.totalGenerationMs += messageGenerationMs;
+    timing.currentMessageStartMs = null;
+  }
+}
+
 function createMessageEndHandler(currentTiming: {
   value: TurnTiming | null;
 }): (event: MessageEndEvent) => void {
@@ -204,15 +229,37 @@ function createMessageEndHandler(currentTiming: {
     const timing = currentTiming.value;
     const now = Date.now();
 
-    if (timing.currentMessageStartMs) {
-      const messageGenerationMs = now - timing.currentMessageStartMs;
-      timing.totalGenerationMs += messageGenerationMs;
-      timing.currentMessageStartMs = null;
-    }
-
+    applyMessageEnd(timing, now);
     timing.lastUpdateMs = now;
   };
 }
+function handleTurnEndNotification(
+  timing: TurnTiming,
+  event: TurnEndEvent,
+  agentState: {
+    lastTurnEndTimestamp?: number | null;
+    totalGenerationMs?: number;
+  },
+  ctx: ExtensionContext,
+): void {
+  const turnEndTimestamp = Date.now();
+  agentState.lastTurnEndTimestamp = turnEndTimestamp;
+  const durationMs = Math.max(0, turnEndTimestamp - timing.turnStartMs);
+  const generationMs =
+    timing.totalGenerationMs > 0 ? timing.totalGenerationMs : undefined;
+
+  agentState.totalGenerationMs =
+    (agentState.totalGenerationMs ?? 0) + timing.totalGenerationMs;
+  const usage = "usage" in event.message ? event.message.usage : undefined;
+  const notificationStr = formatSimpleOutput(
+    usage?.output,
+    durationMs,
+    usage,
+    generationMs,
+  );
+  ctx.ui.notify(notificationStr, "info");
+}
+
 function createTurnEndHandler(
   currentTiming: { value: TurnTiming | null },
   agentState: {
@@ -227,21 +274,7 @@ function createTurnEndHandler(
     if (!timing) return;
     if (event.message.role !== "assistant") return;
     try {
-      const turnEndTimestamp = Date.now();
-      agentState.lastTurnEndTimestamp = turnEndTimestamp;
-      const durationMs = Math.max(0, turnEndTimestamp - timing.turnStartMs);
-      const generationMs =
-        timing.totalGenerationMs > 0 ? timing.totalGenerationMs : undefined;
-
-      agentState.totalGenerationMs =
-        (agentState.totalGenerationMs ?? 0) + timing.totalGenerationMs;
-      const notificationStr = formatSimpleOutput(
-        event.message.usage.output,
-        durationMs,
-        event.message.usage,
-        generationMs,
-      );
-      ctx.ui.notify(notificationStr, "info");
+      handleTurnEndNotification(timing, event, agentState, ctx);
     } catch {
       // ctx is stale after session replacement or reload
     }
@@ -281,33 +314,63 @@ function computeAgentRunStats(messages: AgentEndEvent["messages"]): {
 
   return { turns, totalOutputTokens, totalInputTokens, totalCost };
 }
+function handleAgentEnd(
+  agentState: {
+    agentStartTime: number | null;
+    lastTurnEndTimestamp?: number | null;
+    totalGenerationMs?: number;
+  },
+  event: AgentEndEvent,
+  ctx: ExtensionContext,
+): void {
+  if (agentState.agentStartTime === null) return;
+  const stats = computeAgentRunStats(event.messages);
+  if (!stats) return;
+  const agentRunStats = buildAgentRunStats(stats, agentState);
+  const totalDurationMs =
+    (agentState.lastTurnEndTimestamp ?? Date.now()) - agentState.agentStartTime;
+  sendAgentNotification(ctx, agentRunStats, totalDurationMs);
+}
+
+function sendAgentNotification(
+  ctx: ExtensionContext,
+  stats: AgentRunStats,
+  duration: number,
+): void {
+  if (!ctx.hasUI) return;
+  const message = formatAggregateOutput(stats, duration);
+  ctx.ui.notify(message, "info");
+}
+
 function createAgentEndHandler(agentState: {
   agentStartTime: number | null;
   lastTurnEndTimestamp?: number | null;
   totalGenerationMs?: number;
 }) {
   return (event: AgentEndEvent, ctx: ExtensionContext): void => {
-    if (agentState.agentStartTime === null) return;
     try {
-      const endTimestamp = agentState.lastTurnEndTimestamp ?? Date.now();
-      const totalDurationMs = endTimestamp - agentState.agentStartTime;
-      const stats = computeAgentRunStats(event.messages);
-      if (!stats) return;
-      const agentRunStats: AgentRunStats = {
-        ...stats,
-        totalCacheReadTokens: 0,
-        totalCacheWriteTokens: 0,
-        totalTokens: stats.totalInputTokens + stats.totalOutputTokens,
-        totalGenerationMs: agentState.totalGenerationMs ?? 0,
-      };
-      const notificationStr = formatAggregateOutput(
-        agentRunStats,
-        totalDurationMs,
-      );
-      if (ctx.hasUI) ctx.ui.notify(notificationStr, "info");
+      handleAgentEnd(agentState, event, ctx);
     } catch {
       // ctx is stale after session replacement or reload
     }
+  };
+}
+
+function buildAgentRunStats(
+  stats: {
+    turns: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    totalCost: Usage["cost"];
+  },
+  agentState: { totalGenerationMs?: number },
+): AgentRunStats {
+  return {
+    ...stats,
+    totalCacheReadTokens: 0,
+    totalCacheWriteTokens: 0,
+    totalTokens: stats.totalInputTokens + stats.totalOutputTokens,
+    totalGenerationMs: agentState.totalGenerationMs ?? 0,
   };
 }
 function createAgentStartHandler(state: {

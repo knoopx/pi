@@ -4,6 +4,7 @@
   "description": "Turn statistics integration",
   "scripts": {
     "lint": "bun ./node_modules/eslint/bin/eslint.js",
+    "test": "vitest run --coverage",
     "tsc": "tsc --noEmit"
   },
   "type": "module",
@@ -13,14 +14,16 @@
     ]
   },
   "dependencies": {
-    "@earendil-works/pi-ai": "^0.74.0",
-    "@earendil-works/pi-coding-agent": "^0.74.0"
+    "@earendil-works/pi-agent-core": "0.74.2",
+    "@earendil-works/pi-ai": "^0.78.0",
+    "@earendil-works/pi-coding-agent": "^0.78.0"
   },
   "devDependencies": {
     "@types/node": "^25.7.0",
     "eslint": "^10.3.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.3",
+    "@vitest/coverage-v8": "^4.1.7",
     "vitest": "^4.1.6"
   }
 }

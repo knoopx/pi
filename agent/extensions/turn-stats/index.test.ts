@@ -10,7 +10,7 @@ import {
   formatAggregateOutput,
 } from "./index";
 import type { AgentRunStats } from "./index";
-import { createUsage } from "./test/utils";
+import { createUsage } from "./test/usage-factory";
 function testFormatCost(costTotal: number, expected: string) {
   expect(
     formatCost({
