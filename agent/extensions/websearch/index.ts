@@ -1,6 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { Static } from "typebox";
-import { Type } from "typebox";
+import { Type, type Static } from "typebox";
 import type { Column } from "../../shared/rendering/types";
 import { textResult } from "../../shared/result/tool";
 import { dotJoin, countLabel } from "../../shared/rendering/labels";
@@ -36,6 +35,17 @@ import {
   buildOptionTableRenderer,
 } from "./nix/options";
 import { registerGithubSearchTools } from "./github/registration";
+import {
+  searchSourcegraph,
+  SearchSourcegraphParams,
+} from "./sourcegraph/search";
+import { formatSourcegraphResult } from "./sourcegraph/formatting";
+import {
+  searchContext7,
+  resolveContext7Library,
+  SearchContext7Params,
+} from "./context7/search";
+import { formatContext7Result, formatLibraryList } from "./context7/formatting";
 
 const searchCols: Column[] = [
   { key: "#", align: "right", minWidth: 3 },
@@ -50,6 +60,29 @@ const searchCols: Column[] = [
     },
   },
 ];
+
+function createSearchHandler<P extends { query: string }, R>(
+  searchFn: (params: P) => Promise<R>,
+  formatter: (result: R) => string,
+  resultKey: string,
+): (_toolCallId: string, params: P) => Promise<ReturnType<typeof textResult>> {
+  return async (_toolCallId, params) => {
+    try {
+      const result = await searchFn(params);
+      const output = formatter(result);
+      return textResult(output, {
+        query: params.query,
+        [resultKey]: (result as Record<string, unknown>)[resultKey] ?? [],
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return textResult(`Error: ${message}`, {
+        query: params.query,
+        [resultKey]: [],
+      });
+    }
+  };
+}
 
 function formatSearchOutput(query: string, results: SearchResult[]): string {
   const rows = results.map((r, i) => ({
@@ -107,14 +140,7 @@ export default function (pi: ExtensionAPI): void {
   pi.registerTool({
     name: "web-search",
     label: "Search DuckDuckGo",
-    description: `Search using DuckDuckGo search engine.
-
-Use this to:
-- Find web pages and articles
-- Discover content on the internet
-- Get search results with metadata
-
-Returns search results with titles, URLs, and descriptions.`,
+    description: `Search using DuckDuckGo search engine.`,
     parameters: SearchWebParams,
 
     async execute(_toolCallId: string, params: SearchWebParamsType) {
@@ -139,15 +165,7 @@ Returns search results with titles, URLs, and descriptions.`,
   pi.registerTool({
     name: "npm-search-packages",
     label: "Search NPM Packages",
-    description: `Search for packages available on the npm registry.
-
-Use this to:
-- Find JavaScript/TypeScript packages
-- Discover libraries and frameworks
-- Check package descriptions and keywords
-- Explore npm ecosystem
-
-Returns matching packages with metadata.`,
+    description: `Search for packages available on the npm registry.`,
     parameters: SearchNpmPackagesParams,
 
     async execute(_toolCallId: string, params: SearchNpmPackagesParamsType) {
@@ -158,15 +176,7 @@ Returns matching packages with metadata.`,
   pi.registerTool({
     name: "pypi-search-packages",
     label: "Search PyPI Packages",
-    description: `Search for Python packages available on PyPI.
-
-Use this to:
-- Find packages by name or functionality
-- Discover libraries for specific tasks
-- Check package descriptions and versions
-- Explore available Python packages
-
-Returns matching packages with metadata.`,
+    description: `Search for Python packages available on PyPI.`,
     parameters: SearchPyPIPackagesParams,
 
     async execute(_toolCallId: string, params: SearchPyPIPackagesParamsType) {
@@ -177,15 +187,7 @@ Returns matching packages with metadata.`,
   pi.registerTool({
     name: "nix-search-packages",
     label: "Search Nix Packages",
-    description: `Find packages available in the NixOS package repository.
-
-Use this to:
-- Discover software packages for installation
-- Check package versions and descriptions
-- Find packages by name or functionality
-- Get package metadata and maintainers
-
-Returns detailed package information from nixpkgs.`,
+    description: `Find packages available in the NixOS package repository.`,
     parameters: NixQueryParams,
 
     async execute(_toolCallId: string, params: NixQueryParamsType) {
@@ -202,15 +204,7 @@ Returns detailed package information from nixpkgs.`,
   pi.registerTool({
     name: "nix-search-options",
     label: "Search Nix Options",
-    description: `Find configuration options available in NixOS.
-
-Use this to:
-- Discover system configuration settings
-- Find options for services and modules
-- Check option types and default values
-- Get examples for configuration
-
-Returns NixOS configuration option details.`,
+    description: `Find configuration options available in NixOS.`,
     parameters: NixQueryParams,
 
     async execute(_toolCallId: string, params: NixQueryParamsType) {
@@ -227,15 +221,7 @@ Returns NixOS configuration option details.`,
   pi.registerTool({
     name: "hm-search-options",
     label: "Search Home-Manager Options",
-    description: `Find configuration options for Home Manager.
-
-Use this to:
-- Configure user-specific settings
-- Set up dotfiles and user programs
-- Customize desktop environment
-- Manage user-level services
-
-Returns Home Manager configuration options.`,
+    description: `Find configuration options for Home Manager.`,
     parameters: NixQueryParams,
 
     async execute(_toolCallId: string, params: NixQueryParamsType) {
@@ -253,7 +239,7 @@ Returns Home Manager configuration options.`,
     name: "hf-search-models",
     label: "HuggingFace Search",
     description:
-      "Search Hugging Face models. Filter by tags like 'gguf', 'text-generation', 'llama'. Returns model ID, downloads, likes, and tags.",
+      "Search Hugging Face models by tags, author, pipeline, or library. Returns model ID, downloads, likes, and tags.",
     parameters: SearchHuggingfaceModelsParams,
 
     async execute(_toolCallId, params, signal) {
@@ -262,5 +248,48 @@ Returns Home Manager configuration options.`,
         signal,
       );
     },
+  });
+
+  pi.registerTool({
+    name: "sg-search-code",
+    label: "Sourcegraph Code Search",
+    description: `Search for code across open-source repositories using Sourcegraph.`,
+    parameters: SearchSourcegraphParams,
+
+    execute: createSearchHandler(
+      searchSourcegraph,
+      formatSourcegraphResult,
+      "results",
+    ),
+  });
+
+  pi.registerTool({
+    name: "ctx7-search-docs",
+    label: "Context7 Docs Search",
+    description: `Search library documentation via Context7.`,
+    parameters: SearchContext7Params,
+
+    execute: createSearchHandler(
+      searchContext7,
+      formatContext7Result,
+      "results",
+    ),
+  });
+
+  pi.registerTool({
+    name: "ctx7-resolve-library",
+    label: "Context7 Resolve Library",
+    description: `Resolve a library name to Context7 library IDs.`,
+    parameters: Type.Object({
+      query: Type.String({
+        description: "Library name to resolve",
+      }),
+    }),
+
+    execute: createSearchHandler(
+      async (params: { query: string }) => resolveContext7Library(params.query),
+      formatLibraryList,
+      "libraries",
+    ),
   });
 }

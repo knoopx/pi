@@ -1,10 +1,9 @@
 import { Type } from "typebox";
-import type { Column } from "../../../shared/rendering/types";
 import { countLabel } from "../../../shared/rendering/labels";
 import { ghCmdJson } from "../../../shared/process/gh-cmd";
 import { TypeBoxFields } from "../../gh/lib/types";
 import { pushArrayFlag } from "../../gh/lib/registration";
-import { formatSearchResults } from "./formatting";
+import { formatSearchResults, createCodeSearchColumns } from "./formatting";
 import type { GHCodeSearchResult } from "./types";
 
 interface CodeSearchParams {
@@ -52,19 +51,7 @@ function formatCodeSearchResult(result: {
   results: GHCodeSearchResult[];
   total: number;
 }): string {
-  const cols: Column[] = [
-    { key: "#", align: "right", minWidth: 3 },
-    {
-      key: "path",
-      format(_v, row) {
-        const r = row as Record<string, string>;
-        const lines = [r.path];
-        if (r.snippet) lines.push(r.snippet);
-        lines.push(r.url);
-        return lines.join("\n");
-      },
-    },
-  ];
+  const cols = createCodeSearchColumns();
   const rowMapper = (item: GHCodeSearchResult, i: number) => {
     const snippet = item.text_matches?.[0]?.snippet?.substring(0, 100) ?? "";
     return {

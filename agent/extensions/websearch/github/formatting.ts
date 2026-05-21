@@ -2,6 +2,26 @@ import { stateDot } from "../../../shared/rendering/labels";
 import { table } from "../../../shared/rendering/table/renderer";
 import type { Column } from "../../../shared/rendering/types";
 
+type ExtraLineFn = (row: Record<string, string>) => string | undefined;
+
+export function createCodeSearchColumns(extraLine?: ExtraLineFn): Column[] {
+  return [
+    { key: "#", align: "right", minWidth: 3 },
+    {
+      key: "path",
+      format(_v, row) {
+        const r = row as Record<string, string>;
+        const lines = [r.path];
+        if (r.snippet) lines.push(r.snippet);
+        const extra = extraLine?.(r);
+        if (extra) lines.push(extra);
+        lines.push(r.url);
+        return lines.join("\n");
+      },
+    },
+  ];
+}
+
 export function formatSearchResults<T>(
   result: { query: string; results: T[]; total: number },
   columns: Column[],
@@ -61,6 +81,28 @@ function formatSearchResult<TItem, TRow extends SearchResultRow>(
   return [countLabelFn(result.total), "", table(cols, rows)].join("\n");
 }
 
+function buildTitleLine<Item extends GHListItemResult>(
+  row: SearchResultRow,
+  options: ListItemFormatOptions<Item>,
+): string {
+  const dot = resolveStateDot(row.state);
+  const badge = options.titleBadge?.(row);
+  return formatTitleParts(dot, row.title, badge);
+}
+
+function resolveStateDot(state: string): string {
+  return state === "open" ? stateDot("on") : stateDot("off");
+}
+
+function formatTitleParts(
+  dot: string,
+  title: string,
+  badge: string | undefined,
+): string {
+  if (!badge) return `${dot} ${title}`;
+  return `${dot} ${title} ${badge}`;
+}
+
 export function createListItemFormatter<Item extends GHListItemResult>(
   options: ListItemFormatOptions<Item>,
 ): (result: { query: string; results: Item[]; total: number }) => string {
@@ -75,11 +117,9 @@ export function createListItemFormatter<Item extends GHListItemResult>(
       ...(options.additionalFields?.(item) ?? {}),
     });
     const titleFormatter = (row: SearchResultRow) => {
-      const dot = row.state === "open" ? stateDot("on") : stateDot("off");
-      const badge = options.titleBadge?.(row) ?? "";
+      const lines = [buildTitleLine(row, options)];
       const subtitle =
         options.subtitleLine?.(row) ?? `${row.repo} · ${row.date}`;
-      const lines = [`${dot} ${row.title}${badge ? ` ${badge}` : ""}`];
       lines.push(subtitle);
       if (row.labels) lines.push(row.labels);
       lines.push(row.url);

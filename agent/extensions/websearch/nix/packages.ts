@@ -79,6 +79,20 @@ function buildPackageSourceUrl(
   const anchor = line ? `#L${line}` : "";
   return `${NIXPKGS_GITHUB_BASE}/${filePath}${anchor}`;
 }
+function formatHomepage(homepage: unknown): string {
+  if (Array.isArray(homepage)) return homepage.join(", ");
+  return String(homepage || "");
+}
+
+function formatMaintainers(maintainers: unknown[]): string {
+  return maintainers
+    .map((m) => {
+      const obj = m as Record<string, unknown>;
+      return (obj.name ?? obj.github ?? "") as string;
+    })
+    .join(", ");
+}
+
 export function mapPackage(item: NixPackage): Record<string, string> {
   return removeEmptyProperties({
     attr_name: item.package_attr_name,
@@ -86,16 +100,27 @@ export function mapPackage(item: NixPackage): Record<string, string> {
     version: item.package_pversion,
     description: cleanText(item.package_description),
     longDescription: cleanText(item.package_longDescription),
-    homepage: Array.isArray(item.package_homepage)
-      ? item.package_homepage.join(", ")
-      : String(item.package_homepage || ""),
-    maintainers: (item.package_maintainers ?? [])
-      .map((m) => m.name || m.github)
-      .join(", "),
+    homepage: formatHomepage(item.package_homepage),
+    maintainers: formatMaintainers(item.package_maintainers ?? []),
     license: (item.package_license_set ?? []).join(", "),
     sourceUrl: buildPackageSourceUrl(item.package_position) ?? "",
   });
 }
+
+function buildPackageMeta(row: Record<string, string>): string | null {
+  const meta: string[] = [];
+  if (row.attr_name) meta.push(`attr: ${row.attr_name}`);
+  if (row.license) meta.push(row.license);
+  return meta.length > 0 ? meta.join(" · ") : null;
+}
+
+function appendPackageFields(lines: string[], r: Record<string, string>): void {
+  for (const field of ["description", "maintainers", "homepage", "sourceUrl"])
+    if (r[field]) lines.push(r[field]);
+  const meta = buildPackageMeta(r);
+  if (meta) lines.push(meta);
+}
+
 export function formatPackageTable(res: Record<string, string>[]): string {
   const cols: Column[] = [
     { key: "#", align: "right", minWidth: 3 },
@@ -105,14 +130,7 @@ export function formatPackageTable(res: Record<string, string>[]): string {
       format(_v, row) {
         const r = row as Record<string, string>;
         const lines = [r.package];
-        if (r.description) lines.push(r.description);
-        const meta: string[] = [];
-        if (r.attr_name) meta.push(`attr: ${r.attr_name}`);
-        if (r.license) meta.push(r.license);
-        if (meta.length > 0) lines.push(meta.join(" · "));
-        if (r.maintainers) lines.push(r.maintainers);
-        if (r.homepage) lines.push(r.homepage);
-        if (r.sourceUrl) lines.push(r.sourceUrl);
+        appendPackageFields(lines, r);
         return lines.join("\n");
       },
     },

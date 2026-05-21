@@ -5,9 +5,9 @@ import websearchExtension from "../index";
 import type {
   MockTool,
   MockExtensionAPI,
-} from "../../../shared/testing/test-utils";
-import { createMockExtensionAPI } from "../../../shared/testing/test-utils";
-import { disableThrottle } from "../../../shared/network/throttle";
+} from "../../../shared/testing/test-factories";
+import { createMockExtensionAPI } from "../../../shared/testing/test-factories";
+import { disableThrottle } from "../lib/throttle";
 
 const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
 

@@ -71,3 +71,31 @@ Search Hugging Face models with filters (tags, author, pipeline, library, date, 
 - `gated` (boolean, optional): Filter by gated status
 - `sort` (string, optional): Sort by 'downloads', 'likes', or 'created'
 - `limit` (number, optional): Number of results (1-50, default 10)
+
+### sg-search-code
+
+Search for code across open-source repositories using Sourcegraph.
+
+**Parameters:**
+
+- `query` (string): Search query keywords
+- `language` (string, optional): Filter results by language
+- `limit` (number, optional): Maximum results (max 100)
+
+### ctx7-search-docs
+
+Search library documentation via Context7 — curated, version-aware docs with code examples.
+
+**Parameters:**
+
+- `query` (string): Documentation search query or library name
+- `library` (string, optional): Context7 library ID (skips auto-resolve)
+- `tokens` (number, optional): Token budget for response (default 4000)
+
+### ctx7-resolve-library
+
+Resolve a library name to Context7 library IDs.
+
+**Parameters:**
+
+- `query` (string): Library name to resolve

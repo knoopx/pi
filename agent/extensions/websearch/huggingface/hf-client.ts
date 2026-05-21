@@ -1,4 +1,4 @@
-import { throttledFetch } from "../../../shared/network/throttle";
+import { throttledFetch } from "../lib/throttle";
 
 const HF_API = "https://huggingface.co/api";
 const HF_BASE = "https://huggingface.co";
@@ -23,12 +23,16 @@ export function parseCsv(input?: string): string[] {
     .filter((x) => x.length > 0);
 }
 
+function isValidDays(days: number): boolean {
+  return Number.isFinite(days) && days >= 1;
+}
+
 export function isWithinLastDays(
   iso: string | undefined,
   days: number,
 ): boolean {
   if (!iso) return false;
-  if (!Number.isFinite(days) || days < 1) return true;
+  if (!isValidDays(days)) return true;
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return false;
   return Date.now() - then <= days * 86_400_000;

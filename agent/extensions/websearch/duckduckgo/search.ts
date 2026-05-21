@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio";
-import { acquireSlot } from "../../../shared/network/throttle";
+import { acquireSlot } from "../lib/throttle";
 import type { SearchResult } from "./types";
 import { DDG_HOST, DDG_HEADERS, DDG_DATA_HEADERS } from "./constants";
 import { fetchWithRedirect } from "./http";

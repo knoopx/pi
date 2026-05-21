@@ -8,9 +8,9 @@ import {
   createMockExtensionAPI,
   type MockExtensionAPI,
   type MockTool,
-} from "../../../shared/testing/test-utils";
+} from "../../../shared/testing/test-factories";
 import websearchExtension from "../index";
-import { disableThrottle } from "../../../shared/network/throttle";
+import { disableThrottle } from "../lib/throttle";
 
 async function executeSearchTool(
   toolConfig: MockTool,
@@ -91,21 +91,23 @@ describe("DuckDuckGo (websearch)", () => {
           <div class="result__url">github.com</div>
         </div>
       `;
+      const mockHeaders = { get: () => null };
       let fetchCallCount = 0;
       const mockFetch = vi.fn().mockImplementation(() => {
         fetchCallCount++;
         if (fetchCallCount === 1) {
           return Promise.resolve({
             ok: true,
+            status: 200,
+            headers: mockHeaders,
             text: () => Promise.resolve("<html>No preload</html>"),
           });
         }
         return Promise.resolve({
           ok: true,
-          text: () =>
-            Promise.resolve(
-              fetchCallCount === 2 ? mockHtmlWithResults : "<html></html>",
-            ),
+          status: 200,
+          headers: mockHeaders,
+          text: () => Promise.resolve(mockHtmlWithResults),
         });
       });
       const result = await executeSearchTool(toolConfig, mockFetch);

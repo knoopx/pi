@@ -1,5 +1,4 @@
-import { Type } from "typebox";
-import type { Static } from "typebox";
+import { Type, type Static } from "typebox";
 import type { Column } from "../../../shared/rendering/types";
 import { textResult } from "../../../shared/result/tool";
 import { dotJoin, countLabel } from "../../../shared/rendering/labels";
@@ -8,8 +7,7 @@ import { formatIsoAge } from "../../../shared/format/time-formatting";
 import { formatDownloadsShort } from "../../../shared/format/text-formatting";
 import { extractLicense, filterUserTags } from "../../../shared/format/hf-tags";
 import type { ModelSummary } from "./types";
-import { HF_API, HF_BASE } from "./helpers";
-import { hfFetch, parseCsv, matchesText, isWithinLastDays } from "./helpers";
+import { HF_API, HF_BASE, hfFetch, parseCsv, matchesText, isWithinLastDays } from "./hf-client";
 
 export const SearchHuggingfaceModelsParams = Type.Object({
   query: Type.String({ description: "Search query (e.g. 'Qwen GGUF')" }),
@@ -67,10 +65,23 @@ export type SearchHuggingfaceModelsParamsType = Static<
   typeof SearchHuggingfaceModelsParams
 >;
 
-export async function searchHuggingfaceModels(
+function buildModelMeta(row: Record<string, string>): string | null {
+  const meta: string[] = [];
+  if (row.License) meta.push(row.License);
+  if (row.Pipeline) meta.push(row.Pipeline);
+  return meta.length > 0 ? meta.join(" · ") : null;
+}
+
+function buildModelTagLine(row: Record<string, string>): string | null {
+  const tagLine: string[] = [];
+  if (row.Tags) tagLine.push(row.Tags);
+  if (row.Updated) tagLine.push(`updated ${row.Updated}`);
+  return tagLine.length > 0 ? tagLine.join(" · ") : null;
+}
+
+function buildModelQuery(
   params: SearchHuggingfaceModelsParamsType,
-  signal?: AbortSignal,
-) {
+): URLSearchParams {
   const limit = params.limit ?? 10;
   const sort = params.sort ?? "downloads";
   const apiLimit = Math.min(100, Math.max(limit * 3, limit));
@@ -82,14 +93,16 @@ export async function searchHuggingfaceModels(
     full: "true",
   });
   if (params.filter) qs.set("filter", params.filter);
+  return qs;
+}
 
-  const models = await hfFetch<ModelSummary[]>(
-    `${HF_API}/models?${qs}`,
-    signal,
-  );
-
+function applyModelFilters(
+  models: ModelSummary[],
+  params: SearchHuggingfaceModelsParamsType,
+): ModelSummary[] {
+  const limit = params.limit ?? 10;
   const tagFilters = parseCsv(params.filter).map((tag) => tag.toLowerCase());
-  const filtered = models
+  return models
     .filter((m) =>
       tagFilters.every((tag) =>
         m.tags.some((candidate) => candidate.toLowerCase() === tag),
@@ -112,6 +125,20 @@ export async function searchHuggingfaceModels(
       return params.gated ? isGated : !isGated;
     })
     .slice(0, limit);
+}
+
+export async function searchHuggingfaceModels(
+  params: SearchHuggingfaceModelsParamsType,
+  signal?: AbortSignal,
+) {
+  const qs = buildModelQuery(params);
+
+  const models = await hfFetch<ModelSummary[]>(
+    `${HF_API}/models?${qs}`,
+    signal,
+  );
+
+  const filtered = applyModelFilters(models, params);
 
   if (!filtered.length) {
     return textResult(
@@ -145,15 +172,11 @@ export async function searchHuggingfaceModels(
       key: "model",
       format: (_v: unknown, row: Record<string, unknown>) => {
         const r = row as Record<string, string>;
-        const meta: string[] = [];
-        if (r.License) meta.push(r.License);
-        if (r.Pipeline) meta.push(r.Pipeline);
         const lines = [r.model];
-        if (meta.length > 0) lines.push(meta.join(" · "));
-        const tagLine: string[] = [];
-        if (r.Tags) tagLine.push(r.Tags);
-        if (r.Updated) tagLine.push(`updated ${r.Updated}`);
-        if (tagLine.length > 0) lines.push(tagLine.join(" · "));
+        const meta = buildModelMeta(r);
+        if (meta) lines.push(meta);
+        const tagLine = buildModelTagLine(r);
+        if (tagLine) lines.push(tagLine);
         if (r.url) lines.push(r.url);
         return lines.join("\n");
       },

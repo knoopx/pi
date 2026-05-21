@@ -37,6 +37,60 @@ interface HomeManagerOptionResponse {
 }
 const HOME_MANAGER_OPTIONS_URL =
   "https://home-manager-options.extranix.com/data/options-master.json";
+function appendBasicFields(lines: string[], r: Record<string, string>): void {
+  if (r.option) lines.push(r.option);
+  if (r.description) lines.push(r.description);
+}
+
+function appendExtraFields(
+  lines: string[],
+  r: Record<string, string>,
+  includeDeclarations: boolean,
+): void {
+  if (r.default) lines.push(`default: ${r.default}`);
+  if (r.example) lines.push(`example: ${r.example}`);
+  appendDeclarations(lines, r.declarations, includeDeclarations);
+  if (r.sourceUrl) lines.push(r.sourceUrl);
+}
+
+function appendDeclarations(
+  lines: string[],
+  declarations: string | undefined,
+  includeDeclarations: boolean,
+): void {
+  if (includeDeclarations && declarations) lines.push(declarations);
+}
+
+function formatOptionRow(
+  row: Record<string, string>,
+  includeDeclarations: boolean,
+): string {
+  const lines: string[] = [];
+  appendBasicFields(lines, row);
+  appendExtraFields(lines, row, includeDeclarations);
+  return lines.join("\n");
+}
+
+function buildOptionRow(
+  item: Record<string, string>,
+  i: number,
+): Record<string, string> {
+  return {
+    "#": String(i + 1),
+    type: orEmpty(item.type),
+    option: orEmpty(item.option),
+    description: orEmpty(item.description),
+    default: orEmpty(item.default),
+    example: orEmpty(item.example),
+    declarations: item.declarations ?? "",
+    sourceUrl: item.sourceUrl ?? "",
+  };
+}
+
+function orEmpty(value: string): string {
+  return value || "";
+}
+
 export function buildOptionTableRenderer(
   includeDeclarations = false,
 ): (res: Record<string, string>[]) => string {
@@ -47,28 +101,14 @@ export function buildOptionTableRenderer(
       {
         key: "option",
         format(_v, row) {
-          const r = row as Record<string, string>;
-          const lines: string[] = [];
-          if (r.option) lines.push(r.option);
-          if (r.description) lines.push(r.description);
-          if (r.default) lines.push(`default: ${r.default}`);
-          if (r.example) lines.push(`example: ${r.example}`);
-          if (includeDeclarations && r.declarations) lines.push(r.declarations);
-          if (r.sourceUrl) lines.push(r.sourceUrl);
-          return lines.join("\n");
+          return formatOptionRow(
+            row as Record<string, string>,
+            includeDeclarations,
+          );
         },
       },
     ];
-    const rows = res.map((item, i) => ({
-      "#": String(i + 1),
-      type: item.type || "",
-      option: item.option || "",
-      description: item.description || "",
-      default: item.default || "",
-      example: item.example || "",
-      declarations: item.declarations ?? "",
-      sourceUrl: item.sourceUrl ?? "",
-    }));
+    const rows = res.map(buildOptionRow);
 
     return [
       dotJoin(countLabel(res.length, "result")),

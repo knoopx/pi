@@ -1,7 +1,7 @@
 import { describe, beforeEach, afterEach } from "vitest";
-import type { MockExtensionAPI } from "../../../shared/testing/test-utils";
-import { createMockExtensionAPI } from "../../../shared/testing/test-utils";
-import { disableThrottle } from "../../../shared/network/throttle";
+import type { MockExtensionAPI } from "../../../shared/testing/test-factories";
+import { createMockExtensionAPI } from "../../../shared/testing/test-factories";
+import { disableThrottle } from "../lib/throttle";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import websearchExtension from "../index";
 

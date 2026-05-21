@@ -1,4 +1,4 @@
-import { throttledFetch } from "../../../shared/network/throttle";
+import { throttledFetch } from "../lib/throttle";
 
 export const NIXPKGS_GITHUB_BASE =
   "https://github.com/NixOS/nixpkgs/blob/nixos-unstable";
@@ -24,9 +24,7 @@ export function resetSearchUrlCache(): void {
   searchConfig.searchUrl = null;
 }
 
-async function resolveSearchUrl(): Promise<string> {
-  if (searchConfig.searchUrl) return searchConfig.searchUrl;
-
+async function fetchIndices(): Promise<string[]> {
   const indicesResponse = await throttledFetch(
     `${SEARCH_BASE_URL}/_cat/indices?v&h=index`,
     {
@@ -41,18 +39,26 @@ async function resolveSearchUrl(): Promise<string> {
   }
 
   const body = await indicesResponse.text();
-  const lines = body.trim().split("\n").slice(1);
+  return body.trim().split("\n").slice(1);
+}
 
+function findBestVersion(lines: string[]): number {
   let bestVersion = 0;
   for (const line of lines) {
     const match = line.match(/^nixos-(\d+)-unstable-/);
     if (match) {
       const version = parseInt(match[1], 10);
-      if (version > bestVersion) {
-        bestVersion = version;
-      }
+      bestVersion = Math.max(bestVersion, version);
     }
   }
+  return bestVersion;
+}
+
+async function resolveSearchUrl(): Promise<string> {
+  if (searchConfig.searchUrl) return searchConfig.searchUrl;
+
+  const lines = await fetchIndices();
+  const bestVersion = findBestVersion(lines);
 
   if (bestVersion === 0) {
     throw new Error("No nixos-*-unstable index found");
@@ -111,18 +117,24 @@ export function cleanText(text: string | null): string {
   if (!text) return "";
   return text.replace(/<[^>]*>/g, "").trim();
 }
+function isArrayEmpty(value: unknown): boolean {
+  return Array.isArray(value) && value.length === 0;
+}
+
+function isEmptyValue(value: unknown): boolean {
+  return (
+    value === undefined || value === null || value === "" || isArrayEmpty(value)
+  );
+}
+
 export function removeEmptyProperties<T extends Record<string, unknown>>(
   obj: T,
 ): Partial<T> {
   const result: Partial<T> = {};
   for (const [key, value] of Object.entries(obj)) {
-    if (
-      value !== undefined &&
-      value !== null &&
-      value !== "" &&
-      !(Array.isArray(value) && value.length === 0)
-    )
+    if (!isEmptyValue(value)) {
       result[key as keyof T] = value as T[keyof T];
+    }
   }
   return result;
 }

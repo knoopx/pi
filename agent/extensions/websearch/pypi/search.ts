@@ -1,13 +1,12 @@
 import type { AgentToolResult } from "@earendil-works/pi-agent-core";
-import { Type } from "typebox";
-import type { Static } from "typebox";
+import { Type, type Static } from "typebox";
 import { textResult } from "../../../shared/result/tool";
-import { throttledFetch } from "../../../shared/network/throttle";
+import { throttledFetch } from "../lib/throttle";
 import {
   formatPackageSearchResults,
   createPackageErrorResult,
-} from "../../../shared/format/package-registry";
-import type { PackageSearchResult } from "../../../shared/format/package-registry";
+} from "../lib/package-registry";
+import type { PackageSearchResult } from "../lib/package-registry";
 
 export const SearchPyPIPackagesParams = Type.Object({
   query: Type.String({

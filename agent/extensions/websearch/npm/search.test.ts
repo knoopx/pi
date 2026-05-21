@@ -1,7 +1,7 @@
 import { it, expect, vi, beforeEach, describe } from "vitest";
 import type { AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { TextContent } from "@earendil-works/pi-ai";
-import type { MockTool } from "../../../shared/testing/test-utils";
+import type { MockTool } from "../../../shared/testing/test-factories";
 import { setupWebsearchTest } from "../test/setup";
 
 async function runWithFetch(

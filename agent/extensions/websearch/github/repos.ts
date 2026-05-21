@@ -21,23 +21,41 @@ async function searchRepos(
   params: RepoSearchParams,
 ): Promise<{ query: string; results: GHRepoSearchResult[]; total: number }> {
   const { query, limit = 20, owner, language, topic, stars, forks } = params;
-  const args: string[] = ["search", "repos", `--limit=${limit}`];
+  const args = buildRepoSearchArgs(
+    query,
+    limit,
+    owner,
+    language,
+    topic,
+    stars,
+    forks,
+  );
+  const results = await ghCmdJson<GHRepoSearchResult[]>(args, "search repos");
+  return { query, results, total: results.length };
+}
 
+function buildRepoSearchArgs(
+  query: string,
+  limit: number,
+  owner?: string[],
+  language?: string,
+  topic?: string[],
+  stars?: string,
+  forks?: string,
+): string[] {
+  const args = ["search", "repos", `--limit=${limit}`];
   if (query) args.push(query);
   pushArrayFlag(args, owner, "owner");
   if (language) args.push(`--language=${language}`);
   pushArrayFlag(args, topic, "topic");
   if (stars) args.push(`--stars=${stars}`);
   if (forks) args.push(`--forks=${forks}`);
-
   args.push(
     "--json=name,fullName,description,url,language,stargazersCount,forksCount",
     "--jq",
     "[.[] | {name, full_name: .fullName, description, html_url: .url, language, stargazers_count: .stargazersCount, forks_count: .forksCount}]",
   );
-  const results = await ghCmdJson<GHRepoSearchResult[]>(args, "search repos");
-
-  return { query, results, total: results.length };
+  return args;
 }
 
 function formatNumber(n: number): string {
