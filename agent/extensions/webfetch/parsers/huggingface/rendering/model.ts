@@ -146,35 +146,6 @@ function renderStatusInfo(parts: string[], detail: HFModelDetail): void {
   }
 }
 
-function extractWidgetText(w: {
-  text?: string;
-  messages?: Array<{ role?: string; content: string }>;
-}): string | null {
-  if (w.text) return w.text;
-  const msg = w.messages?.find((m) => m.role === "user");
-  return msg ? msg.content : null;
-}
-
-function extractWidgetExamples(detail: HFModelDetail): string[] {
-  if (!Array.isArray(detail.widgetData)) return [];
-  const examples: string[] = [];
-  for (const w of detail.widgetData) {
-    const text = extractWidgetText(w);
-    if (text) examples.push(text);
-  }
-  return examples;
-}
-
-function renderWidgetExamples(parts: string[], detail: HFModelDetail): void {
-  const examples = extractWidgetExamples(detail);
-  if (examples.length === 0) return;
-  parts.push("");
-  parts.push("## Widget examples");
-  for (const e of examples) {
-    parts.push(`> ${e.split("\n")[0]}`);
-  }
-}
-
 function extractDatasetName(rm: { dataset?: { name?: string } }): string {
   return rm.dataset?.name ?? "?";
 }
@@ -236,15 +207,6 @@ function renderBenchmarks(parts: string[], detail: HFModelDetail): void {
   }
 }
 
-function renderSpaces(parts: string[], detail: HFModelDetail): void {
-  if (!Array.isArray(detail.spaces) || detail.spaces.length === 0) return;
-  parts.push("");
-  parts.push(`## Spaces (${detail.spaces.length})`);
-  for (const s of detail.spaces) {
-    parts.push(`- [${s}](https://huggingface.co/spaces/${s})`);
-  }
-}
-
 function isGgufModel(info: Record<string, unknown>): boolean {
   return Array.isArray(info.tags) && info.tags.includes("gguf");
 }
@@ -282,9 +244,7 @@ async function renderModelDetailSections(
       detail.cardData as Record<string, unknown> | undefined,
     );
     renderStatusInfo(parts, detail);
-    renderWidgetExamples(parts, detail);
     renderBenchmarks(parts, detail);
-    renderSpaces(parts, detail);
 
     await renderModelTreeSection(parts, parsed, isGguf, signal);
   } catch {
