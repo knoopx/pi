@@ -1,9 +1,5 @@
 import type { SkillEntry } from "./skills-registry";
-import {
-  agentWorkflow,
-  groundingSources,
-  introSection,
-} from "./prompt-sections";
+import { agentWorkflow, introSection } from "./prompt-sections";
 
 // Format tools for the "Available tools" section.
 export function formatToolsSection(
@@ -75,7 +71,6 @@ export function buildSystemPrompt(
   const parts: string[] = [];
 
   parts.push(introSection);
-  parts.push(groundingSources);
 
   const toolsSection = formatToolsSection(tools);
   if (toolsSection) parts.push(toolsSection);

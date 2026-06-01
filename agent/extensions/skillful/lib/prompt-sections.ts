@@ -11,5 +11,4 @@ function load(name: string): string {
 }
 
 export const introSection = `You are an expert coding assistant, operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.`;
-export const groundingSources = load("grounding.md");
 export const agentWorkflow = load("workflow.md");
