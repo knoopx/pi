@@ -163,10 +163,6 @@ Inline code evaluation for JavaScript, Nushell, DuckDB SQL, and Python.
 - `duckdb-repl` — evaluate SQL against in-memory database
 - `python-repl` — evaluate Python code inline
 
-### Change Orchestration
-
-Enforces sequential edit lifecycle — one active edit at a time. Registers `begin-edit` and `finish-edit` tools that gate all file modifications. On each turn end, reminds the agent to call `finish-edit()` if an edit is still open, running verification, cleanup, and self-improvement phases before allowing the next edit.
-
 ### GitHub CLI
 
 Full GitHub integration powered by the `gh` CLI — search repos, code, issues, and PRs. Browse repo contents, view files, manage pull requests (checkout, approve, merge), create issues, list releases and workflows, and manage gists. Mutation operations require confirmation.
@@ -180,10 +176,6 @@ Safety rules that block or require confirmation for dangerous operations before 
 ### Hooks
 
 Event-driven automation that runs shell commands after tool executions. Default hooks auto-format files with prettier (JS/TS/CSS/HTML/Markdown), typecheck TypeScript changes, run eslint on lint config changes, format shell scripts with shfmt, and format Nushell scripts with nu fmt. Hooks can also block tool calls by returning denial decisions. Toggle with `/hooks [on|off]`.
-
-### IDE
-
-Full terminal IDE built as a pi extension: file/symbol browsing, jujutsu version control, GitHub pull requests, workspace management, and operation log. Built with overlay TUIs, Shiki syntax highlighting, and keyboard-driven navigation.
 
 ### Llama Progress
 
@@ -200,16 +192,6 @@ Detects malformed or fenced tool calls in assistant text output — when the mod
 ### Path Injection
 
 Detects directory paths mentioned in user prompts and automatically attaches `tree` output for those directories before the prompt reaches the model. The agent sees the directory structure without being asked. Notifies when trees are attached.
-
-### REPL Tools
-
-Inline code evaluation for JavaScript (`bun-repl`), Nushell (`nu-repl`), DuckDB SQL (`duckdb-repl`), and Python (`python-repl`). Executes code snippets and returns stdout/stderr output.
-
-### Reverse History Search
-
-Fuzzy search through user messages and bash commands across all pi sessions in the current directory. Sorted by recency, deduplicated. Press `Ctrl+R` to open, type to filter, enter to insert result into editor.
-
-![Reverse History Search](screenshots/reverse-history-search.png)
 
 ### Self-Correction
 
