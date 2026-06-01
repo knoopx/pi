@@ -1,6 +1,16 @@
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { expect } from "vitest";
 
 export type FieldDef = { label: string; value: string };
+
+const here = dirname(fileURLToPath(import.meta.url));
+const fixturesDir = join(here, "fixtures");
+
+export function loadFixture<T>(name: string): T {
+  return JSON.parse(readFileSync(join(fixturesDir, name), "utf-8")) as T;
+}
 
 export function assertCommonFieldLabels(fields: FieldDef[]): void {
   const labels = fields.map((f) => f.label);

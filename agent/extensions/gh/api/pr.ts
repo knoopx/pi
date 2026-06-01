@@ -58,7 +58,7 @@ async function fetchPRReviews(
     [
       "api",
       `repos/${owner}/${repo}/pulls/${prNumber}/reviews`,
-      "--jq", ".[] | {id: .node_id, body: .body, state: .state, createdAt: .submitted_at, author: (if .user then {login: .user.login, avatar_url: .user.avatar_url, html_url: .user.html_url} else null end)}",
+      "--jq", "[.[] | {id: .node_id, body: .body, state: .state, createdAt: .submitted_at, author: (if .user then {login: .user.login, avatar_url: .user.avatar_url, html_url: .user.html_url} else null end)}]",
     ],
     "pr reviews",
   );
@@ -88,9 +88,14 @@ interface CreatePROpts {
 }
 
 function appendOptionalPrArgs(args: string[], opts: CreatePROpts): void {
-  if (opts.body) args.push("--body", opts.body);
-  if (opts.head) args.push("--head", opts.head);
-  if (opts.base) args.push("--base", opts.base);
+  const optional = [
+    ["body", opts.body],
+    ["head", opts.head],
+    ["base", opts.base],
+  ] as const;
+  for (const [flag, value] of optional) {
+    if (value) args.push(`--${flag}`, value);
+  }
   if (opts.draft) args.push("--draft");
 }
 

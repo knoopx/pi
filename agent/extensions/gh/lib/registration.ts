@@ -286,14 +286,19 @@ async function runCreateWithErrorHandling<TParams extends TSchema>(
   try {
     const result = await createFn(params);
     if (result.exitCode !== 0) {
-      return createErrorResult(
-        result.stderr || result.stdout || "command exited with non-zero code",
-      );
+      return createErrorResult(resolveCreateError(result));
     }
     return buildCreateSuccessResult(result, successMessagePrefix);
   } catch (error) {
     return createErrorResult(String(error));
   }
+}
+
+function resolveCreateError(result: {
+  stderr: string | undefined;
+  stdout: string;
+}): string {
+  return result.stderr || result.stdout || "command exited with non-zero code";
 }
 
 function buildCreateSuccessResult(

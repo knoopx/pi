@@ -53,7 +53,7 @@ async function fetchIssueComments(
     [
       "api",
       `repos/${owner}/${repo}/issues/${issueNumber}/comments`,
-      "--jq", ".[] | {id: .node_id, body: .body, createdAt: .created_at, author: {login: .user.login, avatar_url: .user.avatar_url, html_url: .user.html_url}}",
+      "--jq", "[.[] | {id: .node_id, body: .body, createdAt: .created_at, author: {login: .user.login, avatar_url: .user.avatar_url, html_url: .user.html_url}}]",
     ],
     "issue comments",
   );

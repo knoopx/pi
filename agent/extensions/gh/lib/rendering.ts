@@ -47,12 +47,11 @@ export function createCreateRenderCall(toolName: string) {
 function buildViewPath(
   a: Record<string, unknown>,
 ): { owner: string; repo: string; number: string } | null {
-  const owner = safeString(a.owner);
-  const repo = safeString(a.repo);
-  if (!owner || !repo) return null;
-  const number = isNumberLike(a.number) ? String(a.number) : undefined;
-  if (!number) return null;
-  return { owner, repo, number };
+  const { owner, repo, number } = a;
+  if (typeof owner === "string" && typeof repo === "string" && typeof number === "number") {
+    return { owner, repo, number: String(number) };
+  }
+  return null;
 }
 
 function formatViewArgs(a: Record<string, unknown>, theme: Theme): string {
@@ -63,10 +62,6 @@ function formatViewArgs(a: Record<string, unknown>, theme: Theme): string {
 
 function safeString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
-}
-
-function isNumberLike(value: unknown): boolean {
-  return typeof value === "number" || typeof value === "string";
 }
 
 export function createViewRenderCall(toolName: string) {

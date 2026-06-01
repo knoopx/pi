@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type {
@@ -6,6 +9,20 @@ import type {
 } from "../../shared/testing/test-factories";
 import { createMockExtensionAPI } from "../../shared/testing/test-factories";
 import { mockGhCmdJson } from "../../shared/testing/test-factories";
+import type { GHPR, GHPRReview } from "./api/pr";
+import type { GHIssue, GHIssueComment } from "./api/issue";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const fixturesDir = join(here, "fixtures");
+
+function loadFixture<T>(name: string): T {
+  return JSON.parse(readFileSync(join(fixturesDir, name), "utf-8")) as T;
+}
+
+const pr = loadFixture<GHPR>("pr-523948.json");
+const prReviews = loadFixture<GHPRReview[]>("pr-523948-reviews.json");
+const issueOpen = loadFixture<GHIssue>("issue-523948.json");
+const issueComments = loadFixture<GHIssueComment[]>("issue-523948-comments.json");
 
 vi.mock("../../shared/process/gh-cmd", () => ({
   ghCmd: vi.fn(),
@@ -18,6 +35,22 @@ const mockCtx = {
   abort: () => {},
   hasUI: false,
 };
+
+async function executeView(
+  tool: MockTool,
+  owner: string,
+  repo: string,
+  number: number,
+): Promise<string> {
+  const result = await tool.execute(
+    "id",
+    { owner, repo, number },
+    undefined,
+    undefined,
+    mockCtx,
+  );
+  return (result.content[0] as { text: string }).text;
+}
 
 // Register the GH extension and find a tool by name.
 async function registerTool(name: string): Promise<MockTool> {
@@ -42,142 +75,44 @@ describe("gh-view-issue output snapshots", () => {
 
   it("renders issue without comments", async () => {
     mockGhCmdJson
-      .mockResolvedValueOnce({
-        number: 42,
-        title: "Fix crash on startup",
-        state: "OPEN",
-        createdAt: "2024-01-15T10:00:00Z",
-        updatedAt: "2024-01-16T12:00:00Z",
-        author: { login: "octocat", avatar_url: "", html_url: "" },
-        body: "The app crashes when opened.",
-        html_url: "https://github.com/owner/repo/issues/42",
-        labels: [{ name: "bug", description: "", color: "red" }],
-        milestone: null,
-      })
+      .mockResolvedValueOnce(issueOpen)
       .mockResolvedValueOnce([]);
 
-    const result = await tool.execute(
-      "id",
-      { owner: "owner", repo: "repo", number: 42 },
-      undefined,
-      undefined,
-      mockCtx,
-    );
-    expect((result.content[0] as { text: string }).text).toMatchSnapshot();
+    const text = await executeView(tool, "NixOS", "nixpkgs", 523948);
+    expect(text).toMatchSnapshot();
   });
 
   it("renders issue with single comment", async () => {
     mockGhCmdJson
-      .mockResolvedValueOnce({
-        number: 10,
-        title: "Add dark mode",
-        state: "OPEN",
-        createdAt: "2024-02-01T08:00:00Z",
-        updatedAt: "2024-02-01T09:00:00Z",
-        author: { login: "designer", avatar_url: "", html_url: "" },
-        body: "Users want a dark mode option.",
-        html_url: "https://github.com/owner/repo/issues/10",
-        labels: [{ name: "enhancement", description: "", color: "blue" }],
-        milestone: { title: "v2.0", description: "", dueOn: "" },
-      })
-      .mockResolvedValueOnce([
-        {
-          id: "c1",
-          body: "I can work on this next sprint.",
-          createdAt: "2024-02-01T10:00:00Z",
-          author: { login: "dev", avatar_url: "", html_url: "" },
-        },
-      ]);
+      .mockResolvedValueOnce(issueOpen)
+      .mockResolvedValueOnce([issueComments[0]]);
 
-    const result = await tool.execute(
-      "id",
-      { owner: "owner", repo: "repo", number: 10 },
-      undefined,
-      undefined,
-      mockCtx,
-    );
-    expect((result.content[0] as { text: string }).text).toMatchSnapshot();
+    const text = await executeView(tool, "NixOS", "nixpkgs", 523948);
+    expect(text).toMatchSnapshot();
   });
 
   it("renders issue with multiple comments", async () => {
     mockGhCmdJson
-      .mockResolvedValueOnce({
-        number: 5,
-        title: "Security vulnerability in auth",
-        state: "CLOSED",
-        createdAt: "2024-03-01T00:00:00Z",
-        updatedAt: "2024-03-05T00:00:00Z",
-        author: { login: "sec-team", avatar_url: "", html_url: "" },
-        body: "Token validation bypass in /api/auth.",
-        html_url: "https://github.com/owner/repo/issues/5",
-        labels: [
-          { name: "security", description: "", color: "red" },
-          { name: "critical", description: "", color: "red" },
-        ],
-        milestone: { title: "v1.1", description: "", dueOn: "" },
-      })
-      .mockResolvedValueOnce([
-        {
-          id: "c1",
-          body: "Confirmed, patching now.",
-          createdAt: "2024-03-01T01:00:00Z",
-          author: { login: "lead", avatar_url: "", html_url: "" },
-        },
-        {
-          id: "c2",
-          body: "Fix merged in #99.",
-          createdAt: "2024-03-02T12:00:00Z",
-          author: { login: "lead", avatar_url: "", html_url: "" },
-        },
-        {
-          id: "c3",
-          body: "Verified the fix works.",
-          createdAt: "2024-03-05T09:00:00Z",
-          author: { login: "tester", avatar_url: "", html_url: "" },
-        },
-      ]);
+      .mockResolvedValueOnce(issueOpen)
+      .mockResolvedValueOnce(issueComments);
 
-    const result = await tool.execute(
-      "id",
-      { owner: "owner", repo: "repo", number: 5 },
-      undefined,
-      undefined,
-      mockCtx,
-    );
-    expect((result.content[0] as { text: string }).text).toMatchSnapshot();
+    const text = await executeView(tool, "NixOS", "nixpkgs", 523948);
+    expect(text).toMatchSnapshot();
   });
 
   it("renders issue with null comment author", async () => {
+    const commentWithNullAuthor: GHIssueComment = {
+      id: "IC_kwDOAEVQ_M8AAAABEZ7orA",
+      body: "This pull request has been mentioned on NixOS Discourse.",
+      createdAt: "2026-06-01T07:53:38Z",
+      author: null,
+    };
     mockGhCmdJson
-      .mockResolvedValueOnce({
-        number: 7,
-        title: "Ghost issue",
-        state: "OPEN",
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z",
-        author: { login: "ghost", avatar_url: "", html_url: "" },
-        body: "Something weird happened.",
-        html_url: "https://github.com/owner/repo/issues/7",
-        labels: [],
-        milestone: null,
-      })
-      .mockResolvedValueOnce([
-        {
-          id: "c1",
-          body: "Comment from deleted user",
-          createdAt: "2024-01-02T00:00:00Z",
-          author: null,
-        },
-      ]);
+      .mockResolvedValueOnce(issueOpen)
+      .mockResolvedValueOnce([commentWithNullAuthor]);
 
-    const result = await tool.execute(
-      "id",
-      { owner: "owner", repo: "repo", number: 7 },
-      undefined,
-      undefined,
-      mockCtx,
-    );
-    expect((result.content[0] as { text: string }).text).toMatchSnapshot();
+    const text = await executeView(tool, "NixOS", "nixpkgs", 523948);
+    expect(text).toMatchSnapshot();
   });
 });
 
@@ -193,115 +128,28 @@ describe("gh-view-pr output snapshots", () => {
 
   it("renders PR without reviews", async () => {
     mockGhCmdJson
-      .mockResolvedValueOnce({
-        number: 50,
-        title: "Refactor auth module",
-        state: "OPEN",
-        createdAt: "2024-01-20T10:00:00Z",
-        updatedAt: "2024-01-21T12:00:00Z",
-        baseRefName: "main",
-        headRefName: "refactor-auth",
-        author: { login: "dev", avatar_url: "", html_url: "" },
-        body: "Clean up the auth module.",
-        html_url: "https://github.com/owner/repo/pull/50",
-        mergeable: "true",
-        reviewDecision: "",
-      })
+      .mockResolvedValueOnce(pr)
       .mockResolvedValueOnce([]);
 
-    const result = await tool.execute(
-      "id",
-      { owner: "owner", repo: "repo", number: 50 },
-      undefined,
-      undefined,
-      mockCtx,
-    );
-    expect((result.content[0] as { text: string }).text).toMatchSnapshot();
+    const text = await executeView(tool, "NixOS", "nixpkgs", 523948);
+    expect(text).toMatchSnapshot();
   });
 
   it("renders PR with approved review", async () => {
     mockGhCmdJson
-      .mockResolvedValueOnce({
-        number: 55,
-        title: "Add CI pipeline",
-        state: "OPEN",
-        createdAt: "2024-02-10T08:00:00Z",
-        updatedAt: "2024-02-11T09:00:00Z",
-        baseRefName: "main",
-        headRefName: "add-ci",
-        author: { login: "devops", avatar_url: "", html_url: "" },
-        body: "Add GitHub Actions workflow.",
-        html_url: "https://github.com/owner/repo/pull/55",
-        mergeable: "true",
-        reviewDecision: "APPROVED",
-      })
-      .mockResolvedValueOnce([
-        {
-          id: "r1",
-          body: "LGTM, looks good.",
-          state: "APPROVED",
-          createdAt: "2024-02-10T10:00:00Z",
-          author: { login: "lead", avatar_url: "", html_url: "" },
-        },
-      ]);
+      .mockResolvedValueOnce(pr)
+      .mockResolvedValueOnce([prReviews[0]]);
 
-    const result = await tool.execute(
-      "id",
-      { owner: "owner", repo: "repo", number: 55 },
-      undefined,
-      undefined,
-      mockCtx,
-    );
-    expect((result.content[0] as { text: string }).text).toMatchSnapshot();
+    const text = await executeView(tool, "NixOS", "nixpkgs", 523948);
+    expect(text).toMatchSnapshot();
   });
 
-  it("renders PR with multiple reviews including changes requested", async () => {
+  it("renders PR with all reviews", async () => {
     mockGhCmdJson
-      .mockResolvedValueOnce({
-        number: 60,
-        title: "Rewrite parser",
-        state: "OPEN",
-        createdAt: "2024-03-01T00:00:00Z",
-        updatedAt: "2024-03-03T00:00:00Z",
-        baseRefName: "main",
-        headRefName: "rewrite-parser",
-        author: { login: "senior-dev", avatar_url: "", html_url: "" },
-        body: "Complete rewrite of the parser module.",
-        html_url: "https://github.com/owner/repo/pull/60",
-        mergeable: "true",
-        reviewDecision: "CHANGES_REQUESTED",
-      })
-      .mockResolvedValueOnce([
-        {
-          id: "r1",
-          body: "Please add error handling for edge cases.",
-          state: "CHANGES_REQUESTED",
-          createdAt: "2024-03-01T12:00:00Z",
-          author: { login: "reviewer", avatar_url: "", html_url: "" },
-        },
-        {
-          id: "r2",
-          body: "Updated with error handling.",
-          state: "COMMENTED",
-          createdAt: "2024-03-02T09:00:00Z",
-          author: { login: "senior-dev", avatar_url: "", html_url: "" },
-        },
-        {
-          id: "r3",
-          body: "Looks good now.",
-          state: "APPROVED",
-          createdAt: "2024-03-03T10:00:00Z",
-          author: { login: "reviewer", avatar_url: "", html_url: "" },
-        },
-      ]);
+      .mockResolvedValueOnce(pr)
+      .mockResolvedValueOnce(prReviews);
 
-    const result = await tool.execute(
-      "id",
-      { owner: "owner", repo: "repo", number: 60 },
-      undefined,
-      undefined,
-      mockCtx,
-    );
-    expect((result.content[0] as { text: string }).text).toMatchSnapshot();
+    const text = await executeView(tool, "NixOS", "nixpkgs", 523948);
+    expect(text).toMatchSnapshot();
   });
 });

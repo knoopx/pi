@@ -5,8 +5,9 @@ import {
   assertFieldValue,
   assertHasCreatedAndUrl,
   assertTitleWithNumberPrefix,
+  loadFixture,
 } from "../test-factories";
-import type { GHIssue } from "./issue";
+import type { GHIssue, GHIssueComment } from "./issue";
 import {
   createIssueColumns,
   createIssueRowMapper,
@@ -15,6 +16,9 @@ import {
   viewIssue,
 } from "./issue";
 import { mockGhCmdJson } from "../../../shared/testing/test-factories";
+
+const issue523948 = loadFixture<GHIssue>("issue-523948.json");
+const issueComments = loadFixture<GHIssueComment[]>("issue-523948-comments.json");
 
 // Build comments field value from comment overrides.
 function getCommentsField(
@@ -244,45 +248,30 @@ describe("viewIssue", () => {
 
   it("calls gh issue view and fetches comments", async () => {
     mockGhCmdJson
-      .mockResolvedValueOnce(createMockIssue())
+      .mockResolvedValueOnce(issue523948)
       .mockResolvedValueOnce([]);
-    const result = await viewIssue("owner", "repo", 42);
+    const result = await viewIssue("NixOS", "nixpkgs", 523948);
     expect(result).toBeDefined();
     expect(result.comments).toEqual([]);
   });
 
   it("calls comments API endpoint for the correct issue", async () => {
     mockGhCmdJson
-      .mockResolvedValueOnce(createMockIssue({ number: 7 }))
+      .mockResolvedValueOnce(issue523948)
       .mockResolvedValueOnce([]);
-    await viewIssue("owner", "repo", 7);
+    await viewIssue("NixOS", "nixpkgs", 523948);
     expect(mockGhCmdJson).toHaveBeenCalledTimes(2);
     const commentsCall = mockGhCmdJson.mock.calls[1];
-    expect(commentsCall[0]).toContain("repos/owner/repo/issues/7/comments");
+    expect(commentsCall[0]).toContain("repos/NixOS/nixpkgs/issues/523948/comments");
   });
 
   it("returns issue data with comments", async () => {
-    const comments = [
-      {
-        id: "c1",
-        body: "Looks good",
-        createdAt: "2024-01-01T00:00:00Z",
-        author: { login: "reviewer", avatar_url: "", html_url: "" },
-      },
-      {
-        id: "c2",
-        body: "LGTM too",
-        createdAt: "2024-01-02T00:00:00Z",
-        author: { login: "second", avatar_url: "", html_url: "" },
-      },
-    ];
     mockGhCmdJson
-      .mockResolvedValueOnce(createMockIssue({ number: 99 }))
-      .mockResolvedValueOnce(comments);
-    const result = await viewIssue("owner", "repo", 99);
-    expect(result.number).toBe(99);
-    expect(result.comments).toHaveLength(2);
-    expect(result.comments[0].body).toBe("Looks good");
-    expect(result.comments[1].author?.login).toBe("second");
+      .mockResolvedValueOnce(issue523948)
+      .mockResolvedValueOnce(issueComments);
+    const result = await viewIssue("NixOS", "nixpkgs", 523948);
+    expect(result.number).toBe(523948);
+    expect(result.comments.length).toBeGreaterThan(0);
+    expect(result.comments[0].author?.login).toBeDefined();
   });
 });

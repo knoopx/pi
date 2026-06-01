@@ -1,105 +1,439 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`gh-view-issue output snapshots > renders issue with multiple comments 1`] = `
-"title: #5 Security vulnerability in auth
-state: CLOSED
-author: sec-team
-labels: security, critical
-milestone: v1.1
-created: 1/3/2024, 1:00:00
-url: https://github.com/owner/repo/issues/5
-comments: @lead (1/3/2024, 2:00:00)
-Confirmed, patching now.
+"title: #523948 nixos/gdm: ensure environment from display-manager.service is propagated
+state: open
+author: nekowinston
+labels: 6.topic: nixos, 8.has: module (update), 10.rebuild-linux: 1-10, 10.rebuild-darwin: 0, 12.approvals: 1, backport release-26.05
+milestone: none
+created: 25/5/2026, 12:34:18
+url: https://github.com/NixOS/nixpkgs/pull/523948
+comments: @nekowinston (28/5/2026, 18:50:56)
+I just tried this PR on my hardware with GNOME/i3/sway/niri, and it seems to work for all of them. I can replicate that in a VM as well, except for niri, which seems to have some trouble starting in VMs for me, even without a greeter.
 ---
-@lead (2/3/2024, 13:00:00)
-Fix merged in #99.
+@jbgi (29/5/2026, 14:29:29)
+also works for me on gdm+niri.
 ---
-@tester (5/3/2024, 10:00:00)
-Verified the fix works.
-Token validation bypass in /api/auth."
+@reedrw (30/5/2026, 4:50:17)
+Adding backport to this since I got bit by this bug on nixos-26.05
+---
+@jackrosenberg (30/5/2026, 12:02:39)
+Tested this on hyprland, does not work, unfortunately. 
+---
+@nekowinston (30/5/2026, 15:43:32)
+> Tested this on hyprland, does not work, unfortunately.
+
+@jackrosenberg could you please use
+\`\`\`nix
+services.displayManager.gdm = {
+  enable = true;
+  debug = true;
+};
+\`\`\`
+and see if you get useful journalctl logs from it?
+---
+@nekowinston (30/5/2026, 19:06:12)
+> I'd also very much like to know why tf. GDM needs to leak its shit into my session at all
+
+I don't think it needs to, or that it does this. Your session's \`$PATH\` shouldn't contain \`\${pkgs.gnome-session}/bin\` with this PR. This makes sure the variables are present when \`gdm\` runs \`gnome-shell\` to show its login window; it shouldn't pass them down into your hyprland session. At least it doesn't for me in the GNOME session.
+We are currently running gdm in an unsupported configuration (we should be using systemd-userdbd, but there are reasons we were unable to get it in for 26.05), so our workaround causes these issues AFAIK.
+---
+@jackrosenberg (31/5/2026, 22:33:42)
+> .... and see if you get useful journalctl logs from it?
+
+Logs [here](https://paste.jackr.eu/zmLAKBpoDve.syslog) :).  i've had bit of a hard time finding what exactly what logs are relevant, if i need to do something different please let me know!
+
+edit: updated the paste to make it a bit neater, hopefully
+---
+@jackrosenberg (31/5/2026, 22:47:40)
+@nekowinston i've updated the link to be a bit better
+---
+@nekowinston (31/5/2026, 22:51:02)
+I see gdm makes it to \`start-hyprland\` but I don't see a reason for it crashing (maybe the mentioned \`debug:disable_logs = false\` would add more context?)
+
+I haven't tried hyprland locally yet, I'll let you know if I can reproduce it.
+---
+@jackrosenberg (31/5/2026, 22:57:09)
+It's possible i've pasted the wrong logs... I dont get to hyprland at all. I can look more at this tomorrow!
+---
+@nixos-discourse (1/6/2026, 9:53:38)
+This pull request has been mentioned on **NixOS Discourse**. There might be relevant details there:
+
+https://discourse.nixos.org/t/gnome-crashes-after-updating-to-26-05-fw13/77969/3
+
+---
+@jackrosenberg (1/6/2026, 11:18:13)
+@nekowinston i think it would be best to get this merged & backported ASAP, as it bricks login for 26.05. We can work on fixing hyprland in a separate PR. 
+An attempt to fix #523332. So apparently we still need a  pam conffile, but we don't need to set the DCONF_PROFILE anymore.
+
+@nikamarisa please let me know what email to credit you with, if you wanna be co-authored on this :)
+
+We should probably also add a nixosTest covering gdm being used by something other than GNOME.
+
+## Things done
+
+<!-- Please check what applies. Note that these are not hard requirements but merely serve as information for reviewers. -->
+
+- Built on platform:
+  - [x] x86_64-linux
+  - [ ] aarch64-linux
+  - [ ] x86_64-darwin
+  - [ ] aarch64-darwin
+- Tested, as applicable:
+  - [x] [NixOS tests] in [nixos/tests].
+  - [ ] [Package tests] at \`passthru.tests\`.
+  - [ ] Tests in [lib/tests] or [pkgs/test] for functions and "core" functionality.
+- [ ] Ran \`nixpkgs-review\` on this PR. See [nixpkgs-review usage].
+- [ ] Tested basic functionality of all binary files, usually in \`./result/bin/\`.
+- Nixpkgs Release Notes
+  - [ ] Package update: when the change is major or breaking.
+- NixOS Release Notes
+  - [ ] Module addition: when adding a new NixOS module.
+  - [ ] Module update: when the change is significant.
+- [x] Fits [CONTRIBUTING.md], [pkgs/README.md], [maintainers/README.md] and other READMEs.
+- [x] Follows the [automation/AI policy].
+
+[NixOS tests]: https://nixos.org/manual/nixos/unstable/index.html#sec-nixos-tests
+[Package tests]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md#package-tests
+[nixpkgs-review usage]: https://github.com/Mic92/nixpkgs-review#usage
+
+[CONTRIBUTING.md]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md
+[automation/AI policy]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md#automationai-policy
+[lib/tests]: https://github.com/NixOS/nixpkgs/blob/master/lib/tests
+[maintainers/README.md]: https://github.com/NixOS/nixpkgs/blob/master/maintainers/README.md
+[nixos/tests]: https://github.com/NixOS/nixpkgs/blob/master/nixos/tests
+[pkgs/README.md]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md
+[pkgs/test]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/test
+"
 `;
 
 exports[`gh-view-issue output snapshots > renders issue with null comment author 1`] = `
-"title: #7 Ghost issue
-state: OPEN
-author: ghost
-labels: none
+"title: #523948 nixos/gdm: ensure environment from display-manager.service is propagated
+state: open
+author: nekowinston
+labels: 6.topic: nixos, 8.has: module (update), 10.rebuild-linux: 1-10, 10.rebuild-darwin: 0, 12.approvals: 1, backport release-26.05
 milestone: none
-created: 1/1/2024, 1:00:00
-url: https://github.com/owner/repo/issues/7
-comments: @unknown (2/1/2024, 1:00:00)
-Comment from deleted user
-Something weird happened."
+created: 25/5/2026, 12:34:18
+url: https://github.com/NixOS/nixpkgs/pull/523948
+comments: @unknown (1/6/2026, 9:53:38)
+This pull request has been mentioned on NixOS Discourse.
+An attempt to fix #523332. So apparently we still need a  pam conffile, but we don't need to set the DCONF_PROFILE anymore.
+
+@nikamarisa please let me know what email to credit you with, if you wanna be co-authored on this :)
+
+We should probably also add a nixosTest covering gdm being used by something other than GNOME.
+
+## Things done
+
+<!-- Please check what applies. Note that these are not hard requirements but merely serve as information for reviewers. -->
+
+- Built on platform:
+  - [x] x86_64-linux
+  - [ ] aarch64-linux
+  - [ ] x86_64-darwin
+  - [ ] aarch64-darwin
+- Tested, as applicable:
+  - [x] [NixOS tests] in [nixos/tests].
+  - [ ] [Package tests] at \`passthru.tests\`.
+  - [ ] Tests in [lib/tests] or [pkgs/test] for functions and "core" functionality.
+- [ ] Ran \`nixpkgs-review\` on this PR. See [nixpkgs-review usage].
+- [ ] Tested basic functionality of all binary files, usually in \`./result/bin/\`.
+- Nixpkgs Release Notes
+  - [ ] Package update: when the change is major or breaking.
+- NixOS Release Notes
+  - [ ] Module addition: when adding a new NixOS module.
+  - [ ] Module update: when the change is significant.
+- [x] Fits [CONTRIBUTING.md], [pkgs/README.md], [maintainers/README.md] and other READMEs.
+- [x] Follows the [automation/AI policy].
+
+[NixOS tests]: https://nixos.org/manual/nixos/unstable/index.html#sec-nixos-tests
+[Package tests]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md#package-tests
+[nixpkgs-review usage]: https://github.com/Mic92/nixpkgs-review#usage
+
+[CONTRIBUTING.md]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md
+[automation/AI policy]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md#automationai-policy
+[lib/tests]: https://github.com/NixOS/nixpkgs/blob/master/lib/tests
+[maintainers/README.md]: https://github.com/NixOS/nixpkgs/blob/master/maintainers/README.md
+[nixos/tests]: https://github.com/NixOS/nixpkgs/blob/master/nixos/tests
+[pkgs/README.md]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md
+[pkgs/test]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/test
+"
 `;
 
 exports[`gh-view-issue output snapshots > renders issue with single comment 1`] = `
-"title: #10 Add dark mode
-state: OPEN
-author: designer
-labels: enhancement
-milestone: v2.0
-created: 1/2/2024, 9:00:00
-url: https://github.com/owner/repo/issues/10
-comments: @dev (1/2/2024, 11:00:00)
-I can work on this next sprint.
-Users want a dark mode option."
+"title: #523948 nixos/gdm: ensure environment from display-manager.service is propagated
+state: open
+author: nekowinston
+labels: 6.topic: nixos, 8.has: module (update), 10.rebuild-linux: 1-10, 10.rebuild-darwin: 0, 12.approvals: 1, backport release-26.05
+milestone: none
+created: 25/5/2026, 12:34:18
+url: https://github.com/NixOS/nixpkgs/pull/523948
+comments: @nekowinston (28/5/2026, 18:50:56)
+I just tried this PR on my hardware with GNOME/i3/sway/niri, and it seems to work for all of them. I can replicate that in a VM as well, except for niri, which seems to have some trouble starting in VMs for me, even without a greeter.
+An attempt to fix #523332. So apparently we still need a  pam conffile, but we don't need to set the DCONF_PROFILE anymore.
+
+@nikamarisa please let me know what email to credit you with, if you wanna be co-authored on this :)
+
+We should probably also add a nixosTest covering gdm being used by something other than GNOME.
+
+## Things done
+
+<!-- Please check what applies. Note that these are not hard requirements but merely serve as information for reviewers. -->
+
+- Built on platform:
+  - [x] x86_64-linux
+  - [ ] aarch64-linux
+  - [ ] x86_64-darwin
+  - [ ] aarch64-darwin
+- Tested, as applicable:
+  - [x] [NixOS tests] in [nixos/tests].
+  - [ ] [Package tests] at \`passthru.tests\`.
+  - [ ] Tests in [lib/tests] or [pkgs/test] for functions and "core" functionality.
+- [ ] Ran \`nixpkgs-review\` on this PR. See [nixpkgs-review usage].
+- [ ] Tested basic functionality of all binary files, usually in \`./result/bin/\`.
+- Nixpkgs Release Notes
+  - [ ] Package update: when the change is major or breaking.
+- NixOS Release Notes
+  - [ ] Module addition: when adding a new NixOS module.
+  - [ ] Module update: when the change is significant.
+- [x] Fits [CONTRIBUTING.md], [pkgs/README.md], [maintainers/README.md] and other READMEs.
+- [x] Follows the [automation/AI policy].
+
+[NixOS tests]: https://nixos.org/manual/nixos/unstable/index.html#sec-nixos-tests
+[Package tests]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md#package-tests
+[nixpkgs-review usage]: https://github.com/Mic92/nixpkgs-review#usage
+
+[CONTRIBUTING.md]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md
+[automation/AI policy]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md#automationai-policy
+[lib/tests]: https://github.com/NixOS/nixpkgs/blob/master/lib/tests
+[maintainers/README.md]: https://github.com/NixOS/nixpkgs/blob/master/maintainers/README.md
+[nixos/tests]: https://github.com/NixOS/nixpkgs/blob/master/nixos/tests
+[pkgs/README.md]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md
+[pkgs/test]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/test
+"
 `;
 
 exports[`gh-view-issue output snapshots > renders issue without comments 1`] = `
-"title: #42 Fix crash on startup
-state: OPEN
-author: octocat
-labels: bug
+"title: #523948 nixos/gdm: ensure environment from display-manager.service is propagated
+state: open
+author: nekowinston
+labels: 6.topic: nixos, 8.has: module (update), 10.rebuild-linux: 1-10, 10.rebuild-darwin: 0, 12.approvals: 1, backport release-26.05
 milestone: none
-created: 15/1/2024, 11:00:00
-url: https://github.com/owner/repo/issues/42
+created: 25/5/2026, 12:34:18
+url: https://github.com/NixOS/nixpkgs/pull/523948
 comments: none
-The app crashes when opened."
+An attempt to fix #523332. So apparently we still need a  pam conffile, but we don't need to set the DCONF_PROFILE anymore.
+
+@nikamarisa please let me know what email to credit you with, if you wanna be co-authored on this :)
+
+We should probably also add a nixosTest covering gdm being used by something other than GNOME.
+
+## Things done
+
+<!-- Please check what applies. Note that these are not hard requirements but merely serve as information for reviewers. -->
+
+- Built on platform:
+  - [x] x86_64-linux
+  - [ ] aarch64-linux
+  - [ ] x86_64-darwin
+  - [ ] aarch64-darwin
+- Tested, as applicable:
+  - [x] [NixOS tests] in [nixos/tests].
+  - [ ] [Package tests] at \`passthru.tests\`.
+  - [ ] Tests in [lib/tests] or [pkgs/test] for functions and "core" functionality.
+- [ ] Ran \`nixpkgs-review\` on this PR. See [nixpkgs-review usage].
+- [ ] Tested basic functionality of all binary files, usually in \`./result/bin/\`.
+- Nixpkgs Release Notes
+  - [ ] Package update: when the change is major or breaking.
+- NixOS Release Notes
+  - [ ] Module addition: when adding a new NixOS module.
+  - [ ] Module update: when the change is significant.
+- [x] Fits [CONTRIBUTING.md], [pkgs/README.md], [maintainers/README.md] and other READMEs.
+- [x] Follows the [automation/AI policy].
+
+[NixOS tests]: https://nixos.org/manual/nixos/unstable/index.html#sec-nixos-tests
+[Package tests]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md#package-tests
+[nixpkgs-review usage]: https://github.com/Mic92/nixpkgs-review#usage
+
+[CONTRIBUTING.md]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md
+[automation/AI policy]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md#automationai-policy
+[lib/tests]: https://github.com/NixOS/nixpkgs/blob/master/lib/tests
+[maintainers/README.md]: https://github.com/NixOS/nixpkgs/blob/master/maintainers/README.md
+[nixos/tests]: https://github.com/NixOS/nixpkgs/blob/master/nixos/tests
+[pkgs/README.md]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md
+[pkgs/test]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/test
+"
+`;
+
+exports[`gh-view-pr output snapshots > renders PR with all reviews 1`] = `
+"title: #523948 nixos/gdm: ensure environment from display-manager.service is propagated
+state: open
+author: nekowinston
+branch: master ← gdm/env-fixes-2
+mergeable: true
+review: none
+created: 25/5/2026, 12:34:18
+url: https://github.com/NixOS/nixpkgs/pull/523948
+reviews: @Atemu (30/5/2026, 18:29:30) — APPROVED
+This works for me with GDM launching Hyprland via UWSM and sway (through whichever method our sway module uses by default).
+
+These env vars appear to be propagated into the session on 25.11 too, so we're not changing anything in that regard.
+
+Given that this is a major regression (I couldn't even switch to TTY..), this needs to be backported to 26.05 ASAP. cc @yayayayaka @jopejoe1
+
+(I'd also very much like to know why tf. GDM needs to leak its shit into my session at all? All of this feels immensely stupid. Why can't it just take the env vars given to it and execv like a normal program? I need to look into getting rid of GDM..)
+An attempt to fix #523332. So apparently we still need a  pam conffile, but we don't need to set the DCONF_PROFILE anymore.
+
+@nikamarisa please let me know what email to credit you with, if you wanna be co-authored on this :)
+
+We should probably also add a nixosTest covering gdm being used by something other than GNOME.
+
+## Things done
+
+<!-- Please check what applies. Note that these are not hard requirements but merely serve as information for reviewers. -->
+
+- Built on platform:
+  - [x] x86_64-linux
+  - [ ] aarch64-linux
+  - [ ] x86_64-darwin
+  - [ ] aarch64-darwin
+- Tested, as applicable:
+  - [x] [NixOS tests] in [nixos/tests].
+  - [ ] [Package tests] at \`passthru.tests\`.
+  - [ ] Tests in [lib/tests] or [pkgs/test] for functions and "core" functionality.
+- [ ] Ran \`nixpkgs-review\` on this PR. See [nixpkgs-review usage].
+- [ ] Tested basic functionality of all binary files, usually in \`./result/bin/\`.
+- Nixpkgs Release Notes
+  - [ ] Package update: when the change is major or breaking.
+- NixOS Release Notes
+  - [ ] Module addition: when adding a new NixOS module.
+  - [ ] Module update: when the change is significant.
+- [x] Fits [CONTRIBUTING.md], [pkgs/README.md], [maintainers/README.md] and other READMEs.
+- [x] Follows the [automation/AI policy].
+
+[NixOS tests]: https://nixos.org/manual/nixos/unstable/index.html#sec-nixos-tests
+[Package tests]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md#package-tests
+[nixpkgs-review usage]: https://github.com/Mic92/nixpkgs-review#usage
+
+[CONTRIBUTING.md]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md
+[automation/AI policy]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md#automationai-policy
+[lib/tests]: https://github.com/NixOS/nixpkgs/blob/master/lib/tests
+[maintainers/README.md]: https://github.com/NixOS/nixpkgs/blob/master/maintainers/README.md
+[nixos/tests]: https://github.com/NixOS/nixpkgs/blob/master/nixos/tests
+[pkgs/README.md]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md
+[pkgs/test]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/test
+"
 `;
 
 exports[`gh-view-pr output snapshots > renders PR with approved review 1`] = `
-"title: #55 Add CI pipeline
-state: OPEN
-author: devops
-branch: main ← add-ci
+"title: #523948 nixos/gdm: ensure environment from display-manager.service is propagated
+state: open
+author: nekowinston
+branch: master ← gdm/env-fixes-2
 mergeable: true
-review: APPROVED
-created: 10/2/2024, 9:00:00
-url: https://github.com/owner/repo/pull/55
-reviews: @lead (10/2/2024, 11:00:00) — APPROVED
-LGTM, looks good.
-Add GitHub Actions workflow."
-`;
+review: none
+created: 25/5/2026, 12:34:18
+url: https://github.com/NixOS/nixpkgs/pull/523948
+reviews: @Atemu (30/5/2026, 18:29:30) — APPROVED
+This works for me with GDM launching Hyprland via UWSM and sway (through whichever method our sway module uses by default).
 
-exports[`gh-view-pr output snapshots > renders PR with multiple reviews including changes requested 1`] = `
-"title: #60 Rewrite parser
-state: OPEN
-author: senior-dev
-branch: main ← rewrite-parser
-mergeable: true
-review: CHANGES_REQUESTED
-created: 1/3/2024, 1:00:00
-url: https://github.com/owner/repo/pull/60
-reviews: @reviewer (1/3/2024, 13:00:00) — CHANGES_REQUESTED
-Please add error handling for edge cases.
----
-@senior-dev (2/3/2024, 10:00:00) — COMMENTED
-Updated with error handling.
----
-@reviewer (3/3/2024, 11:00:00) — APPROVED
-Looks good now.
-Complete rewrite of the parser module."
+These env vars appear to be propagated into the session on 25.11 too, so we're not changing anything in that regard.
+
+Given that this is a major regression (I couldn't even switch to TTY..), this needs to be backported to 26.05 ASAP. cc @yayayayaka @jopejoe1
+
+(I'd also very much like to know why tf. GDM needs to leak its shit into my session at all? All of this feels immensely stupid. Why can't it just take the env vars given to it and execv like a normal program? I need to look into getting rid of GDM..)
+An attempt to fix #523332. So apparently we still need a  pam conffile, but we don't need to set the DCONF_PROFILE anymore.
+
+@nikamarisa please let me know what email to credit you with, if you wanna be co-authored on this :)
+
+We should probably also add a nixosTest covering gdm being used by something other than GNOME.
+
+## Things done
+
+<!-- Please check what applies. Note that these are not hard requirements but merely serve as information for reviewers. -->
+
+- Built on platform:
+  - [x] x86_64-linux
+  - [ ] aarch64-linux
+  - [ ] x86_64-darwin
+  - [ ] aarch64-darwin
+- Tested, as applicable:
+  - [x] [NixOS tests] in [nixos/tests].
+  - [ ] [Package tests] at \`passthru.tests\`.
+  - [ ] Tests in [lib/tests] or [pkgs/test] for functions and "core" functionality.
+- [ ] Ran \`nixpkgs-review\` on this PR. See [nixpkgs-review usage].
+- [ ] Tested basic functionality of all binary files, usually in \`./result/bin/\`.
+- Nixpkgs Release Notes
+  - [ ] Package update: when the change is major or breaking.
+- NixOS Release Notes
+  - [ ] Module addition: when adding a new NixOS module.
+  - [ ] Module update: when the change is significant.
+- [x] Fits [CONTRIBUTING.md], [pkgs/README.md], [maintainers/README.md] and other READMEs.
+- [x] Follows the [automation/AI policy].
+
+[NixOS tests]: https://nixos.org/manual/nixos/unstable/index.html#sec-nixos-tests
+[Package tests]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md#package-tests
+[nixpkgs-review usage]: https://github.com/Mic92/nixpkgs-review#usage
+
+[CONTRIBUTING.md]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md
+[automation/AI policy]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md#automationai-policy
+[lib/tests]: https://github.com/NixOS/nixpkgs/blob/master/lib/tests
+[maintainers/README.md]: https://github.com/NixOS/nixpkgs/blob/master/maintainers/README.md
+[nixos/tests]: https://github.com/NixOS/nixpkgs/blob/master/nixos/tests
+[pkgs/README.md]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md
+[pkgs/test]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/test
+"
 `;
 
 exports[`gh-view-pr output snapshots > renders PR without reviews 1`] = `
-"title: #50 Refactor auth module
-state: OPEN
-author: dev
-branch: main ← refactor-auth
+"title: #523948 nixos/gdm: ensure environment from display-manager.service is propagated
+state: open
+author: nekowinston
+branch: master ← gdm/env-fixes-2
 mergeable: true
 review: none
-created: 20/1/2024, 11:00:00
-url: https://github.com/owner/repo/pull/50
+created: 25/5/2026, 12:34:18
+url: https://github.com/NixOS/nixpkgs/pull/523948
 reviews: none
-Clean up the auth module."
+An attempt to fix #523332. So apparently we still need a  pam conffile, but we don't need to set the DCONF_PROFILE anymore.
+
+@nikamarisa please let me know what email to credit you with, if you wanna be co-authored on this :)
+
+We should probably also add a nixosTest covering gdm being used by something other than GNOME.
+
+## Things done
+
+<!-- Please check what applies. Note that these are not hard requirements but merely serve as information for reviewers. -->
+
+- Built on platform:
+  - [x] x86_64-linux
+  - [ ] aarch64-linux
+  - [ ] x86_64-darwin
+  - [ ] aarch64-darwin
+- Tested, as applicable:
+  - [x] [NixOS tests] in [nixos/tests].
+  - [ ] [Package tests] at \`passthru.tests\`.
+  - [ ] Tests in [lib/tests] or [pkgs/test] for functions and "core" functionality.
+- [ ] Ran \`nixpkgs-review\` on this PR. See [nixpkgs-review usage].
+- [ ] Tested basic functionality of all binary files, usually in \`./result/bin/\`.
+- Nixpkgs Release Notes
+  - [ ] Package update: when the change is major or breaking.
+- NixOS Release Notes
+  - [ ] Module addition: when adding a new NixOS module.
+  - [ ] Module update: when the change is significant.
+- [x] Fits [CONTRIBUTING.md], [pkgs/README.md], [maintainers/README.md] and other READMEs.
+- [x] Follows the [automation/AI policy].
+
+[NixOS tests]: https://nixos.org/manual/nixos/unstable/index.html#sec-nixos-tests
+[Package tests]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md#package-tests
+[nixpkgs-review usage]: https://github.com/Mic92/nixpkgs-review#usage
+
+[CONTRIBUTING.md]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md
+[automation/AI policy]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md#automationai-policy
+[lib/tests]: https://github.com/NixOS/nixpkgs/blob/master/lib/tests
+[maintainers/README.md]: https://github.com/NixOS/nixpkgs/blob/master/maintainers/README.md
+[nixos/tests]: https://github.com/NixOS/nixpkgs/blob/master/nixos/tests
+[pkgs/README.md]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md
+[pkgs/test]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/test
+"
 `;

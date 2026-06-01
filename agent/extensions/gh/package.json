@@ -14,8 +14,6 @@
     "tsc": "tsc --noEmit"
   },
   "dependencies": {
-    "@earendil-works/pi-agent-core": "^0.78.0",
-    "@earendil-works/pi-ai": "0.74.2",
     "@earendil-works/pi-coding-agent": "^0.78.0",
     "@earendil-works/pi-tui": "^0.78.0",
     "typebox": "^1.1.38"

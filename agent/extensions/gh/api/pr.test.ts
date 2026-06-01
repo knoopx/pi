@@ -4,8 +4,9 @@ import {
   assertCommonFieldLabels,
   assertHasCreatedAndUrl,
   assertTitleWithNumberPrefix,
+  loadFixture,
 } from "../test-factories";
-import type { GHPR } from "./pr";
+import type { GHPR, GHPRReview } from "./pr";
 import {
   createPrColumns,
   createPrRowMapper,
@@ -14,6 +15,9 @@ import {
   viewPR,
 } from "./pr";
 import { mockGhCmdJson } from "../../../shared/testing/test-factories";
+
+const pr523948 = loadFixture<GHPR>("pr-523948.json");
+const prReviews523948 = loadFixture<GHPRReview[]>("pr-523948-reviews.json");
 
 vi.mock("../../../shared/rendering/labels", () => ({
   dotJoin: (s: string) => s,
@@ -124,22 +128,12 @@ describe("createPrFields", () => {
 
   it("formats reviews with author and state", () => {
     const fieldFn = createPrFields();
-    const pr = createMockPR({
-      reviews: [
-        {
-          id: "r1",
-          body: "LGTM",
-          state: "APPROVED" as const,
-          createdAt: "2024-01-01T00:00:00Z",
-          author: { login: "reviewer", avatar_url: "", html_url: "" },
-        },
-      ],
-    });
+    const pr = createMockPR({ reviews: [prReviews523948[0]] });
     const fields = fieldFn(pr as unknown as GHPR);
     const reviewsField = fields.find((f) => f.label === "reviews");
-    expect(reviewsField?.value).toContain("@reviewer");
+    expect(reviewsField?.value).toContain("@Atemu");
     expect(reviewsField?.value).toContain("APPROVED");
-    expect(reviewsField?.value).toContain("LGTM");
+    expect(reviewsField?.value).toContain("GDM");
   });
 });
 
@@ -182,21 +176,25 @@ describe("viewPR", () => {
   });
 
   it("returns PR data with reviews", async () => {
-    const reviews = [
-      {
-        id: "r1",
-        body: "LGTM",
-        state: "APPROVED" as const,
-        createdAt: "2024-01-01T00:00:00Z",
-        author: { login: "reviewer", avatar_url: "", html_url: "" },
-      },
-    ];
     mockGhCmdJson
-      .mockResolvedValueOnce(createMockPR({ number: 99 }))
-      .mockResolvedValueOnce(reviews);
-    const result = await viewPR("owner", "repo", 99);
-    expect(result.number).toBe(99);
+      .mockResolvedValueOnce(pr523948)
+      .mockResolvedValueOnce(prReviews523948);
+    const result = await viewPR("NixOS", "nixpkgs", 523948);
+    expect(result.number).toBe(523948);
     expect(result.reviews).toHaveLength(1);
-    expect(result.reviews[0].body).toBe("LGTM");
+    expect(result.reviews[0].body).toContain("GDM");
+  });
+
+  it("returns single review as array from jq [.] wrapper", async () => {
+    // gh api --jq "[.[] | {...}]" always outputs an array, even for one review.
+    // Without the [.] wrapper, a single review would be a bare object,
+    // crashing formatReviews with "reviews.map is not a function".
+    mockGhCmdJson
+      .mockResolvedValueOnce(pr523948)
+      .mockResolvedValueOnce(prReviews523948);
+    const result = await viewPR("NixOS", "nixpkgs", 523948);
+    expect(Array.isArray(result.reviews)).toBe(true);
+    expect(result.reviews).toHaveLength(1);
+    expect(result.reviews[0].state).toBe("APPROVED");
   });
 });

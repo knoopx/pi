@@ -29,20 +29,21 @@ interface GHWorkflowRun {
   url: string;
 }
 
+class GhCommandError extends Error {
+  constructor(command: string, result: { stderr: string; stdout: string }) {
+    super(`${command} failed: ${result.stderr || result.stdout}`);
+  }
+}
+
 async function ghList<T>(args: string[], errorBase: string): Promise<T[]> {
   const result = await ghCmd(args);
+  if (result.exitCode !== 0) throw new GhCommandError(errorBase, result);
+  return parseGhListOutput<T>(result.stdout, errorBase);
+}
 
-  if (result.exitCode !== 0)
-    throw new Error(`${errorBase} failed: ${result.stderr || result.stdout}`);
-  let items: T[];
-  try {
-    const raw = JSON.parse(result.stdout) as unknown;
-    items = Array.isArray(raw) ? (raw as T[]) : [];
-  } catch {
-    throw new Error(`Failed to parse ${errorBase} output: ${result.stdout}`);
-  }
-
-  return items;
+function parseGhListOutput<T>(stdout: string, _label: string): T[] {
+  const raw = JSON.parse(stdout) as unknown;
+  return Array.isArray(raw) ? (raw as T[]) : [];
 }
 function listWorkflows(
   owner: string,
