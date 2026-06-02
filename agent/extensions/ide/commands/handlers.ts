@@ -12,6 +12,7 @@ import { openChangesBrowser } from "../components/changes/overlay";
 import { openTodosBrowser } from "../components/todos/overlay";
 import { openSearchPicker } from "../components/search/overlay";
 import { openSkillsPicker } from "../components/skills/overlay";
+import { openDirectoriesPicker } from "../components/directories/overlay";
 
 export function handleSessionStart(
   pi: ExtensionAPI,
@@ -107,4 +108,13 @@ export function handleSkillsCommand(
 ): void {
   if (!ctx.hasUI) return;
   void openSkillsPicker(pi, ctx, args);
+}
+
+export function handleDirectoriesCommand(
+  pi: ExtensionAPI,
+  args: string,
+  ctx: ExtensionContext,
+): void {
+  if (!ctx.hasUI) return;
+  void openDirectoriesPicker(pi, ctx, args);
 }

@@ -11,7 +11,11 @@ import { openPullRequestsBrowser } from "../components/pull-requests/overlay";
 import { openChangesBrowser } from "../components/changes/overlay";
 import { createWorkspacesComponent } from "../components/workspaces/component";
 import { FULL_OVERLAY_OPTIONS } from "../lib/ui/overlay";
-import { handleSkillsCommand, handleSearchCommand } from "./handlers";
+import {
+  handleSkillsCommand,
+  handleSearchCommand,
+  handleDirectoriesCommand,
+} from "./handlers";
 
 interface ShortcutDef {
   key: KeyId;
@@ -101,6 +105,13 @@ export function registerShortcuts(
       description: "Open skills picker",
       handler: (ctx) => {
         void handleSkillsCommand(pi, "", ctx);
+      },
+    },
+    {
+      key: Key.ctrlShift("p"),
+      description: "Open directory picker",
+      handler: (ctx) => {
+        void handleDirectoriesCommand(pi, "", ctx);
       },
     },
   ];

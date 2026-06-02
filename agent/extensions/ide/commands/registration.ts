@@ -16,6 +16,7 @@ import {
   handleTodosCommand,
   handleSearchCommand,
   handleSkillsCommand,
+  handleDirectoriesCommand,
 } from "./handlers";
 
 export function registerCommands(
@@ -107,6 +108,13 @@ export function registerCommands(
     description: "Browse agent skills with frontmatter preview",
     handler: async (args, ctx) => {
       void handleSkillsCommand(pi, args, ctx);
+    },
+  });
+
+  pi.registerCommand("directories", {
+    description: "Browse and pick directories from the project",
+    handler: async (args, ctx) => {
+      void handleDirectoriesCommand(pi, args, ctx);
     },
   });
 }
