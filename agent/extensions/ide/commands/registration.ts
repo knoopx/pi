@@ -15,6 +15,7 @@ import {
   handlePullRequestsCommand,
   handleTodosCommand,
   handleSearchCommand,
+  handleSkillsCommand,
 } from "./handlers";
 
 export function registerCommands(
@@ -99,6 +100,13 @@ export function registerCommands(
       "Search project files using ripgrep with syntax-highlighted previews",
     handler: async (args, ctx) => {
       void handleSearchCommand(pi, args, ctx);
+    },
+  });
+
+  pi.registerCommand("skills", {
+    description: "Browse agent skills with frontmatter preview",
+    handler: async (args, ctx) => {
+      void handleSkillsCommand(pi, args, ctx);
     },
   });
 }

@@ -11,7 +11,7 @@ import { openPullRequestsBrowser } from "../components/pull-requests/overlay";
 import { openChangesBrowser } from "../components/changes/overlay";
 import { createWorkspacesComponent } from "../components/workspaces/component";
 import { FULL_OVERLAY_OPTIONS } from "../lib/ui/overlay";
-import { handleSearchCommand } from "./handlers";
+import { handleSkillsCommand, handleSearchCommand } from "./handlers";
 
 interface ShortcutDef {
   key: KeyId;
@@ -94,6 +94,13 @@ export function registerShortcuts(
       description: "Open project-wide search",
       handler: (ctx) => {
         void handleSearchCommand(pi, "", ctx);
+      },
+    },
+    {
+      key: Key.ctrl("s"),
+      description: "Open skills picker",
+      handler: (ctx) => {
+        void handleSkillsCommand(pi, "", ctx);
       },
     },
   ];

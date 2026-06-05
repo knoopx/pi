@@ -11,6 +11,7 @@ import { openPullRequestsBrowser } from "../components/pull-requests/overlay";
 import { openChangesBrowser } from "../components/changes/overlay";
 import { openTodosBrowser } from "../components/todos/overlay";
 import { openSearchPicker } from "../components/search/overlay";
+import { openSkillsPicker } from "../components/skills/overlay";
 
 export function handleSessionStart(
   pi: ExtensionAPI,
@@ -97,4 +98,13 @@ export function handleSearchCommand(
 ): void {
   if (!ctx.hasUI) return;
   void openSearchPicker(pi, ctx, args);
+}
+
+export function handleSkillsCommand(
+  pi: ExtensionAPI,
+  args: string,
+  ctx: ExtensionContext,
+): void {
+  if (!ctx.hasUI) return;
+  void openSkillsPicker(pi, ctx, args);
 }

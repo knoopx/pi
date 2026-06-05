@@ -2,6 +2,7 @@
   "app.editor.external": [],
   "app.model.cycleBackward": [],
   "app.model.cycleForward": [],
+  "app.models.save": [],
   "app.models.toggleProvider": [],
   "app.exit": "ctrl+q",
   "app.session.new": "ctrl+n",
