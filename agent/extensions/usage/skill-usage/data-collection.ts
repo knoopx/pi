@@ -48,7 +48,8 @@ function mapToSkillStats(agg: ReturnType<typeof aggregateStats>): SkillStats {
       string,
       { count: number; skills: Record<string, number> }
     > = {};
-    for (const [key, { count, items }] of Object.entries(buckets)) {
+    for (const key of Object.keys(buckets)) {
+      const { count, items } = buckets[key];
       result[key] = { count, skills: items };
     }
     return result;
