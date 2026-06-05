@@ -1,9 +1,9 @@
 import { promisify } from "node:util";
-import { exec as execCb } from "node:child_process";
-import { stat, glob as fsGlob } from "node:fs/promises";
+import { exec } from "node:child_process";
+import { stat, glob } from "node:fs/promises";
 import { resolve, isAbsolute } from "node:path";
 
-const exec = promisify(execCb);
+const runCommand = promisify(exec);
 
 const GLOB_CHARS = new Set(["*", "?", "[", "]"]);
 
@@ -71,7 +71,7 @@ async function expandGlob(pattern: string): Promise<GlobResult> {
   const files = new Set<string>();
 
   try {
-    for await (const match of fsGlob(pattern)) {
+    for await (const match of glob(pattern)) {
       if (await isDirectory(match)) {
         directories.add(match);
       } else {
@@ -110,7 +110,7 @@ export async function runTree(
     const info = await stat(dir);
     if (!info.isDirectory()) return null;
     const pattern = filter ? ` -P "${filter}"` : "";
-    const { stdout } = await exec(`tree --gitignore${pattern} "${dir}"`, {
+    const { stdout } = await runCommand(`tree --gitignore${pattern} "${dir}"`, {
       timeout: 2_000,
     });
     // tree prints the directory path as its first line; strip it to avoid duplication with formatTreeBlocks
