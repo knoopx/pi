@@ -4,6 +4,7 @@ import type {
   KeybindingsManager,
 } from "@earendil-works/pi-coding-agent";
 import type { Theme } from "@earendil-works/pi-coding-agent";
+import { join } from "node:path";
 import { Key, matchesKey, type TUI } from "@earendil-works/pi-tui";
 import {
   createListPicker,
@@ -12,7 +13,12 @@ import {
 } from "../../lib/list-picker/picker";
 import { formatSymbolListEntry } from "./formatting";
 import type { SymbolReferenceActionType } from "../symbol-references/types";
-import { SYMBOL_TYPES, type SymbolResult, type SymbolInfo, type SymbolTypeFilter } from "./types";
+import {
+  SYMBOL_TYPES,
+  type SymbolResult,
+  type SymbolInfo,
+  type SymbolTypeFilter,
+} from "./types";
 import { loadPreviewFromPath } from "../../lib/file-preview";
 import { querySymbols } from "./symbol-parsing";
 import { openEditor } from "../../lib/open-editor";
@@ -117,7 +123,7 @@ function buildSymbolPickerOptions(options: {
     formatItem: (item: SymbolInfo, _width: number, t: Theme): string =>
       formatSymbolListEntry(t, { ...item, line: item.startLine }),
     loadPreview: (item: SymbolInfo) =>
-      loadPreviewFromPath(ctx.cwd, item.path, theme),
+      loadPreviewFromPath(join(ctx.cwd, item.path), theme),
     onKey: (data: string, onReload: (() => void) | undefined): boolean => {
       if (matchesKey(data, Key.ctrl("/"))) {
         const currentIndex = SYMBOL_TYPES.indexOf(currentTypeRef.value);

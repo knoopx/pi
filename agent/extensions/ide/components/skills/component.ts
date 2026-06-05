@@ -93,7 +93,7 @@ export function createSkillsComponent(
       loadItems: () => loadSkills(),
       filterItems: (items, query) => filterSkills(items, query),
       formatItem: (item, width) => formatSkillItem(item, width, theme),
-      loadPreview: (item) => loadPreviewFromPath("", item.path, theme),
+      loadPreview: (item) => loadPreviewFromPath(item.path, theme),
       actions: [
         {
           key: Key.ctrl("i"),

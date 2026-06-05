@@ -4,6 +4,7 @@ import type {
   KeybindingsManager,
 } from "@earendil-works/pi-coding-agent";
 import type { Theme } from "@earendil-works/pi-coding-agent";
+import { join } from "node:path";
 import { Key, type Component, type TUI } from "@earendil-works/pi-tui";
 import {
   createListPicker,
@@ -107,7 +108,7 @@ class FilesView implements Component {
           return `${getFileIcon(item.path)} ${item.path}`;
         },
         loadPreview: (item: FileInfo) =>
-          loadPreviewFromPath(ctx.cwd, item.path, theme),
+          loadPreviewFromPath(join(ctx.cwd, item.path), theme),
         filterItems: (items, query) =>
           items.filter(
             (item) =>

@@ -4,6 +4,7 @@ import type {
   KeybindingsManager,
 } from "@earendil-works/pi-coding-agent";
 import type { Theme } from "@earendil-works/pi-coding-agent";
+import { join } from "node:path";
 import { Key, type TUI } from "@earendil-works/pi-tui";
 import {
   createListPicker,
@@ -70,7 +71,10 @@ export function createSearchComponent(
       formatItem: (item, width) => formatSearchResult(width, theme, item),
       async loadPreview(item: SearchResult) {
         try {
-          const preview = await loadPreviewFromPath(ctx.cwd, item.path, theme);
+          const preview = await loadPreviewFromPath(
+            join(ctx.cwd, item.path),
+            theme,
+          );
           if (!item.matchedText || preview.length === 0) return preview;
           return highlightMatchInPreview(preview, item, theme);
         } catch {

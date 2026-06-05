@@ -2,7 +2,6 @@ import type { Theme, ThemeColor } from "@earendil-works/pi-coding-agent";
 import { highlightCode } from "./shiki/highlight";
 import { lang } from "./language";
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 export function highlightCodeLines(
   line: string,
   _theme: Theme,
@@ -26,12 +25,11 @@ export function loadFilePreviewWithShiki(
 }
 
 export async function loadPreviewFromPath(
-  cwd: string,
   filePath: string,
   theme: Theme,
 ): Promise<string[]> {
   try {
-    const content = await readFile(join(cwd, filePath), "utf8");
+    const content = await readFile(filePath, "utf8");
     return loadFilePreviewWithShiki(filePath, content, theme);
   } catch {
     return [];
