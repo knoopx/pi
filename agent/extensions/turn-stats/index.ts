@@ -32,8 +32,8 @@ export function formatDuration(ms: number): string {
   if (seconds < 1) return `${seconds.toFixed(2)}s`;
   return `${String(Math.floor(seconds))}s`;
 }
-export function formatTokens(tokens: number | undefined | null): string {
-  if (tokens == null) return "N/A";
+export function formatTokens(tokens: number | undefined | null): string | null {
+  if (tokens == null) return null;
   if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M`;
   return formatSmallTokens(tokens);
 }
@@ -50,11 +50,10 @@ export function formatInputOutputTokens(
 ): string {
   const inputStr = formatTokens(input);
   const outputStr = formatTokens(output);
-  const directionStr = `↑${inputStr} ↓${outputStr}`;
-
-  if (inputStr === "N/A" && outputStr === "N/A") return "";
-
-  return directionStr;
+  const parts: string[] = [];
+  if (inputStr) parts.push(`↑${inputStr}`);
+  if (outputStr) parts.push(`↓${outputStr}`);
+  return parts.join(" ");
 }
 export function formatCost(usage: Usage | undefined | null): string {
   if (!usage) return "";
@@ -124,10 +123,12 @@ export function formatSimpleOutput(
   const durationStr = formatDuration(durationMs);
   const tokPerSecStr = formatTokensPerSecond(output, generationMs);
   const costStr = formatCost(usage);
-  let result = `↓${outputStr} |  ${durationStr}`;
-  if (tokPerSecStr) result += ` |  ${tokPerSecStr}`;
-  if (costStr) result += ` | ${costStr}`;
-  return result;
+  const parts: string[] = [];
+  if (outputStr) parts.push(`↓${outputStr}`);
+  parts.push(` ${durationStr}`);
+  if (tokPerSecStr) parts.push(` ${tokPerSecStr}`);
+  if (costStr) parts.push(costStr);
+  return parts.join(" | ");
 }
 interface TurnTiming {
   turnStartMs: number;

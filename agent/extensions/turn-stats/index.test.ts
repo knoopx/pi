@@ -187,14 +187,14 @@ describe("formatTokens", () => {
 
   describe("given undefined or null token values", () => {
     describe("when formatting undefined tokens", () => {
-      it("then it should return 'N/A'", () => {
-        expect(formatTokens(undefined)).toBe("N/A");
+      it("then it should return null", () => {
+        expect(formatTokens(undefined)).toBe(null);
       });
     });
 
     describe("when formatting null tokens", () => {
-      it("then it should return 'N/A'", () => {
-        expect(formatTokens(null)).toBe("N/A");
+      it("then it should return null", () => {
+        expect(formatTokens(null)).toBe(null);
       });
     });
   });
@@ -556,7 +556,7 @@ describe("formatSimpleOutput", () => {
 
   describe("given undefined output tokens", () => {
     describe("when formatting undefined output, duration: 36000ms, cost: $0.01", () => {
-      it("then it should return '↓N/A |  36s | $0.01'", () => {
+      it("then it should omit output segment and return ' 36s | $0.01'", () => {
         expect(
           formatSimpleOutput(
             undefined,
@@ -576,7 +576,7 @@ describe("formatSimpleOutput", () => {
               },
             }),
           ),
-        ).toBe("↓N/A |  36s | $0.01");
+        ).toBe(" 36s | $0.01");
       });
     });
   });
