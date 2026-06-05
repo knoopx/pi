@@ -42,7 +42,7 @@ describe("HistorySearchComponent", () => {
   let component: HistorySearchComponent;
 
   beforeEach(() => {
-    theme = createMockTheme();
+    theme = createMockTheme() as unknown as Theme;
     history = createSampleHistory();
     component = new HistorySearchComponent(theme, history);
   });
@@ -296,7 +296,7 @@ describe("makeHistorySearchRenderer", () => {
   >;
 
   beforeEach(() => {
-    theme = createMockTheme();
+    theme = createMockTheme() as unknown as Theme;
     history = createSampleHistory();
     doneCallback = vi.fn();
     mockTui = createMockTui() as unknown as TUI;
@@ -420,7 +420,7 @@ describe("full integration: makeHistorySearchRenderer → ctx.ui.custom flow", (
   let mockTui: TUI;
 
   beforeEach(() => {
-    theme = createMockTheme();
+    theme = createMockTheme() as unknown as Theme;
     history = createSampleHistory();
     doneCallback = vi.fn();
     mockTui = createMockTui() as unknown as TUI;

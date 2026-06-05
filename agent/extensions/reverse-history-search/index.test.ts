@@ -7,7 +7,7 @@ import type {
   ModelRegistry,
 } from "@earendil-works/pi-coding-agent";
 import setupExtension from "./index";
-import { fuzzyMatch } from "../../shared/matching/fuzzy";
+import { fuzzyMatch } from "../../shared/fuzzy.js";
 import type { MockExtensionAPI } from "../../shared/testing/test-factories";
 import { createMockExtensionAPI } from "../../shared/testing/test-factories";
 
@@ -51,6 +51,8 @@ describe("Reverse History Search Extension", () => {
       handler = regCall[1].handler as (ctx: ExtensionContext) => Promise<void>;
       mockCtx = {
         hasUI: true,
+        mode: "tui",
+        isProjectTrusted: () => true,
         cwd: "/home/test/project",
         ui: {
           notify: vi.fn(),

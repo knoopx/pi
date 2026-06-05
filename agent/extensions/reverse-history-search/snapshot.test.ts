@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { HistoryEntry } from "./types";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { createMockTheme } from "../../shared/testing/mock-theme";
 import { renderHistoryPage } from "./ui/renderer";
 
@@ -10,7 +11,7 @@ function filterEntries(entries: HistoryEntry[], query: string): HistoryEntry[] {
 }
 
 describe("reverse-history-search — list row rendering", () => {
-  const theme = createMockTheme();
+  const theme = createMockTheme() as unknown as Theme;
 
   const sampleEntries: HistoryEntry[] = [
     {

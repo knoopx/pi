@@ -1,4 +1,4 @@
-import { fuzzyMatch } from "../../../shared/matching/fuzzy";
+import { fuzzyMatch } from "../../../shared/fuzzy.js";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { matchesKey, type TUI } from "@earendil-works/pi-tui";
 import { renderHistoryPage } from "./renderer";
