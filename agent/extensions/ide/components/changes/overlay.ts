@@ -23,7 +23,7 @@ export async function openChangesBrowser(
         init: { pi, tui, theme, keybindings, ctx },
         finish: done,
         onInsert: (text) => {
-          ctx.ui.setEditorText(ctx.ui.getEditorText() + text);
+          ctx.ui.pasteToEditor(text);
         },
         onBookmark: (changeId) => promptAndSetBookmark(changeId),
         onFileCmAction: (filePath, action) => {

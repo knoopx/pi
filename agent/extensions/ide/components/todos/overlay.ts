@@ -25,9 +25,8 @@ export async function openTodosBrowser(
   );
 
   if (result) {
-    const currentText = ctx.ui.getEditorText();
-    ctx.ui.setEditorText(
-      `${currentText}${result.path}:${String(result.startLine)} ${result.text}`,
+    ctx.ui.pasteToEditor(
+      `${result.path}:${String(result.startLine)} ${result.text}`,
     );
   }
 }

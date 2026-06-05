@@ -39,7 +39,7 @@ export async function openBrowserOverlay(
         done,
         cwd: ctx.cwd,
         onInsert: (text) => {
-          ctx.ui.setEditorText(ctx.ui.getEditorText() + text);
+          ctx.ui.pasteToEditor(text);
         },
       });
     },

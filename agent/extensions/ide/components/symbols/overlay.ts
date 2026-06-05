@@ -34,8 +34,7 @@ export async function openSymbolsPicker(
   });
 
   if (symbolResult) {
-    const currentText = ctx.ui.getEditorText();
     const textToInsert = `${symbolResult.path}:${symbolResult.startLine}`;
-    ctx.ui.setEditorText(currentText + textToInsert);
+    ctx.ui.pasteToEditor(textToInsert);
   }
 }

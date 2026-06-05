@@ -37,7 +37,6 @@ export async function openFilesPicker(
   });
 
   if (result) {
-    const currentText = ctx.ui.getEditorText();
-    ctx.ui.setEditorText(currentText + result.path);
+    ctx.ui.pasteToEditor(result.path);
   }
 }
