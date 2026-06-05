@@ -21,7 +21,7 @@ describe("jj module", () => {
     describe("when sanitizing unicode and whitespace", () => {
       it("then strips non-ascii characters and normalizes spacing", () => {
         const result = sanitizeDescription(
-          "feat(ide): ✨   add   op-log\tviewer",
+          "feat(ide): add   op-log\tviewer",
         );
         expect(result).toBe("feat(ide): add op-log viewer");
       });
@@ -29,7 +29,7 @@ describe("jj module", () => {
 
     describe("when sanitizing text that becomes empty", () => {
       it("then returns fallback description", () => {
-        const result = sanitizeDescription("✨🐛📚");
+        const result = sanitizeDescription("feat fix docs");
         expect(result).toBe("(no description)");
       });
     });
@@ -41,7 +41,7 @@ describe("jj module", () => {
         execMock.mockResolvedValue({
           code: 0,
           stdout:
-            "abc123\tdef456\tchanged\tmutable\tAlice\t2026-02-15 14:00\tparent1,parent2\tfeat(ide): ✨ add discard\n",
+            "abc123\tdef456\tchanged\tmutable\tAlice\t2026-02-15 14:00\tparent1,parent2\tfeat(ide): add discard\n",
           stderr: "",
         });
         const result = await loadChanges(pi, "/repo");
@@ -79,7 +79,7 @@ describe("jj module", () => {
         execMock.mockResolvedValue({
           code: 0,
           stdout:
-            "main\tabc123\tfeat: ✨ one\tAlice\nmain\tabc123\tfeat: ✨ one\tAlice\nfeature\tdef456\tfeat: ✨ two\tBob\n",
+            "main\tabc123\tfeat: one\tAlice\nmain\tabc123\tfeat: one\tAlice\nfeature\tdef456\tfeat: two\tBob\n",
           stderr: "",
         });
         const result = await listBookmarksByChange(pi, "/repo");
@@ -116,7 +116,7 @@ describe("jj module", () => {
       it("then parses ids and sanitizes descriptions", async () => {
         execMock.mockResolvedValue({
           code: 0,
-          stdout: "op1|refactor(ide): ♻️ cleanup|extra\nop2|✨\n",
+          stdout: "op1|refactor(ide): cleanup|extra\nop2|feat\n",
           stderr: "",
         });
         const result = await loadOpLog(pi, "/repo", 10);

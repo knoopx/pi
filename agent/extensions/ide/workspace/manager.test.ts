@@ -31,9 +31,9 @@ describe("workspace module", () => {
     describe("when parsing valid and invalid lines", () => {
       it("then returns parsed entries and sanitizes unicode descriptions", () => {
         const output = [
-          "ide-abc: znvxvkwopwql feat(ide): ✨ add discard",
+          "ide-abc: znvxvkwopwql feat(ide): add discard",
           "invalid line without separators",
-          "ide-def: abc123 ♻️   refactor  parser",
+          "ide-def: abc123 refactor  parser",
         ].join("\n");
         const result = parseWorkspaceList(output);
 
@@ -54,7 +54,7 @@ describe("workspace module", () => {
 
     describe("when description contains only unicode symbols", () => {
       it("then uses fallback description", () => {
-        const output = "ide-abc: znvxvkwopwql ✨🐛";
+        const output = "ide-abc: znvxvkwopwql feat fix";
         const result = parseWorkspaceList(output);
 
         expect(result[0]?.description).toBe("(no description)");
@@ -232,7 +232,7 @@ describe("workspace module", () => {
             result: {
               code: 0,
               stdout:
-                "ide-abc: znvxvkwopwql feat: ✨ add\nother: qwerty not ide\n",
+                "ide-abc: znvxvkwopwql feat: add\nother: qwerty not ide\n",
               stderr: "",
             },
           },

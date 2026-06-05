@@ -176,7 +176,7 @@ describe("list-picker — list row rendering", () => {
           { id: "c", label: "deleted-file.ts" },
         ];
         const { picker } = await setup(items, {
-          formatItem: (item: ListPickerItem) => `[★] ${item.label}`,
+          formatItem: (item: ListPickerItem) => `[>] ${item.label}`,
           loadPreview: vi.fn().mockResolvedValue([]),
         });
         const result = picker.render(80);
@@ -197,7 +197,7 @@ describe("list-picker — list row rendering", () => {
         const { picker, tui } = await setup(
           createItems(15, "long-file-name-"),
           {
-            formatItem: (item: ListPickerItem) => `[★] ${item.label}`,
+            formatItem: (item: ListPickerItem) => `[>] ${item.label}`,
             loadPreview: vi.fn().mockResolvedValue([]),
           },
         );
