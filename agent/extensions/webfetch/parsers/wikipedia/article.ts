@@ -4,7 +4,7 @@ import { visit } from "unist-util-visit";
 import type { Node as UnistNode } from "unist";
 import type { ParseResult } from "../../types";
 import { createRetryFetchText } from "../../lib/parser-factory";
-import { parseWikitext as wikitextToMdast } from "../../lib/wikitext-parser";
+import { parseWikitext } from "../../lib/wikitext-parser";
 import { cleanMdastTree } from "./tree-cleaning";
 import { stripTemplatesAndCommentsFromTextNodes } from "./wikitext";
 
@@ -62,7 +62,7 @@ export async function handleArticle(
   }
   let tree: ParseResult;
   try {
-    tree = wikitextToMdast(result.rawWikitext);
+    tree = parseWikitext(result.rawWikitext);
   } catch {
     return result.rawWikitext;
   }
