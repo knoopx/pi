@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    globals: true,
+
     setupFiles: ["../../shared/testing/test-factories.ts"],
     coverage: {
       provider: "v8",
