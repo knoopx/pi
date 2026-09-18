@@ -2,7 +2,7 @@
 
 Personal [Pi Coding Agent](https://buildwithpi.ai/) configuration.
 
-https://github.com/user-attachments/assets/054693ae-40b8-4ec3-88bf-7dcca312fcb1
+https://github.com/user-attachments/assets/93b0e756-1f33-4c60-b773-95d3a85ddaed
 
 ## IDE — TUI Development Environment
 
